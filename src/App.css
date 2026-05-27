@@ -471,9 +471,9 @@ textarea {
 }
 
 .actionButton.secondary {
-  background: white;
+  background: var(--surface-strong);
   color: var(--text);
-  box-shadow: 0 6px 18px rgba(2,6,23,0.04);
+  border: 1px solid var(--border);
 }
 
 .actionButton.danger,
