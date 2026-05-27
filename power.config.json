@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "appId": null,
+  "appDisplayName": "Project Portfolio Management Central",
+  "region": "prod",
+  "environmentId": "b13877a6-5201-e4ef-8d74-878957333982",
+  "description": " ",
+  "buildPath": "./dist",
+  "buildEntryPoint": "index.html",
+  "localAppUrl": "http://localhost:3000",
+  "logoPath": "Default",
+  "connectionReferences": {},
+  "databaseReferences": {
+    "default.cds": {
+      "dataSources": {
+        "portfolio": {
+          "entitySetName": "pm_portfolios",
+          "logicalName": "pm_portfolio",
+          "isHidden": false
+        },
+        "programme": {
+          "entitySetName": "pm_programmes",
+          "logicalName": "pm_programme",
+          "isHidden": false
+        },
+        "project": {
+          "entitySetName": "pm_projects",
+          "logicalName": "pm_project",
+          "isHidden": false
+        },
+        "pipelines": {
+          "entitySetName": "pm_initiatives",
+          "logicalName": "pm_initiative",
+          "isHidden": false
+        },
+        "projecttask": {
+          "entitySetName": "pm_projecttasks",
+          "logicalName": "pm_projecttask",
+          "isHidden": false
+        },
+        "projectmilestone": {
+          "entitySetName": "pm_projectmilestones",
+          "logicalName": "pm_projectmilestone",
+          "isHidden": false
+        }
+      },
+      "environmentVariableName": ""
+    }
+  }
+}
