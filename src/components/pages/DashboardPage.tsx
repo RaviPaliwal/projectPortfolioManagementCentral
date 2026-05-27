@@ -41,6 +41,11 @@ export default function DashboardPage() {
         <p>High-level metrics and my active project summary for the PPM Central workspace.</p>
       </div>
 
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+        <button className="actionButton secondary" type="button">New Project</button>
+        <button className="actionButton" type="button">View All Projects</button>
+      </div>
+
       {error ? (
         <div className="alertBanner">{error}</div>
       ) : null}
