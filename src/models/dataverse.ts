@@ -6,12 +6,18 @@ export interface PortfolioModel {
   pm_portfolioid?: string
   pm_portfolioname?: string
   pm_ownerid?: string
+  pm_portfolioowner?: string
   pm_portfoliostatus?: number | string
   pm_ragstatus?: RagStatusCode
   pm_startdate?: string
   pm_enddate?: string
   pm_approvedbudgeteur?: number
   pm_actualspendeur?: number
+  pm_portfoliodescription?: string
+  pm_strategicobjective?: string
+  pm_prioritylevel?: number
+  pm_businessunit?: string
+  pm_createdon?: string
 }
 
 export interface ProgrammeModel {
@@ -23,6 +29,43 @@ export interface ProgrammeModel {
   pm_startdate?: string
   pm_enddate?: string
   pm_portfolioname?: string
+  pm_programmemanager?: string
+  pm_sponsorname?: string
+  pm_programmedescription?: string
+  pm_budgeteur?: number
+  pm_actualspendeur?: number
+  pm_businessunit?: string
+}
+
+export interface RiskModel {
+  pm_riskid?: string
+  pm_risktitle?: string
+  pm_riskcategory?: number | string
+  pm_riskdescription?: string
+  pm_ragstatus?: RagStatusCode
+  pm_riskowner?: string
+  pm_riskstatus?: number | string
+  pm_escalated?: boolean
+  pm_identifieddate?: string
+  pm_targetclosedate?: string
+  pm_inherentscore?: number
+  pm_residualscore?: number
+  _pm_programmefk_value?: string
+}
+
+export interface IssueModel {
+  pm_issueid?: string
+  pm_issuetitle?: string
+  pm_issuedescription?: string
+  pm_issuecategory?: number | string
+  pm_ragstatus?: RagStatusCode
+  pm_issueowner?: string
+  pm_issuestatus?: number | string
+  pm_escalationstatus?: boolean
+  pm_prioritylevel?: number | string
+  pm_dateraised?: string
+  pm_targetresolutiondate?: string
+  _pm_programmefk_value?: string
 }
 
 export interface ProjectModel {
@@ -38,6 +81,11 @@ export interface ProjectModel {
   pm_plannedenddate?: string
   pm_actualstartdate?: string
   pm_actualenddate?: string
+  pm_approvedbudgeteur?: number
+  pm_actualcosteur?: number
+  pm_percentcomplete?: number
+  pm_businessunit?: string
+  pm_projectsponsor?: string
   pm_portfolioname?: string
   pm_programmename?: string
 }
@@ -72,5 +120,6 @@ export interface ProjectMilestoneModel {
   pm_milestonename?: string
   pm_milestonetype?: number | string
   pm_planneddate?: string
+  pm_ragstatus?: RagStatusCode
   _pm_project_value?: string
 }

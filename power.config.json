@@ -62,6 +62,16 @@
           "entitySetName": "pm_timesheetentries",
           "logicalName": "pm_timesheetentry",
           "isHidden": false
+        },
+        "risk": {
+          "entitySetName": "pm_risks",
+          "logicalName": "pm_risk",
+          "isHidden": false
+        },
+        "issue": {
+          "entitySetName": "pm_issues",
+          "logicalName": "pm_issue",
+          "isHidden": false
         }
       },
       "environmentVariableName": ""

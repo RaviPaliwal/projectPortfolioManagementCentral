@@ -6,6 +6,7 @@
 // Models
 export * as CommonModels from './models/CommonModels';
 export * as Pm_initiativesModel from './models/Pm_initiativesModel';
+export * as Pm_issuesModel from './models/Pm_issuesModel';
 export * as Pm_portfoliosModel from './models/Pm_portfoliosModel';
 export * as Pm_programmesModel from './models/Pm_programmesModel';
 export * as Pm_projectmilestonesModel from './models/Pm_projectmilestonesModel';
@@ -13,11 +14,13 @@ export * as Pm_projectsModel from './models/Pm_projectsModel';
 export * as Pm_projecttasksModel from './models/Pm_projecttasksModel';
 export * as Pm_resourceallocationsModel from './models/Pm_resourceallocationsModel';
 export * as Pm_resourcesModel from './models/Pm_resourcesModel';
+export * as Pm_risksModel from './models/Pm_risksModel';
 export * as Pm_timesheetentriesModel from './models/Pm_timesheetentriesModel';
 export * as Pm_timesheetsModel from './models/Pm_timesheetsModel';
 
 // Services
 export * from './services/Pm_initiativesService';
+export * from './services/Pm_issuesService';
 export * from './services/Pm_portfoliosService';
 export * from './services/Pm_programmesService';
 export * from './services/Pm_projectmilestonesService';
@@ -25,5 +28,6 @@ export * from './services/Pm_projectsService';
 export * from './services/Pm_projecttasksService';
 export * from './services/Pm_resourceallocationsService';
 export * from './services/Pm_resourcesService';
+export * from './services/Pm_risksService';
 export * from './services/Pm_timesheetentriesService';
 export * from './services/Pm_timesheetsService';

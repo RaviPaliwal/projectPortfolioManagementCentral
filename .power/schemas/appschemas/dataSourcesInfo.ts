@@ -5,6 +5,13 @@
  */
 
 export const dataSourcesInfo = {
+  "pm_issues": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_issueid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pm_initiatives": {
     "tableId": "",
     "version": "",
@@ -58,6 +65,13 @@ export const dataSourcesInfo = {
     "tableId": "",
     "version": "",
     "primaryKey": "pm_resourceallocationid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_risks": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_riskid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },
