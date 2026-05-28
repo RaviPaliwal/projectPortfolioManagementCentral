@@ -1,0 +1,378 @@
+import { Card, CardContent, Typography, Box, Chip, LinearProgress, useTheme, IconButton, Tooltip } from '@mui/material'
+import { type ReactNode } from 'react'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import ErrorIcon from '@mui/icons-material/Error'
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+
+// ─── StatusChip ────────────────────────────────────────────────────────────
+export interface StatusChipProps {
+  status?: string | number | null
+  type?: 'rag' | 'phase' | 'prog_phase'
+  size?: 'small' | 'medium'
+}
+
+const RAG_CONFIG: Record<string, { color: 'success' | 'warning' | 'error' | 'default'; icon: React.ReactElement; label: string }> = {
+  '1': { color: 'success', icon: <CheckCircleIcon sx={{ fontSize: 14 }} />, label: 'Green' },
+  '0': { color: 'warning', icon: <WarningAmberIcon sx={{ fontSize: 14 }} />, label: 'Amber' },
+  '2': { color: 'error', icon: <ErrorIcon sx={{ fontSize: 14 }} />, label: 'Red' },
+}
+
+const PHASE_LABELS: Record<string, { label: string; color: 'info' | 'primary' | 'secondary' }> = {
+  '0': { label: 'Execution', color: 'primary' },
+  '1': { label: 'Planning', color: 'info' },
+  '2': { label: 'Closure', color: 'secondary' },
+}
+
+const PROG_PHASE_LABELS: Record<string, { label: string; color: 'info' | 'primary' | 'secondary' }> = {
+  '0': { label: 'Delivery', color: 'primary' },
+  '1': { label: 'Planning', color: 'info' },
+  '2': { label: 'Initiation', color: 'secondary' },
+}
+
+export const StatusChip: React.FC<StatusChipProps> = ({ status, type = 'rag', size = 'small' }) => {
+  const statusStr = status?.toString() ?? ''
+
+  if (type === 'rag') {
+    const cfg = RAG_CONFIG[statusStr] ?? { color: 'default' as const, icon: <VisibilityIcon sx={{ fontSize: 14 }} />, label: 'Not Set' }
+    return (
+      <Chip
+        icon={cfg.icon}
+        label={cfg.label}
+        color={cfg.color}
+        size={size}
+        variant="outlined"
+        sx={{ fontWeight: 600, borderRadius: 8 }}
+      />
+    )
+  }
+
+  if (type === 'prog_phase') {
+    const cfg = PROG_PHASE_LABELS[statusStr] ?? { label: 'Unknown', color: 'default' as const }
+    return <Chip label={cfg.label} size={size} variant="outlined" color={cfg.color} sx={{ fontWeight: 600, borderRadius: 8 }} />
+  }
+
+  const cfg = PHASE_LABELS[statusStr] ?? { label: 'Unknown', color: 'default' as const }
+  return <Chip label={cfg.label} size={size} variant="outlined" color={cfg.color} sx={{ fontWeight: 600, borderRadius: 8 }} />
+}
+
+// ─── SummaryCard ────────────────────────────────────────────────────────────
+export interface SummaryCardProps {
+  title: string
+  subtitle?: string
+  status?: 'active' | 'completed' | 'onhold' | 'delayed'
+  progress?: number
+  metrics?: Array<{ label: string; value: string | number; icon?: ReactNode }>
+  children?: ReactNode
+  onClick?: () => void
+  elevation?: number
+}
+
+export const SummaryCard: React.FC<SummaryCardProps> = ({
+  title,
+  subtitle,
+  status,
+  progress,
+  metrics,
+  children,
+  onClick,
+  elevation = 1,
+}) => {
+  const theme = useTheme()
+
+  const statusColors: Record<string, any> = {
+    active: 'success',
+    completed: 'primary',
+    onhold: 'warning',
+    delayed: 'error',
+  }
+
+  return (
+    <Card
+      onClick={onClick}
+      sx={{
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'all 0.3s ease',
+        '&:hover': onClick ? {
+          transform: 'translateY(-4px)',
+          boxShadow: theme.shadows[4],
+        } : {},
+        height: '100%',
+      }}
+    >
+      <CardContent>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+            {title}
+          </Typography>
+          {subtitle && (
+            <Typography variant="body2" color="textSecondary">
+              {subtitle}
+            </Typography>
+          )}
+          {status && (
+            <Box sx={{ mt: 1 }}>
+              <Chip
+                label={status.charAt(0).toUpperCase() + status.slice(1)}
+                size="small"
+                color={statusColors[status]}
+                variant="outlined"
+              />
+            </Box>
+          )}
+        </Box>
+
+        {progress !== undefined && (
+          <Box sx={{ mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>Progress</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>{progress}%</Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={progress}
+              sx={{
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: theme.palette.mode === 'light' ? '#e0e0e0' : '#424242',
+                '& .MuiLinearProgress-bar': { borderRadius: 4 },
+              }}
+            />
+          </Box>
+        )}
+
+        {metrics && metrics.length > 0 && (
+          <Box sx={{ mb: 2, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
+            {metrics.map((metric, index) => (
+              <Box key={index}>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 0.25 }}>
+                  {metric.label}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  {metric.icon && metric.icon}
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    {metric.value}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        )}
+
+        {children}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ─── ProjectTaskMilestoneView ──────────────────────────────────────────────
+export interface Task {
+  id?: string
+  name?: string
+  assignedTo?: string
+  percentComplete?: number
+  plannedStart?: string
+  plannedEnd?: string
+}
+
+export interface Milestone {
+  id?: string
+  name?: string
+  type?: string | number
+  plannedDate?: string
+}
+
+export interface ProjectDetailViewProps {
+  projectName?: string
+  projectCode?: string
+  manager?: string
+  ragStatus?: string | number | null
+  phase?: string | number | null
+  portfolioName?: string
+  programmeName?: string
+  tasks?: Task[]
+  milestones?: Milestone[]
+  budget?: number
+  actualCost?: number
+}
+
+export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
+  projectName,
+  projectCode,
+  manager,
+  ragStatus,
+  phase,
+  portfolioName,
+  programmeName,
+  tasks = [],
+  milestones = [],
+  budget,
+  actualCost,
+}) => {
+  const theme = useTheme()
+  const completedTasks = tasks.filter((t) => (t.percentComplete ?? 0) >= 100).length
+  const overallProgress = tasks.length > 0 ? Math.round(tasks.reduce((s, t) => s + (t.percentComplete ?? 0), 0) / tasks.length) : 0
+  const achievedMilestones = milestones.filter((m) => !m.plannedDate || new Date(m.plannedDate) < new Date()).length
+
+  return (
+    <Box>
+      {/* Header section */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>{projectName || 'Untitled Project'}</Typography>
+          {projectCode && <Typography variant="body2" color="text.secondary">Code: {projectCode}</Typography>}
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <StatusChip status={ragStatus} type="rag" />
+          <StatusChip status={phase} type="phase" />
+        </Box>
+      </Box>
+
+      {/* Info chips */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+        {manager && <Chip icon={<VisibilityIcon sx={{ fontSize: 14 }} />} label={manager} size="small" variant="outlined" />}
+        {portfolioName && <Chip label={`Portfolio: ${portfolioName}`} size="small" variant="outlined" color="primary" />}
+        {programmeName && <Chip label={`Programme: ${programmeName}`} size="small" variant="outlined" color="secondary" />}
+      </Box>
+
+      {/* Metrics grid */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 1.5, mb: 2 }}>
+        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>{tasks.length}</Typography>
+          <Typography variant="caption" color="text.secondary">Total Tasks</Typography>
+        </Box>
+        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main' }}>{completedTasks}</Typography>
+          <Typography variant="caption" color="text.secondary">Completed</Typography>
+        </Box>
+        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: 'warning.main' }}>{milestones.length}</Typography>
+          <Typography variant="caption" color="text.secondary">Milestones</Typography>
+        </Box>
+        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: 'info.main' }}>{overallProgress}%</Typography>
+          <Typography variant="caption" color="text.secondary">Progress</Typography>
+        </Box>
+      </Box>
+
+      {/* Budget info */}
+      {(budget !== undefined || actualCost !== undefined) && (
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          {budget !== undefined && (
+            <Typography variant="body2">
+              Budget: <strong>${budget.toLocaleString()}</strong>
+            </Typography>
+          )}
+          {actualCost !== undefined && (
+            <Typography variant="body2">
+              Actual: <strong>${actualCost.toLocaleString()}</strong>
+            </Typography>
+          )}
+        </Box>
+      )}
+
+      {/* Progress bar */}
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>Overall Progress</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>{overallProgress}%</Typography>
+        </Box>
+        <LinearProgress
+          variant="determinate"
+          value={overallProgress}
+          sx={{
+            height: 10,
+            borderRadius: 5,
+            backgroundColor: theme.palette.mode === 'light' ? '#e0e0e0' : '#424242',
+            '& .MuiLinearProgress-bar': { borderRadius: 5 },
+          }}
+        />
+      </Box>
+
+      {/* Tasks section */}
+      {tasks.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <CheckCircleIcon fontSize="small" color="success" /> Tasks ({tasks.length})
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            {tasks.slice(0, 5).map((task) => (
+              <Box
+                key={task.id}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  p: 1.5,
+                  bgcolor: theme.palette.action.hover,
+                  borderRadius: 1.5,
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{task.name}</Typography>
+                  {task.assignedTo && <Typography variant="caption" color="text.secondary">{task.assignedTo}</Typography>}
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={task.percentComplete ?? 0}
+                    sx={{
+                      width: 60,
+                      height: 6,
+                      borderRadius: 3,
+                      bgcolor: theme.palette.mode === 'light' ? '#e0e0e0' : '#424242',
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ fontWeight: 600, minWidth: 32, textAlign: 'right' }}>
+                    {task.percentComplete ?? 0}%
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {/* Milestones section */}
+      {milestones.length > 0 && (
+        <Box>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <ExpandMoreIcon fontSize="small" color="warning" /> Milestones ({milestones.length})
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            {milestones.slice(0, 5).map((ms) => (
+              <Box
+                key={ms.id}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  p: 1.5,
+                  bgcolor: theme.palette.action.hover,
+                  borderRadius: 1.5,
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{ms.name}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {ms.type && <StatusChip status={ms.type} type="phase" size="small" />}
+                  {ms.plannedDate && (
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(ms.plannedDate).toLocaleDateString()}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+    </Box>
+  )
+}
+
+// ─── Default export ─────────────────────────────────────────────────────────
+export default SummaryCard

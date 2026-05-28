@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchPortfolioHierarchy, programmePhaseLabel, ragLabel } from '../../services/dataverseService'
+import {
+  Box,
+  Paper,
+  Typography,
+  Alert,
+  Skeleton,
+  Chip,
+  Grid,
+  Card,
+  CardContent,
+} from '@mui/material'
+import AccountTreeIcon from '@mui/icons-material/AccountTree'
+import FolderOpenIcon from '@mui/icons-material/FolderOpen'
+import { fetchPortfolioHierarchy } from '../../services/dataverseService'
+import { StatusChip } from '../common'
 import type { ProgrammeModel } from '../../models/dataverse'
 
 export default function ProgrammesPage() {
@@ -13,16 +27,14 @@ export default function ProgrammesPage() {
       try {
         const hierarchy = await fetchPortfolioHierarchy()
         if (isMounted) setProgrammes(hierarchy.programmes)
-      } catch (err) {
+      } catch {
         if (isMounted) setError('Unable to load programmes.')
       } finally {
         if (isMounted) setLoading(false)
       }
     }
     load()
-    return () => {
-      isMounted = false
-    }
+    return () => { isMounted = false }
   }, [])
 
   const programmeGroups = useMemo(() => {
@@ -34,42 +46,111 @@ export default function ProgrammesPage() {
     }, {})
   }, [programmes])
 
-  return (
-    <div className="page-root pagePanel">
-      <div className="pageHeader">
-        <h3>Programmes</h3>
-        <p>Programme-level view, grouped by portfolio and annotated with phase / RAG status.</p>
-      </div>
+  const totalProgrammes = programmes.length
+  const portfolioCount = Object.keys(programmeGroups).length
 
-      {error ? <div className="alertBanner">{error}</div> : null}
+  return (
+    <Box>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700 }}>Programmes</Typography>
+        <Typography variant="body2" color="text.secondary">Programme-level view, grouped by portfolio and annotated with phase / RAG status.</Typography>
+      </Box>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {/* Summary KPIs */}
+      {!loading && (
+        <Grid container spacing={2.5} sx={{ mb: 3 }}>
+          {[
+            { title: 'Total Programmes', value: totalProgrammes, icon: <AccountTreeIcon />, color: '#0ea5e9' },
+            { title: 'Portfolios', value: portfolioCount, icon: <FolderOpenIcon />, color: '#22c55e' },
+          ].map((kpi, idx) => (
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
+              <Card sx={{ position: 'relative', overflow: 'visible' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
+                        {kpi.title}
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                        {kpi.value}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: `${kpi.color}15`,
+                        color: kpi.color,
+                      }}
+                    >
+                      {kpi.icon}
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
       {loading ? (
-        <div className="listPlaceholder">Loading programmes…</div>
-      ) : (
-        <div className="programmeGrid">
-          {Object.entries(programmeGroups).map(([portfolioName, programmesInPortfolio]) => (
-            <section key={portfolioName} className="programmeGroup">
-              <h4>{portfolioName}</h4>
-              <div className="programmeList">
-                {programmesInPortfolio.map((programme) => (
-                  <article key={programme.pm_programmeid} className="programmeCard">
-                    <div className="programmeCardHeader">
-                      <h5>{programme.pm_programmename}</h5>
-                      <span className={`statusPill ${programme.pm_ragstatus === '2' ? 'statusRed' : programme.pm_ragstatus === '1' ? 'statusGreen' : 'statusAmber'}`}>
-                        {ragLabel(programme.pm_ragstatus)}
-                      </span>
-                    </div>
-                    <div className="programmeMeta">
-                      <span>{programmePhaseLabel(programme.pm_programmephase)}</span>
-                      <span>{programme.pm_startdate ?? 'No start date'}</span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} variant="rounded" height={100} />
           ))}
-        </div>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {Object.entries(programmeGroups).map(([portfolioName, programmesInPortfolio]) => (
+            <Paper key={portfolioName} sx={{ p: 2.5 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: 'primary.main' }}>
+                {portfolioName}
+              </Typography>
+              <Grid container spacing={2}>
+                {programmesInPortfolio.map((programme) => (
+                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={programme.pm_programmeid}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        transition: 'all 0.2s',
+                        '&:hover': { borderColor: 'secondary.main', boxShadow: 1 },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                          {programme.pm_programmename ?? 'Untitled programme'}
+                        </Typography>
+                        <StatusChip status={programme.pm_ragstatus} type="rag" />
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                        <StatusChip status={programme.pm_programmephase} type="prog_phase" />
+                        <Chip
+                          label={programme.pm_startdate ?? 'No start date'}
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontSize: '0.7rem' }}
+                        />
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {programme.pm_portfolioname ?? '—'}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+            </Paper>
+          ))}
+        </Box>
       )}
-    </div>
+    </Box>
   )
 }

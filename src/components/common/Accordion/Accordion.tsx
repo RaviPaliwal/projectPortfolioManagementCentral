@@ -1,0 +1,73 @@
+import { useState } from 'react'
+import Typography from '@mui/material/Typography'
+import MuiAccordion from '@mui/material/Accordion'
+import AccordionSummary from '@mui/material/AccordionSummary'
+import AccordionDetails from '@mui/material/AccordionDetails'
+import type { AccordionProps as MuiAccordionProps } from '@mui/material/Accordion'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+
+export interface AccordionItem {
+  id: string | number
+  title: string
+  content: React.ReactNode
+  disabled?: boolean
+}
+
+export interface AccordionProps extends Omit<MuiAccordionProps, 'children'> {
+  items: AccordionItem[]
+  defaultExpanded?: string | number
+  allowMultiple?: boolean
+}
+
+export const Accordion: React.FC<AccordionProps> = ({
+  items,
+  defaultExpanded,
+  allowMultiple = false,
+  ...props
+}) => {
+  const [expanded, setExpanded] = useState<string | number | false>(
+    defaultExpanded || false
+  )
+
+  const handleChange = (itemId: string | number) => (
+    _event: React.SyntheticEvent,
+    isExpanded: boolean
+  ) => {
+    if (allowMultiple) {
+      setExpanded(isExpanded ? itemId : false)
+    } else {
+      setExpanded(isExpanded ? itemId : false)
+    }
+  }
+
+  return (
+    <div>
+      {items.map((item) => (
+        <MuiAccordion
+          key={item.id}
+          expanded={expanded === item.id}
+          onChange={handleChange(item.id)}
+          disabled={item.disabled}
+          {...props}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {item.title}
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {typeof item.content === 'string' ? (
+              <Typography variant="body2">{item.content}</Typography>
+            ) : (
+              item.content
+            )}
+          </AccordionDetails>
+        </MuiAccordion>
+      ))}
+    </div>
+  )
+}
+
+export default Accordion

@@ -1,4 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import {
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  Skeleton,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  useTheme,
+} from '@mui/material'
+import ViewsIcon from '@mui/icons-material/GridView'
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
+import TrendingDownIcon from '@mui/icons-material/TrendingDown'
+import WarningIcon from '@mui/icons-material/Warning'
 import {
   fetchDashboardMetrics,
   fetchMyActiveProjects,
@@ -7,33 +27,13 @@ import {
   updateInitiativeStatus,
   projectPhaseLabel,
 } from '../../services/dataverseService'
-import KpiCard from '../../components/KpiCard'
+import { StatusChip, DashboardCharts } from '../common'
 import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel } from '../../models/dataverse'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
-const RAG_CONFIG: Record<string, { bg: string; text: string; dot: string; label: string }> = {
-  '2': { bg: '#FEF2F2', text: '#991B1B', dot: '#EF4444', label: 'Red' },
-  '1': { bg: '#F0FDF4', text: '#166534', dot: '#22C55E', label: 'Green' },
-  '0': { bg: '#FFFBEB', text: '#92400E', dot: '#F59E0B', label: 'Amber' },
-}
-
-function RagPill({ status }: { status: string | undefined }) {
-  const cfg = RAG_CONFIG[status ?? '0'] ?? RAG_CONFIG['0']
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      background: cfg.bg, color: cfg.text,
-      fontSize: 11, fontWeight: 600, letterSpacing: '0.04em',
-      padding: '3px 9px', borderRadius: 20,
-    }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.dot, flexShrink: 0 }} />
-      {cfg.label}
-    </span>
-  )
-}
-
 export default function DashboardPage() {
+  const theme = useTheme()
   const [metrics, setMetrics] = useState({
     totalActiveProjects: 0,
     totalActivePortfolios: 0,
@@ -96,209 +96,297 @@ export default function DashboardPage() {
     }
   }
 
+  // Build chart data from real metrics
+  const projectStatusData = useMemo(() => [
+    { name: 'Active', value: metrics.totalActiveProjects },
+    { name: 'Red', value: metrics.projectsInRed },
+    { name: 'Amber', value: metrics.projectsInAmber },
+  ], [metrics])
+
+  const resourceUtilizationData = useMemo(() => [
+    { team: 'Projects', utilized: metrics.totalActiveProjects, available: Math.max(0, 50 - metrics.totalActiveProjects) },
+    { team: 'Portfolios', utilized: metrics.totalActivePortfolios, available: Math.max(0, 20 - metrics.totalActivePortfolios) },
+  ], [metrics])
+
+  const kpiCards = [
+    { title: 'Active Portfolios', value: metrics.totalActivePortfolios, icon: <ViewsIcon />, color: '#0ea5e9' },
+    { title: 'Approved Budget', value: currencyFormatter.format(metrics.totalApprovedBudget), icon: <AccountBalanceWalletIcon />, color: '#22c55e' },
+    { title: 'Actual Spend', value: currencyFormatter.format(metrics.totalActualSpend), icon: <TrendingDownIcon />, color: '#f59e0b' },
+    { title: 'Red / Amber', value: metrics.projectsInRed + metrics.projectsInAmber, icon: <WarningIcon />, color: '#ef4444' },
+  ]
+
   return (
-      <div className="page-root">
-        {/* Header */}
-        <header className="page-intro">
-          <p className="page-eyebrow">PPM Central · Executive Dashboard</p>
-          <h1 className="page-title">Executive Portfolio Dashboard</h1>
-          <p className="page-subtitle">Top-line portfolio KPIs, budget health, and pending approvals in one executive view.</p>
-        </header>
+    <Box>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="caption" color="primary" sx={{ fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          PPM Central · Executive Dashboard
+        </Typography>
+        <Typography variant="h3" sx={{ mt: 0.5, mb: 1 }}>Executive Portfolio Dashboard</Typography>
+        <Typography variant="body1" color="text.secondary">
+          Top-line portfolio KPIs, budget health, and pending approvals in one executive view.
+        </Typography>
+      </Box>
 
-        {/* KPI Row */}
-        
-          <div className="kpi-grid">
-                <KpiCard title="Active Portfolios" value={metrics.totalActivePortfolios} accent="blue" />
-                <KpiCard title="Approved Budget" value={currencyFormatter.format(metrics.totalApprovedBudget)} accent="teal" />
-                <KpiCard title="Actual Spend" value={currencyFormatter.format(metrics.totalActualSpend)} accent="amber" />
-                <KpiCard title="Red / Amber Projects" value={metrics.projectsInRed + metrics.projectsInAmber} accent="amber" />
-                <div />
-        </div>
+      {/* KPI Cards */}
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        {kpiCards.map((kpi, idx) => (
+          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
+            <Card sx={{ position: 'relative', overflow: 'visible' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
+                      {kpi.title}
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                      {loading ? <Skeleton width={100} /> : kpi.value}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: `${kpi.color}15`,
+                      color: kpi.color,
+                    }}
+                  >
+                    {kpi.icon}
+                  </Box>
+                </Box>
+                {idx === 3 && !loading && (
+                  <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                    <StatusChip status="2" type="rag" size="small" />
+                    <StatusChip status="0" type="rag" size="small" />
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
-        {/* Main content */}
-        <div className="main-grid">
+      {/* Dashboard Charts */}
+      <Box sx={{ mb: 3 }}>
+        <DashboardCharts
+          projectStatusData={projectStatusData}
+          resourceUtilizationData={resourceUtilizationData}
+        />
+      </Box>
 
-          {/* Projects card */}
-          <section className="section-card">
-            <div className="section-header">
-              <div>
-                <h2 className="section-title">My Active Projects</h2>
-                <p className="section-desc">Projects currently in-flight with live status and delivery phase.</p>
-              </div>
-              <div className="btn-row">
-                <button className="btn btn-primary" type="button" onClick={() => setShowAllProjects(true)}>
-                  View all projects
-                </button>
-              </div>
-            </div>
+      {/* Main grid */}
+      <Grid container spacing={2.5}>
+        {/* Active Projects */}
+        <Grid size={{ xs: 12, md: 8 }}>
+          <Paper sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>My Active Projects</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Projects currently in-flight with live status and delivery phase.
+                </Typography>
+              </Box>
+              <Button variant="contained" size="small" onClick={() => setShowAllProjects(true)}>
+                View all
+              </Button>
+            </Box>
 
             {loading ? (
-              <div className="project-grid-loading">
+              <Grid container spacing={2}>
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="project-card-loading">
-                    <div className="skeleton skeleton-line skeleton-line--label" />
-                    <div className="skeleton skeleton-line skeleton-line--short" />
-                    <div className="skeleton skeleton-line" />
-                  </div>
+                  <Grid size={{ xs: 12, sm: 6 }} key={i}>
+                    <Skeleton variant="rounded" height={120} />
+                  </Grid>
                 ))}
-              </div>
+              </Grid>
             ) : projects.length > 0 ? (
-              <div className="project-grid">
+              <Grid container spacing={2}>
                 {projects.map((project) => (
-                  <article key={project.pm_projectid} className="project-card">
-                    <div className="project-card-top">
-                      <h3 className="project-name">{project.pm_projectname ?? 'Untitled project'}</h3>
-                      <RagPill status={project.pm_ragstatus?.toString()} />
-                    </div>
-                    <p className="project-code">{project.pm_projectcode ?? '—'}</p>
-                    <div className="project-meta">
-                      <span className="project-phase">{projectPhaseLabel(project.pm_projectphase)}</span>
-                      <span className="project-parent">
-                        {project.pm_programmename ?? project.pm_portfolioname ?? 'No parent'}
-                      </span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">No active projects found.</div>
-            )}
-          </section>
-
-          <div className="stacked-column">
-            <section className="section-card">
-              <div className="section-header">
-                <div>
-                  <h2 className="section-title">My Action Center</h2>
-                  <p className="section-desc">Pending approvals assigned for executive review.</p>
-                </div>
-              </div>
-
-              {loading ? (
-                <div className="empty-state">Loading approval requests…</div>
-              ) : approvals.length > 0 ? (
-                <div className="action-list">
-                  {approvals.map((request) => (
-                    <article key={request.pm_initiativeid} className="request-card">
-                      <div>
-                        <h3>{request.pm_name ?? 'Approval request'}</h3>
-                        <p className="request-meta">
-                          {request.pm_portfolioname ?? 'Portfolio not set'} · {request.pm_requestorname ?? 'Unknown requestor'}
-                        </p>
-                        <p className="request-copy">{request.pm_businesscase ?? 'No business case provided.'}</p>
-                        {request.pm_submissiondate ? <p className="request-meta">Submitted {new Date(request.pm_submissiondate).toLocaleDateString()}</p> : null}
-                      </div>
-                      <div className="request-actions">
-                        <button
-                          className="btn btn-primary"
-                          disabled={actionLoading}
-                          type="button"
-                          onClick={() => handleRequestAction(request.pm_initiativeid!, 0)}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          className="btn btn-secondary"
-                          disabled={actionLoading}
-                          type="button"
-                          onClick={() => handleRequestAction(request.pm_initiativeid!, 3)}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-state">No pending approvals found.</div>
-              )}
-            </section>
-
-            <section className="section-card">
-              <div className="section-header">
-                <div>
-                  <h2 className="section-title">RAG Snapshot</h2>
-                  <p className="section-desc">Current portfolio and programme health at a glance.</p>
-                </div>
-              </div>
-
-              <div className="snapshot-body">
-                <div className="snapshot-section">
-                  <h3 className="snapshot-heading">Portfolios</h3>
-                  {portfolioSnapshot.length > 0 ? (
-                    portfolioSnapshot.map((portfolio) => (
-                      <div key={portfolio.pm_portfolioid} className="snapshot-item">
-                        <div>
-                          <strong>{portfolio.pm_portfolioname ?? 'Unnamed portfolio'}</strong>
-                          <p className="request-meta">Budget {currencyFormatter.format(portfolio.pm_approvedbudgeteur ?? 0)}</p>
-                        </div>
-                        <RagPill status={portfolio.pm_ragstatus?.toString()} />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-state">No portfolio snapshot available.</div>
-                  )}
-                </div>
-
-                <div className="snapshot-section">
-                  <h3 className="snapshot-heading">Programmes</h3>
-                  {programmeSnapshot.length > 0 ? (
-                    programmeSnapshot.map((programme) => (
-                      <div key={programme.pm_programmeid} className="snapshot-item">
-                        <div>
-                          <strong>{programme.pm_programmename ?? 'Unnamed programme'}</strong>
-                          <p className="request-meta">{programme.pm_portfolioname ?? 'No portfolio'}</p>
-                        </div>
-                        <RagPill status={programme.pm_ragstatus?.toString()} />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-state">No programme snapshot available.</div>
-                  )}
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-
-        {/* Error */}
-        {error && <div className="error-banner">⚠ {error}</div>}
-
-        {showAllProjects && (
-          <div className="modal-backdrop" onClick={() => setShowAllProjects(false)}>
-            <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
-              <h3 className="modal-title">All Active Projects</h3>
-              <p className="modal-desc">Live project list powered by the portfolio model.</p>
-              {loading ? (
-                <div className="empty-state">Loading full project list…</div>
-              ) : projects.length > 0 ? (
-                <div className="project-grid" style={{ gap: 12, marginTop: 12 }}>
-                  {projects.map((project) => (
-                    <article key={project.pm_projectid} className="project-card">
-                      <div className="project-card-top">
-                        <h3 className="project-name">{project.pm_projectname ?? 'Untitled project'}</h3>
-                        <RagPill status={project.pm_ragstatus?.toString()} />
-                      </div>
-                      <p className="project-code">{project.pm_projectcode ?? '—'}</p>
-                      <div className="project-meta">
-                        <span className="project-phase">{projectPhaseLabel(project.pm_projectphase)}</span>
-                        <span className="project-parent">
+                  <Grid size={{ xs: 12, sm: 6 }} key={project.pm_projectid}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        transition: 'all 0.2s',
+                        '&:hover': { borderColor: 'primary.main', boxShadow: 1 },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                          {project.pm_projectname ?? 'Untitled project'}
+                        </Typography>
+                        <StatusChip status={project.pm_ragstatus} type="rag" />
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                        {project.pm_projectcode ?? '—'}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <StatusChip status={project.pm_projectphase} type="phase" />
+                        <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center' }}>
                           {project.pm_programmename ?? project.pm_portfolioname ?? 'No parent'}
-                        </span>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-state">No active projects found.</div>
-              )}
-              <button className="btn btn-secondary" onClick={() => setShowAllProjects(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-        )}
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                No active projects found.
+              </Typography>
+            )}
+          </Paper>
+        </Grid>
 
-      </div>
-    )
+        {/* Right column */}
+        <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          {/* Action Center */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>My Action Center</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Pending approvals assigned for executive review.
+            </Typography>
+
+            {loading ? (
+              <Skeleton variant="rounded" height={200} />
+            ) : approvals.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {approvals.map((request) => (
+                  <Paper key={request.pm_initiativeid} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{request.pm_name ?? 'Approval request'}</Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {request.pm_portfolioname ?? 'Portfolio not set'} · {request.pm_requestorname ?? 'Unknown'}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 0.5, mb: 1 }}>
+                      {request.pm_businesscase ?? 'No business case provided.'}
+                    </Typography>
+                    {request.pm_submissiondate && (
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                        Submitted {new Date(request.pm_submissiondate).toLocaleDateString()}
+                      </Typography>
+                    )}
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="success"
+                        disabled={actionLoading}
+                        onClick={() => handleRequestAction(request.pm_initiativeid!, 0)}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        disabled={actionLoading}
+                        onClick={() => handleRequestAction(request.pm_initiativeid!, 3)}
+                      >
+                        Reject
+                      </Button>
+                    </Box>
+                  </Paper>
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                No pending approvals found.
+              </Typography>
+            )}
+          </Paper>
+
+          {/* RAG Snapshot */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>RAG Snapshot</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Current portfolio and programme health at a glance.
+            </Typography>
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>Portfolios</Typography>
+              {portfolioSnapshot.length > 0 ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {portfolioSnapshot.map((portfolio) => (
+                    <Box key={portfolio.pm_portfolioid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 1.5 }}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{portfolio.pm_portfolioname ?? 'Unnamed'}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Budget {currencyFormatter.format(portfolio.pm_approvedbudgeteur ?? 0)}
+                        </Typography>
+                      </Box>
+                      <StatusChip status={portfolio.pm_ragstatus} type="rag" />
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography variant="caption" color="text.secondary">No portfolio snapshot available.</Typography>
+              )}
+            </Box>
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'secondary.main' }}>Programmes</Typography>
+              {programmeSnapshot.length > 0 ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {programmeSnapshot.map((programme) => (
+                    <Box key={programme.pm_programmeid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 1.5 }}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{programme.pm_programmename ?? 'Unnamed'}</Typography>
+                        <Typography variant="caption" color="text.secondary">{programme.pm_portfolioname ?? 'No portfolio'}</Typography>
+                      </Box>
+                      <StatusChip status={programme.pm_ragstatus} type="rag" />
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography variant="caption" color="text.secondary">No programme snapshot available.</Typography>
+              )}
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Error */}
+      {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+
+      {/* All Projects Dialog */}
+      <Dialog open={showAllProjects} onClose={() => setShowAllProjects(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>All Active Projects</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Live project list powered by the portfolio model.
+          </Typography>
+          {loading ? (
+            <Typography variant="body2" color="text.secondary">Loading full project list…</Typography>
+          ) : projects.length > 0 ? (
+            <Grid container spacing={1.5}>
+              {projects.map((project) => (
+                <Grid size={{ xs: 12, sm: 6 }} key={project.pm_projectid}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{project.pm_projectname ?? 'Untitled'}</Typography>
+                      <StatusChip status={project.pm_ragstatus} type="rag" />
+                    </Box>
+                    <Typography variant="caption" color="text.secondary" display="block">{project.pm_projectcode ?? '—'}</Typography>
+                    <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                      <StatusChip status={project.pm_projectphase} type="phase" />
+                    </Box>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Typography variant="body2" color="text.secondary">No active projects found.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAllProjects(false)} variant="outlined">Close</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  )
 }
