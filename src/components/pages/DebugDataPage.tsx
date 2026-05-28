@@ -22,12 +22,15 @@ import {
   Collapse,
   Tooltip,
   useTheme,
-  Divider,
   LinearProgress,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
@@ -38,7 +41,8 @@ import StorageIcon from '@mui/icons-material/Storage'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
 import WarningIcon from '@mui/icons-material/Warning'
-import { getAvailableTables, debugQueryTable, seedAllResourceData } from '../../services/dataverseService'
+import { getAvailableTables, debugQueryTable, seedAllResourceData, truncateResourceData } from '../../services/dataverseService'
+import AddIcon from '@mui/icons-material/Add'
 import type { DebugQueryOptions } from '../../services/dataverseService'
 
 const ALL_TABLES = getAvailableTables()
@@ -63,6 +67,9 @@ export default function DebugDataPage() {
   const [rawResponse, setRawResponse] = useState<any>(null)
   const [showRaw, setShowRaw] = useState(false)
   const [copyLabel, setCopyLabel] = useState('Copy')
+  const [seeding, setSeeding] = useState(false)
+  const [seedConfirmOpen, setSeedConfirmOpen] = useState(false)
+  const [seedResults, setSeedResults] = useState<{ table: string; created: number; error?: string }[]>([])
 
   const tableRef = useRef<HTMLDivElement>(null)
 
@@ -108,6 +115,40 @@ export default function DebugDataPage() {
       setTimeout(() => setCopyLabel('Copy'), 2000)
     }
   }
+
+  const handleSeed = useCallback(async () => {
+    setSeedConfirmOpen(false)
+    setSeeding(true)
+    setSeedResults([])
+    try {
+      // Step 1: Truncate existing data
+      setSeedResults([{ table: '⏳ Truncating existing data...', created: 0 }])
+      const truncateResults = await truncateResourceData()
+
+      // Check if truncate had errors before proceeding
+      const truncateErrors = truncateResults.filter(r => r.error)
+      if (truncateErrors.length > 0) {
+        setSeedResults(truncateResults.map(r => ({ table: `Truncated: ${r.table}`, created: r.created, error: r.error })))
+        setSeeding(false)
+        return
+      }
+
+      // Step 2: Seed fresh data
+      setSeedResults(truncateResults.map(r => ({ ...r, table: `🗑 ${r.table} (truncated)` })))
+      const freshSeedResults = await seedAllResourceData()
+
+      // Combine both results
+      const combined = [
+        ...truncateResults.map(r => ({ table: `Truncated: ${r.table}`, created: r.created, error: r.error })),
+        ...freshSeedResults.map(r => ({ table: `Seeded: ${r.table}`, created: r.created, error: r.error })),
+      ]
+      setSeedResults(combined)
+    } catch (err: any) {
+      setSeedResults([{ table: 'error', created: 0, error: err?.message || String(err) }])
+    } finally {
+      setSeeding(false)
+    }
+  }, [setSeedConfirmOpen, setSeeding, setSeedResults])
 
   // Format a cell value for display
   const formatCellValue = (val: any): string => {
@@ -168,7 +209,7 @@ export default function DebugDataPage() {
             value={topValue}
             onChange={(e) => setTopValue(Number(e.target.value) || 100)}
             sx={{ width: 140 }}
-            inputProps={{ min: 1, max: 5000 }}
+            slotProps={{ htmlInput: { min: 1, max: 5000 } }}
           />
 
           {/* Filter */}
@@ -421,6 +462,142 @@ export default function DebugDataPage() {
           ))}
         </Box>
       </Paper>
+
+      {/* Seed Data Section */}
+      <Paper elevation={1} sx={{ p: 3, mt: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+          <StorageIcon sx={{ verticalAlign: 'middle', mr: 1, fontSize: 20 }} />
+          Seed Resource Data
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Populate <strong>pm_resources</strong>, <strong>pm_resourceallocations</strong>, <strong>pm_timesheets</strong>, and <strong>pm_timesheetentries</strong> with sample data so the Resource Utilization charts on the Dashboard have data to display.
+        </Typography>
+
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            variant="contained"
+            color="warning"
+            startIcon={seeding ? <CircularProgress size={16} color="inherit" /> : <StorageIcon />}
+            disabled={seeding}
+            onClick={() => setSeedConfirmOpen(true)}
+          >
+            {seeding ? 'Truncating & Seeding...' : 'Truncate & Seed All Resource Data'}
+          </Button>
+
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={seeding ? <CircularProgress size={16} color="inherit" /> : <AddIcon />}
+            disabled={seeding}
+            onClick={async () => {
+              setSeeding(true)
+              setSeedResults([])
+              setSeedResults([{ table: '⏳ Seeding data (without truncation)...', created: 0 }])
+              try {
+                const freshSeedResults = await seedAllResourceData()
+                setSeedResults(freshSeedResults.map(r => ({ table: `Seeded: ${r.table}`, created: r.created, error: r.error })))
+              } catch (err: any) {
+                setSeedResults([{ table: 'error', created: 0, error: err?.message || String(err) }])
+              } finally {
+                setSeeding(false)
+              }
+            }}
+          >
+            {seeding ? 'Seeding...' : 'Quick Seed (no truncation)'}
+          </Button>
+
+          {seedResults.length > 0 && !seeding && (
+            <>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setSeedResults([])}
+              >
+                Clear Results
+              </Button>
+              <Button
+                size="small"
+                variant="text"
+                color="primary"
+                onClick={() => {
+                  setSelectedTable('pm_resources')
+                  setFilterStr('statecode eq 0')
+                  setSelectFields('pm_fullname, pm_dailyworkcapacity, pm_departmentname')
+                  setOrderBy('pm_fullname asc')
+                }}
+              >
+                Query Resources
+              </Button>
+            </>
+          )}
+        </Box>
+
+        {/* Seed results */}
+        {seedResults.length > 0 && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+              Operation Results
+            </Typography>
+            {seeding && <LinearProgress sx={{ mb: 1 }} />}
+            <List dense disablePadding>
+              {seedResults.map((r, idx) => (
+                <ListItem key={idx} sx={{ px: 0, py: 0.25 }}>
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    {r.table.startsWith('⏳') ? (
+                      <CircularProgress size={16} />
+                    ) : r.error ? (
+                      <ErrorIcon fontSize="small" color="error" />
+                    ) : r.created > 0 ? (
+                      <CheckCircleIcon fontSize="small" color="success" />
+                    ) : (
+                      <WarningIcon fontSize="small" color="warning" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Typography variant="body2">
+                        <strong>{r.table}</strong>: {r.created} record{r.created !== 1 ? 's' : ''}
+                        {r.error && <span style={{ color: '#ef4444' }}> — Error: {r.error}</span>}
+                      </Typography>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        )}
+      </Paper>
+
+      {/* Seed confirmation dialog */}
+      <Dialog open={seedConfirmOpen} onClose={() => setSeedConfirmOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Confirm Truncate &amp; Seed</DialogTitle>
+        <DialogContent>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            <strong>This will FIRST delete ALL existing records</strong> from the following tables, then create fresh sample data.
+          </Alert>
+          <Typography variant="body2" sx={{ mb: 1.5 }}>
+            The following tables will be truncated and reseeded:
+          </Typography>
+          <List dense>
+            {['pm_timesheetentries', 'pm_timesheets', 'pm_resourceallocations', 'pm_resources'].map((t) => (
+              <ListItem key={t} sx={{ px: 0, py: 0.25 }}>
+                <ListItemIcon sx={{ minWidth: 32 }}>
+                  <StorageIcon fontSize="small" color="action" />
+                </ListItemIcon>
+                <ListItemText primary={<Typography variant="body2"><strong>{t}</strong></Typography>} />
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSeedConfirmOpen(false)} variant="outlined" disabled={seeding}>
+            Cancel
+          </Button>
+          <Button onClick={handleSeed} variant="contained" color="error" disabled={seeding}>
+            {seeding ? 'Processing...' : 'Yes, Truncate & Seed'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Initial state when no query made */}
       {!results && !loading && (

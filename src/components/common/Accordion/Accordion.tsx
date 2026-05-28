@@ -13,7 +13,7 @@ export interface AccordionItem {
   disabled?: boolean
 }
 
-export interface AccordionProps extends Omit<MuiAccordionProps, 'children'> {
+export interface AccordionProps extends Omit<MuiAccordionProps, 'children' | 'defaultExpanded'> {
   items: AccordionItem[]
   defaultExpanded?: string | number
   allowMultiple?: boolean

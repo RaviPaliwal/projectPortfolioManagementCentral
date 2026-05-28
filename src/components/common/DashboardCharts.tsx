@@ -142,7 +142,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
             <YAxis type="category" dataKey="resource" width={140} stroke={textColor} tick={{ fontSize: 12 }} />
             <Tooltip
               contentStyle={tooltipStyle}
-              formatter={(value: number, name: string) => {
+              formatter={(value: any, name: any) => {
                 if (name === 'allocated') return [`${value}h`, 'Allocated Hours']
                 if (name === 'available') return [`${value}h`, 'Available Capacity']
                 if (name === 'overage') return [`${value}h`, 'Over-allocated']
@@ -209,7 +209,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
             <YAxis stroke={textColor} label={{ value: 'Hours', angle: -90, position: 'insideLeft', fill: textColor }} />
             <Tooltip
               contentStyle={tooltipStyle}
-              formatter={(value: number, name: string) => {
+              formatter={(value: any, name: any) => {
                 if (name === 'planned') return [`${value}h`, 'Planned']
                 return [`${value}h`, 'Actual']
               }}
@@ -242,7 +242,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
               innerRadius={60}
               outerRadius={100}
               labelLine={false}
-              label={({ name, hours }) => {
+              label={({ name, hours }: any) => {
                 const pct = totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : '0'
                 return `${name}: ${pct}%`
               }}
@@ -252,7 +252,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
                 <Cell key={`cell-${index}`} fill={DONUT_COLORS[index % DONUT_COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`${value}h`, 'Hours']} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => [`${value}h`, 'Hours']} />
             <Legend
               formatter={(value: string) => {
                 const item = data.find((d) => d.name === value)

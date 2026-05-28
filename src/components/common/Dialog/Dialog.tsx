@@ -7,7 +7,7 @@ import {
 } from '@mui/material'
 import type { DialogProps as MuiDialogProps } from '@mui/material/Dialog'
 
-export interface DialogProps extends Omit<MuiDialogProps, 'open'> {
+export interface DialogProps extends Omit<MuiDialogProps, 'open' | 'content'> {
   open: boolean
   title: string
   content: React.ReactNode

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Box,
   Paper,
@@ -37,7 +37,6 @@ import {
   fetchProjectMilestones,
   fetchProjectTasks,
   fetchMyActiveProjects,
-  projectPhaseLabel,
   updateProject,
   updateProjectTask,
 } from '../../services/dataverseService'
@@ -258,7 +257,7 @@ export default function ProjectsPage() {
                 >
                   <ListItemText
                     primary={project.title}
-                    slotProps={{ primary: { fontSize: '0.8125rem', fontWeight: selectedProjectId === project.id ? 700 : 500 } }}
+                    slotProps={{ primary: { sx: { fontSize: '0.8125rem', fontWeight: selectedProjectId === project.id ? 700 : 500 } } }}
                   />
                   <StatusChip status={project.status} type="rag" />
                 </ListItemButton>
@@ -364,7 +363,7 @@ export default function ProjectsPage() {
                     <TextField fullWidth size="small" label="Type" value={milestoneForm.pm_milestonetype ?? ''} onChange={(e) => setMilestoneForm((f) => ({ ...f, pm_milestonetype: e.target.value }))} />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 3 }}>
-                    <TextField fullWidth size="small" type="date" InputLabelProps={{ shrink: true }} label="Date" value={milestoneForm.pm_planneddate ?? ''} onChange={(e) => setMilestoneForm((f) => ({ ...f, pm_planneddate: e.target.value }))} />
+                    <TextField fullWidth size="small" type="date" slotProps={{ inputLabel: { shrink: true } }} label="Date" value={milestoneForm.pm_planneddate ?? ''} onChange={(e) => setMilestoneForm((f) => ({ ...f, pm_planneddate: e.target.value }))} />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 2 }}>
                     <Button fullWidth variant="contained" size="small" onClick={handleMilestoneCreate} sx={{ height: '100%' }}>Add</Button>

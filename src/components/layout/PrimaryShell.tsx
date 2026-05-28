@@ -121,7 +121,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
                 <ListItemIcon sx={{ minWidth: 40 }}>{tab.icon}</ListItemIcon>
                 <ListItemText
                   primary={tab.label}
-                  slotProps={{ primary: { fontWeight: isActive ? 700 : 500, fontSize: '0.875rem' } }}
+                  slotProps={{ primary: { sx: { fontWeight: isActive ? 700 : 500, fontSize: '0.875rem' } } }}
                 />
               </ListItemButton>
             )

@@ -64,6 +64,15 @@ const programmePhaseLabel = (code?: string | number): string => {
   return 'Unknown'
 }
 
+const normalizeLookupId = (id?: string): string | undefined => {
+  if (!id) return undefined
+  return id.replace(/[{}]/g, '').trim().toLowerCase()
+}
+
+const normalizeLookupName = (name?: string): string | undefined => {
+  return name?.trim().toLowerCase()
+}
+
 const mapPortfolio = (item: Pm_portfolios): PortfolioModel => ({
   pm_portfolioid: item.pm_portfolioid,
   pm_portfolioname: item.pm_portfolioname,
@@ -512,6 +521,10 @@ export async function createInitiative(payload: Partial<InitiativeModel>): Promi
 }
 
 // ── Resource Utilization Charts Data ──────────────────────────────────────
+// NOTE: Dataverse lookup alias fields like pm_resourcename or pm_projectname may not be
+// reliably returned in getAll() results for related records. Always query the lookup
+// GUID field (_pm_resource_value, _pm_project_value, pm_resourceid, etc.) and resolve
+// the display name from the related entity when building chart datasets.
 // 1. Capacity vs. Allocation Heatmap (Stacked Bar)
 export async function fetchCapacityAllocationData(): Promise<
   { resource: string; capacity: number; allocated: number; percentage: number }[]
@@ -523,8 +536,8 @@ export async function fetchCapacityAllocationData(): Promise<
       top: 500,
     }),
     Pm_resourceallocationsService.getAll({
-      filter: "statecode eq 0 and pm_assignmentstatus eq 0",
-      select: ['pm_resourceallocationid', 'pm_resourcename', 'pm_allocatedhours', 'pm_allocationpercentage', 'pm_startdate', 'pm_enddate'],
+      filter: "statecode eq 0",
+      select: ['pm_resourceallocationid', 'pm_allocatedhours', 'pm_allocationpercentage', 'pm_startdate', 'pm_enddate', '_pm_resource_value', 'pm_resourceid'],
       top: 2000,
     }),
   ])
@@ -532,35 +545,64 @@ export async function fetchCapacityAllocationData(): Promise<
   const resources = unwrapList<Pm_resources>(resourcesResult)
   const allocations = unwrapList<Pm_resourceallocations>(allocationsResult)
 
-  // Build resource lookup by name
-  const resourceMap = new Map<string, number>()
+  // Build resource lookups: normalized name and normalized GUID/resource ID -> canonical resource info
+  const resourceByName = new Map<string, { name: string; capacity: number }>()
+  const resourceByGuid = new Map<string, { name: string; capacity: number }>()
   for (const r of resources) {
-    if (r.pm_fullname) {
-      resourceMap.set(r.pm_fullname, r.pm_dailyworkcapacity ?? 8)
+    const normalizedName = normalizeLookupName(r.pm_fullname)
+    if (normalizedName) {
+      resourceByName.set(normalizedName, {
+        name: r.pm_fullname!.trim(),
+        capacity: r.pm_dailyworkcapacity ?? 8,
+      })
+    }
+    const normalizedGuid = normalizeLookupId(r.pm_resourceid)
+    if (normalizedGuid) {
+      resourceByGuid.set(normalizedGuid, {
+        name: r.pm_fullname?.trim() || 'Unknown',
+        capacity: r.pm_dailyworkcapacity ?? 8,
+      })
     }
   }
 
-  // Group allocations by resource name (using pm_resourcename from allocation)
+  const resolveResourceName = (a: Pm_resourceallocations): string | undefined => {
+    const normalizedResourceName = normalizeLookupName(a.pm_resourcename)
+    if (normalizedResourceName && resourceByName.has(normalizedResourceName)) {
+      return resourceByName.get(normalizedResourceName)!.name
+    }
+    const normalizedGuid = normalizeLookupId(((a as any)._pm_resource_value as string) || a.pm_resourceid)
+    if (normalizedGuid && resourceByGuid.has(normalizedGuid)) {
+      return resourceByGuid.get(normalizedGuid)!.name
+    }
+    return undefined
+  }
+
   const allocationMap = new Map<string, number>()
+  let unmatchedAllocations = 0
   for (const a of allocations) {
-    const name = a.pm_resourcename?.trim()
-    if (!name) continue
+    const name = resolveResourceName(a)
+    if (!name) {
+      unmatchedAllocations += 1
+      continue
+    }
     const totalAlloc = a.pm_allocatedhours ?? 0
     allocationMap.set(name, (allocationMap.get(name) ?? 0) + totalAlloc)
   }
 
-  // Also allocate for resources that have capacity but no allocations (show as 0)
-  for (const [name] of resourceMap) {
-    if (!allocationMap.has(name)) {
-      allocationMap.set(name, 0)
+  for (const resourceInfo of resourceByName.values()) {
+    if (!allocationMap.has(resourceInfo.name)) {
+      allocationMap.set(resourceInfo.name, 0)
     }
   }
 
-  // Build chart data
+  const resourceCapacityByName = new Map<string, number>()
+  for (const resourceInfo of resourceByName.values()) {
+    resourceCapacityByName.set(resourceInfo.name, resourceInfo.capacity)
+  }
+
   const result: { resource: string; capacity: number; allocated: number; percentage: number }[] = []
   for (const [resource, allocated] of allocationMap) {
-    const capacity = resourceMap.get(resource) ?? 8
-    // Assume daily capacity * 20 working days per month as monthly capacity
+    const capacity = resourceCapacityByName.get(resource) ?? 8
     const monthlyCapacity = capacity * 20
     const percentage = monthlyCapacity > 0 ? Math.round((allocated / monthlyCapacity) * 100) : 0
     result.push({
@@ -571,7 +613,6 @@ export async function fetchCapacityAllocationData(): Promise<
     })
   }
 
-  // Sort by percentage descending (most overallocated first)
   result.sort((a, b) => b.percentage - a.percentage)
   return result.slice(0, 12)
 }
@@ -582,8 +623,8 @@ export async function fetchPlannedVsActualData(): Promise<
 > {
   const [allocationsResult, entriesResult] = await Promise.all([
     Pm_resourceallocationsService.getAll({
-      filter: "statecode eq 0 and pm_assignmentstatus eq 0",
-      select: ['pm_resourceallocationid', 'pm_allocatedhours', 'pm_startdate', 'pm_enddate'],
+      filter: "statecode eq 0",
+      select: ['pm_resourceallocationid', 'pm_allocatedhours', 'pm_startdate', 'pm_enddate', '_pm_resource_value', 'pm_resourceid'],
       top: 2000,
     }),
     Pm_timesheetentriesService.getAll({
@@ -634,16 +675,48 @@ export async function fetchUtilizationByProjectData(): Promise<
 > {
   const entriesResult = await Pm_timesheetentriesService.getAll({
     filter: "statecode eq 0",
-    select: ['pm_timesheetentryid', 'pm_hoursworked', 'pm_projectname'],
+    select: ['pm_timesheetentryid', 'pm_hoursworked', 'pm_worknotes', '_pm_project_value'],
     top: 2000,
   })
 
   const entries = unwrapList<Pm_timesheetentries>(entriesResult)
 
+  const projectIds = Array.from(new Set(entries
+    .map((entry) => normalizeLookupId((entry as any)._pm_project_value as string))
+    .filter((id): id is string => Boolean(id))))
+  const projectNamesById = new Map<string, string>()
+  if (projectIds.length > 0) {
+    const projectsResult = await Pm_projectsService.getAll({
+      filter: 'statecode eq 0',
+      select: ['pm_projectid', 'pm_projectname'],
+      top: 2000,
+    })
+    const projects = unwrapList<Pm_projects>(projectsResult)
+    for (const project of projects) {
+      const projectId = normalizeLookupId(project.pm_projectid)
+      if (projectId && project.pm_projectname) {
+        projectNamesById.set(projectId, project.pm_projectname.trim())
+      }
+    }
+  }
+
+  // Helper to extract project name from work notes (e.g. "Work on ERP Implementation - 2026-01-15")
+  const extractProjectFromNotes = (notes: string): string | undefined => {
+    const normalized = notes?.trim()
+    if (!normalized) return undefined
+    const match = normalized.match(/^Work on (.+?) - \d{4}-\d{2}-\d{2}/)
+    return match ? match[1].trim() : undefined
+  }
+
   // Group by project name
   const projectMap = new Map<string, number>()
   for (const e of entries) {
-    const project = e.pm_projectname?.trim() || 'Unassigned'
+    const projectId = normalizeLookupId((e as any)._pm_project_value as string)
+    let project = projectId ? projectNamesById.get(projectId) : undefined
+    if (!project && e.pm_worknotes) {
+      project = extractProjectFromNotes(e.pm_worknotes)
+    }
+    project = project || 'Unassigned'
     projectMap.set(project, (projectMap.get(project) ?? 0) + (e.pm_hoursworked ?? 0))
   }
 
@@ -654,16 +727,10 @@ export async function fetchUtilizationByProjectData(): Promise<
 
   // Sort descending by hours and take top 8 + "Other"
   result.sort((a, b) => b.hours - a.hours)
-  if (result.length > 8) {
-    const top = result.slice(0, 8)
-    const other = result.slice(8).reduce((sum, item) => sum + item.hours, 0)
-    if (other > 0) {
-      top.push({ name: 'Other', hours: other })
-    }
-    return top
-  }
-
-  return result
+  const topResults = result.length > 8 ? result.slice(0, 8) : result
+  const other = result.length > 8 ? result.slice(8).reduce((sum, item) => sum + item.hours, 0) : 0
+  const finalResult = result.length > 8 && other > 0 ? [...topResults, { name: 'Other', hours: other }] : topResults
+  return finalResult
 }
 
 // 4. Department / Role Demand Forecasting (Line/Area Chart)
@@ -678,8 +745,8 @@ export async function fetchDepartmentDemandData(): Promise<
       top: 500,
     }),
     Pm_resourceallocationsService.getAll({
-      filter: "statecode eq 0 and pm_assignmentstatus eq 0",
-      select: ['pm_resourceallocationid', 'pm_resourcename', 'pm_allocatedhours', 'pm_assignmentrole', 'pm_startdate', 'pm_enddate'],
+      filter: "statecode eq 0",
+      select: ['pm_resourceallocationid', 'pm_allocatedhours', 'pm_assignmentrole', 'pm_startdate', 'pm_enddate', '_pm_resource_value', 'pm_resourceid'],
       top: 2000,
     }),
   ])
@@ -687,15 +754,34 @@ export async function fetchDepartmentDemandData(): Promise<
   const resources = unwrapList<Pm_resources>(resourcesResult)
   const allocations = unwrapList<Pm_resourceallocations>(allocationsResult)
 
-  // Build resource-to-department/role lookup by name
-  const resourceDeptMap = new Map<string, string>()
-  const resourceRoleMap = new Map<string, string>()
+  // Build resource-to-department/role lookup: by normalized name and normalized GUID/resource ID
+  const resourceDeptByName = new Map<string, string>()
+  const resourceDeptByGuid = new Map<string, { name: string; dept: string; role: string }>()
   for (const r of resources) {
-    if (r.pm_fullname) {
-      const name = r.pm_fullname.trim()
-      resourceDeptMap.set(name, r.pm_departmentname?.trim() || 'Unspecified')
-      resourceRoleMap.set(name, r.pm_primaryrole?.trim() || 'Unspecified')
+    const normalizedName = normalizeLookupName(r.pm_fullname)
+    if (normalizedName) {
+      resourceDeptByName.set(normalizedName, r.pm_departmentname?.trim() || 'Unspecified')
     }
+    const normalizedGuid = normalizeLookupId(r.pm_resourceid)
+    if (normalizedGuid) {
+      resourceDeptByGuid.set(normalizedGuid, {
+        name: r.pm_fullname?.trim() || 'Unknown',
+        dept: r.pm_departmentname?.trim() || 'Unspecified',
+        role: r.pm_primaryrole?.trim() || 'Unspecified',
+      })
+    }
+  }
+  const resolveDept = (a: Pm_resourceallocations): string => {
+    const normalizedResName = normalizeLookupName(a.pm_resourcename)
+    if (normalizedResName && resourceDeptByName.has(normalizedResName)) {
+      return resourceDeptByName.get(normalizedResName)!
+    }
+    const normalizedGuid = normalizeLookupId(((a as any)._pm_resource_value as string) || a.pm_resourceid)
+    if (normalizedGuid && resourceDeptByGuid.has(normalizedGuid)) {
+      return resourceDeptByGuid.get(normalizedGuid)!.dept
+    }
+    if (a.pm_assignmentrole?.trim()) return a.pm_assignmentrole.trim()
+    return 'Unspecified'
   }
 
   // Group allocations by month and department (using YYYY-MM keys for sorting)
@@ -703,18 +789,7 @@ export async function fetchDepartmentDemandData(): Promise<
   for (const a of allocations) {
     if (!a.pm_startdate) continue
     const monthKey = a.pm_startdate.substring(0, 7)
-
-    // Try to find department by matching resource name
-    const resourceName = a.pm_resourcename?.trim()
-    let dept: string
-    if (resourceName && resourceDeptMap.has(resourceName)) {
-      dept = resourceDeptMap.get(resourceName)!
-    } else if (a.pm_assignmentrole?.trim()) {
-      // Fallback: use assignment role if resource not found in resource table
-      dept = a.pm_assignmentrole.trim()
-    } else {
-      dept = 'Unspecified'
-    }
+    const dept = resolveDept(a)
 
     if (!demandByMonth.has(monthKey)) {
       demandByMonth.set(monthKey, new Map())
@@ -808,6 +883,75 @@ interface SeedResult {
   error?: string
 }
 
+/** Known primary key fields for each resource table */
+const primaryKeyMap: Record<string, string> = {
+  pm_resources: 'pm_resourceid',
+  pm_resourceallocations: 'pm_resourceallocationid',
+  pm_timesheets: 'pm_timesheetid',
+  pm_timesheetentries: 'pm_timesheetentryid',
+}
+
+/**
+ * Helper to delete all records from a given table using its service.
+ */
+async function truncateTable(
+  tableName: string,
+  service: { getAll: (options?: any) => Promise<any>; delete: (id: string) => Promise<void> },
+  filter?: string
+): Promise<{ deleted: number; failed: number; error?: string }> {
+  const pkField = primaryKeyMap[tableName]
+  if (!pkField) return { deleted: 0, failed: 0, error: `Unknown primary key for table: ${tableName}` }
+
+  try {
+    // No default filter — fetch ALL records regardless of statecode
+    const queryFilter = filter || undefined
+    const result = await service.getAll({
+      ...(queryFilter ? { filter: queryFilter } : {}),
+      select: [pkField],
+      top: 5000,
+    })
+    const records = unwrapList<any>(result)
+    let deleted = 0
+    let failed = 0
+    for (const rec of records) {
+      const id = rec[pkField]
+      if (id) {
+        try {
+          await service.delete(id)
+          deleted++
+        } catch {
+          failed++
+        }
+      }
+    }
+    return { deleted, failed }
+  } catch (err: any) {
+    return { deleted: 0, failed: 0, error: err?.message || String(err) }
+  }
+}
+
+/**
+ * Truncates (deletes all records from) the resource-related tables.
+ * Deletes in reverse dependency order (entries → timesheets → allocations → resources).
+ */
+export async function truncateResourceData(): Promise<SeedResult[]> {
+  const results: SeedResult[] = []
+
+  const tables = [
+    { name: 'pm_timesheetentries', service: Pm_timesheetentriesService },
+    { name: 'pm_timesheets', service: Pm_timesheetsService },
+    { name: 'pm_resourceallocations', service: Pm_resourceallocationsService },
+    { name: 'pm_resources', service: Pm_resourcesService },
+  ]
+
+  for (const { name, service } of tables) {
+    const { deleted, failed, error } = await truncateTable(name, service as any)
+    results.push({ table: name, created: deleted, error: error || (failed > 0 ? `${failed} delete(s) failed` : undefined) })
+  }
+
+  return results
+}
+
 /**
  * Creates sample data across pm_resources, pm_resourceallocations, pm_timesheets,
  * and pm_timesheetentries so the resource utilization charts have data to display.
@@ -817,38 +961,94 @@ export async function seedAllResourceData(): Promise<SeedResult[]> {
 
   // ── 1. Create Resources ─────────────────────────────────────────────────────
   const resourceSeedData = [
-    { pm_fullname: 'Alice Johnson', pm_departmentname: 'Engineering', pm_primaryrole: 'Senior Developer', pm_dailyworkcapacity: 8, pm_positiontitle: 'Senior Developer', pm_contactemail: 'alice@ppmcentral.com' },
-    { pm_fullname: 'Bob Smith', pm_departmentname: 'Engineering', pm_primaryrole: 'Developer', pm_dailyworkcapacity: 8, pm_positiontitle: 'Developer', pm_contactemail: 'bob@ppmcentral.com' },
-    { pm_fullname: 'Carol Williams', pm_departmentname: 'Design', pm_primaryrole: 'UI Designer', pm_dailyworkcapacity: 8, pm_positiontitle: 'UI/UX Designer', pm_contactemail: 'carol@ppmcentral.com' },
-    { pm_fullname: 'David Brown', pm_departmentname: 'QA', pm_primaryrole: 'Test Lead', pm_dailyworkcapacity: 8, pm_positiontitle: 'QA Lead', pm_contactemail: 'david@ppmcentral.com' },
-    { pm_fullname: 'Eva Davis', pm_departmentname: 'Product', pm_primaryrole: 'Product Manager', pm_dailyworkcapacity: 8, pm_positiontitle: 'Product Manager', pm_contactemail: 'eva@ppmcentral.com' },
-    { pm_fullname: 'Frank Miller', pm_departmentname: 'Engineering', pm_primaryrole: 'DevOps Engineer', pm_dailyworkcapacity: 8, pm_positiontitle: 'DevOps Engineer', pm_contactemail: 'frank@ppmcentral.com' },
+    { pm_fullname: 'Alice Johnson', pm_departmentname: 'Engineering', pm_primaryrole: 'Senior Developer', pm_dailyworkcapacity: 8, pm_positiontitle: 'Senior Developer', pm_contactemail: 'alice@ppmcentral.com', statecode: 0, statuscode: 1 },
+    { pm_fullname: 'Bob Smith', pm_departmentname: 'Engineering', pm_primaryrole: 'Developer', pm_dailyworkcapacity: 8, pm_positiontitle: 'Developer', pm_contactemail: 'bob@ppmcentral.com', statecode: 0, statuscode: 1 },
+    { pm_fullname: 'Carol Williams', pm_departmentname: 'Design', pm_primaryrole: 'UI Designer', pm_dailyworkcapacity: 8, pm_positiontitle: 'UI/UX Designer', pm_contactemail: 'carol@ppmcentral.com', statecode: 0, statuscode: 1 },
+    { pm_fullname: 'David Brown', pm_departmentname: 'QA', pm_primaryrole: 'Test Lead', pm_dailyworkcapacity: 8, pm_positiontitle: 'QA Lead', pm_contactemail: 'david@ppmcentral.com', statecode: 0, statuscode: 1 },
+    { pm_fullname: 'Eva Davis', pm_departmentname: 'Product', pm_primaryrole: 'Product Manager', pm_dailyworkcapacity: 8, pm_positiontitle: 'Product Manager', pm_contactemail: 'eva@ppmcentral.com', statecode: 0, statuscode: 1 },
+    { pm_fullname: 'Frank Miller', pm_departmentname: 'Engineering', pm_primaryrole: 'DevOps Engineer', pm_dailyworkcapacity: 8, pm_positiontitle: 'DevOps Engineer', pm_contactemail: 'frank@ppmcentral.com', statecode: 0, statuscode: 1 },
   ]
 
-  let resourceCount = 0
+  // Create resources, no need to parse response — catch errors only
   for (const res of resourceSeedData) {
     try {
-      const r = await Pm_resourcesService.create(res as any)
-      const created = unwrapSingle<any>(r)
-      if (created && created.pm_resourceid) resourceCount++
+      await Pm_resourcesService.create(res as any)
     } catch (err: any) {
-      results.push({ table: 'pm_resources', created: resourceCount, error: err?.message || String(err) })
-      return results // stop on first failure
+      console.error('[seedAllResourceData] Create resource error:', err)
+      results.push({ table: 'pm_resources', created: 0, error: err?.message || String(err) })
+      return results
     }
   }
-  results.push({ table: 'pm_resources', created: resourceCount })
 
-  // ── 2. Fetch created resources to get name → ID mapping ─────────────────────
+  // Fetch back to verify count and get GUIDs for linking
   const resourcesResult = await Pm_resourcesService.getAll({
     filter: "statecode eq 0",
     select: ['pm_resourceid', 'pm_fullname'],
     top: 500,
   })
   const fetchedResources = unwrapList<any>(resourcesResult)
+  const resourceCount = fetchedResources.length
+  results.push({ table: 'pm_resources', created: resourceCount })
+  if (resourceCount === 0) {
+    results.push({ table: 'pm_resources', created: 0, error: 'No resources were created — cannot continue' })
+    return results
+  }
+
+  // Build name → GUID map
   const resourceNameToId = new Map<string, string>()
   for (const r of fetchedResources) {
-    if (r.pm_fullname) resourceNameToId.set(r.pm_fullname.trim(), r.pm_resourceid)
+    if (r.pm_fullname && r.pm_resourceid) resourceNameToId.set(r.pm_fullname.trim(), r.pm_resourceid)
   }
+
+  // Ensure project records exist for seeded timesheet entries
+  const projectNames = [
+    'ERP Implementation',
+    'Mobile App Redesign',
+    'Cloud Migration',
+    'Data Analytics Platform',
+    'Customer Portal',
+    'Security Audit',
+  ]
+  const projectNameToId = new Map<string, string>()
+
+  const existingProjectFilter = projectNames
+    .map((name) => `pm_projectname eq '${name.replace(/'/g, "''")}'`)
+    .join(' or ')
+  if (existingProjectFilter) {
+    const existingProjectsResult = await Pm_projectsService.getAll({
+      filter: `statecode eq 0 and (${existingProjectFilter})`,
+      select: ['pm_projectid', 'pm_projectname'],
+      top: 500,
+    })
+    const existingProjects = unwrapList<any>(existingProjectsResult)
+    for (const project of existingProjects) {
+      if (project.pm_projectname && project.pm_projectid) {
+        projectNameToId.set(project.pm_projectname.trim(), project.pm_projectid)
+      }
+    }
+  }
+
+  for (const projectName of projectNames) {
+    if (projectNameToId.has(projectName)) continue
+    try {
+      const createdProject = unwrapSingle<Pm_projects>(
+        await Pm_projectsService.create({
+          pm_projectname: projectName,
+          pm_projectcode: `PRJ-${projectName.substring(0, 3).toUpperCase()}`,
+          statecode: 0,
+          statuscode: 1,
+        } as any)
+      )
+      if (createdProject?.pm_projectid) {
+        projectNameToId.set(projectName, createdProject.pm_projectid)
+      }
+    } catch (err: any) {
+      console.error('[seedAllResourceData] Create project error:', err)
+      results.push({ table: 'pm_projects', created: projectNameToId.size, error: err?.message || String(err) })
+      break
+    }
+  }
+  results.push({ table: 'pm_projects', created: projectNameToId.size })
 
   // ── 3. Create Resource Allocations ──────────────────────────────────────────
   // Spread allocations across 6 months: Nov '25 – Apr '26
@@ -868,53 +1068,69 @@ export async function seedAllResourceData(): Promise<SeedResult[]> {
     { name: 'Frank Miller', dept: 'Engineering', role: 'CI/CD Pipeline' },
   ]
 
-  let allocCount = 0
+  let allocError: string | undefined
   // For each month, create allocations with varying hours
   for (const [mi, month] of months.entries()) {
+    if (allocError) break // stop if we already hit an error
+
     const startDate = month + '-01'
     const end = new Date(month + '-01')
     end.setMonth(end.getMonth() + 1)
-    end.setDate(0) // last day of month
+    end.setDate(0)
     const endDate = end.toISOString().split('T')[0]
 
     // Each month assign a subset of allocation templates
-    const activeTemplates = allocationTemplates.filter((_, i) => (i + mi) % 3 !== 2) // rotate which ones are active
+    const activeTemplates = allocationTemplates.filter((_, i) => (i + mi) % 3 !== 2)
     for (const tpl of activeTemplates) {
-      const rid = resourceNameToId.get(tpl.name)
-      // Vary hours by month: more hours earlier months, fewer later
       const baseHours = 40 - mi * 4 + Math.floor(Math.random() * 15)
       const hours = Math.max(10, Math.min(80, baseHours))
 
       try {
-        const a = await Pm_resourceallocationsService.create({
-          pm_resourcename: tpl.name,
-          pm_resourceid: tpl.name,
+        // Build resource lookup binding
+        const payload: any = {
           pm_assignmentrole: tpl.role,
           pm_allocatedhours: hours,
           pm_allocationpercentage: Math.min(100, Math.round((hours / 160) * 100)),
-          pm_assignmentstatus: 0, // Active
+          pm_assignmentstatus: 0,
+          statecode: 0,
+          statuscode: 1,
           pm_startdate: startDate,
           pm_enddate: endDate,
-          pm_resourceid: tpl.name,
-        } as any)
-        const created = unwrapSingle<any>(a)
-        if (created && created.pm_resourceallocationid) allocCount++
+        }
+
+        // Link to resource via OData bind syntax (as typed in Pm_resourceallocationsBase)
+        const resourceId = resourceNameToId.get(tpl.name)
+        if (resourceId) {
+          payload["pm_resource@odata.bind"] = `/pm_resources(${resourceId})`
+        }
+
+        await Pm_resourceallocationsService.create(payload)
       } catch (err: any) {
-        results.push({ table: 'pm_resourceallocations', created: allocCount, error: err?.message || String(err) })
-        return results
+        console.error('[seedAllResourceData] Create allocation error:', err)
+        allocError = err?.message || String(err)
+        break
       }
     }
   }
-  results.push({ table: 'pm_resourceallocations', created: allocCount })
+
+  // Fetch back to verify allocation count
+  const allocResult = await Pm_resourceallocationsService.getAll({
+    filter: "statecode eq 0 and pm_assignmentstatus eq 0",
+    select: ['pm_resourceallocationid'],
+    top: 5000,
+  })
+  const allocList = unwrapList<any>(allocResult)
+  results.push({ table: 'pm_resourceallocations', created: allocList.length, error: allocError })
+  if (allocError) return results
 
   // ── 4. Create Timesheets ───────────────────────────────────────────────────
   const timesheetResources = [
-    { name: 'Alice Johnson', period: '2026-01', status: 0 }, // Approved
-    { name: 'Bob Smith', period: '2026-01', status: 1 }, // Submitted
-    { name: 'Carol Williams', period: '2026-02', status: 0 }, // Approved
+    { name: 'Alice Johnson', period: '2026-01', status: 0 },
+    { name: 'Bob Smith', period: '2026-01', status: 1 },
+    { name: 'Carol Williams', period: '2026-02', status: 0 },
   ]
 
-  const timesheetIds: string[] = []
+  let tsError: string | undefined
   for (const ts of timesheetResources) {
     const startDate = ts.period + '-01'
     const end = new Date(ts.period + '-01')
@@ -923,7 +1139,7 @@ export async function seedAllResourceData(): Promise<SeedResult[]> {
     const endDate = end.toISOString().split('T')[0]
 
     try {
-      const t = await Pm_timesheetsService.create({
+      const timesheetPayload: any = {
         pm_timesheetname: `${ts.name} - ${ts.period}`,
         pm_ownername: ts.name,
         pm_reportingperiod: ts.period,
@@ -931,59 +1147,84 @@ export async function seedAllResourceData(): Promise<SeedResult[]> {
         pm_periodenddate: endDate,
         pm_timesheetstatus: ts.status,
         pm_totalhours: 0,
-      } as any)
-      const created = unwrapSingle<any>(t)
-      if (created && created.pm_timesheetid) {
-        timesheetIds.push(created.pm_timesheetid)
+        statecode: 0,
+        statuscode: 1,
       }
+      const resourceId = resourceNameToId.get(ts.name)
+      if (resourceId) {
+        timesheetPayload["pm_resource@odata.bind"] = `/pm_resources(${resourceId})`
+      }
+      await Pm_timesheetsService.create(timesheetPayload as any)
     } catch (err: any) {
-      results.push({ table: 'pm_timesheets', created: timesheetIds.length, error: err?.message || String(err) })
-      return results
+      tsError = err?.message || String(err)
+      break
     }
   }
-  results.push({ table: 'pm_timesheets', created: timesheetIds.length })
+
+  // Fetch back to verify timesheet count and get IDs for linking
+  const tsResult = await Pm_timesheetsService.getAll({
+    filter: 'statecode eq 0',
+    select: ['pm_timesheetid', 'pm_ownername', 'pm_reportingperiod'],
+    top: 500,
+  })
+  const tsList = unwrapList<any>(tsResult)
+  const timesheetIds = tsList.map((t: any) => t.pm_timesheetid).filter(Boolean)
+  results.push({ table: 'pm_timesheets', created: timesheetIds.length, error: tsError })
+  if (tsError) return results
 
   // ── 5. Create Timesheet Entries (actual hours logged) ───────────────────────
-  const projectNames = [
-    'ERP Implementation',
-    'Mobile App Redesign',
-    'Cloud Migration',
-    'Data Analytics Platform',
-    'Customer Portal',
-    'Security Audit',
-  ]
+  let entryError: string | undefined
 
-  const entryResourceNames = ['Alice Johnson', 'Bob Smith', 'Carol Williams', 'David Brown', 'Eva Davis', 'Frank Miller']
-  let entryCount = 0
-
-  // Create entries across multiple months
   for (const [mi, month] of months.entries()) {
-    const numEntries = 3 + Math.floor(Math.random() * 4) // 3-6 entries per month
+    if (entryError) break
+
+    const numEntries = 3 + Math.floor(Math.random() * 4)
     for (let ei = 0; ei < numEntries; ei++) {
-      const resourceName = entryResourceNames[mi % entryResourceNames.length]
       const projectName = projectNames[(mi + ei) % projectNames.length]
       const day = 1 + Math.floor(Math.random() * 25)
       const workDate = `${month}-${String(day).padStart(2, '0')}`
-      const hours = 4 + Math.floor(Math.random() * 12) // 4-16 hours
-      const timesheetId = timesheetIds.length > 0 ? timesheetIds[mi % timesheetIds.length] : undefined
+      const hours = 4 + Math.floor(Math.random() * 12)
 
       try {
-        const e = await Pm_timesheetentriesService.create({
+        // NOTE: pm_projectname is a read-only computed field from a lookup,
+        // so we do NOT send it in create. Use pm_worknotes to describe the project.
+        const payload: any = {
           pm_hoursworked: hours,
           pm_workdate: workDate,
-          pm_projectname: projectName,
-          pm_ischargeable: Math.random() > 0.2, // 80% chargeable
+          pm_ischargeable: Math.random() > 0.2,
           pm_worknotes: `Work on ${projectName} - ${workDate}`,
-        } as any)
-        const created = unwrapSingle<any>(e)
-        if (created && created.pm_timesheetentryid) entryCount++
+          statecode: 0,
+          statuscode: 1,
+        }
+
+        // Link to a timesheet via OData bind syntax (as typed in Pm_timesheetentriesBase)
+        if (timesheetIds.length > 0) {
+          const tsId = timesheetIds[mi % timesheetIds.length]
+          payload["pm_timesheet@odata.bind"] = `/pm_timesheets(${tsId})`
+        }
+
+        const projectId = projectNameToId.get(projectName)
+        if (projectId) {
+          payload["pm_project@odata.bind"] = `/pm_projects(${projectId})`
+        }
+
+        await Pm_timesheetentriesService.create(payload)
       } catch (err: any) {
-        results.push({ table: 'pm_timesheetentries', created: entryCount, error: err?.message || String(err) })
-        return results
+        console.error('[seedAllResourceData] Create timesheet entry error:', err)
+        entryError = err?.message || String(err)
+        break
       }
     }
   }
-  results.push({ table: 'pm_timesheetentries', created: entryCount })
+
+  // Fetch back to verify entry count
+  const entryResult = await Pm_timesheetentriesService.getAll({
+    filter: 'statecode eq 0',
+    select: ['pm_timesheetentryid'],
+    top: 5000,
+  })
+  const entryList = unwrapList<any>(entryResult)
+  results.push({ table: 'pm_timesheetentries', created: entryList.length, error: entryError })
 
   return results
 }

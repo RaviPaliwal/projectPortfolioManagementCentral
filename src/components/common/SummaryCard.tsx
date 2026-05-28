@@ -1,11 +1,10 @@
-import { Card, CardContent, Typography, Box, Chip, LinearProgress, useTheme, IconButton, Tooltip } from '@mui/material'
+import { Card, CardContent, Typography, Box, Chip, LinearProgress, useTheme } from '@mui/material'
 import { type ReactNode } from 'react'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import ErrorIcon from '@mui/icons-material/Error'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
 // ─── StatusChip ────────────────────────────────────────────────────────────
 export interface StatusChipProps {
@@ -78,7 +77,6 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   metrics,
   children,
   onClick,
-  elevation = 1,
 }) => {
   const theme = useTheme()
 
@@ -214,8 +212,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
   const theme = useTheme()
   const completedTasks = tasks.filter((t) => (t.percentComplete ?? 0) >= 100).length
   const overallProgress = tasks.length > 0 ? Math.round(tasks.reduce((s, t) => s + (t.percentComplete ?? 0), 0) / tasks.length) : 0
-  const achievedMilestones = milestones.filter((m) => !m.plannedDate || new Date(m.plannedDate) < new Date()).length
-
   return (
     <Box>
       {/* Header section */}

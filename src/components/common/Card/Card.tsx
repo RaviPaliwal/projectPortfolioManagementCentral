@@ -1,4 +1,4 @@
-import { Card as MuiCard, CardContent, CardHeader, Typography } from '@mui/material'
+import { Card as MuiCard, CardContent, CardHeader } from '@mui/material'
 import type { CardProps as MuiCardProps } from '@mui/material/Card'
 
 export interface CardProps extends Omit<MuiCardProps, 'title'> {

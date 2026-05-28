@@ -28,7 +28,7 @@ class PageErrorBoundary extends Component<EBProps, EBState> {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Something went wrong while rendering. This may be caused by a connectivity issue or data mismatch.
             </Typography>
-            {process.env.NODE_ENV === 'development' && (
+            {import.meta.env.DEV && (
               <Alert severity="error" sx={{ mb: 2, textAlign: 'left', fontSize: '0.75rem', fontFamily: 'monospace' }}>
                 {this.state.error.name}: {this.state.error.message}
               </Alert>

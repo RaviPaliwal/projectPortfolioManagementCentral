@@ -228,21 +228,21 @@ export default function PipelinePage() {
 
                 <Grid container spacing={2} sx={{ mb: 1.5 }}>
                   <Grid size={{ xs: 6, sm: 3 }}>
-                    <Typography variant="caption" color="text.secondary" display="block">Priority</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Priority</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>{(initiative as any).pm_priorityscore ?? '—'}</Typography>
                   </Grid>
                   <Grid size={{ xs: 6, sm: 3 }}>
-                    <Typography variant="caption" color="text.secondary" display="block">Strategic</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Strategic</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>{(initiative as any).pm_strategicalignmentscore ?? '—'}</Typography>
                   </Grid>
                   <Grid size={{ xs: 6, sm: 3 }}>
-                    <Typography variant="caption" color="text.secondary" display="block">Est. Cost</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Est. Cost</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
                       {initiative.pm_estimatedcost ? `€${initiative.pm_estimatedcost.toLocaleString()}` : 'TBC'}
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 6, sm: 3 }}>
-                    <Typography variant="caption" color="text.secondary" display="block">Est. Benefits</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Est. Benefits</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
                       {initiative.pm_estimatedbenefits ? `€${initiative.pm_estimatedbenefits.toLocaleString()}` : '—'}
                     </Typography>

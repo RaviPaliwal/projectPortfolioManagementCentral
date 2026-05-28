@@ -69,6 +69,7 @@ export default function DashboardPage() {
   useEffect(() => {
     let isMounted = true
     async function load() {
+      console.log('[DashboardPage] load dashboard data start')
       try {
         const [dashboard, activeProjects, pendingApprovals, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand] = await Promise.all([
           fetchDashboardMetrics(),
@@ -80,6 +81,7 @@ export default function DashboardPage() {
           fetchUtilizationByProjectData(),
           fetchDepartmentDemandData(),
         ])
+        console.log('[DashboardPage] load dashboard data success', { capacityAlloc, plannedActual, utilByProject, deptDemand })
         if (!isMounted) return
         setMetrics(dashboard)
         setProjects(activeProjects.slice(0, 6))
@@ -90,7 +92,8 @@ export default function DashboardPage() {
         setDepartmentDemandData(deptDemand)
         setPortfolioSnapshot(hierarchy.portfolios.slice().sort(sortByRag).slice(0, 4))
         setProgrammeSnapshot(hierarchy.programmes.slice().sort(sortByRag).slice(0, 4))
-      } catch {
+      } catch (error) {
+        console.error('[DashboardPage] load dashboard data failed', error)
         if (!isMounted) return
         setError('Unable to load dashboard data.')
       } finally {
@@ -269,14 +272,14 @@ export default function DashboardPage() {
                 {approvals.map((request) => (
                   <Paper key={request.pm_initiativeid} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{request.pm_name ?? 'Approval request'}</Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                       {request.pm_portfolioname ?? 'Portfolio not set'} · {request.pm_requestorname ?? 'Unknown'}
                     </Typography>
                     <Typography variant="body2" sx={{ mt: 0.5, mb: 1 }}>
                       {request.pm_businesscase ?? 'No business case provided.'}
                     </Typography>
                     {request.pm_submissiondate && (
-                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                         Submitted {new Date(request.pm_submissiondate).toLocaleDateString()}
                       </Typography>
                     )}
@@ -381,7 +384,7 @@ export default function DashboardPage() {
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{project.pm_projectname ?? 'Untitled'}</Typography>
                       <StatusChip status={project.pm_ragstatus} type="rag" />
                     </Box>
-                    <Typography variant="caption" color="text.secondary" display="block">{project.pm_projectcode ?? '—'}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{project.pm_projectcode ?? '—'}</Typography>
                     <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                       <StatusChip status={project.pm_projectphase} type="phase" />
                     </Box>
