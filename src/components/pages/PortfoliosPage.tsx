@@ -46,7 +46,7 @@ export default function PortfoliosPage() {
   }, [hierarchy.projects])
 
   return (
-    <div className="pagePanel">
+    <div className="page-root pagePanel">
       <div className="pageHeader">
         <h3>Portfolio hierarchy</h3>
         <p>Browse portfolios and the programmes / projects that belong to them.</p>

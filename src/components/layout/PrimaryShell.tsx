@@ -21,10 +21,10 @@ export default function PrimaryShell({ activeTab, onChangeTab, children }: Prima
     <div className="primaryShell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brandLogo">PPM</div>
+          <div className="brandLogo">📈</div>
           <div>
             <h1>PPM Central</h1>
-            <span>Module 1</span>
+            <span>Executive portfolio hub</span>
           </div>
         </div>
 

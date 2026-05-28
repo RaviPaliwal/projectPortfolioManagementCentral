@@ -35,7 +35,7 @@ export default function ProgrammesPage() {
   }, [programmes])
 
   return (
-    <div className="pagePanel">
+    <div className="page-root pagePanel">
       <div className="pageHeader">
         <h3>Programmes</h3>
         <p>Programme-level view, grouped by portfolio and annotated with phase / RAG status.</p>

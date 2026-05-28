@@ -11,6 +11,7 @@ export interface PortfolioModel {
   pm_startdate?: string
   pm_enddate?: string
   pm_approvedbudgeteur?: number
+  pm_actualspendeur?: number
 }
 
 export interface ProgrammeModel {
@@ -46,6 +47,14 @@ export interface InitiativeModel {
   pm_name?: string
   pm_businesscase?: string
   pm_estimatedcost?: number
+  pm_estimatedbenefits?: number
+  pm_priorityscore?: number
+  pm_strategicalignmentscore?: number
+  pm_pipelinestatus?: string | number
+  pm_requestorname?: string
+  pm_submissiondate?: string
+  pm_portfolioname?: string
+  _pm_portfolio_value?: string
 }
 
 export interface ProjectTaskModel {

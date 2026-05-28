@@ -228,7 +228,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="pagePanel pageSplit">
+    <div className="page-root pagePanel pageSplit">
       <div className="pageHeader">
         <div>
           <h3>Project portfolio operations</h3>
@@ -242,57 +242,64 @@ export default function ProjectsPage() {
       {error ? <div className="alertBanner">{error}</div> : null}
 
       {isAddingProject ? (
-        <section className="formCard">
-          <h4>Create a new project</h4>
-          <div className="formGrid">
-            <label>
-              Project name
-              <input
-                value={projectForm.pm_projectname ?? ''}
-                onChange={(event) => setProjectForm((current) => ({ ...current, pm_projectname: event.target.value }))}
-              />
-            </label>
-            <label>
-              Project code
-              <input
-                value={projectForm.pm_projectcode ?? ''}
-                onChange={(event) => setProjectForm((current) => ({ ...current, pm_projectcode: event.target.value }))}
-              />
-            </label>
-            <label>
-              Project manager
-              <input
-                value={projectForm.pm_projectmanager ?? ''}
-                onChange={(event) => setProjectForm((current) => ({ ...current, pm_projectmanager: event.target.value }))}
-              />
-            </label>
-            <label>
-              RAG status
-              <select
-                value={projectForm.pm_ragstatus ?? '1'}
-                onChange={(event) => setProjectForm((current) => ({ ...current, pm_ragstatus: event.target.value }))}
-              >
-                <option value="1">Green</option>
-                <option value="0">Amber</option>
-                <option value="2">Red</option>
-              </select>
-            </label>
-            <label>
-              Phase
-              <select
-                value={projectForm.pm_projectphase ?? '1'}
-                onChange={(event) => setProjectForm((current) => ({ ...current, pm_projectphase: event.target.value }))}
-              >
-                <option value="1">Planning</option>
-                <option value="0">Execution</option>
-                <option value="2">Closure</option>
-              </select>
-            </label>
+        <div className="modal-backdrop" onClick={() => setIsAddingProject(false)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <h3 className="modal-title">Create a new project</h3>
+            <div className="formGrid">
+              <label>
+                Project name
+                <input
+                  value={projectForm.pm_projectname ?? ''}
+                  onChange={(event) => setProjectForm((current) => ({ ...current, pm_projectname: event.target.value }))}
+                />
+              </label>
+              <label>
+                Project code
+                <input
+                  value={projectForm.pm_projectcode ?? ''}
+                  onChange={(event) => setProjectForm((current) => ({ ...current, pm_projectcode: event.target.value }))}
+                />
+              </label>
+              <label>
+                Project manager
+                <input
+                  value={projectForm.pm_projectmanager ?? ''}
+                  onChange={(event) => setProjectForm((current) => ({ ...current, pm_projectmanager: event.target.value }))}
+                />
+              </label>
+              <label>
+                RAG status
+                <select
+                  value={projectForm.pm_ragstatus ?? '1'}
+                  onChange={(event) => setProjectForm((current) => ({ ...current, pm_ragstatus: event.target.value }))}
+                >
+                  <option value="1">Green</option>
+                  <option value="0">Amber</option>
+                  <option value="2">Red</option>
+                </select>
+              </label>
+              <label>
+                Phase
+                <select
+                  value={projectForm.pm_projectphase ?? '1'}
+                  onChange={(event) => setProjectForm((current) => ({ ...current, pm_projectphase: event.target.value }))}
+                >
+                  <option value="1">Planning</option>
+                  <option value="0">Execution</option>
+                  <option value="2">Closure</option>
+                </select>
+              </label>
+            </div>
+            <div className="btn-row">
+              <button className="btn btn-primary" type="button" onClick={handleProjectCreate}>
+                Save project
+              </button>
+              <button className="btn btn-secondary" type="button" onClick={() => setIsAddingProject(false)}>
+                Cancel
+              </button>
+            </div>
           </div>
-          <button className="actionButton" type="button" onClick={handleProjectCreate}>
-            Save project
-          </button>
-        </section>
+        </div>
       ) : null}
 
       <div className="listPanel">
