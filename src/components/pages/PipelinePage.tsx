@@ -1,310 +1,797 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   Box,
   Paper,
   Typography,
-  Button,
-  TextField,
   Alert,
-  Skeleton,
-  Grid,
+  Chip,
+  useTheme,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TableSortLabel,
+  TextField,
+  Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Chip,
-  Card,
-  CardContent,
+  Rating,
+  Grid,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange'
+import EditIcon from '@mui/icons-material/Edit'
+import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
-import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
-import { createInitiative, fetchInitiatives, convertInitiativeToProject } from '../../services/dataverseService'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange'
+import PersonIcon from '@mui/icons-material/Person'
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
+import DescriptionIcon from '@mui/icons-material/Description'
+import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown'
+import HowToRegIcon from '@mui/icons-material/HowToReg'
+import CancelIcon from '@mui/icons-material/Cancel'
+import TransformIcon from '@mui/icons-material/Transform'
+import ErrorIcon from '@mui/icons-material/Error'
+import {
+  fetchInitiatives,
+  createInitiative,
+  updateInitiative,
+  convertInitiativeToProject,
+  updateInitiativeStatus,
+  fetchPipelineKpis,
+} from '../../services/dataverseService'
 import type { InitiativeModel } from '../../models/dataverse'
+import type { PipelineKpis } from '../../services/dataverseService'
+import { fontSizes } from '../../styles'
+import { PageHeader, KpiCardRow, TabPanel, TableFooter, TableShell, DetailDrawer, SearchFilterBar } from '../common'
+import type { KpiCardItem, FilterOption } from '../common'
 
-const statusFilterConfig: Record<number, { label: string; color: 'success' | 'info' | 'warning' }> = {
-  0: { label: 'Approved', color: 'success' },
-  1: { label: 'Under Review', color: 'info' },
-  2: { label: 'Deferred', color: 'warning' },
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+
+const STATUS_CONFIG: Record<string, { label: string; color: 'success' | 'info' | 'warning' | 'error' | 'default' }> = {
+  '0': { label: 'Approved', color: 'success' },
+  '1': { label: 'Under Review', color: 'info' },
+  '2': { label: 'Deferred', color: 'warning' },
+  '3': { label: 'Rejected', color: 'error' },
 }
 
-// Pipeline status badge for initiative cards
-const pipelineStatusLabel = (status?: string | number): { label: string; color: 'success' | 'info' | 'warning' } => {
-  const s = status?.toString()
-  if (s === '0') return { label: 'Approved', color: 'success' }
-  if (s === '1') return { label: 'Under Review', color: 'info' }
-  if (s === '2') return { label: 'Deferred', color: 'warning' }
-  return { label: 'Unknown', color: 'info' }
+const STATUS_FILTER_OPTIONS: FilterOption[] = [
+  { value: '', label: 'All Statuses' },
+  { value: '0', label: 'Approved' },
+  { value: '1', label: 'Under Review' },
+  { value: '2', label: 'Deferred' },
+  { value: '3', label: 'Rejected' },
+]
+
+type SortField = 'name' | 'sponsor' | 'strategicScore' | 'estimatedCost' | 'status'
+type SortDir = 'asc' | 'desc'
+
+interface SortState {
+  field: SortField
+  dir: SortDir
 }
+
+// ─── Strategic Score Visual ────────────────────────────────────────────────────
+
+function StrategicScoreDisplay({ score }: { score?: number }) {
+  if (score === undefined || score === null) {
+    return <Typography variant="caption" color="text.secondary">—</Typography>
+  }
+  if (score >= 4) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+        <Rating value={score} readOnly size="small" precision={0.5} max={5} sx={{ fontSize: fontSizes.smMd }} />
+        <Chip label="High" size="small" color="success" variant="outlined" sx={{ fontWeight: 600, fontSize: fontSizes.xs, height: 20 }} />
+      </Box>
+    )
+  }
+  if (score >= 2.5) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+        <Rating value={score} readOnly size="small" precision={0.5} max={5} sx={{ fontSize: fontSizes.smMd }} />
+        <Chip label="Medium" size="small" color="warning" variant="outlined" sx={{ fontWeight: 600, fontSize: fontSizes.xs, height: 20 }} />
+      </Box>
+    )
+  }
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>        <Rating value={score} readOnly size="small" precision={0.5} max={5} sx={{ fontSize: fontSizes.smMd }} />
+      <Chip label="Low" size="small" color="default" variant="outlined" sx={{ fontWeight: 600, fontSize: fontSizes.xs, height: 20 }} />
+    </Box>
+  )
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function PipelinePage() {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  // ── Data State ─────────────────────────────────────────────────────────────
   const [initiatives, setInitiatives] = useState<InitiativeModel[]>([])
+  const [kpis, setKpis] = useState<PipelineKpis>({
+    totalActiveInitiatives: 0,
+    pendingApprovals: 0,
+    totalEstimatedCost: 0,
+    approvedThisMonth: 0,
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [newInitiative, setNewInitiative] = useState<Partial<InitiativeModel>>({ pm_name: '', pm_businesscase: '', pm_estimatedcost: 0 })
-  const [showNewModal, setShowNewModal] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<number>(1) // 1 = UnderReview
-  const [kpis, setKpis] = useState({ total: 0, pipelineValue: 0, avgPriority: 0 })
-  const [isCreating, setIsCreating] = useState(false)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
 
-  async function load(status?: number) {
+  // ── Grid State ─────────────────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [sort, setSort] = useState<SortState>({ field: 'name', dir: 'asc' })
+
+  // ── Detail Panel State ─────────────────────────────────────────────────────
+  const [selectedInitiative, setSelectedInitiative] = useState<InitiativeModel | null>(null)
+  const [detailTab, setDetailTab] = useState(0)
+
+  // ── Create Modal State ─────────────────────────────────────────────────────
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [createForm, setCreateForm] = useState({
+    pm_initiativename: '',
+    pm_businesscasedescription: '',
+    pm_estimatedcosteur: 0,
+    pm_estimatedbenefitseur: 0,
+    pm_requestorname: '',
+    pm_initiativetype: 2,
+    pm_pipelinestatus: 1,
+  })
+
+  // ── Score Edit State ───────────────────────────────────────────────────────
+  const [editScoreMode, setEditScoreMode] = useState(false)
+  const [editScore, setEditScore] = useState(0)
+
+  // ── Data Loading ──────────────────────────────────────────────────────────
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const list = await fetchInitiatives(status)
+      const [list, kpiData] = await Promise.all([
+        fetchInitiatives(),
+        fetchPipelineKpis(),
+      ])
       setInitiatives(list)
-      // KPIs: compute overall pipeline metrics (call all initiatives)
-      const all = await fetchInitiatives()
-      const pipelineValue = all.reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)
-      const avgPriority = all.length ? Math.round((all.reduce((s, i) => s + ((i as any).pm_priorityscore ?? 0), 0) / all.length) * 10) / 10 : 0
-      setKpis({ total: all.length, pipelineValue, avgPriority })
+      setKpis(kpiData)
     } catch {
-      setError('Unable to load pipeline.')
+      setError('Unable to load pipeline data.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    load(statusFilter)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter])
+    loadData()
+  }, [loadData])
 
-  const handleCreate = async () => {
-    setError(null)
-    if (!newInitiative.pm_name) {
+  // ── KPIs ──────────────────────────────────────────────────────────────────
+  const kpiItems: KpiCardItem[] = [
+    {
+      label: 'Total Active Initiatives',
+      value: kpis.totalActiveInitiatives,
+      subtitle: 'Ideas in the hopper',
+      icon: <LightbulbIcon />,
+      color: '#0ea5e9',
+    },
+    {
+      label: 'Pending Approvals',
+      value: kpis.pendingApprovals,
+      subtitle: 'Awaiting decision',
+      icon: <WarningAmberIcon />,
+      color: '#f59e0b',
+      valueColor: '#f59e0b',
+    },
+    {
+      label: 'Total Est. Pipeline Cost',
+      value: currencyFormatter.format(kpis.totalEstimatedCost),
+      subtitle: 'Potential financial demand',
+      icon: <CurrencyExchangeIcon />,
+      color: '#22c55e',
+    },
+    {
+      label: 'Approved This Month',
+      value: kpis.approvedThisMonth,
+      subtitle: 'Intake velocity',
+      icon: <TrendingUpIcon />,
+      color: '#8b5cf6',
+    },
+  ]
+
+  // ── Sort Handler ─────────────────────────────────────────────────────────
+  const handleSort = useCallback((field: SortField) => {
+    setSort((prev) => ({
+      field,
+      dir: prev.field === field && prev.dir === 'asc' ? 'desc' : 'asc',
+    }))
+  }, [])
+
+  // ── Filtered & Sorted Initiatives ──────────────────────────────────────────
+  const filteredInitiatives = useMemo(() => {
+    let list = [...initiatives]
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      list = list.filter(
+        (i) =>
+          i.pm_name?.toLowerCase().includes(q) ||
+          i.pm_requestorname?.toLowerCase().includes(q) ||
+          i.pm_businesscase?.toLowerCase().includes(q) ||
+          i.pm_portfolioname?.toLowerCase().includes(q)
+      )
+    }
+
+    if (statusFilter) {
+      list = list.filter((i) => String(i.pm_pipelinestatus) === statusFilter)
+    }
+
+    const sorted = [...list].sort((a, b) => {
+      let cmp = 0
+      switch (sort.field) {
+        case 'name':
+          cmp = (a.pm_name ?? '').localeCompare(b.pm_name ?? '')
+          break
+        case 'sponsor':
+          cmp = (a.pm_requestorname ?? '').localeCompare(b.pm_requestorname ?? '')
+          break
+        case 'strategicScore':
+          cmp = (a.pm_strategicalignmentscore ?? 0) - (b.pm_strategicalignmentscore ?? 0)
+          break
+        case 'estimatedCost':
+          cmp = (a.pm_estimatedcost ?? 0) - (b.pm_estimatedcost ?? 0)
+          break
+        case 'status':
+          cmp = (String(a.pm_pipelinestatus ?? '')).localeCompare(String(b.pm_pipelinestatus ?? ''))
+          break
+      }
+      return sort.dir === 'asc' ? cmp : -cmp
+    })
+
+    return sorted
+  }, [initiatives, searchQuery, statusFilter, sort])
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleRowClick = useCallback((initiative: InitiativeModel) => {
+    setSelectedInitiative(initiative)
+    setDetailTab(0)
+    setEditScoreMode(false)
+  }, [])
+
+  const handleCloseDetail = useCallback(() => {
+    setSelectedInitiative(null)
+    setDetailTab(0)
+    setEditScoreMode(false)
+  }, [])
+
+  const handleCreateInitiative = async () => {
+    if (!createForm.pm_initiativename.trim()) {
       setError('Initiative name is required.')
       return
     }
-    setIsCreating(true)
+    setActionLoading(true)
     try {
-      await createInitiative({
-        pm_initiativename: newInitiative.pm_name,
-        pm_businesscasedescription: newInitiative.pm_businesscase,
-        pm_estimatedcosteur: newInitiative.pm_estimatedcost,
-      } as any)
-      setNewInitiative({ pm_name: '', pm_businesscase: '', pm_estimatedcost: 0 })
-      setShowNewModal(false)
-      await load(statusFilter)
+      const created = await createInitiative(createForm as any)
+      if (created) {
+        setShowCreateModal(false)
+        setCreateForm({
+          pm_initiativename: '',
+          pm_businesscasedescription: '',
+          pm_estimatedcosteur: 0,
+          pm_estimatedbenefitseur: 0,
+          pm_requestorname: '',
+          pm_initiativetype: 2,
+          pm_pipelinestatus: 1,
+        })
+        setSuccessMsg('Initiative created successfully.')
+        await loadData()
+        setTimeout(() => setSuccessMsg(null), 3000)
+      }
     } catch {
       setError('Unable to create initiative.')
     } finally {
-      setIsCreating(false)
+      setActionLoading(false)
     }
   }
 
-  const handleConvert = async (initiative: InitiativeModel) => {
+  const handleSaveScore = async () => {
+    if (!selectedInitiative?.pm_initiativeid) return
+    setActionLoading(true)
     try {
-      const pid = await convertInitiativeToProject(initiative)
-      if (pid) {
-        await load(statusFilter)
-        setError(null)
+      await updateInitiative(selectedInitiative.pm_initiativeid, {
+        pm_strategicalignmentscore: editScore,
+      } as any)
+      setSelectedInitiative({ ...selectedInitiative, pm_strategicalignmentscore: editScore })
+      setEditScoreMode(false)
+      setSuccessMsg('Strategic alignment score updated.')
+      await loadData()
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Unable to update score.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleRequestApproval = async () => {
+    if (!selectedInitiative?.pm_initiativeid) return
+    setActionLoading(true)
+    try {
+      await updateInitiativeStatus(selectedInitiative.pm_initiativeid, 1)
+      setSelectedInitiative({ ...selectedInitiative, pm_pipelinestatus: 1 })
+      await loadData()
+      setSuccessMsg('Initiative submitted for approval.')
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Unable to request approval.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleConvertToProject = async () => {
+    if (!selectedInitiative) return
+    setActionLoading(true)
+    try {
+      const projectId = await convertInitiativeToProject(selectedInitiative)
+      if (projectId) {
+        setSuccessMsg('Initiative converted to project successfully.')
+        await loadData()
+        setSelectedInitiative(null)
+        setTimeout(() => setSuccessMsg(null), 3000)
       } else {
-        setError('Initiative conversion failed.')
+        setError('Conversion failed. Please try again.')
       }
     } catch {
-      setError('Initiative conversion error.')
+      setError('Unable to convert initiative to project.')
+    } finally {
+      setActionLoading(false)
     }
   }
 
-  const kpiCards = [
-    { title: 'Total Initiatives', value: kpis.total, icon: <TrendingUpIcon />, color: '#0ea5e9' },
-    { title: 'Pipeline Value', value: `€${kpis.pipelineValue.toLocaleString()}`, icon: <CurrencyExchangeIcon />, color: '#22c55e' },
-    { title: 'Avg Priority Score', value: kpis.avgPriority, icon: <PriorityHighIcon />, color: '#f59e0b' },
-  ]
+  const handleDefer = async () => {
+    if (!selectedInitiative?.pm_initiativeid) return
+    setActionLoading(true)
+    try {
+      await updateInitiativeStatus(selectedInitiative.pm_initiativeid, 2)
+      setSelectedInitiative({ ...selectedInitiative, pm_pipelinestatus: 2 })
+      await loadData()
+      setSuccessMsg('Initiative deferred.')
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Unable to defer initiative.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
 
+  const handleReject = async () => {
+    if (!selectedInitiative?.pm_initiativeid) return
+    setActionLoading(true)
+    try {
+      await updateInitiativeStatus(selectedInitiative.pm_initiativeid, 3)
+      setSelectedInitiative({ ...selectedInitiative, pm_pipelinestatus: 3 })
+      await loadData()
+      setSuccessMsg('Initiative rejected.')
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Unable to reject initiative.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  // ── Detail Drawer subtitle ────────────────────────────────────────────────
+  const drawerSubtitle = selectedInitiative && (
+    <>
+      {selectedInitiative.pm_requestorname && (
+        <Typography variant="body2" color="text.secondary">
+          <PersonIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+          {selectedInitiative.pm_requestorname}
+        </Typography>
+      )}
+      {selectedInitiative.pm_portfolioname && (
+        <Chip
+          label={selectedInitiative.pm_portfolioname}
+          size="small"
+          color="primary"
+          variant="outlined"
+          sx={{ fontWeight: 600, borderRadius: 8, fontSize: fontSizes.xs, height: 22 }}
+        />
+      )}
+      {selectedInitiative.pm_submissiondate && (
+        <Typography variant="body2" color="text.secondary">
+          <CalendarTodayIcon sx={{ fontSize: 13, mr: 0.5, verticalAlign: 'text-bottom' }} />
+          Submitted: {new Date(selectedInitiative.pm_submissiondate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </Typography>
+      )}
+      <Chip
+        label={STATUS_CONFIG[String(selectedInitiative.pm_pipelinestatus ?? '')]?.label ?? 'Draft'}
+        color={STATUS_CONFIG[String(selectedInitiative.pm_pipelinestatus ?? '')]?.color ?? 'default'}
+        size="small"
+        variant="outlined"
+        sx={{ fontWeight: 600, borderRadius: 8 }}
+      />
+    </>
+  )
+
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Pipeline</Typography>
-          <Typography variant="body2" color="text.secondary">Pre-project initiative pipeline with business case and estimated investment.</Typography>
-        </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowNewModal(true)}>
-          New Initiative
-        </Button>
-      </Box>
+      <PageHeader
+        title="Pipeline"
+        subtitle="Pre-project initiative pipeline — triage, score, and convert ideas into authorised projects."
+        action={{
+          label: '+ New Initiative',
+          icon: <AddIcon />,
+          onClick: () => setShowCreateModal(true),
+        }}
+      />
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+      {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-      {/* KPI Cards */}
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        {kpiCards.map((kpi, idx) => (
-          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
-                      {kpi.title}
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                      {loading ? <Skeleton width={100} /> : kpi.value}
-                    </Typography>
-                  </Box>
-                  <Box
+      {/* ── 1. 4-Column KPI Header ──────────────────────────────────────────── */}
+      {!loading && <KpiCardRow items={kpiItems} />}
+
+      {/* ── 2. Master Pipeline Grid ──────────────────────────────────────────── */}
+      <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+        <SearchFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search by name, sponsor, portfolio..."
+          filterValue={statusFilter}
+          onFilterChange={setStatusFilter}
+          filterLabel="Status"
+          filterOptions={STATUS_FILTER_OPTIONS}
+          onClear={() => { setSearchQuery(''); setStatusFilter('') }}
+        />
+
+        <TableShell
+          loading={loading}
+          empty={filteredInitiatives.length === 0}
+          emptyIcon={<LightbulbIcon />}
+          emptyTitle={searchQuery || statusFilter ? 'No initiatives match your search criteria.' : 'No initiatives found.'}
+          emptyAction={!searchQuery && !statusFilter ? (
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
+              Create your first initiative
+            </Button>
+          ) : undefined}
+        >
+          <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                    Initiative Name
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'sponsor'} direction={sort.field === 'sponsor' ? sort.dir : 'asc'} onClick={() => handleSort('sponsor')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                    Business Sponsor
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'strategicScore'} direction={sort.field === 'strategicScore' ? sort.dir : 'asc'} onClick={() => handleSort('strategicScore')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                    Strategic Alignment
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'estimatedCost'} direction={sort.field === 'estimatedCost' ? sort.dir : 'asc'} onClick={() => handleSort('estimatedCost')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                    Estimated Cost
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'status'} direction={sort.field === 'status' ? sort.dir : 'asc'} onClick={() => handleSort('status')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                    Status
+                  </TableSortLabel>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredInitiatives.map((initiative, idx) => {
+                const statusCfg = STATUS_CONFIG[String(initiative.pm_pipelinestatus ?? '')] ?? { label: 'Draft', color: 'default' as const }
+                return (
+                  <TableRow
+                    key={initiative.pm_initiativeid}
+                    hover
+                    onClick={() => handleRowClick(initiative)}
                     sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      bgcolor: `${kpi.color}15`,
-                      color: kpi.color,
+                      cursor: 'pointer',
+                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                      transition: 'background-color 0.15s ease',
+                      '& td': { px: 2.5, py: 1.25 },
                     }}
                   >
-                    {kpi.icon}
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Filter & List */}
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>Pipeline Initiatives</Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {Object.entries(statusFilterConfig).map(([code, cfg]) => {
-              const codeNum = Number(code)
-              return (
-                <Chip
-                  key={code}
-                  label={cfg.label}
-                  color={statusFilter === codeNum ? cfg.color : 'default'}
-                  variant={statusFilter === codeNum ? 'filled' : 'outlined'}
-                  onClick={() => setStatusFilter(codeNum)}
-                  sx={{ fontWeight: 600, cursor: 'pointer' }}
-                />
-              )
-            })}
-          </Box>
-        </Box>
-
-        {loading ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} variant="rounded" height={120} />
-            ))}
-          </Box>
-        ) : initiatives.length > 0 ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {initiatives.map((initiative) => (
-              <Paper
-                key={initiative.pm_initiativeid}
-                variant="outlined"
-                sx={{
-                  p: 2.5,
-                  borderRadius: 2,
-                  transition: 'all 0.2s',
-                  '&:hover': { borderColor: 'primary.main', boxShadow: 1 },
-                }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      {initiative.pm_name ?? 'Untitled initiative'}
-                    </Typography>
-                    {initiative.pm_portfolioname && (
-                      <Typography variant="caption" color="text.secondary">
-                        Portfolio: {initiative.pm_portfolioname}
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LightbulbIcon sx={{ fontSize: 18, color: '#f59e0b', opacity: 0.7 }} />
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {initiative.pm_name ?? 'Untitled Initiative'}
+                          </Typography>
+                          {initiative.pm_portfolioname && (
+                            <Typography variant="caption" color="text.secondary">
+                              {initiative.pm_portfolioname}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                        <Typography variant="body2" color="text.secondary">
+                          {initiative.pm_requestorname || '—'}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <StrategicScoreDisplay score={initiative.pm_strategicalignmentscore} />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                        {initiative.pm_estimatedcost ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
                       </Typography>
-                    )}
-                  </Box>
-                  {(() => {
-                    const stat = pipelineStatusLabel(initiative.pm_pipelinestatus)
-                    return <Chip label={stat.label} color={stat.color} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
-                  })()}
-                </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={statusCfg.label}
+                        color={statusCfg.color}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontWeight: 600, borderRadius: 8 }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </TableShell>
 
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  {initiative.pm_businesscase ?? 'Business case not provided.'}
-                </Typography>
-
-                <Grid container spacing={2} sx={{ mb: 1.5 }}>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Priority</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{(initiative as any).pm_priorityscore ?? '—'}</Typography>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Strategic</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{(initiative as any).pm_strategicalignmentscore ?? '—'}</Typography>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Est. Cost</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {initiative.pm_estimatedcost ? `€${initiative.pm_estimatedcost.toLocaleString()}` : 'TBC'}
-                    </Typography>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Est. Benefits</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {initiative.pm_estimatedbenefits ? `€${initiative.pm_estimatedbenefits.toLocaleString()}` : '—'}
-                    </Typography>
-                  </Grid>
-                </Grid>
-
-                {(initiative as any).pm_pipelinestatus === 0 && (
-                  <Button variant="contained" size="small" onClick={() => handleConvert(initiative)}>
-                    Convert to Project
-                  </Button>
-                )}
-              </Paper>
-            ))}
-          </Box>
-        ) : (
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
-            No initiatives found for this filter.
-          </Typography>
+        {!loading && filteredInitiatives.length > 0 && (
+          <TableFooter
+            filteredCount={filteredInitiatives.length}
+            totalCount={initiatives.length}
+            itemLabel="initiative"
+            totals={[
+              { label: 'Est. pipeline', value: currencyFormatter.format(filteredInitiatives.reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)) },
+            ]}
+          />
         )}
       </Paper>
 
-      {/* New Initiative Dialog */}
-      <Dialog open={showNewModal} onClose={() => setShowNewModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>New Initiative</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Submit a new idea to the pipeline for executive review.
+      {/* ── 3. Slide-Out Detail Panel ────────────────────────────────────────── */}
+      <DetailDrawer
+        open={!!selectedInitiative}
+        onClose={handleCloseDetail}
+        icon={<LightbulbIcon sx={{ color: '#f59e0b', fontSize: 22 }} />}
+        title={selectedInitiative?.pm_name ?? ''}
+        subtitle={drawerSubtitle}
+        tabs={[
+          { label: 'Overview' },
+          { label: 'Score & Triage' },
+          { label: 'Actions' },
+        ]}
+        tabValue={detailTab}
+        onTabChange={(v) => { setDetailTab(v); setEditScoreMode(false) }}
+      >
+        {/* ═══ Tab 0: Overview ═══ */}
+        <TabPanel value={detailTab} index={0} pt={0}>
+          {selectedInitiative && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              {selectedInitiative.pm_businesscase ? (
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <DescriptionIcon sx={{ fontSize: 16 }} /> Business Case
+                  </Typography>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                      {selectedInitiative.pm_businesscase}
+                    </Typography>
+                  </Paper>
+                </Box>
+              ) : (
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">No business case provided.</Typography>
+                </Paper>
+              )}
+
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderLeft: '3px solid #0ea5e9' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Est. Cost</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—'}</Typography>
+                </Paper>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderLeft: '3px solid #22c55e' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Est. Benefits</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—'}</Typography>
+                </Paper>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderLeft: '3px solid #f59e0b' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Priority Score</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>{selectedInitiative.pm_priorityscore ?? '—'}</Typography>
+                </Paper>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderLeft: '3px solid #8b5cf6' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Strategic Alignment</Typography>
+                  <Box sx={{ mt: 0.5 }}><StrategicScoreDisplay score={selectedInitiative.pm_strategicalignmentscore} /></Box>
+                </Paper>
+              </Box>
+
+              {selectedInitiative.pm_submissiondate && (
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <CalendarTodayIcon sx={{ fontSize: 16 }} /> Timeline
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Submitted: {new Date(selectedInitiative.pm_submissiondate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </Typography>
+                </Paper>
+              )}
+            </Box>
+          )}
+        </TabPanel>
+
+        {/* ═══ Tab 1: Score & Triage ═══ */}
+        <TabPanel value={detailTab} index={1} pt={0}>
+          {selectedInitiative && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <ThumbsUpDownIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Strategic Alignment Score
+                </Typography>
+                {editScoreMode ? (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Rate this initiative against strategic pillars (1–5).</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <Rating value={editScore} onChange={(_, v) => setEditScore(v ?? 0)} precision={0.5} max={5} size="large" sx={{ fontSize: '2rem' }} />
+                      <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{editScore.toFixed(1)}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button variant="contained" size="small" onClick={handleSaveScore} disabled={actionLoading} sx={{ borderRadius: 2 }}>
+                        {actionLoading ? 'Saving...' : 'Save Score'}
+                      </Button>
+                      <Button variant="outlined" size="small" onClick={() => setEditScoreMode(false)} sx={{ borderRadius: 2 }}>Cancel</Button>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
+                      <Rating value={selectedInitiative.pm_strategicalignmentscore ?? 0} readOnly precision={0.5} max={5} size="large" sx={{ fontSize: '1.75rem' }} />
+                      <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                        {selectedInitiative.pm_strategicalignmentscore?.toFixed(1) ?? '—'}
+                      </Typography>
+                      {selectedInitiative.pm_strategicalignmentscore != null && (
+                        <Chip
+                          label={selectedInitiative.pm_strategicalignmentscore >= 4 ? 'High' : selectedInitiative.pm_strategicalignmentscore >= 2.5 ? 'Medium' : 'Low'}
+                          color={selectedInitiative.pm_strategicalignmentscore >= 4 ? 'success' : selectedInitiative.pm_strategicalignmentscore >= 2.5 ? 'warning' : 'default'}
+                          size="small" variant="filled"
+                          sx={{ fontWeight: 700, borderRadius: 8 }}
+                        />
+                      )}
+                    </Box>
+                    <Button variant="outlined" size="small" startIcon={<EditIcon />}
+                      onClick={() => { setEditScore(selectedInitiative.pm_strategicalignmentscore ?? 0); setEditScoreMode(true) }}
+                      sx={{ borderRadius: 2 }}>
+                      Edit Score
+                    </Button>
+                  </Box>
+                )}
+              </Paper>
+
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <TrendingUpIcon sx={{ fontSize: 18, color: '#f59e0b' }} /> Priority Score
+                </Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                  {selectedInitiative.pm_priorityscore ?? '—'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                  Higher scores indicate greater urgency and business impact.
+                </Typography>
+              </Paper>
+            </Box>
+          )}
+        </TabPanel>
+
+        {/* ═══ Tab 2: Actions ═══ */}
+        <TabPanel value={detailTab} index={2} pt={0}>
+          {selectedInitiative && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              {[
+                { icon: <HowToRegIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />, title: 'Request Approval', desc: 'Lock the business case and submit to the investment board for review.', color: '#0ea5e9', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleRequestApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '0' || String(selectedInitiative.pm_pipelinestatus) === '3' },
+                { icon: <TransformIcon sx={{ fontSize: 18, color: '#22c55e' }} />, title: 'Convert to Project', desc: 'Create a new project from this approved initiative.', color: '#22c55e', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
+                { icon: <CancelIcon sx={{ fontSize: 18, color: '#f59e0b' }} />, title: 'Defer Initiative', desc: 'Postpone the initiative if it lacks immediate funding or strategic fit.', color: '#f59e0b', btnLabel: 'Defer', btnVariant: 'outlined' as const, btnColor: 'warning' as const, onClick: handleDefer, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '2' || String(selectedInitiative.pm_pipelinestatus) === '3' },
+                { icon: <ErrorIcon sx={{ fontSize: 18, color: '#ef4444' }} />, title: 'Reject Initiative', desc: 'Close the initiative if it lacks strategic value or funding.', color: '#ef4444', btnLabel: 'Reject', btnVariant: 'outlined' as const, btnColor: 'error' as const, onClick: handleReject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '3' },
+              ].map((action, idx) => (
+                <Paper key={idx} variant="outlined" sx={{ p: 2.5, borderRadius: 2, borderLeft: `3px solid ${action.color}`, transition: 'all 0.2s', '&:hover': { bgcolor: isDark ? '#1e293b' : '#f8fafc' } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        {action.icon} {action.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 0, fontSize: fontSizes.smMd }}>{action.desc}</Typography>
+                    </Box>
+                    <Button variant={action.btnVariant} size="small" color={action.btnColor}
+                      onClick={action.onClick} disabled={actionLoading || action.btnDisabled}
+                      sx={{ borderRadius: 2, whiteSpace: 'nowrap', ml: 2 }}>
+                      {actionLoading ? 'Processing...' : action.btnLabel}
+                    </Button>
+                  </Box>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </TabPanel>
+      </DetailDrawer>
+
+      {/* ── 4. Create Initiative Modal ────────────────────────────────────────── */}
+      <Dialog open={showCreateModal} onClose={() => !actionLoading && setShowCreateModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>New Initiative</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Submit a new idea to the pipeline for executive review and triage.
           </Typography>
-          <Grid container spacing={2}>
+          <Grid container spacing={2.5}>
             <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Initiative name"
-                value={newInitiative.pm_name ?? ''}
-                onChange={(e) => setNewInitiative((prev) => ({ ...prev, pm_name: e.target.value }))}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                multiline
-                minRows={3}
-                label="Business case"
-                value={newInitiative.pm_businesscase ?? ''}
-                onChange={(e) => setNewInitiative((prev) => ({ ...prev, pm_businesscase: e.target.value }))}
-              />
+              <TextField label="Initiative Name" required fullWidth size="small"
+                value={createForm.pm_initiativename}
+                onChange={(e) => setCreateForm((f) => ({ ...f, pm_initiativename: e.target.value }))}
+                slotProps={{ input: { sx: { borderRadius: 2 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Estimated cost (€)"
-                value={newInitiative.pm_estimatedcost ?? 0}
-                onChange={(e) => setNewInitiative((prev) => ({ ...prev, pm_estimatedcost: Number(e.target.value) }))}
-              />
+              <TextField label="Requester / Sponsor" fullWidth size="small"
+                value={createForm.pm_requestorname}
+                onChange={(e) => setCreateForm((f) => ({ ...f, pm_requestorname: e.target.value }))}
+                slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Status</InputLabel>
+                <Select value={createForm.pm_pipelinestatus} label="Status"
+                  onChange={(e) => setCreateForm((f) => ({ ...f, pm_pipelinestatus: e.target.value as number }))}
+                  sx={{ borderRadius: 2 }}>
+                  <MenuItem value={1}>Under Review</MenuItem>
+                  <MenuItem value={0}>Approved</MenuItem>
+                  <MenuItem value={2}>Deferred</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField label="Estimated Cost (EUR)" type="number" fullWidth size="small"
+                value={createForm.pm_estimatedcosteur}
+                onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedcosteur: Number(e.target.value) }))}
+                slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField label="Estimated Benefits (EUR)" type="number" fullWidth size="small"
+                value={createForm.pm_estimatedbenefitseur}
+                onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedbenefitseur: Number(e.target.value) }))}
+                slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField label="Business Case / Description" fullWidth size="small" multiline rows={3}
+                value={createForm.pm_businesscasedescription}
+                onChange={(e) => setCreateForm((f) => ({ ...f, pm_businesscasedescription: e.target.value }))}
+                slotProps={{ input: { sx: { borderRadius: 2 } } }} />
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowNewModal(false)} variant="outlined">Cancel</Button>
-          <Button onClick={handleCreate} variant="contained" disabled={isCreating}>
-            {isCreating ? 'Submitting...' : 'Submit'}
+        <DialogActions sx={{ p: 2.5, gap: 1 }}>
+          <Button onClick={() => setShowCreateModal(false)} variant="outlined" disabled={actionLoading}>Cancel</Button>
+          <Button onClick={handleCreateInitiative} variant="contained"
+            disabled={!createForm.pm_initiativename.trim() || actionLoading}
+            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' } }}>
+            {actionLoading ? 'Creating...' : 'Create Initiative'}
           </Button>
         </DialogActions>
       </Dialog>

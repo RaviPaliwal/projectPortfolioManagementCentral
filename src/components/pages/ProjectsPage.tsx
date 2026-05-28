@@ -19,19 +19,14 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   TableSortLabel,
   Tabs,
   Tab,
-  FormControl,
-  InputLabel,
-  Select,
   LinearProgress,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import SearchIcon from '@mui/icons-material/Search'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
@@ -52,7 +47,8 @@ import {
   createIssue,
   assignResource,
 } from '../../services/dataverseService'
-import { StatusChip } from '../common'
+import { StatusChip, PageHeader, KpiCardRow, SearchFilterBar, TableFooter, TableShell } from '../common'
+import type { KpiCardItem } from '../common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel } from '../../models/dataverse'
 
 const RAG_COLORS: Record<string, string> = {
@@ -66,13 +62,6 @@ const RAG_LABELS: Record<string, string> = {
   '1': 'Green',
   '0': 'Amber',
 }
-
-const PHASE_OPTIONS = [
-  { value: '', label: 'All Phases' },
-  { value: '1', label: 'Planning' },
-  { value: '0', label: 'Execution' },
-  { value: '2', label: 'Closure' },
-]
 
 interface SortState {
   field: string
@@ -177,29 +166,30 @@ export default function ProjectsPage() {
   const redProjects = projects.filter((p) => String(p.pm_ragstatus) === '2').length
   const totalBudget = projects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur ?? 0), 0)
 
-  const kpiCards = [
+  const kpiItems: KpiCardItem[] = [
     {
       label: 'Active Projects',
       value: activeProjects,
-      icon: <CheckCircleIcon sx={{ color: '#22c55e', fontSize: 28 }} />,
+      icon: <CheckCircleIcon />,
       color: '#22c55e',
     },
     {
       label: 'Projects at Risk',
       value: redProjects,
-      icon: <ErrorIcon sx={{ color: '#ef4444', fontSize: 28 }} />,
+      icon: <ErrorIcon />,
       color: '#ef4444',
+      valueColor: '#ef4444',
     },
     {
       label: 'Total Active Budget',
       value: currency(totalBudget),
-      icon: <AttachMoneyIcon sx={{ color: '#3b82f6', fontSize: 28 }} />,
+      icon: <AttachMoneyIcon />,
       color: '#3b82f6',
     },
     {
       label: 'Milestones Due This Month',
       value: milestonesDue,
-      icon: <EventNoteIcon sx={{ color: '#8b5cf6', fontSize: 28 }} />,
+      icon: <EventNoteIcon />,
       color: '#8b5cf6',
     },
   ]
@@ -778,86 +768,48 @@ export default function ProjectsPage() {
   // ══════════════════════════════════════════════════════════════════════
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Project Portfolio</Typography>
-          <Typography variant="body2" color="text.secondary">Monitor and manage all active projects across the enterprise.</Typography>
-        </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsAddingProject(true)}>
-          + New Project
-        </Button>
-      </Box>
+      <PageHeader
+        title="Project Portfolio"
+        subtitle="Monitor and manage all active projects across the enterprise."
+        action={{ label: '+ New Project', icon: <AddIcon />, onClick: () => setIsAddingProject(true) }}
+      />
 
       {/* Alerts */}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-      {/* ── 4 KPI Cards ─────────────────────────────────────────────── */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 3 }}>
-        {kpiCards.map((kpi) => (
-          <Paper
-            key={kpi.label}
-            sx={{
-              p: 2.5,
-              borderRadius: 1.5,
-              borderLeft: `3px solid ${kpi.color}`,
-              transition: 'box-shadow 0.2s',
-              '&:hover': { boxShadow: theme.shadows[4] },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-              <Typography variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary' }}>
-                {kpi.label}
-              </Typography>
-              {kpi.icon}
-            </Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 800,
-                color: kpi.label === 'Projects at Risk' ? '#ef4444' : 'inherit',
-              }}
-            >
-              {kpi.value}
-            </Typography>
-          </Paper>
-        ))}
-      </Box>
-
-      {/* ── Command Bar ─────────────────────────────────────────────── */}
-      <Paper sx={{ p: 2, mb: 2, borderRadius: 1.5 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <TextField
-            size="small"
-            placeholder="Search projects..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            slotProps={{ input: { startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} /> } }}
-            sx={{ minWidth: 280 }}
-          />
-          <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Filter by Phase</InputLabel>
-            <Select value={phaseFilter} label="Filter by Phase" onChange={(e) => setPhaseFilter(e.target.value)}>
-              {PHASE_OPTIONS.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Box sx={{ flex: 1 }} />
-          <Typography variant="caption" color="text.secondary">
-            {filteredProjects.length} of {projects.length} projects
-          </Typography>
-        </Box>
-      </Paper>
+      {/* ── KPI Cards ─────────────────────────────────────────────────── */}
+      <KpiCardRow items={kpiItems} loading={loading} />
 
       {/* ── Project Grid ────────────────────────────────────────────── */}
-      {loading ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {[...Array(6)].map((_, i) => <Skeleton key={i} variant="rounded" height={52} />)}
-        </Box>
-      ) : filteredProjects.length > 0 ? (
-        <TableContainer component={Paper} sx={{ borderRadius: 1.5, maxHeight: 'calc(100vh - 320px)' }}>
+      <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+        <SearchFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search projects..."
+          filterValue={phaseFilter}
+          onFilterChange={setPhaseFilter}
+          filterLabel="Filter by Phase"
+          filterOptions={[
+            { value: '', label: 'All Phases' },
+            { value: '1', label: 'Planning' },
+            { value: '0', label: 'Execution' },
+            { value: '2', label: 'Closure' },
+          ]}
+          onClear={() => { setSearchQuery(''); setPhaseFilter('') }}
+        />
+
+        <TableShell
+          loading={loading}
+          empty={filteredProjects.length === 0}
+          emptyIcon={<AccountTreeIcon />}
+          emptyTitle={searchQuery || phaseFilter ? 'No projects match your search criteria.' : 'No projects found.'}
+          emptyAction={!searchQuery && !phaseFilter ? (
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setIsAddingProject(true)}>
+              Create your first project
+            </Button>
+          ) : undefined}
+        >
           <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow>
@@ -958,16 +910,19 @@ export default function ProjectsPage() {
               ))}
             </TableBody>
           </Table>
-        </TableContainer>
-      ) : (
-        <Paper sx={{ p: 6, borderRadius: 1.5, textAlign: 'center' }}>
-          <AccountTreeIcon sx={{ fontSize: 48, color: theme.palette.text.secondary, mb: 2 }} />
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>No projects found</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {searchQuery || phaseFilter ? 'Try adjusting your search or filter criteria.' : 'Click "+ New Project" to create the first project.'}
-          </Typography>
-        </Paper>
-      )}
+        </TableShell>
+
+        {!loading && filteredProjects.length > 0 && (
+          <TableFooter
+            filteredCount={filteredProjects.length}
+            totalCount={projects.length}
+            itemLabel="project"
+            totals={[
+              { label: 'Total budget', value: currency(filteredProjects.reduce((s, p) => s + (p.pm_approvedbudgeteur ?? 0), 0)) },
+            ]}
+          />
+        )}
+      </Paper>
 
       {/* ── Create Project Modal ────────────────────────────────────── */}
       <Dialog open={isAddingProject} onClose={() => setIsAddingProject(false)} maxWidth="sm" fullWidth>

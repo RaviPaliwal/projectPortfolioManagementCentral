@@ -5,8 +5,6 @@ import {
   Paper,
   Typography,
   Button,
-  Card,
-  CardContent,
   Skeleton,
   Alert,
   Dialog,
@@ -15,10 +13,10 @@ import {
   DialogActions,
   useTheme,
 } from '@mui/material'
-import ViewsIcon from '@mui/icons-material/GridView'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import WarningIcon from '@mui/icons-material/Warning'
+import ViewsIcon from '@mui/icons-material/GridView'
 import {
   fetchDashboardMetrics,
   fetchMyActiveProjects,
@@ -30,8 +28,9 @@ import {
   fetchDepartmentDemandData,
   updateInitiativeStatus,
 } from '../../services/dataverseService'
-import { StatusChip, DashboardCharts } from '../common'
+import { StatusChip, DashboardCharts, PageHeader, KpiCardRow } from '../common'
 import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel } from '../../models/dataverse'
+import type { KpiCardItem } from '../common/KpiCardRow/KpiCardRow'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
@@ -123,62 +122,22 @@ export default function DashboardPage() {
     { name: 'Red', value: metrics.projectsInRed },
   ], [metrics])
 
-  const kpiCards = [
-    { title: 'Active Portfolios', value: metrics.totalActivePortfolios, icon: <ViewsIcon />, color: '#0ea5e9' },
-    { title: 'Approved Budget', value: currencyFormatter.format(metrics.totalApprovedBudget), icon: <AccountBalanceWalletIcon />, color: '#22c55e' },
-    { title: 'Actual Spend', value: currencyFormatter.format(metrics.totalActualSpend), icon: <TrendingDownIcon />, color: '#f59e0b' },
-    { title: 'Red / Amber', value: metrics.projectsInRed + metrics.projectsInAmber, icon: <WarningIcon />, color: '#ef4444' },
+  const kpiItems: KpiCardItem[] = [
+    { label: 'Active Portfolios', value: metrics.totalActivePortfolios, icon: <ViewsIcon />, color: '#0ea5e9' },
+    { label: 'Approved Budget', value: currencyFormatter.format(metrics.totalApprovedBudget), icon: <AccountBalanceWalletIcon />, color: '#22c55e' },
+    { label: 'Actual Spend', value: currencyFormatter.format(metrics.totalActualSpend), icon: <TrendingDownIcon />, color: '#f59e0b' },
+    { label: 'Red / Amber', value: metrics.projectsInRed + metrics.projectsInAmber, icon: <WarningIcon />, color: '#ef4444' },
   ]
 
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="caption" color="primary" sx={{ fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-          PPM Central · Executive Dashboard
-        </Typography>
-        <Typography variant="h3" sx={{ mt: 0.5, mb: 1 }}>Executive Portfolio Dashboard</Typography>
-        <Typography variant="body1" color="text.secondary">
-          Top-line portfolio KPIs, budget health, and pending approvals in one executive view.
-        </Typography>
-      </Box>
+      <PageHeader
+        title="Executive Portfolio Dashboard"
+        subtitle="Top-line portfolio KPIs, budget health, and pending approvals in one executive view."
+      />
 
       {/* KPI Cards */}
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        {kpiCards.map((kpi, idx) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
-            <Card sx={{ position: 'relative', overflow: 'visible' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
-                      {kpi.title}
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                      {loading ? <Skeleton width={100} /> : kpi.value}
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      bgcolor: `${kpi.color}15`,
-                      color: kpi.color,
-                    }}
-                  >
-                    {kpi.icon}
-                  </Box>
-                </Box>
-
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      <KpiCardRow items={kpiItems} loading={loading} />
 
       {/* Dashboard Charts */}
       <Box sx={{ mb: 3 }}>

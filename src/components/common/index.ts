@@ -24,3 +24,30 @@ export type { SummaryCardProps, StatusChipProps, ProjectDetailViewProps, Task, M
 
 export { DashboardCharts } from "./DashboardCharts"
 export type { DashboardChartsProps } from "./DashboardCharts"
+
+export { PageHeader } from "./PageHeader/PageHeader"
+export type { PageHeaderProps, PageHeaderAction } from "./PageHeader/PageHeader"
+
+export { KpiCardRow } from "./KpiCardRow/KpiCardRow"
+export type { KpiCardRowProps, KpiCardItem } from "./KpiCardRow/KpiCardRow"
+
+export { HealthSplitBar } from "./HealthSplitBar/HealthSplitBar"
+export type { HealthSplitBarProps } from "./HealthSplitBar/HealthSplitBar"
+
+export { VarianceDisplay } from "./VarianceDisplay/VarianceDisplay"
+export type { VarianceDisplayProps } from "./VarianceDisplay/VarianceDisplay"
+
+export { SearchFilterBar } from "./SearchFilterBar/SearchFilterBar"
+export type { SearchFilterBarProps, FilterOption } from "./SearchFilterBar/SearchFilterBar"
+
+export { DetailDrawer } from "./DetailDrawer/DetailDrawer"
+export type { DetailDrawerProps, DetailDrawerTab } from "./DetailDrawer/DetailDrawer"
+
+export { TableFooter } from "./TableFooter/TableFooter"
+export type { TableFooterProps, TableFooterTotal } from "./TableFooter/TableFooter"
+
+export { TabPanel } from "./TabPanel/TabPanel"
+export type { TabPanelProps } from "./TabPanel/TabPanel"
+
+export { TableShell } from "./TableShell/TableShell"
+export type { TableShellProps } from "./TableShell/TableShell"

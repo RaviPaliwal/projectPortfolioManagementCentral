@@ -6,11 +6,7 @@ import {
   Alert,
   Skeleton,
   Chip,
-  Card,
-  CardContent,
   useTheme,
-  TextField,
-  InputAdornment,
   Button,
   Dialog,
   DialogTitle,
@@ -30,16 +26,15 @@ import {
   TableSortLabel,
   Tabs,
   Tab,
+  TextField,
 } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
+import ErrorIcon from '@mui/icons-material/Error'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import WarningAmberIcon from '@mui/icons-material/WarningAmber'
-import ErrorIcon from '@mui/icons-material/Error'
 import PersonIcon from '@mui/icons-material/Person'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import DescriptionIcon from '@mui/icons-material/Description'
@@ -49,8 +44,20 @@ import AssignmentLateIcon from '@mui/icons-material/AssignmentLate'
 import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import { fetchPortfolioHierarchy, fetchProgrammeDetails, createProgramme } from '../../services/dataverseService'
-import { StatusChip } from '../common'
+import {
+  StatusChip,
+  PageHeader,
+  KpiCardRow,
+  HealthSplitBar,
+  VarianceDisplay,
+  SearchFilterBar,
+  TabPanel,
+  TableFooter,
+  TableShell,
+} from '../common'
+import { fontSizes } from '../../styles'
 import type { ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '../../models/dataverse'
+import type { KpiCardItem, FilterOption } from '../common'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
@@ -67,43 +74,6 @@ const ISSUE_PRIORITY_LABELS: Record<string, string> = {
   '0': 'High',
   '1': 'Critical',
   '2': 'Medium',
-}
-
-// ─── Tab Panel ─────────────────────────────────────────────────────────────────
-function TabPanel({ children, value, index }: { children: React.ReactNode; value: number; index: number }) {
-  return value === index ? <Box>{children}</Box> : null
-}
-
-// ─── Health Split Bar ──────────────────────────────────────────────────────────
-function HealthSplitBar({ green, amber, red }: { green: number; amber: number; red: number }) {
-  const total = green + amber + red || 1
-  const gPct = (green / total) * 100
-  const aPct = (amber / total) * 100
-  const rPct = (red / total) * 100
-
-  return (
-    <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <CheckCircleIcon sx={{ fontSize: 14, color: '#22c55e' }} />
-          <Typography variant="caption" sx={{ fontWeight: 600, color: '#22c55e' }}>{green}</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <WarningAmberIcon sx={{ fontSize: 14, color: '#f59e0b' }} />
-          <Typography variant="caption" sx={{ fontWeight: 600, color: '#f59e0b' }}>{amber}</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <ErrorIcon sx={{ fontSize: 14, color: '#ef4444' }} />
-          <Typography variant="caption" sx={{ fontWeight: 600, color: '#ef4444' }}>{red}</Typography>
-        </Box>
-      </Box>
-      <Box sx={{ width: '100%', height: 8, borderRadius: 4, overflow: 'hidden', display: 'flex', bgcolor: '#e2e8f0' }}>
-        <Box sx={{ width: `${gPct}%`, bgcolor: '#22c55e', transition: 'width 0.6s ease' }} />
-        <Box sx={{ width: `${aPct}%`, bgcolor: '#f59e0b', transition: 'width 0.6s ease' }} />
-        <Box sx={{ width: `${rPct}%`, bgcolor: '#ef4444', transition: 'width 0.6s ease' }} />
-      </Box>
-    </Box>
-  )
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
@@ -332,24 +302,6 @@ export default function ProgrammesPage() {
     }
   }
 
-  // ── Variance Display ──────────────────────────────────────────────────────
-  const VarianceDisplay = ({ budget, consumed }: { budget?: number; consumed?: number }) => {
-    const variance = (budget ?? 0) - (consumed ?? 0)
-    const isNegative = variance < 0
-    return (
-      <Typography
-        variant="body2"
-        sx={{
-          fontWeight: 600,
-          fontFamily: '"JetBrains Mono", monospace',
-          color: isNegative ? '#ef4444' : isDark ? '#e2e8f0' : '#0f172a',
-        }}
-      >
-        {isNegative ? '−' : ''}{currencyFormatter.format(Math.abs(variance))}
-      </Typography>
-    )
-  }
-
   // ── Render ───────────────────────────────────────────────────────────────────
   // If detail view is active, show it instead of the list
   if (selectedProgrammeId && detailData) {
@@ -405,7 +357,7 @@ export default function ProgrammesPage() {
               <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.75 }}>
                   <AccountTreeIcon sx={{ color: 'primary.main', fontSize: 22 }} />
-                  <Typography variant="h5" sx={{ fontWeight: 700, fontSize: '1.35rem' }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
                     {prog?.pm_programmename ?? 'Programme'}
                   </Typography>
                   <StatusChip status={prog?.pm_ragstatus} type="rag" size="small" />
@@ -430,7 +382,7 @@ export default function ProgrammesPage() {
                       size="small"
                       color="primary"
                       variant="outlined"
-                      sx={{ fontWeight: 600, borderRadius: 1, height: 24, fontSize: '0.7rem' }}
+                      sx={{ fontWeight: 600, borderRadius: 1, height: 24, fontSize: fontSizes.xs }}
                     />
                   )}
                   {prog?.pm_startdate && (
@@ -447,8 +399,7 @@ export default function ProgrammesPage() {
 
               {/* Quick stats mini-cards */}
               <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-                <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>
                     Budget
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>
@@ -456,7 +407,7 @@ export default function ProgrammesPage() {
                   </Typography>
                 </Paper>
                 <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>
                     Actual Spend
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
@@ -464,7 +415,7 @@ export default function ProgrammesPage() {
                   </Typography>
                 </Paper>
                 <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>
                     Projects
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
@@ -488,7 +439,7 @@ export default function ProgrammesPage() {
               '& .MuiTab-root': {
                 fontWeight: 600,
                 textTransform: 'none',
-                fontSize: '0.8125rem',
+                fontSize: fontSizes.smMd,
                 minHeight: 44,
                 py: 1.5,
                 px: 2.5,
@@ -525,37 +476,37 @@ export default function ProgrammesPage() {
                     </Typography>
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
                       <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Phase
                         </Typography>
                         <StatusChip status={prog?.pm_programmephase} type="prog_phase" size="medium" />
                       </Paper>
                       <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Programme Manager
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_programmemanager || '—'}</Typography>
                       </Paper>
                       <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Sponsor
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_sponsorname || '—'}</Typography>
                       </Paper>
                       <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Business Unit
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_businessunit || '—'}</Typography>
                       </Paper>
                       <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Parent Portfolio
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_portfolioname || '—'}</Typography>
                       </Paper>
                       <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Budget
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
@@ -570,7 +521,7 @@ export default function ProgrammesPage() {
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
                           <LightbulbIcon sx={{ fontSize: 16, color: '#f59e0b' }} /> Business Objectives
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8, fontSize: '0.8125rem' }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8, fontSize: fontSizes.smMd }}>
                           {prog.pm_programmedescription}
                         </Typography>
                       </Paper>
@@ -580,14 +531,14 @@ export default function ProgrammesPage() {
                         <TrackChangesIcon sx={{ fontSize: 16, color: 'primary.main' }} /> Actions
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                        <Button variant="outlined" size="small" disabled sx={{ borderRadius: 1, textTransform: 'none', fontSize: '0.75rem' }}>
+                        <Button variant="outlined" size="small" disabled sx={{ borderRadius: 1, textTransform: 'none' }}>
                           Update Phase
                         </Button>
-                        <Button variant="outlined" size="small" disabled sx={{ borderRadius: 1, textTransform: 'none', fontSize: '0.75rem' }}>
+                        <Button variant="outlined" size="small" disabled sx={{ borderRadius: 1, textTransform: 'none' }}>
                           Request Gate Review
                         </Button>
                       </Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', fontSize: '0.7rem' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', fontSize: fontSizes.sm }}>
                         Phase updates and gate review requests coming soon.
                       </Typography>
                     </Paper>
@@ -603,13 +554,13 @@ export default function ProgrammesPage() {
                   <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Project Name</TableCell>
-                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Code</TableCell>
-                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Phase</TableCell>
-                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>RAG</TableCell>
-                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Project Manager</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>% Complete</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Budget</TableCell>
+                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: fontSizes.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>Project Name</TableCell>
+                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: fontSizes.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>Code</TableCell>
+                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: fontSizes.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>Phase</TableCell>
+                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: fontSizes.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>RAG</TableCell>
+                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: fontSizes.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>Project Manager</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: fontSizes.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>% Complete</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#0f172a' : '#f8fafc', fontSize: fontSizes.sm, textTransform: 'uppercase', letterSpacing: 0.3 }}>Budget</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -637,7 +588,7 @@ export default function ProgrammesPage() {
                           </TableCell>
                           <TableCell align="right">
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                              <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', fontSize: '0.8rem' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.smMd }}>
                                 {proj.pm_percentcomplete ?? 0}%
                               </Typography>
                               <Box
@@ -662,7 +613,7 @@ export default function ProgrammesPage() {
                             </Box>
                           </TableCell>
                           <TableCell align="right">
-                            <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', fontSize: '0.8rem' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.smMd }}>
                               {currencyFormatter.format(proj.pm_approvedbudgeteur ?? 0)}
                             </Typography>
                           </TableCell>
@@ -686,19 +637,19 @@ export default function ProgrammesPage() {
                 {/* Summary cards row */}
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' }, gap: 2 }}>
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, borderLeft: `3px solid #0ea5e9` }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Programme Budget</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>Programme Budget</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
                   </Paper>
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, borderLeft: `3px solid #f59e0b` }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Actual Spend</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>Actual Spend</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}</Typography>
                   </Paper>
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, borderLeft: `3px solid #22c55e` }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Child Projects Budget</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>Child Projects Budget</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currencyFormatter.format(detailProjects.reduce((s, p) => s + (p.pm_approvedbudgeteur ?? 0), 0))}</Typography>
                   </Paper>
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, borderLeft: `3px solid ${((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? '#ef4444' : '#22c55e'}` }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Variance</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>Variance</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 700, color: ((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? '#ef4444' : '#22c55e', fontFamily: '"JetBrains Mono", monospace' }}>
                       {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
                     </Typography>
@@ -719,15 +670,15 @@ export default function ProgrammesPage() {
                   </Box>
                   <Box sx={{ display: 'flex', gap: 3, mb: 2, flexWrap: 'wrap' }}>
                     <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Total Budget</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>Total Budget</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Total Spend</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>Total Spend</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.3 }}>Variance</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>Variance</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: ((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? '#ef4444' : '#22c55e' }}>
                         {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
                       </Typography>
@@ -769,7 +720,7 @@ export default function ProgrammesPage() {
                             <Typography variant="body2" sx={{ fontWeight: 500, flex: 1 }}>{proj.pm_projectname ?? 'Untitled'}</Typography>
                             <Box sx={{ textAlign: 'right' }}>
                               <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', display: 'block' }}>{currencyFormatter.format(proj.pm_approvedbudgeteur ?? 0)}</Typography>
-                              <Typography variant="caption" color="text.secondary" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.65rem' }}>{currencyFormatter.format(proj.pm_actualcosteur ?? 0)}</Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.xs }}>{currencyFormatter.format(proj.pm_actualcosteur ?? 0)}</Typography>
                             </Box>
                           </Paper>
                         ))}
@@ -781,13 +732,13 @@ export default function ProgrammesPage() {
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, bgcolor: isDark ? '#1e293b' : '#f8fafc', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: 150 }}>
                     <MoneyIcon sx={{ fontSize: 32, color: 'text.disabled', mb: 1.5 }} />
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Funding Allocation</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.8rem' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontSize: fontSizes.smMd }}>
                       Allocate top-level funding from sources.
                     </Typography>
                     <Button variant="outlined" size="small" disabled sx={{ borderRadius: 1, textTransform: 'none' }}>
                       Allocate Funding
                     </Button>
-                    <Typography variant="caption" color="text.disabled" sx={{ mt: 1, fontSize: '0.65rem' }}>
+                    <Typography variant="caption" color="text.disabled" sx={{ mt: 1, fontSize: fontSizes.xs }}>
                       Coming in a future update.
                     </Typography>
                   </Paper>
@@ -806,7 +757,7 @@ export default function ProgrammesPage() {
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                         Escalated Risks
                       </Typography>
-                      <Chip label={detailRisks.filter((r) => r.pm_escalated).length} size="small" color="error" sx={{ fontWeight: 700, fontSize: '0.65rem', borderRadius: 1, height: 20 }} />
+                      <Chip label={detailRisks.filter((r) => r.pm_escalated).length} size="small" color="error" sx={{ fontWeight: 700, fontSize: fontSizes.xs, borderRadius: 1, height: 20 }} />
                     </Box>
                     {detailRisks.filter((r) => r.pm_escalated).length > 0 ? (
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -817,16 +768,16 @@ export default function ProgrammesPage() {
                               <StatusChip status={risk.pm_ragstatus} type="rag" size="small" />
                             </Box>
                             {risk.pm_riskdescription && (
-                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: '0.75rem' }}>{risk.pm_riskdescription}</Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: fontSizes.sm }}>{risk.pm_riskdescription}</Typography>
                             )}
                             <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                              {risk.pm_riskowner && <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Owner: {risk.pm_riskowner}</Typography>}
-                              {risk.pm_inherentscore !== undefined && <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Score: {risk.pm_inherentscore}</Typography>}
+                              {risk.pm_riskowner && <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>Owner: {risk.pm_riskowner}</Typography>}
+                              {risk.pm_inherentscore !== undefined && <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>Score: {risk.pm_inherentscore}</Typography>}
                               <Chip
                                 label={RISK_CATEGORY_LABELS[risk.pm_riskcategory?.toString() ?? ''] ?? 'Unknown'}
                                 size="small"
                                 variant="outlined"
-                                sx={{ fontSize: '0.6rem', fontWeight: 600, borderRadius: 1, height: 20 }}
+                                sx={{ fontSize: fontSizes.xs, fontWeight: 600, borderRadius: 1, height: 20 }}
                               />
                             </Box>
                           </Paper>
@@ -834,7 +785,7 @@ export default function ProgrammesPage() {
                       </Box>
                     ) : (
                       <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1, textAlign: 'center' }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>No escalated risks.</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: fontSizes.smMd }}>No escalated risks.</Typography>
                       </Paper>
                     )}
                   </Box>
@@ -845,7 +796,7 @@ export default function ProgrammesPage() {
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                         Programme Risks
                       </Typography>
-                      <Chip label={detailRisks.filter((r) => !r.pm_escalated).length} size="small" color="warning" sx={{ fontWeight: 700, fontSize: '0.65rem', borderRadius: 1, height: 20 }} />
+                      <Chip label={detailRisks.filter((r) => !r.pm_escalated).length} size="small" color="warning" sx={{ fontWeight: 700, fontSize: fontSizes.xs, borderRadius: 1, height: 20 }} />
                     </Box>
                     {detailRisks.filter((r) => !r.pm_escalated).length > 0 ? (
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -858,16 +809,16 @@ export default function ProgrammesPage() {
                                 label={RISK_CATEGORY_LABELS[risk.pm_riskcategory?.toString() ?? ''] ?? 'Unknown'}
                                 size="small"
                                 variant="outlined"
-                                sx={{ fontSize: '0.6rem', fontWeight: 600, borderRadius: 1, height: 20 }}
+                                sx={{ fontSize: fontSizes.xs, fontWeight: 600, borderRadius: 1, height: 20 }}
                               />
                             </Box>
-                            {risk.pm_riskowner && <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Owner: {risk.pm_riskowner}</Typography>}
+                            {risk.pm_riskowner && <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>Owner: {risk.pm_riskowner}</Typography>}
                           </Paper>
                         ))}
                       </Box>
                     ) : (
                       <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1, textAlign: 'center' }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>No programme-level risks.</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: fontSizes.smMd }}>No programme-level risks.</Typography>
                       </Paper>
                     )}
                   </Box>
@@ -880,7 +831,7 @@ export default function ProgrammesPage() {
                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                       Issues
                     </Typography>
-                    <Chip label={detailIssues.length} size="small" color="warning" sx={{ fontWeight: 700, fontSize: '0.65rem', borderRadius: 1, height: 20 }} />
+                    <Chip label={detailIssues.length} size="small" color="warning" sx={{ fontWeight: 700, fontSize: fontSizes.xs, borderRadius: 1, height: 20 }} />
                   </Box>
                   {detailIssues.length > 0 ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -893,19 +844,19 @@ export default function ProgrammesPage() {
                               label={ISSUE_PRIORITY_LABELS[issue.pm_prioritylevel?.toString() ?? ''] ?? 'Unknown'}
                               size="small"
                               color={issue.pm_prioritylevel === 1 ? 'error' : issue.pm_prioritylevel === 0 ? 'warning' : 'default'}
-                              sx={{ fontSize: '0.6rem', fontWeight: 600, borderRadius: 1, height: 20 }}
+                              sx={{ fontSize: fontSizes.xs, fontWeight: 600, borderRadius: 1, height: 20 }}
                             />
                             {issue.pm_escalationstatus && (
-                              <Chip label="Escalated" size="small" color="error" sx={{ fontSize: '0.6rem', fontWeight: 600, borderRadius: 1, height: 20 }} />
+                              <Chip label="Escalated" size="small" color="error" sx={{ fontSize: fontSizes.xs, fontWeight: 600, borderRadius: 1, height: 20 }} />
                             )}
                           </Box>
                           {issue.pm_issuedescription && (
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: '0.75rem' }}>{issue.pm_issuedescription}</Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: fontSizes.sm }}>{issue.pm_issuedescription}</Typography>
                           )}
                           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                            {issue.pm_issueowner && <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Owner: {issue.pm_issueowner}</Typography>}
+                            {issue.pm_issueowner && <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>Owner: {issue.pm_issueowner}</Typography>}
                             {issue.pm_targetresolutiondate && (
-                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>
                                 Target: {new Date(issue.pm_targetresolutiondate).toLocaleDateString()}
                               </Typography>
                             )}
@@ -915,7 +866,7 @@ export default function ProgrammesPage() {
                     </Box>
                   ) : (
                     <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1, textAlign: 'center' }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>No issues reported.</Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: fontSizes.smMd }}>No issues reported.</Typography>
                     </Paper>
                   )}
                 </Box>
@@ -928,192 +879,76 @@ export default function ProgrammesPage() {
   }
 
   // ── MAIN LIST VIEW ──────────────────────────────────────────────────────────
+  const kpiItems: KpiCardItem[] = [
+    {
+      label: 'Total Programmes',
+      value: kpiData.count,
+      icon: <AccountTreeIcon />,
+      color: '#0ea5e9',
+    },
+    {
+      label: 'Total Budget',
+      value: currencyFormatter.format(kpiData.totalBudget),
+      icon: <AccountBalanceWalletIcon />,
+      color: '#22c55e',
+      valueColor: 'primary.main',
+    },
+    {
+      label: 'Total Actual Spend',
+      value: currencyFormatter.format(kpiData.totalActual),
+      subtitle: kpiData.totalBudget > 0 ? `${((kpiData.totalActual / kpiData.totalBudget) * 100).toFixed(1)}% of budget` : '',
+      icon: <TrendingDownIcon />,
+      color: '#f59e0b',
+    },
+  ]
+
   return (
     <Box>
-      {/* Page Header */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Programmes</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Searchable directory of all programmes with aggregated health and financials.
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setShowCreateModal(true)}
-          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, px: 3 }}
-        >
-          + New Programme
-        </Button>
-      </Box>
+      <PageHeader
+        title="Programmes"
+        subtitle="Searchable directory of all programmes with aggregated health and financials."
+        action={{ label: '+ New Programme', icon: <AddIcon />, onClick: () => setShowCreateModal(true) }}
+      />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
       {/* ── 1. KPI Ribbon ──────────────────────────────────────────────────── */}
+      {!loading && <KpiCardRow items={kpiItems} />}
+
+      {/* Health overview card */}
       {!loading && (
-        <Box sx={{ display: 'flex', gap: 2.5, mb: 3, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
-          {/* KPI 1: Total Programmes */}
-          <Box sx={{ flex: '1 1 0', minWidth: 180 }}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
-                      Total Programmes
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                      {kpiData.count}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ width: 44, height: 44, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0ea5e915', color: '#0ea5e9' }}>
-                    <AccountTreeIcon />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-
-          {/* KPI 2: Total Budget */}
-          <Box sx={{ flex: '1 1 0', minWidth: 180 }}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
-                      Total Budget
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                      {currencyFormatter.format(kpiData.totalBudget)}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ width: 44, height: 44, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#22c55e15', color: '#22c55e' }}>
-                    <AccountBalanceWalletIcon />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-
-          {/* KPI 3: Total Actual Spend */}
-          <Box sx={{ flex: '1 1 0', minWidth: 180 }}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
-                      Total Actual Spend
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                      {currencyFormatter.format(kpiData.totalActual)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {kpiData.totalBudget > 0
-                        ? `${((kpiData.totalActual / kpiData.totalBudget) * 100).toFixed(1)}% of budget`
-                        : ''}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ width: 44, height: 44, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#f59e0b15', color: '#f59e0b' }}>
-                    <TrendingDownIcon />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-
-          {/* KPI 4: Health Split */}
-          <Box sx={{ flex: '1 1 0', minWidth: 220 }}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 1 }}>
-                  Overall Health Split
-                </Typography>
-                <HealthSplitBar green={kpiData.green} amber={kpiData.amber} red={kpiData.red} />
-              </CardContent>
-            </Card>
-          </Box>
-        </Box>
+        <HealthSplitBar green={kpiData.green} amber={kpiData.amber} red={kpiData.red} sx={{ mb: 3 }} />
       )}
 
       {/* ── 2. Master Programme Directory ──────────────────────────────────── */}
       <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-        {/* Top Bar: Search + Filter + Controls */}
-        <Box
-          sx={{
-            px: 2.5,
-            py: 2,
-            borderBottom: `1px solid ${theme.palette.divider}`,
-            display: 'flex',
-            gap: 2,
-            flexWrap: 'wrap',
-            alignItems: 'center',
-          }}
-        >
-          <TextField
-            size="small"
-            placeholder="Search by name, manager, sponsor, portfolio..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-                sx: { borderRadius: 2, fontSize: '0.875rem' },
-              },
-            }}
-            sx={{ flex: '1 1 260px', maxWidth: 420 }}
-          />
+        <SearchFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search by name, manager, sponsor, portfolio..."
+          filterValue={portfolioFilter}
+          onFilterChange={setPortfolioFilter}
+          filterLabel="Portfolio"
+          filterOptions={[
+            { value: 'all', label: 'All Portfolios' },
+            ...portfolios.map((p) => ({ value: p.id, label: p.name })),
+          ] as FilterOption[]}
+          onClear={() => { setSearchQuery(''); setPortfolioFilter('all') }}
+        />
 
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Portfolio</InputLabel>
-            <Select
-              value={portfolioFilter}
-              label="Portfolio"
-              onChange={(e) => setPortfolioFilter(e.target.value)}
-              sx={{ borderRadius: 2, fontSize: '0.875rem' }}
-            >
-              <MenuItem value="all">All Portfolios</MenuItem>
-              {portfolios.map((p) => (
-                <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {searchQuery || portfolioFilter !== 'all' ? (
-            <Button
-              size="small"
-              variant="text"
-              onClick={() => { setSearchQuery(''); setPortfolioFilter('all') }}
-              sx={{ whiteSpace: 'nowrap' }}
-            >
-              Clear filters
+        <TableShell
+          loading={loading}
+          empty={filteredProgrammes.length === 0}
+          emptyIcon={<AccountTreeIcon />}
+          emptyTitle={searchQuery || portfolioFilter !== 'all'
+            ? 'No programmes match your search criteria.'
+            : 'No programmes found.'}
+          emptyAction={!searchQuery && portfolioFilter === 'all' ? (
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
+              Create your first programme
             </Button>
-          ) : null}
-        </Box>
-
-        {/* Loading skeleton */}
-        {loading ? (
-          <Box sx={{ p: 3 }}>
-            {[...Array(8)].map((_, i) => <Skeleton key={i} variant="rounded" height={36} sx={{ mb: 1 }} />)}
-          </Box>
-        ) : filteredProgrammes.length === 0 ? (
-          <Box sx={{ p: 8, textAlign: 'center' }}>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-              {searchQuery || portfolioFilter !== 'all'
-                ? 'No programmes match your search criteria.'
-                : 'No programmes found.'}
-            </Typography>
-            {!searchQuery && portfolioFilter === 'all' && (
-              <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
-                Create your first programme
-              </Button>
-            )}
-          </Box>
-        ) : (
-          <Box sx={{ p: 0 }}>
+          ) : undefined}
+        >
             {/* Dense Data Grid */}
             <TableContainer sx={{ maxHeight: 'calc(100vh - 480px)', minHeight: 300 }}>
               <Table stickyHeader size="small" sx={{ minWidth: 1400 }}>
@@ -1204,7 +1039,7 @@ export default function ProgrammesPage() {
                             size="small"
                             variant="outlined"
                             color={programme.pm_portfolioname ? 'primary' : 'default'}
-                            sx={{ fontWeight: 600, borderRadius: 8, fontSize: '0.7rem', height: 22 }}
+                            sx={{ fontWeight: 600, borderRadius: 8, fontSize: fontSizes.xs, height: 22 }}
                           />
                         </TableCell>
                         <TableCell>
@@ -1246,22 +1081,18 @@ export default function ProgrammesPage() {
                 </TableBody>
               </Table>
             </TableContainer>
+          </TableShell>
 
-            {/* Footer */}
-            <Box sx={{ px: 2.5, py: 1.5, borderTop: `1px solid ${theme.palette.divider}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="text.secondary">
-                Showing {filteredProgrammes.length} of {programmes.length} programme{programmes.length !== 1 ? 's' : ''}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Total budget: {currencyFormatter.format(filteredProgrammes.reduce((s, p) => s + (p.pm_budgeteur ?? 0), 0))}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Total actual: {currencyFormatter.format(filteredProgrammes.reduce((s, p) => s + (p.pm_actualspendeur ?? 0), 0))}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
+        {!loading && filteredProgrammes.length > 0 && (
+          <TableFooter
+            filteredCount={filteredProgrammes.length}
+            totalCount={programmes.length}
+            itemLabel="programme"
+            totals={[
+              { label: 'Total budget', value: currencyFormatter.format(filteredProgrammes.reduce((s, p) => s + (p.pm_budgeteur ?? 0), 0)) },
+              { label: 'Total actual', value: currencyFormatter.format(filteredProgrammes.reduce((s, p) => s + (p.pm_actualspendeur ?? 0), 0)) },
+            ]}
+          />
         )}
       </Paper>
 

@@ -1,7 +1,8 @@
 ﻿import { useState, useMemo, Component, type ReactNode, type ErrorInfo } from 'react'
 import { ThemeProvider, CssBaseline, createTheme, Box, Paper, Typography, Button, Alert } from '@mui/material'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined'
-import type { PaletteMode } from '@mui/material'
+import type { PaletteMode, ThemeOptions } from '@mui/material'
+import { fontSizes } from './styles'
 
 // ─── ErrorBoundary ────────────────────────────────────────────────────────────
 interface EBProps { children: ReactNode; pageName?: string }
@@ -82,14 +83,22 @@ const getTheme = (mode: PaletteMode) =>
       },
       divider: mode === 'light' ? '#e2e8f0' : '#334155',
     },
+    shape: { borderRadius: 12 },
     typography: {
       fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      h1: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 700, letterSpacing: '-0.02em' },
-      h2: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 700, letterSpacing: '-0.01em' },
-      h3: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 600 },
-      h4: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 600 },
-    },
-    shape: { borderRadius: 12 },
+      fontSize: 14, // base = 0.875rem
+      h1: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 700, letterSpacing: '-0.02em', fontSize: fontSizes['4xl'] },
+      h2: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 700, letterSpacing: '-0.01em', fontSize: fontSizes['3xl'] },
+      h3: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 600, fontSize: fontSizes['2xl'] },
+      h4: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 600, fontSize: fontSizes['xl'] },
+      h5: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 600, fontSize: fontSizes['lg'] },
+      h6: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 600 },
+      subtitle1: { fontSize: fontSizes['base'] },
+      subtitle2: { fontSize: fontSizes['sm'] },
+      body1: { fontSize: fontSizes['base'] },
+      body2: { fontSize: fontSizes['sm'] },
+      caption: { fontSize: fontSizes['xs'] },
+    } as ThemeOptions['typography'],
     components: {
       MuiCard: {
         styleOverrides: {
@@ -102,11 +111,14 @@ const getTheme = (mode: PaletteMode) =>
       },
       MuiButton: {
         styleOverrides: {
-          root: { textTransform: 'none', fontWeight: 600, borderRadius: 10, padding: '8px 20px', fontSize: '0.8125rem' },
+          root: { textTransform: 'none', fontWeight: 600, borderRadius: 10, padding: '8px 20px', fontSize: fontSizes.smMd },
         },
       },
-      MuiChip: { styleOverrides: { root: { fontWeight: 600, fontSize: '0.75rem', borderRadius: 8 } } },
+      MuiChip: { styleOverrides: { root: { fontWeight: 600, fontSize: fontSizes.sm, borderRadius: 8 } } },
       MuiDialog: { styleOverrides: { paper: { borderRadius: 16 } } },
+      MuiTab: { styleOverrides: { root: { textTransform: 'none', fontWeight: 600, fontSize: fontSizes.smMd } } },
+      MuiTableCell: { styleOverrides: { root: { fontSize: fontSizes.sm } } },
+      MuiInputBase: { styleOverrides: { root: { fontSize: fontSizes.base } } },
     },
   })
 

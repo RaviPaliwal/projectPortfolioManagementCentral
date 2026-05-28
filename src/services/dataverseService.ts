@@ -860,6 +860,58 @@ export async function createInitiative(payload: Partial<InitiativeModel>): Promi
   return unwrapSingle<Pm_initiatives>(result)
 }
 
+export async function updateInitiative(id: string, changes: Partial<InitiativeModel>): Promise<InitiativeModel | null> {
+  const result = await Pm_initiativesService.update(id, changes as any)
+  try { console.debug('[dataverseService] updateInitiative id/changes/result:', id, changes, result) } catch (e) {}
+  return unwrapSingle<Pm_initiatives>(result)
+}
+
+export interface PipelineKpis {
+  totalActiveInitiatives: number
+  pendingApprovals: number
+  totalEstimatedCost: number
+  approvedThisMonth: number
+}
+
+export async function fetchPipelineKpis(): Promise<PipelineKpis> {
+  const [allResult, pendingResult, approvedThisMonthResult] = await Promise.all([
+    Pm_initiativesService.getAll({
+      filter: "pm_pipelinestatus ne 3", // Not Rejected — simplified; Cancelled/Converted not mappable easily
+      select: ['pm_initiativeid', 'pm_estimatedcosteur', 'pm_pipelinestatus', 'pm_submissiondate', 'pm_decisiondate'],
+      top: 500,
+    }),
+    Pm_initiativesService.getAll({
+      filter: "pm_pipelinestatus eq 1", // Under Review
+      select: ['pm_initiativeid'],
+      top: 500,
+    }),
+    Pm_initiativesService.getAll({
+      filter: "pm_pipelinestatus eq 0", // Approved
+      select: ['pm_initiativeid', 'pm_decisiondate'],
+      top: 500,
+    }),
+  ])
+
+  const all = unwrapList<Pm_initiatives>(allResult)
+  const pending = unwrapList<Pm_initiatives>(pendingResult)
+  const approvedThisMonth = unwrapList<Pm_initiatives>(approvedThisMonthResult)
+
+  const now = new Date()
+  const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const approvedThisMonthCount = approvedThisMonth.filter((i) => {
+    const d = i.pm_decisiondate ?? i.pm_submissiondate
+    if (!d) return false
+    return d >= currentMonthStart
+  }).length
+
+  return {
+    totalActiveInitiatives: all.length,
+    pendingApprovals: pending.length,
+    totalEstimatedCost: all.reduce((s, i) => s + (i.pm_estimatedcosteur ?? 0), 0),
+    approvedThisMonth: approvedThisMonthCount,
+  }
+}
+
 // ── Resource Utilization Charts Data ──────────────────────────────────────
 // NOTE: Dataverse lookup alias fields like pm_resourcename or pm_projectname may not be
 // reliably returned in getAll() results for related records. Always query the lookup

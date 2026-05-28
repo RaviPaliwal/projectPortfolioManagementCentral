@@ -62,40 +62,6 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
           },
         }}
       >
-        {/* Brand */}
-        <Box
-          sx={{
-            p: 3,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            borderBottom: `1px solid ${theme.palette.divider}`,
-          }}
-        >
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              bgcolor: 'primary.main',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.25rem',
-            }}
-          >
-            📈
-          </Box>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, fontFamily: "'Outfit', sans-serif" }}>
-              PPM Central
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-              Executive portfolio hub
-            </Typography>
-          </Box>
-        </Box>
-
         {/* Navigation */}
         <List sx={{ px: 1.5, py: 2 }}>
           {tabs.map((tab) => {
@@ -142,14 +108,42 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
           }}
         >
           <Toolbar sx={{ px: 3, gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: "'Outfit', sans-serif" }}>
-                {tabs.find((tab) => tab.key === activeTab)?.label}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="caption"
+                onClick={() => onChangeTab('dashboard')}
+                sx={{
+                  fontWeight: 600,
+                  color: 'text.secondary',
+                  letterSpacing: '0.03em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  transition: 'color 0.15s ease',
+                  '&:hover': { color: 'primary.main' },
+                }}
+              >
+                PPM Central
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Enterprise PPM UX connecting directly to Dataverse.
-              </Typography>
+              {activeTab !== 'dashboard' && tabs.find((tab) => tab.key === activeTab) && (
+                <>
+                  <Typography variant="caption" color="text.disabled">/</Typography>
+                  <Typography
+                    variant="body2"
+                    onClick={() => onChangeTab(activeTab)}
+                    sx={{
+                      fontWeight: 600,
+                      color: 'text.primary',
+                      cursor: 'pointer',
+                      transition: 'color 0.15s ease',
+                      '&:hover': { color: 'primary.main' },
+                    }}
+                  >
+                    {tabs.find((tab) => tab.key === activeTab)?.label}
+                  </Typography>
+                </>
+              )}
             </Box>
+            <Box sx={{ flex: 1 }} />
             <IconButton onClick={onToggleTheme} sx={{ color: 'text.secondary' }}>
               {themeMode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
             </IconButton>

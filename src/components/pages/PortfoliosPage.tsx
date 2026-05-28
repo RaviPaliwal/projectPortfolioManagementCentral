@@ -4,24 +4,14 @@ import {
   Paper,
   Typography,
   Alert,
-  Skeleton,
   Chip,
-  Card,
-  CardContent,
   useTheme,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   TableSortLabel,
-  TextField,
-  InputAdornment,
-  Drawer,
-  IconButton,
-  Tabs,
-  Tab,
   Button,
   Dialog,
   DialogTitle,
@@ -33,16 +23,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  TextField,
 } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
 import AddIcon from '@mui/icons-material/Add'
-import CloseIcon from '@mui/icons-material/Close'
 import EditIcon from '@mui/icons-material/Edit'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import WarningAmberIcon from '@mui/icons-material/WarningAmber'
-import ErrorIcon from '@mui/icons-material/Error'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import DescriptionIcon from '@mui/icons-material/Description'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
@@ -51,8 +37,20 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import PersonIcon from '@mui/icons-material/Person'
 import MoneyIcon from '@mui/icons-material/Money'
 import { fetchPortfolioHierarchy, createPortfolio } from '../../services/dataverseService'
-import { StatusChip } from '../common'
+import {
+  StatusChip,
+  PageHeader,
+  KpiCardRow,
+  HealthSplitBar,
+  VarianceDisplay,
+  SearchFilterBar,
+  TabPanel,
+  TableFooter,
+  TableShell,
+  DetailDrawer,
+} from '../common'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '../../models/dataverse'
+import type { KpiCardItem } from '../common'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
@@ -67,52 +65,6 @@ interface SortState {
 const STATUS_LABELS: Record<string, string> = {
   '0': 'Active',
   '1': 'On Hold',
-}
-
-// ─── Tab Panel Helper ─────────────────────────────────────────────────────────
-function TabPanel({ children, value, index }: { children: React.ReactNode; value: number; index: number }) {
-  return value === index ? <Box sx={{ pt: 2 }}>{children}</Box> : null
-}
-
-// ─── Health Split Bar ─────────────────────────────────────────────────────────
-function HealthSplitBar({ green, amber, red }: { green: number; amber: number; red: number }) {
-  const total = green + amber + red || 1
-  const gPct = (green / total) * 100
-  const aPct = (amber / total) * 100
-  const rPct = (red / total) * 100
-
-  return (
-    <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <CheckCircleIcon sx={{ fontSize: 14, color: '#22c55e' }} />
-          <Typography variant="caption" sx={{ fontWeight: 600, color: '#22c55e' }}>{green}</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <WarningAmberIcon sx={{ fontSize: 14, color: '#f59e0b' }} />
-          <Typography variant="caption" sx={{ fontWeight: 600, color: '#f59e0b' }}>{amber}</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <ErrorIcon sx={{ fontSize: 14, color: '#ef4444' }} />
-          <Typography variant="caption" sx={{ fontWeight: 600, color: '#ef4444' }}>{red}</Typography>
-        </Box>
-      </Box>
-      <Box
-        sx={{
-          width: '100%',
-          height: 8,
-          borderRadius: 4,
-          overflow: 'hidden',
-          display: 'flex',
-          bgcolor: '#e2e8f0',
-        }}
-      >
-        <Box sx={{ width: `${gPct}%`, bgcolor: '#22c55e', transition: 'width 0.6s ease' }} />
-        <Box sx={{ width: `${aPct}%`, bgcolor: '#f59e0b', transition: 'width 0.6s ease' }} />
-        <Box sx={{ width: `${rPct}%`, bgcolor: '#ef4444', transition: 'width 0.6s ease' }} />
-      </Box>
-    </Box>
-  )
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -190,7 +142,7 @@ export default function PortfoliosPage() {
   }, [hierarchy.projects])
 
   // KPI data
-  const kpiData = useMemo(() => {
+  const kpiItems = useMemo((): KpiCardItem[] => {
     const totalBudget = portfolioList.reduce((s, p) => s + (p.pm_approvedbudgeteur ?? 0), 0)
     const totalConsumed = portfolioList.reduce((s, p) => s + (p.pm_actualspendeur ?? 0), 0)
     let green = 0, amber = 0, red = 0
@@ -200,7 +152,33 @@ export default function PortfoliosPage() {
       else if (rag === '0') amber++
       else if (rag === '2') red++
     }
-    return { totalBudget, totalConsumed, green, amber, red, count: portfolioList.length }
+    return [
+      {
+        label: 'Total Portfolio Value',
+        value: currencyFormatter.format(totalBudget),
+        subtitle: `Across ${portfolioList.length} portfolio${portfolioList.length !== 1 ? 's' : ''}`,
+        icon: <AccountBalanceWalletIcon />,
+        color: '#0ea5e9',
+      },
+      {
+        label: 'Total Consumed / Actuals',
+        value: currencyFormatter.format(totalConsumed),
+        subtitle: totalBudget > 0 ? `${((totalConsumed / totalBudget) * 100).toFixed(1)}% of total budget consumed` : 'No budget data',
+        icon: <TrendingDownIcon />,
+        color: '#f59e0b',
+      },
+    ]
+  }, [portfolioList])
+
+  const kpiHealth = useMemo(() => {
+    let green = 0, amber = 0, red = 0
+    for (const p of portfolioList) {
+      const rag = p.pm_ragstatus?.toString()
+      if (rag === '1') green++
+      else if (rag === '0') amber++
+      else if (rag === '2') red++
+    }
+    return { green, amber, red }
   }, [portfolioList])
 
   // Filter & sort portfolios
@@ -292,7 +270,6 @@ export default function PortfoliosPage() {
         pm_strategicobjective: createForm.pm_strategicobjective || undefined,
       })
       if (created) {
-        // Refresh data and close modal
         const freshData = await fetchPortfolioHierarchy()
         setHierarchy(freshData)
         setShowCreateModal(false)
@@ -315,568 +292,412 @@ export default function PortfoliosPage() {
     }
   }
 
-  // ── Variance display ──────────────────────────────────────────────────────
-  const VarianceDisplay = ({ budget, consumed }: { budget?: number; consumed?: number }) => {
-    const variance = (budget ?? 0) - (consumed ?? 0)
-    const isNegative = variance < 0
-    return (
-      <Typography
-        variant="body2"
-        sx={{
-          fontWeight: 600,
-          fontFamily: '"JetBrains Mono", monospace',
-          color: isNegative ? '#ef4444' : isDark ? '#e2e8f0' : '#0f172a',
-        }}
-      >
-        {isNegative ? '−' : ''}{currencyFormatter.format(Math.abs(variance))}
-      </Typography>
-    )
-  }
-
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>Portfolios</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Master view of all portfolios — aggregate health, budget tracking, and drill-down details.
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setShowCreateModal(true)}
-          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, px: 3 }}
-        >
-          New Portfolio
-        </Button>
-      </Box>
+      <PageHeader
+        title="Portfolios"
+        subtitle="Master view of all portfolios — aggregate health, budget tracking, and drill-down details."
+        action={{ label: 'New Portfolio', icon: <AddIcon />, onClick: () => setShowCreateModal(true) }}
+      />
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      {/* ── 1. Executive Roll-Up KPI Ribbon ─────────────────────────────── */}
+      {/* ── 1. Executive Roll-Up KPI Ribbon ──────────────────────────── */}
       {!loading && (
-        <Box sx={{ display: 'flex', gap: 2.5, mb: 3, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
-          <Box sx={{ flex: '1 1 0', minWidth: 200 }}>
-            <Card sx={{ position: 'relative', overflow: 'visible', height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
-                      Total Portfolio Value
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                      {currencyFormatter.format(kpiData.totalBudget)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Across {kpiData.count} portfolio{kpiData.count !== 1 ? 's' : ''}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ width: 44, height: 44, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0ea5e915', color: '#0ea5e9' }}>
-                    <AccountBalanceWalletIcon />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-
-          <Box sx={{ flex: '1 1 0', minWidth: 200 }}>
-            <Card sx={{ position: 'relative', overflow: 'visible', height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 0.5 }}>
-                      Total Consumed / Actuals
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                      {currencyFormatter.format(kpiData.totalConsumed)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {kpiData.totalBudget > 0
-                        ? `${((kpiData.totalConsumed / kpiData.totalBudget) * 100).toFixed(1)}% of total budget consumed`
-                        : 'No budget data'}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ width: 44, height: 44, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#f59e0b15', color: '#f59e0b' }}>
-                    <TrendingDownIcon />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-
-          <Box sx={{ flex: '1 1 0', minWidth: 260 }}>
-            <Card sx={{ position: 'relative', overflow: 'visible', height: '100%' }}>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 1 }}>
-                  Overall Health Split
-                </Typography>
-                <HealthSplitBar green={kpiData.green} amber={kpiData.amber} red={kpiData.red} />
-              </CardContent>
-            </Card>
-          </Box>
-        </Box>
+        <>
+          <KpiCardRow items={kpiItems} />
+          <HealthSplitBar green={kpiHealth.green} amber={kpiHealth.amber} red={kpiHealth.red} sx={{ mb: 3 }} />
+        </>
       )}
 
-      {/* ── 2. Dense Master Portfolio Grid ───────────────────────────────── */}
+      {/* ── 2. Dense Master Portfolio Grid ────────────────────────────── */}
       <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-        {/* Search bar */}
-        <Box sx={{ px: 2.5, py: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
-          <TextField
-            size="small"
-            placeholder="Search portfolios by name, owner, or business unit..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-                sx: { borderRadius: 2, fontSize: '0.875rem' },
-              },
-            }}
-            sx={{ maxWidth: 420 }}
-          />
-        </Box>
+        <SearchFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search portfolios by name, owner, or business unit..."
+          onClear={() => setSearchQuery('')}
+        />
 
-        {loading ? (
-          <Box sx={{ p: 3 }}>
-            {[...Array(5)].map((_, i) => <Skeleton key={i} variant="rounded" height={48} sx={{ mb: 1 }} />)}
-          </Box>
-        ) : filteredPortfolios.length === 0 ? (
-          <Box sx={{ p: 6, textAlign: 'center' }}>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-              {searchQuery ? 'No portfolios match your search.' : 'No portfolios found.'}
-            </Typography>
-            {!searchQuery && (
-              <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
-                Create your first portfolio
-              </Button>
-            )}
-          </Box>
-        ) : (
-          <TableContainer sx={{ maxHeight: 'calc(100vh - 460px)', minHeight: 300 }}>
-            <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Portfolio Name</TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'owner'} direction={sort.field === 'owner' ? sort.dir : 'asc'} onClick={() => handleSort('owner')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Owner / Sponsor</TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'status'} direction={sort.field === 'status' ? sort.dir : 'asc'} onClick={() => handleSort('status')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Status</TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'rag'} direction={sort.field === 'rag' ? sort.dir : 'asc'} onClick={() => handleSort('rag')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>RAG Status</TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'budget'} direction={sort.field === 'budget' ? sort.dir : 'asc'} onClick={() => handleSort('budget')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Total Budget</TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'consumed'} direction={sort.field === 'consumed' ? sort.dir : 'asc'} onClick={() => handleSort('consumed')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Consumed</TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'variance'} direction={sort.field === 'variance' ? sort.dir : 'asc'} onClick={() => handleSort('variance')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Variance</TableSortLabel>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredPortfolios.map((portfolio, idx) => {
-                  const variance = (portfolio.pm_approvedbudgeteur ?? 0) - (portfolio.pm_actualspendeur ?? 0)
-                  const isNegative = variance < 0
-                  return (
-                    <TableRow
-                      key={portfolio.pm_portfolioid}
-                      hover
-                      onClick={() => handleRowClick(portfolio)}
-                      sx={{
-                        cursor: 'pointer',
-                        bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
-                        '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                        transition: 'background-color 0.15s ease',
-                        '& td': { px: 2.5, py: 1.25 },
-                      }}
-                    >
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <AccountTreeIcon sx={{ fontSize: 18, color: 'primary.main', opacity: 0.7 }} />
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {portfolio.pm_portfolioname ?? 'Unnamed Portfolio'}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {portfolio.pm_portfolioowner || '—'}
+        <TableShell
+          loading={loading}
+          empty={filteredPortfolios.length === 0}
+          emptyIcon={<AccountTreeIcon />}
+          emptyTitle={searchQuery ? 'No portfolios match your search.' : 'No portfolios found.'}
+          emptyAction={!searchQuery && (
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
+              Create your first portfolio
+            </Button>
+          )}
+        >
+          <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Portfolio Name</TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'owner'} direction={sort.field === 'owner' ? sort.dir : 'asc'} onClick={() => handleSort('owner')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Owner / Sponsor</TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'status'} direction={sort.field === 'status' ? sort.dir : 'asc'} onClick={() => handleSort('status')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Status</TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'rag'} direction={sort.field === 'rag' ? sort.dir : 'asc'} onClick={() => handleSort('rag')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>RAG Status</TableSortLabel>
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'budget'} direction={sort.field === 'budget' ? sort.dir : 'asc'} onClick={() => handleSort('budget')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Total Budget</TableSortLabel>
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'consumed'} direction={sort.field === 'consumed' ? sort.dir : 'asc'} onClick={() => handleSort('consumed')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Consumed</TableSortLabel>
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableSortLabel active={sort.field === 'variance'} direction={sort.field === 'variance' ? sort.dir : 'asc'} onClick={() => handleSort('variance')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Variance</TableSortLabel>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredPortfolios.map((portfolio, idx) => {
+                const variance = (portfolio.pm_approvedbudgeteur ?? 0) - (portfolio.pm_actualspendeur ?? 0)
+                const isNegative = variance < 0
+                return (
+                  <TableRow
+                    key={portfolio.pm_portfolioid}
+                    hover
+                    onClick={() => handleRowClick(portfolio)}
+                    sx={{
+                      cursor: 'pointer',
+                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                      transition: 'background-color 0.15s ease',
+                      '& td': { px: 2.5, py: 1.25 },
+                    }}
+                  >
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <AccountTreeIcon sx={{ fontSize: 18, color: 'primary.main', opacity: 0.7 }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {portfolio.pm_portfolioname ?? 'Unnamed Portfolio'}
                         </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={STATUS_LABELS[portfolio.pm_portfoliostatus?.toString() ?? ''] ?? 'Unknown'}
-                          size="small"
-                          variant="outlined"
-                          color={portfolio.pm_portfoliostatus === 0 || portfolio.pm_portfoliostatus === '0' ? 'success' : 'default'}
-                          sx={{ fontWeight: 600, borderRadius: 8 }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <StatusChip status={portfolio.pm_ragstatus} type="rag" size="small" />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {currencyFormatter.format(portfolio.pm_approvedbudgeteur ?? 0)}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {portfolio.pm_portfolioowner || '—'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={STATUS_LABELS[portfolio.pm_portfoliostatus?.toString() ?? ''] ?? 'Unknown'}
+                        size="small"
+                        variant="outlined"
+                        color={portfolio.pm_portfoliostatus === 0 || portfolio.pm_portfoliostatus === '0' ? 'success' : 'default'}
+                        sx={{ fontWeight: 600, borderRadius: 8 }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <StatusChip status={portfolio.pm_ragstatus} type="rag" size="small" />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                        {currencyFormatter.format(portfolio.pm_approvedbudgeteur ?? 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', color: isDark ? '#94a3b8' : '#64748b' }}>
+                        {currencyFormatter.format(portfolio.pm_actualspendeur ?? 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <VarianceDisplay budget={portfolio.pm_approvedbudgeteur} consumed={portfolio.pm_actualspendeur} />
+                      {isNegative && (
+                        <Typography variant="caption" sx={{ color: '#ef4444', fontWeight: 500, display: 'block' }}>
+                          Over budget
                         </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', color: isDark ? '#94a3b8' : '#64748b' }}>
-                          {currencyFormatter.format(portfolio.pm_actualspendeur ?? 0)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <VarianceDisplay budget={portfolio.pm_approvedbudgeteur} consumed={portfolio.pm_actualspendeur} />
-                        {isNegative && (
-                          <Typography variant="caption" sx={{ color: '#ef4444', fontWeight: 500, display: 'block' }}>
-                            Over budget
-                          </Typography>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </TableShell>
 
-        {/* Footer count */}
         {!loading && filteredPortfolios.length > 0 && (
-          <Box sx={{ px: 2.5, py: 1.5, borderTop: `1px solid ${theme.palette.divider}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Showing {filteredPortfolios.length} of {portfolioList.length} portfolio{portfolioList.length !== 1 ? 's' : ''}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Typography variant="caption" color="text.secondary">
-                Total budget: {currencyFormatter.format(filteredPortfolios.reduce((s, p) => s + (p.pm_approvedbudgeteur ?? 0), 0))}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Total consumed: {currencyFormatter.format(filteredPortfolios.reduce((s, p) => s + (p.pm_actualspendeur ?? 0), 0))}
-              </Typography>
-            </Box>
-          </Box>
+          <TableFooter
+            filteredCount={filteredPortfolios.length}
+            totalCount={portfolioList.length}
+            itemLabel="portfolio"
+            totals={[
+              { label: 'Total budget', value: currencyFormatter.format(filteredPortfolios.reduce((s, p) => s + (p.pm_approvedbudgeteur ?? 0), 0)) },
+              { label: 'Total consumed', value: currencyFormatter.format(filteredPortfolios.reduce((s, p) => s + (p.pm_actualspendeur ?? 0), 0)) },
+            ]}
+          />
         )}
       </Paper>
 
-      {/* ── 3. Slide-Out Detail Panel ─────────────────────────────────────── */}
-      <Drawer
-        anchor="right"
+      {/* ── 3. Slide-Out Detail Panel ──────────────────────────────────── */}
+      <DetailDrawer
         open={!!selectedPortfolio}
         onClose={() => setSelectedPortfolio(null)}
-        slotProps={{
-          backdrop: { invisible: true },
-          paper: {
-            sx: {
-              width: { xs: '100%', sm: 560, md: 640 },
-              p: 0,
-              bgcolor: 'background.paper',
-              borderLeft: `1px solid ${theme.palette.divider}`,
-            },
-          },
-        }}
+        icon={<AccountTreeIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
+        title={selectedPortfolio?.pm_portfolioname ?? ''}
+        subtitle={selectedPortfolio && (
+          <>
+            {selectedPortfolio.pm_portfolioowner && (
+              <Typography variant="body2" color="text.secondary">
+                <PersonIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                {selectedPortfolio.pm_portfolioowner}
+              </Typography>
+            )}
+            {selectedPortfolio.pm_businessunit && (
+              <Typography variant="body2" color="text.secondary">
+                <BusinessIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                {selectedPortfolio.pm_businessunit}
+              </Typography>
+            )}
+          </>
+        )}
+        headerActions={
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<EditIcon />}
+            onClick={() => setEditInfo('Edit functionality will be available in a future update.')}
+            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' } }}
+          >
+            Edit Portfolio
+          </Button>
+        }
+        tabs={[
+          { label: 'Summary' },
+          { label: 'Programmes', count: detailProgrammes.length },
+          { label: 'Projects', count: detailProjects.length },
+          { label: 'Financials' },
+        ]}
+        tabValue={detailTab}
+        onTabChange={setDetailTab}
       >
         {selectedPortfolio && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* Panel Header */}
-            <Box sx={{ px: 3, py: 2.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Box sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-                    <AccountTreeIcon sx={{ color: 'primary.main', fontSize: 22 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      {selectedPortfolio.pm_portfolioname ?? 'Unnamed Portfolio'}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mt: 0.5 }}>
-                    {selectedPortfolio.pm_portfolioowner && (
-                      <Typography variant="body2" color="text.secondary">
-                        <PersonIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                        {selectedPortfolio.pm_portfolioowner}
-                      </Typography>
-                    )}
-                    {selectedPortfolio.pm_businessunit && (
-                      <Typography variant="body2" color="text.secondary">
-                        <BusinessIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                        {selectedPortfolio.pm_businessunit}
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<EditIcon />}
-                    onClick={() => setEditInfo('Edit functionality will be available in a future update.')}
-                    sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' } }}
-                  >
-                    Edit Portfolio
-                  </Button>
-                  <IconButton size="small" onClick={() => setSelectedPortfolio(null)}>
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              </Box>
-            </Box>
-
+          <>
             {/* Edit info banner */}
             {editInfo && (
-              <Alert severity="info" onClose={() => setEditInfo(null)} sx={{ borderRadius: 0, px: 3 }}>
+              <Alert severity="info" onClose={() => setEditInfo(null)} sx={{ mb: 2 }}>
                 {editInfo}
               </Alert>
             )}
 
-            {/* Tabs */}
-            <Tabs
-              value={detailTab}
-              onChange={(_, v) => setDetailTab(v)}
-              variant="fullWidth"
-              sx={{
-                borderBottom: `1px solid ${theme.palette.divider}`,
-                '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: '0.8125rem', minHeight: 44 },
-              }}
-            >
-              <Tab label="Summary" />
-              <Tab label={`Programmes (${detailProgrammes.length})`} />
-              <Tab label={`Projects (${detailProjects.length})`} />
-              <Tab label="Financials" />
-            </Tabs>
-
-            {/* Tab Content */}
-            <Box sx={{ flex: 1, overflow: 'auto', px: 3, py: 2 }}>
-              {/* Summary Tab */}
-              <TabPanel value={detailTab} index={0}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                  {/* RAG + Status */}
-                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                    <StatusChip status={selectedPortfolio.pm_ragstatus} type="rag" size="medium" />
+            {/* Summary Tab */}
+            <TabPanel value={detailTab} index={0} pt={0}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <StatusChip status={selectedPortfolio.pm_ragstatus} type="rag" size="medium" />
+                  <Chip
+                    label={STATUS_LABELS[selectedPortfolio.pm_portfoliostatus?.toString() ?? ''] ?? 'Unknown'}
+                    size="small"
+                    variant="outlined"
+                    color={selectedPortfolio.pm_portfoliostatus === 0 || selectedPortfolio.pm_portfoliostatus === '0' ? 'success' : 'default'}
+                    sx={{ fontWeight: 600, borderRadius: 8 }}
+                  />
+                  {selectedPortfolio.pm_prioritylevel !== undefined && (
                     <Chip
-                      label={STATUS_LABELS[selectedPortfolio.pm_portfoliostatus?.toString() ?? ''] ?? 'Unknown'}
+                      label={`Priority: ${selectedPortfolio.pm_prioritylevel}`}
                       size="small"
                       variant="outlined"
-                      color={selectedPortfolio.pm_portfoliostatus === 0 || selectedPortfolio.pm_portfoliostatus === '0' ? 'success' : 'default'}
+                      color="primary"
                       sx={{ fontWeight: 600, borderRadius: 8 }}
                     />
-                    {selectedPortfolio.pm_prioritylevel !== undefined && (
-                      <Chip
-                        label={`Priority: ${selectedPortfolio.pm_prioritylevel}`}
-                        size="small"
-                        variant="outlined"
-                        color="primary"
-                        sx={{ fontWeight: 600, borderRadius: 8 }}
-                      />
-                    )}
-                  </Box>
-
-                  {/* Dates */}
-                  {(selectedPortfolio.pm_startdate || selectedPortfolio.pm_enddate) && (
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <CalendarTodayIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {selectedPortfolio.pm_startdate ? new Date(selectedPortfolio.pm_startdate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not set'}
-                          {' → '}
-                          {selectedPortfolio.pm_enddate ? new Date(selectedPortfolio.pm_enddate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not set'}
-                        </Typography>
-                      </Box>
-                    </Box>
                   )}
-
-                  {/* Description */}
-                  {selectedPortfolio.pm_portfoliodescription ? (
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <DescriptionIcon sx={{ fontSize: 16 }} /> Description
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-                        {selectedPortfolio.pm_portfoliodescription}
-                      </Typography>
-                    </Box>
-                  ) : null}
-
-                  {/* Strategic Objective */}
-                  {selectedPortfolio.pm_strategicobjective ? (
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <LightbulbIcon sx={{ fontSize: 16 }} /> Strategic Objective
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-                        {selectedPortfolio.pm_strategicobjective}
-                      </Typography>
-                    </Box>
-                  ) : null}
-
-                  {/* Quick Metrics */}
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                        {detailProgrammes.length}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">Programmes</Typography>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: 'secondary.main' }}>
-                        {detailProjects.length}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">Projects</Typography>
-                    </Paper>
-                  </Box>
                 </Box>
-              </TabPanel>
 
-              {/* Programmes Tab */}
-              <TabPanel value={detailTab} index={1}>
-                {detailProgrammes.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    {detailProgrammes.map((prog) => (
-                      <Paper key={prog.pm_programmeid} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                              {prog.pm_programmename ?? 'Untitled Programme'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {prog.pm_startdate ? new Date(prog.pm_startdate).toLocaleDateString() : 'No start date'}
-                              {' → '}
-                              {prog.pm_enddate ? new Date(prog.pm_enddate).toLocaleDateString() : 'No end date'}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', gap: 0.75 }}>
-                            <StatusChip status={prog.pm_programmephase} type="prog_phase" size="small" />
-                            <StatusChip status={prog.pm_ragstatus} type="rag" size="small" />
-                          </Box>
-                        </Box>
-                      </Paper>
-                    ))}
-                  </Box>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
-                    No programmes linked to this portfolio.
-                  </Typography>
-                )}
-              </TabPanel>
-
-              {/* Projects Tab */}
-              <TabPanel value={detailTab} index={2}>
-                {detailProjects.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    {detailProjects.map((proj) => (
-                      <Paper key={proj.pm_projectid} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                              {proj.pm_projectname ?? 'Untitled Project'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {proj.pm_projectcode ?? '—'}
-                              {proj.pm_projectmanager ? ` · ${proj.pm_projectmanager}` : ''}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', gap: 0.75 }}>
-                            <StatusChip status={proj.pm_projectphase} type="phase" size="small" />
-                            <StatusChip status={proj.pm_ragstatus} type="rag" size="small" />
-                          </Box>
-                        </Box>
-                      </Paper>
-                    ))}
-                  </Box>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
-                    No projects linked to this portfolio.
-                  </Typography>
-                )}
-              </TabPanel>
-
-              {/* Financials Tab */}
-              <TabPanel value={detailTab} index={3}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                  {/* Budget vs Actual */}
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <MoneyIcon sx={{ fontSize: 18 }} /> Budget Overview
-                    </Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">Approved Budget</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                          {currencyFormatter.format(selectedPortfolio.pm_approvedbudgeteur ?? 0)}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#f59e0b' }}>
-                          {currencyFormatter.format(selectedPortfolio.pm_actualspendeur ?? 0)}
-                        </Typography>
-                      </Box>
+                {(selectedPortfolio.pm_startdate || selectedPortfolio.pm_enddate) && (
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <CalendarTodayIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {selectedPortfolio.pm_startdate ? new Date(selectedPortfolio.pm_startdate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not set'}
+                        {' → '}
+                        {selectedPortfolio.pm_enddate ? new Date(selectedPortfolio.pm_enddate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not set'}
+                      </Typography>
                     </Box>
+                  </Box>
+                )}
 
-                    {/* Budget utilization bar */}
-                    <Box sx={{ mb: 1 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography variant="caption" color="text.secondary">Budget Utilization</Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                          {selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0
-                            ? `${((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100).toFixed(1)}%`
-                            : '0%'}
-                        </Typography>
+                {selectedPortfolio.pm_portfoliodescription ? (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <DescriptionIcon sx={{ fontSize: 16 }} /> Description
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                      {selectedPortfolio.pm_portfoliodescription}
+                    </Typography>
+                  </Box>
+                ) : null}
+
+                {selectedPortfolio.pm_strategicobjective ? (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <LightbulbIcon sx={{ fontSize: 16 }} /> Strategic Objective
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                      {selectedPortfolio.pm_strategicobjective}
+                    </Typography>
+                  </Box>
+                ) : null}
+
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                      {detailProgrammes.length}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">Programmes</Typography>
+                  </Paper>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+                      {detailProjects.length}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">Projects</Typography>
+                  </Paper>
+                </Box>
+              </Box>
+            </TabPanel>
+
+            {/* Programmes Tab */}
+            <TabPanel value={detailTab} index={1} pt={0}>
+              {detailProgrammes.length > 0 ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {detailProgrammes.map((prog) => (
+                    <Paper key={prog.pm_programmeid} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                            {prog.pm_programmename ?? 'Untitled Programme'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {prog.pm_startdate ? new Date(prog.pm_startdate).toLocaleDateString() : 'No start date'}
+                            {' → '}
+                            {prog.pm_enddate ? new Date(prog.pm_enddate).toLocaleDateString() : 'No end date'}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 0.75 }}>
+                          <StatusChip status={prog.pm_programmephase} type="prog_phase" size="small" />
+                          <StatusChip status={prog.pm_ragstatus} type="rag" size="small" />
+                        </Box>
                       </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0
-                          ? Math.min((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100, 100)
-                          : 0}
-                        sx={{
-                          height: 10,
+                    </Paper>
+                  ))}
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
+                  No programmes linked to this portfolio.
+                </Typography>
+              )}
+            </TabPanel>
+
+            {/* Projects Tab */}
+            <TabPanel value={detailTab} index={2} pt={0}>
+              {detailProjects.length > 0 ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {detailProjects.map((proj) => (
+                    <Paper key={proj.pm_projectid} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                            {proj.pm_projectname ?? 'Untitled Project'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {proj.pm_projectcode ?? '—'}
+                            {proj.pm_projectmanager ? ` · ${proj.pm_projectmanager}` : ''}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 0.75 }}>
+                          <StatusChip status={proj.pm_projectphase} type="phase" size="small" />
+                          <StatusChip status={proj.pm_ragstatus} type="rag" size="small" />
+                        </Box>
+                      </Box>
+                    </Paper>
+                  ))}
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
+                  No projects linked to this portfolio.
+                </Typography>
+              )}
+            </TabPanel>
+
+            {/* Financials Tab */}
+            <TabPanel value={detailTab} index={3} pt={0}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <MoneyIcon sx={{ fontSize: 18 }} /> Budget Overview
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Approved Budget</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                        {currencyFormatter.format(selectedPortfolio.pm_approvedbudgeteur ?? 0)}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#f59e0b' }}>
+                        {currencyFormatter.format(selectedPortfolio.pm_actualspendeur ?? 0)}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ mb: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">Budget Utilization</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                        {selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0
+                          ? `${((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100).toFixed(1)}%`
+                          : '0%'}
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0
+                        ? Math.min((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100, 100)
+                        : 0}
+                      sx={{
+                        height: 10,
+                        borderRadius: 5,
+                        bgcolor: isDark ? '#334155' : '#e2e8f0',
+                        '& .MuiLinearProgress-bar': {
                           borderRadius: 5,
-                          bgcolor: isDark ? '#334155' : '#e2e8f0',
-                          '& .MuiLinearProgress-bar': {
-                            borderRadius: 5,
-                            bgcolor: (() => {
-                              const ratio = selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0
-                                ? (selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur
-                                : 0
-                              return ratio > 0.9 ? '#ef4444' : ratio > 0.7 ? '#f59e0b' : '#22c55e'
-                            })(),
-                          },
-                        }}
-                      />
-                    </Box>
-                  </Paper>
+                          bgcolor: (() => {
+                            const ratio = selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0
+                              ? (selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur
+                              : 0
+                            return ratio > 0.9 ? '#ef4444' : ratio > 0.7 ? '#f59e0b' : '#22c55e'
+                          })(),
+                        },
+                      }}
+                    />
+                  </Box>
+                </Paper>
 
-                  {/* Variance */}
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                      Budget Variance
-                    </Typography>
-                    <VarianceDisplay budget={selectedPortfolio.pm_approvedbudgeteur} consumed={selectedPortfolio.pm_actualspendeur} />
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                      {selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0
-                        ? `${((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100).toFixed(1)}% of budget consumed`
-                        : 'No budget data available'}
-                    </Typography>
-                  </Paper>
-                </Box>
-              </TabPanel>
-            </Box>
-          </Box>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                    Budget Variance
+                  </Typography>
+                  <VarianceDisplay budget={selectedPortfolio.pm_approvedbudgeteur} consumed={selectedPortfolio.pm_actualspendeur} />
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                    {selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0
+                      ? `${((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100).toFixed(1)}% of budget consumed`
+                      : 'No budget data available'}
+                  </Typography>
+                </Paper>
+              </Box>
+            </TabPanel>
+          </>
         )}
-      </Drawer>
+      </DetailDrawer>
 
-      {/* ── 4. Create Portfolio Modal ──────────────────────────────────────── */}
+      {/* ── 4. Create Portfolio Modal ───────────────────────────────────── */}
       <Dialog open={showCreateModal} onClose={() => !actionLoading && setShowCreateModal(false)} maxWidth="md" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
           New Portfolio
