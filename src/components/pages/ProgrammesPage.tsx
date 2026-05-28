@@ -17,6 +17,7 @@ import {
   Select,
   MenuItem,
   Grid,
+  Slider,
   Table,
   TableBody,
   TableCell,
@@ -43,6 +44,7 @@ import MoneyIcon from '@mui/icons-material/Money'
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate'
 import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { fetchPortfolioHierarchy, fetchProgrammeDetails, createProgramme } from '../../services/dataverseService'
 import {
   StatusChip,
@@ -83,7 +85,7 @@ export default function ProgrammesPage() {
 
   // ── Data State ─────────────────────────────────────────────────────────────
   const [programmes, setProgrammes] = useState<ProgrammeModel[]>([])
-  const [portfolios, setPortfolios] = useState<{ id: string; name: string }[]>([])
+  const [portfolios, setPortfolios] = useState<{ id: string; name: string; budget: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
@@ -110,6 +112,8 @@ export default function ProgrammesPage() {
 
   // ── Create Modal State ─────────────────────────────────────────────────────
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; name: string }>({ open: false, name: '' })
+
   const [createForm, setCreateForm] = useState({
     pm_programmename: '',
     pm_programmemanager: '',
@@ -124,6 +128,14 @@ export default function ProgrammesPage() {
     pm_portfolioValue: '',
   })
 
+  // Max budget for the slider — derived from the selected portfolio's approved budget
+  const sliderMaxBudget = useMemo(() => {
+    if (!createForm.pm_portfolioValue) return 10_000_000 // default max if no portfolio selected
+    const selected = portfolios.find((p) => p.id === createForm.pm_portfolioValue)
+    if (selected && selected.budget > 0) return selected.budget
+    return 10_000_000
+  }, [createForm.pm_portfolioValue, portfolios])
+
   // ── Data Loading ──────────────────────────────────────────────────────────
   useEffect(() => {
     let mounted = true
@@ -135,7 +147,7 @@ export default function ProgrammesPage() {
           setPortfolios(
             hierarchy.portfolios
               .filter((p) => p.pm_portfolioid && p.pm_portfolioname)
-              .map((p) => ({ id: p.pm_portfolioid!, name: p.pm_portfolioname! }))
+              .map((p) => ({ id: p.pm_portfolioid!, name: p.pm_portfolioname!, budget: p.pm_approvedbudgeteur ?? 0 }))
           )
         }
       } catch {
@@ -259,6 +271,7 @@ export default function ProgrammesPage() {
   // ── Create Programme ───────────────────────────────────────────────────────
   const handleCreateProgramme = async () => {
     if (!createForm.pm_programmename.trim()) return
+    setError(null)
     setActionLoading(true)
     try {
       const payload: any = {
@@ -281,6 +294,8 @@ export default function ProgrammesPage() {
         const hierarchy = await fetchPortfolioHierarchy()
         setProgrammes(hierarchy.programmes)
         setShowCreateModal(false)
+        const programmeName = created.pm_programmename || createForm.pm_programmename
+        setConfirmDialog({ open: true, name: programmeName })
         setCreateForm({
           pm_programmename: '',
           pm_programmemanager: '',
@@ -294,6 +309,8 @@ export default function ProgrammesPage() {
           pm_programmedescription: '',
           pm_portfolioValue: '',
         })
+      } else {
+        setError('Unable to create programme - the API did not return a record.')
       }
     } catch {
       setError('Unable to create programme.')
@@ -1193,15 +1210,68 @@ export default function ProgrammesPage() {
               </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Budget (EUR)"
-                type="number"
-                fullWidth
-                size="small"
-                value={createForm.pm_budgeteur}
-                onChange={(e) => setCreateForm((f) => ({ ...f, pm_budgeteur: Number(e.target.value) }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
-              />
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <MoneyIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                Budget
+                <Typography variant="caption" color="text.secondary" component="span" sx={{ fontWeight: 400 }}>
+                  (max {currencyFormatter.format(sliderMaxBudget)})
+                </Typography>
+              </Typography>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: isDark ? '#1e293b' : '#f8fafc',
+                  borderColor: isDark ? '#334155' : '#e2e8f0',
+                }}
+              >
+                <Box sx={{ textAlign: 'center', mb: 1 }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700,
+                      fontFamily: '"JetBrains Mono", monospace',
+                      color: createForm.pm_budgeteur > 0 ? 'primary.main' : 'text.secondary',
+                    }}
+                  >
+                    {currencyFormatter.format(createForm.pm_budgeteur)}
+                  </Typography>
+                  {createForm.pm_budgeteur > 0 && sliderMaxBudget > 0 && (
+                    <Typography variant="caption" color="text.secondary">
+                      {((createForm.pm_budgeteur / sliderMaxBudget) * 100).toFixed(1)}% of portfolio budget
+                    </Typography>
+                  )}
+                </Box>
+                <Slider
+                  value={createForm.pm_budgeteur}
+                  onChange={(_, value) => setCreateForm((f) => ({ ...f, pm_budgeteur: value as number }))}
+                  min={0}
+                  max={sliderMaxBudget}
+                  step={sliderMaxBudget > 10_000_000 ? 100_000 : 50_000}
+                  sx={{
+                    color: createForm.pm_budgeteur > sliderMaxBudget * 0.9
+                      ? '#ef4444'
+                      : createForm.pm_budgeteur > sliderMaxBudget * 0.75
+                        ? '#f59e0b'
+                        : '#0ea5e9',
+                    '& .MuiSlider-thumb': {
+                      width: 18,
+                      height: 18,
+                      transition: 'box-shadow 0.15s ease',
+                      '&:hover, &.Mui-focusVisible': {
+                        boxShadow: '0 0 0 8px rgba(14, 165, 233, 0.16)',
+                      },
+                    },
+                    '& .MuiSlider-rail': {
+                      opacity: 0.25,
+                    },
+                    '& .MuiSlider-track': {
+                      border: 'none',
+                    },
+                  }}
+                />
+              </Paper>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
@@ -1260,6 +1330,58 @@ export default function ProgrammesPage() {
             sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' } }}
           >
             {actionLoading ? 'Creating...' : 'Create Programme'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── 5. Success Confirmation Dialog ──────────────────────────────── */}
+      <Dialog
+        open={confirmDialog.open}
+        onClose={() => setConfirmDialog({ open: false, name: '' })}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: { borderRadius: 3, overflow: 'visible' },
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -28,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            bgcolor: '#22c55e',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)',
+          }}
+        >
+          <CheckCircleIcon sx={{ fontSize: 32, color: '#ffffff' }} />
+        </Box>
+        <DialogTitle sx={{ textAlign: 'center', pt: 5, fontWeight: 700, fontSize: 20 }}>
+          Programme Created
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', pb: 3 }}>
+          <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+            {confirmDialog.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            The programme has been created successfully. You can now add projects, assign resources, and manage financials.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+          <Button
+            variant="contained"
+            onClick={() => setConfirmDialog({ open: false, name: '' })}
+            sx={{ borderRadius: 2, px: 4, bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' } }}
+          >
+            Got it
           </Button>
         </DialogActions>
       </Dialog>

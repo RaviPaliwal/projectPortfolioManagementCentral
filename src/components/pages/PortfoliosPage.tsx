@@ -36,6 +36,7 @@ import BusinessIcon from '@mui/icons-material/Business'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import PersonIcon from '@mui/icons-material/Person'
 import MoneyIcon from '@mui/icons-material/Money'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { fetchPortfolioHierarchy, createPortfolio } from '../../services/dataverseService'
 import {
   StatusChip,
@@ -100,6 +101,9 @@ export default function PortfoliosPage() {
     pm_portfoliodescription: '',
     pm_strategicobjective: '',
   })
+
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; name: string }>({ open: false, name: '' })
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -256,6 +260,7 @@ export default function PortfoliosPage() {
 
   const handleCreatePortfolio = async () => {
     if (!createForm.pm_portfolioname.trim()) return
+    setError(null)
     setActionLoading(true)
     try {
       const created = await createPortfolio({
@@ -273,6 +278,9 @@ export default function PortfoliosPage() {
         const freshData = await fetchPortfolioHierarchy()
         setHierarchy(freshData)
         setShowCreateModal(false)
+        // Show success confirmation
+        const portfolioName = created.pm_portfolioname || createForm.pm_portfolioname
+        setConfirmDialog({ open: true, name: portfolioName })
         setCreateForm({
           pm_portfolioname: '',
           pm_portfolioowner: '',
@@ -828,6 +836,64 @@ export default function PortfoliosPage() {
             sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' } }}
           >
             {actionLoading ? 'Creating...' : 'Create Portfolio'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── 5. Success Confirmation Dialog ──────────────────────────────── */}
+      <Dialog
+        open={confirmDialog.open}
+        onClose={() => setConfirmDialog({ open: false, name: '' })}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: { borderRadius: 3, overflow: 'visible' },
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -28,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            bgcolor: '#22c55e',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)',
+          }}
+        >
+          <CheckCircleIcon sx={{ fontSize: 32, color: '#fff' }} />
+        </Box>
+        <DialogTitle sx={{ textAlign: 'center', pt: 5, pb: 1, fontWeight: 700, fontSize: 20 }}>
+          Portfolio Created
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', pb: 3 }}>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+            <strong style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>{confirmDialog.name}</strong> has been successfully created.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            You can now link programmes and projects to this portfolio from their respective pages.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3, gap: 1.5 }}>
+          <Button
+            variant="contained"
+            onClick={() => setConfirmDialog({ open: false, name: '' })}
+            sx={{
+              bgcolor: '#0078D4',
+              '&:hover': { bgcolor: '#006cbe' },
+              borderRadius: 2,
+              px: 4,
+              fontWeight: 600,
+            }}
+          >
+            Done
           </Button>
         </DialogActions>
       </Dialog>

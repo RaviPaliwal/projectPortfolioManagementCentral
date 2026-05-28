@@ -514,16 +514,41 @@ export async function convertInitiativeToProject(initiative: InitiativeModel): P
 }
 
 export async function createProgramme(payload: Partial<ProgrammeModel>): Promise<ProgrammeModel | null> {
-  const defaults = {
-    ownerid: '00000000-0000-0000-0000-000000000000',
-    owneridtype: 'systemuser',
-    statecode: 0 as const,
-    statuscode: 1 as const,
+  // Strip undefined values — Dataverse API rejects fields with null/undefined
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null) {
+      cleanPayload[key] = value
+    }
   }
-  const result = await Pm_programmesService.create({ ...defaults, ...payload } as any)
-  try { console.debug('[dataverseService] createProgramme payload/result:', payload, result) } catch (e) {}
-  const item = unwrapSingle<Pm_programmes>(result)
-  return item ? mapProgramme(item) : null
+  // Do NOT set ownerid/owneridtype explicitly — let the Power Apps client
+  // auto-assign the current user to avoid 'invalid owner' errors.
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  try {
+    const result = await Pm_programmesService.create({ ...defaults, ...cleanPayload } as any)
+    try { console.debug('[dataverseService] createProgramme payload/result:', cleanPayload, result) } catch (e) {}
+    const item = unwrapSingle<Pm_programmes>(result)
+    if (item) {
+      return mapProgramme(item)
+    }
+    // unwrapSingle returned null — log the raw response to aid debugging
+    try {
+      console.warn('[dataverseService] createProgramme: unwrapSingle returned null. Raw result:', JSON.stringify(result, null, 2))
+    } catch (e) {
+      console.warn('[dataverseService] createProgramme: unwrapSingle returned null. Raw result (non-serializable):', result)
+    }
+    return null
+  } catch (err: any) {
+    try {
+      console.error('[dataverseService] createProgramme: API call failed:', err?.message || err, '| payload:', JSON.stringify(cleanPayload))
+    } catch (e) {
+      console.error('[dataverseService] createProgramme: API call failed (unable to serialize):', err)
+    }
+    throw err // re-throw so the caller can handle it
+  }
 }
 
 export interface ProgrammeDetail {
@@ -597,17 +622,42 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
 }
 
 export async function createPortfolio(payload: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
-  // Provide sensible defaults for required owner fields
-  const defaults = {
-    ownerid: '00000000-0000-0000-0000-000000000000',
-    owneridtype: 'systemuser',
-    statecode: 0 as const,
-    statuscode: 1 as const,
+  // Strip undefined values — Dataverse API rejects fields with null/undefined
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null) {
+      cleanPayload[key] = value
+    }
   }
-  const result = await Pm_portfoliosService.create({ ...defaults, ...payload } as any)
-  try { console.debug('[dataverseService] createPortfolio payload/result:', payload, result) } catch (e) {}
-  const item = unwrapSingle<Pm_portfolios>(result)
-  return item ? mapPortfolio(item) : null
+  // Provide sensible defaults — do NOT set ownerid/owneridtype explicitly;
+  // letting the Power Apps client auto-assign the current user avoids
+  // 'invalid owner' errors that occur with a zero-GUID.
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  try {
+    const result = await Pm_portfoliosService.create({ ...defaults, ...cleanPayload } as any)
+    try { console.debug('[dataverseService] createPortfolio payload/result:', cleanPayload, result) } catch (e) {}
+    const item = unwrapSingle<Pm_portfolios>(result)
+    if (item) {
+      return mapPortfolio(item)
+    }
+    // unwrapSingle returned null — log the raw response to aid debugging
+    try {
+      console.warn('[dataverseService] createPortfolio: unwrapSingle returned null. Raw result:', JSON.stringify(result, null, 2))
+    } catch (e) {
+      console.warn('[dataverseService] createPortfolio: unwrapSingle returned null. Raw result (non-serializable):', result)
+    }
+    return null
+  } catch (err: any) {
+    try {
+      console.error('[dataverseService] createPortfolio: API call failed:', err?.message || err, '| payload:', JSON.stringify(cleanPayload))
+    } catch (e) {
+      console.error('[dataverseService] createPortfolio: API call failed (unable to serialize):', err)
+    }
+    throw err // re-throw so the caller can handle it
+  }
 }
 
 export async function createProject(payload: Partial<ProjectModel>): Promise<ProjectModel | null> {
