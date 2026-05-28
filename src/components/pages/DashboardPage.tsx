@@ -25,7 +25,7 @@ import {
   fetchPortfolioHierarchy,
   fetchPendingApprovalRequests,
   updateInitiativeStatus,
-  projectPhaseLabel,
+  // projectPhaseLabel,
 } from '../../services/dataverseService'
 import { StatusChip, DashboardCharts } from '../common'
 import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel } from '../../models/dataverse'
@@ -222,7 +222,7 @@ export default function DashboardPage() {
                         </Typography>
                         <StatusChip status={project.pm_ragstatus} type="rag" />
                       </Box>
-                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                         {project.pm_projectcode ?? '—'}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
