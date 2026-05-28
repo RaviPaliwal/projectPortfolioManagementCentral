@@ -321,9 +321,33 @@ export async function fetchMyActiveProjects(): Promise<ProjectModel[]> {
 export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
   const [portfoliosResult, programmesResult, projectsResult] = await Promise.all([
     Pm_portfoliosService.getAll({ select: ['pm_portfolioid', 'pm_portfolioname', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur'], top: 200 }),
-    Pm_programmesService.getAll({ select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_portfolioname'], top: 500 }),
+    // Avoid selecting lookup alias fields on programmes because Dataverse getAll() may
+    // return no rows when alias fields are included. Use the lookup GUID and resolve
+    // the portfolio display name from the portfolios list instead.
+    Pm_programmesService.getAll({ select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate'], top: 500 }),
     Pm_projectsService.getAll({ select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_portfolio_value', '_pm_programme_value', 'pm_projectmanager', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate'], top: 1000 }),
   ])
+
+  const portfolios = unwrapList<Pm_portfolios>(portfoliosResult).map(mapPortfolio)
+  const programmes = unwrapList<Pm_programmes>(programmesResult)
+  const projects = unwrapList<Pm_projects>(projectsResult)
+
+  const portfolioNameById = new Map<string, string>()
+  for (const p of portfolios) {
+    if (p.pm_portfolioid && p.pm_portfolioname) {
+      const portfolioId = normalizeLookupId(p.pm_portfolioid)
+      if (portfolioId) portfolioNameById.set(portfolioId, p.pm_portfolioname)
+    }
+  }
+
+  const mappedProgrammes = programmes.map((programme) => {
+    const mapped = mapProgramme(programme)
+    const portfolioId = normalizeLookupId(programme._pm_portfolio_value)
+    if (!mapped.pm_portfolioname && portfolioId && portfolioNameById.has(portfolioId)) {
+      mapped.pm_portfolioname = portfolioNameById.get(portfolioId)
+    }
+    return mapped
+  })
 
   try {
     console.debug('[dataverseService] fetchPortfolioHierarchy raw results:', { portfoliosResult, programmesResult, projectsResult })
@@ -332,9 +356,9 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
   }
 
   return {
-    portfolios: unwrapList<Pm_portfolios>(portfoliosResult).map(mapPortfolio),
-    programmes: unwrapList<Pm_programmes>(programmesResult).map(mapProgramme),
-    projects: unwrapList<Pm_projects>(projectsResult).map(mapProject),
+    portfolios,
+    programmes: mappedProgrammes,
+    projects: projects.map(mapProject),
   }
 }
 
