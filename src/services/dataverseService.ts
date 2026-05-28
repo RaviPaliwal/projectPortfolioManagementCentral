@@ -5,6 +5,10 @@ import {
   Pm_projectmilestonesService,
   Pm_projectsService,
   Pm_projecttasksService,
+  Pm_resourcesService,
+  Pm_resourceallocationsService,
+  Pm_timesheetsService,
+  Pm_timesheetentriesService,
 } from '../generated'
 import type { Pm_initiatives } from '../generated/models/Pm_initiativesModel'
 import type { Pm_portfolios } from '../generated/models/Pm_portfoliosModel'
@@ -12,6 +16,9 @@ import type { Pm_programmes } from '../generated/models/Pm_programmesModel'
 import type { Pm_projectmilestones } from '../generated/models/Pm_projectmilestonesModel'
 import type { Pm_projects } from '../generated/models/Pm_projectsModel'
 import type { Pm_projecttasks } from '../generated/models/Pm_projecttasksModel'
+import type { Pm_resources } from '../generated/models/Pm_resourcesModel'
+import type { Pm_resourceallocations } from '../generated/models/Pm_resourceallocationsModel'
+import type { Pm_timesheetentries } from '../generated/models/Pm_timesheetentriesModel'
 import type {
   InitiativeModel,
   PortfolioModel,
@@ -136,6 +143,7 @@ export interface DashboardMetrics {
   totalActualSpend: number
   projectsInRed: number
   projectsInAmber: number
+  projectsInGreen: number
   pipelineValue: number
 }
 
@@ -146,7 +154,7 @@ export interface ProjectHierarchy {
 }
 
 export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
-  const [activeProjectResult, redProjectResult, amberProjectResult, portfolioResult, initiativeResult] = await Promise.all([
+  const [activeProjectResult, redProjectResult, amberProjectResult, greenProjectResult, portfolioResult, initiativeResult] = await Promise.all([
     Pm_projectsService.getAll({
       filter: "statecode eq 0",
       select: ['pm_projectname', 'pm_ragstatus'],
@@ -159,6 +167,11 @@ export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
     }),
     Pm_projectsService.getAll({
       filter: "statecode eq 0 and pm_ragstatus eq 0",
+      select: ['pm_projectname', 'pm_ragstatus'],
+      top: 500,
+    }),
+    Pm_projectsService.getAll({
+      filter: "statecode eq 0 and pm_ragstatus eq 1",
       select: ['pm_projectname', 'pm_ragstatus'],
       top: 500,
     }),
@@ -175,6 +188,7 @@ export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
       activeProjectResult,
       redProjectResult,
       amberProjectResult,
+      greenProjectResult,
       portfolioResult,
       initiativeResult,
     })
@@ -185,6 +199,7 @@ export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
   const activeProjects = unwrapList<Pm_projects>(activeProjectResult)
   const redProjects = unwrapList<Pm_projects>(redProjectResult)
   const amberProjects = unwrapList<Pm_projects>(amberProjectResult)
+  const greenProjects = unwrapList<Pm_projects>(greenProjectResult)
   const portfolios = unwrapList<Pm_portfolios>(portfolioResult)
   const initiatives = unwrapList<Pm_initiatives>(initiativeResult)
 
@@ -199,6 +214,7 @@ export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
     totalActualSpend: actualSpend,
     projectsInRed: redProjects.length,
     projectsInAmber: amberProjects.length,
+    projectsInGreen: greenProjects.length,
     pipelineValue,
   }
 }
@@ -493,6 +509,483 @@ export async function createInitiative(payload: Partial<InitiativeModel>): Promi
   const result = await Pm_initiativesService.create(payload as any)
   try { console.debug('[dataverseService] createInitiative payload/result:', payload, result) } catch (e) {}
   return unwrapSingle<Pm_initiatives>(result)
+}
+
+// ── Resource Utilization Charts Data ──────────────────────────────────────
+// 1. Capacity vs. Allocation Heatmap (Stacked Bar)
+export async function fetchCapacityAllocationData(): Promise<
+  { resource: string; capacity: number; allocated: number; percentage: number }[]
+> {
+  const [resourcesResult, allocationsResult] = await Promise.all([
+    Pm_resourcesService.getAll({
+      filter: "statecode eq 0",
+      select: ['pm_resourceid', 'pm_fullname', 'pm_dailyworkcapacity'],
+      top: 500,
+    }),
+    Pm_resourceallocationsService.getAll({
+      filter: "statecode eq 0 and pm_assignmentstatus eq 0",
+      select: ['pm_resourceallocationid', 'pm_resourcename', 'pm_allocatedhours', 'pm_allocationpercentage', 'pm_startdate', 'pm_enddate'],
+      top: 2000,
+    }),
+  ])
+
+  const resources = unwrapList<Pm_resources>(resourcesResult)
+  const allocations = unwrapList<Pm_resourceallocations>(allocationsResult)
+
+  // Build resource lookup by name
+  const resourceMap = new Map<string, number>()
+  for (const r of resources) {
+    if (r.pm_fullname) {
+      resourceMap.set(r.pm_fullname, r.pm_dailyworkcapacity ?? 8)
+    }
+  }
+
+  // Group allocations by resource name (using pm_resourcename from allocation)
+  const allocationMap = new Map<string, number>()
+  for (const a of allocations) {
+    const name = a.pm_resourcename?.trim()
+    if (!name) continue
+    const totalAlloc = a.pm_allocatedhours ?? 0
+    allocationMap.set(name, (allocationMap.get(name) ?? 0) + totalAlloc)
+  }
+
+  // Also allocate for resources that have capacity but no allocations (show as 0)
+  for (const [name] of resourceMap) {
+    if (!allocationMap.has(name)) {
+      allocationMap.set(name, 0)
+    }
+  }
+
+  // Build chart data
+  const result: { resource: string; capacity: number; allocated: number; percentage: number }[] = []
+  for (const [resource, allocated] of allocationMap) {
+    const capacity = resourceMap.get(resource) ?? 8
+    // Assume daily capacity * 20 working days per month as monthly capacity
+    const monthlyCapacity = capacity * 20
+    const percentage = monthlyCapacity > 0 ? Math.round((allocated / monthlyCapacity) * 100) : 0
+    result.push({
+      resource,
+      capacity: monthlyCapacity,
+      allocated,
+      percentage,
+    })
+  }
+
+  // Sort by percentage descending (most overallocated first)
+  result.sort((a, b) => b.percentage - a.percentage)
+  return result.slice(0, 12)
+}
+
+// 2. Planned vs. Actual Effort (Clustered Column by Month)
+export async function fetchPlannedVsActualData(): Promise<
+  { month: string; planned: number; actual: number }[]
+> {
+  const [allocationsResult, entriesResult] = await Promise.all([
+    Pm_resourceallocationsService.getAll({
+      filter: "statecode eq 0 and pm_assignmentstatus eq 0",
+      select: ['pm_resourceallocationid', 'pm_allocatedhours', 'pm_startdate', 'pm_enddate'],
+      top: 2000,
+    }),
+    Pm_timesheetentriesService.getAll({
+      filter: "statecode eq 0",
+      select: ['pm_timesheetentryid', 'pm_hoursworked', 'pm_workdate'],
+      top: 2000,
+    }),
+  ])
+
+  const allocations = unwrapList<Pm_resourceallocations>(allocationsResult)
+  const entries = unwrapList<Pm_timesheetentries>(entriesResult)
+
+  // Group planned by month using YYYY-MM keys
+  const plannedByMonth = new Map<string, number>()
+  for (const a of allocations) {
+    if (!a.pm_startdate) continue
+    const monthKey = a.pm_startdate.substring(0, 7)
+    plannedByMonth.set(monthKey, (plannedByMonth.get(monthKey) ?? 0) + (a.pm_allocatedhours ?? 0))
+  }
+
+  // Group actual by month using YYYY-MM keys
+  const actualByMonth = new Map<string, number>()
+  for (const e of entries) {
+    if (!e.pm_workdate) continue
+    const monthKey = e.pm_workdate.substring(0, 7)
+    actualByMonth.set(monthKey, (actualByMonth.get(monthKey) ?? 0) + (e.pm_hoursworked ?? 0))
+  }
+
+  // Combine all months — sort by YYYY-MM before converting to display labels
+  const allMonths = Array.from(new Set([...plannedByMonth.keys(), ...actualByMonth.keys()])).sort()
+  const result: { month: string; planned: number; actual: number }[] = []
+  for (const yyyymm of allMonths) {
+    const date = new Date(yyyymm + '-01')
+    const monthLabel = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+    result.push({
+      month: monthLabel,
+      planned: plannedByMonth.get(yyyymm) ?? 0,
+      actual: actualByMonth.get(yyyymm) ?? 0,
+    })
+  }
+
+  return result
+}
+
+// 3. Utilization by Project (Donut Chart)
+export async function fetchUtilizationByProjectData(): Promise<
+  { name: string; hours: number }[]
+> {
+  const entriesResult = await Pm_timesheetentriesService.getAll({
+    filter: "statecode eq 0",
+    select: ['pm_timesheetentryid', 'pm_hoursworked', 'pm_projectname'],
+    top: 2000,
+  })
+
+  const entries = unwrapList<Pm_timesheetentries>(entriesResult)
+
+  // Group by project name
+  const projectMap = new Map<string, number>()
+  for (const e of entries) {
+    const project = e.pm_projectname?.trim() || 'Unassigned'
+    projectMap.set(project, (projectMap.get(project) ?? 0) + (e.pm_hoursworked ?? 0))
+  }
+
+  const result: { name: string; hours: number }[] = []
+  for (const [name, hours] of projectMap) {
+    result.push({ name, hours })
+  }
+
+  // Sort descending by hours and take top 8 + "Other"
+  result.sort((a, b) => b.hours - a.hours)
+  if (result.length > 8) {
+    const top = result.slice(0, 8)
+    const other = result.slice(8).reduce((sum, item) => sum + item.hours, 0)
+    if (other > 0) {
+      top.push({ name: 'Other', hours: other })
+    }
+    return top
+  }
+
+  return result
+}
+
+// 4. Department / Role Demand Forecasting (Line/Area Chart)
+export async function fetchDepartmentDemandData(): Promise<
+  { month: string; role: string; hours: number }[]
+> {
+  // Fetch resources to get department/role mapping
+  const [resourcesResult, allocationsResult] = await Promise.all([
+    Pm_resourcesService.getAll({
+      filter: "statecode eq 0",
+      select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole'],
+      top: 500,
+    }),
+    Pm_resourceallocationsService.getAll({
+      filter: "statecode eq 0 and pm_assignmentstatus eq 0",
+      select: ['pm_resourceallocationid', 'pm_resourcename', 'pm_allocatedhours', 'pm_assignmentrole', 'pm_startdate', 'pm_enddate'],
+      top: 2000,
+    }),
+  ])
+
+  const resources = unwrapList<Pm_resources>(resourcesResult)
+  const allocations = unwrapList<Pm_resourceallocations>(allocationsResult)
+
+  // Build resource-to-department/role lookup by name
+  const resourceDeptMap = new Map<string, string>()
+  const resourceRoleMap = new Map<string, string>()
+  for (const r of resources) {
+    if (r.pm_fullname) {
+      const name = r.pm_fullname.trim()
+      resourceDeptMap.set(name, r.pm_departmentname?.trim() || 'Unspecified')
+      resourceRoleMap.set(name, r.pm_primaryrole?.trim() || 'Unspecified')
+    }
+  }
+
+  // Group allocations by month and department (using YYYY-MM keys for sorting)
+  const demandByMonth = new Map<string, Map<string, number>>()
+  for (const a of allocations) {
+    if (!a.pm_startdate) continue
+    const monthKey = a.pm_startdate.substring(0, 7)
+
+    // Try to find department by matching resource name
+    const resourceName = a.pm_resourcename?.trim()
+    let dept: string
+    if (resourceName && resourceDeptMap.has(resourceName)) {
+      dept = resourceDeptMap.get(resourceName)!
+    } else if (a.pm_assignmentrole?.trim()) {
+      // Fallback: use assignment role if resource not found in resource table
+      dept = a.pm_assignmentrole.trim()
+    } else {
+      dept = 'Unspecified'
+    }
+
+    if (!demandByMonth.has(monthKey)) {
+      demandByMonth.set(monthKey, new Map())
+    }
+    const deptMap = demandByMonth.get(monthKey)!
+    deptMap.set(dept, (deptMap.get(dept) ?? 0) + (a.pm_allocatedhours ?? 0))
+  }
+
+  // Flatten to array sorted by YYYY-MM, then convert to display labels
+  const sortedMonths = Array.from(demandByMonth.keys()).sort()
+  const result: { month: string; role: string; hours: number }[] = []
+  for (const yyyymm of sortedMonths) {
+    const date = new Date(yyyymm + '-01')
+    const monthLabel = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+    const deptMap = demandByMonth.get(yyyymm)!
+    for (const [role, hours] of deptMap) {
+      result.push({ month: monthLabel, role, hours })
+    }
+  }
+
+  return result
+}
+
+// ── Generic Debug Query ───────────────────────────────────────────────────
+// Map of table name → service reference for debug queries
+const tableServices: Record<string, { getAll: (options?: any) => Promise<any> }> = {
+  pm_portfolios: Pm_portfoliosService,
+  pm_programmes: Pm_programmesService,
+  pm_projects: Pm_projectsService,
+  pm_initiatives: Pm_initiativesService,
+  pm_projecttasks: Pm_projecttasksService,
+  pm_projectmilestones: Pm_projectmilestonesService,
+  pm_resources: Pm_resourcesService,
+  pm_resourceallocations: Pm_resourceallocationsService,
+  pm_timesheets: Pm_timesheetsService,
+  pm_timesheetentries: Pm_timesheetentriesService,
+}
+
+export interface DebugQueryOptions {
+  table: string
+  filter?: string
+  top?: number
+  select?: string[]
+  orderBy?: string[]
+}
+
+export async function debugQueryTable(options: DebugQueryOptions): Promise<{
+  columns: string[]
+  rows: Record<string, any>[]
+  rawResponse: any
+  count: number
+  error?: string
+}> {
+  const service = tableServices[options.table]
+  if (!service) {
+    return { columns: [], rows: [], rawResponse: null, count: 0, error: `Unknown table: ${options.table}` }
+  }
+
+  try {
+    const result = await service.getAll({
+      filter: options.filter || undefined,
+      top: options.top || 100,
+      select: options.select?.length ? options.select : undefined,
+      orderBy: options.orderBy?.length ? options.orderBy : undefined,
+    })
+
+    const rows: Record<string, any>[] = unwrapList<any>(result)
+    const columns = rows.length > 0 ? Object.keys(rows[0]) : []
+
+    return { columns, rows, rawResponse: result, count: rows.length }
+  } catch (err: any) {
+    return {
+      columns: [],
+      rows: [],
+      rawResponse: null,
+      count: 0,
+      error: err?.message || String(err),
+    }
+  }
+}
+
+// Return all available table names for debug page
+export function getAvailableTables(): string[] {
+  return Object.keys(tableServices)
+}
+
+// ── Seed Data for Charts ──────────────────────────────────────────────────────
+interface SeedResult {
+  table: string
+  created: number
+  error?: string
+}
+
+/**
+ * Creates sample data across pm_resources, pm_resourceallocations, pm_timesheets,
+ * and pm_timesheetentries so the resource utilization charts have data to display.
+ */
+export async function seedAllResourceData(): Promise<SeedResult[]> {
+  const results: SeedResult[] = []
+
+  // ── 1. Create Resources ─────────────────────────────────────────────────────
+  const resourceSeedData = [
+    { pm_fullname: 'Alice Johnson', pm_departmentname: 'Engineering', pm_primaryrole: 'Senior Developer', pm_dailyworkcapacity: 8, pm_positiontitle: 'Senior Developer', pm_contactemail: 'alice@ppmcentral.com' },
+    { pm_fullname: 'Bob Smith', pm_departmentname: 'Engineering', pm_primaryrole: 'Developer', pm_dailyworkcapacity: 8, pm_positiontitle: 'Developer', pm_contactemail: 'bob@ppmcentral.com' },
+    { pm_fullname: 'Carol Williams', pm_departmentname: 'Design', pm_primaryrole: 'UI Designer', pm_dailyworkcapacity: 8, pm_positiontitle: 'UI/UX Designer', pm_contactemail: 'carol@ppmcentral.com' },
+    { pm_fullname: 'David Brown', pm_departmentname: 'QA', pm_primaryrole: 'Test Lead', pm_dailyworkcapacity: 8, pm_positiontitle: 'QA Lead', pm_contactemail: 'david@ppmcentral.com' },
+    { pm_fullname: 'Eva Davis', pm_departmentname: 'Product', pm_primaryrole: 'Product Manager', pm_dailyworkcapacity: 8, pm_positiontitle: 'Product Manager', pm_contactemail: 'eva@ppmcentral.com' },
+    { pm_fullname: 'Frank Miller', pm_departmentname: 'Engineering', pm_primaryrole: 'DevOps Engineer', pm_dailyworkcapacity: 8, pm_positiontitle: 'DevOps Engineer', pm_contactemail: 'frank@ppmcentral.com' },
+  ]
+
+  let resourceCount = 0
+  for (const res of resourceSeedData) {
+    try {
+      const r = await Pm_resourcesService.create(res as any)
+      const created = unwrapSingle<any>(r)
+      if (created && created.pm_resourceid) resourceCount++
+    } catch (err: any) {
+      results.push({ table: 'pm_resources', created: resourceCount, error: err?.message || String(err) })
+      return results // stop on first failure
+    }
+  }
+  results.push({ table: 'pm_resources', created: resourceCount })
+
+  // ── 2. Fetch created resources to get name → ID mapping ─────────────────────
+  const resourcesResult = await Pm_resourcesService.getAll({
+    filter: "statecode eq 0",
+    select: ['pm_resourceid', 'pm_fullname'],
+    top: 500,
+  })
+  const fetchedResources = unwrapList<any>(resourcesResult)
+  const resourceNameToId = new Map<string, string>()
+  for (const r of fetchedResources) {
+    if (r.pm_fullname) resourceNameToId.set(r.pm_fullname.trim(), r.pm_resourceid)
+  }
+
+  // ── 3. Create Resource Allocations ──────────────────────────────────────────
+  // Spread allocations across 6 months: Nov '25 – Apr '26
+  const months = ['2025-11', '2025-12', '2026-01', '2026-02', '2026-03', '2026-04']
+  const allocationTemplates = [
+    { name: 'Alice Johnson', dept: 'Engineering', role: 'Backend Architecture' },
+    { name: 'Alice Johnson', dept: 'Engineering', role: 'Code Review' },
+    { name: 'Bob Smith', dept: 'Engineering', role: 'Frontend Development' },
+    { name: 'Bob Smith', dept: 'Engineering', role: 'API Integration' },
+    { name: 'Carol Williams', dept: 'Design', role: 'UI Design' },
+    { name: 'Carol Williams', dept: 'Design', role: 'Prototyping' },
+    { name: 'David Brown', dept: 'QA', role: 'Test Automation' },
+    { name: 'David Brown', dept: 'QA', role: 'Manual Testing' },
+    { name: 'Eva Davis', dept: 'Product', role: 'Requirements' },
+    { name: 'Eva Davis', dept: 'Product', role: 'Stakeholder Mgmt' },
+    { name: 'Frank Miller', dept: 'Engineering', role: 'Infrastructure' },
+    { name: 'Frank Miller', dept: 'Engineering', role: 'CI/CD Pipeline' },
+  ]
+
+  let allocCount = 0
+  // For each month, create allocations with varying hours
+  for (const [mi, month] of months.entries()) {
+    const startDate = month + '-01'
+    const end = new Date(month + '-01')
+    end.setMonth(end.getMonth() + 1)
+    end.setDate(0) // last day of month
+    const endDate = end.toISOString().split('T')[0]
+
+    // Each month assign a subset of allocation templates
+    const activeTemplates = allocationTemplates.filter((_, i) => (i + mi) % 3 !== 2) // rotate which ones are active
+    for (const tpl of activeTemplates) {
+      const rid = resourceNameToId.get(tpl.name)
+      // Vary hours by month: more hours earlier months, fewer later
+      const baseHours = 40 - mi * 4 + Math.floor(Math.random() * 15)
+      const hours = Math.max(10, Math.min(80, baseHours))
+
+      try {
+        const a = await Pm_resourceallocationsService.create({
+          pm_resourcename: tpl.name,
+          pm_resourceid: tpl.name,
+          pm_assignmentrole: tpl.role,
+          pm_allocatedhours: hours,
+          pm_allocationpercentage: Math.min(100, Math.round((hours / 160) * 100)),
+          pm_assignmentstatus: 0, // Active
+          pm_startdate: startDate,
+          pm_enddate: endDate,
+          pm_resourceid: tpl.name,
+        } as any)
+        const created = unwrapSingle<any>(a)
+        if (created && created.pm_resourceallocationid) allocCount++
+      } catch (err: any) {
+        results.push({ table: 'pm_resourceallocations', created: allocCount, error: err?.message || String(err) })
+        return results
+      }
+    }
+  }
+  results.push({ table: 'pm_resourceallocations', created: allocCount })
+
+  // ── 4. Create Timesheets ───────────────────────────────────────────────────
+  const timesheetResources = [
+    { name: 'Alice Johnson', period: '2026-01', status: 0 }, // Approved
+    { name: 'Bob Smith', period: '2026-01', status: 1 }, // Submitted
+    { name: 'Carol Williams', period: '2026-02', status: 0 }, // Approved
+  ]
+
+  const timesheetIds: string[] = []
+  for (const ts of timesheetResources) {
+    const startDate = ts.period + '-01'
+    const end = new Date(ts.period + '-01')
+    end.setMonth(end.getMonth() + 1)
+    end.setDate(0)
+    const endDate = end.toISOString().split('T')[0]
+
+    try {
+      const t = await Pm_timesheetsService.create({
+        pm_timesheetname: `${ts.name} - ${ts.period}`,
+        pm_ownername: ts.name,
+        pm_reportingperiod: ts.period,
+        pm_periodstartdate: startDate,
+        pm_periodenddate: endDate,
+        pm_timesheetstatus: ts.status,
+        pm_totalhours: 0,
+      } as any)
+      const created = unwrapSingle<any>(t)
+      if (created && created.pm_timesheetid) {
+        timesheetIds.push(created.pm_timesheetid)
+      }
+    } catch (err: any) {
+      results.push({ table: 'pm_timesheets', created: timesheetIds.length, error: err?.message || String(err) })
+      return results
+    }
+  }
+  results.push({ table: 'pm_timesheets', created: timesheetIds.length })
+
+  // ── 5. Create Timesheet Entries (actual hours logged) ───────────────────────
+  const projectNames = [
+    'ERP Implementation',
+    'Mobile App Redesign',
+    'Cloud Migration',
+    'Data Analytics Platform',
+    'Customer Portal',
+    'Security Audit',
+  ]
+
+  const entryResourceNames = ['Alice Johnson', 'Bob Smith', 'Carol Williams', 'David Brown', 'Eva Davis', 'Frank Miller']
+  let entryCount = 0
+
+  // Create entries across multiple months
+  for (const [mi, month] of months.entries()) {
+    const numEntries = 3 + Math.floor(Math.random() * 4) // 3-6 entries per month
+    for (let ei = 0; ei < numEntries; ei++) {
+      const resourceName = entryResourceNames[mi % entryResourceNames.length]
+      const projectName = projectNames[(mi + ei) % projectNames.length]
+      const day = 1 + Math.floor(Math.random() * 25)
+      const workDate = `${month}-${String(day).padStart(2, '0')}`
+      const hours = 4 + Math.floor(Math.random() * 12) // 4-16 hours
+      const timesheetId = timesheetIds.length > 0 ? timesheetIds[mi % timesheetIds.length] : undefined
+
+      try {
+        const e = await Pm_timesheetentriesService.create({
+          pm_hoursworked: hours,
+          pm_workdate: workDate,
+          pm_projectname: projectName,
+          pm_ischargeable: Math.random() > 0.2, // 80% chargeable
+          pm_worknotes: `Work on ${projectName} - ${workDate}`,
+        } as any)
+        const created = unwrapSingle<any>(e)
+        if (created && created.pm_timesheetentryid) entryCount++
+      } catch (err: any) {
+        results.push({ table: 'pm_timesheetentries', created: entryCount, error: err?.message || String(err) })
+        return results
+      }
+    }
+  }
+  results.push({ table: 'pm_timesheetentries', created: entryCount })
+
+  return results
 }
 
 export { ragLabel, projectPhaseLabel, programmePhaseLabel }

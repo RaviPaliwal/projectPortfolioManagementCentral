@@ -20,8 +20,9 @@ import TimelineIcon from '@mui/icons-material/Timeline'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
+import BugReportIcon from '@mui/icons-material/BugReport'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'debug'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -29,6 +30,7 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'programmes', label: 'Programmes', icon: <FolderOpenIcon /> },
   { key: 'projects', label: 'Projects', icon: <TaskIcon /> },
   { key: 'pipeline', label: 'Pipeline', icon: <TimelineIcon /> },
+  { key: 'debug', label: 'Debug', icon: <BugReportIcon /> },
 ]
 
 interface PrimaryShellProps {

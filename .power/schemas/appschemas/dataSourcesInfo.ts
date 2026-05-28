@@ -46,5 +46,33 @@ export const dataSourcesInfo = {
     "primaryKey": "pm_projecttaskid",
     "dataSourceType": "Dataverse",
     "apis": {}
+  },
+  "pm_resources": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_resourceid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_resourceallocations": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_resourceallocationid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_timesheets": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_timesheetid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_timesheetentries": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_timesheetentryid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
   }
 };

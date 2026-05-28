@@ -24,8 +24,11 @@ import {
   fetchMyActiveProjects,
   fetchPortfolioHierarchy,
   fetchPendingApprovalRequests,
+  fetchCapacityAllocationData,
+  fetchPlannedVsActualData,
+  fetchUtilizationByProjectData,
+  fetchDepartmentDemandData,
   updateInitiativeStatus,
-  // projectPhaseLabel,
 } from '../../services/dataverseService'
 import { StatusChip, DashboardCharts } from '../common'
 import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel } from '../../models/dataverse'
@@ -41,6 +44,7 @@ export default function DashboardPage() {
     totalActualSpend: 0,
     projectsInRed: 0,
     projectsInAmber: 0,
+    projectsInGreen: 0,
     pipelineValue: 0,
   })
   const [projects, setProjects] = useState<ProjectModel[]>([])
@@ -49,6 +53,11 @@ export default function DashboardPage() {
   const [programmeSnapshot, setProgrammeSnapshot] = useState<ProgrammeModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Old resourceUtilizationData state removed — replaced by 4 new chart data states below
+  const [capacityAllocationData, setCapacityAllocationData] = useState<{ resource: string; capacity: number; allocated: number; percentage: number }[]>([])
+  const [plannedVsActualData, setPlannedVsActualData] = useState<{ month: string; planned: number; actual: number }[]>([])
+  const [utilizationByProjectData, setUtilizationByProjectData] = useState<{ name: string; hours: number }[]>([])
+  const [departmentDemandData, setDepartmentDemandData] = useState<{ month: string; role: string; hours: number }[]>([])
   const [showAllProjects, setShowAllProjects] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
 
@@ -61,16 +70,24 @@ export default function DashboardPage() {
     let isMounted = true
     async function load() {
       try {
-        const [dashboard, activeProjects, pendingApprovals, hierarchy] = await Promise.all([
+        const [dashboard, activeProjects, pendingApprovals, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand] = await Promise.all([
           fetchDashboardMetrics(),
           fetchMyActiveProjects(),
           fetchPendingApprovalRequests(),
           fetchPortfolioHierarchy(),
+          fetchCapacityAllocationData(),
+          fetchPlannedVsActualData(),
+          fetchUtilizationByProjectData(),
+          fetchDepartmentDemandData(),
         ])
         if (!isMounted) return
         setMetrics(dashboard)
         setProjects(activeProjects.slice(0, 6))
         setApprovals(pendingApprovals)
+        setCapacityAllocationData(capacityAlloc)
+        setPlannedVsActualData(plannedActual)
+        setUtilizationByProjectData(utilByProject)
+        setDepartmentDemandData(deptDemand)
         setPortfolioSnapshot(hierarchy.portfolios.slice().sort(sortByRag).slice(0, 4))
         setProgrammeSnapshot(hierarchy.programmes.slice().sort(sortByRag).slice(0, 4))
       } catch {
@@ -96,16 +113,11 @@ export default function DashboardPage() {
     }
   }
 
-  // Build chart data from real metrics
+  // Build chart data from real metrics — RAG status distribution
   const projectStatusData = useMemo(() => [
-    { name: 'Active', value: metrics.totalActiveProjects },
-    { name: 'Red', value: metrics.projectsInRed },
+    { name: 'Green', value: metrics.projectsInGreen },
     { name: 'Amber', value: metrics.projectsInAmber },
-  ], [metrics])
-
-  const resourceUtilizationData = useMemo(() => [
-    { team: 'Projects', utilized: metrics.totalActiveProjects, available: Math.max(0, 50 - metrics.totalActiveProjects) },
-    { team: 'Portfolios', utilized: metrics.totalActivePortfolios, available: Math.max(0, 20 - metrics.totalActivePortfolios) },
+    { name: 'Red', value: metrics.projectsInRed },
   ], [metrics])
 
   const kpiCards = [
@@ -158,12 +170,7 @@ export default function DashboardPage() {
                     {kpi.icon}
                   </Box>
                 </Box>
-                {idx === 3 && !loading && (
-                  <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-                    <StatusChip status="2" type="rag" size="small" />
-                    <StatusChip status="0" type="rag" size="small" />
-                  </Box>
-                )}
+
               </CardContent>
             </Card>
           </Grid>
@@ -174,7 +181,10 @@ export default function DashboardPage() {
       <Box sx={{ mb: 3 }}>
         <DashboardCharts
           projectStatusData={projectStatusData}
-          resourceUtilizationData={resourceUtilizationData}
+          capacityAllocationData={capacityAllocationData}
+          plannedVsActualData={plannedVsActualData}
+          utilizationByProjectData={utilizationByProjectData}
+          departmentDemandData={departmentDemandData}
         />
       </Box>
 

@@ -48,6 +48,7 @@ import PortfoliosPage from './components/pages/PortfoliosPage'
 import ProgrammesPage from './components/pages/ProgrammesPage'
 import ProjectsPage from './components/pages/ProjectsPage'
 import PipelinePage from './components/pages/PipelinePage'
+import DebugDataPage from './components/pages/DebugDataPage'
 
 const pageMap: Record<TabKey, ReactNode> = {
   dashboard: <DashboardPage />,
@@ -55,6 +56,7 @@ const pageMap: Record<TabKey, ReactNode> = {
   programmes: <ProgrammesPage />,
   projects: <ProjectsPage />,
   pipeline: <PipelinePage />,
+  debug: <DebugDataPage />,
 }
 
 const palette = {

@@ -42,6 +42,26 @@
           "entitySetName": "pm_projectmilestones",
           "logicalName": "pm_projectmilestone",
           "isHidden": false
+        },
+        "resource": {
+          "entitySetName": "pm_resources",
+          "logicalName": "pm_resource",
+          "isHidden": false
+        },
+        "resourceallocation": {
+          "entitySetName": "pm_resourceallocations",
+          "logicalName": "pm_resourceallocation",
+          "isHidden": false
+        },
+        "timesheet": {
+          "entitySetName": "pm_timesheets",
+          "logicalName": "pm_timesheet",
+          "isHidden": false
+        },
+        "timesheetentry": {
+          "entitySetName": "pm_timesheetentries",
+          "logicalName": "pm_timesheetentry",
+          "isHidden": false
         }
       },
       "environmentVariableName": ""
