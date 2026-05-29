@@ -55,6 +55,7 @@ import {
   deleteRisk,
   fetchMitigationActions,
 } from '../../services/dataverseService'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import type { RiskModel, RiskMitigationActionModel } from '../../models/dataverse'
 import { fontSizes } from '../../styles'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar } from '../common'
@@ -361,28 +362,96 @@ export default function RisksPage() {
     ]
   }, [risks])
 
-  // Heatmap data for Nivo
+  // ── Heatmap & Chart Data ──────────────────────────────────────────────────
   const heatmapData = useMemo(() => {
-    const grid: Record<string, number> = {}
+    const probOrder = ['Likely (4)', 'Possible (3)', 'Unlikely (2)', 'Rare (1)']
+    const impactOrder = ['Mod (1)', 'Maj (2)', 'Cat (3)']
+
+    const grid: Record<string, { count: number; riskTitles: string[] }> = {}
     for (const r of risks) {
       const p = probNumeric(r.pm_inherentprobability)
       const i = impactNumeric(r.pm_inherentimpact)
       if (p > 0 && i > 0) {
         const key = `${p}x${i}`
-        grid[key] = (grid[key] ?? 0) + 1
+        if (!grid[key]) grid[key] = { count: 0, riskTitles: [] }
+        grid[key].count++
+        if (r.pm_risktitle) grid[key].riskTitles.push(r.pm_risktitle)
       }
     }
-    const y = ['Likely (4)', 'Possible (3)', 'Unlikely (2)', 'Rare (1)']
-    const x = ['Mod (1)', 'Maj (2)', 'Cat (3)']
-    const z = y.map((row) => {
+
+    const z = probOrder.map((row) => {
       const prob = Number(row.match(/\((\d+)\)/)?.[1] ?? 0)
-      return x.map((col) => {
+      return impactOrder.map((col) => {
         const impact = Number(col.match(/\((\d+)\)/)?.[1] ?? 0)
-        return grid[`${prob}x${impact}`] ?? 0
+        return grid[`${prob}x${impact}`]?.count ?? 0
       })
     })
-    return { x, y, z }
+
+    const text = probOrder.map((row) => {
+      const prob = Number(row.match(/\((\d+)\)/)?.[1] ?? 0)
+      return impactOrder.map((col) => {
+        const impact = Number(col.match(/\((\d+)\)/)?.[1] ?? 0)
+        const cell = grid[`${prob}x${impact}`]
+        if (!cell || cell.count === 0) return ''
+        const score = prob * impact
+        const severity = getScoreLabel(score)
+        return `${cell.count}\n${severity}`
+      })
+    })
+
+    const hovertext = probOrder.map((row) => {
+      const prob = Number(row.match(/\((\d+)\)/)?.[1] ?? 0)
+      return impactOrder.map((col) => {
+        const impact = Number(col.match(/\((\d+)\)/)?.[1] ?? 0)
+        const cell = grid[`${prob}x${impact}`]
+        const score = prob * impact
+        const severity = getScoreLabel(score)
+        let h = `<b>Score: ${score} — ${severity}</b><br>`
+        h += `Probability: ${row.split('(')[0].trim()}<br>`
+        h += `Impact: ${col.split('(')[0].trim()}<br>`
+        h += `<b>Risk Count: ${cell?.count ?? 0}</b><br>`
+        if (cell?.riskTitles.length) {
+          h += `<br><b>Risks in this cell:</b><br>`
+          h += cell.riskTitles.slice(0, 3).map(t => `• ${t}`).join('<br>')
+          if (cell.riskTitles.length > 3) h += `<br>… +${cell.riskTitles.length - 3} more`
+        }
+        return h
+      })
+    })
+
+    return { x: impactOrder, y: probOrder, z, text, hovertext }
   }, [risks])
+
+  // Risk distribution by category for recharts
+  const categoryChartData = useMemo(() => {
+    const catCount: Record<string, number> = {}
+    for (const r of risks) {
+      const cat = RISK_CATEGORY_LABELS[String(r.pm_riskcategory ?? '')] ?? 'Unknown'
+      catCount[cat] = (catCount[cat] ?? 0) + 1
+    }
+    return Object.entries(catCount)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+  }, [risks])
+
+  // Risk severity distribution
+  const severityChartData = useMemo(() => {
+    const sev: Record<string, number> = { High: 0, Medium: 0, Low: 0, Unscored: 0 }
+    for (const r of risks) {
+      const score = riskScore(r.pm_inherentprobability, r.pm_inherentimpact)
+      const label = getScoreLabel(score)
+      sev[label] = (sev[label] ?? 0) + 1
+    }
+    return Object.entries(sev)
+      .map(([name, value]) => ({ name, value }))
+  }, [risks])
+
+  const SEVERITY_COLORS: Record<string, string> = {
+    'High': '#ef4444',
+    'Medium': '#f59e0b',
+    'Low': '#22c55e',
+    'Unscored': '#94a3b8',
+  }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSort = (field: SortField) => {
@@ -518,14 +587,17 @@ export default function RisksPage() {
 
       <KpiCardRow items={kpis} />
 
-      {/* ── Heatmap Section ─────────────────────────────────────────────── */}
-      <Paper sx={{ p: 3, mb: 3, borderRadius: 2, border: `1px solid ${theme.palette.divider}` }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-          Inherent Risk Heatmap
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Probability × Impact matrix showing risk distribution. Cells are color-coded by severity and intensity shows risk count.
-        </Typography>
+      {/* ── Heatmap & Charts Section ──────────────────────────────────── */}
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        {/* Main Heatmap */}
+        <Grid size={{ xs: 12, md: 8 }}>
+          <Paper sx={{ p: 3, borderRadius: 2, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              Inherent Risk Heatmap
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Probability × Impact matrix showing risk distribution. Cells are color-coded by severity; intensity reflects risk count.
+            </Typography>
             <Box sx={{ height: 340 }}>
               <Plot
                 data={[
@@ -533,6 +605,7 @@ export default function RisksPage() {
                     z: heatmapData.z,
                     x: heatmapData.x,
                     y: heatmapData.y,
+                    hovertemplate: '%{y} × %{x}<br><b>Risks: %{z}</b><extra></extra>',
                     type: 'heatmap',
                     colorscale: [
                       [0, '#dbeafe'],
@@ -540,7 +613,6 @@ export default function RisksPage() {
                       [0.66, '#f59e0b'],
                       [1, '#ef4444'],
                     ],
-                    hovertemplate: '%{y} × %{x}<br>Risks: %{z}<extra></extra>',
                     showscale: true,
                     colorbar: {
                       title: { text: 'Risk count' },
@@ -548,7 +620,7 @@ export default function RisksPage() {
                       tickfont: { size: 11, color: isDark ? '#cbd5e1' : '#475569' },
                     },
                   },
-                ]}
+                ] as any}
                 layout={{
                   autosize: true,
                   margin: { t: 30, r: 30, b: 60, l: 90 },
@@ -563,16 +635,219 @@ export default function RisksPage() {
                     tickfont: { size: 11, color: isDark ? '#cbd5e1' : '#475569' },
                     titlefont: { size: 12, color: isDark ? '#cbd5e1' : '#475569' },
                   },
+                  annotations: heatmapData.z.flatMap((row, i) =>
+                    row.map((val, j) => ({
+                      x: j,
+                      y: i,
+                      xref: 'x',
+                      yref: 'y',
+                      text: val > 0 ? String(val) : '',
+                      showarrow: false,
+                      font: {
+                        size: val > 0 ? 14 : 0,
+                        color: val >= 5 ? '#ffffff' : isDark ? '#e2e8f0' : '#1e293b',
+                      },
+                      bgcolor: val > 0 ? 'rgba(255,255,255,0.3)' : 'transparent',
+                      borderpad: 4,
+                      bordercolor: 'rgba(255,255,255,0.1)',
+                      borderwidth: 1,
+                    }))
+                  ),
                   paper_bgcolor: 'transparent',
                   plot_bgcolor: isDark ? '#0f172a' : '#ffffff',
                   font: { color: isDark ? '#cbd5e1' : '#475569', family: 'inherit' },
-                }}
+                } as any}
                 config={{ displayModeBar: false, responsive: true }}
                 useResizeHandler
                 style={{ width: '100%', height: '100%' }}
               />
             </Box>
-      </Paper>
+          </Paper>
+        </Grid>
+
+        {/* Severity Distribution Pie Chart */}
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Paper sx={{ p: 3, borderRadius: 2, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              Severity Distribution
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Breakdown of risks by inherent severity level.
+            </Typography>
+            <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {severityChartData.some(d => d.value > 0) ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={severityChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={90}
+                      paddingAngle={3}
+                      dataKey="value"
+                      nameKey="name"
+                    >
+                      {severityChartData.map((entry) => (
+                        <Cell key={entry.name} fill={SEVERITY_COLORS[entry.name] ?? '#94a3b8'} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip
+                      contentStyle={{
+                        borderRadius: 8,
+                        border: `1px solid ${theme.palette.divider}`,
+                        background: isDark ? '#1e293b' : '#ffffff',
+                      }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      iconType="circle"
+                      iconSize={10}
+                      formatter={(value: string) => (
+                        <span style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: '0.8rem' }}>{value}</span>
+                      )}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <Typography variant="body2" color="text.secondary">No severity data</Typography>
+              )}
+            </Box>
+            {/* Severity summary stats */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-around', mt: 1, pt: 1.5, borderTop: `1px solid ${theme.palette.divider}` }}>
+              {severityChartData.map((d) => (
+                <Box key={d.name} sx={{ textAlign: 'center' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: SEVERITY_COLORS[d.name] ?? '#94a3b8', display: 'block' }}>
+                    {d.value}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                    {d.name}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Category Distribution Bar Chart */}
+        <Grid size={{ xs: 12, md: 7 }}>
+          <Paper sx={{ p: 3, borderRadius: 2, border: `1px solid ${theme.palette.divider}` }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              Risk by Category
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Distribution of risks across category types.
+            </Typography>
+            <Box sx={{ height: 220 }}>
+              {categoryChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={categoryChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 11, fill: isDark ? '#cbd5e1' : '#475569' }}
+                      axisLine={{ stroke: isDark ? '#475569' : '#cbd5e1' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fontSize: 11, fill: isDark ? '#cbd5e1' : '#475569' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <RechartsTooltip
+                      contentStyle={{
+                        borderRadius: 8,
+                        border: `1px solid ${theme.palette.divider}`,
+                        background: isDark ? '#1e293b' : '#ffffff',
+                      }}
+                    />
+                    <Bar dataKey="value" name="Risks" radius={[6, 6, 0, 0]}>
+                      {categoryChartData.map((entry) => {
+                        const colorKey = Object.entries(RISK_CATEGORY_LABELS).find(([, v]) => v === entry.name)?.[0]
+                        return <Cell key={entry.name} fill={RISK_CATEGORY_COLORS[colorKey ?? ''] ?? '#0ea5e9'} />
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                  <Typography variant="body2" color="text.secondary">No category data</Typography>
+                </Box>
+              )}
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Risk Summary Stats */}
+        <Grid size={{ xs: 12, md: 5 }}>
+          <Paper sx={{ p: 3, borderRadius: 2, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              Risk Summary
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Key metrics at a glance.
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 1, borderRadius: 1.5, bgcolor: isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.04)' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ef4444' }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>High Risk</Typography>
+                </Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#ef4444' }}>
+                  {severityChartData.find(d => d.name === 'High')?.value ?? 0}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 1, borderRadius: 1.5, bgcolor: isDark ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.04)' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>Medium Risk</Typography>
+                </Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#f59e0b' }}>
+                  {severityChartData.find(d => d.name === 'Medium')?.value ?? 0}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 1, borderRadius: 1.5, bgcolor: isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.04)' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#22c55e' }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>Low Risk</Typography>
+                </Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#22c55e' }}>
+                  {severityChartData.find(d => d.name === 'Low')?.value ?? 0}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 1, borderRadius: 1.5, bgcolor: isDark ? 'rgba(148,163,184,0.08)' : 'rgba(148,163,184,0.04)' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#94a3b8' }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>Unscored</Typography>
+                </Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#94a3b8' }}>
+                  {severityChartData.find(d => d.name === 'Unscored')?.value ?? 0}
+                </Typography>
+              </Box>
+              <Divider sx={{ my: 0.5 }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>Total Risks</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 700 }}>{risks.length}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>% High / Medium</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 700, color: (severityChartData.find(d => d.name === 'High')?.value ?? 0) + (severityChartData.find(d => d.name === 'Medium')?.value ?? 0) > 0 ? '#ef4444' : '#22c55e' }}>
+                  {risks.length > 0
+                    ? `${Math.round(((severityChartData.find(d => d.name === 'High')?.value ?? 0) + (severityChartData.find(d => d.name === 'Medium')?.value ?? 0)) / risks.length * 100)}%`
+                    : '—'}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>Open / In Mitigation</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                  {risks.filter(r => String(r.pm_riskstatus ?? '') === '1').length} / {risks.filter(r => String(r.pm_riskstatus ?? '') === '0').length}
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
 
       {/* ── Search, Filter & Table ─────────────────────────────────────── */}
       <Paper sx={{ overflow: 'hidden', mb: 3 }}>

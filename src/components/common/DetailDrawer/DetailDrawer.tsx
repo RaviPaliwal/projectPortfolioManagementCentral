@@ -1,7 +1,7 @@
 import { Box, Typography, IconButton, Drawer, Tabs, Tab, useTheme } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import type { ReactNode } from 'react'
-import { fontSizes } from '../../../styles'
+import type { ReactNode, SyntheticEvent } from 'react'
+import { fontSizes } from '../../../styles' 
 
 export interface DetailDrawerTab {
   label: string
@@ -23,8 +23,8 @@ export interface DetailDrawerProps {
   tabs?: DetailDrawerTab[]
   /** Current tab index (controlled by parent) */
   tabValue?: number
-  /** Tab change handler (controlled by parent) */
-  onTabChange?: (value: number) => void
+  /** Tab change handler (controlled by parent). Supports either `(value: number) => void` or `(event, value) => void` */
+  onTabChange?: ((event: SyntheticEvent, value: number) => void) | ((value: number) => void)
   /** Content to render in the drawer body */
   children?: ReactNode
   /** Drawer width */
@@ -93,7 +93,14 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
         {tabs && tabs.length > 0 && (
           <Tabs
             value={tabValue ?? 0}
-            onChange={(_, v) => onTabChange?.(v)}
+            onChange={(e, v) => {
+              if (!onTabChange) return
+              if ((onTabChange as Function).length >= 2) {
+                (onTabChange as (e: SyntheticEvent, v: number) => void)(e, v)
+              } else {
+                (onTabChange as (v: number) => void)(v)
+              }
+            }}
             variant="fullWidth"
             sx={{
               borderBottom: `1px solid ${theme.palette.divider}`,

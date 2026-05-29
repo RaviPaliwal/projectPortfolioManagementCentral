@@ -515,7 +515,7 @@ export default function SchedulePage() {
 
       {/* ── Project Selector + Action Buttons ──────────────────────────── */}
       <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="center">
+        <Grid container component="div" spacing={2} sx={{ alignItems: 'center' }}>
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Select Project</InputLabel>

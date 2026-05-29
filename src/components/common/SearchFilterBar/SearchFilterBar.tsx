@@ -17,13 +17,18 @@ export interface SearchFilterBarProps {
   onFilterChange?: (value: string) => void
   filterLabel?: string
   filterOptions?: FilterOption[]
+  /** Secondary filter dropdown */
+  secondaryFilterValue?: string
+  onSecondaryFilterChange?: (value: string) => void
+  secondaryFilterLabel?: string
+  secondaryFilterOptions?: FilterOption[]
   /** Extra filter elements to render after the main filter */
   extraFilters?: ReactNode
   /** If search or filter is active, show clear button */
   onClear?: () => void
   /** If true, show clear button even when no filters active */
   showClear?: boolean
-}
+} 
 
 export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   searchQuery,
@@ -33,11 +38,15 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   onFilterChange,
   filterLabel,
   filterOptions,
+  secondaryFilterValue,
+  onSecondaryFilterChange,
+  secondaryFilterLabel,
+  secondaryFilterOptions,
   extraFilters,
   onClear,
   showClear,
 }) => {
-  const hasFilters = searchQuery || (filterValue && filterValue !== 'all' && filterValue !== '') || showClear
+  const hasFilters = searchQuery || (filterValue && filterValue !== 'all' && filterValue !== '') || (secondaryFilterValue && secondaryFilterValue !== 'all' && secondaryFilterValue !== '') || showClear
 
   return (
     <Box
@@ -80,6 +89,24 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
             sx={{ borderRadius: 2, fontSize: fontSizes.base }}
           >
             {filterOptions.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      )}
+
+      {secondaryFilterOptions && onSecondaryFilterChange && secondaryFilterLabel && (
+        <FormControl size="small" sx={{ minWidth: 180 }}>
+          <InputLabel>{secondaryFilterLabel}</InputLabel>
+          <Select
+            value={secondaryFilterValue ?? ''}
+            label={secondaryFilterLabel}
+            onChange={(e) => onSecondaryFilterChange(e.target.value)}
+            sx={{ borderRadius: 2, fontSize: fontSizes.base }}
+          >
+            {secondaryFilterOptions.map((opt) => (
               <MenuItem key={opt.value} value={opt.value}>
                 {opt.label}
               </MenuItem>

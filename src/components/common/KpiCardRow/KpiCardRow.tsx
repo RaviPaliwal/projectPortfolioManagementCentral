@@ -10,6 +10,8 @@ export interface KpiCardItem {
   subtitle?: string
   /** If set, the value text will use this color */
   valueColor?: string
+  /** If true, the value should be treated as currency when rendering */
+  isCurrency?: boolean
 }
 
 export interface KpiCardRowProps {

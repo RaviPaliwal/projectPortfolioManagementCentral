@@ -249,7 +249,7 @@ export default function GateReviewsPage() {
           cmp = (a.pm_gatename ?? '').localeCompare(b.pm_gatename ?? '')
           break
         case 'stage':
-          cmp = (a.pm_gatestage ?? 0) - (b.pm_gatestage ?? 0)
+          cmp = Number(a.pm_gatestage ?? 0) - Number(b.pm_gatestage ?? 0)
           break
         case 'outcome':
           cmp = String(a.pm_reviewoutcome ?? '').localeCompare(String(b.pm_reviewoutcome ?? ''))

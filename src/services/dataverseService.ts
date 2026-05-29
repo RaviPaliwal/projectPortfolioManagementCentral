@@ -27,6 +27,7 @@ import type { Pm_projectmilestones } from '../generated/models/Pm_projectmilesto
 import type { Pm_projects } from '../generated/models/Pm_projectsModel'
 import type { Pm_projecttasks } from '../generated/models/Pm_projecttasksModel'
 import type { Pm_resources } from '../generated/models/Pm_resourcesModel'
+import type { Pm_riskmitigationactions } from '../generated/models/Pm_riskmitigationactionsModel' 
 import type { Pm_resourceallocations } from '../generated/models/Pm_resourceallocationsModel'
 import type { Pm_timesheets } from '../generated/models/Pm_timesheetsModel'
 import type { Pm_timesheetentries } from '../generated/models/Pm_timesheetentriesModel'
@@ -181,7 +182,7 @@ const mapInitiative = (item: Pm_initiatives): InitiativeModel => ({
 const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => ({
   pm_projecttaskid: item.pm_projecttaskid,
   pm_taskname: item.pm_taskname,
-  pm_taskdescription: item.pm_taskdescription,
+  pm_taskdescription: item.pm_taskname ?? item.pm_projecttaskname,
   pm_tasklevel: item.pm_tasklevel,
   pm_parenttaskid: item.pm_parenttaskid,
   pm_wbsnumber: item.pm_wbsnumber,
@@ -2572,7 +2573,7 @@ const mapRisk = (item: Pm_risks): RiskModel => ({
   pm_riskreference: item.pm_riskreference,
   pm_programme: item.pm_programme,
   pm_projectcode: item.pm_projectcode,
-  pm_programmename: item.pm_programmename,
+  pm_programmename: item.pm_programmefkname,
   _pm_project_value: (item as any)._pm_project_value,
   _pm_programmefk_value: item._pm_programmefk_value,
   statecode: item.statecode,
