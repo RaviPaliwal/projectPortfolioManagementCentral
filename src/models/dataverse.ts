@@ -48,9 +48,22 @@ export interface RiskModel {
   pm_escalated?: boolean
   pm_identifieddate?: string
   pm_targetclosedate?: string
+  pm_inherentprobability?: number | string
+  pm_inherentimpact?: number | string
   pm_inherentscore?: number
+  pm_residualprobability?: number | string
+  pm_residualimpact?: number | string
   pm_residualscore?: number
+  pm_responsestrategy?: number | string
+  pm_riskcause?: string
+  pm_riskeffect?: string
+  pm_riskreference?: string
+  pm_programme?: string
+  pm_projectcode?: string
+  pm_programmename?: string
+  _pm_project_value?: string
   _pm_programmefk_value?: string
+  statecode?: number
 }
 
 export interface IssueModel {
@@ -63,9 +76,16 @@ export interface IssueModel {
   pm_issuestatus?: number | string
   pm_escalationstatus?: boolean
   pm_prioritylevel?: number | string
+  pm_impactlevel?: number | string
+  pm_issuereference?: string
   pm_dateraised?: string
   pm_targetresolutiondate?: string
+  pm_actualresolutiondate?: string
+  pm_resolutiondetails?: string
+  pm_linkedrisk?: string
+  _pm_project_value?: string
   _pm_programmefk_value?: string
+  statecode?: number
 }
 
 export interface ProjectModel {
@@ -108,11 +128,24 @@ export interface InitiativeModel {
 export interface ProjectTaskModel {
   pm_projecttaskid?: string
   pm_taskname?: string
-  _pm_project_value?: string
+  pm_taskdescription?: string
+  pm_tasklevel?: number
+  pm_parenttaskid?: string
+  pm_wbsnumber?: string
+  pm_durationdays?: number
+  pm_lagdays?: number
   pm_plannedstartdate?: string
   pm_plannedenddate?: string
+  pm_actualstartdate?: string
+  pm_actualenddate?: string
   pm_percentcomplete?: number
+  pm_taskstatus?: number | string
   pm_assignedresource?: string
+  pm_ismilestone?: boolean
+  pm_oncriticalpath?: boolean
+  pm_predecessortaskid?: string
+  _pm_predecessortask_value?: string
+  _pm_project_value?: string
 }
 
 export interface ProjectMilestoneModel {
@@ -120,6 +153,236 @@ export interface ProjectMilestoneModel {
   pm_milestonename?: string
   pm_milestonetype?: number | string
   pm_planneddate?: string
+  pm_actualdate?: string
   pm_ragstatus?: RagStatusCode
+  pm_status?: number | string
+  pm_owner?: string
+  pm_description?: string
   _pm_project_value?: string
+}
+
+export interface ResourceModel {
+  pm_resourceid?: string
+  pm_fullname?: string
+  pm_departmentname?: string
+  pm_primaryrole?: string
+  pm_resourcecategory?: number | string
+  pm_employmentstatus?: number | string
+  pm_dailyworkcapacity?: number
+  pm_dailycostrate?: number
+  pm_positiontitle?: string
+  pm_contactemail?: string
+  pm_suppliercompany?: string
+  pm_contractstartdate?: string
+  pm_contractenddate?: string
+  statecode?: number
+}
+
+export interface ResourceAllocationModel {
+  pm_resourceallocationid?: string
+  pm_allocatedhours?: number
+  pm_allocationpercentage?: number
+  pm_assignmentrole?: string
+  pm_assignmentstatus?: number | string
+  pm_startdate?: string
+  pm_enddate?: string
+  _pm_resource_value?: string
+  _pm_project_value?: string
+}
+
+export interface TimesheetModel {
+  pm_timesheetid?: string
+  pm_timesheetname?: string
+  pm_ownername?: string
+  pm_periodstartdate?: string
+  pm_periodenddate?: string
+  pm_timesheetstatus?: number | string
+  pm_totalhours?: number
+  pm_totalchargeablehours?: number
+  pm_totalnonchargeablehours?: number
+  pm_submissiondate?: string
+  pm_submittedby?: string
+  pm_approvaldate?: string
+  pm_approvedby?: string
+  pm_rejectionreason?: string
+  pm_reportingperiod?: string
+  pm_resourcename?: string
+  _pm_resource_value?: string
+}
+
+export interface TimesheetEntryModel {
+  pm_timesheetentryid?: string
+  pm_timesheetid?: string
+  pm_hoursworked?: number
+  pm_workdate?: string
+  pm_worknotes?: string
+  pm_ischargeable?: boolean
+  pm_isapproved?: boolean
+  pm_isovertime?: boolean
+  pm_nonchargeablereason?: string
+  pm_projectname?: string
+  pm_projecttaskname?: string
+  _pm_project_value?: string
+  _pm_projecttask_value?: string
+  pm_timesheetname?: string
+}
+
+export interface BudgetLineModel {
+  pm_budgetlineid?: string
+  pm_budgetlinename?: string
+  pm_approvedbudgeteur?: number
+  pm_revisedbudgeteur?: number
+  pm_actualspendeur?: number
+  pm_committedspendeur?: number
+  pm_forecastspendeur?: number
+  pm_varianceeur?: number
+  pm_estimateatcompletioneur?: number
+  pm_estimatetocompleteeur?: number
+  pm_costcategory?: number | string
+  pm_costcategoryname?: string
+  pm_fundingperiod?: string
+  pm_fundingsourcecode?: string
+  pm_notes?: string
+  pm_portfolio?: string
+  pm_programme?: string
+  pm_projectcode?: string
+  pm_fiscalperiodname?: string
+  pm_fundingsourcename?: string
+  pm_portfoliolookupname?: string
+  pm_programmelookupname?: string
+  pm_projectname?: string
+  _pm_fiscalperiod_value?: string
+  _pm_fundingsource_value?: string
+  _pm_portfoliolookup_value?: string
+  _pm_programmelookup_value?: string
+  _pm_project_value?: string
+  statecode?: number
+}
+
+export interface FundingSourceModel {
+  pm_fundingsourceid?: string
+  pm_fundingsourcename?: string
+  pm_fundingtype?: number | string
+  pm_fundingstatus?: number | string
+  pm_totalamounteur?: number
+  pm_allocatedamounteur?: number
+  pm_availableamounteur?: number
+  pm_fundingbody?: string
+  pm_referencecode?: string
+  pm_effectivefromdate?: string
+  pm_effectivetodate?: string
+  pm_portfolioname?: string
+  pm_programmename?: string
+  _pm_portfolio_value?: string
+  _pm_programmelookup_value?: string
+  statecode?: number
+}
+
+export interface CashflowEntryModel {
+  pm_cashflowentryid?: string
+  pm_entryname?: string
+  pm_amounteur?: number
+  pm_transactiondate?: string
+  pm_transactiondirection?: number | string
+  pm_transactiontype?: number | string
+  pm_category?: number | string
+  pm_description?: string
+  pm_invoicenumber?: string
+  pm_financialperiod?: string
+  pm_programme?: string
+  pm_projectcode?: string
+  pm_fiscalperiodname?: string
+  pm_programmelookupname?: string
+  pm_projectname?: string
+  _pm_fiscalperiod_value?: string
+  _pm_programmelookup_value?: string
+  _pm_project_value?: string
+  statecode?: number
+}
+
+export interface GateReviewModel {
+  pm_projectgatereviewid?: string
+  pm_gatename?: string
+  pm_gatestage?: number | string
+  pm_reviewoutcome?: number | string
+  pm_reviewstatus?: number | string
+  pm_plannedreviewdate?: string
+  pm_actualreviewdate?: string
+  pm_leadreviewer?: string
+  pm_reviewnotes?: string
+  pm_reviewconditions?: string
+  pm_documentsurl?: string
+  pm_projectcode?: string
+  pm_programmename?: string
+  _pm_project_value?: string
+  _pm_programmelookup_value?: string
+  statecode?: number
+}
+
+export interface BenefitModel {
+  pm_benefitid?: string
+  pm_benefitname?: string
+  pm_benefitcategory?: number | string
+  pm_benefitdescription?: string
+  pm_benefitstatus?: number | string
+  pm_benefittype?: number | string
+  pm_benefitreference?: string
+  pm_baselinevalue?: number
+  pm_targetvalue?: number
+  pm_unitofmeasure?: string
+  pm_ragstatus?: RagStatusCode
+  pm_realisationstartdate?: string
+  pm_realisationenddate?: string
+  pm_programmename?: string
+  pm_projectcode?: string
+  pm_benifitownername?: string
+  pm_programmelookupname?: string
+  pm_projectname?: string
+  _pm_benifitowner_value?: string
+  _pm_programmelookup_value?: string
+  _pm_project_value?: string
+  statecode?: number
+}
+
+export interface PerformanceMeasureModel {
+  pm_performancemeasureid?: string
+  pm_measurename?: string
+  pm_benefitname?: string
+  pm_plannedvalue?: number
+  pm_actualvalue?: number
+  pm_cumulativeplanned?: number
+  pm_cumulativeactual?: number
+  pm_variance?: number
+  pm_reportingperiod?: string
+  pm_evidenced?: number | string
+  pm_notes?: string
+  _pm_benefit_value?: string
+  statecode?: number
+}
+
+export interface FinancialPeriodModel {
+  pm_fiscalperiodid?: string
+  pm_periodname?: string
+  pm_startdate?: string
+  pm_enddate?: string
+  pm_fiscalyear?: number
+  pm_periodnumber?: number
+  pm_isclosed?: boolean
+  pm_iscurrentperiod?: boolean
+  statecode?: number
+}
+
+export interface RiskMitigationActionModel {
+  pm_riskmitigationactionid?: string
+  pm_actiontitle?: string
+  pm_actiondescription?: string
+  pm_actionowner?: string
+  pm_status?: number | string
+  pm_duedate?: string
+  pm_completiondate?: string
+  pm_effectiveness?: number | string
+  pm_notes?: string
+  _pm_risk_value?: string
+  pm_riskidentifier?: string
+  statecode?: number
 }

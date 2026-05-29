@@ -72,6 +72,106 @@
           "entitySetName": "pm_issues",
           "logicalName": "pm_issue",
           "isHidden": false
+        },
+        "benefit": {
+          "entitySetName": "pm_benefits",
+          "logicalName": "pm_benefit",
+          "isHidden": false
+        },
+        "budgetline": {
+          "entitySetName": "pm_budgetlines",
+          "logicalName": "pm_budgetline",
+          "isHidden": false
+        },
+        "cashflowentry": {
+          "entitySetName": "pm_cashflowentries",
+          "logicalName": "pm_cashflowentry",
+          "isHidden": false
+        },
+        "changelogentry": {
+          "entitySetName": "pm_changelogentries",
+          "logicalName": "pm_changelogentry",
+          "isHidden": false
+        },
+        "changerequest": {
+          "entitySetName": "pm_changerequests",
+          "logicalName": "pm_changerequest",
+          "isHidden": false
+        },
+        "changerequestimpact": {
+          "entitySetName": "pm_changerequestimpacts",
+          "logicalName": "pm_changerequestimpact",
+          "isHidden": false
+        },
+        "financialperiods": {
+          "entitySetName": "pm_fiscalperiods",
+          "logicalName": "pm_fiscalperiod",
+          "isHidden": false
+        },
+        "fundingsource": {
+          "entitySetName": "pm_fundingsources",
+          "logicalName": "pm_fundingsource",
+          "isHidden": false
+        },
+        "holiday": {
+          "entitySetName": "pm_holidaies",
+          "logicalName": "pm_holiday",
+          "isHidden": false
+        },
+        "performancemeasure": {
+          "entitySetName": "pm_performancemeasures",
+          "logicalName": "pm_performancemeasure",
+          "isHidden": false
+        },
+        "projectapprovalrequest": {
+          "entitySetName": "pm_projectapprovalrequests",
+          "logicalName": "pm_projectapprovalrequest",
+          "isHidden": false
+        },
+        "projectgatereview": {
+          "entitySetName": "pm_projectgatereviews",
+          "logicalName": "pm_projectgatereview",
+          "isHidden": false
+        },
+        "projectstatussnapshot": {
+          "entitySetName": "pm_projectstatussnapshots",
+          "logicalName": "pm_projectstatussnapshot",
+          "isHidden": false
+        },
+        "resourceskill": {
+          "entitySetName": "pm_resourceskills",
+          "logicalName": "pm_resourceskill",
+          "isHidden": false
+        },
+        "riskmitigationaction": {
+          "entitySetName": "pm_riskmitigationactions",
+          "logicalName": "pm_riskmitigationaction",
+          "isHidden": false
+        },
+        "skill": {
+          "entitySetName": "pm_skills",
+          "logicalName": "pm_skill",
+          "isHidden": false
+        },
+        "users": {
+          "entitySetName": "systemusers",
+          "logicalName": "systemuser",
+          "isHidden": false
+        },
+        "workflow": {
+          "entitySetName": "pm_workflows",
+          "logicalName": "pm_workflow",
+          "isHidden": false
+        },
+        "workflowapprovalstep": {
+          "entitySetName": "pm_workflowapprovalsteps",
+          "logicalName": "pm_workflowapprovalstep",
+          "isHidden": false
+        },
+        "workflowinstance": {
+          "entitySetName": "pm_workflowinstances",
+          "logicalName": "pm_workflowinstance",
+          "isHidden": false
         }
       },
       "environmentVariableName": ""

@@ -49,6 +49,14 @@ import PortfoliosPage from './components/pages/PortfoliosPage'
 import ProgrammesPage from './components/pages/ProgrammesPage'
 import ProjectsPage from './components/pages/ProjectsPage'
 import PipelinePage from './components/pages/PipelinePage'
+import ResourcesPage from './components/pages/ResourcesPage'
+import TimesheetsPage from './components/pages/TimesheetsPage'
+import BudgetsPage from './components/pages/BudgetsPage'
+import GateReviewsPage from './components/pages/GateReviewsPage'
+import BenefitsPage from './components/pages/BenefitsPage'
+import SchedulePage from './components/pages/SchedulePage'
+import RisksPage from './components/pages/RisksPage'
+import IssuesPage from './components/pages/IssuesPage'
 import DebugDataPage from './components/pages/DebugDataPage'
 
 const pageMap: Record<TabKey, ReactNode> = {
@@ -57,6 +65,14 @@ const pageMap: Record<TabKey, ReactNode> = {
   programmes: <ProgrammesPage />,
   projects: <ProjectsPage />,
   pipeline: <PipelinePage />,
+  resources: <ResourcesPage />,
+  timesheets: <TimesheetsPage />,
+  budgets: <BudgetsPage />,
+  gatereviews: <GateReviewsPage />,
+  benefits: <BenefitsPage />,
+  schedule: <SchedulePage />,
+  risks: <RisksPage />,
+  issues: <IssuesPage />,
   debug: <DebugDataPage />,
 }
 

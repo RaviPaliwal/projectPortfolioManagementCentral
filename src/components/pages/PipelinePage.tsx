@@ -12,6 +12,7 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
+  TablePagination,
   TextField,
   Button,
   Dialog,
@@ -24,6 +25,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Divider,
+  Avatar,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -39,6 +42,11 @@ import HowToRegIcon from '@mui/icons-material/HowToReg'
 import CancelIcon from '@mui/icons-material/Cancel'
 import TransformIcon from '@mui/icons-material/Transform'
 import ErrorIcon from '@mui/icons-material/Error'
+import AccountTreeIcon from '@mui/icons-material/AccountTree'
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import ScienceIcon from '@mui/icons-material/Science'
+import InfoIcon from '@mui/icons-material/Info'
 import {
   fetchInitiatives,
   createInitiative,
@@ -46,9 +54,11 @@ import {
   convertInitiativeToProject,
   updateInitiativeStatus,
   fetchPipelineKpis,
+  fetchPortfolioHierarchy,
 } from '../../services/dataverseService'
 import type { InitiativeModel } from '../../models/dataverse'
 import type { PipelineKpis } from '../../services/dataverseService'
+import type { PortfolioModel } from '../../models/dataverse'
 import { fontSizes } from '../../styles'
 import { PageHeader, KpiCardRow, TabPanel, TableFooter, TableShell, DetailDrawer, SearchFilterBar } from '../common'
 import type { KpiCardItem, FilterOption } from '../common'
@@ -132,6 +142,8 @@ export default function PipelinePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [sort, setSort] = useState<SortState>({ field: 'name', dir: 'asc' })
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(25)
 
   // ── Detail Panel State ─────────────────────────────────────────────────────
   const [selectedInitiative, setSelectedInitiative] = useState<InitiativeModel | null>(null)
@@ -147,23 +159,32 @@ export default function PipelinePage() {
     pm_requestorname: '',
     pm_initiativetype: 2,
     pm_pipelinestatus: 1,
+    _pm_portfolio_value: '',
   })
+
+  // ── Confirmation Dialog State ─────────────────────────────────────────────
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; name: string }>({ open: false, name: '' })
 
   // ── Score Edit State ───────────────────────────────────────────────────────
   const [editScoreMode, setEditScoreMode] = useState(false)
   const [editScore, setEditScore] = useState(0)
+
+  // ── Portfolio options for create modal ──────────────────────────────────
+  const [portfolios, setPortfolios] = useState<PortfolioModel[]>([])
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const [list, kpiData] = await Promise.all([
+      const [list, kpiData, hierarchy] = await Promise.all([
         fetchInitiatives(),
         fetchPipelineKpis(),
+        fetchPortfolioHierarchy(),
       ])
       setInitiatives(list)
       setKpis(kpiData)
+      setPortfolios(hierarchy.portfolios)
     } catch {
       setError('Unable to load pipeline data.')
     } finally {
@@ -260,6 +281,20 @@ export default function PipelinePage() {
     return sorted
   }, [initiatives, searchQuery, statusFilter, sort])
 
+  // ── Pagination ───────────────────────────────────────────────────────────
+  const paginatedInitiatives = useMemo(
+    () => filteredInitiatives.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [filteredInitiatives, page, rowsPerPage]
+  )
+
+  const handleChangePage = useCallback((_e: unknown, newPage: number) => setPage(newPage), [])
+  const handleChangeRowsPerPage = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(e.target.value, 10))
+    setPage(0)
+  }, [])
+  const handleSearchChange = useCallback((value: string) => { setSearchQuery(value); setPage(0) }, [])
+  const handleStatusFilterChange = useCallback((value: string) => { setStatusFilter(value); setPage(0) }, [])
+
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleRowClick = useCallback((initiative: InitiativeModel) => {
     setSelectedInitiative(initiative)
@@ -278,11 +313,14 @@ export default function PipelinePage() {
       setError('Initiative name is required.')
       return
     }
+    setError(null)
     setActionLoading(true)
     try {
       const created = await createInitiative(createForm as any)
       if (created) {
+        const initiativeName = created.pm_name || createForm.pm_initiativename
         setShowCreateModal(false)
+        setConfirmDialog({ open: true, name: initiativeName })
         setCreateForm({
           pm_initiativename: '',
           pm_businesscasedescription: '',
@@ -291,10 +329,9 @@ export default function PipelinePage() {
           pm_requestorname: '',
           pm_initiativetype: 2,
           pm_pipelinestatus: 1,
+          _pm_portfolio_value: '',
         })
-        setSuccessMsg('Initiative created successfully.')
         await loadData()
-        setTimeout(() => setSuccessMsg(null), 3000)
       }
     } catch {
       setError('Unable to create initiative.')
@@ -431,7 +468,7 @@ export default function PipelinePage() {
         title="Pipeline"
         subtitle="Pre-project initiative pipeline — triage, score, and convert ideas into authorised projects."
         action={{
-          label: '+ New Initiative',
+          label: 'New Initiative',
           icon: <AddIcon />,
           onClick: () => setShowCreateModal(true),
         }}
@@ -447,13 +484,13 @@ export default function PipelinePage() {
       <Paper sx={{ overflow: 'hidden', mb: 3 }}>
         <SearchFilterBar
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchChange}
           searchPlaceholder="Search by name, sponsor, portfolio..."
           filterValue={statusFilter}
-          onFilterChange={setStatusFilter}
+          onFilterChange={handleStatusFilterChange}
           filterLabel="Status"
           filterOptions={STATUS_FILTER_OPTIONS}
-          onClear={() => { setSearchQuery(''); setStatusFilter('') }}
+          onClear={() => { setSearchQuery(''); setStatusFilter(''); setPage(0) }}
         />
 
         <TableShell
@@ -498,7 +535,7 @@ export default function PipelinePage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredInitiatives.map((initiative, idx) => {
+              {paginatedInitiatives.map((initiative, idx) => {
                 const statusCfg = STATUS_CONFIG[String(initiative.pm_pipelinestatus ?? '')] ?? { label: 'Draft', color: 'default' as const }
                 return (
                   <TableRow
@@ -568,6 +605,17 @@ export default function PipelinePage() {
             totals={[
               { label: 'Est. pipeline', value: currencyFormatter.format(filteredInitiatives.reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)) },
             ]}
+          />
+        )}
+        {!loading && filteredInitiatives.length > 0 && (
+          <TablePagination
+            component="div"
+            count={filteredInitiatives.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[25, 50, 100]}
           />
         )}
       </Paper>
@@ -735,63 +783,249 @@ export default function PipelinePage() {
       </DetailDrawer>
 
       {/* ── 4. Create Initiative Modal ────────────────────────────────────────── */}
-      <Dialog open={showCreateModal} onClose={() => !actionLoading && setShowCreateModal(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>New Initiative</DialogTitle>
+      <Dialog
+        open={showCreateModal}
+        onClose={() => !actionLoading && setShowCreateModal(false)}
+        maxWidth="md"
+        fullWidth
+        slotProps={{
+          paper: { sx: { borderRadius: 3 } },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: '#f59e0b', borderRadius: 1.5 }}>
+            <LightbulbIcon sx={{ fontSize: 18, color: '#fff' }} />
+          </Avatar>
+          New Initiative
+        </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Submit a new idea to the pipeline for executive review and triage.
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3, pl: 0 }}>
+            Submit a new idea to the pipeline for executive review and triage. Initiatives default to <strong>Under Review</strong> status.
           </Typography>
-          <Grid container spacing={2.5}>
+
+          {/* ── Section: Basic Information ── */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <DescriptionIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+              Basic Information
+            </Typography>
+            <Divider sx={{ flex: 1 }} />
+          </Box>
+          <Grid container spacing={2.5} sx={{ mb: 3 }}>
             <Grid size={{ xs: 12 }}>
-              <TextField label="Initiative Name" required fullWidth size="small"
+              <TextField
+                label="Initiative Name"
+                required
+                fullWidth
+                size="small"
                 value={createForm.pm_initiativename}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_initiativename: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                slotProps={{
+                  input: { sx: { borderRadius: 2 } },
+                }}
+              />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField label="Requester / Sponsor" fullWidth size="small"
+              <TextField
+                label="Requester / Sponsor"
+                fullWidth
+                size="small"
                 value={createForm.pm_requestorname}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_requestorname: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                slotProps={{ input: { startAdornment: <PersonIcon sx={{ fontSize: 18, mr: 0.75, color: 'action.active' }} />, sx: { borderRadius: 2 } } }}
+              />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select value={createForm.pm_pipelinestatus} label="Status"
-                  onChange={(e) => setCreateForm((f) => ({ ...f, pm_pipelinestatus: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}>
-                  <MenuItem value={1}>Under Review</MenuItem>
-                  <MenuItem value={0}>Approved</MenuItem>
-                  <MenuItem value={2}>Deferred</MenuItem>
+                <InputLabel>Portfolio (optional)</InputLabel>
+                <Select
+                  value={createForm._pm_portfolio_value}
+                  label="Portfolio (optional)"
+                  onChange={(e) => setCreateForm((f) => ({ ...f, _pm_portfolio_value: e.target.value }))}
+                  sx={{ borderRadius: 2 }}
+                >
+                  <MenuItem value="">
+                    <em style={{ color: '#94a3b8' }}>No portfolio</em>
+                  </MenuItem>
+                  {portfolios.map((p) => (
+                    <MenuItem key={p.pm_portfolioid} value={p.pm_portfolioid}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <AccountTreeIcon sx={{ fontSize: 16, color: 'primary.main', opacity: 0.6 }} />
+                        {p.pm_portfolioname}
+                      </Box>
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField label="Estimated Cost (EUR)" type="number" fullWidth size="small"
-                value={createForm.pm_estimatedcosteur}
-                onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedcosteur: Number(e.target.value) }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }} />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField label="Estimated Benefits (EUR)" type="number" fullWidth size="small"
-                value={createForm.pm_estimatedbenefitseur}
-                onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedbenefitseur: Number(e.target.value) }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }} />
-            </Grid>
             <Grid size={{ xs: 12 }}>
-              <TextField label="Business Case / Description" fullWidth size="small" multiline rows={3}
-                value={createForm.pm_businesscasedescription}
-                onChange={(e) => setCreateForm((f) => ({ ...f, pm_businesscasedescription: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+              <FormControl fullWidth size="small">
+                <InputLabel>Initiative Type</InputLabel>
+                <Select
+                  value={createForm.pm_initiativetype}
+                  label="Initiative Type"
+                  onChange={(e) => setCreateForm((f) => ({ ...f, pm_initiativetype: e.target.value as number }))}
+                  sx={{ borderRadius: 2 }}
+                >
+                  <MenuItem value={2}>Initiative</MenuItem>
+                  <MenuItem value={0}>Project</MenuItem>
+                  <MenuItem value={1}>Programme</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
+
+          {/* ── Section: Financial Estimates ── */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <MonetizationOnIcon sx={{ fontSize: 18, color: '#22c55e' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+              Financial Estimates
+            </Typography>
+            <Divider sx={{ flex: 1 }} />
+          </Box>
+          <Grid container spacing={2.5} sx={{ mb: 3 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Estimated Cost (EUR)"
+                type="number"
+                fullWidth
+                size="small"
+                value={createForm.pm_estimatedcosteur}
+                onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedcosteur: Number(e.target.value) }))}
+                slotProps={{
+                  input: { startAdornment: <CurrencyExchangeIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} />, sx: { borderRadius: 2 } },
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Estimated Benefits (EUR)"
+                type="number"
+                fullWidth
+                size="small"
+                value={createForm.pm_estimatedbenefitseur}
+                onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedbenefitseur: Number(e.target.value) }))}
+                slotProps={{
+                  input: { startAdornment: <TrendingUpIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} />, sx: { borderRadius: 2 } },
+                }}
+              />
+            </Grid>
+          </Grid>
+
+          {/* ── Section: Business Case ── */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <ScienceIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+              Business Case
+            </Typography>
+            <Divider sx={{ flex: 1 }} />
+          </Box>
+          <Grid container spacing={2.5}>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                label="Business Case / Description"
+                fullWidth
+                size="small"
+                multiline
+                rows={4}
+                value={createForm.pm_businesscasedescription}
+                onChange={(e) => setCreateForm((f) => ({ ...f, pm_businesscasedescription: e.target.value }))}
+                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                placeholder="Describe the problem, opportunity, and strategic rationale for this initiative..."
+              />
+            </Grid>
+          </Grid>
+
+          {/* ── Status badge ── */}
+          <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, bgcolor: isDark ? '#1e293b' : '#f0f9ff', borderRadius: 2, border: '1px solid', borderColor: isDark ? '#334155' : '#bae6fd' }}>
+            <InfoIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
+            <Typography variant="body2" color="text.secondary">
+              Status will be set to{' '}
+              <Chip label="Under Review" size="small" color="info" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8, height: 22 }} />
+              {' '}by default. This can be changed later from the initiative detail panel.
+            </Typography>
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setShowCreateModal(false)} variant="outlined" disabled={actionLoading}>Cancel</Button>
-          <Button onClick={handleCreateInitiative} variant="contained"
+        <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button
+            onClick={() => setShowCreateModal(false)}
+            variant="outlined"
+            disabled={actionLoading}
+            sx={{ borderRadius: 2 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateInitiative}
+            variant="contained"
             disabled={!createForm.pm_initiativename.trim() || actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' } }}>
+            startIcon={actionLoading ? undefined : <AddIcon />}
+            sx={{
+              bgcolor: '#0078D4',
+              '&:hover': { bgcolor: '#006cbe' },
+              borderRadius: 2,
+              fontWeight: 600,
+            }}
+          >
             {actionLoading ? 'Creating...' : 'Create Initiative'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── 5. Success Confirmation Dialog ─────────────────────────────────── */}
+      <Dialog
+        open={confirmDialog.open}
+        onClose={() => setConfirmDialog({ open: false, name: '' })}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: { borderRadius: 3, overflow: 'visible' },
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -28,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            bgcolor: '#22c55e',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)',
+          }}
+        >
+          <CheckCircleIcon sx={{ fontSize: 32, color: '#fff' }} />
+        </Box>
+        <DialogTitle sx={{ textAlign: 'center', pt: 5, pb: 1, fontWeight: 700, fontSize: 20 }}>
+          Initiative Created
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', pb: 3 }}>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+            <strong style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>{confirmDialog.name}</strong> has been successfully submitted to the pipeline.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            The initiative is now <strong>Under Review</strong>. You can triage, score, and convert it to a project from the detail panel.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3, gap: 1.5 }}>
+          <Button
+            variant="contained"
+            onClick={() => setConfirmDialog({ open: false, name: '' })}
+            sx={{
+              bgcolor: '#0078D4',
+              '&:hover': { bgcolor: '#006cbe' },
+              borderRadius: 2,
+              px: 4,
+              fontWeight: 600,
+            }}
+          >
+            Done
           </Button>
         </DialogActions>
       </Dialog>

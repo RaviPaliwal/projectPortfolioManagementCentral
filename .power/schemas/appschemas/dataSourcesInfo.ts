@@ -5,10 +5,80 @@
  */
 
 export const dataSourcesInfo = {
+  "pm_benefits": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_benefitid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_budgetlines": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_budgetlineid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_cashflowentries": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_cashflowentryid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_changelogentries": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_changelogentryid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_changerequests": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_changerequestid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_changerequestimpacts": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_changerequestimpactid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_fiscalperiods": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_fiscalperiodid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_fundingsources": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_fundingsourceid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_holidaies": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_holidayid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pm_issues": {
     "tableId": "",
     "version": "",
     "primaryKey": "pm_issueid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_performancemeasures": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_performancemeasureid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },
@@ -40,10 +110,31 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pm_projectapprovalrequests": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_projectapprovalrequestid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_projectgatereviews": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_projectgatereviewid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pm_projectmilestones": {
     "tableId": "",
     "version": "",
     "primaryKey": "pm_projectmilestoneid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_projectstatussnapshots": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_projectstatussnapshotid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },
@@ -68,10 +159,31 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pm_resourceskills": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_resourceskillid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pm_risks": {
     "tableId": "",
     "version": "",
     "primaryKey": "pm_riskid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_riskmitigationactions": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_riskmitigationactionid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_skills": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_skillid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },
@@ -86,6 +198,34 @@ export const dataSourcesInfo = {
     "tableId": "",
     "version": "",
     "primaryKey": "pm_timesheetentryid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "systemusers": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "systemuserid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_workflows": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_workflowid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_workflowapprovalsteps": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_workflowapprovalstepid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_workflowinstances": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_workflowinstanceid",
     "dataSourceType": "Dataverse",
     "apis": {}
   }

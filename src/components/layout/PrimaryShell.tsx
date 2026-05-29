@@ -17,12 +17,20 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import TaskIcon from '@mui/icons-material/Task'
 import TimelineIcon from '@mui/icons-material/Timeline'
+import PeopleIcon from '@mui/icons-material/People'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
 import BugReportIcon from '@mui/icons-material/BugReport'
+import AccessTimeIcon from '@mui/icons-material/AccessTime'
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
+import FactCheckIcon from '@mui/icons-material/FactCheck'
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
+import CrisisAlertIcon from '@mui/icons-material/CrisisAlert'
+import ReportProblemIcon from '@mui/icons-material/ReportProblem'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'debug'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'debug'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -30,6 +38,14 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'programmes', label: 'Programmes', icon: <FolderOpenIcon /> },
   { key: 'projects', label: 'Projects', icon: <TaskIcon /> },
   { key: 'pipeline', label: 'Pipeline', icon: <TimelineIcon /> },
+  { key: 'resources', label: 'Resources', icon: <PeopleIcon /> },
+  { key: 'timesheets', label: 'Timesheets', icon: <AccessTimeIcon /> },
+  { key: 'budgets', label: 'Budgets', icon: <AccountBalanceWalletIcon /> },
+  { key: 'gatereviews', label: 'Gate Reviews', icon: <FactCheckIcon /> },
+  { key: 'benefits', label: 'Benefits', icon: <EmojiEventsIcon /> },
+  { key: 'schedule', label: 'Schedule', icon: <CalendarMonthIcon /> },
+  { key: 'risks', label: 'Risks', icon: <CrisisAlertIcon /> },
+  { key: 'issues', label: 'Issues', icon: <ReportProblemIcon /> },
   { key: 'debug', label: 'Debug', icon: <BugReportIcon /> },
 ]
 

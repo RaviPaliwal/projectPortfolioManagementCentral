@@ -23,6 +23,7 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   TableSortLabel,
   Tabs,
@@ -91,8 +92,13 @@ export default function ProgrammesPage() {
   const [actionLoading, setActionLoading] = useState(false)
 
   // ── List View State ────────────────────────────────────────────────────────
+  
   const [searchQuery, setSearchQuery] = useState('')
   const [portfolioFilter, setPortfolioFilter] = useState('all')
+  
+  // ADD THESE TWO LINES:
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(25)
 
   type SortField = 'name' | 'phase' | 'rag' | 'sponsor' | 'manager' | 'portfolio' | 'budget' | 'actual' | 'variance' | 'bizunit'
   type SortDir = 'asc' | 'desc'
@@ -267,6 +273,20 @@ export default function ProgrammesPage() {
 
     return sorted
   }, [programmes, searchQuery, portfolioFilter, sort])
+
+  // ── Pagination ───────────────────────────────────────────────────────────
+  const paginatedProgrammes = useMemo(
+    () => filteredProgrammes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [filteredProgrammes, page, rowsPerPage]
+  )
+
+  const handleChangePage = useCallback((_e: unknown, newPage: number) => setPage(newPage), [])
+  const handleChangeRowsPerPage = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(e.target.value, 10))
+    setPage(0)
+  }, [])
+  const handleSearchChange = useCallback((value: string) => { setSearchQuery(value); setPage(0) }, [])
+  const handlePortfolioFilterChange = useCallback((value: string) => { setPortfolioFilter(value); setPage(0) }, [])
 
   // ── Create Programme ───────────────────────────────────────────────────────
   const handleCreateProgramme = async () => {
@@ -924,7 +944,7 @@ export default function ProgrammesPage() {
       <PageHeader
         title="Programmes"
         subtitle="Searchable directory of all programmes with aggregated health and financials."
-        action={{ label: '+ New Programme', icon: <AddIcon />, onClick: () => setShowCreateModal(true) }}
+        action={{ label: 'New Programme', icon: <AddIcon />, onClick: () => setShowCreateModal(true) }}
       />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
@@ -941,16 +961,16 @@ export default function ProgrammesPage() {
       <Paper sx={{ overflow: 'hidden', mb: 3 }}>
         <SearchFilterBar
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchChange}
           searchPlaceholder="Search by name, manager, sponsor, portfolio..."
           filterValue={portfolioFilter}
-          onFilterChange={setPortfolioFilter}
+          onFilterChange={handlePortfolioFilterChange}
           filterLabel="Portfolio"
           filterOptions={[
             { value: 'all', label: 'All Portfolios' },
             ...portfolios.map((p) => ({ value: p.id, label: p.name })),
           ] as FilterOption[]}
-          onClear={() => { setSearchQuery(''); setPortfolioFilter('all') }}
+          onClear={() => { setSearchQuery(''); setPortfolioFilter('all'); setPage(0) }}
         />
 
         <TableShell
@@ -1010,7 +1030,7 @@ export default function ProgrammesPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredProgrammes.map((programme, idx) => {
+                  {paginatedProgrammes.map((programme, idx) => {
                     const variance = (programme.pm_budgeteur ?? 0) - (programme.pm_actualspendeur ?? 0)
                     const isNegative = variance < 0
                     return (
@@ -1109,6 +1129,17 @@ export default function ProgrammesPage() {
               { label: 'Total budget', value: currencyFormatter.format(filteredProgrammes.reduce((s, p) => s + (p.pm_budgeteur ?? 0), 0)) },
               { label: 'Total actual', value: currencyFormatter.format(filteredProgrammes.reduce((s, p) => s + (p.pm_actualspendeur ?? 0), 0)) },
             ]}
+          />
+        )}
+        {!loading && filteredProgrammes.length > 0 && (
+          <TablePagination
+            component="div"
+            count={filteredProgrammes.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[25, 50, 100]}
           />
         )}
       </Paper>

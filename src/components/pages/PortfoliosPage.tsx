@@ -12,7 +12,9 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
+  TablePagination,
   Button,
+  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -38,6 +40,7 @@ import PersonIcon from '@mui/icons-material/Person'
 import MoneyIcon from '@mui/icons-material/Money'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { fetchPortfolioHierarchy, createPortfolio } from '../../services/dataverseService'
+import { fontSizes } from '../../styles'
 import {
   StatusChip,
   PageHeader,
@@ -82,6 +85,8 @@ export default function PortfoliosPage() {
   // Grid state
   const [searchQuery, setSearchQuery] = useState('')
   const [sort, setSort] = useState<SortState>({ field: 'name', dir: 'asc' })
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(25)
 
   // Detail panel state
   const [selectedPortfolio, setSelectedPortfolio] = useState<PortfolioModel | null>(null)
@@ -234,6 +239,19 @@ export default function PortfoliosPage() {
     return sorted
   }, [portfolioList, searchQuery, sort])
 
+  // ── Pagination ───────────────────────────────────────────────────────────
+  const paginatedPortfolios = useMemo(
+    () => filteredPortfolios.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [filteredPortfolios, page, rowsPerPage]
+  )
+
+  const handleChangePage = useCallback((_e: unknown, newPage: number) => setPage(newPage), [])
+  const handleChangeRowsPerPage = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(e.target.value, 10))
+    setPage(0)
+  }, [])
+  const handleSearchChange = useCallback((value: string) => { setSearchQuery(value); setPage(0) }, [])
+
   // ── Detail panel data ─────────────────────────────────────────────────────
   const detailProgrammes = useMemo(() => {
     if (!selectedPortfolio?.pm_portfolioid) return []
@@ -323,9 +341,9 @@ export default function PortfoliosPage() {
       <Paper sx={{ overflow: 'hidden', mb: 3 }}>
         <SearchFilterBar
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchChange}
           searchPlaceholder="Search portfolios by name, owner, or business unit..."
-          onClear={() => setSearchQuery('')}
+          onClear={() => { setSearchQuery(''); setPage(0) }}
         />
 
         <TableShell
@@ -366,7 +384,7 @@ export default function PortfoliosPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredPortfolios.map((portfolio, idx) => {
+              {paginatedPortfolios.map((portfolio, idx) => {
                 const variance = (portfolio.pm_approvedbudgeteur ?? 0) - (portfolio.pm_actualspendeur ?? 0)
                 const isNegative = variance < 0
                 return (
@@ -443,6 +461,17 @@ export default function PortfoliosPage() {
             ]}
           />
         )}
+        {!loading && filteredPortfolios.length > 0 && (
+          <TablePagination
+            component="div"
+            count={filteredPortfolios.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[25, 50, 100]}
+          />
+        )}
       </Paper>
 
       {/* ── 3. Slide-Out Detail Panel ──────────────────────────────────── */}
@@ -468,15 +497,13 @@ export default function PortfoliosPage() {
           </>
         )}
         headerActions={
-          <Button
-            variant="contained"
+          <IconButton
             size="small"
-            startIcon={<EditIcon />}
             onClick={() => setEditInfo('Edit functionality will be available in a future update.')}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' } }}
+            sx={{ borderRadius: 1.5 }}
           >
-            Edit Portfolio
-          </Button>
+            <EditIcon sx={{ borderRadius: 1.5 }} />
+          </IconButton>
         }
         tabs={[
           { label: 'Summary' },
@@ -870,7 +897,7 @@ export default function PortfoliosPage() {
         >
           <CheckCircleIcon sx={{ fontSize: 32, color: '#fff' }} />
         </Box>
-        <DialogTitle sx={{ textAlign: 'center', pt: 5, pb: 1, fontWeight: 700, fontSize: 20 }}>
+        <DialogTitle sx={{ textAlign: 'center', pt: 5, pb: 1, fontWeight: 700, fontSize: fontSizes.xl }}>
           Portfolio Created
         </DialogTitle>
         <DialogContent sx={{ textAlign: 'center', pb: 3 }}>

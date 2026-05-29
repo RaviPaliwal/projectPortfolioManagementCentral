@@ -22,12 +22,12 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
+  TablePagination,
   Tabs,
   Tab,
   LinearProgress,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
@@ -38,6 +38,11 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import HowToRegIcon from '@mui/icons-material/HowToReg'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import EventNoteIcon from '@mui/icons-material/EventNote'
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
+import AnalyticsIcon from '@mui/icons-material/Analytics'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import AssignmentIcon from '@mui/icons-material/Assignment'
 import {
   createProject,
   fetchProjectsFull,
@@ -46,10 +51,14 @@ import {
   createRisk,
   createIssue,
   assignResource,
+  createBudgetLine,
+  createBenefit,
+  createProjectTask,
 } from '../../services/dataverseService'
 import { StatusChip, PageHeader, KpiCardRow, SearchFilterBar, TableFooter, TableShell } from '../common'
+import { fontSizes } from '../../styles'
 import type { KpiCardItem } from '../common'
-import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel } from '../../models/dataverse'
+import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '../../models/dataverse'
 
 const RAG_COLORS: Record<string, string> = {
   '2': '#ef4444',
@@ -96,8 +105,7 @@ export default function ProjectsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
-  // Navigation state
-  const [view, setView] = useState<'grid' | 'detail'>('grid')
+  // Navigation state — selectedProject controls inline 360 view
   const [selectedProject, setSelectedProject] = useState<ProjectModel | null>(null)
 
   // Data state
@@ -110,6 +118,8 @@ export default function ProjectsPage() {
   // Grid state
   const [searchQuery, setSearchQuery] = useState('')
   const [phaseFilter, setPhaseFilter] = useState('')
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(25)
   const [sort, setSort] = useState<SortState>({ field: 'pm_projectname', direction: 'asc' })
 
   // Create modal state
@@ -132,10 +142,36 @@ export default function ProjectsPage() {
   // Resource allocation form
   const [resourceForm, setResourceForm] = useState({ pm_resourceName: '', pm_resourceId: '', pm_allocatedhours: 40, pm_assignmentrole: '', pm_startdate: '', pm_enddate: '' })
 
+  // Budget line form
+  const [budgetForm, setBudgetForm] = useState({ pm_budgetlinename: '', pm_approvedbudgeteur: 0, pm_actualspendeur: 0, pm_costcategory: '' })
+
+  // Task form
+  const [taskForm, setTaskForm] = useState({ pm_taskname: '', pm_taskdescription: '', pm_assignedresource: '', pm_plannedstartdate: '', pm_plannedenddate: '', pm_percentcomplete: 0, pm_durationdays: 0 })
+
+  // Benefit form
+  const [benefitForm, setBenefitForm] = useState({ pm_benefitname: '', pm_benefitcategory: '1', pm_benefitstatus: '0', pm_targetvalue: 0, pm_unitofmeasure: '', pm_realisationenddate: '' })
+
+  // Dialog states for entity creation sub-forms
+  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false)
+  const [benefitDialogOpen, setBenefitDialogOpen] = useState(false)
+
+  // Sub-dialog states for entity creation
+  const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false)
+  const [riskDialogOpen, setRiskDialogOpen] = useState(false)
+  const [issueDialogOpen, setIssueDialogOpen] = useState(false)
+  const [resourceDialogOpen, setResourceDialogOpen] = useState(false)
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false)
+
+  // Additional detail data
+  const [detailBudgetLines, setDetailBudgetLines] = useState<BudgetLineModel[]>([])
+  const [detailBenefits, setDetailBenefits] = useState<BenefitModel[]>([])
+  const [detailTasks, setDetailTasks] = useState<ProjectTaskModel[]>([])
+  const [detailGateReviews, setDetailGateReviews] = useState<GateReviewModel[]>([])
+
   // Detail sub-data
   const [detailMilestones, setDetailMilestones] = useState<ProjectMilestoneModel[]>([])
   const [detailRisks, setDetailRisks] = useState<RiskModel[]>([])
-  const [, setDetailIssues] = useState<IssueModel[]>([])
+  const [detailIssues, setDetailIssues] = useState<IssueModel[]>([])
   const [detailResources, setDetailResources] = useState<any[]>([])
 
   // Success messages
@@ -246,48 +282,176 @@ export default function ProjectsPage() {
     return list
   }, [projects, searchQuery, phaseFilter, sort])
 
-  // ── Row click → detail view ─────────────────────────────────────────────
+  // ── Pagination ───────────────────────────────────────────────────────────
+  const paginatedProjects = useMemo(
+    () => filteredProjects.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [filteredProjects, page, rowsPerPage]
+  )
+
+  const handleChangePage = useCallback((_e: unknown, newPage: number) => setPage(newPage), [])
+  const handleChangeRowsPerPage = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(e.target.value, 10))
+    setPage(0)
+  }, [])
+  const handleSearchChange = useCallback((value: string) => { setSearchQuery(value); setPage(0) }, [])
+  const handlePhaseFilterChange = useCallback((value: string) => { setPhaseFilter(value); setPage(0) }, [])
+
+  // ── Row click → show inline 360 project summary ─────────────────────────
   const handleRowClick = useCallback(async (project: ProjectModel) => {
     setSelectedProject(project)
-    setView('detail')
     setDetailTab(0)
     setDetailLoading(true)
     setError(null)
 
     try {
-      // Fetch related data for the detail view
-      const { Pm_projectmilestonesService, Pm_risksService, Pm_issuesService, Pm_resourceallocationsService } = await import('../../generated')
+      console.log('📋 [360 View] Opening project:', project.pm_projectname, '| ID:', project.pm_projectid)
+
+      // Fetch all related entities for the project summary
+      const {
+        Pm_projectmilestonesService, Pm_risksService, Pm_issuesService,
+        Pm_resourceallocationsService, Pm_budgetlinesService, Pm_benefitsService,
+        Pm_projecttasksService, Pm_projectgatereviewsService,
+      } = await import('../../generated')
       const unwrap = (result: any): any[] => {
-        if (!result) return []
-        if ('value' in result) return result.value
-        if (Array.isArray(result)) return result
+        if (!result) { console.warn('⚠️ unwrap: result is falsy', result); return [] }
+        // Sometimes the API returns via OData fetch directly, or a wrapper
+        if (result.success && Array.isArray(result.data)) {
+          console.log('🔓 unwrap: found success.data array of length', result.data.length)
+          return result.data
+        }
+        // Fallback: if data exists but wrapped differently
+        if (result.data && !Array.isArray(result.data)) {
+          console.warn('⚠️ unwrap: result.data exists but is not an array', typeof result.data)
+        }
+        // OData format
+        if ('value' in result) {
+          const val = result.value
+          if (Array.isArray(val)) {
+            console.log('🔓 unwrap: found value array of length', val.length)
+            return val
+          }
+          console.warn('⚠️ unwrap: value key exists but not array', typeof val)
+          return []
+        }
+        // Already an array
+        if (Array.isArray(result)) {
+          console.log('🔓 unwrap: result is already an array of length', result.length)
+          return result
+        }
+        console.warn('⚠️ unwrap: unrecognized format, keys:', Object.keys(result))
         return []
       }
 
       const projectId = project.pm_projectid!
-      const [msResult, riskResult, issueResult, allocResult] = await Promise.all([
-        Pm_projectmilestonesService.getAll({
-          filter: `_pm_project_value eq '${projectId}'`,
-          select: ['pm_projectmilestoneid', 'pm_milestonename', 'pm_milestonetype', 'pm_planneddate', 'pm_status', 'pm_ragstatus'],
-          orderBy: ['pm_planneddate asc'],
-          top: 100,
-        }),
-        Pm_risksService.getAll({
-          filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
-          select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskowner', 'pm_riskstatus', 'pm_identifieddate', 'pm_targetclosedate'],
-          top: 100,
-        }),
-        Pm_issuesService.getAll({
-          filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
-          select: ['pm_issueid', 'pm_issuetitle', 'pm_issuedescription', 'pm_issuecategory', 'pm_ragstatus', 'pm_issueowner', 'pm_issuestatus', 'pm_prioritylevel', 'pm_dateraised', 'pm_targetresolutiondate'],
-          top: 100,
-        }),
-        Pm_resourceallocationsService.getAll({
-          filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
-          select: ['pm_resourceallocationid', 'pm_allocatedhours', 'pm_allocationpercentage', 'pm_assignmentrole', 'pm_startdate', 'pm_enddate', 'pm_resourcename'],
-          top: 100,
-        }),
+      console.log('🔍 [360 View] Querying all related entities for project ID:', projectId)
+
+      const [
+        msResult, riskResult, issueResult, allocResult,
+        budgetResult, benefitResult, taskResult, gateResult,
+      ] = await Promise.all([
+        (async () => {
+          const r = await Pm_projectmilestonesService.getAll({
+            filter: `_pm_project_value eq '${projectId}'`,
+            select: ['pm_projectmilestoneid', 'pm_milestonename', 'pm_milestonetype', 'pm_planneddate', 'pm_status', 'pm_ragstatus'],
+            orderBy: ['pm_planneddate asc'],
+            top: 100,
+          })
+          console.log('🔍 [360 View] Milestones raw result:', JSON.stringify(r).slice(0, 1000))
+          const unwrapped = unwrap(r)
+          console.log('🔍 [360 View] Milestones unwrapped count:', unwrapped.length, '| Sample:', unwrapped.length > 0 ? JSON.stringify(unwrapped[0]) : 'NO DATA')
+          return r
+        })(),
+        (async () => {
+          const r = await Pm_risksService.getAll({
+            filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+            select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskowner', 'pm_riskstatus', 'pm_identifieddate', 'pm_targetclosedate'],
+            top: 100,
+          })
+          console.log('🔍 [360 View] Risks raw result:', JSON.stringify(r).slice(0, 1000))
+          const unwrapped = unwrap(r)
+          console.log('🔍 [360 View] Risks unwrapped count:', unwrapped.length, '| Sample:', unwrapped.length > 0 ? JSON.stringify(unwrapped[0]) : 'NO DATA')
+          return r
+        })(),
+        (async () => {
+          const r = await Pm_issuesService.getAll({
+            filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+            select: ['pm_issueid', 'pm_issuetitle', 'pm_issuedescription', 'pm_issuecategory', 'pm_ragstatus', 'pm_issueowner', 'pm_issuestatus', 'pm_prioritylevel', 'pm_dateraised', 'pm_targetresolutiondate'],
+            top: 100,
+          })
+          console.log('🔍 [360 View] Issues raw result:', JSON.stringify(r).slice(0, 1000))
+          const unwrapped = unwrap(r)
+          console.log('🔍 [360 View] Issues unwrapped count:', unwrapped.length, '| Sample:', unwrapped.length > 0 ? JSON.stringify(unwrapped[0]) : 'NO DATA')
+          return r
+        })(),
+        (async () => {
+          const r = await Pm_resourceallocationsService.getAll({
+            filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+            select: ['pm_resourceallocationid', 'pm_allocatedhours', 'pm_allocationpercentage', 'pm_assignmentrole', 'pm_startdate', 'pm_enddate', '_pm_resource_value'],
+            top: 100,
+          })
+          console.log('🔍 [360 View] Resources raw result:', JSON.stringify(r).slice(0, 1000))
+          const unwrapped = unwrap(r)
+          console.log('🔍 [360 View] Resources unwrapped count:', unwrapped.length, '| Sample:', unwrapped.length > 0 ? JSON.stringify(unwrapped[0]) : 'NO DATA')
+          return r
+        })(),
+        (async () => {
+          const r = await Pm_budgetlinesService.getAll({
+            filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+            select: ['pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur', 'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory'],
+            top: 100,
+          })
+          console.log('🔍 [360 View] Budget lines raw result:', JSON.stringify(r).slice(0, 1000))
+          const unwrapped = unwrap(r)
+          console.log('🔍 [360 View] Budget lines unwrapped count:', unwrapped.length, '| Sample:', unwrapped.length > 0 ? JSON.stringify(unwrapped[0]) : 'NO DATA')
+          return r
+        })(),
+        (async () => {
+          const r = await Pm_benefitsService.getAll({
+            filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+            select: ['pm_benefitid', 'pm_benefitname', 'pm_benefitcategory', 'pm_benefitstatus', 'pm_targetvalue', 'pm_unitofmeasure', 'pm_ragstatus', 'pm_realisationenddate'],
+            top: 100,
+          })
+          console.log('🔍 [360 View] Benefits raw result:', JSON.stringify(r).slice(0, 1000))
+          const unwrapped = unwrap(r)
+          console.log('🔍 [360 View] Benefits unwrapped count:', unwrapped.length, '| Sample:', unwrapped.length > 0 ? JSON.stringify(unwrapped[0]) : 'NO DATA')
+          return r
+        })(),
+        (async () => {
+          const r = await Pm_projecttasksService.getAll({
+            filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+            select: ['pm_projecttaskid', 'pm_taskname', 'pm_taskstatus', 'pm_percentcomplete', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_assignedresource', 'pm_ismilestone'],
+            orderBy: ['pm_plannedstartdate asc'],
+            top: 200,
+          })
+          console.log('🔍 [360 View] Tasks raw result:', JSON.stringify(r).slice(0, 1000))
+          const unwrapped = unwrap(r)
+          console.log('🔍 [360 View] Tasks unwrapped count:', unwrapped.length, '| Sample:', unwrapped.length > 0 ? JSON.stringify(unwrapped[0]) : 'NO DATA')
+          return r
+        })(),
+        (async () => {
+          const r = await Pm_projectgatereviewsService.getAll({
+            filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+            select: ['pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage', 'pm_reviewoutcome', 'pm_reviewstatus', 'pm_plannedreviewdate', 'pm_actualreviewdate', 'pm_leadreviewer'],
+            orderBy: ['pm_plannedreviewdate desc'],
+            top: 50,
+          })
+          console.log('🔍 [360 View] Gate reviews raw result:', JSON.stringify(r).slice(0, 1000))
+          const unwrapped = unwrap(r)
+          console.log('🔍 [360 View] Gate reviews unwrapped count:', unwrapped.length, '| Sample:', unwrapped.length > 0 ? JSON.stringify(unwrapped[0]) : 'NO DATA')
+          return r
+        })(),
       ])
+
+      console.log('📋 [360 View] ALL DATA LOADED. Final counts:', {
+        milestones: unwrap(msResult).length,
+        risks: unwrap(riskResult).length,
+        issues: unwrap(issueResult).length,
+        resources: unwrap(allocResult).length,
+        budgetLines: unwrap(budgetResult).length,
+        benefits: unwrap(benefitResult).length,
+        tasks: unwrap(taskResult).length,
+        gateReviews: unwrap(gateResult).length,
+      })
 
       setDetailMilestones(unwrap(msResult).map((m: any) => ({
         pm_projectmilestoneid: m.pm_projectmilestoneid,
@@ -320,6 +484,46 @@ export default function ProjectsPage() {
         pm_targetresolutiondate: i.pm_targetresolutiondate,
       })))
       setDetailResources(unwrap(allocResult))
+      setDetailBudgetLines(unwrap(budgetResult).map((b: any) => ({
+        pm_budgetlineid: b.pm_budgetlineid,
+        pm_budgetlinename: b.pm_budgetlinename,
+        pm_approvedbudgeteur: b.pm_approvedbudgeteur,
+        pm_actualspendeur: b.pm_actualspendeur,
+        pm_committedspendeur: b.pm_committedspendeur,
+        pm_forecastspendeur: b.pm_forecastspendeur,
+        pm_varianceeur: b.pm_varianceeur,
+        pm_costcategory: b.pm_costcategory,
+      })))
+      setDetailBenefits(unwrap(benefitResult).map((b: any) => ({
+        pm_benefitid: b.pm_benefitid,
+        pm_benefitname: b.pm_benefitname,
+        pm_benefitcategory: b.pm_benefitcategory,
+        pm_benefitstatus: b.pm_benefitstatus,
+        pm_targetvalue: b.pm_targetvalue,
+        pm_unitofmeasure: b.pm_unitofmeasure,
+        pm_ragstatus: b.pm_ragstatus,
+        pm_realisationenddate: b.pm_realisationenddate,
+      })))
+      setDetailTasks(unwrap(taskResult).map((t: any) => ({
+        pm_projecttaskid: t.pm_projecttaskid,
+        pm_taskname: t.pm_taskname,
+        pm_taskstatus: t.pm_taskstatus,
+        pm_percentcomplete: t.pm_percentcomplete,
+        pm_plannedstartdate: t.pm_plannedstartdate,
+        pm_plannedenddate: t.pm_plannedenddate,
+        pm_assignedresource: t.pm_assignedresource,
+        pm_ismilestone: t.pm_ismilestone,
+      })))
+      setDetailGateReviews(unwrap(gateResult).map((g: any) => ({
+        pm_projectgatereviewid: g.pm_projectgatereviewid,
+        pm_gatename: g.pm_gatename,
+        pm_gatestage: g.pm_gatestage,
+        pm_reviewoutcome: g.pm_reviewoutcome,
+        pm_reviewstatus: g.pm_reviewstatus,
+        pm_plannedreviewdate: g.pm_plannedreviewdate,
+        pm_actualreviewdate: g.pm_actualreviewdate,
+        pm_leadreviewer: g.pm_leadreviewer,
+      })))
     } catch (err) {
       setError('Failed to load project detail data.')
       console.warn(err)
@@ -328,9 +532,18 @@ export default function ProjectsPage() {
     }
   }, [])
 
-  const handleBack = useCallback(() => {
-    setView('grid')
+  const handleBackToProjects = useCallback(() => {
     setSelectedProject(null)
+    setError(null)
+    // Reset forms
+    setMilestoneForm({ pm_milestonename: '', pm_planneddate: '' })
+    setRiskForm({ pm_risktitle: '', pm_riskdescription: '', pm_ragstatus: '1', pm_riskcategory: '3' })
+    setIssueForm({ pm_issuetitle: '', pm_issuedescription: '', pm_prioritylevel: '0', pm_issuecategory: '0' })
+    setResourceForm({ pm_resourceName: '', pm_resourceId: '', pm_allocatedhours: 40, pm_assignmentrole: '', pm_startdate: '', pm_enddate: '' })
+    setBudgetForm({ pm_budgetlinename: '', pm_approvedbudgeteur: 0, pm_actualspendeur: 0, pm_costcategory: '' })
+    setBenefitForm({ pm_benefitname: '', pm_benefitcategory: '1', pm_benefitstatus: '0', pm_targetvalue: 0, pm_unitofmeasure: '', pm_realisationenddate: '' })
+    setTaskForm({ pm_taskname: '', pm_taskdescription: '', pm_assignedresource: '', pm_plannedstartdate: '', pm_plannedenddate: '', pm_percentcomplete: 0, pm_durationdays: 0 })
+    setDetailTab(0)
   }, [])
 
   // ── Create project ──────────────────────────────────────────────────────
@@ -362,6 +575,7 @@ export default function ProjectsPage() {
         _pm_project_value: selectedProject.pm_projectid,
       })
       setMilestoneForm({ pm_milestonename: '', pm_planneddate: '' })
+      setMilestoneDialogOpen(false)
       setSuccessMsg('Milestone added successfully.')
       // Refresh milestones
       const { Pm_projectmilestonesService } = await import('../../generated')
@@ -371,7 +585,7 @@ export default function ProjectsPage() {
         orderBy: ['pm_planneddate asc'],
         top: 100,
       })
-      const unwrap = (r: any) => { if (!r) return []; if ('value' in r) return r.value; return Array.isArray(r) ? r : [] }
+      const unwrap = (r: any) => { if (!r) return []; if (r.success && Array.isArray(r.data)) return r.data; if ('value' in r) return r.value; return Array.isArray(r) ? r : [] }
       setDetailMilestones(unwrap(result).map((m: any) => ({
         pm_projectmilestoneid: m.pm_projectmilestoneid,
         pm_milestonename: m.pm_milestonename,
@@ -393,7 +607,27 @@ export default function ProjectsPage() {
         pm_projectid: selectedProject.pm_projectid,
       })
       setRiskForm({ pm_risktitle: '', pm_riskdescription: '', pm_ragstatus: '1', pm_riskcategory: '3' })
+      setRiskDialogOpen(false)
       setSuccessMsg('Risk logged successfully.')
+      // Refresh risks
+      const { Pm_risksService } = await import('../../generated')
+      const result = await Pm_risksService.getAll({
+        filter: `_pm_project_value eq '${selectedProject.pm_projectid}' and statecode eq 0`,
+        select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskowner', 'pm_riskstatus', 'pm_identifieddate', 'pm_targetclosedate'],
+        top: 100,
+      })
+      const unwrap = (r: any) => { if (!r) return []; if (r.success && Array.isArray(r.data)) return r.data; if ('value' in r) return r.value; return Array.isArray(r) ? r : [] }
+      setDetailRisks(unwrap(result).map((r: any) => ({
+        pm_riskid: r.pm_riskid,
+        pm_risktitle: r.pm_risktitle,
+        pm_riskcategory: r.pm_riskcategory,
+        pm_riskdescription: r.pm_riskdescription,
+        pm_ragstatus: r.pm_ragstatus,
+        pm_riskowner: r.pm_riskowner,
+        pm_riskstatus: r.pm_riskstatus,
+        pm_identifieddate: r.pm_identifieddate,
+        pm_targetclosedate: r.pm_targetclosedate,
+      })))
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch {
       setError('Unable to log risk.')
@@ -409,7 +643,28 @@ export default function ProjectsPage() {
         pm_projectid: selectedProject.pm_projectid,
       })
       setIssueForm({ pm_issuetitle: '', pm_issuedescription: '', pm_prioritylevel: '0', pm_issuecategory: '0' })
+      setIssueDialogOpen(false)
       setSuccessMsg('Issue logged successfully.')
+      // Refresh issues
+      const { Pm_issuesService } = await import('../../generated')
+      const result = await Pm_issuesService.getAll({
+        filter: `_pm_project_value eq '${selectedProject.pm_projectid}' and statecode eq 0`,
+        select: ['pm_issueid', 'pm_issuetitle', 'pm_issuedescription', 'pm_issuecategory', 'pm_ragstatus', 'pm_issueowner', 'pm_issuestatus', 'pm_prioritylevel', 'pm_dateraised', 'pm_targetresolutiondate'],
+        top: 100,
+      })
+      const unwrap = (r: any) => { if (!r) return []; if (r.success && Array.isArray(r.data)) return r.data; if ('value' in r) return r.value; return Array.isArray(r) ? r : [] }
+      setDetailIssues(unwrap(result).map((i: any) => ({
+        pm_issueid: i.pm_issueid,
+        pm_issuetitle: i.pm_issuetitle,
+        pm_issuedescription: i.pm_issuedescription,
+        pm_issuecategory: i.pm_issuecategory,
+        pm_ragstatus: i.pm_ragstatus,
+        pm_issueowner: i.pm_issueowner,
+        pm_issuestatus: i.pm_issuestatus,
+        pm_prioritylevel: i.pm_prioritylevel,
+        pm_dateraised: i.pm_dateraised,
+        pm_targetresolutiondate: i.pm_targetresolutiondate,
+      })))
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch {
       setError('Unable to log issue.')
@@ -429,16 +684,17 @@ export default function ProjectsPage() {
         pm_enddate: resourceForm.pm_enddate,
       })
       setResourceForm({ pm_resourceName: '', pm_resourceId: '', pm_allocatedhours: 40, pm_assignmentrole: '', pm_startdate: '', pm_enddate: '' })
+      setResourceDialogOpen(false)
       setSuccessMsg('Resource assigned successfully.')
       // Refresh resource allocations
       try {
         const { Pm_resourceallocationsService } = await import('../../generated')
         const allocResult = await Pm_resourceallocationsService.getAll({
           filter: `_pm_project_value eq '${selectedProject.pm_projectid}' and statecode eq 0`,
-          select: ['pm_resourceallocationid', 'pm_allocatedhours', 'pm_allocationpercentage', 'pm_assignmentrole', 'pm_startdate', 'pm_enddate', 'pm_resourcename'],
+          select: ['pm_resourceallocationid', 'pm_allocatedhours', 'pm_allocationpercentage', 'pm_assignmentrole', 'pm_startdate', 'pm_enddate', '_pm_resource_value'],
           top: 100,
         })
-        const unwrap = (r: any) => { if (!r) return []; if ('value' in r) return r.value; return Array.isArray(r) ? r : [] }
+        const unwrap = (r: any) => { if (!r) return []; if (r.success && Array.isArray(r.data)) return r.data; if ('value' in r) return r.value; return Array.isArray(r) ? r : [] }
         setDetailResources(unwrap(allocResult))
       } catch { /* silent */ }
       setTimeout(() => setSuccessMsg(null), 3000)
@@ -447,11 +703,140 @@ export default function ProjectsPage() {
     }
   }
 
+  // ── Add budget line ─────────────────────────────────────────────────────
+  const handleAddBudgetLine = async () => {
+    if (!selectedProject?.pm_projectid || !budgetForm.pm_budgetlinename) { setError('Budget line name is required.'); return }
+    try {
+      await createBudgetLine({
+        pm_budgetlinename: budgetForm.pm_budgetlinename,
+        pm_approvedbudgeteur: budgetForm.pm_approvedbudgeteur,
+        pm_actualspendeur: budgetForm.pm_actualspendeur,
+        pm_costcategory: budgetForm.pm_costcategory !== '' ? Number(budgetForm.pm_costcategory) : undefined,
+        _pm_project_value: selectedProject.pm_projectid,
+      })
+      setBudgetForm({ pm_budgetlinename: '', pm_approvedbudgeteur: 0, pm_actualspendeur: 0, pm_costcategory: '' })
+      setBudgetDialogOpen(false)
+      setSuccessMsg('Budget line added successfully.')
+      // Refresh budget lines
+      try {
+        const { Pm_budgetlinesService } = await import('../../generated')
+        const budgetResult = await Pm_budgetlinesService.getAll({
+          filter: `_pm_project_value eq '${selectedProject.pm_projectid}' and statecode eq 0`,
+          select: ['pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur', 'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory'],
+          top: 100,
+        })
+        const unwrap = (r: any) => { if (!r) return []; if (r.success && Array.isArray(r.data)) return r.data; if ('value' in r) return r.value; return Array.isArray(r) ? r : [] }
+        setDetailBudgetLines(unwrap(budgetResult).map((b: any) => ({
+          pm_budgetlineid: b.pm_budgetlineid,
+          pm_budgetlinename: b.pm_budgetlinename,
+          pm_approvedbudgeteur: b.pm_approvedbudgeteur,
+          pm_actualspendeur: b.pm_actualspendeur,
+          pm_committedspendeur: b.pm_committedspendeur,
+          pm_forecastspendeur: b.pm_forecastspendeur,
+          pm_varianceeur: b.pm_varianceeur,
+          pm_costcategory: b.pm_costcategory,
+        })))
+      } catch { /* silent */ }
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Unable to add budget line.')
+    }
+  }
+
+  // ── Add benefit ────────────────────────────────────────────────────────
+  const handleAddBenefit = async () => {
+    if (!selectedProject?.pm_projectid || !benefitForm.pm_benefitname) { setError('Benefit name is required.'); return }
+    try {
+      await createBenefit({
+        pm_benefitname: benefitForm.pm_benefitname,
+        pm_benefitcategory: benefitForm.pm_benefitcategory,
+        pm_benefitstatus: benefitForm.pm_benefitstatus,
+        pm_targetvalue: benefitForm.pm_targetvalue,
+        pm_unitofmeasure: benefitForm.pm_unitofmeasure,
+        pm_realisationenddate: benefitForm.pm_realisationenddate,
+        _pm_project_value: selectedProject.pm_projectid,
+      })
+      setBenefitForm({ pm_benefitname: '', pm_benefitcategory: '1', pm_benefitstatus: '0', pm_targetvalue: 0, pm_unitofmeasure: '', pm_realisationenddate: '' })
+      setBenefitDialogOpen(false)
+      setSuccessMsg('Benefit added successfully.')
+      // Refresh benefits
+      try {
+        const { Pm_benefitsService } = await import('../../generated')
+        const benefitResult = await Pm_benefitsService.getAll({
+          filter: `_pm_project_value eq '${selectedProject.pm_projectid}' and statecode eq 0`,
+          select: ['pm_benefitid', 'pm_benefitname', 'pm_benefitcategory', 'pm_benefitstatus', 'pm_targetvalue', 'pm_unitofmeasure', 'pm_ragstatus', 'pm_realisationenddate'],
+          top: 100,
+        })
+        const unwrap = (r: any) => { if (!r) return []; if (r.success && Array.isArray(r.data)) return r.data; if ('value' in r) return r.value; return Array.isArray(r) ? r : [] }
+        setDetailBenefits(unwrap(benefitResult).map((b: any) => ({
+          pm_benefitid: b.pm_benefitid,
+          pm_benefitname: b.pm_benefitname,
+          pm_benefitcategory: b.pm_benefitcategory,
+          pm_benefitstatus: b.pm_benefitstatus,
+          pm_targetvalue: b.pm_targetvalue,
+          pm_unitofmeasure: b.pm_unitofmeasure,
+          pm_ragstatus: b.pm_ragstatus,
+          pm_realisationenddate: b.pm_realisationenddate,
+        })))
+      } catch { /* silent */ }
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Unable to add benefit.')
+    }
+  }
+
+  // ── Add task ────────────────────────────────────────────────────────────
+  const handleAddTask = async () => {
+    if (!selectedProject?.pm_projectid || !taskForm.pm_taskname) { setError('Task name is required.'); return }
+    try {
+      await createProjectTask({
+        pm_taskname: taskForm.pm_taskname,
+        pm_taskdescription: taskForm.pm_taskdescription,
+        pm_assignedresource: taskForm.pm_assignedresource,
+        pm_plannedstartdate: taskForm.pm_plannedstartdate,
+        pm_plannedenddate: taskForm.pm_plannedenddate,
+        pm_percentcomplete: taskForm.pm_percentcomplete,
+        pm_durationdays: taskForm.pm_durationdays || undefined,
+        _pm_project_value: selectedProject.pm_projectid,
+      })
+      setTaskForm({ pm_taskname: '', pm_taskdescription: '', pm_assignedresource: '', pm_plannedstartdate: '', pm_plannedenddate: '', pm_percentcomplete: 0, pm_durationdays: 0 })
+      setTaskDialogOpen(false)
+      setSuccessMsg('Task added successfully.')
+      // Refresh tasks
+      try {
+        const { Pm_projecttasksService } = await import('../../generated')
+        const taskResult = await Pm_projecttasksService.getAll({
+          filter: `_pm_project_value eq '${selectedProject.pm_projectid}' and statecode eq 0`,
+          select: ['pm_projecttaskid', 'pm_taskname', 'pm_taskstatus', 'pm_percentcomplete', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_assignedresource', 'pm_ismilestone'],
+          orderBy: ['pm_plannedstartdate asc'],
+          top: 200,
+        })
+        const unwrap = (r: any) => { if (!r) return []; if (r.success && Array.isArray(r.data)) return r.data; if ('value' in r) return r.value; return Array.isArray(r) ? r : [] }
+        setDetailTasks(unwrap(taskResult).map((t: any) => ({
+          pm_projecttaskid: t.pm_projecttaskid,
+          pm_taskname: t.pm_taskname,
+          pm_taskstatus: t.pm_taskstatus,
+          pm_percentcomplete: t.pm_percentcomplete,
+          pm_plannedstartdate: t.pm_plannedstartdate,
+          pm_plannedenddate: t.pm_plannedenddate,
+          pm_assignedresource: t.pm_assignedresource,
+          pm_ismilestone: t.pm_ismilestone,
+        })))
+      } catch { /* silent */ }
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Unable to add task.')
+    }
+  }
+
   // ── Detail tabs ─────────────────────────────────────────────────────────
   const detailTabs = [
     { label: 'Milestones', icon: <FlagIcon fontSize="small" /> },
     { label: 'Risks & Issues', icon: <BugReportIcon fontSize="small" /> },
     { label: 'Resources', icon: <PersonAddIcon fontSize="small" /> },
+    { label: 'Budget', icon: <AccountBalanceWalletIcon fontSize="small" /> },
+    { label: 'Benefits', icon: <EmojiEventsIcon fontSize="small" /> },
+    { label: 'Tasks', icon: <AnalyticsIcon fontSize="small" /> },
     { label: 'Gate Review', icon: <HowToRegIcon fontSize="small" /> },
   ]
 
@@ -468,310 +853,415 @@ export default function ProjectsPage() {
   )
 
   // ══════════════════════════════════════════════════════════════════════
-  // RENDER
-  // ══════════════════════════════════════════════════════════════════════
-  if (view === 'detail' && selectedProject) {
-    return (
-      <Box>
-        {/* Header bar */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <IconButton onClick={handleBack} sx={{ bgcolor: theme.palette.action.hover, borderRadius: 1.5 }}>
+return (
+  <Box>
+
+    {/* ── 360° Project Detail View (inline, replaces table when selected) ── */}
+{selectedProject && (
+  <Box sx={{ mb: 3 }}>
+    {/* Back button + header */}
+    <Paper sx={{ mb: 2.5, borderRadius: 2, overflow: 'hidden' }}>
+      <Box sx={{ px: 3, pt: 2.5, pb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+          <IconButton onClick={handleBackToProjects} size="small" sx={{ mt: 0.5, borderRadius: 1.5 }}>
             <ArrowBackIcon />
           </IconButton>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>{selectedProject.pm_projectname}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              {selectedProject.pm_projectcode} &middot; {selectedProject.pm_projectmanager ?? 'No manager'}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.3 }}>{selectedProject.pm_projectname}</Typography>
+              <StatusChip status={selectedProject.pm_ragstatus} type="rag" />
+              <Chip label={phaseLabel(selectedProject.pm_projectphase)} size="small" variant="outlined" />
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+              {selectedProject.pm_projectcode}
+              {selectedProject.pm_projectmanager ? ` · Manager: ${selectedProject.pm_projectmanager}` : ''}
+              {selectedProject.pm_projectsponsor ? ` · Sponsor: ${selectedProject.pm_projectsponsor}` : ''}
+              {selectedProject.pm_businessunit ? ` · ${selectedProject.pm_businessunit}` : ''}
+              {selectedProject.pm_portfolioname ? ` · Portfolio: ${selectedProject.pm_portfolioname}` : ''}
+              {selectedProject.pm_programmename ? ` · Programme: ${selectedProject.pm_programmename}` : ''}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <StatusChip status={selectedProject.pm_ragstatus} type="rag" />
-            <Chip label={phaseLabel(selectedProject.pm_projectphase)} size="small" variant="outlined" />
+        </Box>
+      </Box>
+    </Paper>
+
+    {/* ── Quick Info Cards ──────────────────────────────────── */}
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 2.5 }}>
+      <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid #3b82f6' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Budget</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>{currency(selectedProject.pm_approvedbudgeteur)}</Typography>
+      </Paper>
+      <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid #f59e0b' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Actual Spend</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>{currency(selectedProject.pm_actualcosteur)}</Typography>
+      </Paper>
+      <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid #22c55e' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>% Complete</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>{selectedProject.pm_percentcomplete ?? 0}%</Typography>
+        <LinearProgress
+          variant="determinate"
+          value={selectedProject.pm_percentcomplete ?? 0}
+          sx={{ mt: 0.5, height: 4, borderRadius: 2, bgcolor: theme.palette.action.hover }}
+        />
+      </Paper>
+      <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: `3px solid ${RAG_COLORS[String(selectedProject.pm_ragstatus)] ?? '#6b7280'}` }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Schedule</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          {selectedProject.pm_plannedenddate
+            ? new Date(selectedProject.pm_plannedenddate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : '—'}
+        </Typography>
+      </Paper>
+    </Box>
+
+    {/* ── Action Buttons Bar ────────────────────────────────── */}
+    <Paper sx={{ px: 2.5, py: 1.5, mb: 2.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+      <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mr: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>Actions:</Typography>
+      <Button size="small" variant="outlined" startIcon={<FlagIcon />} onClick={() => setMilestoneDialogOpen(true)}>Milestone</Button>
+      <Button size="small" variant="outlined" color="error" startIcon={<ErrorIcon />} onClick={() => setRiskDialogOpen(true)}>Risk</Button>
+      <Button size="small" variant="outlined" color="warning" startIcon={<WarningAmberIcon />} onClick={() => setIssueDialogOpen(true)}>Issue</Button>
+      <Button size="small" variant="outlined" startIcon={<PersonAddIcon />} onClick={() => setResourceDialogOpen(true)}>Resource</Button>
+      <Button size="small" variant="outlined" startIcon={<AttachMoneyIcon />} onClick={() => setBudgetDialogOpen(true)}>Budget</Button>
+      <Button size="small" variant="outlined" startIcon={<EmojiEventsIcon />} onClick={() => setBenefitDialogOpen(true)}>Benefit</Button>
+      <Button size="small" variant="outlined" startIcon={<AssignmentIcon />} onClick={() => setTaskDialogOpen(true)}>Task</Button>
+    </Paper>
+
+    {/* ── Tabbed Content ────────────────────────────────────── */}
+    <Paper sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
+      <Tabs
+        value={detailTab}
+        onChange={(_, v) => setDetailTab(v)}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{
+          px: 2, pt: 1,
+          '& .MuiTab-root': { textTransform: 'none', fontWeight: 600, minHeight: 48, borderRadius: '8px 8px 0 0', fontSize: fontSizes.smMd },
+          '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0' },
+        }}
+      >
+        {detailTabs.map((tab) => (
+          <Tab key={tab.label} label={tab.label} icon={tab.icon} iconPosition="start" />
+        ))}
+      </Tabs>
+
+      <Box sx={{ p: 3 }}>
+        {detailLoading ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {[...Array(3)].map((_, i) => <Skeleton key={i} variant="rounded" height={80} />)}
           </Box>
-        </Box>
-
-        {/* Quick info cards */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 3 }}>
-          <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid #3b82f6' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Budget</Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>{currency(selectedProject.pm_approvedbudgeteur)}</Typography>
-          </Paper>
-          <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid #f59e0b' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Actual Spend</Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>{currency(selectedProject.pm_actualcosteur)}</Typography>
-          </Paper>
-          <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid #22c55e' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>% Complete</Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>{selectedProject.pm_percentcomplete ?? 0}%</Typography>
-            <LinearProgress
-              variant="determinate"
-              value={selectedProject.pm_percentcomplete ?? 0}
-              sx={{ mt: 0.5, height: 4, borderRadius: 2, bgcolor: theme.palette.action.hover }}
-            />
-          </Paper>
-          <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: `3px solid ${RAG_COLORS[String(selectedProject.pm_ragstatus)] ?? '#6b7280'}` } }>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Sponsor</Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>{selectedProject.pm_projectsponsor ?? '—'}</Typography>
-          </Paper>
-        </Box>
-
-        {/* Tabs */}
-        <Paper sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
-          <Tabs
-            value={detailTab}
-            onChange={(_, v) => setDetailTab(v)}
-            sx={{
-              px: 2, pt: 1,
-              '& .MuiTab-root': { textTransform: 'none', fontWeight: 600, minHeight: 48, borderRadius: '8px 8px 0 0' },
-              '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0' },
-            }}
-          >
-            {detailTabs.map((tab) => (
-              <Tab key={tab.label} label={tab.label} icon={tab.icon} iconPosition="start" />
-            ))}
-          </Tabs>
-
-          <Box sx={{ p: 3 }}>
-            {detailLoading ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {[...Array(3)].map((_, i) => <Skeleton key={i} variant="rounded" height={80} />)}
-              </Box>
-            ) : detailTab === 0 ? (
-              /* ── Tab 0: Milestones ───────────────────────────────── */
-              <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
-                  Add Milestone
-                </Typography>
-                <Grid container spacing={1.5} sx={{ mb: 3 }}>
-                  <Grid size={{ xs: 12, sm: 5 }}>
-                    <TextField fullWidth size="small" label="Milestone name" value={milestoneForm.pm_milestonename ?? ''}
-                      onChange={(e) => setMilestoneForm((f) => ({ ...f, pm_milestonename: e.target.value }))} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 3 }}>
-                    <TextField fullWidth size="small" type="date" slotProps={{ inputLabel: { shrink: true } }} label="Target date"
-                      value={milestoneForm.pm_planneddate ?? ''} onChange={(e) => setMilestoneForm((f) => ({ ...f, pm_planneddate: e.target.value }))} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 2 }}>
-                    <TextField select fullWidth size="small" label="Type" value={milestoneForm.pm_milestonetype ?? ''}
-                      onChange={(e) => setMilestoneForm((f) => ({ ...f, pm_milestonetype: e.target.value }))}>
-                      <MenuItem value="">Any</MenuItem>
-                      <MenuItem value="0">Delivery</MenuItem>
-                      <MenuItem value="1">Governance</MenuItem>
-                    </TextField>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 2 }}>
-                    <Button fullWidth variant="contained" size="small" onClick={handleAddMilestone} sx={{ height: '100%' }}>Add</Button>
-                  </Grid>
-                </Grid>
-
-                {detailMilestones.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {detailMilestones.map((ms) => (
-                      <Paper key={ms.pm_projectmilestoneid} variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{ms.pm_milestonename}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {ms.pm_milestonetype === '0' || ms.pm_milestonetype === 0 ? 'Delivery' : ms.pm_milestonetype === '1' || ms.pm_milestonetype === 1 ? 'Governance' : '—'}
-                            {ms.pm_planneddate ? ` · ${new Date(ms.pm_planneddate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
-                          </Typography>
-                        </Box>
-                        <StatusChip status={ms.pm_ragstatus} type="rag" />
-                      </Paper>
-                    ))}
-                  </Box>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                    No milestones yet. Add one above.
-                  </Typography>
-                )}
-              </Box>
-            ) : detailTab === 1 ? (
-              /* ── Tab 1: Risks & Issues ────────────────────────────── */
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
-                {/* Risk form */}
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ErrorIcon color="error" fontSize="small" /> Log Risk
-                  </Typography>
-                  <Grid container spacing={1.5}>
-                    <Grid size={12}>
-                      <TextField fullWidth size="small" label="Risk title" value={riskForm.pm_risktitle ?? ''}
-                        onChange={(e) => setRiskForm((f) => ({ ...f, pm_risktitle: e.target.value }))} />
-                    </Grid>
-                    <Grid size={12}>
-                      <TextField fullWidth size="small" multiline rows={2} label="Description" value={riskForm.pm_riskdescription ?? ''}
-                        onChange={(e) => setRiskForm((f) => ({ ...f, pm_riskdescription: e.target.value }))} />
-                    </Grid>
-                    <Grid size={6}>
-                      <TextField select fullWidth size="small" label="Category" value={riskForm.pm_riskcategory ?? '3'}
-                        onChange={(e) => setRiskForm((f) => ({ ...f, pm_riskcategory: e.target.value }))}>
-                        <MenuItem value="0">Resource</MenuItem>
-                        <MenuItem value="1">Financial</MenuItem>
-                        <MenuItem value="2">Legal</MenuItem>
-                        <MenuItem value="3">Technical</MenuItem>
-                        <MenuItem value="4">External</MenuItem>
-                      </TextField>
-                    </Grid>
-                    <Grid size={6}>
-                      <TextField select fullWidth size="small" label="RAG" value={riskForm.pm_ragstatus ?? '1'}
-                        onChange={(e) => setRiskForm((f) => ({ ...f, pm_ragstatus: e.target.value }))}>
-                        <MenuItem value="1">Green</MenuItem>
-                        <MenuItem value="0">Amber</MenuItem>
-                        <MenuItem value="2">Red</MenuItem>
-                      </TextField>
-                    </Grid>
-                    <Grid size={12}>
-                      <Button fullWidth variant="contained" size="small" onClick={handleAddRisk}>Log Risk</Button>
-                    </Grid>
-                  </Grid>
-                </Paper>
-
-                {/* Issue form */}
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <WarningAmberIcon color="warning" fontSize="small" /> Log Issue
-                  </Typography>
-                  <Grid container spacing={1.5}>
-                    <Grid size={12}>
-                      <TextField fullWidth size="small" label="Issue title" value={issueForm.pm_issuetitle ?? ''}
-                        onChange={(e) => setIssueForm((f) => ({ ...f, pm_issuetitle: e.target.value }))} />
-                    </Grid>
-                    <Grid size={12}>
-                      <TextField fullWidth size="small" multiline rows={2} label="Description" value={issueForm.pm_issuedescription ?? ''}
-                        onChange={(e) => setIssueForm((f) => ({ ...f, pm_issuedescription: e.target.value }))} />
-                    </Grid>
-                    <Grid size={6}>
-                      <TextField select fullWidth size="small" label="Priority" value={issueForm.pm_prioritylevel ?? '0'}
-                        onChange={(e) => setIssueForm((f) => ({ ...f, pm_prioritylevel: e.target.value }))}>
-                        <MenuItem value="0">High</MenuItem>
-                        <MenuItem value="1">Critical</MenuItem>
-                        <MenuItem value="2">Medium</MenuItem>
-                      </TextField>
-                    </Grid>
-                    <Grid size={6}>
-                      <TextField select fullWidth size="small" label="Category" value={issueForm.pm_issuecategory ?? '0'}
-                        onChange={(e) => setIssueForm((f) => ({ ...f, pm_issuecategory: e.target.value }))}>
-                        <MenuItem value="0">Dependency</MenuItem>
-                        <MenuItem value="1">Technical</MenuItem>
-                      </TextField>
-                    </Grid>
-                    <Grid size={12}>
-                      <Button fullWidth variant="contained" size="small" onClick={handleAddIssue}>Log Issue</Button>
-                    </Grid>
-                  </Grid>
-                </Paper>
-
-                {/* Recent risks list */}
-                {detailRisks.length > 0 && (
-                  <Box sx={{ gridColumn: '1 / -1' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                      Recent Risks ({detailRisks.length})
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {detailRisks.map((r) => (
-                        <Paper key={r.pm_riskid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: RAG_COLORS[String(r.pm_ragstatus)] ?? '#6b7280', flexShrink: 0 }} />
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{r.pm_risktitle}</Typography>
-                            <Typography variant="caption" color="text.secondary">{r.pm_riskowner ?? 'Unassigned'} {r.pm_targetclosedate ? `· Target: ${new Date(r.pm_targetclosedate).toLocaleDateString()}` : ''}</Typography>
-                          </Box>
-                          <Chip label={['Resource','Financial','Legal','Technical','External'][Number(r.pm_riskcategory)] ?? '—'} size="small" variant="outlined" />
-                        </Paper>
-                      ))}
+        ) : detailTab === 0 ? (
+          /* ═══════════════════════════════════════════════════ */
+          /* Tab 0: Milestones                                     */
+          /* ═══════════════════════════════════════════════════ */
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Project Milestones</Typography>
+            </Box>
+            {detailMilestones.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {detailMilestones.map((ms) => (
+                  <Paper key={ms.pm_projectmilestoneid} variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{ms.pm_milestonename}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {ms.pm_milestonetype === '0' || ms.pm_milestonetype === 0 ? 'Delivery' : ms.pm_milestonetype === '1' || ms.pm_milestonetype === 1 ? 'Governance' : '—'}
+                        {ms.pm_planneddate ? ` · ${new Date(ms.pm_planneddate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+                      </Typography>
                     </Box>
-                  </Box>
-                )}
-              </Box>
-            ) : detailTab === 2 ? (
-              /* ── Tab 2: Resources ─────────────────────────────────── */
-              <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
-                  Assign Resource
-                </Typography>
-                <Grid container spacing={1.5} sx={{ mb: 3 }}>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField fullWidth size="small" label="Resource name or ID" value={resourceForm.pm_resourceName}
-                      onChange={(e) => setResourceForm((f) => ({ ...f, pm_resourceName: e.target.value, pm_resourceId: e.target.value }))} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 2 }}>
-                    <TextField fullWidth size="small" type="number" label="Hours" value={resourceForm.pm_allocatedhours}
-                      onChange={(e) => setResourceForm((f) => ({ ...f, pm_allocatedhours: Number(e.target.value) }))} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 3 }}>
-                    <TextField fullWidth size="small" label="Role" value={resourceForm.pm_assignmentrole}
-                      onChange={(e) => setResourceForm((f) => ({ ...f, pm_assignmentrole: e.target.value }))} />
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 1.5 }}>
-                    <TextField fullWidth size="small" type="date" slotProps={{ inputLabel: { shrink: true } }} label="Start"
-                      value={resourceForm.pm_startdate} onChange={(e) => setResourceForm((f) => ({ ...f, pm_startdate: e.target.value }))} />
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 1.5 }}>
-                    <TextField fullWidth size="small" type="date" slotProps={{ inputLabel: { shrink: true } }} label="End"
-                      value={resourceForm.pm_enddate} onChange={(e) => setResourceForm((f) => ({ ...f, pm_enddate: e.target.value }))} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 2 }}>
-                    <Button fullWidth variant="contained" size="small" onClick={handleAssignResource} sx={{ height: '100%' }}>Assign</Button>
-                  </Grid>
-                </Grid>
-
-                {detailResources.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {detailResources.map((alloc: any) => (
-                      <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{alloc.pm_resourcename ?? alloc.pm_resourceid ?? 'Unknown resource'}</Typography>
-                          <Typography variant="caption" color="text.secondary">{alloc.pm_assignmentrole ?? '—'} &middot; {alloc.pm_allocatedhours ?? 0}h allocated</Typography>
-                        </Box>
-                        <Typography variant="caption" color="text.secondary">
-                          {alloc.pm_startdate ? new Date(alloc.pm_startdate).toLocaleDateString() : '—'} — {alloc.pm_enddate ? new Date(alloc.pm_enddate).toLocaleDateString() : '—'}
-                        </Typography>
-                      </Paper>
-                    ))}
-                  </Box>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                    No resources assigned yet.
-                  </Typography>
-                )}
+                    <StatusChip status={ms.pm_ragstatus} type="rag" />
+                  </Paper>
+                ))}
               </Box>
             ) : (
-              /* ── Tab 3: Gate Review ───────────────────────────────── */
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <HowToRegIcon sx={{ fontSize: 48, color: theme.palette.text.secondary, mb: 2 }} />
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Gate Review</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 480, mx: 'auto' }}>
-                  Submit this project for a formal gate review by the PMO. This will change the project phase and initiate an approval workflow.
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                  <Button variant="contained" size="large" startIcon={<HowToRegIcon />}>
-                    Submit Gate Review
-                  </Button>
-                  <Button variant="outlined" size="large">
-                    Request Phase Change
-                  </Button>
-                </Box>
-                <Paper variant="outlined" sx={{ mt: 3, p: 2, borderRadius: 1.5, maxWidth: 480, mx: 'auto', bgcolor: theme.palette.action.hover }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Gate reviews require PMO approval before proceeding. A workflow instance will be created and assigned to the portfolio director.
-                  </Typography>
-                </Paper>
-              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                No milestones yet. Use the Actions bar above to add one.
+              </Typography>
             )}
           </Box>
-        </Paper>
-      </Box>
-    )
-  }
+        ) : detailTab === 1 ? (
+          /* ═══════════════════════════════════════════════════ */
+          /* Tab 1: Risks & Issues                                  */
+          /* ═══════════════════════════════════════════════════ */
+          <Grid container spacing={2}>
+              {/* Risks list */}
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Risks ({detailRisks.length})
+                </Typography>
+                {detailRisks.length > 0 ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {detailRisks.map((r) => (
+                      <Paper key={r.pm_riskid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: RAG_COLORS[String(r.pm_ragstatus)] ?? '#6b7280', flexShrink: 0 }} />
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{r.pm_risktitle}</Typography>
+                          <Typography variant="caption" color="text.secondary">{r.pm_riskowner ?? 'Unassigned'} {r.pm_targetclosedate ? `· Target: ${new Date(r.pm_targetclosedate).toLocaleDateString()}` : ''}</Typography>
+                        </Box>
+                        <Chip label={['Resource','Financial','Legal','Technical','External'][Number(r.pm_riskcategory)] ?? '—'} size="small" variant="outlined" />
+                      </Paper>
+                    ))}
+                  </Box>
+                ) : (
+                  <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">No risks logged.</Typography>
+                  </Paper>
+                )}
+              </Grid>
+              {/* Issues list */}
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Issues ({detailIssues.length})
+                </Typography>
+                {detailIssues.length > 0 ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {detailIssues.map((i: any) => (
+                      <Paper key={i.pm_issueid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <WarningAmberIcon sx={{ fontSize: 16, color: i.pm_prioritylevel === '1' || i.pm_prioritylevel === 1 ? '#ef4444' : '#f59e0b' }} />
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{i.pm_issuetitle}</Typography>
+                          <Typography variant="caption" color="text.secondary">{i.pm_issueowner ?? 'Unassigned'} {i.pm_targetresolutiondate ? `· Due: ${new Date(i.pm_targetresolutiondate).toLocaleDateString()}` : ''}</Typography>
+                        </Box>
+                        <Chip label={String(i.pm_issuestatus) === '1' ? 'Resolved' : 'Open'} size="small" color={String(i.pm_issuestatus) === '1' ? 'success' : 'default'} variant="outlined" />
+                      </Paper>
+                    ))}
+                  </Box>
+                ) : (
+                  <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">No issues logged.</Typography>
+                  </Paper>
+                )}
+              </Grid>
+            </Grid>
+        ) : detailTab === 2 ? (
+          /* ═══════════════════════════════════════════════════ */
+          /* Tab 2: Resources                                      */
+          /* ═══════════════════════════════════════════════════ */
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Allocated Resources</Typography>
+            {detailResources.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {detailResources.map((alloc: any) => (
+                  <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{alloc._pm_resource_value ?? alloc.pm_resourceid ?? 'Unknown resource'}</Typography>
+                      <Typography variant="caption" color="text.secondary">{alloc.pm_assignmentrole ?? '—'} &middot; {alloc.pm_allocatedhours ?? 0}h allocated</Typography>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {alloc.pm_startdate ? new Date(alloc.pm_startdate).toLocaleDateString() : '—'} — {alloc.pm_enddate ? new Date(alloc.pm_enddate).toLocaleDateString() : '—'}
+                    </Typography>
+                  </Paper>
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                No resources assigned yet. Use the Actions bar above to assign one.
+              </Typography>
+            )}
+          </Box>
+        ) : detailTab === 3 ? (
+          /* ═══════════════════════════════════════════════════ */
+          /* Tab 3: Budget Lines                                   */
+          /* ═══════════════════════════════════════════════════ */
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Budget Breakdown</Typography>
+              <Chip label={`Total: ${currency(detailBudgetLines.reduce((s, b) => s + (b.pm_approvedbudgeteur ?? 0), 0))}`} size="small" color="primary" variant="outlined" />
+              <Chip label={`Spent: ${currency(detailBudgetLines.reduce((s, b) => s + (b.pm_actualspendeur ?? 0), 0))}`} size="small" color={detailBudgetLines.reduce((s, b) => s + (b.pm_actualspendeur ?? 0), 0) > detailBudgetLines.reduce((s, b) => s + (b.pm_approvedbudgeteur ?? 0), 0) ? 'error' : 'default'} variant="outlined" />
+            </Box>
+            {detailBudgetLines.length > 0 ? (
+              <Table size="small" sx={{ minWidth: 600 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>Line Item</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Category</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }} align="right">Budget</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }} align="right">Actual</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }} align="right">Variance</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {detailBudgetLines.map((b) => {
+                    const variance = (b.pm_approvedbudgeteur ?? 0) - (b.pm_actualspendeur ?? 0)
+                    return (
+                      <TableRow key={b.pm_budgetlineid}>
+                        <TableCell><Typography variant="body2" sx={{ fontWeight: 600 }}>{b.pm_budgetlinename}</Typography></TableCell>
+                        <TableCell><Chip label={['Staff', 'Contractors', 'Licences', 'Infrastructure'][Number(b.pm_costcategory)] ?? '—'} size="small" variant="outlined" /></TableCell>
+                        <TableCell align="right">{currency(b.pm_approvedbudgeteur)}</TableCell>
+                        <TableCell align="right">{currency(b.pm_actualspendeur)}</TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" sx={{ color: variance >= 0 ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                            {variance >= 0 ? '+' : ''}{currency(variance)}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                No budget lines yet. Use the Actions bar above to add one.
+              </Typography>
+            )}
+          </Box>
+        ) : detailTab === 4 ? (
+          /* ═══════════════════════════════════════════════════ */
+          /* Tab 4: Benefits                                      */
+          /* ═══════════════════════════════════════════════════ */
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Planned Benefits</Typography>
+              <Chip label={`${detailBenefits.length} benefit(s)`} size="small" color="success" variant="outlined" />
+            </Box>
+            {detailBenefits.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {detailBenefits.map((b) => (
+                  <Paper key={b.pm_benefitid} variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{b.pm_benefitname}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {b.pm_benefitcategory === '1' ? 'Financial' : b.pm_benefitcategory === '2' ? 'Strategic' : 'Operational'}
+                        {b.pm_unitofmeasure ? ` · Target: ${b.pm_targetvalue ?? '—'} ${b.pm_unitofmeasure}` : ''}
+                        {b.pm_realisationenddate ? ` · Due: ${new Date(b.pm_realisationenddate).toLocaleDateString()}` : ''}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <StatusChip status={b.pm_ragstatus} type="rag" />
+                      <Chip label={b.pm_benefitstatus === '0' ? 'Not Started' : b.pm_benefitstatus === '1' ? 'In Progress' : 'Achieved'} size="small" variant="outlined" />
+                    </Box>
+                  </Paper>
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                No benefits yet. Use the Actions bar above to add one.
+              </Typography>
+            )}
+          </Box>
+        ) : detailTab === 5 ? (
+          /* ═══════════════════════════════════════════════════ */
+          /* Tab 5: Tasks                                          */
+          /* ═══════════════════════════════════════════════════ */
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+              Project Tasks ({detailTasks.length})
+            </Typography>
+            {detailTasks.length > 0 ? (
+              <Table size="small" sx={{ minWidth: 700 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>Task Name</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Assigned To</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }} align="right">% Complete</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Start</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>End</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {detailTasks.map((t) => (
+                    <TableRow key={t.pm_projecttaskid}>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {t.pm_taskname}
+                          {t.pm_ismilestone && <Chip label="Milestone" size="small" color="info" variant="outlined" sx={{ ml: 1, height: 20, fontSize: fontSizes.xs }} />}
+                        </Typography>
+                      </TableCell>
+                      <TableCell><Typography variant="body2">{t.pm_assignedresource ?? '—'}</Typography></TableCell>
+                      <TableCell align="right">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end' }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={t.pm_percentcomplete ?? 0}
+                            sx={{ width: 48, height: 5, borderRadius: 3, bgcolor: theme.palette.action.hover }}
+                          />
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>{t.pm_percentcomplete ?? 0}%</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell><Typography variant="body2">{t.pm_plannedstartdate ? new Date(t.pm_plannedstartdate).toLocaleDateString() : '—'}</Typography></TableCell>
+                      <TableCell><Typography variant="body2">{t.pm_plannedenddate ? new Date(t.pm_plannedenddate).toLocaleDateString() : '—'}</Typography></TableCell>
+                      <TableCell>
+                        <Chip
+                          label={String(t.pm_taskstatus) === '0' ? 'Not Started' : String(t.pm_taskstatus) === '1' ? 'In Progress' : String(t.pm_taskstatus) === '2' ? 'Complete' : String(t.pm_taskstatus) === '3' ? 'On Hold' : '—'}
+                          size="small"
+                          variant="outlined"
+                          color={String(t.pm_taskstatus) === '2' ? 'success' : String(t.pm_taskstatus) === '1' ? 'info' : 'default'}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                No tasks yet. Use the Actions bar above to add one.
+              </Typography>
+            )}
+          </Box>
+        ) : (
+          /* ═══════════════════════════════════════════════════ */
+          /* Tab 6: Gate Review                                    */
+          /* ═══════════════════════════════════════════════════ */
+          <Box>
+            {detailGateReviews.length > 0 ? (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Gate Reviews ({detailGateReviews.length})</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {detailGateReviews.map((g) => (
+                    <Paper key={g.pm_projectgatereviewid} variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{g.pm_gatename}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Stage {g.pm_gatestage} · {g.pm_leadreviewer ? `Reviewer: ${g.pm_leadreviewer}` : ''}
+                          {g.pm_plannedreviewdate ? ` · Planned: ${new Date(g.pm_plannedreviewdate).toLocaleDateString()}` : ''}
+                          {g.pm_actualreviewdate ? ` · Actual: ${new Date(g.pm_actualreviewdate).toLocaleDateString()}` : ''}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={String(g.pm_reviewstatus) === '2' ? 'Approved' : String(g.pm_reviewstatus) === '1' ? 'Pending' : String(g.pm_reviewstatus) === '3' ? 'Rejected' : '—'}
+                        size="small"
+                        color={String(g.pm_reviewstatus) === '2' ? 'success' : String(g.pm_reviewstatus) === '3' ? 'error' : 'default'}
+                      />
+                    </Paper>
+                  ))}
+                </Box>
+              </Box>
+            ) : null}
 
-  // ══════════════════════════════════════════════════════════════════════
-  // MAIN GRID VIEW
-  // ══════════════════════════════════════════════════════════════════════
-  return (
-    <Box>
-      <PageHeader
+            {/* Gate review action section */}
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <HowToRegIcon sx={{ fontSize: 48, color: theme.palette.text.secondary, mb: 2 }} />
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Gate Review</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 480, mx: 'auto' }}>
+                Submit this project for a formal gate review by the PMO. This will change the project phase and initiate an approval workflow.
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                <Button variant="contained" size="large" startIcon={<HowToRegIcon />}>
+                  Submit Gate Review
+                </Button>
+                <Button variant="outlined" size="large">
+                  Request Phase Change
+                </Button>
+              </Box>
+              <Paper variant="outlined" sx={{ mt: 3, p: 2, borderRadius: 1.5, maxWidth: 480, mx: 'auto', bgcolor: theme.palette.action.hover }}>
+                <Typography variant="caption" color="text.secondary">
+                  Gate reviews require PMO approval before proceeding. A workflow instance will be created and assigned to the portfolio director.
+                </Typography>
+              </Paper>
+            </Box>
+          </Box>
+        )}
+      </Box>
+    </Paper>
+  </Box>
+)}
+
+{!selectedProject && (
+        <>
+<PageHeader
         title="Project Portfolio"
         subtitle="Monitor and manage all active projects across the enterprise."
-        action={{ label: '+ New Project', icon: <AddIcon />, onClick: () => setIsAddingProject(true) }}
+        action={{ label: 'New Project', icon: <AddIcon />, onClick: () => setIsAddingProject(true) }}
       />
 
       {/* Alerts */}
@@ -785,10 +1275,10 @@ export default function ProjectsPage() {
       <Paper sx={{ overflow: 'hidden', mb: 3 }}>
         <SearchFilterBar
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchChange}
           searchPlaceholder="Search projects..."
           filterValue={phaseFilter}
-          onFilterChange={setPhaseFilter}
+          onFilterChange={handlePhaseFilterChange}
           filterLabel="Filter by Phase"
           filterOptions={[
             { value: '', label: 'All Phases' },
@@ -796,7 +1286,7 @@ export default function ProjectsPage() {
             { value: '0', label: 'Execution' },
             { value: '2', label: 'Closure' },
           ]}
-          onClear={() => { setSearchQuery(''); setPhaseFilter('') }}
+          onClear={() => { setSearchQuery(''); setPhaseFilter(''); setPage(0) }}
         />
 
         <TableShell
@@ -838,7 +1328,7 @@ export default function ProjectsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredProjects.map((project, idx) => (
+              {paginatedProjects.map((project, idx) => (
                 <TableRow
                   key={project.pm_projectid}
                   hover
@@ -922,7 +1412,20 @@ export default function ProjectsPage() {
             ]}
           />
         )}
+        {!loading && filteredProjects.length > 0 && (
+          <TablePagination
+            component="div"
+            count={filteredProjects.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[25, 50, 100]}
+          />
+        )}
       </Paper>
+        </>
+      )}
 
       {/* ── Create Project Modal ────────────────────────────────────── */}
       <Dialog open={isAddingProject} onClose={() => setIsAddingProject(false)} maxWidth="sm" fullWidth>
@@ -982,6 +1485,291 @@ export default function ProjectsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* ── Add Milestone Dialog ──────────────────────────────────── */}
+      <Dialog open={milestoneDialogOpen} onClose={() => setMilestoneDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Add Milestone</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Milestone name *" value={milestoneForm.pm_milestonename ?? ''}
+                onChange={(e) => setMilestoneForm((f) => ({ ...f, pm_milestonename: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="Planned date"
+                value={milestoneForm.pm_planneddate ?? ''} onChange={(e) => setMilestoneForm((f) => ({ ...f, pm_planneddate: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField select fullWidth label="Type" value={milestoneForm.pm_milestonetype ?? ''}
+                onChange={(e) => setMilestoneForm((f) => ({ ...f, pm_milestonetype: e.target.value }))}>
+                <MenuItem value="">None</MenuItem>
+                <MenuItem value="0">Delivery</MenuItem>
+                <MenuItem value="1">Governance</MenuItem>
+              </TextField>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMilestoneDialogOpen(false)} variant="outlined">Cancel</Button>
+          <Button onClick={handleAddMilestone} variant="contained" disabled={!milestoneForm.pm_milestonename}>Add</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Log Risk Dialog ───────────────────────────────────────── */}
+      <Dialog open={riskDialogOpen} onClose={() => setRiskDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Log Risk</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Risk title *" value={riskForm.pm_risktitle ?? ''}
+                onChange={(e) => setRiskForm((f) => ({ ...f, pm_risktitle: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth multiline rows={3} label="Description" value={riskForm.pm_riskdescription ?? ''}
+                onChange={(e) => setRiskForm((f) => ({ ...f, pm_riskdescription: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField select fullWidth label="Category" value={riskForm.pm_riskcategory ?? '3'}
+                onChange={(e) => setRiskForm((f) => ({ ...f, pm_riskcategory: e.target.value }))}>
+                <MenuItem value="0">Resource</MenuItem>
+                <MenuItem value="1">Financial</MenuItem>
+                <MenuItem value="2">Legal</MenuItem>
+                <MenuItem value="3">Technical</MenuItem>
+                <MenuItem value="4">External</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField select fullWidth label="RAG" value={riskForm.pm_ragstatus ?? '1'}
+                onChange={(e) => setRiskForm((f) => ({ ...f, pm_ragstatus: e.target.value }))}>
+                <MenuItem value="1">Green</MenuItem>
+                <MenuItem value="0">Amber</MenuItem>
+                <MenuItem value="2">Red</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Risk owner" value={riskForm.pm_riskowner ?? ''}
+                onChange={(e) => setRiskForm((f) => ({ ...f, pm_riskowner: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="Target close date"
+                value={riskForm.pm_targetclosedate ?? ''} onChange={(e) => setRiskForm((f) => ({ ...f, pm_targetclosedate: e.target.value }))} />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRiskDialogOpen(false)} variant="outlined">Cancel</Button>
+          <Button onClick={handleAddRisk} variant="contained" color="error" disabled={!riskForm.pm_risktitle}>Log Risk</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Log Issue Dialog ──────────────────────────────────────── */}
+      <Dialog open={issueDialogOpen} onClose={() => setIssueDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Log Issue</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Issue title *" value={issueForm.pm_issuetitle ?? ''}
+                onChange={(e) => setIssueForm((f) => ({ ...f, pm_issuetitle: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth multiline rows={3} label="Description" value={issueForm.pm_issuedescription ?? ''}
+                onChange={(e) => setIssueForm((f) => ({ ...f, pm_issuedescription: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField select fullWidth label="Category" value={issueForm.pm_issuecategory ?? '0'}
+                onChange={(e) => setIssueForm((f) => ({ ...f, pm_issuecategory: e.target.value }))}>
+                <MenuItem value="0">Scope</MenuItem>
+                <MenuItem value="1">Schedule</MenuItem>
+                <MenuItem value="2">Budget</MenuItem>
+                <MenuItem value="3">Quality</MenuItem>
+                <MenuItem value="4">Resource</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField select fullWidth label="Priority" value={issueForm.pm_prioritylevel ?? '0'}
+                onChange={(e) => setIssueForm((f) => ({ ...f, pm_prioritylevel: e.target.value }))}>
+                <MenuItem value="0">Normal</MenuItem>
+                <MenuItem value="1">High</MenuItem>
+                <MenuItem value="2">Critical</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Issue owner" value={issueForm.pm_issueowner ?? ''}
+                onChange={(e) => setIssueForm((f) => ({ ...f, pm_issueowner: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="Target resolution date"
+                value={issueForm.pm_targetresolutiondate ?? ''} onChange={(e) => setIssueForm((f) => ({ ...f, pm_targetresolutiondate: e.target.value }))} />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIssueDialogOpen(false)} variant="outlined">Cancel</Button>
+          <Button onClick={handleAddIssue} variant="contained" color="warning" disabled={!issueForm.pm_issuetitle}>Log Issue</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Assign Resource Dialog ────────────────────────────────── */}
+      <Dialog open={resourceDialogOpen} onClose={() => setResourceDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Assign Resource</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Resource name *" value={resourceForm.pm_resourceName ?? ''}
+                onChange={(e) => setResourceForm((f) => ({ ...f, pm_resourceName: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Resource ID *" value={resourceForm.pm_resourceId ?? ''}
+                onChange={(e) => setResourceForm((f) => ({ ...f, pm_resourceId: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth type="number" label="Allocated hours" value={resourceForm.pm_allocatedhours ?? 40}
+                onChange={(e) => setResourceForm((f) => ({ ...f, pm_allocatedhours: Number(e.target.value) }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth label="Role" value={resourceForm.pm_assignmentrole ?? ''}
+                onChange={(e) => setResourceForm((f) => ({ ...f, pm_assignmentrole: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="Start date"
+                value={resourceForm.pm_startdate ?? ''} onChange={(e) => setResourceForm((f) => ({ ...f, pm_startdate: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="End date"
+                value={resourceForm.pm_enddate ?? ''} onChange={(e) => setResourceForm((f) => ({ ...f, pm_enddate: e.target.value }))} />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResourceDialogOpen(false)} variant="outlined">Cancel</Button>
+          <Button onClick={handleAssignResource} variant="contained" disabled={!resourceForm.pm_resourceId}>Assign</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Add Budget Line Dialog ──────────────────────────────────── */}
+      <Dialog open={budgetDialogOpen} onClose={() => setBudgetDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Add Budget Line</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Budget line name *" value={budgetForm.pm_budgetlinename ?? ''}
+                onChange={(e) => setBudgetForm((f) => ({ ...f, pm_budgetlinename: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth type="number" label="Approved budget (EUR)" value={budgetForm.pm_approvedbudgeteur ?? 0}
+                onChange={(e) => setBudgetForm((f) => ({ ...f, pm_approvedbudgeteur: Number(e.target.value) }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth type="number" label="Actual spend (EUR)" value={budgetForm.pm_actualspendeur ?? 0}
+                onChange={(e) => setBudgetForm((f) => ({ ...f, pm_actualspendeur: Number(e.target.value) }))} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField select fullWidth label="Cost category" value={budgetForm.pm_costcategory ?? ''}
+                onChange={(e) => setBudgetForm((f) => ({ ...f, pm_costcategory: e.target.value }))}>
+                <MenuItem value="">None</MenuItem>
+                <MenuItem value="0">Staff</MenuItem>
+                <MenuItem value="1">Contractors</MenuItem>
+                <MenuItem value="2">Licences</MenuItem>
+                <MenuItem value="3">Infrastructure</MenuItem>
+              </TextField>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBudgetDialogOpen(false)} variant="outlined">Cancel</Button>
+          <Button onClick={handleAddBudgetLine} variant="contained" disabled={!budgetForm.pm_budgetlinename}>Add Budget Line</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Add Benefit Dialog ─────────────────────────────────────── */}
+      <Dialog open={benefitDialogOpen} onClose={() => setBenefitDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Add Benefit</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Benefit name *" value={benefitForm.pm_benefitname ?? ''}
+                onChange={(e) => setBenefitForm((f) => ({ ...f, pm_benefitname: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField select fullWidth label="Category" value={benefitForm.pm_benefitcategory ?? '1'}
+                onChange={(e) => setBenefitForm((f) => ({ ...f, pm_benefitcategory: e.target.value }))}>
+                <MenuItem value="1">Financial</MenuItem>
+                <MenuItem value="2">Strategic</MenuItem>
+                <MenuItem value="0">Operational</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField select fullWidth label="Status" value={benefitForm.pm_benefitstatus ?? '0'}
+                onChange={(e) => setBenefitForm((f) => ({ ...f, pm_benefitstatus: e.target.value }))}>
+                <MenuItem value="0">Not Started</MenuItem>
+                <MenuItem value="1">In Progress</MenuItem>
+                <MenuItem value="2">Achieved</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth type="number" label="Target value" value={benefitForm.pm_targetvalue ?? 0}
+                onChange={(e) => setBenefitForm((f) => ({ ...f, pm_targetvalue: Number(e.target.value) }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth label="Unit of measure" value={benefitForm.pm_unitofmeasure ?? ''}
+                onChange={(e) => setBenefitForm((f) => ({ ...f, pm_unitofmeasure: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="Realisation end date"
+                value={benefitForm.pm_realisationenddate ?? ''} onChange={(e) => setBenefitForm((f) => ({ ...f, pm_realisationenddate: e.target.value }))} />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBenefitDialogOpen(false)} variant="outlined">Cancel</Button>
+          <Button onClick={handleAddBenefit} variant="contained" disabled={!benefitForm.pm_benefitname}>Add Benefit</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Add Task Dialog ──────────────────────────────────────────── */}
+      <Dialog open={taskDialogOpen} onClose={() => setTaskDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Add Task</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth label="Task name *" value={taskForm.pm_taskname ?? ''}
+                onChange={(e) => setTaskForm((f) => ({ ...f, pm_taskname: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth multiline rows={2} label="Description" value={taskForm.pm_taskdescription ?? ''}
+                onChange={(e) => setTaskForm((f) => ({ ...f, pm_taskdescription: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth label="Assigned resource" value={taskForm.pm_assignedresource ?? ''}
+                onChange={(e) => setTaskForm((f) => ({ ...f, pm_assignedresource: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth type="number" label="Duration (days)" value={taskForm.pm_durationdays ?? 0}
+                onChange={(e) => setTaskForm((f) => ({ ...f, pm_durationdays: Number(e.target.value) }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="Planned start date"
+                value={taskForm.pm_plannedstartdate ?? ''} onChange={(e) => setTaskForm((f) => ({ ...f, pm_plannedstartdate: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="Planned end date"
+                value={taskForm.pm_plannedenddate ?? ''} onChange={(e) => setTaskForm((f) => ({ ...f, pm_plannedenddate: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth type="number" label="% Complete" value={taskForm.pm_percentcomplete ?? 0}
+                slotProps={{ htmlInput: { min: 0, max: 100 } }}
+                onChange={(e) => setTaskForm((f) => ({ ...f, pm_percentcomplete: Number(e.target.value) }))} />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTaskDialogOpen(false)} variant="outlined">Cancel</Button>
+          <Button onClick={handleAddTask} variant="contained" disabled={!taskForm.pm_taskname}>Add Task</Button>
+        </DialogActions>
+      </Dialog>
+
     </Box>
+    
   )
 }
+

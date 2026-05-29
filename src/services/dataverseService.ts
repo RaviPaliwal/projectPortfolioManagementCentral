@@ -11,6 +11,14 @@ import {
   Pm_timesheetentriesService,
   Pm_risksService,
   Pm_issuesService,
+  Pm_budgetlinesService,
+  Pm_fundingsourcesService,
+  Pm_cashflowentriesService,
+  Pm_fiscalperiodsService,
+  Pm_projectgatereviewsService,
+  Pm_benefitsService,
+  Pm_performancemeasuresService,
+  Pm_riskmitigationactionsService,
 } from '../generated'
 import type { Pm_initiatives } from '../generated/models/Pm_initiativesModel'
 import type { Pm_portfolios } from '../generated/models/Pm_portfoliosModel'
@@ -20,9 +28,17 @@ import type { Pm_projects } from '../generated/models/Pm_projectsModel'
 import type { Pm_projecttasks } from '../generated/models/Pm_projecttasksModel'
 import type { Pm_resources } from '../generated/models/Pm_resourcesModel'
 import type { Pm_resourceallocations } from '../generated/models/Pm_resourceallocationsModel'
+import type { Pm_timesheets } from '../generated/models/Pm_timesheetsModel'
 import type { Pm_timesheetentries } from '../generated/models/Pm_timesheetentriesModel'
 import type { Pm_risks } from '../generated/models/Pm_risksModel'
 import type { Pm_issues } from '../generated/models/Pm_issuesModel'
+import type { Pm_budgetlines } from '../generated/models/Pm_budgetlinesModel'
+import type { Pm_fundingsources } from '../generated/models/Pm_fundingsourcesModel'
+import type { Pm_cashflowentries } from '../generated/models/Pm_cashflowentriesModel'
+import type { Pm_fiscalperiods } from '../generated/models/Pm_fiscalperiodsModel'
+import type { Pm_projectgatereviews } from '../generated/models/Pm_projectgatereviewsModel'
+import type { Pm_benefits } from '../generated/models/Pm_benefitsModel'
+import type { Pm_performancemeasures } from '../generated/models/Pm_performancemeasuresModel'
 import type {
   InitiativeModel,
   PortfolioModel,
@@ -32,6 +48,18 @@ import type {
   ProjectTaskModel,
   RiskModel,
   IssueModel,
+  ResourceModel,
+  ResourceAllocationModel,
+  TimesheetModel,
+  TimesheetEntryModel,
+  BudgetLineModel,
+  FundingSourceModel,
+  CashflowEntryModel,
+  FinancialPeriodModel,
+  GateReviewModel,
+  BenefitModel,
+  PerformanceMeasureModel,
+  RiskMitigationActionModel,
 } from '../models/dataverse'
 
 const unwrapList = <T>(result: any): T[] => {
@@ -153,11 +181,24 @@ const mapInitiative = (item: Pm_initiatives): InitiativeModel => ({
 const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => ({
   pm_projecttaskid: item.pm_projecttaskid,
   pm_taskname: item.pm_taskname,
-  _pm_project_value: item._pm_project_value,
+  pm_taskdescription: item.pm_taskdescription,
+  pm_tasklevel: item.pm_tasklevel,
+  pm_parenttaskid: item.pm_parenttaskid,
+  pm_wbsnumber: item.pm_wbsnumber,
+  pm_durationdays: item.pm_durationdays,
+  pm_lagdays: item.pm_lagdays,
   pm_plannedstartdate: item.pm_plannedstartdate,
   pm_plannedenddate: item.pm_plannedenddate,
+  pm_actualstartdate: item.pm_actualstartdate,
+  pm_actualenddate: item.pm_actualenddate,
   pm_percentcomplete: item.pm_percentcomplete,
+  pm_taskstatus: item.pm_taskstatus,
   pm_assignedresource: item.pm_assignedresource,
+  pm_ismilestone: item.pm_ismilestone,
+  pm_oncriticalpath: item.pm_oncriticalpath,
+  pm_predecessortaskid: item.pm_predecessortaskid,
+  _pm_predecessortask_value: item._pm_predecessortask_value,
+  _pm_project_value: item._pm_project_value,
 })
 
 const mapProjectMilestone = (item: Pm_projectmilestones): ProjectMilestoneModel => ({
@@ -165,7 +206,77 @@ const mapProjectMilestone = (item: Pm_projectmilestones): ProjectMilestoneModel 
   pm_milestonename: item.pm_milestonename,
   pm_milestonetype: item.pm_milestonetype,
   pm_planneddate: item.pm_planneddate,
+  pm_actualdate: item.pm_actualdate,
+  pm_ragstatus: item.pm_ragstatus,
+  pm_status: item.pm_status,
+  pm_owner: item.pm_owner,
+  pm_description: item.pm_description,
   _pm_project_value: item._pm_project_value,
+})
+
+const mapResource = (item: Pm_resources): ResourceModel => ({
+  pm_resourceid: item.pm_resourceid,
+  pm_fullname: item.pm_fullname,
+  pm_departmentname: item.pm_departmentname,
+  pm_primaryrole: item.pm_primaryrole,
+  pm_resourcecategory: item.pm_resourcecategory,
+  pm_employmentstatus: item.pm_employmentstatus,
+  pm_dailyworkcapacity: item.pm_dailyworkcapacity,
+  pm_dailycostrate: item.pm_dailycostrate,
+  pm_positiontitle: item.pm_positiontitle,
+  pm_contactemail: item.pm_contactemail,
+  pm_suppliercompany: item.pm_suppliercompany,
+  pm_contractstartdate: item.pm_contractstartdate,
+  pm_contractenddate: item.pm_contractenddate,
+  statecode: item.statecode,
+})
+
+const mapResourceAllocation = (item: Pm_resourceallocations): ResourceAllocationModel => ({
+  pm_resourceallocationid: item.pm_resourceallocationid,
+  pm_allocatedhours: item.pm_allocatedhours,
+  pm_allocationpercentage: item.pm_allocationpercentage,
+  pm_assignmentrole: item.pm_assignmentrole,
+  pm_assignmentstatus: item.pm_assignmentstatus,
+  pm_startdate: item.pm_startdate,
+  pm_enddate: item.pm_enddate,
+  _pm_resource_value: item._pm_resource_value,
+  _pm_project_value: (item as any)._pm_project_value,
+})
+
+const mapTimesheet = (item: Pm_timesheets): TimesheetModel => ({
+  pm_timesheetid: item.pm_timesheetid,
+  pm_timesheetname: item.pm_timesheetname,
+  pm_ownername: item.pm_ownername,
+  pm_periodstartdate: item.pm_periodstartdate,
+  pm_periodenddate: item.pm_periodenddate,
+  pm_timesheetstatus: item.pm_timesheetstatus,
+  pm_totalhours: item.pm_totalhours,
+  pm_totalchargeablehours: item.pm_totalchargeablehours,
+  pm_totalnonchargeablehours: item.pm_totalnonchargeablehours,
+  pm_submissiondate: item.pm_submissiondate,
+  pm_submittedby: item.pm_submittedby,
+  pm_approvaldate: item.pm_approvaldate,
+  pm_approvedby: item.pm_approvedby,
+  pm_rejectionreason: item.pm_rejectionreason,
+  pm_reportingperiod: item.pm_reportingperiod,
+  pm_resourcename: item.pm_resourcename,
+  _pm_resource_value: item._pm_resource_value,
+})
+
+const mapTimesheetEntry = (item: Pm_timesheetentries): TimesheetEntryModel => ({
+  pm_timesheetentryid: item.pm_timesheetentryid,
+  pm_timesheetid: item.pm_timesheetid,
+  pm_hoursworked: item.pm_hoursworked,
+  pm_workdate: item.pm_workdate,
+  pm_worknotes: item.pm_worknotes,
+  pm_ischargeable: item.pm_ischargeable,
+  pm_isapproved: item.pm_isapproved,
+  pm_isovertime: item.pm_isovertime,
+  pm_nonchargeablereason: item.pm_nonchargeablereason,
+  pm_projectname: item.pm_projectname,
+  pm_projecttaskname: item.pm_projecttaskname,
+  _pm_project_value: item._pm_project_value,
+  _pm_projecttask_value: item._pm_projecttask_value,
 })
 
 export interface DashboardMetrics {
@@ -411,12 +522,123 @@ export async function fetchProjectDetails(projectId: string): Promise<ProjectMod
 export async function fetchProjectTasks(projectId: string): Promise<ProjectTaskModel[]> {
   const result = await Pm_projecttasksService.getAll({
     filter: `_pm_project_value eq '${projectId}'`,
-    select: ['pm_projecttaskid', 'pm_taskname', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_percentcomplete', 'pm_assignedresource'],
-    orderBy: ['pm_taskname asc'],
-    top: 200,
+    select: [
+      'pm_projecttaskid', 'pm_taskname', 'pm_taskdescription',
+      'pm_tasklevel', 'pm_parenttaskid', 'pm_wbsnumber',
+      'pm_durationdays', 'pm_lagdays',
+      'pm_plannedstartdate', 'pm_plannedenddate',
+      'pm_actualstartdate', 'pm_actualenddate',
+      'pm_percentcomplete', 'pm_taskstatus',
+      'pm_assignedresource', 'pm_ismilestone', 'pm_oncriticalpath',
+      'pm_predecessortaskid', '_pm_predecessortask_value',
+    ],
+    orderBy: ['pm_tasklevel asc', 'pm_wbsnumber asc', 'pm_taskname asc'],
+    top: 500,
   })
   try { console.debug('[dataverseService] fetchProjectTasks result raw:', result, 'projectId:', projectId) } catch (e) {}
   return unwrapList<Pm_projecttasks>(result).map(mapProjectTask)
+}
+
+export interface ScheduleData {
+  tasks: ProjectTaskModel[]
+  milestones: ProjectMilestoneModel[]
+  predecessorMap: Map<string, string> // taskId -> predecessorTaskId
+}
+
+export async function fetchScheduleData(projectId: string): Promise<ScheduleData> {
+  const [tasksResult, milestonesResult] = await Promise.all([
+    Pm_projecttasksService.getAll({
+      filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+      select: [
+        'pm_projecttaskid', 'pm_taskname', 'pm_taskdescription',
+        'pm_tasklevel', 'pm_parenttaskid', 'pm_wbsnumber',
+        'pm_durationdays', 'pm_lagdays',
+        'pm_plannedstartdate', 'pm_plannedenddate',
+        'pm_actualstartdate', 'pm_actualenddate',
+        'pm_percentcomplete', 'pm_taskstatus',
+        'pm_assignedresource', 'pm_ismilestone', 'pm_oncriticalpath',
+        'pm_predecessortaskid', '_pm_predecessortask_value',
+      ],
+      orderBy: ['pm_tasklevel asc', 'pm_wbsnumber asc', 'pm_taskname asc'],
+      top: 500,
+    }),
+    Pm_projectmilestonesService.getAll({
+      filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+      select: [
+        'pm_projectmilestoneid', 'pm_milestonename', 'pm_milestonetype',
+        'pm_planneddate', 'pm_actualdate', 'pm_ragstatus', 'pm_status',
+        'pm_owner', 'pm_description',
+      ],
+      orderBy: ['pm_planneddate asc'],
+      top: 200,
+    }),
+  ])
+
+  const tasks = unwrapList<Pm_projecttasks>(tasksResult).map(mapProjectTask)
+  const milestones = unwrapList<Pm_projectmilestones>(milestonesResult).map(mapProjectMilestone)
+
+  // Build predecessor map: taskId -> predecessorTaskId
+  const predecessorMap = new Map<string, string>()
+  for (const task of tasks) {
+    if (task._pm_predecessortask_value) {
+      predecessorMap.set(task.pm_projecttaskid!, task._pm_predecessortask_value)
+    }
+  }
+
+  try { console.debug('[dataverseService] fetchScheduleData:', { projectId, taskCount: tasks.length, milestoneCount: milestones.length }) } catch (e) {}
+
+  return { tasks, milestones, predecessorMap }
+}
+
+export async function createScheduleTask(payload: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_project_value' && key !== '_pm_predecessortask_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  // Project OData bind
+  if (payload._pm_project_value) {
+    const projectId = normalizeLookupId(payload._pm_project_value)
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+    }
+  }
+  // Predecessor OData bind
+  if (payload._pm_predecessortask_value) {
+    const predId = normalizeLookupId(payload._pm_predecessortask_value)
+    if (predId) {
+      cleanPayload['pm_PredecessorTask@odata.bind'] = `/pm_projecttasks(${predId})`
+    }
+  }
+  const result = await Pm_projecttasksService.create({ ...defaults, ...cleanPayload } as any)
+  try { console.debug('[dataverseService] createScheduleTask payload/result:', cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_projecttasks>(result)
+  return item ? mapProjectTask(item) : null
+}
+
+export async function updateScheduleTask(id: string, changes: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null &&
+        key !== 'pm_projecttaskid' && key !== '_pm_project_value' && key !== '_pm_predecessortask_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_projecttasksService.update(id, cleanPayload as any)
+  try { console.debug('[dataverseService] updateScheduleTask id/changes/result:', id, cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_projecttasks>(result)
+  return item ? mapProjectTask(item) : null
+}
+
+export async function deleteScheduleTask(id: string): Promise<void> {
+  try { console.debug('[dataverseService] deleteScheduleTask id:', id) } catch (e) {}
+  await Pm_projecttasksService.delete(id)
 }
 
 export async function fetchProjectMilestones(projectId: string): Promise<ProjectMilestoneModel[]> {
@@ -560,9 +782,30 @@ export interface ProgrammeDetail {
 
 export async function fetchProgrammeDetails(programmeId: string): Promise<ProgrammeDetail> {
   const progResult = await Pm_programmesService.get(programmeId, {
-    select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_portfolioname', 'pm_programmemanager', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'],
+    // IMPORTANT: Do NOT include lookup alias fields (e.g. pm_portfolioname) in the select list
+    // because Dataverse may return an error or unexpected result when they are requested.
+    // Resolve the portfolio display name from the lookup GUID separately.
+    select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_programmemanager', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'],
   })
   const programme = mapProgramme(unwrapSingle<Pm_programmes>(progResult) ?? ({} as Pm_programmes))
+
+  // Resolve portfolio name from the lookup GUID if not already populated
+  if (!programme.pm_portfolioname && programme._pm_portfolio_value) {
+    try {
+      const portfolioId = normalizeLookupId(programme._pm_portfolio_value)
+      if (portfolioId) {
+        const portfolioResult = await Pm_portfoliosService.get(portfolioId, {
+          select: ['pm_portfolioid', 'pm_portfolioname'],
+        })
+        const portfolio = unwrapSingle<Pm_portfolios>(portfolioResult)
+        if (portfolio?.pm_portfolioname) {
+          programme.pm_portfolioname = portfolio.pm_portfolioname
+        }
+      }
+    } catch (e) {
+      console.warn('[dataverseService] fetchProgrammeDetails: failed to resolve portfolio name', e)
+    }
+  }
 
   const [projectsResult, risksResult, issuesResult] = await Promise.all([
     Pm_projectsService.getAll({
@@ -904,10 +1147,28 @@ export async function assignResource(payload: {
   return unwrapSingle<any>(result)
 }
 
-export async function createInitiative(payload: Partial<InitiativeModel>): Promise<InitiativeModel | null> {
-  const result = await Pm_initiativesService.create(payload as any)
+export async function createInitiative(payload: Partial<InitiativeModel> & { _pm_portfolio_value?: string }): Promise<InitiativeModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && key !== '_pm_portfolio_value') {
+      cleanPayload[key] = value
+    }
+  }
+  // Handle portfolio OData bind
+  if (payload._pm_portfolio_value) {
+    const portfolioId = normalizeLookupId(payload._pm_portfolio_value)
+    if (portfolioId) {
+      cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${portfolioId})`
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  const result = await Pm_initiativesService.create({ ...defaults, ...cleanPayload } as any)
   try { console.debug('[dataverseService] createInitiative payload/result:', payload, result) } catch (e) {}
-  return unwrapSingle<Pm_initiatives>(result)
+  const item = unwrapSingle<Pm_initiatives>(result)
+  return item ? mapInitiative(item) : null
 }
 
 export async function updateInitiative(id: string, changes: Partial<InitiativeModel>): Promise<InitiativeModel | null> {
@@ -1270,6 +1531,9 @@ const tableServices: Record<string, { getAll: (options?: any) => Promise<any> }>
   pm_timesheetentries: Pm_timesheetentriesService,
   pm_risks: Pm_risksService,
   pm_issues: Pm_issuesService,
+  pm_projectgatereviews: Pm_projectgatereviewsService,
+  pm_benefits: Pm_benefitsService,
+  pm_performancemeasures: Pm_performancemeasuresService,
 }
 
 export interface DebugQueryOptions {
@@ -1671,6 +1935,866 @@ export async function seedAllResourceData(): Promise<SeedResult[]> {
   results.push({ table: 'pm_timesheetentries', created: entryList.length, error: entryError })
 
   return results
+}
+
+// ── Resource Data Functions ────────────────────────────────────────────────
+
+export async function fetchResources(): Promise<ResourceModel[]> {
+  const result = await Pm_resourcesService.getAll({
+    filter: "statecode eq 0",
+    select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole', 'pm_resourcecategory', 'pm_employmentstatus', 'pm_dailyworkcapacity', 'pm_dailycostrate', 'pm_positiontitle', 'pm_contactemail', 'pm_suppliercompany', 'pm_contractstartdate', 'pm_contractenddate', 'pm_useremail'],
+    orderBy: ['pm_fullname asc'],
+    top: 500,
+  })
+  try { console.debug('[dataverseService] fetchResources result:', result) } catch (e) {}
+  return unwrapList<Pm_resources>(result).map(mapResource)
+}
+
+export async function fetchResourceById(resourceId: string): Promise<ResourceModel | null> {
+  const result = await Pm_resourcesService.get(resourceId, {
+    select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole', 'pm_resourcecategory', 'pm_employmentstatus', 'pm_dailyworkcapacity', 'pm_dailycostrate', 'pm_positiontitle', 'pm_contactemail', 'pm_suppliercompany', 'pm_contractstartdate', 'pm_contractenddate', 'pm_useremail'],
+  })
+  const item = unwrapSingle<Pm_resources>(result)
+  return item ? mapResource(item) : null
+}
+
+export async function createResource(payload: Partial<ResourceModel>): Promise<ResourceModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  const result = await Pm_resourcesService.create({ ...defaults, ...cleanPayload } as any)
+  try { console.debug('[dataverseService] createResource payload/result:', cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_resources>(result)
+  return item ? mapResource(item) : null
+}
+
+export async function updateResource(id: string, changes: Partial<ResourceModel>): Promise<ResourceModel | null> {
+  const result = await Pm_resourcesService.update(id, changes as any)
+  try { console.debug('[dataverseService] updateResource id/changes/result:', id, changes, result) } catch (e) {}
+  const item = unwrapSingle<Pm_resources>(result)
+  return item ? mapResource(item) : null
+}
+
+export async function deleteResource(id: string): Promise<void> {
+  try { console.debug('[dataverseService] deleteResource id:', id) } catch (e) {}
+  await Pm_resourcesService.delete(id)
+}
+
+export async function fetchResourceAllocations(resourceId: string): Promise<ResourceAllocationModel[]> {
+  const result = await Pm_resourceallocationsService.getAll({
+    filter: `_pm_resource_value eq '${resourceId}' and statecode eq 0`,
+    select: ['pm_resourceallocationid', 'pm_allocatedhours', 'pm_allocationpercentage', 'pm_assignmentrole', 'pm_assignmentstatus', 'pm_startdate', 'pm_enddate', '_pm_project_value'],
+    orderBy: ['pm_startdate desc'],
+    top: 200,
+  })
+  try { console.debug('[dataverseService] fetchResourceAllocations result:', result) } catch (e) {}
+  return unwrapList<Pm_resourceallocations>(result).map(mapResourceAllocation)
+}
+
+// ── Timesheet Functions ────────────────────────────────────────────────────
+
+export async function fetchTimesheets(): Promise<TimesheetModel[]> {
+  const selectFields = [
+    'pm_timesheetid', 'pm_timesheetname',
+    'pm_periodstartdate', 'pm_periodenddate', 'pm_timesheetstatus',
+    'pm_totalhours', 'pm_totalchargeablehours', 'pm_totalnonchargeablehours',
+    'pm_submissiondate', 'pm_approvaldate',
+    'pm_rejectionreason', 'pm_reportingperiod', '_pm_resource_value',
+  ]
+  const options = {
+    select: selectFields,
+    orderBy: ['pm_periodenddate desc', 'pm_timesheetname asc'],
+    top: 500,
+  }
+  const result = await Pm_timesheetsService.getAll({ ...options, filter: "statecode eq 0" })
+  try { console.debug('[dataverseService] fetchTimesheets result:', result) } catch (e) {}
+  let list = unwrapList<Pm_timesheets>(result).map(mapTimesheet)
+  if (list.length === 0) {
+    try { console.warn('[dataverseService] fetchTimesheets: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
+    const fallbackResult = await Pm_timesheetsService.getAll(options)
+    list = unwrapList<Pm_timesheets>(fallbackResult).map(mapTimesheet)
+  }
+  return list
+}
+
+export async function createTimesheet(payload: Partial<TimesheetModel>): Promise<TimesheetModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' && key !== '_pm_resource_value' && key !== 'pm_timesheetid') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    pm_timesheetstatus: 3, // Draft
+    pm_totalhours: 0,
+    pm_totalchargeablehours: 0,
+    pm_totalnonchargeablehours: 0,
+    statecode: 0,
+    statuscode: 1,
+  }
+  // Handle resource OData bind
+  if (payload._pm_resource_value) {
+    const resourceId = normalizeLookupId(payload._pm_resource_value)
+    if (resourceId) {
+      cleanPayload['pm_resource@odata.bind'] = `/pm_resources(${resourceId})`
+    }
+  }
+  const result = await Pm_timesheetsService.create({ ...defaults, ...cleanPayload } as any)
+  try { console.debug('[dataverseService] createTimesheet payload/result:', cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_timesheets>(result)
+  return item ? mapTimesheet(item) : null
+}
+
+export async function updateTimesheetStatus(
+  timesheetId: string,
+  status: number,
+  extra?: { pm_rejectionreason?: string }
+): Promise<void> {
+  const changes: Record<string, any> = { pm_timesheetstatus: status }
+  if (status === 1) {
+    changes.pm_submissiondate = new Date().toISOString()
+    changes.pm_submittedby = 'Current User'
+  }
+  if (status === 0) {
+    changes.pm_approvaldate = new Date().toISOString()
+    changes.pm_approvedby = 'Current User'
+  }
+  if (status === 2 && extra?.pm_rejectionreason) {
+    changes.pm_rejectionreason = extra.pm_rejectionreason
+  }
+  try { console.debug('[dataverseService] updateTimesheetStatus:', { timesheetId, changes }) } catch (e) {}
+  await Pm_timesheetsService.update(timesheetId, changes as any)
+}
+
+export async function fetchTimesheetEntries(timesheetId: string): Promise<TimesheetEntryModel[]> {
+  const selectFields = [
+    'pm_timesheetentryid', 'pm_timesheetid', 'pm_hoursworked', 'pm_workdate',
+    'pm_worknotes', 'pm_ischargeable', 'pm_isapproved', 'pm_isovertime',
+    'pm_nonchargeablereason',
+    '_pm_project_value', '_pm_projecttask_value',
+  ]
+  const options = {
+    select: selectFields,
+    orderBy: ['pm_workdate asc'],
+    top: 200,
+  }
+  const result = await Pm_timesheetentriesService.getAll({ ...options, filter: `_pm_timesheet_value eq '${timesheetId}' and statecode eq 0` })
+  try { console.debug('[dataverseService] fetchTimesheetEntries result:', result) } catch (e) {}
+  let list = unwrapList<Pm_timesheetentries>(result).map(mapTimesheetEntry)
+  if (list.length === 0) {
+    try { console.warn('[dataverseService] fetchTimesheetEntries: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
+    const fallbackResult = await Pm_timesheetentriesService.getAll({ ...options, filter: `_pm_timesheet_value eq '${timesheetId}'` })
+    list = unwrapList<Pm_timesheetentries>(fallbackResult).map(mapTimesheetEntry)
+  }
+  return list
+}
+export async function createTimesheetEntry(payload: Partial<TimesheetEntryModel> & { pm_timesheetid: string }): Promise<TimesheetEntryModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_project_value' && key !== '_pm_projecttask_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  // Timesheet OData bind
+  const timesheetId = normalizeLookupId(payload.pm_timesheetid)
+  if (timesheetId) {
+    cleanPayload['pm_timesheet@odata.bind'] = `/pm_timesheets(${timesheetId})`
+  }
+  // Project OData bind
+  if (payload._pm_project_value) {
+    const projectId = normalizeLookupId(payload._pm_project_value)
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+    }
+  }
+  // Project task OData bind
+  if (payload._pm_projecttask_value) {
+    const taskId = normalizeLookupId(payload._pm_projecttask_value)
+    if (taskId) {
+      cleanPayload['pm_projecttask@odata.bind'] = `/pm_projecttasks(${taskId})`
+    }
+  }
+  const result = await Pm_timesheetentriesService.create({ ...defaults, ...cleanPayload } as any)
+  try { console.debug('[dataverseService] createTimesheetEntry payload/result:', cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_timesheetentries>(result)
+  return item ? mapTimesheetEntry(item) : null
+}
+
+export async function deleteTimesheetEntry(entryId: string): Promise<void> {
+  try { console.debug('[dataverseService] deleteTimesheetEntry id:', entryId) } catch (e) {}
+  await Pm_timesheetentriesService.delete(entryId)
+}
+
+// ── Budget & Finance Functions ─────────────────────────────────────────────
+
+const mapBudgetLine = (item: Pm_budgetlines): BudgetLineModel => ({
+  pm_budgetlineid: item.pm_budgetlineid,
+  pm_budgetlinename: item.pm_budgetlinename,
+  pm_approvedbudgeteur: item.pm_approvedbudgeteur,
+  pm_revisedbudgeteur: item.pm_revisedbudgeteur,
+  pm_actualspendeur: item.pm_actualspendeur,
+  pm_committedspendeur: item.pm_committedspendeur,
+  pm_forecastspendeur: item.pm_forecastspendeur,
+  pm_varianceeur: item.pm_varianceeur,
+  pm_estimateatcompletioneur: item.pm_estimateatcompletioneur,
+  pm_estimatetocompleteeur: item.pm_estimatetocompleteeur,
+  pm_costcategory: item.pm_costcategory,
+  pm_costcategoryname: item.pm_costcategoryname,
+  pm_fundingperiod: item.pm_fundingperiod,
+  pm_fundingsourcecode: item.pm_fundingsourcecode,
+  pm_notes: item.pm_notes,
+  pm_portfolio: item.pm_portfolio,
+  pm_programme: item.pm_programme,
+  pm_projectcode: item.pm_projectcode,
+  pm_fiscalperiodname: item.pm_fiscalperiodname,
+  pm_fundingsourcename: item.pm_fundingsourcename,
+  pm_portfoliolookupname: item.pm_portfoliolookupname,
+  pm_programmelookupname: item.pm_programmelookupname,
+  pm_projectname: item.pm_projectname,
+  _pm_fiscalperiod_value: item._pm_fiscalperiod_value,
+  _pm_fundingsource_value: item._pm_fundingsource_value,
+  _pm_portfoliolookup_value: item._pm_portfoliolookup_value,
+  _pm_programmelookup_value: item._pm_programmelookup_value,
+  _pm_project_value: item._pm_project_value,
+  statecode: item.statecode,
+})
+
+const mapFundingSource = (item: Pm_fundingsources): FundingSourceModel => ({
+  pm_fundingsourceid: item.pm_fundingsourceid,
+  pm_fundingsourcename: item.pm_fundingsourcename,
+  pm_fundingtype: item.pm_fundingtype,
+  pm_fundingstatus: item.pm_fundingstatus,
+  pm_totalamounteur: item.pm_totalamounteur,
+  pm_allocatedamounteur: item.pm_allocatedamounteur,
+  pm_availableamounteur: item.pm_availableamounteur,
+  pm_fundingbody: item.pm_fundingbody,
+  pm_referencecode: item.pm_referencecode,
+  pm_effectivefromdate: item.pm_effectivefromdate,
+  pm_effectivetodate: item.pm_effectivetodate,
+  pm_portfolioname: item.pm_portfolioname,
+  pm_programmename: item.pm_programmename,
+  _pm_portfolio_value: item._pm_portfolio_value,
+  _pm_programmelookup_value: item._pm_programmelookup_value,
+  statecode: item.statecode,
+})
+
+const mapCashflowEntry = (item: Pm_cashflowentries): CashflowEntryModel => ({
+  pm_cashflowentryid: item.pm_cashflowentryid,
+  pm_entryname: item.pm_entryname,
+  pm_amounteur: item.pm_amounteur,
+  pm_transactiondate: item.pm_transactiondate,
+  pm_transactiondirection: item.pm_transactiondirection,
+  pm_transactiontype: item.pm_transactiontype,
+  pm_category: item.pm_category,
+  pm_description: item.pm_description,
+  pm_invoicenumber: item.pm_invoicenumber,
+  pm_financialperiod: item.pm_financialperiod,
+  pm_programme: item.pm_programme,
+  pm_projectcode: item.pm_projectcode,
+  pm_fiscalperiodname: item.pm_fiscalperiodname,
+  pm_programmelookupname: item.pm_programmelookupname,
+  pm_projectname: item.pm_projectname,
+  _pm_fiscalperiod_value: item._pm_fiscalperiod_value,
+  _pm_programmelookup_value: item._pm_programmelookup_value,
+  _pm_project_value: item._pm_project_value,
+  statecode: item.statecode,
+})
+
+const mapGateReview = (item: Pm_projectgatereviews): GateReviewModel => ({
+  pm_projectgatereviewid: item.pm_projectgatereviewid,
+  pm_gatename: item.pm_gatename,
+  pm_gatestage: item.pm_gatestage,
+  pm_reviewoutcome: item.pm_reviewoutcome,
+  pm_reviewstatus: item.pm_reviewstatus,
+  pm_plannedreviewdate: item.pm_plannedreviewdate,
+  pm_actualreviewdate: item.pm_actualreviewdate,
+  pm_leadreviewer: item.pm_leadreviewer,
+  pm_reviewnotes: item.pm_reviewnotes,
+  pm_reviewconditions: item.pm_reviewconditions,
+  pm_documentsurl: item.pm_documentsurl,
+  pm_projectcode: item.pm_projectcode,
+  pm_programmename: item.pm_programmename,
+  _pm_project_value: item._pm_project_value,
+  _pm_programmelookup_value: item._pm_programmelookup_value,
+  statecode: item.statecode,
+})
+
+const mapBenefit = (item: Pm_benefits): BenefitModel => ({
+  pm_benefitid: item.pm_benefitid,
+  pm_benefitname: item.pm_benefitname,
+  pm_benefitcategory: item.pm_benefitcategory,
+  pm_benefitdescription: item.pm_benefitdescription,
+  pm_benefitstatus: item.pm_benefitstatus,
+  pm_benefittype: item.pm_benefittype,
+  pm_benefitreference: item.pm_benefitreference,
+  pm_baselinevalue: item.pm_baselinevalue,
+  pm_targetvalue: item.pm_targetvalue,
+  pm_unitofmeasure: item.pm_unitofmeasure,
+  pm_ragstatus: item.pm_ragstatus,
+  pm_realisationstartdate: item.pm_realisationstartdate,
+  pm_realisationenddate: item.pm_realisationenddate,
+  pm_programmename: item.pm_programmename,
+  pm_projectcode: item.pm_projectcode,
+  pm_benifitownername: item.pm_benifitownername,
+  pm_programmelookupname: item.pm_programmelookupname,
+  pm_projectname: item.pm_projectname,
+  _pm_benifitowner_value: item._pm_benifitowner_value,
+  _pm_programmelookup_value: item._pm_programmelookup_value,
+  _pm_project_value: item._pm_project_value,
+  statecode: item.statecode,
+})
+
+const mapPerformanceMeasure = (item: Pm_performancemeasures): PerformanceMeasureModel => ({
+  pm_performancemeasureid: item.pm_performancemeasureid,
+  pm_measurename: item.pm_measurename,
+  pm_benefitname: item.pm_benefitname,
+  pm_plannedvalue: item.pm_plannedvalue,
+  pm_actualvalue: item.pm_actualvalue,
+  pm_cumulativeplanned: item.pm_cumulativeplanned,
+  pm_cumulativeactual: item.pm_cumulativeactual,
+  pm_variance: item.pm_variance,
+  pm_reportingperiod: item.pm_reportingperiod,
+  pm_evidenced: item.pm_evidenced,
+  pm_notes: item.pm_notes,
+  _pm_benefit_value: item._pm_benefit_value,
+  statecode: item.statecode,
+})
+
+const mapFinancialPeriod = (item: Pm_fiscalperiods): FinancialPeriodModel => ({
+  pm_fiscalperiodid: item.pm_fiscalperiodid,
+  pm_periodname: item.pm_periodname,
+  pm_startdate: item.pm_startdate,
+  pm_enddate: item.pm_enddate,
+  pm_fiscalyear: item.pm_fiscalyear,
+  pm_periodnumber: item.pm_periodnumber,
+  pm_isclosed: item.pm_isclosed,
+  pm_iscurrentperiod: item.pm_iscurrentperiod,
+  statecode: item.statecode,
+})
+
+export async function fetchBudgetLines(): Promise<BudgetLineModel[]> {
+  const selectFields = [
+    'pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur',
+    'pm_revisedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur',
+    'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory',
+    'pm_fundingperiod', 'pm_fundingsourcecode',
+    'pm_notes',
+    'pm_estimateatcompletioneur', 'pm_estimatetocompleteeur',
+  ]
+  const options = {
+    select: selectFields,
+    orderBy: ['pm_budgetlinename asc'],
+    top: 500,
+  }
+  const result = await Pm_budgetlinesService.getAll({ ...options, filter: 'statecode eq 0' })
+  try { console.debug('[dataverseService] fetchBudgetLines result:', result) } catch (e) {}
+  let list = unwrapList<Pm_budgetlines>(result).map(mapBudgetLine)
+  if (list.length === 0) {
+    try { console.warn('[dataverseService] fetchBudgetLines: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
+    const fallbackResult = await Pm_budgetlinesService.getAll(options)
+    list = unwrapList<Pm_budgetlines>(fallbackResult).map(mapBudgetLine)
+  }
+  return list
+}
+
+export async function createBudgetLine(payload: Partial<BudgetLineModel>): Promise<BudgetLineModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  const result = await Pm_budgetlinesService.create({ ...defaults, ...cleanPayload } as any)
+  const item = unwrapSingle<Pm_budgetlines>(result)
+  return item ? mapBudgetLine(item) : null
+}
+
+export async function updateBudgetLine(id: string, changes: Partial<BudgetLineModel>): Promise<BudgetLineModel | null> {
+  const result = await Pm_budgetlinesService.update(id, changes as any)
+  const item = unwrapSingle<Pm_budgetlines>(result)
+  return item ? mapBudgetLine(item) : null
+}
+
+export async function deleteBudgetLine(id: string): Promise<void> {
+  await Pm_budgetlinesService.delete(id)
+}
+
+export async function fetchFundingSources(): Promise<FundingSourceModel[]> {
+  const selectFields = [
+    'pm_fundingsourceid', 'pm_fundingsourcename', 'pm_fundingtype',
+    'pm_fundingstatus', 'pm_totalamounteur', 'pm_allocatedamounteur',
+    'pm_availableamounteur', 'pm_fundingbody', 'pm_referencecode',
+    'pm_effectivefromdate', 'pm_effectivetodate',
+  ]
+  const options = {
+    select: selectFields,
+    orderBy: ['pm_fundingsourcename asc'],
+    top: 500,
+  }
+  const result = await Pm_fundingsourcesService.getAll({ ...options, filter: 'statecode eq 0' })
+  try { console.debug('[dataverseService] fetchFundingSources result:', result) } catch (e) {}
+  let list = unwrapList<Pm_fundingsources>(result).map(mapFundingSource)
+  if (list.length === 0) {
+    try { console.warn('[dataverseService] fetchFundingSources: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
+    const fallbackResult = await Pm_fundingsourcesService.getAll(options)
+    list = unwrapList<Pm_fundingsources>(fallbackResult).map(mapFundingSource)
+  }
+  return list
+}
+
+export async function fetchFinancialPeriods(): Promise<FinancialPeriodModel[]> {
+  const result = await Pm_fiscalperiodsService.getAll({
+    filter: 'statecode eq 0',
+    select: ['pm_fiscalperiodid', 'pm_periodname', 'pm_startdate', 'pm_enddate', 'pm_fiscalyear', 'pm_periodnumber', 'pm_isclosed', 'pm_iscurrentperiod'],
+    orderBy: ['pm_startdate desc'],
+    top: 200,
+  })
+  return unwrapList<Pm_fiscalperiods>(result).map(mapFinancialPeriod)
+}
+
+// ── Gate Review Functions ────────────────────────────────────────────────
+
+export async function fetchGateReviews(): Promise<GateReviewModel[]> {
+  const result = await Pm_projectgatereviewsService.getAll({
+    filter: 'statecode eq 0',
+    select: [
+      'pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage',
+      'pm_reviewoutcome', 'pm_reviewstatus', 'pm_plannedreviewdate',
+      'pm_actualreviewdate', 'pm_leadreviewer', 'pm_reviewnotes',
+      'pm_reviewconditions', 'pm_documentsurl', 'pm_projectcode',
+      'pm_programmename', '_pm_project_value', '_pm_programmelookup_value',
+    ],
+    orderBy: ['pm_plannedreviewdate desc'],
+    top: 500,
+  })
+  return unwrapList<Pm_projectgatereviews>(result).map(mapGateReview)
+}
+
+export async function createGateReview(payload: Partial<GateReviewModel>): Promise<GateReviewModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_project_value' && key !== '_pm_programmelookup_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  // Handle project OData bind
+  if (payload._pm_project_value) {
+    const projectId = normalizeLookupId(payload._pm_project_value)
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+    }
+  }
+  // Handle programme OData bind
+  if (payload._pm_programmelookup_value) {
+    const programmeId = normalizeLookupId(payload._pm_programmelookup_value)
+    if (programmeId) {
+      cleanPayload['pm_ProgrammeLookup@odata.bind'] = `/pm_programmes(${programmeId})`
+    }
+  }
+  const result = await Pm_projectgatereviewsService.create({ ...defaults, ...cleanPayload } as any)
+  const item = unwrapSingle<Pm_projectgatereviews>(result)
+  return item ? mapGateReview(item) : null
+}
+
+export async function updateGateReview(id: string, changes: Partial<GateReviewModel>): Promise<GateReviewModel | null> {
+  const result = await Pm_projectgatereviewsService.update(id, changes as any)
+  const item = unwrapSingle<Pm_projectgatereviews>(result)
+  return item ? mapGateReview(item) : null
+}
+
+export async function deleteGateReview(id: string): Promise<void> {
+  await Pm_projectgatereviewsService.delete(id)
+}
+
+// ── Benefit Functions ─────────────────────────────────────────────────────
+
+export async function fetchBenefits(): Promise<BenefitModel[]> {
+  const selectFields = [
+    'pm_benefitid', 'pm_benefitname', 'pm_benefitcategory',
+    'pm_benefitdescription', 'pm_benefitstatus', 'pm_benefittype',
+    'pm_benefitreference', 'pm_baselinevalue', 'pm_targetvalue',
+    'pm_unitofmeasure', 'pm_ragstatus', 'pm_realisationstartdate',
+    'pm_realisationenddate',
+  ]
+  const options = {
+    select: selectFields,
+    orderBy: ['pm_benefitname asc'],
+    top: 500,
+  }
+  const result = await Pm_benefitsService.getAll({ ...options, filter: 'statecode eq 0' })
+  try { console.debug('[dataverseService] fetchBenefits result:', result) } catch (e) {}
+  let list = unwrapList<Pm_benefits>(result).map(mapBenefit)
+  if (list.length === 0) {
+    try { console.warn('[dataverseService] fetchBenefits: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
+    const fallbackResult = await Pm_benefitsService.getAll(options)
+    list = unwrapList<Pm_benefits>(fallbackResult).map(mapBenefit)
+  }
+  return list
+}
+
+export async function createBenefit(payload: Partial<BenefitModel>): Promise<BenefitModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  const result = await Pm_benefitsService.create({ ...defaults, ...cleanPayload } as any)
+  const item = unwrapSingle<Pm_benefits>(result)
+  return item ? mapBenefit(item) : null
+}
+
+export async function updateBenefit(id: string, changes: Partial<BenefitModel>): Promise<BenefitModel | null> {
+  const result = await Pm_benefitsService.update(id, changes as any)
+  const item = unwrapSingle<Pm_benefits>(result)
+  return item ? mapBenefit(item) : null
+}
+
+export async function deleteBenefit(id: string): Promise<void> {
+  await Pm_benefitsService.delete(id)
+}
+
+// ── Performance Measures Functions ─────────────────────────────────────────
+
+export async function fetchPerformanceMeasures(benefitId?: string): Promise<PerformanceMeasureModel[]> {
+  const filter = benefitId ? `_pm_benefit_value eq '${benefitId}' and statecode eq 0` : 'statecode eq 0'
+  const result = await Pm_performancemeasuresService.getAll({
+    filter,
+    select: [
+      'pm_performancemeasureid', 'pm_measurename', 'pm_benefitname',
+      'pm_plannedvalue', 'pm_actualvalue', 'pm_cumulativeplanned',
+      'pm_cumulativeactual', 'pm_variance', 'pm_reportingperiod',
+      'pm_evidenced', 'pm_notes',
+    ],
+    orderBy: ['pm_reportingperiod asc'],
+    top: 500,
+  })
+  return unwrapList<Pm_performancemeasures>(result).map(mapPerformanceMeasure)
+}
+
+export async function createPerformanceMeasure(payload: Partial<PerformanceMeasureModel> & { _pm_benefit_value?: string }): Promise<PerformanceMeasureModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' && key !== '_pm_benefit_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  if (payload._pm_benefit_value) {
+    const benefitId = normalizeLookupId(payload._pm_benefit_value)
+    if (benefitId) {
+      cleanPayload['pm_benefit@odata.bind'] = `/pm_benefits(${benefitId})`
+    }
+  }
+  const result = await Pm_performancemeasuresService.create({ ...defaults, ...cleanPayload } as any)
+  const item = unwrapSingle<Pm_performancemeasures>(result)
+  return item ? mapPerformanceMeasure(item) : null
+}
+
+export async function updatePerformanceMeasure(id: string, changes: Partial<PerformanceMeasureModel>): Promise<PerformanceMeasureModel | null> {
+  const result = await Pm_performancemeasuresService.update(id, changes as any)
+  const item = unwrapSingle<Pm_performancemeasures>(result)
+  return item ? mapPerformanceMeasure(item) : null
+}
+
+export async function deletePerformanceMeasure(id: string): Promise<void> {
+  await Pm_performancemeasuresService.delete(id)
+}
+
+export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
+  const result = await Pm_cashflowentriesService.getAll({
+    filter: 'statecode eq 0',
+    select: [
+      'pm_cashflowentryid', 'pm_entryname', 'pm_amounteur',
+      'pm_transactiondate', 'pm_transactiondirection', 'pm_transactiontype',
+      'pm_category', 'pm_description', 'pm_invoicenumber',
+      'pm_financialperiod', 'pm_programme', 'pm_projectcode',
+      'pm_fiscalperiodname', 'pm_programmelookupname', 'pm_projectname',
+    ],
+    orderBy: ['pm_transactiondate desc'],
+    top: 500,
+  })
+  return unwrapList<Pm_cashflowentries>(result).map(mapCashflowEntry)
+}
+
+
+// ── Risk Functions ────────────────────────────────────────────────────
+
+const mapRisk = (item: Pm_risks): RiskModel => ({
+  pm_riskid: item.pm_riskid,
+  pm_risktitle: item.pm_risktitle,
+  pm_riskcategory: item.pm_riskcategory,
+  pm_riskdescription: item.pm_riskdescription,
+  pm_ragstatus: item.pm_ragstatus,
+  pm_riskowner: item.pm_riskowner,
+  pm_riskstatus: item.pm_riskstatus,
+  pm_escalated: item.pm_escalated,
+  pm_identifieddate: item.pm_identifieddate,
+  pm_targetclosedate: item.pm_targetclosedate,
+  pm_inherentprobability: item.pm_inherentprobability,
+  pm_inherentimpact: item.pm_inherentimpact,
+  pm_inherentscore: item.pm_inherentscore,
+  pm_residualprobability: item.pm_residualprobability,
+  pm_residualimpact: item.pm_residualimpact,
+  pm_residualscore: item.pm_residualscore,
+  pm_responsestrategy: item.pm_responsestrategy,
+  pm_riskcause: item.pm_riskcause,
+  pm_riskeffect: item.pm_riskeffect,
+  pm_riskreference: item.pm_riskreference,
+  pm_programme: item.pm_programme,
+  pm_projectcode: item.pm_projectcode,
+  pm_programmename: item.pm_programmename,
+  _pm_project_value: (item as any)._pm_project_value,
+  _pm_programmefk_value: item._pm_programmefk_value,
+  statecode: item.statecode,
+})
+
+
+const mapMitigationAction = (item: Pm_riskmitigationactions): RiskMitigationActionModel => ({
+  pm_riskmitigationactionid: item.pm_riskmitigationactionid,
+  pm_actiontitle: item.pm_actiontitle,
+  pm_actiondescription: item.pm_actiondescription,
+  pm_actionowner: item.pm_actionowner,
+  pm_status: item.pm_status,
+  pm_duedate: item.pm_duedate,
+  pm_completiondate: item.pm_completiondate,
+  pm_effectiveness: item.pm_effectiveness,
+  pm_notes: item.pm_notes,
+  _pm_risk_value: item._pm_risk_value,
+  pm_riskidentifier: item.pm_riskidentifier,
+  statecode: item.statecode,
+})
+
+export async function fetchMitigationActions(riskId: string): Promise<RiskMitigationActionModel[]> {
+  const result = await Pm_riskmitigationactionsService.getAll({
+    filter: `_pm_risk_value eq '${riskId}' and statecode eq 0`,
+    select: [
+      'pm_riskmitigationactionid', 'pm_actiontitle', 'pm_actiondescription',
+      'pm_actionowner', 'pm_status', 'pm_duedate', 'pm_completiondate',
+      'pm_effectiveness', 'pm_notes', '_pm_risk_value', 'pm_riskidentifier',
+    ],
+    orderBy: ['pm_duedate asc'],
+    top: 100,
+  })
+  try { console.debug('[dataverseService] fetchMitigationActions result:', result, 'riskId:', riskId) } catch (e) {}
+  let list = unwrapList<Pm_riskmitigationactions>(result).map(mapMitigationAction)
+  if (list.length === 0) {
+    try { console.warn('[dataverseService] fetchMitigationActions: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
+    const fallbackResult = await Pm_riskmitigationactionsService.getAll({
+      select: [
+        'pm_riskmitigationactionid', 'pm_actiontitle', 'pm_actiondescription',
+        'pm_actionowner', 'pm_status', 'pm_duedate', 'pm_completiondate',
+        'pm_effectiveness', 'pm_notes', '_pm_risk_value', 'pm_riskidentifier',
+      ],
+      orderBy: ['pm_duedate asc'],
+      top: 100,
+    })
+    list = unwrapList<Pm_riskmitigationactions>(fallbackResult).map(mapMitigationAction)
+  }
+  return list
+}
+
+export async function fetchAllRisks(): Promise<RiskModel[]> {
+  const selectFields = [
+    'pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription',
+    'pm_ragstatus', 'pm_riskowner', 'pm_riskstatus', 'pm_escalated',
+    'pm_identifieddate', 'pm_targetclosedate',
+    'pm_inherentprobability', 'pm_inherentimpact', 'pm_inherentscore',
+    'pm_residualprobability', 'pm_residualimpact', 'pm_residualscore',
+    'pm_responsestrategy', 'pm_riskcause', 'pm_riskeffect', 'pm_riskreference',
+    '_pm_project_value', '_pm_programmefk_value',
+  ]
+  const options = {
+    select: selectFields,
+    orderBy: ['pm_risktitle asc'],
+    top: 500,
+  }
+  const result = await Pm_risksService.getAll({ ...options, filter: 'statecode eq 0' })
+  try { console.debug('[dataverseService] fetchAllRisks result:', result) } catch (e) {}
+  let list = unwrapList<Pm_risks>(result).map(mapRisk)
+  if (list.length === 0) {
+    try { console.warn('[dataverseService] fetchAllRisks: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
+    const fallbackResult = await Pm_risksService.getAll(options)
+    list = unwrapList<Pm_risks>(fallbackResult).map(mapRisk)
+  }
+  return list
+}
+
+export async function createRiskFull(payload: Partial<RiskModel>): Promise<RiskModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_project_value' && key !== '_pm_programmefk_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+    pm_riskstatus: 1, // Open
+  }
+  // Project OData bind
+  if (payload._pm_project_value) {
+    const projectId = normalizeLookupId(payload._pm_project_value)
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+    }
+  }
+  // Programme OData bind
+  if (payload._pm_programmefk_value) {
+    const programmeId = normalizeLookupId(payload._pm_programmefk_value)
+    if (programmeId) {
+      cleanPayload['pm_ProgrammeFK@odata.bind'] = `/pm_programmes(${programmeId})`
+    }
+  }
+  const result = await Pm_risksService.create({ ...defaults, ...cleanPayload } as any)
+  const item = unwrapSingle<Pm_risks>(result)
+  return item ? mapRisk(item) : null
+}
+
+export async function updateRiskFull(id: string, changes: Partial<RiskModel>): Promise<RiskModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null &&
+        key !== 'pm_riskid' && key !== '_pm_project_value' && key !== '_pm_programmefk_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_risksService.update(id, cleanPayload as any)
+  const item = unwrapSingle<Pm_risks>(result)
+  return item ? mapRisk(item) : null
+}
+
+export async function deleteRisk(id: string): Promise<void> {
+  await Pm_risksService.delete(id)
+}
+// ── Issue Functions ────────────────────────────────────────────────────
+
+const mapIssue = (item: Pm_issues): IssueModel => ({
+  pm_issueid: item.pm_issueid,
+  pm_issuetitle: item.pm_issuetitle,
+  pm_issuedescription: item.pm_issuedescription,
+  pm_issuecategory: item.pm_issuecategory,
+  pm_ragstatus: item.pm_ragstatus,
+  pm_issueowner: item.pm_issueowner,
+  pm_issuestatus: item.pm_issuestatus,
+  pm_escalationstatus: item.pm_escalationstatus,
+  pm_prioritylevel: item.pm_prioritylevel,
+  pm_impactlevel: item.pm_impactlevel,
+  pm_issuereference: item.pm_issuereference,
+  pm_dateraised: item.pm_dateraised,
+  pm_targetresolutiondate: item.pm_targetresolutiondate,
+  pm_actualresolutiondate: item.pm_actualresolutiondate,
+  pm_resolutiondetails: item.pm_resolutiondetails,
+  pm_linkedrisk: item.pm_linkedrisk,
+  _pm_project_value: item._pm_project_value,
+  _pm_programmefk_value: item._pm_programmefk_value,
+  statecode: item.statecode,
+})
+
+export async function fetchAllIssues(): Promise<IssueModel[]> {
+  const selectFields = [
+    'pm_issueid', 'pm_issuetitle', 'pm_issuedescription',
+    'pm_issuecategory', 'pm_ragstatus', 'pm_issueowner',
+    'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel',
+    'pm_impactlevel', 'pm_issuereference',
+    'pm_dateraised', 'pm_targetresolutiondate',
+    'pm_actualresolutiondate', 'pm_resolutiondetails',
+    'pm_linkedrisk', '_pm_project_value', '_pm_programmefk_value',
+  ]
+  const options = {
+    select: selectFields,
+    orderBy: ['pm_dateraised desc'],
+    top: 500,
+  }
+  const result = await Pm_issuesService.getAll({ ...options, filter: 'statecode eq 0' })
+  try { console.debug('[dataverseService] fetchAllIssues result:', result) } catch (e) {}
+  let list = unwrapList<Pm_issues>(result).map(mapIssue)
+  if (list.length === 0) {
+    try { console.warn('[dataverseService] fetchAllIssues: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
+    const fallbackResult = await Pm_issuesService.getAll(options)
+    list = unwrapList<Pm_issues>(fallbackResult).map(mapIssue)
+  }
+  return list
+}
+export async function createIssueFull(payload: Partial<IssueModel>): Promise<IssueModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_project_value' && key !== '_pm_programmefk_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  // Project OData bind
+  if (payload._pm_project_value) {
+    const projectId = normalizeLookupId(payload._pm_project_value)
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+    }
+  }
+  // Programme OData bind
+  if (payload._pm_programmefk_value) {
+    const programmeId = normalizeLookupId(payload._pm_programmefk_value)
+    if (programmeId) {
+      cleanPayload['pm_ProgrammeFK@odata.bind'] = `/pm_programmes(${programmeId})`
+    }
+  }
+  const result = await Pm_issuesService.create({ ...defaults, ...cleanPayload } as any)
+  try { console.debug('[dataverseService] createIssueFull payload/result:', cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_issues>(result)
+  return item ? mapIssue(item) : null
+}
+
+export async function updateIssueFull(id: string, changes: Partial<IssueModel>): Promise<IssueModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null &&
+        key !== 'pm_issueid' && key !== '_pm_project_value' && key !== '_pm_programmefk_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_issuesService.update(id, cleanPayload as any)
+  try { console.debug('[dataverseService] updateIssueFull id/changes/result:', id, cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_issues>(result)
+  return item ? mapIssue(item) : null
+}
+
+export async function deleteIssue(id: string): Promise<void> {
+  try { console.debug('[dataverseService] deleteIssue id:', id) } catch (e) {}
+  await Pm_issuesService.delete(id)
 }
 
 export { ragLabel, projectPhaseLabel, programmePhaseLabel }
