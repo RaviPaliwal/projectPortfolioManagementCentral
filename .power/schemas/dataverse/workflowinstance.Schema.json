@@ -264,6 +264,31 @@
           "x-ms-schema-name": "pm_initiatedby",
           "maxLength": 100
         },
+        "pm_initiatedbylookup": {
+          "type": "string",
+          "title": "Initiated By Lookup",
+          "x-ms-dataverse-attribute": "pm_initiatedbylookup",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_InitiatedByLookup"
+        },
+        "pm_initiatedbylookupname": {
+          "type": "string",
+          "title": "pm_initiatedbylookupname",
+          "x-ms-dataverse-attribute": "pm_initiatedbylookupname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_InitiatedByLookupName",
+          "x-ms-read-only": true,
+          "maxLength": 200
+        },
+        "pm_initiatedbylookupyominame": {
+          "type": "string",
+          "title": "pm_initiatedbylookupyominame",
+          "x-ms-dataverse-attribute": "pm_initiatedbylookupyominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_InitiatedByLookupYomiName",
+          "x-ms-read-only": true,
+          "maxLength": 200
+        },
         "pm_instancename": {
           "type": "string",
           "title": "Instance Name",

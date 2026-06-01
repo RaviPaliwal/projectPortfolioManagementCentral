@@ -27,6 +27,7 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
+import AssessmentIcon from '@mui/icons-material/Assessment'
 import CrisisAlertIcon from '@mui/icons-material/CrisisAlert'
 import ReportProblemIcon from '@mui/icons-material/ReportProblem'
 import ChangeCircleIcon from '@mui/icons-material/ChangeCircle'
@@ -35,8 +36,9 @@ import RateReviewIcon from '@mui/icons-material/RateReview'
 import SavingsIcon from '@mui/icons-material/Savings'
 import PsychologyIcon from '@mui/icons-material/Psychology'
 import AccountTreeWorkflowIcon from '@mui/icons-material/AccountTree'
+import { UserSelector } from '@/context/UserContext'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'approvalrequests' | 'fundingsources' | 'skills' | 'workflows' | 'debug'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'approvalrequests' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'debug'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -58,6 +60,8 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'fundingsources', label: 'Funding Sources', icon: <SavingsIcon /> },
   { key: 'workflows', label: 'Workflows', icon: <AccountTreeWorkflowIcon /> },
   { key: 'skills', label: 'Skills & Mapping', icon: <PsychologyIcon /> },
+  { key: 'holidays', label: 'Holiday Calendar', icon: <CalendarMonthIcon /> },
+  { key: 'statussnapshots', label: 'Status Snapshots', icon: <AssessmentIcon /> },
   { key: 'debug', label: 'Debug', icon: <BugReportIcon /> },
 ]
 
@@ -172,6 +176,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
               )}
             </Box>
             <Box sx={{ flex: 1 }} />
+            <UserSelector />
             <IconButton onClick={onToggleTheme} sx={{ color: 'text.secondary' }}>
               {themeMode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
             </IconButton>

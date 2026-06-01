@@ -172,6 +172,11 @@
           "entitySetName": "pm_workflowinstances",
           "logicalName": "pm_workflowinstance",
           "isHidden": false
+        },
+        "workflowsteptemplates": {
+          "entitySetName": "pm_workflowsteptemplates",
+          "logicalName": "pm_workflowsteptemplate",
+          "isHidden": false
         }
       },
       "environmentVariableName": ""

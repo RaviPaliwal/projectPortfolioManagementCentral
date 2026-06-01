@@ -226,6 +226,45 @@
           "x-ms-schema-name": "pm_approvername",
           "maxLength": 100
         },
+        "pm_assigneedisplayname": {
+          "type": "string",
+          "title": "Assignee Display Name",
+          "x-ms-dataverse-attribute": "pm_assigneedisplayname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_AssigneeDisplayName",
+          "maxLength": 100
+        },
+        "pm_assigneetype": {
+          "type": "string",
+          "title": "Assignee Type",
+          "x-ms-dataverse-attribute": "pm_assigneetype",
+          "x-ms-dataverse-type": "PicklistType",
+          "x-ms-schema-name": "pm_AssigneeType",
+          "enum": [
+            "User",
+            "Team"
+          ],
+          "x-ms-enum-values": [
+            0,
+            1
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "2703dad4-a75d-f111-a826-6045bd56f0ba",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Assignee Type",
+          "x-ms-optionSetType": "Picklist"
+        },
+        "pm_assigneetypename": {
+          "type": "string",
+          "title": "pm_assigneetypename",
+          "x-ms-dataverse-attribute": "pm_assigneetypename",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pm_assigneetypeName",
+          "x-ms-read-only": true
+        },
         "pm_decisiondate": {
           "type": "string",
           "title": "Decision Date",
@@ -372,6 +411,22 @@
           "x-ms-dataverse-attribute": "pm_workflowinstancelookupname",
           "x-ms-dataverse-type": "StringType",
           "x-ms-schema-name": "pm_WorkflowInstanceLookupName",
+          "x-ms-read-only": true,
+          "maxLength": 850
+        },
+        "pm_workflowtemplate": {
+          "type": "string",
+          "title": "Workflow Template",
+          "x-ms-dataverse-attribute": "pm_workflowtemplate",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_WorkflowTemplate"
+        },
+        "pm_workflowtemplatename": {
+          "type": "string",
+          "title": "pm_workflowtemplatename",
+          "x-ms-dataverse-attribute": "pm_workflowtemplatename",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_WorkflowTemplateName",
           "x-ms-read-only": true,
           "maxLength": 850
         },

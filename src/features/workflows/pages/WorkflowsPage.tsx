@@ -4,7 +4,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableRow,
   TableSortLabel, TablePagination, Button, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Avatar, Tabs, Tab, TextField, FormControl, InputLabel, Select, MenuItem, Divider,
+  Avatar, Tabs, Tab, TextField, FormControl, InputLabel, Select, MenuItem,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -17,15 +17,22 @@ import HistoryIcon from '@mui/icons-material/History'
 import SettingsIcon from '@mui/icons-material/Settings'
 import PowerIcon from '@mui/icons-material/Power'
 import PowerOffIcon from '@mui/icons-material/PowerOff'
-import type { WorkflowModel, WorkflowInstanceModel, WorkflowApprovalStepModel } from '@/types/dataverse'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import type { WorkflowModel, WorkflowInstanceModel, WorkflowApprovalStepModel, WorkflowStepTemplateModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
 import {
-  fetchWorkflows, createWorkflow, updateWorkflow, deleteWorkflow,
+  fetchWorkflows, deleteWorkflow,
   fetchWorkflowInstances, fetchWorkflowApprovalSteps, deleteWorkflowInstance,
+  fetchWorkflowStepTemplates,
 } from '@/lib/dataverseClient'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, TabPanel, ExportButton } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
+
+// Sub-page imports
+import WorkflowCreatePage from './WorkflowCreatePage'
+import WorkflowEditPage from './WorkflowEditPage'
+import WorkflowStepConfigPage from './WorkflowStepConfigPage'
 
 const STATUS_LABELS: Record<string, string> = { '0': 'Active', '1': 'Inactive' }
 const INSTANCE_STATUS_LABELS: Record<string, string> = { '0': 'Completed', '1': 'Active' }
@@ -67,16 +74,26 @@ type StepSortField = 'name' | 'order' | 'approver' | 'decision'
 type SortDir = 'asc' | 'desc'
 interface SortState<T> { field: T; dir: SortDir }
 
+type ViewMode = 'list' | 'create' | 'edit' | 'steps'
+
 export default function WorkflowsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  // View routing
+  const [view, setView] = useState<ViewMode>('list')
+  const [viewWorkflow, setViewWorkflow] = useState<WorkflowModel | null>(null)
+
+  // Data
   const [workflows, setWorkflows] = useState<WorkflowModel[]>([])
   const [instances, setInstances] = useState<WorkflowInstanceModel[]>([])
   const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
+  const [stepTemplates, setStepTemplates] = useState<WorkflowStepTemplateModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
-  const [actionLoading, setActionLoading] = useState(false)
+
+  // List view state
   const [pageTab, setPageTab] = useState(0)
   const [wfSearch, setWfSearch] = useState('')
   const [wfStatusFilter, setWfStatusFilter] = useState('')
@@ -94,10 +111,8 @@ export default function WorkflowsPage() {
   const [stepRowsPerPage, setStepRowsPerPage] = useState(25)
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null)
   const [stepsLoading, setStepsLoading] = useState(false)
-  const [showWfForm, setShowWfForm] = useState(false)
-  const [editingWf, setEditingWf] = useState<WorkflowModel | null>(null)
-  const [wfFormData, setWfFormData] = useState({ pm_workflowname: '', pm_workflowdescription: '', pm_workflowtype: 0, pm_entitytype: 0, pm_workflowstatus: 0, statecode: 0 })
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; type: 'workflow' | 'instance' } | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -106,10 +121,16 @@ export default function WorkflowsPage() {
       const [wfList, instList] = await Promise.all([fetchWorkflows(), fetchWorkflowInstances()])
       setWorkflows(wfList)
       setInstances(instList)
-    } catch {
-      setError('Unable to load workflow data.')
+    } catch (err) {
+      setError('Unable to load workflow data. ' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setLoading(false)
+    }
+    try {
+      const stList = await fetchWorkflowStepTemplates()
+      setStepTemplates(stList)
+    } catch {
+      // Non-critical
     }
   }, [])
 
@@ -124,6 +145,7 @@ export default function WorkflowsPage() {
       .finally(() => setStepsLoading(false))
   }, [selectedInstanceId])
 
+  // ─── KPI Cards ───
   const kpiItems = useMemo((): KpiCardItem[] => {
     const totalTemplates = workflows.length
     const activeTemplates = workflows.filter((w) => w.pm_workflowstatus === 0 || w.pm_workflowstatus === '0').length
@@ -134,24 +156,21 @@ export default function WorkflowsPage() {
       { label: 'Active Templates', value: activeTemplates, subtitle: totalTemplates > 0 ? Math.round((activeTemplates / totalTemplates) * 100) + '% of templates' : 'No templates', icon: <PlayArrowIcon />, color: '#22c55e' },
       { label: 'Active Instances', value: activeInsts, subtitle: 'Currently running', icon: <ScheduleIcon />, color: '#f59e0b' },
       { label: 'Completed Instances', value: completedInsts, subtitle: 'Successfully finished', icon: <CheckCircleIcon />, color: '#0ea5e9' },
+      { label: 'Step Templates', value: stepTemplates.length, subtitle: 'Configured steps', icon: <SettingsIcon />, color: '#8b5cf6' },
     ]
-  }, [workflows, instances])
+  }, [workflows, instances, stepTemplates])
 
+  // ─── Filtering & Sorting ───
   const filteredWorkflows = useMemo(() => {
     let list = [...workflows]
     if (wfSearch.trim()) {
       const q = wfSearch.toLowerCase()
-      list = list.filter(
-        (w) =>
-          (w.pm_workflowname ?? '').toLowerCase().includes(q) ||
-          ((w as any).pm_workflowdescription ?? '').toLowerCase().includes(q) ||
-          ((w as any).pm_entitytypename ?? '').toLowerCase().includes(q) ||
-          ((w as any).pm_workflowtypename ?? '').toLowerCase().includes(q)
+      list = list.filter((w) =>
+        (w.pm_workflowname ?? '').toLowerCase().includes(q) ||
+        ((w as any).pm_workflowdescription ?? '').toLowerCase().includes(q)
       )
     }
-    if (wfStatusFilter) {
-      list = list.filter((w) => String(w.pm_workflowstatus ?? (w as any).statecode) === wfStatusFilter)
-    }
+    if (wfStatusFilter) list = list.filter((w) => String(w.pm_workflowstatus ?? (w as any).statecode) === wfStatusFilter)
     return [...list].sort((a, b) => {
       let cmp = 0
       switch (wfSort.field) {
@@ -163,26 +182,18 @@ export default function WorkflowsPage() {
     })
   }, [workflows, wfSearch, wfStatusFilter, wfSort])
 
-  const paginatedWorkflows = useMemo(
-    () => filteredWorkflows.slice(wfPage * wfRowsPerPage, wfPage * wfRowsPerPage + wfRowsPerPage),
-    [filteredWorkflows, wfPage, wfRowsPerPage]
-  )
+  const paginatedWorkflows = useMemo(() => filteredWorkflows.slice(wfPage * wfRowsPerPage, wfPage * wfRowsPerPage + wfRowsPerPage), [filteredWorkflows, wfPage, wfRowsPerPage])
 
   const filteredInstances = useMemo(() => {
     let list = [...instances]
     if (instSearch.trim()) {
       const q = instSearch.toLowerCase()
-      list = list.filter(
-        (i) =>
-          (i.pm_workflowname ?? '').toLowerCase().includes(q) ||
-          ((i as any).pm_instanceidentifier ?? '').toLowerCase().includes(q) ||
-          ((i as any).pm_entityid ?? '').toLowerCase().includes(q) ||
-          ((i as any).pm_initiatedby ?? '').toLowerCase().includes(q)
+      list = list.filter((i) =>
+        (i.pm_workflowname ?? '').toLowerCase().includes(q) ||
+        ((i as any).pm_initiatedby ?? '').toLowerCase().includes(q)
       )
     }
-    if (instStatusFilter) {
-      list = list.filter((i) => String(i.pm_workflowstatus ?? '') === instStatusFilter)
-    }
+    if (instStatusFilter) list = list.filter((i) => String(i.pm_workflowstatus ?? '') === instStatusFilter)
     return [...list].sort((a, b) => {
       let cmp = 0
       switch (instSort.field) {
@@ -195,20 +206,15 @@ export default function WorkflowsPage() {
     })
   }, [instances, instSearch, instStatusFilter, instSort])
 
-  const paginatedInstances = useMemo(
-    () => filteredInstances.slice(instPage * instRowsPerPage, instPage * instRowsPerPage + instRowsPerPage),
-    [filteredInstances, instPage, instRowsPerPage]
-  )
+  const paginatedInstances = useMemo(() => filteredInstances.slice(instPage * instRowsPerPage, instPage * instRowsPerPage + instRowsPerPage), [filteredInstances, instPage, instRowsPerPage])
 
   const filteredSteps = useMemo(() => {
     let list = [...steps]
     if (stepSearch.trim()) {
       const q = stepSearch.toLowerCase()
-      list = list.filter(
-        (s) =>
-          (s.pm_stepname ?? '').toLowerCase().includes(q) ||
-          (s.pm_approvername ?? '').toLowerCase().includes(q) ||
-          (s.pm_decisionstatusname ?? '').toLowerCase().includes(q)
+      list = list.filter((s) =>
+        (s.pm_stepname ?? '').toLowerCase().includes(q) ||
+        (s.pm_approvername ?? '').toLowerCase().includes(q)
       )
     }
     return [...list].sort((a, b) => {
@@ -223,81 +229,32 @@ export default function WorkflowsPage() {
     })
   }, [steps, stepSearch, stepSort])
 
-  const paginatedSteps = useMemo(
-    () => filteredSteps.slice(stepPage * stepRowsPerPage, stepPage * stepRowsPerPage + stepRowsPerPage),
-    [filteredSteps, stepPage, stepRowsPerPage]
-  )
+  const paginatedSteps = useMemo(() => filteredSteps.slice(stepPage * stepRowsPerPage, stepPage * stepRowsPerPage + stepRowsPerPage), [filteredSteps, stepPage, stepRowsPerPage])
 
-  const handleWfSort = useCallback((field: WfSortField) => {
-    setWfSort((prev) => ({ field, dir: prev.field === field && prev.dir === 'asc' ? 'desc' : 'asc' }))
-  }, [])
-  const handleInstSort = useCallback((field: InstSortField) => {
-    setInstSort((prev) => ({ field, dir: prev.field === field && prev.dir === 'asc' ? 'desc' : 'asc' }))
-  }, [])
-  const handleStepSort = useCallback((field: StepSortField) => {
-    setStepSort((prev) => ({ field, dir: prev.field === field && prev.dir === 'asc' ? 'desc' : 'asc' }))
-  }, [])
-
-  const openCreateWf = useCallback(() => {
-    setEditingWf(null)
-    setWfFormData({ pm_workflowname: '', pm_workflowdescription: '', pm_workflowtype: 0, pm_entitytype: 0, pm_workflowstatus: 0, statecode: 0 })
-    setShowWfForm(true)
-  }, [])
-
-  const openEditWf = useCallback((wf: WorkflowModel) => {
-    setEditingWf(wf)
-    setWfFormData({
-      pm_workflowname: wf.pm_workflowname ?? '',
-      pm_workflowdescription: (wf as any).pm_workflowdescription ?? '',
-      pm_workflowtype: Number((wf as any).pm_workflowtype) || 0,
-      pm_entitytype: Number((wf as any).pm_entitytype) || 0,
-      pm_workflowstatus: Number(wf.pm_workflowstatus) || 0,
-      statecode: wf.statecode ?? 0,
-    })
-    setShowWfForm(true)
-  }, [])
-
-  const handleSaveWf = async () => {
-    if (!wfFormData.pm_workflowname.trim()) { setError('Workflow name is required.'); return }
-    setError(null)
-    setActionLoading(true)
-    try {
-      if (editingWf?.pm_workflowid) {
-        await updateWorkflow(editingWf.pm_workflowid, wfFormData as any)
-        setSuccessMsg('Workflow template updated successfully.')
-      } else {
-        await createWorkflow(wfFormData as any)
-        setSuccessMsg('Workflow template created successfully.')
-      }
-      setShowWfForm(false)
-      setTimeout(() => setSuccessMsg(null), 3000)
-      await loadData()
-    } catch {
-      setError(editingWf ? 'Unable to update workflow.' : 'Unable to create workflow.')
-    } finally {
-      setActionLoading(false)
-    }
-  }
+  // ─── Handlers ───
+  const handleWfSort = useCallback((field: WfSortField) => setWfSort((p) => ({ field, dir: p.field === field && p.dir === 'asc' ? 'desc' : 'asc' })), [])
+  const handleInstSort = useCallback((field: InstSortField) => setInstSort((p) => ({ field, dir: p.field === field && p.dir === 'asc' ? 'desc' : 'asc' })), [])
+  const handleStepSort = useCallback((field: StepSortField) => setStepSort((p) => ({ field, dir: p.field === field && p.dir === 'asc' ? 'desc' : 'asc' })), [])
 
   const handleDelete = async () => {
     if (!deleteConfirm) return
     setActionLoading(true)
     try {
-      if (deleteConfirm.type === 'workflow') {
-        await deleteWorkflow(deleteConfirm.id)
-        setSuccessMsg('Workflow deleted successfully.')
-      } else {
-        await deleteWorkflowInstance(deleteConfirm.id)
-        setSuccessMsg('Instance deleted successfully.')
-      }
+      if (deleteConfirm.type === 'workflow') await deleteWorkflow(deleteConfirm.id)
+      else await deleteWorkflowInstance(deleteConfirm.id)
+      setSuccessMsg(deleteConfirm.type === 'workflow' ? 'Workflow deleted.' : 'Instance deleted.')
       setDeleteConfirm(null)
       setTimeout(() => setSuccessMsg(null), 3000)
       await loadData()
-    } catch {
-      setError('Unable to delete.')
-    } finally {
-      setActionLoading(false)
-    }
+    } catch { setError('Unable to delete.') }
+    finally { setActionLoading(false) }
+  }
+
+  const navigateTo = (mode: ViewMode, wf?: WorkflowModel) => {
+    setView(mode)
+    setViewWorkflow(wf ?? null)
+    setError(null)
+    setSuccessMsg(null)
   }
 
   const renderTableHeader = (cells: Array<{
@@ -306,38 +263,34 @@ export default function WorkflowsPage() {
     <TableHead>
       <TableRow>
         {cells.map((cell, idx) => (
-          <TableCell
-            key={idx}
-            align={cell.align || 'left'}
-            sx={{
-              fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em',
-              color: 'text.secondary', py: 1.5, borderBottom: '2px solid', borderColor: 'divider',
-              cursor: cell.sortable ? 'pointer' : 'default',
-              '&:hover': cell.sortable ? { color: 'primary.main' } : {},
-            }}
-            onClick={cell.onClick}
-          >
-            {cell.sortable ? (
-              <TableSortLabel active={cell.active} direction={cell.active ? cell.dir : 'asc'}>
-                {cell.label}
-              </TableSortLabel>
-            ) : cell.label}
+          <TableCell key={idx} align={cell.align || 'left'}
+            sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'text.secondary', py: 1.5, borderBottom: '2px solid', borderColor: 'divider', cursor: cell.sortable ? 'pointer' : 'default', '&:hover': cell.sortable ? { color: 'primary.main' } : {} }}
+            onClick={cell.onClick}>
+            {cell.sortable ? <TableSortLabel active={cell.active} direction={cell.active ? cell.dir : 'asc'}>{cell.label}</TableSortLabel> : cell.label}
           </TableCell>
         ))}
       </TableRow>
     </TableHead>
   )
 
+  // ─── Sub-page Views ───
+  if (view === 'create') {
+    return <WorkflowCreatePage onBack={() => navigateTo('list')} onCreated={() => { loadData(); navigateTo('list') }} />
+  }
+  if (view === 'edit' && viewWorkflow) {
+    return <WorkflowEditPage workflow={viewWorkflow} onBack={() => navigateTo('list')} onSaved={() => { loadData(); navigateTo('list') }} />
+  }
+  if (view === 'steps' && viewWorkflow) {
+    return <WorkflowStepConfigPage workflow={viewWorkflow} onBack={() => navigateTo('list')} />
+  }
+
+  // ─── Main List View ───
   return (
     <Box>
       <PageHeader
         title="Workflow Automation"
         subtitle="Manage workflow templates, track active instances, and review approval steps."
-        action={pageTab === 0 ? {
-          label: 'New Workflow',
-          icon: <AddIcon />,
-          onClick: openCreateWf,
-        } : undefined}
+        action={pageTab === 0 ? { label: 'New Workflow', icon: <AddIcon />, onClick: () => navigateTo('create') } : undefined}
       />
       {pageTab === 0 && <ExportButton data={filteredWorkflows} columns={workflowExportColumns} filename="WorkflowTemplates" />}
       {pageTab === 1 && <ExportButton data={filteredInstances} columns={instanceExportColumns} filename="WorkflowInstances" />}
@@ -345,15 +298,9 @@ export default function WorkflowsPage() {
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
       {!loading && <KpiCardRow items={kpiItems} />}
-      <Tabs
-        value={pageTab}
-        onChange={(_, v) => { setPageTab(v); setSelectedInstanceId(null); setSteps([]); setError(null) }}
-        sx={{
-          mb: 3, borderBottom: 1, borderColor: 'divider',
-          '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40, px: 3 },
-          '& .Mui-selected': { color: 'primary.main' },
-        }}
-      >
+
+      <Tabs value={pageTab} onChange={(_, v) => { setPageTab(v); setSelectedInstanceId(null); setSteps([]); setError(null) }}
+        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider', '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40, px: 3 }, '& .Mui-selected': { color: 'primary.main' } }}>
         <Tab icon={<AccountTreeIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Templates" />
         <Tab icon={<PlayArrowIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Active Instances" />
         <Tab icon={<HistoryIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Approval Steps" />
@@ -363,46 +310,30 @@ export default function WorkflowsPage() {
       <TabPanel value={pageTab} index={0} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField size="small" placeholder="Search templates..." value={wfSearch}
-              onChange={(e) => { setWfSearch(e.target.value); setWfPage(0) }} sx={{ minWidth: 240 }}
-              slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+            <TextField size="small" placeholder="Search templates..." value={wfSearch} onChange={(e) => { setWfSearch(e.target.value); setWfPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 2 } } }} />
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Status</InputLabel>
               <Select value={wfStatusFilter} label="Status" onChange={(e) => { setWfStatusFilter(e.target.value); setWfPage(0) }} sx={{ borderRadius: 2 }}>
                 {STATUS_FILTERS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </Select>
             </FormControl>
-            {(wfSearch || wfStatusFilter) && (
-              <Button size="small" onClick={() => { setWfSearch(''); setWfStatusFilter(''); setWfPage(0) }} sx={{ borderRadius: 2 }}>Clear</Button>
-            )}
+            {(wfSearch || wfStatusFilter) && <Button size="small" onClick={() => { setWfSearch(''); setWfStatusFilter(''); setWfPage(0) }} sx={{ borderRadius: 2 }}>Clear</Button>}
           </Box>
-          <TableShell
-            loading={loading}
-            empty={filteredWorkflows.length === 0}
-            emptyIcon={<AccountTreeIcon />}
-            emptyTitle={wfSearch || wfStatusFilter ? 'No templates match your criteria.' : 'No workflow templates yet.'}
-            emptyAction={!wfSearch && !wfStatusFilter ? (
-              <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreateWf}>Create your first workflow</Button>
-            ) : undefined}
-          >
+          <TableShell loading={loading} empty={filteredWorkflows.length === 0} emptyIcon={<AccountTreeIcon />}
+            emptyTitle={wfSearch || wfStatusFilter ? 'No templates match.' : 'No workflow templates yet.'}
+            emptyAction={!wfSearch && !wfStatusFilter ? <Button variant="outlined" startIcon={<AddIcon />} onClick={() => navigateTo('create')}>Create your first workflow</Button> : undefined}>
             <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
               {renderTableHeader([
                 { label: 'Workflow Name', sortable: true, active: wfSort.field === 'name', dir: wfSort.dir, onClick: () => handleWfSort('name') },
                 { label: 'Entity Type', sortable: true, active: wfSort.field === 'entity', dir: wfSort.dir, onClick: () => handleWfSort('entity') },
-                { label: 'Type' },
                 { label: 'Status', sortable: true, active: wfSort.field === 'status', dir: wfSort.dir, onClick: () => handleWfSort('status'), align: 'center' },
+                { label: 'Steps', align: 'center' },
                 { label: '', align: 'right' },
               ])}
               <TableBody>
                 {paginatedWorkflows.map((wf, idx) => (
-                  <TableRow
-                    key={wf.pm_workflowid} hover
-                    sx={{
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                      transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 },
-                    }}
-                  >
+                  <TableRow key={wf.pm_workflowid} hover
+                    sx={{ bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent', '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Avatar sx={{ width: 32, height: 32, bgcolor: '#6366f1', fontSize: fontSizes.sm, fontWeight: 700 }}>
@@ -410,29 +341,21 @@ export default function WorkflowsPage() {
                         </Avatar>
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>{wf.pm_workflowname ?? 'Unnamed'}</Typography>
-                          {(wf as any).pm_workflowdescription && (
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {(wf as any).pm_workflowdescription}
-                            </Typography>
-                          )}
+                          {(wf as any).pm_workflowdescription && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(wf as any).pm_workflowdescription}</Typography>}
                         </Box>
                       </Box>
                     </TableCell>
                     <TableCell><Typography variant="body2">{(wf as any).pm_entitytypename || '\u2014'}</Typography></TableCell>
-                    <TableCell><Typography variant="body2" color="text.secondary">{(wf as any).pm_workflowtypename || '\u2014'}</Typography></TableCell>
                     <TableCell align="center">
-                      <Chip
-                        label={STATUS_LABELS[String(wf.pm_workflowstatus ?? (wf as any).statecode ?? '')] || (wf.pm_workflowstatus === 0 ? 'Active' : 'Inactive')}
-                        color={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? 'success' : 'default'}
-                        size="small" icon={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? <PowerIcon /> : <PowerOffIcon />}
-                        sx={{ fontWeight: 600, borderRadius: 8 }}
-                      />
+                      <Chip label={STATUS_LABELS[String(wf.pm_workflowstatus ?? '')] || (wf.pm_workflowstatus === 0 ? 'Active' : 'Inactive')} color={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? 'success' : 'default'} size="small" icon={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? <PowerIcon /> : <PowerOffIcon />} sx={{ fontWeight: 600, borderRadius: 8 }} />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip label={String(stepTemplates.filter((s) => s.pm_module === wf.pm_workflowid).length)} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8 }} />
                     </TableCell>
                     <TableCell align="right">
-                      <IconButton size="small" onClick={() => openEditWf(wf)} sx={{ borderRadius: 1.5 }}><EditIcon sx={{ fontSize: 18 }} /></IconButton>
-                      <IconButton size="small" color="error"
-                        onClick={() => setDeleteConfirm({ id: wf.pm_workflowid!, type: 'workflow' })}
-                        sx={{ borderRadius: 1.5 }}><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
+                      <IconButton size="small" onClick={() => navigateTo('steps', wf)} sx={{ borderRadius: 1.5, color: '#8b5cf6' }} title="Configure Steps"><SettingsIcon sx={{ fontSize: 18 }} /></IconButton>
+                      <IconButton size="small" onClick={() => navigateTo('edit', wf)} sx={{ borderRadius: 1.5 }} title="Edit"><EditIcon sx={{ fontSize: 18 }} /></IconButton>
+                      <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: wf.pm_workflowid!, type: 'workflow' })} sx={{ borderRadius: 1.5 }} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -442,10 +365,7 @@ export default function WorkflowsPage() {
           {!loading && filteredWorkflows.length > 0 && (
             <>
               <TableFooter filteredCount={filteredWorkflows.length} totalCount={workflows.length} itemLabel="template" />
-              <TablePagination component="div" count={filteredWorkflows.length} page={wfPage}
-                onPageChange={(_, p) => setWfPage(p)} rowsPerPage={wfRowsPerPage}
-                onRowsPerPageChange={(e) => { setWfRowsPerPage(parseInt(e.target.value, 10)); setWfPage(0) }}
-                rowsPerPageOptions={[25, 50, 100]} />
+              <TablePagination component="div" count={filteredWorkflows.length} page={wfPage} onPageChange={(_, p) => setWfPage(p)} rowsPerPage={wfRowsPerPage} onRowsPerPageChange={(e) => { setWfRowsPerPage(parseInt(e.target.value, 10)); setWfPage(0) }} rowsPerPageOptions={[25, 50, 100]} />
             </>
           )}
         </Paper>
@@ -455,26 +375,16 @@ export default function WorkflowsPage() {
       <TabPanel value={pageTab} index={1} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField size="small" placeholder="Search instances..." value={instSearch}
-              onChange={(e) => { setInstSearch(e.target.value); setInstPage(0) }} sx={{ minWidth: 240 }}
-              slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+            <TextField size="small" placeholder="Search instances..." value={instSearch} onChange={(e) => { setInstSearch(e.target.value); setInstPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 2 } } }} />
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Status</InputLabel>
               <Select value={instStatusFilter} label="Status" onChange={(e) => { setInstStatusFilter(e.target.value); setInstPage(0) }} sx={{ borderRadius: 2 }}>
                 {INSTANCE_STATUS_FILTERS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </Select>
             </FormControl>
-            <Button variant="outlined" size="small" startIcon={<HistoryIcon />} onClick={() => setPageTab(2)} sx={{ borderRadius: 2, ml: 'auto' }}>View Steps</Button>
-            {(instSearch || instStatusFilter) && (
-              <Button size="small" onClick={() => { setInstSearch(''); setInstStatusFilter(''); setInstPage(0) }} sx={{ borderRadius: 2 }}>Clear</Button>
-            )}
+            {(instSearch || instStatusFilter) && <Button size="small" onClick={() => { setInstSearch(''); setInstStatusFilter(''); setInstPage(0) }} sx={{ borderRadius: 2 }}>Clear</Button>}
           </Box>
-          <TableShell
-            loading={loading}
-            empty={filteredInstances.length === 0}
-            emptyIcon={<PlayArrowIcon />}
-            emptyTitle={instSearch || instStatusFilter ? 'No instances match your criteria.' : 'No workflow instances yet.'}
-          >
+          <TableShell loading={loading} empty={filteredInstances.length === 0} emptyIcon={<PlayArrowIcon />} emptyTitle={instSearch || instStatusFilter ? 'No instances match.' : 'No workflow instances yet.'}>
             <Table stickyHeader size="small" sx={{ minWidth: 800 }}>
               {renderTableHeader([
                 { label: 'Workflow', sortable: true, active: instSort.field === 'workflow', dir: instSort.dir, onClick: () => handleInstSort('workflow') },
@@ -486,42 +396,20 @@ export default function WorkflowsPage() {
               ])}
               <TableBody>
                 {paginatedInstances.map((inst, idx) => (
-                  <TableRow
-                    key={inst.pm_workflowinstanceid} hover
-                    onClick={() => { setSelectedInstanceId(inst.pm_workflowinstanceid!); setPageTab(2) }}
-                    sx={{
-                      cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                      transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 },
-                    }}
-                  >
+                  <TableRow key={inst.pm_workflowinstanceid} hover onClick={() => { setSelectedInstanceId(inst.pm_workflowinstanceid!); setPageTab(2) }}
+                    sx={{ cursor: 'pointer', bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent', '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', fontSize: fontSizes.sm, fontWeight: 700 }}>
-                          {(inst.pm_workflowname ?? 'W').charAt(0).toUpperCase()}
-                        </Avatar>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', fontSize: fontSizes.sm, fontWeight: 700 }}>{(inst.pm_workflowname ?? 'W').charAt(0).toUpperCase()}</Avatar>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{inst.pm_workflowname ?? 'Unnamed'}</Typography>
                       </Box>
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.xs }}>
-                        {(inst as any).pm_entityid ? ((inst as any).pm_entityid).substring(0, 8) + '...' : '\u2014'}
-                      </Typography>
-                    </TableCell>
+                    <TableCell><Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.xs }}>{(inst as any).pm_entityid ? ((inst as any).pm_entityid).substring(0, 8) + '...' : '\u2014'}</Typography></TableCell>
                     <TableCell><Typography variant="body2">{(inst as any).pm_initiatedby || '\u2014'}</Typography></TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        label={INSTANCE_STATUS_LABELS[String(inst.pm_workflowstatus ?? '')] ?? 'Unknown'}
-                        color={INSTANCE_STATUS_COLORS[String(inst.pm_workflowstatus ?? '')] ?? 'default'}
-                        size="small" sx={{ fontWeight: 600, borderRadius: 8 }}
-                      />
-                    </TableCell>
+                    <TableCell align="center"><Chip label={INSTANCE_STATUS_LABELS[String(inst.pm_workflowstatus ?? '')] ?? 'Unknown'} color={INSTANCE_STATUS_COLORS[String(inst.pm_workflowstatus ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600, borderRadius: 8 }} /></TableCell>
                     <TableCell><Typography variant="body2" color="text.secondary">{formatDate((inst as any).pm_initiationdate)}</Typography></TableCell>
                     <TableCell align="right">
-                      <IconButton size="small" color="error"
-                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' }) }}
-                        sx={{ borderRadius: 1.5 }}><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
+                      <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' }) }} sx={{ borderRadius: 1.5 }}><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -531,10 +419,7 @@ export default function WorkflowsPage() {
           {!loading && filteredInstances.length > 0 && (
             <>
               <TableFooter filteredCount={filteredInstances.length} totalCount={instances.length} itemLabel="instance" />
-              <TablePagination component="div" count={filteredInstances.length} page={instPage}
-                onPageChange={(_, p) => setInstPage(p)} rowsPerPage={instRowsPerPage}
-                onRowsPerPageChange={(e) => { setInstRowsPerPage(parseInt(e.target.value, 10)); setInstPage(0) }}
-                rowsPerPageOptions={[25, 50, 100]} />
+              <TablePagination component="div" count={filteredInstances.length} page={instPage} onPageChange={(_, p) => setInstPage(p)} rowsPerPage={instRowsPerPage} onRowsPerPageChange={(e) => { setInstRowsPerPage(parseInt(e.target.value, 10)); setInstPage(0) }} rowsPerPageOptions={[25, 50, 100]} />
             </>
           )}
         </Paper>
@@ -544,23 +429,12 @@ export default function WorkflowsPage() {
       <TabPanel value={pageTab} index={2} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField size="small" placeholder="Search steps..." value={stepSearch}
-              onChange={(e) => { setStepSearch(e.target.value); setStepPage(0) }} sx={{ minWidth: 240 }}
-              slotProps={{ input: { sx: { borderRadius: 2 } } }} />
-            {selectedInstanceId && (
-              <Chip icon={<ScheduleIcon />} label={'Instance: ' + selectedInstanceId.substring(0, 8) + '...'}
-                onDelete={() => setSelectedInstanceId(null)} size="small" color="primary" variant="outlined" sx={{ borderRadius: 8 }} />
-            )}
-            {stepSearch && (
-              <Button size="small" onClick={() => { setStepSearch(''); setStepPage(0) }} sx={{ borderRadius: 2 }}>Clear</Button>
-            )}
+            <TextField size="small" placeholder="Search steps..." value={stepSearch} onChange={(e) => { setStepSearch(e.target.value); setStepPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+            {selectedInstanceId && <Chip icon={<ScheduleIcon />} label={'Instance: ' + selectedInstanceId.substring(0, 8) + '...'} onDelete={() => setSelectedInstanceId(null)} size="small" color="primary" variant="outlined" sx={{ borderRadius: 8 }} />}
+            {stepSearch && <Button size="small" onClick={() => { setStepSearch(''); setStepPage(0) }} sx={{ borderRadius: 2 }}>Clear</Button>}
           </Box>
-          <TableShell
-            loading={stepsLoading}
-            empty={filteredSteps.length === 0}
-            emptyIcon={<HistoryIcon />}
-            emptyTitle={!selectedInstanceId ? 'Select an instance to view its approval steps.' : (stepSearch ? 'No steps match your criteria.' : 'No approval steps found for this instance.')}
-          >
+          <TableShell loading={stepsLoading} empty={filteredSteps.length === 0} emptyIcon={<HistoryIcon />}
+            emptyTitle={!selectedInstanceId ? 'Select an instance to view its approval steps.' : (stepSearch ? 'No steps match.' : 'No approval steps found.')}>
             <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
               {renderTableHeader([
                 { label: 'Step Name', sortable: true, active: stepSort.field === 'name', dir: stepSort.dir, onClick: () => handleStepSort('name') },
@@ -571,34 +445,17 @@ export default function WorkflowsPage() {
               ])}
               <TableBody>
                 {paginatedSteps.map((step, idx) => (
-                  <TableRow
-                    key={step.pm_workflowapprovalstepid} hover
-                    sx={{
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                      transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 },
-                    }}
-                  >
+                  <TableRow key={step.pm_workflowapprovalstepid} hover
+                    sx={{ bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent', '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#8b5cf6', fontSize: fontSizes.sm, fontWeight: 700 }}>
-                          {(step.pm_stepname ?? 'S').charAt(0).toUpperCase()}
-                        </Avatar>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#8b5cf6', fontSize: fontSizes.sm, fontWeight: 700 }}>{(step.pm_stepname ?? 'S').charAt(0).toUpperCase()}</Avatar>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{step.pm_stepname ?? 'Unnamed Step'}</Typography>
                       </Box>
                     </TableCell>
-                    <TableCell align="center">
-                      <Chip label={'#' + (step.pm_steporder ?? '\u2014')} size="small" variant="outlined"
-                        sx={{ fontWeight: 600, borderRadius: 8, fontFamily: '"JetBrains Mono", monospace' }} />
-                    </TableCell>
+                    <TableCell align="center"><Chip label={'#' + (step.pm_steporder ?? '\u2014')} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8, fontFamily: '"JetBrains Mono", monospace' }} /></TableCell>
                     <TableCell><Typography variant="body2">{step.pm_approvername || '\u2014'}</Typography></TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        label={APPROVAL_STATUS_LABELS[String(step.pm_decisionstatus ?? '')] ?? 'Unknown'}
-                        color={APPROVAL_STATUS_COLORS[String(step.pm_decisionstatus ?? '')] ?? 'default'}
-                        size="small" sx={{ fontWeight: 600, borderRadius: 8 }}
-                      />
-                    </TableCell>
+                    <TableCell align="center"><Chip label={APPROVAL_STATUS_LABELS[String(step.pm_decisionstatus ?? '')] ?? 'Unknown'} color={APPROVAL_STATUS_COLORS[String(step.pm_decisionstatus ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600, borderRadius: 8 }} /></TableCell>
                     <TableCell><Typography variant="body2" color="text.secondary">{formatDate(step.pm_decisiondate)}</Typography></TableCell>
                   </TableRow>
                 ))}
@@ -608,82 +465,18 @@ export default function WorkflowsPage() {
           {!stepsLoading && filteredSteps.length > 0 && (
             <>
               <TableFooter filteredCount={filteredSteps.length} totalCount={steps.length} itemLabel="step" />
-              <TablePagination component="div" count={filteredSteps.length} page={stepPage}
-                onPageChange={(_, p) => setStepPage(p)} rowsPerPage={stepRowsPerPage}
-                onRowsPerPageChange={(e) => { setStepRowsPerPage(parseInt(e.target.value, 10)); setStepPage(0) }}
-                rowsPerPageOptions={[25, 50, 100]} />
+              <TablePagination component="div" count={filteredSteps.length} page={stepPage} onPageChange={(_, p) => setStepPage(p)} rowsPerPage={stepRowsPerPage} onRowsPerPageChange={(e) => { setStepRowsPerPage(parseInt(e.target.value, 10)); setStepPage(0) }} rowsPerPageOptions={[25, 50, 100]} />
             </>
           )}
         </Paper>
       </TabPanel>
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={showWfForm} onClose={() => !actionLoading && setShowWfForm(false)} maxWidth="sm" fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
-        <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#6366f1', borderRadius: 1.5 }}>
-            {editingWf ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <AccountTreeIcon sx={{ fontSize: 18, color: '#fff' }} />}
-          </Avatar>
-          {editingWf ? 'Edit Workflow Template' : 'Create Workflow Template'}
-        </DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            {editingWf ? 'Update the settings for ' + editingWf.pm_workflowname + '.' : 'Define a new workflow template with triggers and approval steps.'}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <SettingsIcon sx={{ fontSize: 18, color: '#6366f1' }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-              Workflow Details
-            </Typography>
-            <Divider sx={{ flex: 1 }} />
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <TextField label="Workflow Name" required fullWidth size="small" value={wfFormData.pm_workflowname}
-              onChange={(e) => setWfFormData((f) => ({ ...f, pm_workflowname: e.target.value }))}
-              slotProps={{ input: { sx: { borderRadius: 2 } } }} />
-            <TextField label="Description" fullWidth multiline rows={2} size="small" value={wfFormData.pm_workflowdescription}
-              onChange={(e) => setWfFormData((f) => ({ ...f, pm_workflowdescription: e.target.value }))}
-              placeholder="What does this workflow do?" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField label="Workflow Type" type="number" size="small" value={wfFormData.pm_workflowtype}
-                onChange={(e) => setWfFormData((f) => ({ ...f, pm_workflowtype: Number(e.target.value) }))}
-                sx={{ minWidth: 140 }} slotProps={{ input: { sx: { borderRadius: 2 } } }} />
-              <TextField label="Entity Type" type="number" size="small" value={wfFormData.pm_entitytype}
-                onChange={(e) => setWfFormData((f) => ({ ...f, pm_entitytype: Number(e.target.value) }))}
-                sx={{ minWidth: 140 }} slotProps={{ input: { sx: { borderRadius: 2 } } }} />
-              <FormControl size="small" sx={{ minWidth: 140 }}>
-                <InputLabel>Status</InputLabel>
-                <Select value={wfFormData.pm_workflowstatus} label="Status"
-                  onChange={(e) => setWfFormData((f) => ({ ...f, pm_workflowstatus: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}>
-                  <MenuItem value={0}>Active</MenuItem>
-                  <MenuItem value={1}>Inactive</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={() => setShowWfForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>Cancel</Button>
-          <Button onClick={handleSaveWf} variant="contained"
-            disabled={!wfFormData.pm_workflowname.trim() || actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}>
-            {actionLoading ? 'Saving...' : editingWf ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete Confirmation */}
-      <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-          {deleteConfirm?.type === 'workflow' ? 'Delete Workflow' : 'Delete Instance'}
-        </DialogTitle>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
+        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>{deleteConfirm?.type === 'workflow' ? 'Delete Workflow' : 'Delete Instance'}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">
-            {deleteConfirm?.type === 'workflow'
-              ? 'Are you sure you want to delete this workflow template? This action cannot be undone.'
-              : 'Are you sure you want to delete this workflow instance? This action cannot be undone.'}
+            {deleteConfirm?.type === 'workflow' ? 'Are you sure? This will delete the workflow template. This action cannot be undone.' : 'Are you sure you want to delete this workflow instance? This action cannot be undone.'}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>

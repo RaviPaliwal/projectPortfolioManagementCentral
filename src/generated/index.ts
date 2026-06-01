@@ -36,6 +36,7 @@ export * as Pm_timesheetsModel from './models/Pm_timesheetsModel';
 export * as Pm_workflowapprovalstepsModel from './models/Pm_workflowapprovalstepsModel';
 export * as Pm_workflowinstancesModel from './models/Pm_workflowinstancesModel';
 export * as Pm_workflowsModel from './models/Pm_workflowsModel';
+export * as Pm_workflowsteptemplatesModel from './models/Pm_workflowsteptemplatesModel';
 export * as SystemusersModel from './models/SystemusersModel';
 
 // Services
@@ -70,4 +71,5 @@ export * from './services/Pm_timesheetsService';
 export * from './services/Pm_workflowapprovalstepsService';
 export * from './services/Pm_workflowinstancesService';
 export * from './services/Pm_workflowsService';
+export * from './services/Pm_workflowsteptemplatesService';
 export * from './services/SystemusersService';

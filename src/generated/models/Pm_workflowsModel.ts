@@ -18,7 +18,6 @@ export interface Pm_workflowsBase {
   overriddencreatedon?: string;
   ownerid: string;
   owneridtype: string;
-  pm_approvalsteps?: string;
   pm_description?: string;
   pm_isactive?: boolean;
   pm_module?: string;

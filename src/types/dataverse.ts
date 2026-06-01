@@ -498,6 +498,7 @@ export interface WorkflowInstanceModel {
   pm_entityname?: string
   pm_entitytype?: string
   pm_initiatedby?: string
+  _pm_initiatedbylookup_value?: string
   pm_initiationdate?: string
   pm_completiondate?: string
   pm_workflowname?: string
@@ -514,11 +515,77 @@ export interface WorkflowInstanceModel {
   statecode?: number
 }
 
+export interface ProjectStatusSnapshotModel {
+  pm_projectstatussnapshotid?: string
+  pm_snapshotname?: string
+  pm_entitytype?: string
+  pm_projectcode?: string
+  pm_actionitems?: string
+  pm_approvalstatus?: number | string
+  pm_benefitsragstatus?: number | string
+  pm_costragstatus?: number | string
+  pm_overallragstatus?: number | string
+  pm_resourceragstatus?: number | string
+  pm_riskragstatus?: number | string
+  pm_scheduleragstatus?: number | string
+  pm_portfolio?: string
+  pm_programme?: string
+  pm_projecthighlights?: string
+  pm_projectlowlights?: string
+  pm_reportingperiod?: string
+  pm_submissiondate?: string
+  pm_submittedby?: string
+  pm_reportingfiscalperiodname?: string
+  pm_projectname?: string
+  pm_portfoliolookupname?: string
+  pm_programmenamename?: string
+  _pm_project_value?: string
+  _pm_portfoliolookup_value?: string
+  _pm_programmename_value?: string
+  _pm_reportingfiscalperiod_value?: string
+  statecode?: number
+}
+
+export interface HolidayModel {
+  pm_holidayid?: string
+  pm_holidayname?: string
+  pm_holidaydate?: string
+  pm_country?: string
+  pm_isfixeddate?: boolean
+  pm_year?: number
+  pm_notes?: string
+  statecode?: number
+}
+
+export interface WorkflowStepTemplateModel {
+  pm_workflowsteptemplateid?: string
+  pm_workflowname?: string
+  pm_steporder?: number
+  pm_assignetype?: number | string
+  pm_assignetypename?: string
+  pm_assigneeid?: string
+  pm_displayname?: string
+  pm_description?: string
+  pm_sladays?: number
+  pm_allowdelegation?: boolean
+  pm_approvalrequired?: boolean
+  pm_isparallel?: boolean
+  pm_conditionsjson?: string
+  pm_status?: number | string
+  pm_statusname?: string
+  pm_statusreason?: string
+  pm_module?: string
+  statecode?: number
+}
+
 export interface WorkflowApprovalStepModel {
   pm_workflowapprovalstepid?: string
   pm_stepname?: string
   pm_steporder?: number
   pm_approvername?: string
+  pm_assigneetype?: number | string
+  pm_assigneetypename?: string
+  pm_assigneedisplayname?: string
   pm_approvalstatus?: number | string
   pm_approvalstatusname?: string
   pm_decisionstatus?: number | string
@@ -534,5 +601,7 @@ export interface WorkflowApprovalStepModel {
   pm_workflowinstanceid?: string
   pm_workflowinstancelookupname?: string
   _pm_workflowinstancelookup_value?: string
+  _pm_workflowtemplate_value?: string
+  pm_workflowtemplatename?: string
   statecode?: number
 }

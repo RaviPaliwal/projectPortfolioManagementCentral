@@ -1,0 +1,11 @@
+<TabPanel value={pageTab} index={3} pt={0}>
+<Paper sx={{ overflow: "hidden", mb: 3 }}>
+<Box sx={{ px: 2, py: 1.5, display: "flex", gap: 1.5, alignItems: "center", flexWrap: "wrap" }}>
+<Typography variant="subtitle1" sx={{ fontWeight: 700, mr: 2 }}>Select Workflow</Typography>
+<FormControl size="small" sx={{ minWidth: 240 }}><InputLabel>Workflow Template</InputLabel>
+<Select value={selectedWorkflowId ?? ""} label="Workflow Template" onChange={(e) => setSelectedWorkflowId(e.target.value || null)} sx={{ borderRadius: 2 }}>
+<MenuItem value="">All Templates</MenuItem>
+{workflows.map((wf) => (<MenuItem key={wf.pm_workflowid} value={wf.pm_workflowid}>{wf.pm_workflowname}</MenuItem>))}
+</Select></FormControl>
+{selectedWorkflowId && (<Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => openCreateStep(selectedWorkflowId)} sx={{ bgcolor: "#8b5cf6", "&:hover": { bgcolor: "#7c3aed" }, borderRadius: 2, fontWeight: 600, ml: "auto" }}>Add Step</Button>)}
+</Box>

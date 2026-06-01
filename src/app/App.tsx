@@ -3,6 +3,7 @@ import { ThemeProvider, CssBaseline, createTheme, Box, Paper, Typography, Button
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import type { PaletteMode, ThemeOptions } from '@mui/material'
 import { fontSizes } from '@/styles'
+import { UserContextProvider } from '@/context/UserContext'
 
 // ─── ErrorBoundary ────────────────────────────────────────────────────────────
 interface EBProps { children: ReactNode; pageName?: string }
@@ -121,13 +122,15 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div className="appShell">
-        <PrimaryShell activeTab={activeTab} onChangeTab={setActiveTab} onToggleTheme={toggleTheme} themeMode={themeMode}>
-          <PageErrorBoundary pageName={tabs.find((t) => t.key === activeTab)?.label}>
-            {pageMap[activeTab]}
-          </PageErrorBoundary>
-        </PrimaryShell>
-      </div>
+      <UserContextProvider>
+        <div className="appShell">
+          <PrimaryShell activeTab={activeTab} onChangeTab={setActiveTab} onToggleTheme={toggleTheme} themeMode={themeMode}>
+            <PageErrorBoundary pageName={tabs.find((t) => t.key === activeTab)?.label}>
+              {pageMap[activeTab]}
+            </PageErrorBoundary>
+          </PrimaryShell>
+        </div>
+      </UserContextProvider>
     </ThemeProvider>
   )
 }

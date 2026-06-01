@@ -228,5 +228,12 @@ export const dataSourcesInfo = {
     "primaryKey": "pm_workflowinstanceid",
     "dataSourceType": "Dataverse",
     "apis": {}
+  },
+  "pm_workflowsteptemplates": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_workflowsteptemplateid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
   }
 };

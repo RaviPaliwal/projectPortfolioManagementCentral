@@ -1,13 +1,13 @@
 {
-  "name": "pm_workflow",
-  "title": "Workflow",
+  "name": "pm_workflowsteptemplate",
+  "title": "Workflow Step Templates",
   "schema": {
     "type": "array",
     "items": {
       "type": "object",
       "x-ms-dataverse-entity": true,
-      "x-ms-dataverse-entityset": "pm_workflows",
-      "x-ms-dataverse-primary-id": "pm_workflowid",
+      "x-ms-dataverse-entityset": "pm_workflowsteptemplates",
+      "x-ms-dataverse-primary-id": "pm_workflowsteptemplateid",
       "x-ms-dataverse-primary-name": "pm_workflowname",
       "properties": {
         "createdby": {
@@ -218,20 +218,12 @@
           "x-ms-schema-name": "OwningUser",
           "x-ms-read-only": true
         },
-        "pm_description": {
+        "pm_allowdelegation": {
           "type": "string",
-          "title": "Description",
-          "x-ms-dataverse-attribute": "pm_description",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_description",
-          "maxLength": 100
-        },
-        "pm_isactive": {
-          "type": "string",
-          "title": "Is Active",
-          "x-ms-dataverse-attribute": "pm_isactive",
+          "title": "Allow Delegation",
+          "x-ms-dataverse-attribute": "pm_allowdelegation",
           "x-ms-dataverse-type": "BooleanType",
-          "x-ms-schema-name": "pm_isactive",
+          "x-ms-schema-name": "pm_AllowDelegation",
           "enum": [
             "No",
             "Yes"
@@ -244,76 +236,216 @@
             null,
             null
           ],
-          "x-ms-optionsetmetadataid": "0fb19020-1a6f-4f24-8f4a-348d329260fb",
+          "x-ms-optionsetmetadataid": "71e0f3ff-a65d-f111-a826-6045bd56f0ba",
           "x-ms-isGlobal": false,
-          "x-ms-optionsetdisplayname": "Is Active",
+          "x-ms-optionsetdisplayname": "Allow Delegation",
           "x-ms-optionSetType": "Boolean"
         },
-        "pm_isactivename": {
+        "pm_allowdelegationname": {
           "type": "string",
-          "title": "pm_isactivename",
-          "x-ms-dataverse-attribute": "pm_isactivename",
+          "title": "pm_allowdelegationname",
+          "x-ms-dataverse-attribute": "pm_allowdelegationname",
           "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_isactiveName",
+          "x-ms-schema-name": "pm_allowdelegationName",
           "x-ms-read-only": true
         },
-        "pm_module": {
+        "pm_approvalrequired": {
           "type": "string",
-          "title": "Module",
-          "x-ms-dataverse-attribute": "pm_module",
+          "title": "Approval Required",
+          "x-ms-dataverse-attribute": "pm_approvalrequired",
+          "x-ms-dataverse-type": "BooleanType",
+          "x-ms-schema-name": "pm_ApprovalRequired",
+          "enum": [
+            "No",
+            "Yes"
+          ],
+          "x-ms-enum-values": [
+            0,
+            1
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "377a0717-a75d-f111-a826-6045bd56f0ba",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Approval Required",
+          "x-ms-optionSetType": "Boolean"
+        },
+        "pm_approvalrequiredname": {
+          "type": "string",
+          "title": "pm_approvalrequiredname",
+          "x-ms-dataverse-attribute": "pm_approvalrequiredname",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pm_approvalrequiredName",
+          "x-ms-read-only": true
+        },
+        "pm_assigneeid": {
+          "type": "string",
+          "title": "Assignee Id",
+          "x-ms-dataverse-attribute": "pm_assigneeid",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_module",
+          "x-ms-schema-name": "pm_AssigneeId",
           "maxLength": 100
         },
-        "pm_triggercondition": {
+        "pm_assignetype": {
           "type": "string",
-          "title": "Trigger Condition",
-          "x-ms-dataverse-attribute": "pm_triggercondition",
+          "title": "Assigne Type",
+          "x-ms-dataverse-attribute": "pm_assignetype",
+          "x-ms-dataverse-type": "PicklistType",
+          "x-ms-schema-name": "pm_AssigneType",
+          "enum": [
+            "User",
+            "Team"
+          ],
+          "x-ms-enum-values": [
+            0,
+            1
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "77244cba-a55d-f111-a826-6045bd56f0ba",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Assigne Type",
+          "x-ms-optionSetType": "Picklist"
+        },
+        "pm_assignetypename": {
+          "type": "string",
+          "title": "pm_assignetypename",
+          "x-ms-dataverse-attribute": "pm_assignetypename",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pm_assignetypeName",
+          "x-ms-read-only": true
+        },
+        "pm_conditionsjson": {
+          "type": "string",
+          "title": "Conditions Json",
+          "x-ms-dataverse-attribute": "pm_conditionsjson",
+          "x-ms-dataverse-type": "MemoType",
+          "x-ms-schema-name": "pm_ConditionsJson",
+          "maxLength": 2000
+        },
+        "pm_description": {
+          "type": "string",
+          "title": "Description",
+          "x-ms-dataverse-attribute": "pm_description",
+          "x-ms-dataverse-type": "MemoType",
+          "x-ms-schema-name": "pm_Description",
+          "maxLength": 2000
+        },
+        "pm_displayname": {
+          "type": "string",
+          "title": "Display Name",
+          "x-ms-dataverse-attribute": "pm_displayname",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_triggercondition",
+          "x-ms-schema-name": "pm_DisplayName",
           "maxLength": 100
         },
-        "pm_triggerentity": {
+        "pm_isparallel": {
           "type": "string",
-          "title": "Trigger Entity",
-          "x-ms-dataverse-attribute": "pm_triggerentity",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_triggerentity",
-          "maxLength": 100
+          "title": "Is Parallel",
+          "x-ms-dataverse-attribute": "pm_isparallel",
+          "x-ms-dataverse-type": "BooleanType",
+          "x-ms-schema-name": "pm_IsParallel",
+          "enum": [
+            "No",
+            "Yes"
+          ],
+          "x-ms-enum-values": [
+            0,
+            1
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "3ef3070e-a75d-f111-a826-6045bd56f0ba",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Is Parallel",
+          "x-ms-optionSetType": "Boolean"
         },
-        "pm_triggerevent": {
+        "pm_isparallelname": {
           "type": "string",
-          "title": "Trigger Event",
-          "x-ms-dataverse-attribute": "pm_triggerevent",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_triggerevent",
-          "maxLength": 100
+          "title": "pm_isparallelname",
+          "x-ms-dataverse-attribute": "pm_isparallelname",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pm_isparallelName",
+          "x-ms-read-only": true
         },
-        "pm_version": {
+        "pm_sladays": {
           "type": "string",
-          "title": "Version",
-          "x-ms-dataverse-attribute": "pm_version",
+          "title": "Sla Days",
+          "x-ms-dataverse-attribute": "pm_sladays",
           "x-ms-dataverse-type": "IntegerType",
-          "x-ms-schema-name": "pm_version"
+          "x-ms-schema-name": "pm_SlaDays"
         },
-        "pm_workflowid": {
+        "pm_status": {
           "type": "string",
-          "title": "Workflow",
-          "x-ms-dataverse-attribute": "pm_workflowid",
-          "x-ms-dataverse-type": "UniqueidentifierType",
-          "x-ms-schema-name": "pm_workflowId",
-          "x-ms-dataverse-primary-id": true,
-          "required": true,
-          "x-ms-keyType": "primary"
+          "title": "Status",
+          "x-ms-dataverse-attribute": "pm_status",
+          "x-ms-dataverse-type": "PicklistType",
+          "x-ms-schema-name": "pm_Status",
+          "enum": [
+            "Active",
+            "Inactive"
+          ],
+          "x-ms-enum-values": [
+            1,
+            0
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "a7522557-a75d-f111-a826-6045bd56f0ba",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Status",
+          "x-ms-optionSetType": "Picklist"
+        },
+        "pm_statusname": {
+          "type": "string",
+          "title": "pm_statusname",
+          "x-ms-dataverse-attribute": "pm_statusname",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pm_statusName",
+          "x-ms-read-only": true
+        },
+        "pm_statusreason": {
+          "type": "string",
+          "title": "Status Reason",
+          "x-ms-dataverse-attribute": "pm_statusreason",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_StatusReason",
+          "maxLength": 100
+        },
+        "pm_steporder": {
+          "type": "string",
+          "title": "stepOrder",
+          "x-ms-dataverse-attribute": "pm_steporder",
+          "x-ms-dataverse-type": "IntegerType",
+          "x-ms-schema-name": "pm_stepOrder"
         },
         "pm_workflowname": {
           "type": "string",
-          "title": "Workflow Name",
+          "title": "Step Name",
           "x-ms-dataverse-attribute": "pm_workflowname",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_workflowname",
+          "x-ms-schema-name": "pm_workflowName",
           "x-ms-dataverse-primary-name": true,
+          "required": true,
           "maxLength": 850
+        },
+        "pm_workflowsteptemplateid": {
+          "type": "string",
+          "title": "Workflow Step Template",
+          "x-ms-dataverse-attribute": "pm_workflowsteptemplateid",
+          "x-ms-dataverse-type": "UniqueidentifierType",
+          "x-ms-schema-name": "pm_WorkflowStepTemplateId",
+          "x-ms-dataverse-primary-id": true,
+          "required": true,
+          "x-ms-keyType": "primary"
         },
         "statecode": {
           "type": "string",
@@ -334,7 +466,7 @@
             null,
             null
           ],
-          "x-ms-optionsetmetadataid": "2fbb2481-b047-4d1a-9f4b-6d7e7b974855",
+          "x-ms-optionsetmetadataid": "82fe3633-ca0a-f111-8406-6045bd5629ae",
           "x-ms-isGlobal": false,
           "x-ms-optionsetdisplayname": "Status",
           "x-ms-optionSetType": "State"
@@ -365,7 +497,7 @@
             null,
             null
           ],
-          "x-ms-optionsetmetadataid": "592a1ae1-9a0b-4fb4-b4b2-63038fc41bdd",
+          "x-ms-optionsetmetadataid": "8cfe3633-ca0a-f111-8406-6045bd5629ae",
           "x-ms-isGlobal": false,
           "x-ms-optionsetdisplayname": "Status Reason",
           "x-ms-optionSetType": "Status"
@@ -411,7 +543,8 @@
         "owneridtype",
         "owneridyominame",
         "owningbusinessunitname",
-        "pm_workflowid",
+        "pm_workflowname",
+        "pm_workflowsteptemplateid",
         "statecode"
       ]
     }

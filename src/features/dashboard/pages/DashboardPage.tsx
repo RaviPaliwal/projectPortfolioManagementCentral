@@ -34,11 +34,13 @@ import {
   fetchMyActiveProjects,
   fetchPortfolioHierarchy,
   fetchPendingApprovalRequests,
+  fetchApprovalRequests,
   fetchCapacityAllocationData,
   fetchPlannedVsActualData,
   fetchUtilizationByProjectData,
   fetchDepartmentDemandData,
   updateInitiativeStatus,
+  updateApprovalRequest,
   fetchInitiatives,
   fetchPipelineKpis,
   fetchMilestonesDueThisMonth,
@@ -47,9 +49,10 @@ import {
 } from '@/lib/dataverseClient'
 import { StatusChip, DashboardCharts, PageHeader, KpiCardRow, HealthSplitBar, VarianceDisplay, ExportButton } from '@/components/common'
 import { fontSizes } from '@/styles'
-import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
+import type { InitiativeModel, ApprovalRequestModel, PortfolioModel, ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
 import type { KpiCardItem } from '@/components/common/KpiCardRow/KpiCardRow'
 import type { PipelineKpis } from '@/lib/dataverseClient'
+import MyTasksWidget from '@/components/common/MyTasksWidget'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
@@ -91,6 +94,7 @@ export default function DashboardPage() {
   // New data
   const [pipelineKpis, setPipelineKpis] = useState<PipelineKpis>({ totalActiveInitiatives: 0, pendingApprovals: 0, totalEstimatedCost: 0, approvedThisMonth: 0 })
   const [initiatives, setInitiatives] = useState<InitiativeModel[]>([])
+  const [approvalRequests, setApprovalRequests] = useState<ApprovalRequestModel[]>([])
   const [milestonesDue, setMilestonesDue] = useState(0)
   const [risks, setRisks] = useState<RiskModel[]>([])
   const [issues, setIssues] = useState<IssueModel[]>([])
@@ -106,7 +110,7 @@ export default function DashboardPage() {
     if (isRefresh) setRefreshing(true)
     console.log('[DashboardPage] load dashboard data start')
     try {
-      const [dashboard, activeProjects, pendingApprovals, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, milestones, risksData, issuesData] = await Promise.all([
+      const [dashboard, activeProjects, pendingApprovals, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData] = await Promise.all([
         fetchDashboardMetrics(),
         fetchMyActiveProjects(),
         fetchPendingApprovalRequests(),
@@ -117,6 +121,7 @@ export default function DashboardPage() {
         fetchDepartmentDemandData(),
         fetchPipelineKpis(),
         fetchInitiatives(),
+        fetchApprovalRequests(),
         fetchMilestonesDueThisMonth(),
         fetchAllRisks(),
         fetchAllIssues(),
@@ -133,6 +138,7 @@ export default function DashboardPage() {
       setProgrammeSnapshot(hierarchy.programmes.slice().sort(sortByRag).slice(0, 4))
       setPipelineKpis(pipeline)
       setInitiatives(initiativesData)
+      setApprovalRequests(allApprovalRequests)
       setMilestonesDue(milestones)
       setRisks(risksData)
       setIssues(issuesData)
@@ -155,9 +161,19 @@ export default function DashboardPage() {
     setActionLoading(true)
     try {
       await updateInitiativeStatus(initiativeId, status)
+      // Also update the linked approval request's decision status
+      const linkedRequest = approvalRequests.find(
+        (r) => r.pm_entityid === initiativeId && String(r.pm_decisionstatus) === '1'
+      )
+      if (linkedRequest?.pm_projectapprovalrequestid) {
+        await updateApprovalRequest(linkedRequest.pm_projectapprovalrequestid, {
+          pm_decisionstatus: status === 0 ? 0 : 2,
+          pm_decisiondate: new Date().toISOString().split('T')[0],
+        })
+      }
       setApprovals((current) => current.filter((item) => item.pm_initiativeid !== initiativeId))
     } catch {
-      setError('Unable to update approval request.')
+      setError('Unable to update request.')
     } finally {
       setActionLoading(false)
     }
@@ -438,6 +454,9 @@ export default function DashboardPage() {
 
         {/* Right column */}
         <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          {/* My Tasks Widget */}
+          <MyTasksWidget />
+
           {/* Action Center / Pipeline Overview */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>My Action Center</Typography>

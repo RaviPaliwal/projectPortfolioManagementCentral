@@ -26,6 +26,8 @@ import {
   Pm_workflowsService,
   Pm_workflowinstancesService,
   Pm_workflowapprovalstepsService,
+  Pm_workflowsteptemplatesService,
+  SystemusersService,
 } from '../generated'
 import type { Pm_initiatives } from '../generated/models/Pm_initiativesModel'
 import type { Pm_portfolios } from '../generated/models/Pm_portfoliosModel'
@@ -50,6 +52,7 @@ import type { Pm_workflows } from '../generated/models/Pm_workflowsModel'
 import { Pm_workflowinstancespm_status } from '../generated/models/Pm_workflowinstancesModel'
 import type { Pm_workflowinstances } from '../generated/models/Pm_workflowinstancesModel'
 import type { Pm_workflowapprovalsteps } from '../generated/models/Pm_workflowapprovalstepsModel'
+import type { Pm_workflowsteptemplates } from '../generated/models/Pm_workflowsteptemplatesModel'
 import type { Pm_performancemeasures } from '../generated/models/Pm_performancemeasuresModel'
 import { Pm_changerequestspm_changetype, Pm_changerequestspm_prioritylevel, Pm_changerequestspm_status } from '../generated/models/Pm_changerequestsModel'
 import type { Pm_changerequests } from '../generated/models/Pm_changerequestsModel'
@@ -3533,7 +3536,7 @@ export async function fetchWorkflows(): Promise<WorkflowModel[]> {
       'pm_workflowid', 'pm_workflowname', 'pm_description',
       'pm_module', 'pm_triggerentity', 'pm_triggerevent',
       'pm_triggercondition', 'pm_version', 'pm_isactive',
-      'pm_approvalsteps', 'statecode', 'statuscode',
+      'statecode', 'statuscode',
     ],
     orderBy: ['pm_workflowname asc'],
     top: 500,
@@ -3571,6 +3574,108 @@ export async function deleteWorkflow(id: string): Promise<void> {
   await Pm_workflowsService.delete(id)
 }
 
+
+// ── Workflow Step Template Functions ────────────────────────────────────
+
+const mapWorkflowStepTemplate = (item: Pm_workflowsteptemplates): WorkflowStepTemplateModel => ({
+  pm_workflowsteptemplateid: item.pm_workflowsteptemplateid,
+  pm_workflowname: item.pm_workflowname,
+  pm_steporder: item.pm_steporder,
+  pm_assignetype: (item as any).pm_assignetype,
+  pm_assignetypename: (item as any).pm_assignetypename,
+  pm_assigneeid: item.pm_assigneeid,
+  pm_displayname: item.pm_displayname,
+  pm_description: item.pm_description,
+  pm_sladays: item.pm_sladays,
+  pm_allowdelegation: item.pm_allowdelegation,
+  pm_approvalrequired: item.pm_approvalrequired,
+  pm_isparallel: item.pm_isparallel,
+  pm_conditionsjson: item.pm_conditionsjson,
+  pm_status: (item as any).pm_status,
+  pm_statusname: (item as any).pm_statusname,
+  pm_statusreason: item.pm_statusreason,
+  pm_module: item.pm_module,
+  statecode: (item as any).statecode,
+})
+
+
+// Fetch system users for assignee pickers
+export interface SystemUserOption {
+  id: string
+  name: string
+  email?: string
+  type: "user" | "team"
+}
+
+export async function fetchSystemUsers(): Promise<SystemUserOption[]> {
+  try {
+    const result = await SystemusersService.getAll({
+      select: ['systemuserid', 'fullname', 'internalemailaddress'],
+      filter: "statecode eq 0",
+      top: 500,
+    })
+    const list = unwrapList<any>(result)
+    return list.map((u: any) => ({
+      id: u.systemuserid || u.id || '',
+      name: u.fullname || u.firstname + ' ' + u.lastname || 'Unknown',
+      email: u.internalemailaddress || '',
+      type: "user" as const,
+    }))
+  } catch (err) {
+    console.warn("[dataverseService] fetchSystemUsers failed:", err)
+    return []
+  }
+}
+
+export async function fetchWorkflowStepTemplates(workflowId?: string): Promise<WorkflowStepTemplateModel[]> {
+  const options: any = {
+    select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assignetypename', 'pm_assigneeid', 'pm_displayname', 'pm_description', 'pm_sladays', 'pm_allowdelegation', 'pm_approvalrequired', 'pm_isparallel', 'pm_conditionsjson', 'pm_status', 'pm_statusname', 'pm_statusreason', 'pm_module'],
+    orderBy: ['pm_steporder asc'],
+    top: 200,
+  }
+  if (workflowId) {
+    options.filter = "pm_module eq '" + workflowId + "'"
+  }
+  const result = await Pm_workflowsteptemplatesService.getAll(options)
+  try { console.debug('[dataverseService] fetchWorkflowStepTemplates result:', result) } catch (e) {}
+  return unwrapList<Pm_workflowsteptemplates>(result).map(mapWorkflowStepTemplate)
+}
+
+export async function createWorkflowStepTemplate(payload: Partial<WorkflowStepTemplateModel>): Promise<WorkflowStepTemplateModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && key !== 'pm_workflowsteptemplateid') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+    pm_status: 1,
+  }
+  const result = await Pm_workflowsteptemplatesService.create({ ...defaults, ...cleanPayload } as any)
+  try { console.debug('[dataverseService] createWorkflowStepTemplate payload/result:', cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_workflowsteptemplates>(result)
+  return item ? mapWorkflowStepTemplate(item) : null
+}
+
+export async function updateWorkflowStepTemplate(id: string, changes: Partial<WorkflowStepTemplateModel>): Promise<WorkflowStepTemplateModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null && key !== 'pm_workflowsteptemplateid') {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_workflowsteptemplatesService.update(id, cleanPayload as any)
+  try { console.debug('[dataverseService] updateWorkflowStepTemplate id/changes/result:', id, cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_workflowsteptemplates>(result)
+  return item ? mapWorkflowStepTemplate(item) : null
+}
+
+export async function deleteWorkflowStepTemplate(id: string): Promise<void> {
+  try { console.debug('[dataverseService] deleteWorkflowStepTemplate id:', id) } catch (e) {}
+  await Pm_workflowsteptemplatesService.delete(id)
+}
 export async function fetchWorkflowInstances(): Promise<WorkflowInstanceModel[]> {
   // IMPORTANT: Do NOT include VirtualType alias fields (pm_statusname) in the getAll
   // select list — they can cause Dataverse to return zero rows.

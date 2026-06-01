@@ -27,6 +27,11 @@ import {
   MenuItem,
   Divider,
   Avatar,
+  InputAdornment,
+  List,
+  ListItemButton,
+  ListItemAvatar,
+  ListItemText,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -39,6 +44,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import DescriptionIcon from '@mui/icons-material/Description'
 import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown'
 import HowToRegIcon from '@mui/icons-material/HowToReg'
+import RateReviewIcon from '@mui/icons-material/RateReview'
 import CancelIcon from '@mui/icons-material/Cancel'
 import TransformIcon from '@mui/icons-material/Transform'
 import ErrorIcon from '@mui/icons-material/Error'
@@ -47,15 +53,18 @@ import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ScienceIcon from '@mui/icons-material/Science'
 import InfoIcon from '@mui/icons-material/Info'
+import SearchIcon from '@mui/icons-material/Search'
 import {
   fetchInitiatives,
   createInitiative,
   updateInitiative,
   convertInitiativeToProject,
   updateInitiativeStatus,
+  createApprovalRequest,
   fetchPipelineKpis,
   fetchPortfolioHierarchy,
 } from '@/lib/dataverseClient'
+import { useUser } from '@/context/UserContext'
 import type { InitiativeModel, PortfolioModel } from '@/types/dataverse'
 import type { PipelineKpis } from '@/lib/dataverseClient'
 import { fontSizes } from '@/styles'
@@ -178,6 +187,14 @@ export default function PipelinePage() {
   // ── Score Edit State ───────────────────────────────────────────────────────
   const [editScoreMode, setEditScoreMode] = useState(false)
   const [editScore, setEditScore] = useState(0)
+
+  // ── Reviewer Dialog State ──────────────────────────────────────────────────
+  const [showReviewerDialog, setShowReviewerDialog] = useState(false)
+  const [selectedReviewerId, setSelectedReviewerId] = useState<string | null>(null)
+  const [selectedReviewerName, setSelectedReviewerName] = useState<string | null>(null)
+  const [reviewDueDate, setReviewDueDate] = useState<string>('')
+  const [reviewerSearch, setReviewerSearch] = useState('')
+  const { users: systemUsers } = useUser()
 
   // ── Portfolio options for create modal ──────────────────────────────────
   const [portfolios, setPortfolios] = useState<PortfolioModel[]>([])
@@ -369,17 +386,31 @@ export default function PipelinePage() {
     }
   }
 
-  const handleRequestApproval = async () => {
-    if (!selectedInitiative?.pm_initiativeid) return
+  const handleSubmitWithReviewer = async () => {
+    if (!selectedInitiative?.pm_initiativeid || !selectedReviewerName) return
     setActionLoading(true)
     try {
       await updateInitiativeStatus(selectedInitiative.pm_initiativeid, 1)
+      await createApprovalRequest({
+        pm_requesttitle: `Approval: ${selectedInitiative.pm_name ?? 'Initiative'}`,
+        pm_approvername: selectedReviewerName,
+        pm_entityid: selectedInitiative.pm_initiativeid,
+        pm_entitytype: 0 as any,
+        pm_requestorname: selectedInitiative.pm_requestorname,
+        pm_approvalstage: 4 as any,
+        pm_decisionstatus: 1 as any,
+        pm_duedate: reviewDueDate || undefined,
+      })
       setSelectedInitiative({ ...selectedInitiative, pm_pipelinestatus: 1 })
+      setShowReviewerDialog(false)
+      setSelectedReviewerId(null)
+      setSelectedReviewerName(null)
+      setReviewDueDate('')
       await loadData()
-      setSuccessMsg('Initiative submitted for approval.')
+      setSuccessMsg(`Initiative submitted to ${selectedReviewerName} for review.`)
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch {
-      setError('Unable to request approval.')
+      setError('Unable to submit for approval.')
     } finally {
       setActionLoading(false)
     }
@@ -769,7 +800,7 @@ export default function PipelinePage() {
           {selectedInitiative && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {[
-                { icon: <HowToRegIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />, title: 'Request Approval', desc: 'Lock the business case and submit to the investment board for review.', color: '#0ea5e9', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleRequestApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '0' || String(selectedInitiative.pm_pipelinestatus) === '3' },
+                { icon: <RateReviewIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />, title: 'Request Approval', desc: 'Assign a reviewer and submit to the investment board for review.', color: '#0ea5e9', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: () => setShowReviewerDialog(true), btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '0' || String(selectedInitiative.pm_pipelinestatus) === '3' },
                 { icon: <TransformIcon sx={{ fontSize: 18, color: '#22c55e' }} />, title: 'Convert to Project', desc: 'Create a new project from this approved initiative.', color: '#22c55e', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
                 { icon: <CancelIcon sx={{ fontSize: 18, color: '#f59e0b' }} />, title: 'Defer Initiative', desc: 'Postpone the initiative if it lacks immediate funding or strategic fit.', color: '#f59e0b', btnLabel: 'Defer', btnVariant: 'outlined' as const, btnColor: 'warning' as const, onClick: handleDefer, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '2' || String(selectedInitiative.pm_pipelinestatus) === '3' },
                 { icon: <ErrorIcon sx={{ fontSize: 18, color: '#ef4444' }} />, title: 'Reject Initiative', desc: 'Close the initiative if it lacks strategic value or funding.', color: '#ef4444', btnLabel: 'Reject', btnVariant: 'outlined' as const, btnColor: 'error' as const, onClick: handleReject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '3' },
@@ -985,7 +1016,137 @@ export default function PipelinePage() {
         </DialogActions>
       </Dialog>
 
-      {/* ── 5. Success Confirmation Dialog ─────────────────────────────────── */}
+      {/* ── 5. Reviewer Selection Dialog ───────────────────────────────────── */}
+      <Dialog
+        open={showReviewerDialog}
+        onClose={() => !actionLoading && setShowReviewerDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.5 }}>
+            <RateReviewIcon sx={{ fontSize: 18, color: '#fff' }} />
+          </Avatar>
+          Assign Reviewer
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Select a reviewer to assess <strong>{selectedInitiative?.pm_name ?? 'this initiative'}</strong>.
+            The initiative will be set to <strong>Under Review</strong> and the reviewer will be notified.
+          </Typography>
+
+          {/* Due date */}
+          <TextField
+            label="Review Due Date (optional)"
+            type="date"
+            fullWidth
+            size="small"
+            value={reviewDueDate}
+            onChange={(e) => setReviewDueDate(e.target.value)}
+            slotProps={{
+              input: { startAdornment: <InputAdornment position="start"><CalendarTodayIcon sx={{ fontSize: 16, color: 'action.active' }} /></InputAdornment>, sx: { borderRadius: 2 } },
+              inputLabel: { shrink: true },
+            }}
+            sx={{ mb: 2.5 }}
+          />
+
+          {/* Search users */}
+          <TextField
+            label="Search reviewers"
+            fullWidth
+            size="small"
+            value={reviewerSearch}
+            onChange={(e) => setReviewerSearch(e.target.value)}
+            slotProps={{
+              input: { startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: 'action.active' }} /></InputAdornment>, sx: { borderRadius: 2 } },
+            }}
+            sx={{ mb: 1.5 }}
+          />
+
+          {/* Reviewers list */}
+          <Paper variant="outlined" sx={{ maxHeight: 280, overflow: 'auto', borderRadius: 2 }}>
+            {systemUsers.length === 0 ? (
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">No users available.</Typography>
+              </Box>
+            ) : (
+              <List dense sx={{ py: 0 }}>
+                {systemUsers
+                  .filter((u) =>
+                    !reviewerSearch ||
+                    u.fullname?.toLowerCase().includes(reviewerSearch.toLowerCase()) ||
+                    u.jobtitle?.toLowerCase().includes(reviewerSearch.toLowerCase())
+                  )
+                  .map((user) => {
+                    const isSelected = user.systemuserid === selectedReviewerId
+                    return (
+                      <ListItemButton
+                        key={user.systemuserid}
+                        selected={isSelected}
+                        onClick={() => {
+                          setSelectedReviewerId(user.systemuserid)
+                          setSelectedReviewerName(user.fullname)
+                        }}
+                        sx={{
+                          borderRadius: 1,
+                          mx: 0.5,
+                          my: 0.25,
+                          '&.Mui-selected': {
+                            bgcolor: isDark ? '#1e3a5f' : '#eef2ff',
+                          },
+                        }}
+                      >
+                        <ListItemAvatar>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', fontSize: 14 }}>
+                            {user.fullname?.charAt(0)?.toUpperCase() ?? '?'}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={user.fullname}
+                          secondary={user.jobtitle || user.domainname || ''}
+                          slotProps={{
+                            primary: { sx: { fontWeight: isSelected ? 700 : 500, fontSize: '0.875rem' } },
+                            secondary: { sx: { fontSize: '0.75rem' } },
+                          }}
+                        />
+                        {isSelected && (
+                          <Chip label="Selected" size="small" color="primary" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8, height: 22, fontSize: 11 }} />
+                        )}
+                      </ListItemButton>
+                    )
+                  })}
+              </List>
+            )}
+          </Paper>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button
+            onClick={() => { setShowReviewerDialog(false); setSelectedReviewerId(null); setSelectedReviewerName(null); setReviewDueDate('') }}
+            variant="outlined"
+            disabled={actionLoading}
+            sx={{ borderRadius: 2 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmitWithReviewer}
+            variant="contained"
+            disabled={!selectedReviewerId || actionLoading}
+            startIcon={actionLoading ? undefined : <RateReviewIcon />}
+            sx={{
+              bgcolor: '#0078D4',
+              '&:hover': { bgcolor: '#006cbe' },
+              borderRadius: 2,
+              fontWeight: 600,
+            }}
+          >
+            {actionLoading ? 'Submitting...' : 'Submit for Review'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── 6. Success Confirmation Dialog ─────────────────────────────────── */}
       <Dialog
         open={confirmDialog.open}
         onClose={() => setConfirmDialog({ open: false, name: '' })}

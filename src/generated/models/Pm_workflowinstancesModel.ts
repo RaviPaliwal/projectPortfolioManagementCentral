@@ -29,6 +29,7 @@ export interface Pm_workflowinstancesBase {
   pm_entityname?: string;
   pm_entitytype?: string;
   pm_initiatedby?: string;
+  "pm_InitiatedByLookup@odata.bind"?: string;
   pm_instancename?: string;
   pm_sladuedate?: string;
   pm_startdate?: string;
@@ -56,6 +57,8 @@ export interface Pm_workflowinstances extends Pm_workflowinstancesBase {
   owneridname: string;
   owneridyominame: string;
   owningbusinessunitname: string;
+  pm_initiatedbylookupname?: string;
+  pm_initiatedbylookupyominame?: string;
   pm_statusname?: string;
   pm_workflowlookupname?: string;
   statecodename?: string;
@@ -75,6 +78,8 @@ export interface Pm_workflowinstances extends Pm_workflowinstancesBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
+  pm_initiatedbylookup?: object;
+  _pm_initiatedbylookup_value?: string;
   pm_workflowlookup?: object;
   _pm_workflowlookup_value?: string;
 }
