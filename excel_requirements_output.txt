@@ -1,0 +1,1023 @@
+======= SHEET: Input Sheet =======
+Max row: 94, Max col: 6
+||||||||||
+Response Selection||Scoring||||||||
+Included by default||20||Included via ‘out-of-the-box’ Power Platform templates and/or components. No configuration or customisation required. ||||||
+Included by configuration||20||Configuration is the adaptation of a system’s existing functionality by selecting and setting predefined options, parameters, or rules without changing the underlying code. In the context of the power platform it is the standard, out‑of‑the‑box capabilities of the Power Platform, achieved through settings, data model design etc.. without writing custom code.||||||
+Included by customisation||10||Customisation is the modification or extension of a system by writing or changing code to deliver functionality that is not available in the standard product. In the context of the Power Platform it is extending or altering standard platform capabilities, typically by writing custom code or integrating external services.||||||
+Not provided||0||Not able to meet this requirement||||||
+||||||||||
+Original Ref||Module||Summary||Response [SELECT]||Optional comments (will be truncated at 300 characters)||Link to reference / supporting information 
+FR-PPM-01||Portfolio, Programme & Portfolio Management||The solution shall allow for the creation and management of Projects, Programmes, and Portfolios.||Included by configuration||||
+FR-PPM-02||Portfolio, Programme & Portfolio Management||The solution shall allow for the creation and management of Project, Programme, and Portfolio metadata.||Included by configuration||||
+FR-PPM-03||Portfolio, Programme & Portfolio Management||The solution shall allow for the capture of the full lifecycle of pipeline projects and opportunities, enabling their assessment and prioritisation.||Included by configuration||||
+FR-Gov-01||Governance, Assurance & Compliance||The solution shall provide a structured workflow that guides users through the initiation, submission, review, and approval of new projects.||Included by configuration||||
+FR-Gov-02||Governance, Assurance & Compliance||The solution shall provide structured gate reviews that enable the governance, assessment, approval, and controlled progression of projects through defined lifecycle stages.||Included by configuration||||
+FR-Gov-03||Governance, Assurance & Compliance||The solution shall provide comprehensive audit logs that capture all key user actions, data changes, and system events to support governance, compliance, and traceability.||Included by configuration||||
+FR-SP-01||Schedule & Programme Management||The solution shall allow users to create and manage project schedules of differing complexity natively within the application.||Included by configuration||||
+FR-SP-02||Schedule & Programme Management||The solution shall allow users to monitor project schedules.||Included by configuration||||
+FR-SP-03||Schedule & Programme Management||The solution shall allow for effective schedule management at the programme and portfolio levels.||Included by configuration||||
+FR-FF-01||Financial & Funding Management||The solution shall provide an out of box configurable financial calendar.||Included by configuration||||
+FR-FF-02||Financial & Funding Management||The solution shall allow for the capture, management, and modification of project funding sources across the project lifecycle.||Included by configuration||||
+FR-FF-03||Financial & Funding Management||The solution shall allow for the creation, management, and modification of Project Budgets across the project lifecycle.||Included by configuration||||
+FR-FF-04||Financial & Funding Management||The solution shall allow for the creation, management, and modification of Project Forecasts across the project lifecycle.||Included by configuration||||
+FR-FF-05||Financial & Funding Management||The solution shall allow for the creation, management, and modification of Project Cashflows, planning, monitoring, and controlling cash inflows and outflows throughout the project lifecycle.||Included by configuration||||
+FR-FF-06||Financial & Funding Management||The solution shall allow for the monitoring of project financial metrics and/or KPIs across the project lifecycle.||Included by configuration||||
+FR-RI-01||Risk & Issue Management||The solution shall enable users to identify, document, categorise, and assign ownership for risks across Projects, Programmes, and Portfolios.||Included by configuration||||
+FR-RI-02||Risk & Issue Management||The solution shall provide structured tools for assessing likelihood, impact, scoring, and financial exposure of risks at all levels.||Included by configuration||||
+FR-RI-03||Risk & Issue Management||The solution shall support effective management of risks through responses, mitigations, actions, timeline tracking, and governance controls.||Included by configuration||||
+FR-RI-04||Risk & Issue Management||The solution shall provide dashboards, filtering, search, and reporting capabilities to support effective monitoring of risks across all levels.||Included by configuration||||
+FR-RI-05||Risk & Issue Management||The solution shall provide comprehensive issue identification, tracking, and resolution functionality at Project, Programme, and Portfolio levels.||Included by configuration||||
+FR-CM-01||Change Management||The solution shall support the controlled capture, categorisation, impact assessment, and documentation of change requests across Projects, Programmes, and Portfolios.||Included by configuration||||
+FR-CM-02||Change Management||The solution shall support the tracking, decision recording, and oversight of change requests as they progress through configurable approval steps, ensuring transparent and controlled baseline updates.||Included by configuration||||
+FR-BM-01||Benefits Management||The solution shall support the structured identification, planning, classification, and documentation of benefits at Project, Programme, and Portfolio levels.||Included by configuration||||
+FR-BM-02||Benefits Management||The solution shall track the performance and progress of benefits over time, comparing planned versus actual realisation across all levels.||Included by configuration||||
+FR-TM-01||Timesheet Management||The solution shall enable users to accurately record chargeable and non-chargeable time against authorised activities using a configurable Irish calendar that incorporates official public holidays.||Included by configuration||||
+FR-TM-02||Timesheet Management||The solution shall enable authorised managers to review and approve recorded time against Projects, Programmes, Portfolios, or resource assignments before it is committed to tracking and reporting.||Included by configuration||||
+FR-RM-01||Resource Management||The solution shall provide comprehensive resource configuration and setup capabilities, including internal staff, external suppliers, project teams, specialist resources, and non-labour assets.||Included by configuration||||
+FR-RM-02||Resource Management||The solution shall enable skill-based resource searching so users can define the skills required for Projects, Programmes, and Portfolios, and quickly identify suitable resources.||Included by configuration||||
+FR-RM-03||Resource Management||The solution shall support assignment of resources to Projects, enabling flexible allocation, approval, notification, tracking, and history management to ensure structured and auditable resourcing.||Included by configuration||||
+FR-RA-01||Reporting & Analytics||The solution shall support periodic project status capture aligned to 13 four-week periods, with snapshot history and RAG/KPI monitoring.||Included by configuration||||
+FR-RA-02||Reporting & Analytics||The solution shall deliver out-of-the-box dashboards providing clear, real-time visibility across Projects, Programmes, and Portfolios, with configurable views requiring no custom development.||Included by configuration||||
+FR-RA-03||Reporting & Analytics||The solution shall include ready-made, configurable financial reports requiring no custom development, tailored to different organisational, project, and funding needs.||Included by configuration||||
+FR-RA-04||Reporting & Analytics||The solution shall include ready-made, configurable schedule reports requiring no custom development, supporting visual, portfolio-level insights into project timelines, milestones, and performance.||Included by configuration||||
+FR-RA-05||Reporting & Analytics||The solution shall provide out-of-the-box configurable reporting for Risks and Issues, enabling users at all levels to monitor exposure, status, trends, and escalation points.||Included by configuration||||
+FR-RA-06||Reporting & Analytics||The solution shall allow users to seamlessly extract structured data into external analytics tools such as Power BI without relying on the vendor.||Included by configuration||||
+FR-WF-01||Workflows||The solution shall provide fully configurable workflows supporting governance, approvals, routing, and process automation across Projects, Programmes, and Portfolios, adaptable without custom development.||Included by configuration||||
+FR-WF-02||Workflows||The solution shall provide workflow governance capabilities that allow the PMO to monitor, track, and audit all approvals across Projects, Programmes, and Portfolios.||Included by configuration||||
+FR-UAS-01||User Access & Security||The solution shall allow administrators to define and manage security roles that control what users can create, view, edit, or delete, governed through configurable role structures.||Included by configuration||||
+FR-UAS-02||User Access & Security||The solution shall provide workflow governance capabilities that allow the PMO to monitor, track, and audit all approvals, ensuring compliance with governance frameworks.||Included by configuration||||
+FR-UAS-03||User Access & Security||The solution shall integrate with Entra ID (Azure Active Directory) to enable single sign-on, identity governance, and strong authentication.||Included by configuration||||
+FR-UAS-04||User Access & Security||The solution shall maintain comprehensive audit trails covering user activity, approvals, changes, and access events for governance, compliance, and security monitoring.||Included by configuration||||
+NFR-PERF-01||System Performance||The solution shall load primary dashboards and portfolio views within 3 seconds under normal load conditions.||Included by configuration||||
+NFR-PERF-02||System Performance||The solution shall support concurrent user access without degradation, supporting the full projected user base.||Included by configuration||||
+NFR-PERF-03||System Performance||Power Automate workflows shall complete non-interactive background processes within a defined SLA, with approval notifications triggered within 2 minutes of a qualifying event.||Included by configuration||||
+NFR-PERF-04||System Performance||The solution shall handle Dataverse API call limits without service interruption, implementing throttling and retry logic where required.||Included by configuration||||
+NFR-DM-01||Data Management||All project, programme, and portfolio data shall be stored within Dataverse in IE's managed Power Platform environment.||Included by configuration||||
+NFR-DM-02||Data Management||The solution shall support Dataverse data retention policies aligned with IE's records management obligations and GDPR requirements.||Included by configuration||||
+NFR-DM-03||Data Management||The solution shall implement Dataverse column-level security where sensitive financial or personal data fields are present, in addition to row-level security.||Included by configuration||||
+NFR-DM-04||Data Management||The supplier shall provide a complete data dictionary and entity relationship model for all Dataverse tables introduced or modified as part of the solution.||Included by configuration||||
+NFR-DM-05||Data Management||The solution shall support data archiving and purging strategies without impacting live system performance.||Included by configuration||||
+NFR-DM-06||Data Management||All data extracts and API connections shall enforce role-based access controls consistent with the PPM security model.||Included by configuration||||
+NFR-DM-07||Data Management||The solution shall not introduce custom connectors that bypass IE's Data Loss Prevention (DLP) policies.||Included by configuration||||
+NFR-DM-08||Data Management||The supplier shall provide a data migration strategy, tooling, and validation plan to support transition of existing project data.||Included by configuration||||
+NFR-USE-01||Usability & Accessibility||The solution shall conform to WCAG 2.1 Level AA accessibility standards across all Power Apps interfaces.||Included by configuration||||
+NFR-USE-02||Usability & Accessibility||The solution shall be functional on Microsoft-supported browsers (Edge, Chrome) and shall support access via the Power Apps mobile application on iOS and Android.||Included by configuration||||
+NFR-USE-03||Usability & Accessibility||The solution shall provide contextual help, tooltips, and in-application guidance to support user adoption.||Included by configuration||||
+NFR-USE-04||Usability & Accessibility||All data entry forms shall provide inline validation and meaningful error messages to guide users through correct data entry.||Included by configuration||||
+NFR-USE-05||Usability & Accessibility||The user interface shall be configurable to reflect IE branding including colours, logos, and terminology, without requiring custom development.||Included by configuration||||
+NFR-USE-06||Usability & Accessibility||The solution shall provide a consistent navigation structure across Projects, Programmes, and Portfolios, minimising interactions required to complete common tasks.||Included by configuration||||
+NFR-PP-01||Power Platform||The solution shall be delivered as a managed solution within Dataverse, enabling controlled deployment across Dev/Test and Production environments via standard ALM pipelines.||Included by configuration||||
+NFR-PP-02||Power Platform||The solution shall comply with Microsoft Power Platform best practices for solution layering, avoiding hard-coded environment URLs.||Included by configuration||||
+NFR-PP-03||Power Platform||All Power Automate flows shall use connection references and environment variables rather than hard-coded connections.||Included by configuration||||
+NFR-PP-04||Power Platform||The solution shall be compatible with the current generally available release of Power Platform, with a defined process for managing Microsoft release wave updates.||Included by configuration||||
+NFR-PP-05||Power Platform||The supplier shall document all Dataverse customisations, custom connectors, PCF controls, and Power Automate flows within the Configuration and Customisation Log.||Included by configuration||||
+NFR-PP-06||Power Platform||The solution shall not exceed IE's allocated Dataverse storage capacity, with tooling or guidance to monitor storage consumption.||Included by configuration||||
+NFR-PP-07||Power Platform||The solution shall implement a Power Platform environment strategy aligned with Microsoft's recommended ALM framework.||Included by configuration||||
+NFR-PP-08||Power Platform||All canvas Power Apps shall be built using the responsive layout engine and shall not rely on fixed pixel positioning.||Included by configuration||||
+NFR-INT-01||3rd Party Integrations||The integration shall support extraction of actual costs, commitments, and purchase orders from SAP FI/CO modules on both a scheduled and on-demand basis.||Included by configuration||||
+NFR-INT-02||3rd Party Integrations||The integration shall support mapping between SAP WBS elements, cost centres, and internal orders and the corresponding PPM project structures.||Included by configuration||||
+NFR-INT-03||3rd Party Integrations||The SAP integration shall be implemented via a middleware or integration platform rather than direct point-to-point connection.||Included by configuration||||
+NFR-INT-04||3rd Party Integrations||The integration shall include error handling, retry logic, and alerting mechanisms for failed or incomplete data transfers.||Included by configuration||||
+NFR-INT-05||3rd Party Integrations||The supplier shall deliver an Integration Architecture Document, Data Mapping Specification, and API/Interface Specification as named deliverables.||Included by configuration||||
+NFR-INT-06||3rd Party Integrations||The integration architecture shall accommodate IE's planned migration from SAP ECC to SAP S/4HANA without requiring a full redesign.||Included by configuration||||
+NFR-INT-07||3rd Party Integrations||The system shall enable authorised users to upload finalised financial data for each 4-week reporting period using a standardised Excel template prior to SAP integration.||Included by configuration||||
+NFR-INT-08||3rd Party Integrations||The solution shall support import and export of schedules in XER (Primavera P6), MPP (MS Project), and XML formats as a minimum.||Included by configuration||||
+NFR-INT-09||3rd Party Integrations||On import, the solution shall validate schedule data for integrity and surface warnings to the user prior to committing the import.||Included by configuration||||
+NFR-INT-10||3rd Party Integrations||The integration shall preserve WBS hierarchy, milestone designations, and baseline data on import from external scheduling tools.||Included by configuration||||
+NFR-INT-11||3rd Party Integrations||The solution shall support scheduled or event-triggered synchronisation with external scheduling tools, in addition to manual file upload.||Included by configuration||||
+NFR-INT-12||3rd Party Integrations||The system shall enable authorised users to upload finalised schedule data for each 4-week reporting period using a standardised Excel template.||Included by configuration||||
+NFR-INT-13||3rd Party Integrations||The solution shall integrate with Microsoft Teams to support approval notifications, project status updates, and workflow alerts.||Included by configuration||||
+NFR-INT-14||3rd Party Integrations||The solution shall integrate with SharePoint Online for document management, enabling documents to be linked or stored against projects.||Included by configuration||||
+NFR-INT-15||3rd Party Integrations||The solution shall integrate with Outlook for approval notifications and, where applicable, calendar-based milestone visibility.||Included by configuration||||
+NFR-INT-16||3rd Party Integrations||The solution shall leverage Entra ID (Azure AD) group membership for dynamic security role assignment within the PPM solution.||Included by configuration||||
+NFR-INT-17||3rd Party Integrations||The solution shall expose Dataverse data via the Power BI Dataverse connector or a dedicated semantic layer to enable self-service reporting.||Included by configuration||||
+NFR-INT-18||3rd Party Integrations||The supplier shall provide a baseline Power BI dataset model aligned to the PPM data structure as a named deliverable within the MVP pilot.||Included by configuration||||
+NFR-INT-19||3rd Party Integrations||Embedded Power BI reports within the PPM solution shall respect the PPM role-based access control model using Power BI row-level security.||Included by configuration||||
+======= SHEET: Aggregated =======
+Max row: 396, Max col: 8
+ID||Reference||Response 1||Response 2||Response 3||Response 4||Response 5||Mandatory
+1||ANYL_74_FNC||Critical||Critical||||||Critical||Mandatory
+2||ANYL_75_FNC||Major||Critical||||||Critical||Optional
+3||ANYL_76_FNC||High||Critical||||||Major||Optional
+4||ANYL_77_FNC||Minor||||||||High||Optional
+5||ZKF_041_||||||Major||||||Optional
+6||ARCH_78_INT||Critical||||High||High||Critical||Optional
+7||ARCH_79_NFR||Major||||Minor||Minor||Major||Optional
+8||ARCH_80_NFR||High||High||||||High||Optional
+9||ARCH_81_NFR||Minor||Minor||Critical||Critical||Minor||Optional
+10||ARCH_82_NFR||||||Major||Major||||Optional
+11||ARCH_83_NFR||Critical||Critical||High||High||Major||Optional
+12||ARCH_84_INT||Major||Major||Minor||Minor||High||Optional
+13||ARCH_85_INT||High||High||Trivial||Trivial||Minor||Optional
+14||ARCH_86_NFR||Minor||Minor||||Critical||Trivial||Optional
+15||ARCH_87_FNC||Trivial||Trivial||||Major||Critical||Optional
+16||ARCH_88_FNC||||Critical||||High||Major||Optional
+17||ZKF_012_||||Major||Critical||Minor||High||Optional
+18||ZKF_013_||||High||Critical||Trivial||Minor||Optional
+19||ZKF_016_||Critical||Minor||Major||Critical||Trivial||Optional
+20||ZKF_027_||Critical||Trivial||High||||Critical||Optional
+21||ZKF_039_||Major||Critical||Minor||||Major||Optional
+22||BKG_1_FNC||High||||Trivial||||High||Optional
+23||BKG_10_INT||Minor||||Critical||Critical||Minor||Optional
+24||BKG_11_INT||Trivial||||Major||Major||Trivial||Optional
+25||BKG_12_FNC||Critical||Critical||||||Critical||Mandatory
+26||BKG_13_FNC||Major||Major||Minor||Minor||Major||Optional
+27||BKG_14_FNC||||||Minor||||||Optional
+28||BKG_15_FNC||Minor||Minor||Trivial||||||Optional
+29||BKG_16_FNC||Trivial||Trivial||Critical||Critical||||Optional
+30||BKG_17_FNC||||Critical||Major||Major||||Optional
+31||BKG_18_FNC||||Major||||||||Optional
+32||BKG_19_FNC||||High||Minor||Minor||||Optional
+33||BKG_2_FNC||||Minor||Trivial||Trivial||||Optional
+34||BKG_20_FNC||||Trivial||||Critical||Critical||Optional
+35||BKG_21_FNC||||Critical||||Major||Major||Optional
+36||BKG_22_FNC||Major||Major||||High||High||Optional
+37||BKG_23_FNC||High||High||||Minor||Minor||Optional
+38||BKG_24_FNC||Critical||Minor||||Trivial||Trivial||Optional
+39||BKG_25_FNC||Major||Trivial||||Critical||Critical||Optional
+40||BKG_26_FNC||||Critical||Major||Major||Major||Optional
+41||BKG_27_FNC||||Major||High||High||||Optional
+42||BKG_28_FNC||||High||Critical||Minor||||Optional
+43||BKG_29_FNC||||Critical||Major||Trivial||||Optional
+44||BKG_3_FNC||||Major||||Critical||Critical||Optional
+45||BKG_30_FNC||Major||High||||Major||Major||Optional
+46||BKG_31_FNC||High||Critical||||High||High||Optional
+47||BKG_32_FNC||Minor||Major||||Critical||Critical||Optional
+48||BKG_33_FNC||Critical||||Minor||||Major||Optional
+49||BKG_34_FNC||Major||||Trivial||||High||Optional
+50||BKG_35_FNC||High||||Critical||Critical||Critical||Optional
+51||BKG_36_FNC||Minor||High||Major||Major||Major||Optional
+52||BKG_37_FNC||Trivial||Minor||||||High||Optional
+53||BKG_39_FNC||Minor||Critical||Minor||Minor||Critical||Optional
+54||BKG_4_FNC||Trivial||||Trivial||Trivial||Major||Optional
+55||BKG_40_FNC||Trivial||||||Critical||High||Optional
+56||BKG_41_FNC||Critical||||||Major||Minor||Optional
+57||BKG_42_FNC||Major||Trivial||||High||Critical||Optional
+58||BKG_43_FNC||High||Minor||||Minor||Major||Optional
+59||BKG_44_FNC||Minor||Trivial||||Trivial||||Optional
+60||BKG_45_INT||||Trivial||||Critical||||Optional
+61||BKG_47_FNC||||Critical||Major||Major||||Optional
+62||BKG_48_FNC||||Major||High||High||Minor||Optional
+63||BKG_49_FNC||Major||High||Critical||Minor||Trivial||Optional
+64||BKG_5_FNC||High||Minor||Major||Trivial||Trivial||Optional
+65||BKG_50_FNC||Minor||Trivial||||Critical||Critical||Optional
+66||BKG_51_FNC||Critical||Critical||||Major||Major||Optional
+67||BKG_52_FNC||Major||Critical||||High||High||Optional
+68||BKG_53_INT||High||Major||||Critical||Minor||Optional
+69||BKG_55_FNC||Minor||High||||||Trivial||Optional
+70||BKG_56_FNC||Trivial||Minor||||||Critical||Optional
+71||BKG_57_FNC||Trivial||Critical||||||Critical||Optional
+72||BKG_59_FNC||Critical||Major||||||Major||Optional
+73||BKG_6_FNC||Major||High||||||High||Optional
+74||BKG_60_FNC||High||Minor||||||Minor||Optional
+75||BKG_63_FNC||Minor||Trivial||||||Critical||Optional
+76||BKG_65_FNC||Trivial||Trivial||||||Major||Optional
+77||BKG_7_FNC||||||||||||Optional
+78||BKG_8_INT||||||||||||Optional
+79||BKG_9_INT||||||||||||Optional
+80||ZKF_004_||||||||||||Optional
+81||ZKF_007_||||||||||||Optional
+82||ZKF_014_||||||||||||Optional
+83||ZKF_018_||||||||||||Optional
+84||ZKF_028_||||||||||||Optional
+85||ZKF_044_||||||||||||Optional
+86||ZRM_045_||||||||||||Optional
+87||ZRM_047_||||||||||||Optional
+88||COMMS_100_FNC||||||||||||Optional
+89||COMMS_89_FNC||||||||||||Optional
+90||COMMS_90_FNC||||||||||||Optional
+91||COMMS_91_FNC||||||||||||Optional
+92||COMMS_92_FNC||||||||||||Optional
+93||COMMS_93_FNC||||||||||||Optional
+94||COMMS_94_FNC||||||||||||Optional
+95||COMMS_95_FNC||||||||||||Optional
+96||COMMS_96_FNC||||||||||||Optional
+97||COMMS_97_FNC||||||||||||Optional
+98||COMMS_98_FNC||||||||||||Optional
+99||COMMS_99_FNC||||||||||||Optional
+100||ZKF_003_||||||||||||Optional
+101||ZKF_011_||||||||||||Optional
+102||ZKF_019_||||||||||||Optional
+103||ZKF_025_||||||||||||Optional
+104||ZKF_036_||||||||||||Optional
+105||ZKF_042_||||||||||||Optional
+106||SUPP_101_FNC||||||||||||Optional
+107||SUPP_102_FNC||||||||||||Optional
+108||SUPP_103_FNC||||||||||||Optional
+109||SUPP_104_FNC||||||||||||Optional
+110||SUPP_105_FNC||||||||||||Optional
+111||SUPP_106_FNC||||||||||||Optional
+112||SUPP_107_FNC||||||||||||Optional
+113||SUPP_108_FNC||||||||||||Optional
+114||SUPP_109_FNC||||||||||||Optional
+115||SUPP_110_FNC||||||||||||Optional
+116||SUPP_111_FNC||||||||||||Optional
+117||SUPP_112_FNC||||||||||||Optional
+118||SUPP_113_FNC||||||||||||Optional
+119||SUPP_114_FNC||||||||||||Optional
+120||SUPP_115_FNC||||||||||||Optional
+121||SUPP_314_FNC||||||||||||Optional
+122||SUPP_315_FNC||||||||||||Optional
+123||ZKF_030_||||||||||||Optional
+124||FARE_116_FNC||||||||||||Optional
+125||FARE_117_FNC||||||||||||Optional
+126||FARE_118_FNC||||||||||||Optional
+127||FARE_119_FNC||||||||||||Optional
+128||FARE_120_FNC||||||||||||Optional
+129||FARE_121_FNC||||||||||||Optional
+130||FARE_122_FNC||||||||||||Optional
+131||FARE_123_FNC||||||||||||Optional
+132||FARE_124_FNC||||||||||||Optional
+133||FARE_125_FNC||||||||||||Optional
+134||FARE_126_FNC||||||||||||Optional
+135||FARE_127_FNC||||||||||||Optional
+136||FARE_128_FNC||||||||||||Optional
+137||FARE_129_FNC||||||||||||Optional
+138||FARE_130_FNC||||||||||||Optional
+139||FARE_131_FNC||||||||||||Optional
+140||FARE_132_FNC||||||||||||Optional
+141||FARE_133_FNC||||||||||||Optional
+142||FARE_134_FNC||||||||||||Optional
+143||FARE_135_FNC||||||||||||Optional
+144||FARE_136_FNC||||||||||||Optional
+145||FARE_137_FNC||||||||||||Optional
+146||FARE_138_FNC||||||||||||Optional
+147||FARE_139_FNC||||||||||||Optional
+148||FARE_140_FNC||||||||||||Optional
+149||FARE_141_FNC||||||||||||Optional
+150||FARE_142_FNC||||||||||||Optional
+151||FARE_143_FNC||||||||||||Optional
+152||FARE_144_FNC||||||||||||Optional
+153||FARE_145_FNC||||||||||||Optional
+154||FARE_146_FNC||||||||||||Optional
+155||FARE_147_FNC||||||||||||Optional
+156||FARE_148_FNC||||||||||||Optional
+157||FARE_149_FNC||||||||||||Optional
+158||FARE_150_FNC||||||||||||Optional
+159||FARE_151_FNC||||||||||||Optional
+160||FARE_152_FNC||||||||||||Optional
+161||FARE_153_FNC||||||||||||Optional
+162||FARE_154_NFR||||||||||||Optional
+163||FARE_155_FNC||||||||||||Optional
+164||FARE_156_NFR||||||||||||Optional
+165||FARE_157_FNC||||||||||||Optional
+166||FARE_158_FNC||||||||||||Optional
+167||FARE_159_FNC||||||||||||Optional
+168||FARE_160_FNC||||||||||||Optional
+169||FARE_161_FNC||||||||||||Optional
+170||ZKF_031_||||||||||||Optional
+171||ZKF_034_||||||||||||Optional
+172||ZRM_046_||||||||||||Optional
+173||FCST_162_FNC||||||||||||Optional
+174||FCST_163_FNC||||||||||||Optional
+175||FCST_164_FNC||||||||||||Optional
+176||FCST_165_INT||||||||||||Optional
+177||FCST_166_FNC||||||||||||Optional
+178||GRP_66_FNC||||||||||||Optional
+179||GRP_67_FNC||||||||||||Optional
+180||GRP_68_FNC||||||||||||Optional
+181||GRP_69_FNC||||||||||||Optional
+182||GRP_70_FNC||||||||||||Optional
+183||GRP_71_FNC||||||||||||Optional
+184||GRP_72_FNC||||||||||||Optional
+185||GRP_73_FNC||||||||||||Optional
+186||PRTNR_167_INT||||||||||||Optional
+187||PRTNR_168_INT||||||||||||Optional
+188||PRTNR_169_INT||||||||||||Optional
+189||PRTNR_170_INT||||||||||||Optional
+190||PRTNR_171_INT||||||||||||Optional
+191||PRTNR_172_INT||||||||||||Optional
+192||PRTNR_173_INT||||||||||||Optional
+193||PYMNT_175_FNC||||||||||||Optional
+194||PYMNT_176_FNC||||||||||||Optional
+195||PYMNT_177_FNC||||||||||||Optional
+196||PYMNT_178_FNC||||||||||||Optional
+197||PYMNT_179_FNC||||||||||||Optional
+198||PYMNT_180_FNC||||||||||||Optional
+199||PYMNT_181_FNC||||||||||||Optional
+200||PYMNT_182_FNC||||||||||||Optional
+201||PYMNT_183_FNC||||||||||||Optional
+202||PYMNT_184_FNC||||||||||||Optional
+203||PYMNT_185_FNC||||||||||||Optional
+204||PYMNT_186_FNC||||||||||||Optional
+205||PD_187_FNC||||||||||||Optional
+206||PD_188_FNC||||||||||||Optional
+207||PD_189_FNC||||||||||||Optional
+208||PD_190_FNC||||||||||||Optional
+209||PD_191_FNC||||||||||||Optional
+210||PD_192_FNC||||||||||||Optional
+211||PD_193_FNC||||||||||||Optional
+212||PD_194_FNC||||||||||||Optional
+213||PD_195_FNC||||||||||||Optional
+214||PD_196_FNC||||||||||||Optional
+215||PD_197_FNC||||||||||||Optional
+216||PD_198_FNC||||||||||||Optional
+217||PD_199_FNC||||||||||||Optional
+218||PD_200_FNC||||||||||||Optional
+219||PD_201_INT||||||||||||Optional
+220||PD_202_FNC||||||||||||Optional
+221||PD_203_FNC||||||||||||Optional
+222||PD_204_FNC||||||||||||Optional
+223||PD_205_FNC||||||||||||Optional
+224||PD_206_FNC||||||||||||Optional
+225||PD_207_FNC||||||||||||Optional
+226||PD_208_FNC||||||||||||Optional
+227||PD_209_FNC||||||||||||Optional
+228||QUOT_210_FNC||||||||||||Optional
+229||QUOT_211_FNC||||||||||||Optional
+230||QUOT_212_FNC||||||||||||Optional
+231||QUOT_213_FNC||||||||||||Optional
+232||QUOT_214_FNC||||||||||||Optional
+233||QUOT_215_FNC||||||||||||Optional
+234||RFND_216_FNC||||||||||||Optional
+235||RFND_217_FNC||||||||||||Optional
+236||RFND_218_FNC||||||||||||Optional
+237||RFND_219_FNC||||||||||||Optional
+238||RFND_220_FNC||||||||||||Optional
+239||RFND_221_FNC||||||||||||Optional
+240||RPRT_222_FNC||||||||||||Optional
+241||RPRT_223_FNC||||||||||||Optional
+242||RPRT_224_FNC||||||||||||Optional
+243||RPRT_225_FNC||||||||||||Optional
+244||RPRT_226_FNC||||||||||||Optional
+245||RPRT_227_FNC||||||||||||Optional
+246||RPRT_228_FNC||||||||||||Optional
+247||RPRT_229_FNC||||||||||||Optional
+248||RPRT_230_FNC||||||||||||Optional
+249||RPRT_231_FNC||||||||||||Optional
+250||RPRT_232_FNC||||||||||||Optional
+251||RPRT_233_FNC||||||||||||Optional
+252||RPRT_234_FNC||||||||||||Optional
+253||RPRT_235_FNC||||||||||||Optional
+254||RPRT_236_FNC||||||||||||Optional
+255||RPRT_237_FNC||||||||||||Optional
+256||RPRT_238_FNC||||||||||||Optional
+257||RPRT_239_FNC||||||||||||Optional
+258||RPRT_240_FNC||||||||||||Optional
+259||RPRT_241_FNC||||||||||||Optional
+260||RPRT_242_FNC||||||||||||Optional
+261||RPRT_243_FNC||||||||||||Optional
+262||RPRT_244_FNC||||||||||||Optional
+263||RPRT_245_FNC||||||||||||Optional
+264||RPRT_246_FNC||||||||||||Optional
+265||RPRT_247_FNC||||||||||||Optional
+266||RPRT_248_FNC||||||||||||Optional
+267||RPRT_249_FNC||||||||||||Optional
+268||RPRT_250_FNC||||||||||||Optional
+269||RPRT_251_FNC||||||||||||Optional
+270||RPRT_252_FNC||||||||||||Optional
+271||RPRT_253_FNC||||||||||||Optional
+272||RPRT_254_FNC||||||||||||Optional
+273||RPRT_255_FNC||||||||||||Optional
+274||RPRT_256_FNC||||||||||||Optional
+275||RPRT_257_FNC||||||||||||Optional
+276||RPRT_258_FNC||||||||||||Optional
+277||RPRT_259_FNC||||||||||||Optional
+278||RPRT_260_FNC||||||||||||Optional
+279||RPRT_261_FNC||||||||||||Optional
+280||RPRT_262_FNC||||||||||||Optional
+281||RPRT_263_INT||||||||||||Optional
+282||RPRT_264_FNC||||||||||||Optional
+283||RPRT_265_FNC||||||||||||Optional
+284||RPRT_266_FNC||||||||||||Optional
+285||RPRT_267_FNC||||||||||||Optional
+286||RPRT_268_FNC||||||||||||Optional
+287||RPRT_269_FNC||||||||||||Optional
+288||RPRT_270_FNC||||||||||||Optional
+289||RPRT_271_FNC||||||||||||Optional
+290||RPRT_272_FNC||||||||||||Optional
+291||RPRT_273_FNC||||||||||||Optional
+292||RPRT_274_FNC||||||||||||Optional
+293||RPRT_275_FNC||||||||||||Optional
+294||RPRT_276_FNC||||||||||||Optional
+295||RPRT_373_FNC||||||||||||Optional
+296||PLNG_277_FNC||||||||||||Optional
+297||PLNG_278_FNC||||||||||||Optional
+298||PLNG_279_FNC||||||||||||Optional
+299||PLNG_280_FNC||||||||||||Optional
+======= SHEET: Scoring Cal Sheet  =======
+Max row: 19, Max col: 17
+||||||||||||||||||||||||||||||||
+||Requirement Type||Requirement Category||Total Req||Total Reponses||Category Points||Max Category Points||Category Score %||Category Score <40%||Evaluation Points||Evaluation Score||||Requirement Type||Evaluation Score||Requirement Type Max Score||Requirement Type Score %||Award Criteria Score %
+||Functional Requirement||Portfolio, Programme & Portfolio Management||3||3||60||60||1||Pass||50||50||||Functional Requirement||300||300||1||0.3
+||Functional Requirement||Governance, Assurance & Compliance||3||3||60||60||1||Pass||20||20||||Non Functional Requirement||150||150||1||0.15
+||Functional Requirement||Schedule & Programme Management||3||3||60||60||1||Pass||30||30||||||||||||
+||Functional Requirement||Financial & Funding Management||6||6||120||120||1||Pass||30||30||||||||||||
+||Functional Requirement||Risk & Issue Management||5||5||100||100||1||Pass||30||30||||||||||||
+||Functional Requirement||Change Management||2||2||40||40||1||Pass||20||20||||||||||||
+||Functional Requirement||Benefits Management||2||2||40||40||1||Pass||10||10||||||||||||
+||Functional Requirement||Timesheet Management||2||2||40||40||1||Pass||20||20||||||||||||
+||Functional Requirement||Resource Management||3||3||60||60||1||Pass||10||10||||||||||||
+||Functional Requirement||Reporting & Analytics||6||6||120||120||1||Pass||40||40||||||||||||
+||Functional Requirement||Workflows||2||2||40||40||1||Pass||20||20||||||||||||
+||Functional Requirement||User Access & Security||4||4||80||80||1||Pass||20||20||||||||||||
+||Non Functional Requirement||System Performance||4||4||80||80||1||Pass||20||20||||||||||||
+||Non Functional Requirement||Data Management||8||8||160||160||1||Pass||20||20||||||||||||
+||Non Functional Requirement||Usability & Accessibility||6||6||120||120||1||Pass||20||20||||||||||||
+||Non Functional Requirement||Power Platform||8||8||160||160||1||Pass||30||30||||||||||||
+||Non Functional Requirement||3rd Party Integrations||19||19||380||380||1||Pass||60||60||||||||||||
+======= SHEET: CF Legacy Reqs =======
+Max row: 814, Max col: 5
+USR_INT-001||Measure:||||||USR_INT-001
+||Interfaces need to support different versions and be capable of maintaining backward compatibility for 18 months.||||||
+||||||||
+||Minimum Level:||||||
+||Current version and previous 2 versions||||||
+||||||||
+||Desired Level:||||||
+||Current version and previous 4 versions||||||
+USR_INT-002||Measure:||||||USR_INT-002
+||The ability to add/replace modules, with minimal impact on the overall application architecture.||||||
+||||||||
+||Minimum Level: N/A||||||
+||||||||
+||Desired Level: N/A||||||
+USR_INT-003||Measure:||||||USR_INT-003
+||Deliver a Solution with a responsive, easy to use and consistent user (business and system) interface.||||||
+||||||||
+||Minimum Level:Top five competitor benchmark||||||
+||||||||
+||Desired Level:Top three competitor benchmark||||||
+USR_INT-003||Measure:||||||USR_INT-003
+||Deliver a Solution with a responsive, easy to use and consistent user (business and system) interface.||||||
+||||||||
+||Minimum Level:Top five competitor benchmark||||||
+||||||||
+||Desired Level:Top three competitor benchmark||||||
+USR_INT-004||Measure:||||||USR_INT-004
+||Provides responsive (device independent), easy to use and consistent end-user interfaces delivering a leading edge customer experience.||||||
+||||||||
+||Minimum Level:||||||
+||Top five competitor benchmark||||||
+||||||||
+||Desired Level:||||||
+||Top three competitor benchmark||||||
+USR_INT-004||Measure:||||||USR_INT-004
+||Provides responsive (device independent), easy to use and consistent end-user interfaces delivering a leading edge customer experience.||||||
+||||||||
+||Minimum Level:||||||
+||Top five competitor benchmark||||||
+||||||||
+||Desired Level:||||||
+||Top three competitor benchmark||||||
+USR_INT-005||Measure:||||||USR_INT-005
+||Any new ticket fulfilment options will require integration with our current validation equipment supplied by Scheidt & Bachmann, the Prime must provide details as to how they will achieve this.||||||
+USR_INT-006||Measure:||||||USR_INT-006
+||Newly procured systems must integrate with legacy systems and other systems in the solution stack, as documented in the indicative target architecture in this document. System interfaces must be validated through system / integration testing. ||||||
+USR_INT-007||Measure:||||||USR_INT-007
+||The solution must integrate with legacy systems and other systems in the solution stack, as documented in the indicative target architecture. Communications infrastructure within the IÉ/CIE domain will be the responsibility of IÉ. Connection to/from the IÉ/CIE domain will be the responsibility of the Prime.||||||
+USR_PER-001||Measure:||||||USR_PER-001
+||As defined by contract (which takes precedence over this). The service shall be available for 99% of the time per month.||||||
+||||||||
+||These availability figures exclude monthly maintenance slots, to be agreed.||||||
+||||||||
+||Minimum Level: 0.99||||||
+||||||||
+||Desired Level: 0.995||||||
+USR_PER-001||Measure:||||||USR_PER-001
+||As defined by contract (which takes precedence over this). The service shall be available for 99% of the time per month.||||||
+||||||||
+||These availability figures exclude monthly maintenance slots, to be agreed.||||||
+||||||||
+||Minimum Level: 0.99||||||
+||||||||
+||Desired Level: 0.995||||||
+USR_PER-001||Measure:||||||USR_PER-001
+||As defined by contract (which takes precedence over this). The service shall be available for 99% of the time per month.||||||
+||||||||
+||These availability figures exclude monthly maintenance slots, to be agreed.||||||
+||||||||
+||Minimum Level: 0.99||||||
+||||||||
+||Desired Level: 0.995||||||
+USR_PER-002||Measure:||||||USR_PER-002
+||As defined by contract (which takes precedence over this). The service shall be available for 99.9% of the time per month.||||||
+||||||||
+||These availability figures exclude monthly maintenance slots, to be agreed.||||||
+||||||||
+||Minimum Level:0.999||||||
+||||||||
+||Desired Level:0.9999||||||
+USR_PER-003||Measure:||||||USR_PER-003
+||The systems need to support a return to service within 24 hours.||||||
+||||||||
+||Minimum Level: 24hrs||||||
+||||||||
+||Desired Level: 12hrs||||||
+USR_PER-003||Measure:||||||USR_PER-003
+||The systems need to support a return to service within 24 hours.||||||
+||||||||
+||Minimum Level: 24hrs||||||
+||||||||
+||Desired Level: 12hrs||||||
+USR_PER-003||Measure:||||||USR_PER-003
+||The systems need to support a return to service within 24 hours.||||||
+||||||||
+||Minimum Level: 24hrs||||||
+||||||||
+||Desired Level: 12hrs||||||
+USR_PER-004||Measure:||||||USR_PER-004
+||The systems need to support a return to service within 2 hours.||||||
+||||||||
+||Minimum Level: 2hrs||||||
+||||||||
+||Desired Level: 1hrs||||||
+USR_PER-005||Measure:||||||USR_PER-005
+||Revert to last stable solution state, immediately prior to any Disaster or cause thereof.||||||
+||||||||
+||Minimum Level:N/A||||||
+||||||||
+||Desired Level:N/A||||||
+USR_PER-005||Measure:||||||USR_PER-005
+||Revert to last stable solution state, immediately prior to any Disaster or cause thereof.||||||
+||||||||
+||Minimum Level:N/A||||||
+||||||||
+||Desired Level:N/A||||||
+USR_PER-005||Measure:||||||USR_PER-005
+||Revert to last stable solution state, immediately prior to any Disaster or cause thereof.||||||
+||||||||
+||Minimum Level: N/A||||||
+||||||||
+||Desired Level: N/A||||||
+USR_PER-006||Measure:||||||USR_PER-006
+||Revert to last stable solution state, immediately prior to any Disaster or cause thereof.||||||
+||||||||
+||Minimum Level:N/A||||||
+||||||||
+||Desired Level:N/A||||||
+USR_PER-007||Measure:||||||USR_PER-007
+||||||||
+||All critical events as defined in the SLA must be resolved within the agreed timeframe.||||||
+||||||||
+||Minimum Level: As per Contract||||||
+||||||||
+||Desired Level: As per Contract||||||
+USR_PER-008||Measure:||||||USR_PER-008
+||BOS and PD can function in both online and offline (without network communications) mode.||||||
+||||||||
+||Minimum Level: 7 days||||||
+||||||||
+||Desired Level: 14 days||||||
+USR_PER-008||Measure:||||||USR_PER-008
+||BOS and PD can function in both online and offline (without network communications) mode.||||||
+||||||||
+||Minimum Level: 7 days||||||
+||||||||
+||Desired Level: 14 days||||||
+USR_PER-009||Measure:Solution can process 250,000 bookings per month.||||||USR_PER-009
+||Minimum Level: 250,000 bookings||||||
+||Desired Level: 500,000 bookings||||||
+||||||||
+||Solution can process up to 10,000 bookings in any one hr.||||||
+||Minimum Level: 10000 bookings||||||
+||Desired Level: 20000 bookings||||||
+||||||||
+||Solution can process 60,000,000 trip enquiries per month.||||||
+||Minimum Level: 60,000,000 trip enquiries||||||
+||Desired Level: 120,000,000 trip enquiries||||||
+||||||||
+||Solution can process 250,000 trip enquiries in any one hour.||||||
+||Minimum Level: 250,000 trip enquiries||||||
+||Desired Level: 500,000 trip enquiries||||||
+USR_PER-009||Measure:Solution can process 250,000 bookings per month.||||||USR_PER-009
+||Minimum Level: 250,000 bookings||||||
+||Desired Level: 500,000 bookings||||||
+||||||||
+||Solution can process up to 10,000 bookings in any one hr.||||||
+||Minimum Level: 10000 bookings||||||
+||Desired Level: 20000 bookings||||||
+||||||||
+||Solution can process 60,000,000 trip enquiries per month.||||||
+||Minimum Level: 60,000,000 trip enquiries||||||
+||Desired Level: 120,000,000 trip enquiries||||||
+||||||||
+||Solution can process 250,000 trip enquiries in any one hour.||||||
+||Minimum Level: 250,000 trip enquiries||||||
+||Desired Level: 500,000 trip enquiries||||||
+USR_PER-009||Measure:||||||USR_PER-009
+||Solution can process 250,000 bookings per month.||||||
+||Minimum Level: 250,000 bookings||||||
+||Desired Level: 500,000 bookings||||||
+||||||||
+||Solution can process up to 10,000 bookings in any one hr.||||||
+||Minimum Level: 10000 bookings||||||
+||Desired Level: 20000 bookings||||||
+||||||||
+||Solution can process 60,000,000 trip enquiries per month.||||||
+||Minimum Level: 60,000,000 trip enquiries||||||
+||Desired Level: 120,000,000 trip enquiries||||||
+||||||||
+||Solution can process 250,000 trip enquiries in any one hour.||||||
+||Minimum Level: 250,000 trip enquiries||||||
+||Desired Level: 500,000 trip enquiries||||||
+USR_PER-009||Measure:Solution can process 250,000 bookings per month.||||||USR_PER-009
+||Minimum Level: 250,000 bookings||||||
+||Desired Level: 500,000 bookings||||||
+||||||||
+||Solution can process up to 10,000 bookings in any one hr.||||||
+||Minimum Level: 10000 bookings||||||
+||Desired Level: 20000 bookings||||||
+||||||||
+||Solution can process 60,000,000 trip enquiries per month.||||||
+||Minimum Level: 60,000,000 trip enquiries||||||
+||Desired Level: 120,000,000 trip enquiries||||||
+||||||||
+||Solution can process 250,000 trip enquiries in any one hour.||||||
+||Minimum Level: 250,000 trip enquiries||||||
+||Desired Level: 500,000 trip enquiries||||||
+USR_PER-010||Measure:||||||USR_PER-010
+||System should be able to support 500 concurrent users accessing the booking engine.||||||
+||||||||
+||Minimum Level: 500||||||
+||Desired Level: 1000||||||
+USR_PER-011||Measure:||||||USR_PER-011
+||Round-trip latency, i.e the one-way latency from source to destination plus the one-way latency from the destination back to the source must not exceed the minimum level.||||||
+||||||||
+||Minimum Level:150ms||||||
+||||||||
+||Desired Level:15ms||||||
+USR_PER-012||Measure:||||||USR_PER-012
+||The Booking Engine is to respond and present in no more than 2 seconds to the most complex customer queries.||||||
+||||||||
+||Minimum Level: 2,000ms||||||
+||||||||
+||Desired Level: 500ms||||||
+USR_PER-013||Measure:||||||USR_PER-013
+||System to respond in less than 500ms for Customer Account customer data retrieval calls, and less than 500ms for account creation service calls.||||||
+||||||||
+||Minimum Level:500ms||||||
+||||||||
+||Desired Level:250ms||||||
+USR_PER-013||Measure:||||||USR_PER-013
+||System to respond in less than 500ms for Customer Account customer data retrieval calls, and less than 500ms for account creation service calls.||||||
+||||||||
+||Minimum Level:500ms||||||
+||||||||
+||Desired Level:250ms||||||
+USR_PER-014||Measure:||||||USR_PER-014
+||The Payment transaction should take no longer than 2,000ms from pay now to payment confirmation.||||||
+||||||||
+||Minimum Level: 2,000ms||||||
+||||||||
+||Desired Level: 1,000ms||||||
+USR_PER-015||Measure:||||||USR_PER-015
+||No Single Point Of Failure across the Solution.||||||
+||||||||
+||Minimum Level: N/A||||||
+||||||||
+||Desired Level: N/A||||||
+USR_PER-016||Measure:||||||USR_PER-016
+||At peak capacity The platform shall exhibit near linear scaling to 1.5 times the initial load expectations (Ref: ITN, Business Volume and Sizing Requirements).||||||
+||||||||
+||Minimum Level: 1.5 * initial load expectations||||||
+||||||||
+||Desired Level: 3 * initial load expectations||||||
+USR_PER-017||Measure:||||||USR_PER-017
+||Support response/fix times as per Contract ||||||
+USR_PER-018||Measure:||||||USR_PER-018
+||The BOS and PD must be capable of generating a ticket in less than 7 seconds.||||||
+||||||||
+||Minimum Level: 7 seconds||||||
+||||||||
+||Desired Level: 2 seconds||||||
+USR_PER-018||Measure:||||||USR_PER-018
+||The BOS and PD must be capable of generating a ticket in less than 7 seconds.||||||
+||||||||
+||Minimum Level: 7 seconds||||||
+||||||||
+||Desired Level: 2 seconds||||||
+USR_PER-018||Measure:||||||USR_PER-018
+||The BOS and PD must be capable of generating a ticket in less than 7 seconds.||||||
+||||||||
+||Minimum Level: 7 seconds||||||
+||||||||
+||Desired Level: 2 seconds||||||
+USR_PER-018||Measure:||||||USR_PER-018
+||The BOS and PD must be capable of generating a ticket in less than 7 seconds.||||||
+||||||||
+||Minimum Level: 7 seconds||||||
+||||||||
+||Desired Level: 2 seconds||||||
+USR_PER-019||Measure:||||||USR_PER-019
+||Magnetic ticket validation at gates must allow a throughput of 25 tickets per minute, through our existing gates.||||||
+||Minimum Level: 25 per minute||||||
+||Desired Level: 35 per minute||||||
+||||||||
+||Measure:||||||
+||Barcode ticket validation must allow a throughput of 15 tickets per minute  Minimum Level:25 per minute||||||
+||Minimum Level: 15 per minute||||||
+||Desired Level: 35 per minute||||||
+USR_PER-019||Measure:||||||USR_PER-019
+||Magnetic ticket validation at gates must allow a throughput of 25 tickets per minute, through our existing gates.||||||
+||Minimum Level: 25 per minute||||||
+||Desired Level: 35 per minute||||||
+||||||||
+||Measure:||||||
+||Barcode ticket validation must allow a throughput of 15 tickets per minute  Minimum Level:25 per minute||||||
+||Minimum Level: 15 per minute||||||
+||Desired Level: 35 per minute||||||
+USR_PER-019||Measure:||||||USR_PER-019
+======= SHEET: Archived_Reqs =======
+Max row: 375, Max col: 7
+ID||Reference||Summary||Epic||Label||Priority||Importance
+1||#REF!||The platform allows advance bookings configurable up to 365 days.||Booking||Functional||||
+2||#REF!||The platform allows same-day booking, up to a configurable time before departure, with different lead times based on service, fare type, reserved / unreserved seating||Booking||Functional||||
+3||#REF!||The platform provides total ticket price & price per leg of the journey during the reservation process.||Booking||Functional||||
+4||#REF!||Authorised User can complete a failed purchase, including overriding all booking details & pricing.||Booking||Functional||||
+5||#REF!||The platform facilitates automatic upsell & cross sell of unlimited number of Add-Ons during booking from internal and third parties using APIs||Booking||Functional||||
+6||#REF!||Customer or Authorised User can amend / cancel one or more upsell products, where permitted, without cancelling the rail ticket.||Booking||Functional||||
+7||#REF!||Authorsed User can configure Cancellation Ts & Cs for upsell products, independetly of Ts & Cs for main ticket||Booking||Functional||||
+8||#REF!||The platform supports Sail-Rail bookings where providers of Sail bookings have made automated Pricing & Booking available.||Booking||Integration||||
+9||#REF!||The platform supports Rail-Air bookings where Airlines have made automated Pricing & Booking available.||Booking||Integration||||
+10||#REF!||The platform supports bookings of any combination of NTA-managed services, where they have made automated Pricing & Booking available.||Booking||Integration||||
+11||#REF!||The platform supports bookings of any combination of 3rd Party products, where the providers have made automated Pricing & Booking available.||Booking||Integration||||
+12||#REF!||The platform allows individual users to create, read, update or delete a Booking, with no back-office support required except where approval is required.||Booking||Functional||||
+13||#REF!||The platform allows the User to reserve a seat without any other product. ||Booking||Functional||||
+14||#REF!||The platform allows a B2C User to make a booking with their B2B details (or vice versa) where the same User has both types of account on their profile.||Booking||Functional||||
+15||#REF!||The platform generates individual passenger references (PNRs) for each customer within one transaction or booking.||Booking||Functional||||
+16||#REF!||All required system-generated information (including pricing) is carried through the transaction / session and updated dynamically in real time during booking||Booking||Functional||||
+17||#REF!||The platform allows a User to rebook a previously booked journey, whether it is completed or not (TBC what parameters must be supported / prepopulated)||Booking||Functional||||
+18||#REF!||The platform allows Users with prepaid passes (e.g. Taxsaver) to reserve seats for journeys over multiple dates with configurable cost (TBC what limits to set)||Booking||Functional||||
+19||#REF!||The platform allows Users with free travel passes (e.g. Social Welfare) to reserve seats for journeys with configurable cost (TBC if this includes non-Irish users)||Booking||Functional||||
+20||#REF!||The platform will automatically offer B2B Customers (or Agents / Proxies etc) any benefits associated to their parent B2B account when making a booking||Booking||Functional||||
+21||#REF!||Authenticated User can 'Manage My Booking' including: cancel / refund whole journey or one leg / amend all permitted aspects of booking (TBC for guests)||Booking||Functional||||
+22||#REF!||User can book 'passenger assistance' for a passenger at any time during a booking (e.g. sight impaired, reduced mobility or others as available) (TBC if integrated)||Booking||Functional||||
+23||#REF!||User is automatically assigned a wheelchair space when booking includes request for wheelchair assistance. System indicates if there are no spaces available||Booking||Functional||||
+24||#REF!||Specified 'companion' passenger is automatically assigned a seat close to assigned wheelchair space (if reserved) or close to companion seat.||Booking||Functional||||
+25||#REF!||Passenger / customer can manually select a seat close to companion's wheelchair space, if available||Booking||Functional||||
+26||#REF!||System creates a customer record for all bookings (quoted, reserved or paid), including predefined data fields, data field rules & data field validations (details TBC).||Booking||Functional||||
+27||#REF!||The platform supports bookings made by 'guest' customers without a profile (TBC: minimum data required & how to store / retrieve / edit without security issues).||Booking||Functional||||
+28||#REF!||Guest customers can 'Manage Booking' using booking-specific identifier such as Booking Ref (TBC if we should require a 2nd piece of data & what it is)||Booking||Functional||||
+29||#REF!||Authorised User can automatically make bulk amendments to customers' bookings (incl seat reservations) and automatically notify passengers ||Booking||Functional||||
+30||#REF!||The platform facilitates multi-channel purchases and aftersales (TBC what we mean by this & how we expect it to be delivered)||Booking||Functional||||
+31||#REF!||Customer can view alternate routes & journeys, including real-time fares (e.g. lowest fare, semi-flex, fully flexible) with dynamic pricing based on Customer type||Booking||Functional||||
+32||#REF!||Customer / sales agent to choose the activation date for time-based products (e.g. weekly, monthly or annual tickets) when purchasing in advance||Booking||Functional||||
+33||#REF!||Authorised User can sell train specific unassigned seat allocations e.g. sell 180 tickets at €20 each (Sell to whom? TBC what this means in practise)||Booking||Functional||||
+34||#REF!||The platform records customer acceptance of specific ticket terms and conditions (TBC if this needs to be done for everything, even just a standalone seat reservation)||Booking||Functional||||
+35||#REF!||Customer can choose mixed Class reservations (i.e.multi-leg journeys, or outbound and return journeys do not have to be the same Class)||Booking||Functional||||
+36||#REF!||Customer can choose to return to a different location (i.e. two way journey can be booked to end at a different place than starting)||Booking||Functional||||
+37||#REF!||Customer can load tickets / bookings to rechargeable card (e.g. Leap Card or similar) (TBC how this aligns with future NTA NGT plans)||Booking||Functional||||
+38||#REF!||Platform facilitates sales of 3rd party Products with or without a Ticket / Reservation||Booking||Functional||||
+39||#REF!||Platform displays ticket terms and conditions in each booking channel.||Booking||Functional||||
+40||#REF!||Customer can specify preferred currency for bookings / price comparison (TBC where we get cross-currency pricing, e.g. by API)||Booking||Functional||||
+41||#REF!||Authorised User can configure admin / transaction fees on a ticket / booking, dependent on or independent of the booking cost.||Booking||Functional||||
+42||#REF!||The platform includes a configurable journey planner and/or can be integrated with an existing journey planner.||Booking||Functional||||
+43||#REF!||User can submit identifier of physical card (e.g. Student card) when booking a product that requires the possession of ID card. Card number is stored with booking.||Booking||Functional||||
+44||#REF!||The platfrom can calculate the change due in euros for all bookings paid in cash whether in euros or Sterling (TBC if this is still relevant / valuable)||Booking||Functional||||
+45||#REF!||The platform has a real time interface from BOM to Seat Reservation System so Authorised Users can make, amend & collect a reservation. (TBC what this means)||Booking||Integration||||
+46||#REF!||The platform provides interfaces for other authorised internal / external systems (e.g. Portable Devices) to make / amend bookings and seat reservations.||Booking||Integration||||
+47||#REF!||Platform allows a User to start / amend / complete bookings in different channels||Booking||Functional||||
+48||#REF!||Platform supports the sale of open tickets with seat reservation (TBC what this means compared to other functionality)||Booking||Functional||||
+49||#REF!||Customer can avail of multiple discounts on a booking (assumes upper limit of discount <= total value of the ticket / basket)||Booking||Functional||||
+50||#REF!||The platform creates a customer record with pre-defined mandatory & optional data fields (e.g. name, email & phone etc), per confirmed Booking  (Is this a duplicate?)||Booking||Functional||||
+51||#REF!||The platform creates a journey record with pre-defined mandatory & optional data fields (e.g. OD, date, time etc), per confirmed Booking  (Is this a duplicate?)||Booking||Functional||||
+52||#REF!||The platform supports Corporate Customer bookings, with or without seat reservations, for named corporate users or generic (unnamed) corporate users||Booking||Functional||||
+53||#REF!||The platfrom supports multi-modal pricing & ticket sales. E.g. Rail/Bus, Rail/Luas.||Booking||Integration||||
+54||#REF!||The platform can load products & refunds onto leap cards (TBC how this would work in practise & what the limitations are)||Booking||Functional||||
+55||#REF!||The platform allows B2B customers to book tickets based on an account facility (Post-Pay) or at the point of purchase (Pre-Pay). ||Booking||Functional||||
+56||#REF!||The platform allows Authorised User to make bookings on behalf of B2B Customers to be paid later by Account, Cash or Card, online or offline||Booking||Functional||||
+57||#REF!||The platform allows an authenticated User to make bookings for one or more named passengers, even when the user is not travelling.||Booking||Functional||||
+58||#REF!||Users who wish to book via a B2B account can choose to pay on account / invoice or immediately. ||Booking||Functional||||
+59||#REF!||The stored booking information includes the ID of the BOM/PD that sold the ticket (TBC what the purpose of this requirement is & if it is still relevant)||Booking||Functional||||
+60||#REF!||User can book & pay for ancilliary products or services along with ticket booking (e.g. bike store, accessible support)||Booking||Functional||||
+61||#REF!||User can book & pay for ancilliary products or services as standalone cross sell or upsell||Booking||Functional||||
+62||#REF!||User can book & pay for unconnected products or services, such as Car Parking, independently or with Bookings||Booking||Functional||||
+63||#REF!||Booking journey is autopulated based on preferences for authenticated users||Booking||Functional||||
+64||#REF!||User can reserve (and pay for if appropriate) bookable facilities at a given location||Booking||Functional||||
+65||#REF!||Authorised User can specify which bookable facilities (eg Passsenger Assistance) are available at a given location||Booking||Functional||||
+66||#REF!||The platform displays discounts on group bookings based on total Passenger cost / count.||Group Booking||Functional||||
+67||#REF!||The platform can calculate and display discounts on group bookings based on line item cost.||Group Booking||Functional||||
+68||#REF!||The platform can calculate and display discounts on group bookings based on total cost.||Group Booking||Functional||||
+69||#REF!||The platform allows Customers to make Group bookings online (TBC if there should be configurable, rule-based or dynamic limits to Group booking size)||Group Booking||Functional||||
+70||#REF!||Authorised user can make Group bookings on behalf of a B2B customer or B2C customer (TBC if Authorised user can override any restrictions for Group bookings)||Group Booking||Functional||||
+71||#REF!||Customer, Agent or Proxy can 'hold' Group bookings via a deposit (with configurable amount) and platform auto-calculates the final payment date||Group Booking||Functional||||
+72||#REF!||Customer, Agent or Proxy can 'amend' any aspect of Group reservations based on configurable rules (e.g. rename pax, amend one or more legs for one or more pax)||Group Booking||Functional||||
+73||#REF!||Group Booking notifications include link to make final payment (and last date to submit) (TBC if this link shoul dbe omitted if no payment remaining)||Group Booking||Functional||||
+74||#REF!||Authorised User can analyse data on Web & App traffic, Booking funnels and ticket sales per source & per time period||Analytics||Functional||||
+75||#REF!||Authorised User can record and analyse competitor data||Analytics||Functional||||
+76||#REF!||Authorised user can access analytics and reporting capabilities to support and improve conversion, revenue and remarketing activities||Analytics||Functional||||
+77||#REF!||Authorised user identify & report on abandoned / failed transactions.||Analytics||Functional||||
+78||#REF!||The platform integrates with, or includes, Pricing Engine, Revenue Management and/or CRM.||Architecture||Integration||||
+79||#REF!||All Customer functionality is available via a Mobile Application||Architecture||Non-Functional||||
+80||#REF!||All Customer functionality is available via a Web Application||Architecture||Non-Functional||||
+81||#REF!||All Administrator functionality is available via a Web Application||Architecture||Non-Functional||||
+82||#REF!||The platform is PCI compliant at all times when operational & the supplier is responsible for ensuring compliance||Architecture||Non-Functional||||
+83||#REF!||The platform stores historical revenue and volume data for a configurable time period [minimum 6 yrs] and optionally auto-delete specific records or fields||Architecture||Non-Functional||||
+84||#REF!||The platform integrates with other relevant systems using industry standard integration techniques (details TBC)||Architecture||Integration||||
+85||#REF!||The platform can import Sales & Loading data from systems (e.g. Passenger Counting / Train Load & Booking / Reservation sales data) (details TBC)||Architecture||Integration||||
+86||#REF!||All data is stored in a centralised data store (e.g. data lake, repository) owned by the client||Architecture||Non-Functional||||
+87||#REF!||Bookings can be created / amended by API call(s)||Architecture||Functional||||
+88||#REF!||Functionality is accesible from any pre-authorised platform, device or system with no additonal requirements||Architecture||Functional||||
+89||#REF!||The automatically sends email and/or SMS notifications to customers of any refunds authorised.||Communications||Functional||||
+90||#REF!||The platform allows authorised users to configure (style, format, content etc.) confirmation email and/or SMS||Communications||Functional||||
+91||#REF!||The platform sends automatic upsell & cross sell of Add-Ons after booking (e.g. by email / SMS). (TBC if we limit this to Customers who are opted in for Marketing)||Communications||Functional||||
+92||#REF!||The platform allows Users to send / re-send booking details by email or SMS to any phone number (TBC if we want allow no-cost re-send of SMS if there is an SMS cost)||Communications||Functional||||
+93||#REF!||Authorised User can forward booking details via SMS / email to the customer on request (TBC if we verify the recipient or only resend to the address(es) on the booking)||Communications||Functional||||
+94||#REF!||Authorised User can trigger customer communications to specific customers, trains or services in the event of potential / consequential disruptions.||Communications||Functional||||
+95||#REF!||Platform automatically notifies customers of imposed amendments (e.g. rescheduling, curtailment etc)||Communications||Functional||||
+96||#REF!||The platform can send tickets to a customer's mobile device (e.g. smartphone) (TBC if this is a duplicate / any different from sending SMS / Email)||Communications||Functional||||
+97||#REF!||The Platform generates notifications to Customers after refund, using the same communications channel as initial booking confirmation.||Communications||Functional||||
+98||#REF!||Authorised User can trigger communications to Users based on consent parameters||Communications||Functional||||
+99||#REF!||Authorised User can trigger communications to Users based on comms type (e.g. disruption)||Communications||Functional||||
+100||#REF!||Authorised User can trigger communications to Users based on booking (e.g. for a given route, train, segment etc)||Communications||Functional||||
+101||#REF!||Authorised User can search for a booking on any given criteria, to support aftersales service||Customer Support||Functional||||
+102||#REF!||The platform provides case management (customer care / support) functionality. (TBC. Do we expect a one-for-all tool or do we integrate this data with CCC?)||Customer Support||Functional||||
+103||#REF!||The platform supports case creation with configurable case types (e.g. complaints, penalty fares, refund queries, service queries) and mandatory / optional data fields||Customer Support||Functional||||
+104||#REF!||The platform supports case assignment to customer care agents.||Customer Support||Functional||||
+105||#REF!||The platform supports differentiation of customer support based on priority & category / subcategory, among other parameters.||Customer Support||Functional||||
+106||#REF!||Authorised User can accept cases relating to Leap, capturing a Leap Case ID and card number.||Customer Support||Functional||||
+107||#REF!||The platform supports automated case creation for contact via email, phone, SMS, facebook, twitter direct message.||Customer Support||Functional||||
+108||#REF!||The platform supports manual case creation for contact via email, phone, SMS, letter, facebook, twitter direct message or other channel requesting a formal response. ||Customer Support||Functional||||
+109||#REF!||Authorised user can resolve a case, including the completion of configurable mandatory / optional data fields.||Customer Support||Functional||||
+110||#REF!||Authorised user can associate a case with a specific customer account, where an existing business or B2C exists. ||Customer Support||Functional||||
+111||#REF!||Authorised user can create a new customer account to associate with a case, where a customer account does not already exist.||Customer Support||Functional||||
+112||#REF!||Authorised user can generate / schedule reporting on customer support cases||Customer Support||Functional||||
+113||#REF!||The platform captures interactions between customer and authorised users and integrates audit capability.||Customer Support||Functional||||
+114||#REF!||Authorised user can add free text /comments to describe outcome of any phone/face to face interactions||Customer Support||Functional||||
+115||#REF!||The platform supports integration of case management with CRM contact history||Customer Support||Functional||||
+116||#REF!||The platform automatically calculates cross-currency prices using Euro price as input (TBC what the source of Fx Rates will be. API / 3rd party source? Lookup table?)||Fares Pricing||Functional||||
+117||#REF!||Authorised User can cater for split capacity trains (TBC what this means in practise - assuming it relates to Fares and/or seat availability)||Fares Pricing||Functional||||
+118||#REF!||Authorised User can manage dynamic pricing based on pre-defined / formulaic business rules. Platform stores all changes for audit (TBC what these rules look like)||Fares Pricing||Functional||||
+119||#REF!||Authorised User can manage dynamic pricing based on custom / manual / ad hoc business rules. Platform stores all changes for audit (TBC what these rules look like)||Fares Pricing||Functional||||
+120||#REF!||Authorised User can manage dynamic pricing based on demand forecast modelling (TBC what kinds of models are required and whether these require other data)||Fares Pricing||Functional||||
+121||#REF!||Authorised User can manage dynamic pricing based on availability (trains, seat class) and price sensitivity.||Fares Pricing||Functional||||
+122||#REF!||The platform facilitates automated dynamic / manual pricing updates as a result of reconfigured carriages||Fares Pricing||Functional||||
+123||#REF!||The platform can pass real-time pricing recommendations to the requesting channel (TBC what channels are to be supported & how data will be passed).||Fares Pricing||Functional||||
+124||#REF!||Authorised User can apply general / default restrictions based on ticket type, passenger type, class type etc (TBC if these roll up or override in case of conflict)||Fares Pricing||Functional||||
+125||#REF!||The platform can control the level of discount via authorisation (e.g. to give staff at more senior levels the option of offering greater discounts).||Fares Pricing||Functional||||
+126||#REF!||Authorised user can configure pricing of upsell product(s) based on criteria (e.g. standalone add-on, fixed amount, unit price by booking/segments/passengers level)||Fares Pricing||Functional||||
+127||#REF!||Authorised User can define when Group products are / are not available based on OD, Train ID, Date/time or other configurable rules. ||Fares Pricing||Functional||||
+128||#REF!||Authorised User can configure different 'expiry' dates per booking type (e.g. Group / Individual / Business / Ancilliary bookings)||Fares Pricing||Functional||||
+129||#REF!||Authorised User can display the difference between on-the-day price and advanced booking price to a customer (TBC if this is still relevant)||Fares Pricing||Functional||||
+130||#REF!||Authorised User can actively manage capacity (inventory of reserved / unreserved seats) for online sales, based on percentage, specific number or other metric||Fares Pricing||Functional||||
+131||#REF!||Authorised User can create unreserved period / time-based products e.g. multi-journey tickets, periodic tickets, unlimited / service specific tickets.||Fares Pricing||Functional||||
+132||#REF!||Authorised User can define the sales validity period and/or usage rules of a product.||Fares Pricing||Functional||||
+133||#REF!||Authorised User can create ad hoc tickets with multiple criteria (e.g. special event services) ||Fares Pricing||Functional||||
+134||#REF!||Authorised User can create product bundles and prices for either / both travel & ancillary services.||Fares Pricing||Functional||||
+135||#REF!||Authorised User can manually set or override non-Euro pricing for specific routes / services||Fares Pricing||Functional||||
+136||#REF!||Authorised User can apply percentage or fixed rates of discounts for customers based on customer type at either / both B2C or B2B account level.||Fares Pricing||Functional||||
+137||#REF!||Authorised user can override one or more rules on all products.||Fares Pricing||Functional||||
+138||#REF!||Authorsied user can configure aftersales conditions by product, time before / after departure, type of aftersales service such as amendment or cancellation etc||Fares Pricing||Functional||||
+139||#REF!||Authorised User can discount one, some or all products on individual sales channels independent of other channels (e.g. "SMS-only discount", "App-only discount")||Fares Pricing||Functional||||
+140||#REF!||Authorised User can specify pricing scenarios for Group tickets e.g. discount based on number of people travelling or based on purchases ‘n’ days in advance)||Fares Pricing||Functional||||
+141||#REF!||Authorised User can specify zone, route and/or km based pricing.||Fares Pricing||Functional||||
+142||#REF!||Authorised User can specify pricing based on origin and destination pairs.||Fares Pricing||Functional||||
+143||#REF!||Authorised User can specify train specific and directional pricing||Fares Pricing||Functional||||
+144||#REF!||Authorised User can set a fixed or variable price for seat reservation.||Fares Pricing||Functional||||
+145||#REF!||Authorised User can set discounts as a fixed discount or percentage discount based on customer type (e.g. "Over 50s", "Student only").||Fares Pricing||Functional||||
+146||#REF!||Authorised User can set discount limits rules (e.g. Dublin to Galway peak time flat fare - no discounts; child discount is nn% of Adult discount; maximum discount etc)||Fares Pricing||Functional||||
+147||#REF!||Authorised User can apply time-based rules to pricing.||Fares Pricing||Functional||||
+148||#REF!||Authorised User can configure leg-based pricing on a variety of pricing approaches such as Best Price Available, Regular Price (other models TBC)||Fares Pricing||Functional||||
+149||#REF!||Authorised User can set effective start and/or end dates for pricing, with default pricing outside the effective date. ||Fares Pricing||Functional||||
+150||#REF!||Authorised User can apply configurable rounding rules to pricing (e.g. round up or down to nearest €n).||Fares Pricing||Functional||||
+151||#REF!||The platform imposes publish controls to prevent pricing being published without approval by other authorised user(s)||Fares Pricing||Functional||||
+152||#REF!||The platform allows preemptive pricing models to be examined in 'near real' conditions before being made available||Fares Pricing||Functional||||
+153||#REF!||The platfrom allows future dated pricing changes to be configured and approved||Fares Pricing||Functional||||
+154||#REF!||The platfrom retains details of [n] previous versions of all pricing & allows rollback to previous pricing on individual basis (i.e. not all-or-nothing)||Fares Pricing||Non-Functional||||
+155||#REF!||Authorised User can support the PDL (Leap card pricing) channel with the use of an XML file (TBC if this requirement is still valid)||Fares Pricing||Functional||||
+156||#REF!||The platform ensures all products and prices on all sales channels are in sync (TBC. This contradicts a different Req for channel-specific prices. Maybe a 'sync now'?)||Fares Pricing||Non-Functional||||
+157||#REF!||Authorised User can configure additional fee based on payment method (e.g. credit card, debit card) as a flat fee or as a percentage with an optional floor.||Fares Pricing||Functional||||
+158||#REF!||Authorised User can override platform recommendation or settings. Platform stores all changes for audit (TBC which settings this relates to... Pricing, for example?)||Fares Pricing||Functional||||
+159||#REF!||Authorised User can specify whether seat reservation is optional, mandatory or unavailable on multiple criteria||Fares Pricing||Functional||||
+160||#REF!||Authorised Users can specify Corporate Rates (per Booking, Route, Destination etc)||Fares Pricing||Functional||||
+161||#REF!||Authorised User can specify which fare types are available in a given carriage||Fares Pricing||Functional||||
+162||#REF!||Authorised User can forecast service requirements based on historic and current demand. (TBC what sort of forecasting capability is expected for this Req)||Forecasting||Functional||||
+163||#REF!||Authorised User can manage yield based on passenger types (e.g. student, adult, child, family) (TBC what this means in practise)||Forecasting||Functional||||
+164||#REF!||Authorised User can model multiple what-if scenarios. (Examples and/or any *mandatory* scenarios TBC)||Forecasting||Functional||||
+165||#REF!||The platform includes or integrates with Booking Engine to support train capacity planning / inventory planning. (does this mean Journey Planner or something else?)||Forecasting||Integration||||
+166||#REF!||The platform facilitates real-time alert & escalation in times of unexpected peaks and troughs (TBC how alerts are identified & how escalation must be processed)||Forecasting||Functional||||
+167||#REF!||The platform allows 3rd Party resellers to modify/cancel their bookings once authenticated (TBC if we want to make an API or a UI available to 3rd parties for this)||Partners||Integration||||
+168||#REF!||The platform allows 3rd party resellers / agents to resell pre-determined tickets on pre-determined services||Partners||Integration||||
+169||#REF!||The platform allows 3rd party resellers / agents to view only their own bookings.||Partners||Integration||||
+170||#REF!||The platform integrates with third party API's for Travel Websites and Search Engines to enable access to the published product catalogue.||Partners||Integration||||
+171||#REF!||The platform integrates with, or includes, 3rd party journey planners to retrieve and display journey timetables & options||Partners||Integration||||
+172||#REF!||The platfrom can be configured to act as an integrated single source of pricing for all sales channels, including external API’s. (i.e. "white labelling")||Partners||Integration||||
+173||#REF!||Authorised User can import external prices using a standard API. (TBC what this means in practise)||Partners||Integration||||
+174||#REF!||Customer can apply one (or more?) Vouchers to the total value of the booking, up to the maximum cost.||Payments||Functional||||
+175||#REF!||Customer can apply one (or more?) Vouchers to the a subset of line items in the booking (e.g. some Vouchers only apply to IR products, not cross sells).||Payments||Functional||||
+176||#REF!||The Platform allows a Customer or Agent to convert a voucher to cash / card transfer (i.e. to be compliant with the European rail passenger rights)||Payments||Functional||||
+177||#REF!||Customer can pay with card-based payment methods, smartphone-based payment methods and/or vouchers||Payments||Functional||||
+178||#REF!||Customer can pay for a booking with multiple payment methods and in multiple instances / instalments (until when?)||Payments||Functional||||
+179||#REF!||Customer can complete transactions with alternate payment methods in the event of failure/rejection of a particular payment method.||Payments||Functional||||
+180||#REF!||Authorized User can deactivate an active voucher (voucher that has been issued but not yet used/expired).||Payments||Functional||||
+181||#REF!||Refunds are redeemable only by the customer the ticket was issued for (TBC. Likely this would be contra-regulatory. Refunds should be to payment method used)||Payments||Functional||||
+182||#REF!||Customers can pay with single use/multi-use Promo codes & vouchers based on rules (e.g. fixed amount, percentage by route / ticket type, OD, service time, train ID etc)||Payments||Functional||||
+183||#REF!||Authorised User can issue and receipt Gift vouchers & system will record audit of vouchers generated by user, date etc.||Payments||Functional||||
+184||#REF!||The platform supports payment by at least Credit & Debit card; Contactless / Chip & PIN, Mobile & Electronic wallet, online & offline payment).||Payments||Functional||||
+185||#REF!||The platform can accept warrants and voucher payments. (TBC how this will work in practise, especially validating vouchers & warrants for online bookings)||Payments||Functional||||
+186||#REF!||The platform can be integrated with cash tills & provide till functionality restricted to Authorised Users. (TBC if this is still part of PCF or separate BOMS & PDs project)||Payments||Functional||||
+187||#REF!||Portable Device can make bookings & seat reservations and issue tickets. (TBC if physical tickets are in scope, or only digital / barcode tickets) (TBC if relevant)||Portable Device||Functional||||
+188||#REF!||Portable Device can send ticket to a customer (e.g. by email, SMS, NFC and/or other mechanism). ||Portable Device||Functional||||
+189||#REF!||Portable Device can issue fixed penalty notices and capture related customer data. ||Portable Device||Functional||||
+190||#REF!||Portable Device will synchronize all relevant data with back-office immediately or when online||Portable Device||Functional||||
+191||#REF!||Portable Device will accept payments via the same methods as online bookings||Portable Device||Functional||||
+192||#REF!||Portable Device will allow the User to specify cash as a payment method. ||Portable Device||Functional||||
+193||#REF!||Portable Device will allow the User to accept warrants and voucher payments. ||Portable Device||Functional||||
+194||#REF!||Portable Device allows the User to add / amend / waive / override any type of fees. ||Portable Device||Functional||||
+195||#REF!||Portable Device channel shall only enable the customer to look up its customer account information. (TBC what this means in practise) ||Portable Device||Functional||||
+196||#REF!||Portable Device can retrieve & display train manifests when online||Portable Device||Functional||||
+197||#REF!||Portable Device can insepct and/or validated magnetic and thermal (2D/QR) tickets. (TBC if Magstripe is still a valid requirement)||Portable Device||Functional||||
+198||#REF!||Portable Device can read relevant content from Leap cards.||Portable Device||Functional||||
+199||#REF!||Portable Device records and synhronises validations on a train / service basis||Portable Device||Functional||||
+200||#REF!||Portable Device allows the User to enter & synchronise passenger count data periodically, against a given train id or service date and time.||Portable Device||Functional||||
+201||#REF!||Portable Device includes or integrates with Journey Planner when online||Portable Device||Integration||||
+202||#REF!||Portable device can be synchronised with the back-end system automatically and/or manually when online.||Portable Device||Functional||||
+203||#REF!||Portable Devices can validate pre-booked tickets assuming internet connection||Portable Device||Functional||||
+204||#REF!||Portable Devices can sell available tickets in real time assuming internet connection||Portable Device||Functional||||
+205||#REF!||Portable Devices can amend bookings in real time assuming internet connection||Portable Device||Functional||||
+206||#REF!||Portable Devices can amend seat allocation in real time assuming internet connection||Portable Device||Functional||||
+207||#REF!||Portable Devices can sell penalty fares in real time assuming internet connection||Portable Device||Functional||||
+208||#REF!||Portable Devices can display all available / occupied seats in real time, assuming internet connection||Portable Device||Functional||||
+209||#REF!||Portable Devices synchronise all activities relevant to train, route, service etc, when internet connection is available||Portable Device||Functional||||
+210||#REF!||Authorised Customers, Agents or Proxies can generate, store and retrieve quotations for a configurable period and complete a transaction later.||Quotations||Functional||||
+211||#REF!||The platform allows configuration of whether (and after how long) quotations must be dynamically updated (e.g. price, availability) before completion||Quotations||Functional||||
+212||#REF!||The platform allows configuration of the 'hold' (i.e. quotation) option per OD, Train ID, Date / Range or other parameters. ||Quotations||Functional||||
+213||#REF!||Authorised User / Agent or Proxy can process multiple quotations within one transaction.||Quotations||Functional||||
+214||#REF!||Customer can create, amend, store, retrieve & complete quotations with or without a configurable 'save the fare' fee. ||Quotations||Functional||||
+215||#REF!||Platform reminds customers of the quotation via their preferred communication method (TBC if this would be considered a form of Marketing under GDPR)||Quotations||Functional||||
+216||#REF!||Authorised User can configure permitted refund types with various rules, incl refund to payment method, refund by cash & refund by voucher||Refunds||Functional||||
+217||#REF!||Authorised User can process pre-travel & post-travel booking refunds, on a per-ticket, per-class, per-train and/or per-service basis (this looks like a duplicate)||Refunds||Functional||||
+218||#REF!||Authorised User can process full / partial refunds of various types, incl refund by voucher (others TBC)||Refunds||Functional||||
+219||#REF!||For booking paid with multiple payment methods, Authorised User can refund to each payment method, up to the initial amount paid||Refunds||Functional||||
+220||#REF!||Authorised User can generate a voucher to refund a customer, whatever the initial payment method.||Refunds||Functional||||
+221||#REF!||Authorised User can specify Fare Rules to automatically refund / not refund related fees (TBC: fees can be refunded alone?)||Refunds||Functional||||
+222||#REF!||Authorised User can record and show price history for a given route, ticket type etc. over the past [n] months (TBC if this means pricing history or sales history)||Reporting||Functional||||
+223||#REF!||Authorised User can insert event notes in calendar (e.g. non-routine incidents etc) (TBC if 'insert' ability should be restricted or require approval)||Reporting||Functional||||
+224||#REF!||Authorised User can create, read, update or delete historic calendar events. (TBC if 'edit' or 'delete' should be restricted or require aproval)||Reporting||Functional||||
+225||#REF!||Authorised User can record and report on advanced booking patterns. (TBC what this means in practise)||Reporting||Functional||||
+226||#REF!||Authorised User can view yield target & comparison reports in real-time (e.g. passengers by train, date / range, ODs, ticket type, average yield, days in advance etc.)||Reporting||Functional||||
+227||#REF!||Authorised User can view operational dashboards based on individual train data / station-specific data (TBC what should be in this kind of dashboard / view)||Reporting||Functional||||
+228||#REF!||Authorised User can extract all changes as an audit trail (exact content of audit trail TBC).||Reporting||Functional||||
+229||#REF!||Authorised User can extract reports on abandoned transactions in suitable format(s) for integration elsewhere.||Reporting||Functional||||
+230||#REF!||The platform can generate periodic & on-demand reports to SAP to allow IE to generate invoices for relevant bookings (TBC how this works in practise)||Reporting||Functional||||
+231||#REF!||Authorised User can query/view transactions from individual sales channels / platforms. ||Reporting||Functional||||
+232||#REF!||Authorised User or platform produces train manifests and shares them with trains / personnel managers.||Reporting||Functional||||
+233||#REF!||Train manifests identify which seats are available / occupied for all or part of the journey.||Reporting||Functional||||
+234||#REF!||The platform provides fraud detection, prevention & alerting functionality including e.g. 3-D Secure, credit card blacklisting, suspicious email / bookings etc.||Reporting||Functional||||
+235||#REF!||Authorised User can report on the usage of vouchers from issue to expiration & stores this data after expiration for at least 6 years)||Reporting||Functional||||
+236||#REF!||Authorised User can query the PSP to search / query details of failed / successful transactions per Customer, date / range, channel etc||Reporting||Functional||||
+237||#REF!||Authorised User can record and display version history of tariff changes.||Reporting||Functional||||
+238||#REF!||Authorised User can execute reports (e.g. visual, drill-downs, version change comparisons). (TBC exactly what reports / data are currently used & required)||Reporting||Functional||||
+239||#REF!||The platform allows an ID & optional parent station code for each station. ||Reporting||Functional||||
+240||#REF!||Authorised User can access enterprise-wide dashboards and reports on Key Performance Indicators.||Reporting||Functional||||
+241||#REF!||Authorised User can access reporting by business account (including discounts and commissions).||Reporting||Functional||||
+242||#REF!||Authorised User can access mix/match revenue reporting by cross-sell type (IÉ liabilities) including Translink, Rail-Bus, Sail-Rail journeys.||Reporting||Functional||||
+243||#REF!||Authorsed User can access report data by channel, location, person, payment type, currency, ticket type, Portable Device ID, zone, date, doubtful transactions etc||Reporting||Functional||||
+244||#REF!||Where a station reports to a parent station, revenue of the station is attached to this parent station for reporting (and can also be seen separately)||Reporting||Functional||||
+245||#REF!||Authorised Users can manually configure and extract custom reports to support in-house and 3rd party requests (e.g. from NTA).||Reporting||Functional||||
+246||#REF!||Authorised User can record and report on unusual booking activity/purchasing patterns by station.||Reporting||Functional||||
+247||#REF!||Authorised User can access activity report by sales agent (including discounts and commissions).||Reporting||Functional||||
+248||#REF!||Authorised User can access activity report by sales currency||Reporting||Functional||||
+249||#REF!||Authorised User can capture timeliness of data (e.g. exception reports) as a daily flash report (TBC what this means in practise)||Reporting||Functional||||
+250||#REF!||Authorised User can access reports on revenue by Booking source (e.g. Website, Mobile, TVM, telesales, BOM/PD, Taxsaver, Leap, 3rd party sales) and product.||Reporting||Functional||||
+251||#REF!||Authorised User can access reports on customer traffic (e.g. online, TVM, telesales, BOM/PD, Taxsaver, Leap, 3rd party, OAP, penalty, DSP cards, zero value tickets).||Reporting||Functional||||
+252||#REF!||Authorised User can reports by travel date (i.e. when revenue is recognized) vs sales date by sales channel (online, TVM, BOM/PD, Telesales etc).||Reporting||Functional||||
+253||#REF!||Authorised User can generate reports by origin station, destination station, segment etc||Reporting||Functional||||
+254||#REF!||Authorised User can generate reports of refunds / ticket echanges by channels (e.g. online, TVM/CSS, telesales, BOS/PD, Taxsaver, Leap and third party sales etc)||Reporting||Functional||||
+255||#REF!||Authorised User can generate report on out-payments (e.g. cancellations, refunds, payments to sister companies).||Reporting||Functional||||
+256||#REF!||Authorised User can generate invoicing data for 3rd parties to SAP (inward & outward, including B2B customers and agents, charter trains) ||Reporting||Functional||||
+257||#REF!||Authorised User can generate apportionment of liabilities including Translink, Rail-Bus, Rail-Luas, Sail-Rail, ATOC-IE journeys by ticket/product time and by mileage.||Reporting||Functional||||
+258||#REF!||The platform allows manual intervention for imports into SAP. (e.g. for 3rd party bundled sales such as Dublin Bus / Bus Éireann, Sail-Rail) (TBC if this is still relevant)||Reporting||Functional||||
+259||#REF!||The platform can reconcile fares charged by journey, sales date, travel date etc. to ensure that the correct fares and taxes are charged. (TBC what this mean in practise)||Reporting||Functional||||
+260||#REF!||The platform supports the apportioning of revenue on time-based products (e.g. annual tickets, OAP tickets to Belfast and other welfare tickets). (Is this a duplicate?)||Reporting||Functional||||
+261||#REF!||Authorised User can import Excel/text sales reports from all channels and export standard Excel/text summarised sales reports into SAP ERP. (e.g. for InterRail tickets)||Reporting||Functional||||
+262||#REF!||Authorised User can generate reports identifying missing batches etc and alert business owner (TBC what this mean in practise)||Reporting||Functional||||
+263||#REF!||The platform can pass financial data records to and from SAP manually or automatically. (TBC what this mean in practise)||Reporting||Integration||||
+264||#REF!||Authorised User can settle / reconcile Leap card usage on the IÉ network, based on agreed NTA/IÉ revenue settlement rules (Is this relevant post-NGT?)||Reporting||Functional||||
+265||#REF!||The platform supports Revenue forecast modelling by one or more criteria (e.g. product, route, zone, sales channel etc)||Reporting||Functional||||
+266||#REF!||The platform supports what-if analysis modelling based on historical data from multiple sources (e.g. data warehouse, 3rd party systems).||Reporting||Functional||||
+267||#REF!||The platform supports user friendly query facilities as well as pre-packaged reports for revenue analytics||Reporting||Functional||||
+268||#REF!||Reconciliation and full audit capabilities are supported.||Reporting||Functional||||
+269||#REF!||Authorised User can export all reports in a variety of formats (e.g. potentially including Excel, CSV, XML, PDF etc)||Reporting||Functional||||
+270||#REF!||The platform stores each upsell or cross sell as a separate line item and reportable either with ticket or separately, based on report / query||Reporting||Functional||||
+271||#REF!||Authorised user can generate reports on sales team effectiveness (e.g. calls per lead, time between calls, time to close etc).||Reporting||Functional||||
+272||#REF!||Authorised user can generate web & mobile analytics reports||Reporting||Functional||||
+273||#REF!||The platform generates customer-specific billing reports on a periodic and/or manual basis, for B2B or multi-user accounts.||Reporting||Functional||||
+274||#REF!||Authorised user can segment customer and/or booking data (e.g. using geo-demographic and behavioural / transactional customer data).||Reporting||Functional||||
+275||#REF!||Authorised User can review occupancy by route, origin or destination, date, price point or combinations||Reporting||Functional||||
+276||#REF!||Authorised User can see train occupancy in real time||Reporting||Functional||||
+277||#REF!||Authorised User can specify which trains are scheduled to be on a given route||Route Planning||Functional||||
+278||#REF!||Authorised User can specify which subset (i.e. carriages) of a given train are on a given route||Route Planning||Functional||||
+279||#REF!||User can see multiple Operators / Serivces for each Route, where applicable||Route Planning||Functional||||
+280||#REF!||Authorised User can specify which routes stop at a given location||Route Planning||Functional||||
+281||#REF!||Authorised User can specify which routes passthrough a given location||Route Planning||Functional||||
+282||#REF!||Two or more carriages from different trains can be assigned to a specific service (i.e. en route merge)||Route Planning||Functional||||
+283||#REF!||Specific train can be assigned to multiple routes (i.e. split front & back)||Route Planning||Functional||||
+284||#REF!||Authorised User can specify which carriages are on a given train||Route Planning||Functional||||
+285||#REF!||Authorised user can populate sales leads & opportunities (including quotations) within a B2B account (TBC. We want Salesforce-type functionality in this platform?)||Sales & Marketing||Functional||||
+286||#REF!||Authorised user can create a record for each lead/sales opportunity, including configurable mandatory / opitonal data fields.||Sales & Marketing||Functional||||
+287||#REF!||Authorised User can create GDPR-compliant marketing campaigns from within the platform, with access to Customer and Travel data for targetting||Sales & Marketing||Functional||||
+288||#REF!||Authorised User can manage personalised and non-personalised campaigns for customers, guests, semi-anonymous & anonymous users in a GDPR-compliant form.||Sales & Marketing||Functional||||
+289||#REF!||Authorised User can manage multi-channel Marketing campaigns (direct mail, email, SMS and other channels) in B2C & B2B Segments combined or independently||Sales & Marketing||Functional||||
+290||#REF!||Authorised User can create & maintain campaign descriptions, rules, procedures etc as template(s)||Sales & Marketing||Functional||||
+291||#REF!||The platform facilitates A/B testing, "what if" scenarios and/or control groups for Marketing campaigns||Sales & Marketing||Functional||||
+292||#REF!||The platform facilitates sequencing strategies e.g. Marketing to Customers / Segments with defined periods between offers / acceptance etc.||Sales & Marketing||Functional||||
+293||#REF!||The platform supports complex campaign analytics at the account level.||Sales & Marketing||Functional||||
+294||#REF!||The platform retains audit trails of opt-in / opt-out confirmation data for Marketing consents||Sales & Marketing||Functional||||
+295||#REF!||Authorised User can issue, track and report on promotional codes.||Sales & Marketing||Functional||||
+296||#REF!||Authorised user can access case management data for use as inclusion/exclusion criteria in campaigns (TBC. This might be counter-Regulatory)||Sales & Marketing||Functional||||
+297||#REF!||Authorised User can follow up on failed / abandoned booking & quotation with an email to help or answer questions (TBC. This might be counter-Regulatory)||Sales & Marketing||Functional||||
+298||#REF!||The platform supports consistent channels and methods of tracking individual customer interactions. (TBC what this means in practise)||Sales & Marketing||Functional||||
+299||#REF!||The platform supports the application of Predictive Next Best Action Models across all customer channels. (TBC what this means in practise)||Sales & Marketing||Functional||||

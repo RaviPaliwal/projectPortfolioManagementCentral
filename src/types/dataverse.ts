@@ -372,6 +372,86 @@ export interface FinancialPeriodModel {
   statecode?: number
 }
 
+export interface ChangeRequestModel {
+  pm_changerequestid?: string
+  pm_changerequesttitle?: string
+  pm_changerequestreference?: string
+  pm_changetype?: number | string
+  pm_changetypename?: string
+  pm_prioritylevel?: number | string
+  pm_prioritylevelname?: string
+  pm_status?: number | string
+  pm_statusname?: string
+  pm_changedescription?: string
+  pm_justification?: string
+  pm_costimpacteur?: number
+  pm_scheduleimpactdays?: number
+  pm_baselineupdated?: boolean
+  pm_benefitsimpact?: string
+  pm_requestorname?: string
+  pm_submissiondate?: string
+  pm_decisiondate?: string
+  pm_decisionmaker?: string
+  pm_versionnumber?: number
+  pm_projectcode?: string
+  pm_programmename?: string
+  pm_projectname?: string
+  pm_programmelookupname?: string
+  pm_changerequestname?: string
+  _pm_project_value?: string
+  _pm_programmelookup_value?: string
+  _pm_changerequest_value?: string
+  statecode?: number
+}
+
+export interface ApprovalRequestModel {
+  pm_projectapprovalrequestid?: string
+  pm_requesttitle?: string
+  pm_approvalstage?: number | string
+  pm_approvalstagename?: string
+  pm_decisionstatus?: number | string
+  pm_decisionstatusname?: string
+  pm_entitytype?: number | string
+  pm_entitytypename?: string
+  pm_prioritylevel?: number | string
+  pm_prioritylevelname?: string
+  pm_approvername?: string
+  pm_decisiondate?: string
+  pm_decisionnotes?: string
+  pm_duedate?: string
+  pm_entityid?: string
+  pm_requestorname?: string
+  statecode?: number
+}
+
+export interface SkillModel {
+  pm_skillid?: string
+  pm_skillname?: string
+  pm_skillcategory?: number | string
+  pm_skillcategoryname?: string
+  pm_skilldescription?: string
+  pm_isactive?: boolean
+  statecode?: number
+}
+
+export interface ResourceSkillModel {
+  pm_resourceskillid?: string
+  pm_skillid?: string
+  pm_skillname?: string
+  pm_resourceid?: string
+  pm_resourcename?: string
+  pm_proficiencylevel?: number | string
+  pm_proficiencylevelname?: string
+  pm_yearsofexperience?: number
+  pm_certificationexpirydate?: string
+  pm_certificationname?: string
+  pm_certified?: boolean
+  pm_primaryskill?: boolean
+  _pm_resource_value?: string
+  _pm_skill_value?: string
+  statecode?: number
+}
+
 export interface RiskMitigationActionModel {
   pm_riskmitigationactionid?: string
   pm_actiontitle?: string
@@ -384,5 +464,58 @@ export interface RiskMitigationActionModel {
   pm_notes?: string
   _pm_risk_value?: string
   pm_riskidentifier?: string
+  statecode?: number
+}
+
+export interface WorkflowModel {
+  pm_workflowid?: string
+  pm_workflowname?: string
+  pm_description?: string
+  pm_module?: string
+  pm_triggerentity?: string
+  pm_triggerevent?: string
+  pm_triggercondition?: string
+  pm_version?: number
+  pm_isactive?: boolean
+  pm_approvalsteps?: string
+  statecode?: number
+  statuscode?: number
+}
+
+export interface WorkflowInstanceModel {
+  pm_workflowinstanceid?: string
+  pm_instancename?: string
+  pm_workflowtemplate?: string
+  pm_workflowlookupname?: string
+  pm_entityid?: string
+  pm_entityname?: string
+  pm_entitytype?: string
+  pm_initiatedby?: string
+  pm_status?: number | string
+  pm_statusname?: string
+  pm_startdate?: string
+  pm_completeddate?: string
+  pm_currentstep?: number
+  pm_sladuedate?: string
+  _pm_workflowlookup_value?: string
+  statecode?: number
+}
+
+export interface WorkflowApprovalStepModel {
+  pm_workflowapprovalstepid?: string
+  pm_stepname?: string
+  pm_steporder?: number
+  pm_approvername?: string
+  pm_decisionstatus?: number | string
+  pm_decisionstatusname?: string
+  pm_decisiondate?: string
+  pm_decisionnotes?: string
+  pm_duedate?: string
+  pm_isparallelstep?: boolean
+  pm_delegatename?: string
+  pm_notificationtimestamp?: string
+  pm_workflowinstanceid?: string
+  pm_workflowinstancelookupname?: string
+  _pm_workflowinstancelookup_value?: string
   statecode?: number
 }

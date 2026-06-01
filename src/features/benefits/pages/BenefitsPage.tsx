@@ -52,10 +52,22 @@ import {
 } from '@/lib/dataverseClient'
 import type { BenefitModel, PerformanceMeasureModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
+import type { ExportColumn } from '@/utils/exportUtils'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const benefitExportColumns: ExportColumn[] = [
+  { key: 'pm_benefitname', label: 'Benefit Name' },
+  { key: 'pm_categoryname', label: 'Category' },
+  { key: 'pm_programmename', label: 'Programme' },
+  { key: 'pm_projectname', label: 'Project' },
+  { key: 'pm_targetvalue', label: 'Target Value', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_actualvalue', label: 'Actual Value', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_realisationstatusname', label: 'Realisation Status' },
+  { key: 'pm_targetdate', label: 'Target Date' },
+]
 
 const CATEGORY_LABELS: Record<string, string> = {
   '0': 'Financial',
@@ -557,6 +569,7 @@ export default function BenefitsPage() {
           onClick: openCreateForm,
         }}
       />
+          <ExportButton filename="benefits.csv" columns={benefitExportColumns} data={filteredBenefits} />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}

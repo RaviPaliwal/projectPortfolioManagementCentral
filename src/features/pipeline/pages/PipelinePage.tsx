@@ -61,6 +61,17 @@ import type { PipelineKpis } from '@/lib/dataverseClient'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TabPanel, TableFooter, TableShell, DetailDrawer, SearchFilterBar } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
+import { ExportButton } from '@/components/common'
+import type { ExportColumn } from '@/utils/exportUtils'
+
+// ── Export columns ────────────────────────────────────────────────────────────
+const pipelineExportColumns: ExportColumn[] = [
+  { key: 'pm_initiativetitle', label: 'Initiative Title' },
+  { key: 'pm_initiativestatus', label: 'Status' },
+  { key: 'pm_initiativeowner', label: 'Owner' },
+  { key: 'pm_estimatedbudget', label: 'Est. Budget (EUR)' },
+  { key: 'pm_initiativecategory', label: 'Category' },
+]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -466,11 +477,14 @@ export default function PipelinePage() {
       <PageHeader
         title="Pipeline"
         subtitle="Pre-project initiative pipeline — triage, score, and convert ideas into authorised projects."
-        action={{
-          label: 'New Initiative',
-          icon: <AddIcon />,
-          onClick: () => setShowCreateModal(true),
-        }}
+        actionElement={
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
+              New Initiative
+            </Button>
+            <ExportButton filename="pipeline" columns={pipelineExportColumns} data={filteredInitiatives} />
+          </Box>
+        }
       />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}

@@ -53,10 +53,12 @@ import {
   deleteScheduleTask,
   createProjectMilestone,
 } from '@/lib/dataverseClient'
-import { PageHeader, KpiCardRow, TableShell, TableFooter, DetailDrawer, SearchFilterBar, TabPanel } from '@/components/common'
+import { PageHeader, KpiCardRow, TableShell, TableFooter, DetailDrawer, SearchFilterBar, TabPanel, GanttChart, ExportButton } from '@/components/common'
+import type { GanttTaskData, GanttMilestoneData } from '@/components/common'
 import { fontSizes } from '@/styles'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ProjectModel, ProjectTaskModel, ProjectMilestoneModel } from '@/types/dataverse'
+import type { ExportColumn } from '@/components/common'
 
 const STATUS_LABELS: Record<string, string> = {
   '0': 'Complete',
@@ -109,6 +111,18 @@ const defaultMilestoneForm = {
   pm_owner: '',
   pm_description: '',
 }
+
+const taskExportColumns: ExportColumn[] = [
+  { key: 'pm_wbsnumber', label: 'WBS' },
+  { key: 'pm_taskname', label: 'Task Name' },
+  { key: 'pm_tasklevel', label: 'Level' },
+  { key: 'pm_plannedstartdate', label: 'Planned Start' },
+  { key: 'pm_plannedenddate', label: 'Planned End' },
+  { key: 'pm_percentcomplete', label: '% Complete' },
+  { key: 'pm_taskstatus', label: 'Status' },
+  { key: 'pm_assignedresource', label: 'Resource' },
+  { key: 'pm_durationdays', label: 'Duration (days)' },
+]
 
 const formatDate = (dateStr?: string): string => {
   if (!dateStr) return '—'
@@ -220,6 +234,51 @@ export default function SchedulePage() {
       setMilestones([])
     }
   }, [selectedProjectId, loadSchedule])
+
+    // ── View mode (table vs gantt) ───────────────────────────────────────
+  const [viewMode, setViewMode] = useState<'table' | 'gantt'>('table')
+
+  // ── Gantt data conversion ──────────────────────────────────────────────
+  const ganttTasks = useMemo((): GanttTaskData[] => {
+    return tasks.map((t) => ({
+      id: t.pm_projecttaskid ?? t.pm_taskname ?? '',
+      name: t.pm_taskname ?? 'Unnamed',
+      wbs: t.pm_wbsnumber,
+      startDate: t.pm_plannedstartdate ?? new Date().toISOString().split('T')[0],
+      endDate: t.pm_plannedenddate ?? t.pm_plannedstartdate ?? new Date().toISOString().split('T')[0],
+      percentComplete: t.pm_percentcomplete ?? 0,
+      isMilestone: t.pm_ismilestone ?? false,
+      onCriticalPath: t.pm_oncriticalpath ?? false,
+      level: t.pm_tasklevel ?? 1,
+      status: String(t.pm_taskstatus),
+      predecessorId: t._pm_predecessortask_value,
+      lagDays: t.pm_lagdays,
+    }))
+  }, [tasks])
+
+  const ganttMilestones = useMemo((): GanttMilestoneData[] => {
+    return milestones.map((m) => ({
+      id: m.pm_projectmilestoneid ?? m.pm_milestonename ?? '',
+      name: m.pm_milestonename ?? 'Unnamed',
+      date: m.pm_planneddate ?? new Date().toISOString().split('T')[0],
+      status: String(m.pm_status),
+    }))
+  }, [milestones])
+
+  // ── Open detail drawer ─────────────────────────────────────────────────
+  const handleRowClick = useCallback((task: ProjectTaskModel) => {
+    setDetailTask(task)
+    setDetailDrawerOpen(true)
+    setDetailTab(0)
+  }, [])
+
+  // ── Gantt task click handler ───────────────────────────────────────────
+  const handleGanttTaskClick = useCallback((taskId: string) => {
+    const task = tasks.find((t) => t.pm_projecttaskid === taskId)
+    if (task) {
+      handleRowClick(task)
+    }
+  }, [tasks, handleRowClick])
 
   // ── KPIs ────────────────────────────────────────────────────────────────
   const totalTasks = tasks.length
@@ -433,13 +492,6 @@ export default function SchedulePage() {
     }
   }
 
-  // ── Open detail drawer ─────────────────────────────────────────────────
-  const handleRowClick = useCallback((task: ProjectTaskModel) => {
-    setDetailTask(task)
-    setDetailDrawerOpen(true)
-    setDetailTab(0)
-  }, [])
-
   const handleEditFromDrawer = () => {
     if (!detailTask) return
     setTaskForm({ ...detailTask })
@@ -507,6 +559,12 @@ export default function SchedulePage() {
       <PageHeader
         title="Schedule Management"
         subtitle="Manage WBS hierarchy, task dependencies, and milestones across projects."
+      />
+
+      <ExportButton
+        data={filteredTasks}
+        columns={taskExportColumns}
+        filename="ScheduleTasks"
       />
 
       {/* Alerts */}
@@ -595,7 +653,33 @@ export default function SchedulePage() {
           {/* ── KPI Cards ───────────────────────────────────────────────── */}
           <KpiCardRow items={kpiItems} loading={loading} />
 
-          {/* ── Schedule Table ────────────────────────────────────────── */}
+          {/* ── View Tabs ───────────────────────────────────────────────── */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Tabs
+              value={viewMode}
+              onChange={(_, v) => setViewMode(v)}
+              textColor="primary"
+              indicatorColor="primary"
+            >
+              <Tab label="Table View" value="table" />
+              <Tab label="Gantt Chart" value="gantt" />
+            </Tabs>
+          </Box>
+
+          {/* ── Gantt Chart View ───────────────────────────────────────── */}
+          {viewMode === 'gantt' && (
+            <Paper sx={{ p: 2, mb: 3, overflow: 'hidden' }}>
+              <GanttChart
+                tasks={ganttTasks}
+                milestones={ganttMilestones}
+                onTaskClick={handleGanttTaskClick}
+                height={500}
+              />
+            </Paper>
+          )}
+
+          {/* ── Schedule Table View ────────────────────────────────────── */}
+          {viewMode === 'table' && (
           <Paper sx={{ overflow: 'hidden', mb: 3 }}>
             <SearchFilterBar
               searchQuery={searchQuery}
@@ -920,6 +1004,7 @@ export default function SchedulePage() {
               />
             )}
           </Paper>
+        )}
         </>
       )}
 

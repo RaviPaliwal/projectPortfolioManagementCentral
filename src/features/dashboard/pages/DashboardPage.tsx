@@ -45,7 +45,7 @@ import {
   fetchAllRisks,
   fetchAllIssues,
 } from '@/lib/dataverseClient'
-import { StatusChip, DashboardCharts, PageHeader, KpiCardRow, HealthSplitBar, VarianceDisplay } from '@/components/common'
+import { StatusChip, DashboardCharts, PageHeader, KpiCardRow, HealthSplitBar, VarianceDisplay, ExportButton } from '@/components/common'
 import { fontSizes } from '@/styles'
 import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
 import type { KpiCardItem } from '@/components/common/KpiCardRow/KpiCardRow'

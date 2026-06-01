@@ -19,6 +19,11 @@ import {
   Pm_benefitsService,
   Pm_performancemeasuresService,
   Pm_riskmitigationactionsService,
+  Pm_changerequestsService,
+  Pm_projectapprovalrequestsService,
+  Pm_workflowsService,
+  Pm_workflowinstancesService,
+  Pm_workflowapprovalstepsService,
 } from '../generated'
 import type { Pm_initiatives } from '../generated/models/Pm_initiativesModel'
 import type { Pm_portfolios } from '../generated/models/Pm_portfoliosModel'
@@ -39,7 +44,12 @@ import type { Pm_cashflowentries } from '../generated/models/Pm_cashflowentriesM
 import type { Pm_fiscalperiods } from '../generated/models/Pm_fiscalperiodsModel'
 import type { Pm_projectgatereviews } from '../generated/models/Pm_projectgatereviewsModel'
 import type { Pm_benefits } from '../generated/models/Pm_benefitsModel'
+import type { Pm_workflows } from '../generated/models/Pm_workflowsModel'
+import type { Pm_workflowinstances } from '../generated/models/Pm_workflowinstancesModel'
+import type { Pm_workflowapprovalsteps } from '../generated/models/Pm_workflowapprovalstepsModel'
 import type { Pm_performancemeasures } from '../generated/models/Pm_performancemeasuresModel'
+import type { Pm_changerequests } from '../generated/models/Pm_changerequestsModel'
+import type { Pm_projectapprovalrequests } from '../generated/models/Pm_projectapprovalrequestsModel'
 import type {
   InitiativeModel,
   PortfolioModel,
@@ -61,6 +71,11 @@ import type {
   BenefitModel,
   PerformanceMeasureModel,
   RiskMitigationActionModel,
+  WorkflowModel,
+  WorkflowInstanceModel,
+  WorkflowApprovalStepModel,
+  ChangeRequestModel,
+  ApprovalRequestModel,
 } from '@/types/dataverse'
 
 const unwrapList = <T>(result: any): T[] => {
@@ -2359,6 +2374,41 @@ export async function fetchFundingSources(): Promise<FundingSourceModel[]> {
   return list
 }
 
+export async function createFundingSource(payload: Partial<FundingSourceModel>): Promise<FundingSourceModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  const result = await Pm_fundingsourcesService.create({ ...defaults, ...cleanPayload } as any)
+  try { console.debug('[dataverseService] createFundingSource payload/result:', cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_fundingsources>(result)
+  return item ? mapFundingSource(item) : null
+}
+
+export async function updateFundingSource(id: string, changes: Partial<FundingSourceModel>): Promise<FundingSourceModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null && key !== 'pm_fundingsourceid') {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_fundingsourcesService.update(id, cleanPayload as any)
+  try { console.debug('[dataverseService] updateFundingSource id/changes/result:', id, cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_fundingsources>(result)
+  return item ? mapFundingSource(item) : null
+}
+
+export async function deleteFundingSource(id: string): Promise<void> {
+  try { console.debug('[dataverseService] deleteFundingSource id:', id) } catch (e) {}
+  await Pm_fundingsourcesService.delete(id)
+}
+
 export async function fetchFinancialPeriods(): Promise<FinancialPeriodModel[]> {
   const result = await Pm_fiscalperiodsService.getAll({
     filter: 'statecode eq 0',
@@ -2797,5 +2847,517 @@ export async function deleteIssue(id: string): Promise<void> {
   try { console.debug('[dataverseService] deleteIssue id:', id) } catch (e) {}
   await Pm_issuesService.delete(id)
 }
+
+
+
+// ── Change Request Functions ────────────────────────────────────────────────
+
+const mapChangeRequest = (item: Pm_changerequests): ChangeRequestModel => ({
+  pm_changerequestid: item.pm_changerequestid,
+  pm_changerequesttitle: item.pm_changerequesttitle,
+  pm_changerequestreference: item.pm_changerequestreference,
+  pm_changetype: item.pm_changetype,
+  pm_changetypename: item.pm_changetypename,
+  pm_prioritylevel: item.pm_prioritylevel,
+  pm_prioritylevelname: item.pm_prioritylevelname,
+  pm_status: item.pm_status,
+  pm_statusname: item.pm_statusname,
+  pm_changedescription: item.pm_changedescription,
+  pm_justification: item.pm_justification,
+  pm_costimpacteur: item.pm_costimpacteur,
+  pm_scheduleimpactdays: item.pm_scheduleimpactdays,
+  pm_baselineupdated: item.pm_baselineupdated,
+  pm_benefitsimpact: item.pm_benefitsimpact,
+  pm_requestorname: item.pm_requestorname,
+  pm_submissiondate: item.pm_submissiondate,
+  pm_decisiondate: item.pm_decisiondate,
+  pm_decisionmaker: item.pm_decisionmaker,
+  pm_versionnumber: item.pm_versionnumber,
+  pm_projectcode: item.pm_projectcode,
+  pm_programmename: item.pm_programmename,
+  pm_projectname: item.pm_projectname,
+  pm_programmelookupname: item.pm_programmelookupname,
+  pm_changerequestname: item.pm_changerequestname,
+  _pm_project_value: item._pm_project_value,
+  _pm_programmelookup_value: item._pm_programmelookup_value,
+  statecode: item.statecode,
+})
+
+export async function fetchChangeRequests(): Promise<ChangeRequestModel[]> {
+  const selectFields = [
+    'pm_changerequestid', 'pm_changerequesttitle', 'pm_changerequestreference',
+    'pm_changetype', 'pm_changetypename',
+    'pm_prioritylevel', 'pm_prioritylevelname',
+    'pm_status', 'pm_statusname',
+    'pm_changedescription', 'pm_justification',
+    'pm_costimpacteur', 'pm_scheduleimpactdays',
+    'pm_baselineupdated', 'pm_benefitsimpact',
+    'pm_requestorname', 'pm_submissiondate',
+    'pm_decisiondate', 'pm_decisionmaker',
+    'pm_projectcode', 'pm_programmename',
+    'pm_projectname', 'pm_programmelookupname',
+    '_pm_project_value', '_pm_programmelookup_value',
+  ]
+  const options = {
+    select: selectFields,
+    orderBy: ['pm_submissiondate desc', 'pm_changerequesttitle asc'],
+    top: 500,
+  }
+  const result = await Pm_changerequestsService.getAll({ ...options, filter: "statecode eq 0" })
+  let list = unwrapList<Pm_changerequests>(result).map(mapChangeRequest)
+  if (list.length === 0) {
+    const fallbackResult = await Pm_changerequestsService.getAll(options)
+    list = unwrapList<Pm_changerequests>(fallbackResult).map(mapChangeRequest)
+  }
+  return list
+}
+
+export async function createChangeRequest(payload: Partial<ChangeRequestModel>): Promise<ChangeRequestModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_project_value' && key !== '_pm_programmelookup_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  const result = await Pm_changerequestsService.create({ ...defaults, ...cleanPayload } as any)
+  const item = unwrapSingle<Pm_changerequests>(result)
+  return item ? mapChangeRequest(item) : null
+}
+
+export async function updateChangeRequest(id: string, changes: Partial<ChangeRequestModel>): Promise<ChangeRequestModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null &&
+        key !== 'pm_changerequestid' && key !== '_pm_project_value' && key !== '_pm_programmelookup_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_changerequestsService.update(id, cleanPayload as any)
+  const item = unwrapSingle<Pm_changerequests>(result)
+  return item ? mapChangeRequest(item) : null
+}
+
+export async function deleteChangeRequest(id: string): Promise<void> {
+  await Pm_changerequestsService.delete(id)
+}
+
+
+
+// ── Cashflow Entry Functions ────────────────────────────────────────────────
+
+export async function createCashflowEntry(payload: Partial<CashflowEntryModel>): Promise<CashflowEntryModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_fiscalperiod_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  if (payload._pm_fiscalperiod_value) {
+    const fiscalPeriodId = payload._pm_fiscalperiod_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (fiscalPeriodId) {
+      cleanPayload['pm_fiscalperiod@odata.bind'] = '/pm_fiscalperiods(' + fiscalPeriodId + ')'
+    }
+  }
+  if (payload._pm_programmelookup_value) {
+    const programmeId = payload._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (programmeId) {
+      cleanPayload['pm_programmeLookup@odata.bind'] = '/pm_programmes(' + programmeId + ')'
+    }
+  }
+  if (payload._pm_project_value) {
+    const projectId = payload._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = '/pm_projects(' + projectId + ')'
+    }
+  }
+  const result = await Pm_cashflowentriesService.create({ ...defaults, ...cleanPayload } as any)
+  const item = unwrapSingle<Pm_cashflowentries>(result)
+  return item ? mapCashflowEntry(item) : null
+}
+
+export async function updateCashflowEntry(id: string, changes: Partial<CashflowEntryModel>): Promise<CashflowEntryModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null &&
+        key !== 'pm_cashflowentryid' && key !== '_pm_fiscalperiod_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_cashflowentriesService.update(id, cleanPayload as any)
+  const item = unwrapSingle<Pm_cashflowentries>(result)
+  return item ? mapCashflowEntry(item) : null
+}
+
+export async function deleteCashflowEntry(id: string): Promise<void> {
+  await Pm_cashflowentriesService.delete(id)
+}
+
+
+
+// ── Approval Request Functions ────────────────────────────────────────────────
+
+const mapApprovalRequest = (item: Pm_projectapprovalrequests): ApprovalRequestModel => ({
+  pm_projectapprovalrequestid: item.pm_projectapprovalrequestid,
+  pm_requesttitle: item.pm_requesttitle,
+  pm_approvalstage: item.pm_approvalstage,
+  pm_approvalstagename: item.pm_approvalstagename,
+  pm_decisionstatus: item.pm_decisionstatus,
+  pm_decisionstatusname: item.pm_decisionstatusname,
+  pm_entitytype: item.pm_entitytype,
+  pm_entitytypename: item.pm_entitytypename,
+  pm_prioritylevel: item.pm_prioritylevel,
+  pm_prioritylevelname: item.pm_prioritylevelname,
+  pm_approvername: item.pm_approvername,
+  pm_decisiondate: item.pm_decisiondate,
+  pm_decisionnotes: item.pm_decisionnotes,
+  pm_duedate: item.pm_duedate,
+  pm_entityid: item.pm_entityid,
+  pm_requestorname: item.pm_requestorname,
+  statecode: item.statecode,
+})
+
+export async function fetchApprovalRequests(): Promise<ApprovalRequestModel[]> {
+  const result = await Pm_projectapprovalrequestsService.getAll({
+    select: [
+      'pm_projectapprovalrequestid', 'pm_requesttitle',
+      'pm_approvalstage', 'pm_approvalstagename',
+      'pm_decisionstatus', 'pm_decisionstatusname',
+      'pm_entitytype', 'pm_entitytypename',
+      'pm_prioritylevel', 'pm_prioritylevelname',
+      'pm_approvername',
+      'pm_decisiondate', 'pm_decisionnotes',
+      'pm_duedate',
+      'pm_entityid',
+      'pm_requestorname',
+    ],
+    orderBy: ['pm_requesttitle asc'],
+    top: 500,
+  })
+  return unwrapList<Pm_projectapprovalrequests>(result).map(mapApprovalRequest)
+}
+
+export async function createApprovalRequest(payload: Partial<ApprovalRequestModel>): Promise<ApprovalRequestModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  const result = await Pm_projectapprovalrequestsService.create({ ...defaults, ...cleanPayload } as any)
+  const item = unwrapSingle<Pm_projectapprovalrequests>(result)
+  return item ? mapApprovalRequest(item) : null
+}
+
+export async function updateApprovalRequest(id: string, changes: Partial<ApprovalRequestModel>): Promise<ApprovalRequestModel | null> {
+  const result = await Pm_projectapprovalrequestsService.update(id, changes as any)
+  const item = unwrapSingle<Pm_projectapprovalrequests>(result)
+  return item ? mapApprovalRequest(item) : null
+}
+
+export async function deleteApprovalRequest(id: string): Promise<void> {
+  await Pm_projectapprovalrequestsService.delete(id)
+}
+
+
+
+// ── Skill Functions ────────────────────────────────────────────────────
+
+const mapSkill = (item: Pm_skills): SkillModel => ({
+  pm_skillid: item.pm_skillid,
+  pm_skillname: item.pm_skillname,
+  pm_skillcategory: item.pm_skillcategory,
+  pm_skillcategoryname: item.pm_skillcategoryname,
+  pm_skilldescription: item.pm_skilldescription,
+  pm_isactive: item.pm_isactive,
+  statecode: item.statecode,
+})
+
+export async function fetchSkills(): Promise<SkillModel[]> {
+  const result = await Pm_skillsService.getAll({
+    select: ['pm_skillid', 'pm_skillname', 'pm_skillcategory', 'pm_skillcategoryname', 'pm_skilldescription', 'pm_isactive'],
+    orderBy: ['pm_skillname asc'],
+    top: 500,
+  })
+  try { console.debug('[dataverseService] fetchSkills result:', result) } catch (e) {}
+  return unwrapList<Pm_skills>(result).map(mapSkill)
+}
+
+export async function createSkill(payload: Partial<SkillModel>): Promise<SkillModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  const result = await Pm_skillsService.create({ ...defaults, ...cleanPayload } as any)
+  try { console.debug('[dataverseService] createSkill payload/result:', cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_skills>(result)
+  return item ? mapSkill(item) : null
+}
+
+export async function updateSkill(id: string, changes: Partial<SkillModel>): Promise<SkillModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null && value !== '' && key !== 'pm_skillid') {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_skillsService.update(id, cleanPayload as any)
+  try { console.debug('[dataverseService] updateSkill id/changes/result:', id, cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_skills>(result)
+  return item ? mapSkill(item) : null
+}
+
+export async function deleteSkill(id: string): Promise<void> {
+  try { console.debug('[dataverseService] deleteSkill id:', id) } catch (e) {}
+  await Pm_skillsService.delete(id)
+}
+
+// ── Resource-Skill Mapping Functions ────────────────────────────────────
+
+const mapResourceSkill = (item: Pm_resourceskills): ResourceSkillModel => ({
+  pm_resourceskillid: item.pm_resourceskillid,
+  pm_skillid: item.pm_skillid,
+  pm_skillname: item.pm_skillname,
+  pm_resourceid: item.pm_resourceid,
+  pm_resourcename: item.pm_resourcename,
+  pm_proficiencylevel: item.pm_proficiencylevel,
+  pm_proficiencylevelname: item.pm_proficiencylevelname,
+  pm_yearsofexperience: item.pm_yearsofexperience,
+  pm_certificationexpirydate: item.pm_certificationexpirydate,
+  pm_certificationname: item.pm_certificationname,
+  pm_certified: item.pm_certified,
+  pm_primaryskill: item.pm_primaryskill,
+  _pm_resource_value: item._pm_resource_value,
+  _pm_skill_value: item._pm_skill_value,
+  statecode: item.statecode,
+})
+
+export async function fetchResourceSkills(): Promise<ResourceSkillModel[]> {
+  const result = await Pm_resourceskillsService.getAll({
+    select: ['pm_resourceskillid', 'pm_skillid', 'pm_skillname', 'pm_resourceid', 'pm_resourcename', 'pm_proficiencylevel', 'pm_proficiencylevelname', 'pm_yearsofexperience', 'pm_certificationexpirydate', 'pm_certificationname', 'pm_certified', 'pm_primaryskill', '_pm_resource_value', '_pm_skill_value'],
+    orderBy: ['pm_skillname asc', 'pm_resourcename asc'],
+    top: 500,
+  })
+  try { console.debug('[dataverseService] fetchResourceSkills result:', result) } catch (e) {}
+  return unwrapList<Pm_resourceskills>(result).map(mapResourceSkill)
+}
+
+export async function createResourceSkill(payload: Partial<ResourceSkillModel>): Promise<ResourceSkillModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_resource_value' && key !== '_pm_skill_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  if (payload._pm_resource_value) {
+    const resourceId = payload._pm_resource_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (resourceId) {
+      cleanPayload['pm_resource@odata.bind'] = '/pm_resources(' + resourceId + ')'
+    }
+  }
+  if (payload._pm_skill_value) {
+    const skillId = payload._pm_skill_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (skillId) {
+      cleanPayload['pm_skill@odata.bind'] = '/pm_skills(' + skillId + ')'
+    }
+  }
+  const result = await Pm_resourceskillsService.create({ ...defaults, ...cleanPayload } as any)
+  try { console.debug('[dataverseService] createResourceSkill payload/result:', cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_resourceskills>(result)
+  return item ? mapResourceSkill(item) : null
+}
+
+export async function updateResourceSkill(id: string, changes: Partial<ResourceSkillModel>): Promise<ResourceSkillModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== 'pm_resourceskillid' && key !== '_pm_resource_value' && key !== '_pm_skill_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_resourceskillsService.update(id, cleanPayload as any)
+  try { console.debug('[dataverseService] updateResourceSkill id/changes/result:', id, cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_resourceskills>(result)
+  return item ? mapResourceSkill(item) : null
+}
+
+export async function deleteResourceSkill(id: string): Promise<void> {
+  try { console.debug('[dataverseService] deleteResourceSkill id:', id) } catch (e) {}
+  await Pm_resourceskillsService.delete(id)
+}
+
+
+
+// ── Workflow Functions ────────────────────────────────────────────────
+
+const mapWorkflow = (item: Pm_workflows): WorkflowModel => ({
+  pm_workflowid: item.pm_workflowid,
+  pm_workflowname: item.pm_workflowname,
+  pm_workflowdescription: item.pm_workflowdescription,
+  pm_workflowtype: item.pm_workflowtype,
+  pm_workflowtypename: item.pm_workflowtypename,
+  pm_workflowstatus: item.pm_workflowstatus,
+  pm_workflowstatusname: item.pm_workflowstatusname,
+  pm_entitytype: item.pm_entitytype,
+  pm_entitytypename: item.pm_entitytypename,
+  statecode: item.statecode,
+})
+
+const mapWorkflowInstance = (item: Pm_workflowinstances): WorkflowInstanceModel => ({
+  pm_workflowinstanceid: item.pm_workflowinstanceid,
+  pm_workflowname: item.pm_workflowname,
+  pm_entityid: item.pm_entityid,
+  pm_instanceidentifier: item.pm_instanceidentifier,
+  pm_workflowstatus: item.pm_workflowstatus,
+  pm_workflowstatusname: item.pm_workflowstatusname,
+  pm_initiatedby: item.pm_initiatedby,
+  pm_initiationdate: item.pm_initiationdate,
+  pm_completiondate: item.pm_completiondate,
+  _pm_workflow_value: item._pm_workflow_value,
+  statecode: item.statecode,
+})
+
+const mapWorkflowApprovalStep = (item: Pm_workflowapprovalsteps): WorkflowApprovalStepModel => ({
+  pm_workflowapprovalstepid: item.pm_workflowapprovalstepid,
+  pm_stepname: item.pm_stepname,
+  pm_steporder: item.pm_steporder,
+  pm_approvername: item.pm_approvername,
+  pm_approvalstatus: item.pm_approvalstatus,
+  pm_approvalstatusname: item.pm_approvalstatusname,
+  pm_notes: item.pm_notes,
+  pm_decisiondate: item.pm_decisiondate,
+  _pm_workflowinstance_value: item._pm_workflowinstance_value,
+  statecode: item.statecode,
+})
+
+export async function fetchWorkflows(): Promise<WorkflowModel[]> {
+  const result = await Pm_workflowsService.getAll({
+    select: [
+      'pm_workflowid', 'pm_workflowname', 'pm_workflowdescription',
+      'pm_workflowtype', 'pm_workflowtypename',
+      'pm_workflowstatus', 'pm_workflowstatusname',
+      'pm_entitytype', 'pm_entitytypename',
+    ],
+    orderBy: ['pm_workflowname asc'],
+    top: 500,
+  })
+  try { console.debug('[dataverseService] fetchWorkflows result:', result) } catch (e) {}
+  return unwrapList<Pm_workflows>(result).map(mapWorkflow)
+}
+
+export async function createWorkflow(payload: Partial<WorkflowModel>): Promise<WorkflowModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  const result = await Pm_workflowsService.create({ ...defaults, ...cleanPayload } as any)
+  try { console.debug('[dataverseService] createWorkflow payload/result:', cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_workflows>(result)
+  return item ? mapWorkflow(item) : null
+}
+
+export async function updateWorkflow(id: string, changes: Partial<WorkflowModel>): Promise<WorkflowModel | null> {
+  const result = await Pm_workflowsService.update(id, changes as any)
+  try { console.debug('[dataverseService] updateWorkflow id/changes/result:', id, changes, result) } catch (e) {}
+  const item = unwrapSingle<Pm_workflows>(result)
+  return item ? mapWorkflow(item) : null
+}
+
+export async function deleteWorkflow(id: string): Promise<void> {
+  try { console.debug('[dataverseService] deleteWorkflow id:', id) } catch (e) {}
+  await Pm_workflowsService.delete(id)
+}
+
+export async function fetchWorkflowInstances(): Promise<WorkflowInstanceModel[]> {
+  const result = await Pm_workflowinstancesService.getAll({
+    select: [
+      'pm_workflowinstanceid', 'pm_workflowname',
+      'pm_entityid', 'pm_instanceidentifier',
+      'pm_workflowstatus', 'pm_workflowstatusname',
+      'pm_initiatedby', 'pm_initiationdate', 'pm_completiondate',
+      '_pm_workflow_value',
+    ],
+    orderBy: ['pm_initiationdate desc'],
+    top: 500,
+  })
+  try { console.debug('[dataverseService] fetchWorkflowInstances result:', result) } catch (e) {}
+  return unwrapList<Pm_workflowinstances>(result).map(mapWorkflowInstance)
+}
+
+export async function fetchWorkflowApprovalSteps(instanceId: string): Promise<WorkflowApprovalStepModel[]> {
+  const result = await Pm_workflowapprovalstepsService.getAll({
+    filter: `_pm_workflowinstance_value eq '${instanceId}'`,
+    select: [
+      'pm_workflowapprovalstepid', 'pm_stepname', 'pm_steporder',
+      'pm_approvername', 'pm_approvalstatus', 'pm_approvalstatusname',
+      'pm_notes', 'pm_decisiondate',
+      '_pm_workflowinstance_value',
+    ],
+    orderBy: ['pm_steporder asc'],
+    top: 200,
+  })
+  try { console.debug('[dataverseService] fetchWorkflowApprovalSteps result:', result) } catch (e) {}
+  return unwrapList<Pm_workflowapprovalsteps>(result).map(mapWorkflowApprovalStep)
+}
+
+export async function createWorkflowApprovalStep(payload: Partial<WorkflowApprovalStepModel>): Promise<WorkflowApprovalStepModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_workflowinstance_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  if (payload._pm_workflowinstance_value) {
+    const instanceId = payload._pm_workflowinstance_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (instanceId) {
+      cleanPayload['pm_workflowinstance@odata.bind'] = '/pm_workflowinstances(' + instanceId + ')'
+    }
+  }
+  const result = await Pm_workflowapprovalstepsService.create({ ...defaults, ...cleanPayload } as any)
+  try { console.debug('[dataverseService] createWorkflowApprovalStep payload/result:', cleanPayload, result) } catch (e) {}
+  const item = unwrapSingle<Pm_workflowapprovalsteps>(result)
+  return item ? mapWorkflowApprovalStep(item) : null
+}
+
+export async function deleteWorkflowInstance(id: string): Promise<void> {
+  try { console.debug('[dataverseService] deleteWorkflowInstance id:', id) } catch (e) {}
+  await Pm_workflowinstancesService.delete(id)
+}
+
 
 export { ragLabel, projectPhaseLabel, programmePhaseLabel }

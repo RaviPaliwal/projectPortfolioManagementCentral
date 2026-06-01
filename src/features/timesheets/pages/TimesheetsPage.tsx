@@ -51,10 +51,21 @@ import {
 } from '@/lib/dataverseClient'
 import type { TimesheetModel, TimesheetEntryModel, ResourceModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
+import type { ExportColumn } from '@/utils/exportUtils'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const timesheetExportColumns: ExportColumn[] = [
+  { key: 'pm_name', label: 'Period' },
+  { key: 'pm_ownername', label: 'Owner' },
+  { key: 'pm_statusname', label: 'Status' },
+  { key: 'pm_totalhours', label: 'Total Hours', format: (v: any) => v != null ? String(v) : '' },
+  { key: 'pm_submitteddate', label: 'Submitted Date' },
+  { key: 'pm_approveddate', label: 'Approved Date' },
+  { key: 'pm_approvername', label: 'Approver' },
+]
 
 const STATUS_LABELS: Record<string, string> = {
   '0': 'Approved',
@@ -449,6 +460,7 @@ export default function TimesheetsPage() {
           onClick: openCreateForm,
         }}
       />
+          <ExportButton filename="timesheets.csv" columns={timesheetExportColumns} data={filteredTimesheets} />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}

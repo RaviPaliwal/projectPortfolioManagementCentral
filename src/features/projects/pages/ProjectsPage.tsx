@@ -55,7 +55,8 @@ import {
   createBenefit,
   createProjectTask,
 } from '@/lib/dataverseClient'
-import { StatusChip, PageHeader, KpiCardRow, SearchFilterBar, TableFooter, TableShell } from '@/components/common'
+import { StatusChip, PageHeader, KpiCardRow, SearchFilterBar, TableFooter, TableShell, ExportButton } from '@/components/common'
+import type { ExportColumn } from '@/utils/exportUtils'
 import { fontSizes } from '@/styles'
 import type { KpiCardItem } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
@@ -100,6 +101,22 @@ const currency = (val?: number): string => {
   if (!val && val !== 0) return '—'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val)
 }
+
+// ── Export Columns ────────────────────────────────────────────────────────────────
+const projectExportColumns: ExportColumn[] = [
+  { key: 'pm_projectname', label: 'Project Name' },
+  { key: 'pm_projectcode', label: 'Code' },
+  { key: 'pm_projectmanager', label: 'Manager' },
+  { key: 'pm_projectsponsor', label: 'Sponsor' },
+  { key: 'pm_businessunit', label: 'Business Unit' },
+  { key: 'pm_projectphase', label: 'Phase', format: (v) => ['Execution', 'Planning', 'Closure'][Number(v)] ?? '' },
+  { key: 'pm_ragstatus', label: 'RAG', format: (v) => ['Amber', 'Green', 'Red'][Number(v)] ?? '' },
+  { key: 'pm_approvedbudgeteur', label: 'Budget', format: (v) => v?.toLocaleString() ?? '' },
+  { key: 'pm_actualcosteur', label: 'Actual Cost', format: (v) => v?.toLocaleString() ?? '' },
+  { key: 'pm_percentcomplete', label: '% Complete', format: (v) => `${v ?? 0}%` },
+  { key: 'pm_plannedstartdate', label: 'Start Date', format: (v) => v ? new Date(v).toLocaleDateString() : '' },
+  { key: 'pm_plannedenddate', label: 'End Date', format: (v) => v ? new Date(v).toLocaleDateString() : '' },
+]
 
 export default function ProjectsPage() {
   const theme = useTheme()
@@ -1257,11 +1274,17 @@ return (
 )}
 
 {!selectedProject && (
-        <>
-<PageHeader
+        <>      <PageHeader
         title="Project Portfolio"
         subtitle="Monitor and manage all active projects across the enterprise."
-        action={{ label: 'New Project', icon: <AddIcon />, onClick: () => setIsAddingProject(true) }}
+        actionElement={
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsAddingProject(true)}>
+              New Project
+            </Button>
+            <ExportButton filename="projects" columns={projectExportColumns} data={filteredProjects} />
+          </Box>
+        }
       />
 
       {/* Alerts */}

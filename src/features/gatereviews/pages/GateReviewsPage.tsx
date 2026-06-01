@@ -49,10 +49,22 @@ import {
 } from '@/lib/dataverseClient'
 import type { GateReviewModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
+import type { ExportColumn } from '@/utils/exportUtils'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const gateReviewExportColumns: ExportColumn[] = [
+  { key: 'pm_gatereviewname', label: 'Review Name' },
+  { key: 'pm_projectname', label: 'Project' },
+  { key: 'pm_gatestagename', label: 'Gate Stage' },
+  { key: 'pm_scheduleddate', label: 'Scheduled Date' },
+  { key: 'pm_actualdate', label: 'Actual Date' },
+  { key: 'pm_outcomename', label: 'Outcome' },
+  { key: 'pm_reviewername', label: 'Reviewer' },
+  { key: 'pm_statusname', label: 'Status' },
+]
 
 const GATE_STAGE_LABELS: Record<string, string> = {
   '0': 'Gate 1',
@@ -433,6 +445,7 @@ export default function GateReviewsPage() {
           onClick: openCreateForm,
         }}
       />
+          <ExportButton filename="gate-reviews.csv" columns={gateReviewExportColumns} data={filteredReviews} />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}

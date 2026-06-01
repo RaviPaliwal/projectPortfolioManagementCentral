@@ -60,9 +60,10 @@ import {
   fetchUtilizationByProjectData,
   fetchDepartmentDemandData,
 } from '@/lib/dataverseClient'
+import type { ExportColumn } from '@/utils/exportUtils'
 import type { ResourceModel, ResourceAllocationModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import {
   BarChart,
@@ -127,6 +128,17 @@ interface SortState {
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+
+const resourceExportColumns: ExportColumn[] = [
+  { key: 'pm_fullname', label: 'Name' },
+  { key: 'pm_departmentname', label: 'Department' },
+  { key: 'pm_primaryrole', label: 'Role' },
+  { key: 'pm_resourcecategory', label: 'Category' },
+  { key: 'pm_positiontitle', label: 'Position' },
+  { key: 'pm_dailyworkcapacity', label: 'Daily Capacity (h)' },
+  { key: 'pm_dailycostrate', label: 'Daily Rate (EUR)' },
+  { key: 'pm_contactemail', label: 'Email' },
+]
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -457,11 +469,14 @@ export default function ResourcesPage() {
       <PageHeader
         title="Resources"
         subtitle="Manage your workforce — staff, contractors, and suppliers across departments and roles."
-        action={{
-          label: 'Add Resource',
-          icon: <AddIcon />,
-          onClick: openCreateForm,
-        }}
+  actionElement={
+    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+      <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+        Add Resource
+      </Button>
+      <ExportButton filename="resources" columns={resourceExportColumns} data={filteredResources} />
+    </Box>
+  }
       />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}

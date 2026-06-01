@@ -57,12 +57,29 @@ import {
   TabPanel,
   TableFooter,
   TableShell,
+  ExportButton,
 } from '@/components/common'
+import type { ExportColumn } from '@/utils/exportUtils'
 import { fontSizes } from '@/styles'
 import type { ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+
+// ── Export Columns ────────────────────────────────────────────────────────────────
+const programmeExportColumns: ExportColumn[] = [
+  { key: 'pm_programmename', label: 'Programme Name' },
+  { key: 'pm_programmemanager', label: 'Manager' },
+  { key: 'pm_sponsorname', label: 'Sponsor' },
+  { key: 'pm_portfolioname', label: 'Portfolio' },
+  { key: 'pm_businessunit', label: 'Business Unit' },
+  { key: 'pm_programmephase', label: 'Phase', format: (v) => ['Delivery', 'Planning', 'Initiation'][Number(v)] ?? '' },
+  { key: 'pm_ragstatus', label: 'RAG', format: (v) => ['Amber', 'Green', 'Red'][Number(v)] ?? '' },
+  { key: 'pm_budgeteur', label: 'Budget', format: (v) => v?.toLocaleString() ?? '' },
+  { key: 'pm_actualspendeur', label: 'Actual Spend', format: (v) => v?.toLocaleString() ?? '' },
+  { key: 'pm_startdate', label: 'Start Date', format: (v) => v ? new Date(v).toLocaleDateString() : '' },
+  { key: 'pm_enddate', label: 'End Date', format: (v) => v ? new Date(v).toLocaleDateString() : '' },
+]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const RISK_CATEGORY_LABELS: Record<string, string> = {
@@ -944,7 +961,14 @@ export default function ProgrammesPage() {
       <PageHeader
         title="Programmes"
         subtitle="Searchable directory of all programmes with aggregated health and financials."
-        action={{ label: 'New Programme', icon: <AddIcon />, onClick: () => setShowCreateModal(true) }}
+        actionElement={
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
+              New Programme
+            </Button>
+            <ExportButton filename="programmes" columns={programmeExportColumns} data={filteredProgrammes} />
+          </Box>
+        }
       />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}

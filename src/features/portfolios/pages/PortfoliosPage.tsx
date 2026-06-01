@@ -41,6 +41,16 @@ import MoneyIcon from '@mui/icons-material/Money'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { fetchPortfolioHierarchy, createPortfolio } from '@/lib/dataverseClient'
 import { fontSizes } from '@/styles'
+
+// ── Export columns ────────────────────────────────────────────────────────────
+const portfolioExportColumns: ExportColumn[] = [
+  { key: 'pm_portfolioname', label: 'Portfolio Name' },
+  { key: 'pm_portfolioowner', label: 'Owner' },
+  { key: 'pm_portfoliostatus', label: 'Status' },
+  { key: 'pm_ragstatus', label: 'RAG' },
+  { key: 'pm_approvedbudgeteur', label: 'Budget (EUR)' },
+  { key: 'pm_actualspendeur', label: 'Actual Spend (EUR)' },
+]
 import {
   StatusChip,
   PageHeader,
@@ -55,6 +65,8 @@ import {
 } from '@/components/common'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import type { KpiCardItem } from '@/components/common'
+import { ExportButton } from '@/components/common'
+import type { ExportColumn } from '@/utils/exportUtils'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
@@ -324,7 +336,14 @@ export default function PortfoliosPage() {
       <PageHeader
         title="Portfolios"
         subtitle="Master view of all portfolios — aggregate health, budget tracking, and drill-down details."
-        action={{ label: 'New Portfolio', icon: <AddIcon />, onClick: () => setShowCreateModal(true) }}
+        actionElement={
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
+              New Portfolio
+            </Button>
+            <ExportButton filename="portfolios" columns={portfolioExportColumns} data={filteredPortfolios} />
+          </Box>
+        }
       />
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

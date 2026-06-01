@@ -29,8 +29,14 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import CrisisAlertIcon from '@mui/icons-material/CrisisAlert'
 import ReportProblemIcon from '@mui/icons-material/ReportProblem'
+import ChangeCircleIcon from '@mui/icons-material/ChangeCircle'
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
+import RateReviewIcon from '@mui/icons-material/RateReview'
+import SavingsIcon from '@mui/icons-material/Savings'
+import PsychologyIcon from '@mui/icons-material/Psychology'
+import AccountTreeWorkflowIcon from '@mui/icons-material/AccountTree'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'debug'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'approvalrequests' | 'fundingsources' | 'skills' | 'workflows' | 'debug'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -46,6 +52,12 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'schedule', label: 'Schedule', icon: <CalendarMonthIcon /> },
   { key: 'risks', label: 'Risks', icon: <CrisisAlertIcon /> },
   { key: 'issues', label: 'Issues', icon: <ReportProblemIcon /> },
+  { key: 'changerequests', label: 'Change Requests', icon: <ChangeCircleIcon /> },
+  { key: 'cashflow', label: 'Cashflow', icon: <AccountBalanceIcon /> },
+  { key: 'approvalrequests', label: 'Approvals', icon: <RateReviewIcon /> },
+  { key: 'fundingsources', label: 'Funding Sources', icon: <SavingsIcon /> },
+  { key: 'workflows', label: 'Workflows', icon: <AccountTreeWorkflowIcon /> },
+  { key: 'skills', label: 'Skills & Mapping', icon: <PsychologyIcon /> },
   { key: 'debug', label: 'Debug', icon: <BugReportIcon /> },
 ]
 

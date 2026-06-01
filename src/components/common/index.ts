@@ -51,3 +51,9 @@ export type { TabPanelProps } from "./TabPanel/TabPanel"
 
 export { TableShell } from "./TableShell/TableShell"
 export type { TableShellProps } from "./TableShell/TableShell"
+
+export { default as GanttChart } from "./GanttChart/GanttChart"
+export type { GanttTaskData, GanttMilestoneData, GanttChartProps } from "./GanttChart/GanttChart"
+
+export { ExportButton } from "./ExportButton/ExportButton"
+export type { ExportButtonProps } from "./ExportButton/ExportButton"

@@ -58,7 +58,8 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import type { RiskModel, RiskMitigationActionModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar } from '@/components/common'
+import type { ExportColumn } from '@/utils/exportUtils'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -182,6 +183,25 @@ function sortRisks(risks: RiskModel[], field: SortField, dir: SortDir): RiskMode
     return dir === 'asc' ? cmp : -cmp
   })
 }
+
+// ─── Export Columns ───────────────────────────────────────────────────────────
+
+const riskExportColumns: ExportColumn<RiskModel>[] = [
+  { key: 'pm_riskreference', label: 'Reference' },
+  { key: 'pm_risktitle', label: 'Risk Title' },
+  { key: 'pm_riskcategory', label: 'Category', format: (v) => RISK_CATEGORY_LABELS[String(v ?? '')] ?? String(v ?? '') },
+  { key: 'pm_ragstatus', label: 'RAG', format: (v) => RAG_LABELS[String(v ?? '')] ?? String(v ?? '') },
+  { key: 'pm_riskowner', label: 'Owner' },
+  { key: 'pm_riskstatus', label: 'Status', format: (v) => RISK_STATUS_LABELS[String(v ?? '')] ?? String(v ?? '') },
+  { key: 'pm_inherentprobability', label: 'Inherent Probability', format: (v) => PROBABILITY_LABELS[String(v ?? '')] ?? String(v ?? '') },
+  { key: 'pm_inherentimpact', label: 'Inherent Impact', format: (v) => IMPACT_LABELS[String(v ?? '')] ?? String(v ?? '') },
+  { key: 'pm_identifieddate', label: 'Identified Date' },
+  { key: 'pm_targetclosedate', label: 'Target Close Date' },
+  { key: 'pm_riskdescription', label: 'Description' },
+  { key: 'pm_projectcode', label: 'Project' },
+  { key: 'pm_riskcause', label: 'Cause' },
+  { key: 'pm_riskeffect', label: 'Effect' },
+]
 
 // ─── Form Defaults ────────────────────────────────────────────────────────────
 
@@ -579,9 +599,12 @@ export default function RisksPage() {
         title="Risk Matrix"
         subtitle="Identify, assess, and manage project risks with probability/impact scoring"
         actionElement={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-            Add Risk
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <ExportButton data={filteredRisks} columns={riskExportColumns} filename="risks" />
+            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+              Add Risk
+            </Button>
+          </Box>
         }
       />
 

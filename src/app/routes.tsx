@@ -14,9 +14,16 @@ import SchedulePage from '@/features/schedule/pages/SchedulePage'
 import RisksPage from '@/features/risks/pages/RisksPage'
 import IssuesPage from '@/features/issues/pages/IssuesPage'
 import DebugDataPage from '@/features/debugdata/pages/DebugDataPage'
+import ChangeRequestsPage from '@/features/changerequests/pages/ChangeRequestsPage'
+import CashflowPage from '@/features/cashflow/pages/CashflowPage'
+import ApprovalRequestsPage from '@/features/approvalrequests/pages/ApprovalRequestsPage'
+import FundingSourcesPage from '@/features/fundingsources/pages/FundingSourcesPage'
+import SkillsPage from '@/features/skills/pages/SkillsPage'
+import WorkflowsPage from '@/features/workflows/pages/WorkflowsPage'
 
 export const pageMap: Record<TabKey, ReactNode> = {
   dashboard: <DashboardPage />,
+  cashflow: <CashflowPage />,
   portfolios: <PortfoliosPage />,
   programmes: <ProgrammesPage />,
   projects: <ProjectsPage />,
@@ -30,4 +37,9 @@ export const pageMap: Record<TabKey, ReactNode> = {
   risks: <RisksPage />,
   issues: <IssuesPage />,
   debug: <DebugDataPage />,
+  changerequests: <ChangeRequestsPage />,
+  approvalrequests: <ApprovalRequestsPage />,
+  fundingsources: <FundingSourcesPage />,
+  workflows: <WorkflowsPage />,
+  skills: <SkillsPage />,
 }

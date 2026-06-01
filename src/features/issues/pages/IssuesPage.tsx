@@ -30,7 +30,8 @@ import {
 } from '@/lib/dataverseClient'
 import type { IssueModel } from '@/types/dataverse'
 
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar } from '@/components/common'
+import type { ExportColumn } from '@/utils/exportUtils'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -97,6 +98,25 @@ const defaultForm: Partial<IssueModel> = {
   pm_impactlevel: '2',
   pm_escalationstatus: false,
 }
+
+// ─── Export Columns ───────────────────────────────────────────────────────────
+
+const issueExportColumns: ExportColumn<IssueModel>[] = [
+  { key: 'pm_issuereference', label: 'Reference' },
+  { key: 'pm_issuetitle', label: 'Issue Title' },
+  { key: 'pm_issuecategory', label: 'Category', format: (v) => CATEGORY_LABELS[String(v ?? '')] ?? String(v ?? '') },
+  { key: 'pm_prioritylevel', label: 'Priority', format: (v) => PRIORITY_LABELS[String(v ?? '')] ?? String(v ?? '') },
+  { key: 'pm_ragstatus', label: 'RAG', format: (v) => RAG_LABELS[String(v ?? '')] ?? String(v ?? '') },
+  { key: 'pm_issuestatus', label: 'Status', format: (v) => STATUS_LABELS[String(v ?? '')] ?? String(v ?? '') },
+  { key: 'pm_issueowner', label: 'Owner' },
+  { key: 'pm_impactlevel', label: 'Impact Level', format: (v) => IMPACT_LABELS[String(v ?? '')] ?? String(v ?? '') },
+  { key: 'pm_dateraised', label: 'Date Raised' },
+  { key: 'pm_targetresolutiondate', label: 'Target Resolution' },
+  { key: 'pm_actualresolutiondate', label: 'Actual Resolution' },
+  { key: 'pm_issuedescription', label: 'Description' },
+  { key: 'pm_resolutiondetails', label: 'Resolution Details' },
+  { key: 'pm_linkedrisk', label: 'Linked Risk' },
+]
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -372,9 +392,12 @@ export default function IssuesPage() {
         title="Issues Register"
         subtitle="Track, prioritize, and manage project issues"
         actionElement={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreate}>
-            Add Issue
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <ExportButton data={filteredIssues} columns={issueExportColumns} filename="issues" />
+            <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreate}>
+              Add Issue
+            </Button>
+          </Box>
         }
       />
 

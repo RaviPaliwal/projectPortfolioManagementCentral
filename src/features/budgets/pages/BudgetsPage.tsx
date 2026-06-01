@@ -51,10 +51,25 @@ import {
 } from '@/lib/dataverseClient'
 import type { BudgetLineModel, FundingSourceModel, FinancialPeriodModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
+import type { ExportColumn } from '@/utils/exportUtils'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const budgetExportColumns: ExportColumn[] = [
+  { key: 'pm_budgetlinename', label: 'Name' },
+  { key: 'pm_costcategoryname', label: 'Category' },
+  { key: 'pm_portfolioname', label: 'Portfolio' },
+  { key: 'pm_programmename', label: 'Programme' },
+  { key: 'pm_projectname', label: 'Project' },
+  { key: 'pm_budgetamount', label: 'Budget (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_plannedamount', label: 'Planned (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_actualamount', label: 'Actual (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_remainingamount', label: 'Remaining (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_fiscalperiodname', label: 'Period' },
+  { key: 'pm_statusname', label: 'Status' },
+]
 
 const CATEGORY_LABELS: Record<string, string> = {
   '0': 'Staff',
@@ -434,6 +449,7 @@ export default function BudgetsPage() {
           onClick: openCreateForm,
         }}
       />
+          <ExportButton filename="budgets.csv" columns={budgetExportColumns} data={filteredBudgetLines} />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
