@@ -712,7 +712,17 @@ export default function SkillsPage() {
                   <PersonIcon sx={{ fontSize: 16 }} /> Resources with this Skill
                 </Typography>
                 {(() => {
-                  const count = resourceSkills.filter((rs) => rs.pm_skillid === selectedSkill.pm_skillid).length
+                  const count = resourceSkills.filter((rs) => {
+                    // Match by GUID lookup reference (_pm_skill_value → pm_skillid)
+                    const rsGuid = (rs._pm_skill_value || '').replace(/[{}]/g, '').trim().toLowerCase()
+                    const selGuid = (selectedSkill.pm_skillid || '').replace(/[{}]/g, '').trim().toLowerCase()
+                    if (rsGuid && selGuid && rsGuid === selGuid) return true
+                    // Fallback: match by resolved skill name (case-insensitive)
+                    const rsName = rs.pm_skillname?.trim().toLowerCase()
+                    const selName = selectedSkill.pm_skillname?.trim().toLowerCase()
+                    if (rsName && selName && rsName === selName) return true
+                    return false
+                  }).length
                   return (
                     <>
                       <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
