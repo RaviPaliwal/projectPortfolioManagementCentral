@@ -38,7 +38,7 @@ import PsychologyIcon from '@mui/icons-material/Psychology'
 import AccountTreeWorkflowIcon from '@mui/icons-material/AccountTree'
 import { UserSelector } from '@/context/UserContext'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'approvalrequests' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'debug'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'approvalrequests' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'debug'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -47,6 +47,7 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'projects', label: 'Projects', icon: <TaskIcon /> },
   { key: 'pipeline', label: 'Pipeline', icon: <TimelineIcon /> },
   { key: 'resources', label: 'Resources', icon: <PeopleIcon /> },
+  { key: 'teamadmin', label: 'Team Admin', icon: <PeopleIcon /> },
   { key: 'timesheets', label: 'Timesheets', icon: <AccessTimeIcon /> },
   { key: 'budgets', label: 'Budgets', icon: <AccountBalanceWalletIcon /> },
   { key: 'gatereviews', label: 'Gate Reviews', icon: <FactCheckIcon /> },

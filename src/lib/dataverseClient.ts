@@ -1,4 +1,4 @@
-import {
+﻿import {
   Pm_initiativesService,
   Pm_portfoliosService,
   Pm_programmesService,
@@ -28,6 +28,7 @@ import {
   Pm_workflowapprovalstepsService,
   Pm_workflowsteptemplatesService,
   SystemusersService,
+  TeamsService,
 } from '../generated'
 import type { Pm_initiatives } from '../generated/models/Pm_initiativesModel'
 import type { Pm_portfolios } from '../generated/models/Pm_portfoliosModel'
@@ -60,6 +61,10 @@ import type { Pm_projectapprovalrequests } from '../generated/models/Pm_projecta
 import { Pm_skillspm_skillcategory } from '../generated/models/Pm_skillsModel'
 import type { Pm_skills } from '../generated/models/Pm_skillsModel'
 import type { Pm_resourceskills } from '../generated/models/Pm_resourceskillsModel'
+import type { Teams } from '../generated/models/TeamsModel'
+import { TeammembershipsService } from '../generated/services/TeammembershipsService';
+import type { Systemusers } from '../generated/models/SystemusersModel'
+import type { Teammemberships} from '../generated/models/TeammembershipsModel'
 import type {
   InitiativeModel,
   PortfolioModel,
@@ -88,6 +93,7 @@ import type {
   ApprovalRequestModel,
   SkillModel,
   ResourceSkillModel,
+  WorkflowStepTemplateModel,
 } from '@/types/dataverse'
 
 const unwrapList = <T>(result: any): T[] => {
@@ -3594,37 +3600,133 @@ const mapWorkflowStepTemplate = (item: Pm_workflowsteptemplates): WorkflowStepTe
   pm_status: (item as any).pm_status,
   pm_statusname: (item as any).pm_statusname,
   pm_statusreason: item.pm_statusreason,
-  pm_module: item.pm_module,
+  pm_module: (item as any).pm_module,
   statecode: (item as any).statecode,
 })
 
 
 // Fetch system users for assignee pickers
-export interface SystemUserOption {
-  id: string
-  name: string
-  email?: string
-  type: "user" | "team"
+
+export async function fetchSystemUsers(): Promise<Systemusers[]> {
+  try {
+    const response = await SystemusersService.getAll({
+      // Only select the columns you need for the UI to keep the payload small
+      select: ['systemuserid', 'fullname', 'internalemailaddress'] 
+    } as any);
+
+    let users = response as any;
+    if (response && 'records' in response) users = response.records;
+    if (response && 'value' in response) users = response.value;
+
+    return Array.isArray(users) ? users : [];
+  } catch (err) {
+    console.warn('fetchSystemUsers failed:', err);
+    return [];
+  }
 }
 
-export async function fetchSystemUsers(): Promise<SystemUserOption[]> {
+export type TeamOption = {
+  id: string
+  name: string
+  description?: string
+  type: 'team'
+}
+
+export async function fetchOwnerTeams(): Promise<TeamOption[]> {
   try {
-    const result = await SystemusersService.getAll({
-      select: ['systemuserid', 'fullname', 'internalemailaddress'],
-      filter: "statecode eq 0",
+    const result = await TeamsService.getAll({
+      select: ['teamid', 'name', 'description', 'teamtype', 'systemmanaged'],
+      orderBy: ['name asc'],
       top: 500,
     })
-    const list = unwrapList<any>(result)
-    return list.map((u: any) => ({
-      id: u.systemuserid || u.id || '',
-      name: u.fullname || u.firstname + ' ' + u.lastname || 'Unknown',
-      email: u.internalemailaddress || '',
-      type: "user" as const,
+    const list = unwrapList<Teams>(result)
+    console.debug('[dataverseService] fetchOwnerTeams raw teams:', list)
+    const filtered = list.filter((t) => t.teamtype === 0 && !t.systemmanaged)
+    return filtered.map((team) => ({
+      id: team.teamid,
+      name: team.name,
+      description: team.description,
+      type: 'team',
     }))
   } catch (err) {
-    console.warn("[dataverseService] fetchSystemUsers failed:", err)
+    console.warn('[dataverseService] fetchOwnerTeams failed:', err)
     return []
   }
+}
+
+
+// Replace 'any' with your project's native raw Dataverse SystemUser interface if available
+export async function fetchTeamMembers(teamId: string): Promise<Systemusers[]> {
+  try {
+    // Step 1: Query the junction table to get the raw systemuserids for this team
+    const membershipResult = await TeammembershipsService.getAll({
+      select: ['systemuserid'],
+      filter: `teamid eq '${teamId}'`, // Added matching quotes around teamId parameter
+    });
+
+    const membershipList = unwrapList<Teammemberships>(membershipResult);
+    console.log(`[dataverseService] fetchTeamMembers raw membership result for team ${teamId}:`, membershipList);
+    
+    // Extract raw string IDs from the lookup properties
+    const userIds: string[] = membershipList
+      .map((m: Teammemberships) => m.systemuserid || '') 
+      .filter((id: string | undefined) => !!id);
+
+    // If the team has no members, return an empty array early
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    // Step 2: Format the string array using a chunked join-array strategy to avoid 'In' node issues
+    const chunkSize = 50;
+    const chunks: string[][] = [];
+    for (let i = 0; i < userIds.length; i += chunkSize) {
+      chunks.push(userIds.slice(i, i + chunkSize));
+    }
+
+    // Map each chunk using array joining to produce OData compliant 'or' chains
+    const chunkPromises = chunks.map(async (chunkIds, index) => {
+      console.log(`[dataverseService] Fetching chunk ${index + 1} for team ${teamId}...`);
+      
+      const joinedOrConditions = chunkIds.map((id) => `systemuserid eq '${id}'`).join(' or ');
+      const chunkFilter = `(${joinedOrConditions})`;
+
+      try {
+        const result = await SystemusersService.getAll({
+          select: ['systemuserid', 'fullname', 'internalemailaddress', 'domainname', 'windowsliveid'],
+          filter: chunkFilter,
+        });
+        return unwrapList<Systemusers>(result);
+      } catch (chunkErr) {
+        console.warn(`[dataverseService] Chunk ${index + 1} failed:`, chunkErr);
+        return [];
+      }
+    });
+
+    // Resolve all chunks concurrently and flatten into a final dataset array
+    const resolvedChunks = await Promise.all(chunkPromises);
+    const flattenedUsersList = resolvedChunks.flat();
+    
+    console.log(`[dataverseService] fetchTeamMembers raw users result for team ${teamId}:`, flattenedUsersList);
+
+    // Step 3: Return the raw, unmapped database objects directly
+    return flattenedUsersList;
+
+  } catch (err) {
+    console.warn(`[dataverseService] fetchTeamMembers failed for team ${teamId}:`, err);
+    return [];
+  }
+}
+
+
+export async function addTeamMember(teamId: string, userId: string): Promise<boolean> {
+  console.warn('[dataverseService] addTeamMember is not implemented in this client.');
+  return false
+}
+
+export async function removeTeamMember(teamId: string, userId: string): Promise<boolean> {
+  console.warn('[dataverseService] removeTeamMember is not implemented in this client.');
+  return false
 }
 
 export async function fetchWorkflowStepTemplates(workflowId?: string): Promise<WorkflowStepTemplateModel[]> {
@@ -3743,3 +3845,10 @@ export async function deleteWorkflowInstance(id: string): Promise<void> {
 
 
 export { ragLabel, projectPhaseLabel, programmePhaseLabel }
+
+
+
+
+
+
+

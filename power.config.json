@@ -177,6 +177,16 @@
           "entitySetName": "pm_workflowsteptemplates",
           "logicalName": "pm_workflowsteptemplate",
           "isHidden": false
+        },
+        "teams": {
+          "entitySetName": "teams",
+          "logicalName": "team",
+          "isHidden": false
+        },
+        "teammembership": {
+          "entitySetName": "teammemberships",
+          "logicalName": "teammembership",
+          "isHidden": false
         }
       },
       "environmentVariableName": ""

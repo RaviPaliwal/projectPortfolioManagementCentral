@@ -38,6 +38,8 @@ export * as Pm_workflowinstancesModel from './models/Pm_workflowinstancesModel';
 export * as Pm_workflowsModel from './models/Pm_workflowsModel';
 export * as Pm_workflowsteptemplatesModel from './models/Pm_workflowsteptemplatesModel';
 export * as SystemusersModel from './models/SystemusersModel';
+export * as TeammembershipsModel from './models/TeammembershipsModel';
+export * as TeamsModel from './models/TeamsModel';
 
 // Services
 export * from './services/Pm_benefitsService';
@@ -73,3 +75,5 @@ export * from './services/Pm_workflowinstancesService';
 export * from './services/Pm_workflowsService';
 export * from './services/Pm_workflowsteptemplatesService';
 export * from './services/SystemusersService';
+export * from './services/TeammembershipsService';
+export * from './services/TeamsService';

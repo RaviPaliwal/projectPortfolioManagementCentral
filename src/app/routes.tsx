@@ -22,6 +22,7 @@ import SkillsPage from '@/features/skills/pages/SkillsPage'
 import WorkflowsPage from '@/features/workflows/pages/WorkflowsPage'
 import HolidaysPage from '@/features/holidays/pages/HolidaysPage'
 import StatusSnapshotsPage from '@/features/statussnapshots/pages/StatusSnapshotsPage'
+import TeamUserManagementPage from '@/features/teamadmin/pages/TeamUserManagementPage'
 
 export const pageMap: Record<TabKey, ReactNode> = {
   dashboard: <DashboardPage />,
@@ -44,6 +45,7 @@ export const pageMap: Record<TabKey, ReactNode> = {
   fundingsources: <FundingSourcesPage />,
   workflows: <WorkflowsPage />,
   skills: <SkillsPage />,
+  teamadmin: <TeamUserManagementPage />,
   holidays: <HolidaysPage />,
   statussnapshots: <StatusSnapshotsPage />,
 }
