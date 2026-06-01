@@ -24,8 +24,11 @@ import {
   createCashflowEntry,
   updateCashflowEntry,
   deleteCashflowEntry,
+  fetchProgrammesForLookup,
+  fetchProjectsForLookup,
 } from '@/lib/dataverseClient'
 import type { CashflowEntryModel } from '@/types/dataverse'
+import type { ProgrammeLookupItem, ProjectLookupItem } from '@/lib/dataverseClient'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
@@ -155,6 +158,10 @@ export default function CashflowPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [dialogLoading, setDialogLoading] = useState(false)
 
+  // Lookup data state
+  const [programmes, setProgrammes] = useState<ProgrammeLookupItem[]>([])
+  const [projects, setProjects] = useState<ProjectLookupItem[]>([])
+
   // ─── Data Fetching ─────────────────────────────────────────────────────────
 
   const loadData = useCallback(async () => {
@@ -172,6 +179,19 @@ export default function CashflowPage() {
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
+
+  // Fetch lookup data for programme/project selects
+  useEffect(() => {
+    Promise.all([
+      fetchProgrammesForLookup(),
+      fetchProjectsForLookup(),
+    ]).then(([progs, projs]) => {
+      setProgrammes(progs)
+      setProjects(projs)
+    }).catch((err) => {
+      console.error('Failed to load lookup data:', err)
+    })
+  }, [])
 
   // ─── Filtering & Sorting ───────────────────────────────────────────────────
 
@@ -320,6 +340,8 @@ export default function CashflowPage() {
       pm_transactiontype: '0',
       pm_category: '0',
       statecode: 0,
+      _pm_programmelookup_value: '',
+      _pm_project_value: '',
     })
     setFormErrors({})
     setDialogMode('create')
@@ -702,12 +724,14 @@ export default function CashflowPage() {
           </Table>
         </TableShell>
         {!loading && filteredEntries.length > 0 && (
-          <TableFooter
+          <TablePagination
+            component="div"
             count={filteredEntries.length}
             page={page}
             rowsPerPage={rowsPerPage}
             onPageChange={(_, p) => setPage(p)}
             onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0) }}
+            rowsPerPageOptions={[10, 25, 50]}
           />
         )}
       </Paper>
@@ -945,7 +969,7 @@ export default function CashflowPage() {
         onClose={closeDialog}
         maxWidth="md"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        sx={{ '& .MuiPaper-root': { borderRadius: 3 } }}
       >
         <DialogTitle sx={{ pb: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -1087,22 +1111,52 @@ export default function CashflowPage() {
               <Divider sx={{ mb: 2 }} />
             </Grid>
             <Grid size={6}>
-              <TextField
-                label="Programme"
-                fullWidth
-                size="small"
-                value={formData.pm_programmelookupname || ''}
-                onChange={(e) => handleFieldChange('pm_programmelookupname', e.target.value)}
-              />
+              <FormControl fullWidth size="small">
+                <InputLabel>Programme</InputLabel>
+                <Select
+                  value={formData._pm_programmelookup_value || ''}
+                  label="Programme"
+                  onChange={(e) => {
+                    const programmeId = e.target.value
+                    handleFieldChange('_pm_programmelookup_value', programmeId)
+                    // Clear project when programme changes
+                    handleFieldChange('_pm_project_value', '')
+                  }}
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {programmes.map((prog) => (
+                    <MenuItem key={prog.pm_programmeid} value={prog.pm_programmeid}>
+                      {prog.pm_programmename}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid size={6}>
-              <TextField
-                label="Project"
-                fullWidth
-                size="small"
-                value={formData.pm_projectname || ''}
-                onChange={(e) => handleFieldChange('pm_projectname', e.target.value)}
-              />
+              <FormControl fullWidth size="small">
+                <InputLabel>Project</InputLabel>
+                <Select
+                  value={formData._pm_project_value || ''}
+                  label="Project"
+                  onChange={(e) => handleFieldChange('_pm_project_value', e.target.value)}
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {projects
+                    .filter((proj) => {
+                      // Cascade: if a programme is selected, only show projects linked to that programme
+                      const selectedProgrammeId = formData._pm_programmelookup_value
+                      if (!selectedProgrammeId) return true
+                      const progId = proj._pm_programme_value?.replace(/[{}]/g, '').trim().toLowerCase()
+                      const selectedId = String(selectedProgrammeId).replace(/[{}]/g, '').trim().toLowerCase()
+                      return progId === selectedId
+                    })
+                    .map((proj) => (
+                      <MenuItem key={proj.pm_projectid} value={proj.pm_projectid}>
+                        {proj.pm_projectname}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
         </DialogContent>
@@ -1125,7 +1179,7 @@ export default function CashflowPage() {
       <Dialog
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
-        PaperProps={{ sx: { borderRadius: 3, maxWidth: 400 } }}
+        sx={{ '& .MuiPaper-root': { borderRadius: 3, maxWidth: 400 } }}
       >
         <DialogTitle sx={{ pb: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>Delete Cashflow Entry</Typography>

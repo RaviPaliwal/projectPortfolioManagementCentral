@@ -482,12 +482,12 @@ export default function ApprovalRequestsPage() {
               <AssignmentIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-top' }} />
               Request Details
             </Typography>
-            <Typography variant="body1" fontWeight={600}>{selectedRequest.pm_requesttitle || '\u2014'}</Typography>
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>{selectedRequest.pm_requesttitle || '\u2014'}</Typography>
           </Box>
 
           <Grid container spacing={2}>
             <Grid size={6}>
-              <Typography variant="caption" color="text.secondary" display="block">Stage</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Stage</Typography>
               <Chip
                 size="small"
                 label={STAGE_LABELS[String(selectedRequest.pm_approvalstage ?? '')] || '\u2014'}
@@ -496,7 +496,7 @@ export default function ApprovalRequestsPage() {
               />
             </Grid>
             <Grid size={6}>
-              <Typography variant="caption" color="text.secondary" display="block">Decision Status</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Decision Status</Typography>
               <Chip
                 size="small"
                 label={DECISION_LABELS[String(selectedRequest.pm_decisionstatus ?? '')] || '\u2014'}
@@ -505,32 +505,32 @@ export default function ApprovalRequestsPage() {
               />
             </Grid>
             <Grid size={6}>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                 <PersonIcon sx={{ fontSize: 13, mr: 0.5, verticalAlign: 'text-top' }} />
                 Requestor
               </Typography>
-              <Typography variant="body2" fontWeight={500}>{selectedRequest.pm_requestorname || '\u2014'}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>{selectedRequest.pm_requestorname || '\u2014'}</Typography>
             </Grid>
             <Grid size={6}>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                 <PersonIcon sx={{ fontSize: 13, mr: 0.5, verticalAlign: 'text-top' }} />
                 Approver
               </Typography>
-              <Typography variant="body2" fontWeight={500}>{selectedRequest.pm_approvername || '\u2014'}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>{selectedRequest.pm_approvername || '\u2014'}</Typography>
             </Grid>
             <Grid size={6}>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                 <EventIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-top' }} />
                 Due Date
               </Typography>
-              <Typography variant="body2" fontWeight={500}>{formatDate(selectedRequest.pm_duedate)}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>{formatDate(selectedRequest.pm_duedate)}</Typography>
             </Grid>
             <Grid size={6}>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                 <EventIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-top' }} />
                 Decision Date
               </Typography>
-              <Typography variant="body2" fontWeight={500}>{formatDate(selectedRequest.pm_decisiondate)}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>{formatDate(selectedRequest.pm_decisiondate)}</Typography>
             </Grid>
           </Grid>
 
@@ -551,11 +551,11 @@ export default function ApprovalRequestsPage() {
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Grid container spacing={2}>
           <Grid size={6}>
-            <Typography variant="caption" color="text.secondary" display="block">Entity Type</Typography>
-            <Typography variant="body2" fontWeight={500}>{ENTITY_TYPE_LABELS[String(selectedRequest.pm_entitytype ?? '')] || '\u2014'}</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Entity Type</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>{ENTITY_TYPE_LABELS[String(selectedRequest.pm_entitytype ?? '')] || '\u2014'}</Typography>
           </Grid>
           <Grid size={6}>
-            <Typography variant="caption" color="text.secondary" display="block">Priority</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Priority</Typography>
             <Chip
               size="small"
               label={PRIORITY_LABELS[String(selectedRequest.pm_prioritylevel ?? '')] || '\u2014'}
@@ -564,16 +564,16 @@ export default function ApprovalRequestsPage() {
             />
           </Grid>
           <Grid size={6}>
-            <Typography variant="caption" color="text.secondary" display="block">Stage Name</Typography>
-            <Typography variant="body2" fontWeight={500}>{selectedRequest.pm_approvalstagename || '\u2014'}</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Stage Name</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>{selectedRequest.pm_approvalstagename || '\u2014'}</Typography>
           </Grid>
           <Grid size={6}>
-            <Typography variant="caption" color="text.secondary" display="block">Entity Name</Typography>
-            <Typography variant="body2" fontWeight={500}>{selectedRequest.pm_entitytypename || '\u2014'}</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Entity Name</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>{selectedRequest.pm_entitytypename || '\u2014'}</Typography>
           </Grid>
           {selectedRequest.pm_entityid && (
             <Grid size={12}>
-              <Typography variant="caption" color="text.secondary" display="block">Entity ID</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Entity ID</Typography>
               <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{selectedRequest.pm_entityid}</Typography>
             </Grid>
           )}
@@ -701,7 +701,6 @@ export default function ApprovalRequestsPage() {
               type="date"
               value={formData.pm_duedate || ''}
               onChange={(e) => handleFieldChange('pm_duedate', e.target.value)}
-              InputLabelProps={{ shrink: true }}
             />
           </Grid>
           <Grid size={6}>
@@ -753,7 +752,7 @@ export default function ApprovalRequestsPage() {
       <PageHeader
         title="Approval Requests"
         subtitle="Manage and review approval requests across entities"
-        action={
+        actionElement={
           <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateDialog}>
             New Request
           </Button>
@@ -772,7 +771,7 @@ export default function ApprovalRequestsPage() {
         <SearchFilterBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          placeholder="Search requests..."
+          searchPlaceholder="Search requests..."
           extraFilters={extraFilters}
         />
 
@@ -898,13 +897,22 @@ export default function ApprovalRequestsPage() {
         </TableShell>
 
         {!loading && filteredRequests.length > 0 && (
-          <TableFooter
-            count={filteredRequests.length}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            onPageChange={setPage}
-            onRowsPerPageChange={setRowsPerPage}
-          />
+          <>
+            <TableFooter
+              filteredCount={filteredRequests.length}
+              totalCount={requests.length}
+              itemLabel="request"
+            />
+            <TablePagination
+              component="div"
+              count={filteredRequests.length}
+              page={page}
+              onPageChange={(_e, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+              rowsPerPageOptions={[25, 50, 100]}
+            />
+          </>
         )}
       </Paper>
 

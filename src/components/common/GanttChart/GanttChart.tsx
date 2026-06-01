@@ -79,8 +79,8 @@ const getTaskColor = (task: GanttTaskData, isDark: boolean): string => {
 }
 
 const getStatusLabel = (status?: string): string => {
-  if (status === '0' || status === 0) return 'Complete'
-  if (status === '1' || status === 1) return 'In Progress'
+  if (String(status) === '0') return 'Complete'
+  if (String(status) === '1') return 'In Progress'
   return 'Pending'
 }
 
@@ -98,7 +98,7 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
         if (!items.some((t) => t.id === ms.id)) {
           items.push({
             id: ms.id, name: ms.name, startDate: ms.date, endDate: ms.date,
-            percentComplete: String(ms.status) === '2' || ms.status === 2 ? 100 : 0,
+            percentComplete: String(ms.status) === '2' ? 100 : 0,
             isMilestone: true, level: 1, status: ms.status,
           })
         }

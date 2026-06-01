@@ -28,8 +28,11 @@ import {
   createChangeRequest,
   updateChangeRequest,
   deleteChangeRequest,
+  fetchProgrammesForLookup,
+  fetchProjectsForLookup,
 } from '@/lib/dataverseClient'
 import type { ChangeRequestModel } from '@/types/dataverse'
+import type { ProgrammeLookupItem, ProjectLookupItem } from '@/lib/dataverseClient'
 import { fontSizes } from '@/styles'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton } from '@/components/common'
@@ -124,6 +127,10 @@ export default function ChangeRequestsPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
 
+  // Lookup data state
+  const [programmes, setProgrammes] = useState<ProgrammeLookupItem[]>([])
+  const [projects, setProjects] = useState<ProjectLookupItem[]>([])
+
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -136,7 +143,8 @@ export default function ChangeRequestsPage() {
 
   const [showFormModal, setShowFormModal] = useState(false)
   const [editingCR, setEditingCR] = useState<ChangeRequestModel | null>(null)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Partial<ChangeRequestModel>>({
+    pm_changerequestreference: '',
     pm_changerequesttitle: '',
     pm_changetype: 0,
     pm_prioritylevel: 0,
@@ -149,8 +157,9 @@ export default function ChangeRequestsPage() {
     pm_benefitsimpact: '',
     pm_requestorname: '',
     pm_projectcode: '',
-    pm_programmename: '',
     pm_submissiondate: new Date().toISOString().split('T')[0],
+    _pm_programmelookup_value: '',
+    _pm_project_value: '',
   })
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
@@ -172,6 +181,19 @@ export default function ChangeRequestsPage() {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // Fetch lookup data for programme/project selects
+  useEffect(() => {
+    Promise.all([
+      fetchProgrammesForLookup(),
+      fetchProjectsForLookup(),
+    ]).then(([progs, projs]) => {
+      setProgrammes(progs)
+      setProjects(projs)
+    }).catch((err) => {
+      console.error('Failed to load lookup data:', err)
+    })
+  }, [])
 
   const kpiItems = useMemo((): KpiCardItem[] => {
     const total = changeRequests.length
@@ -249,16 +271,16 @@ export default function ChangeRequestsPage() {
           cmp = String(a.pm_changetype ?? '').localeCompare(String(b.pm_changetype ?? ''))
           break
         case 'priority':
-          cmp = (a.pm_prioritylevel ?? 0) - (b.pm_prioritylevel ?? 0)
+          cmp = Number(a.pm_prioritylevel ?? 0) - Number(b.pm_prioritylevel ?? 0)
           break
         case 'status':
           cmp = String(a.pm_status ?? '').localeCompare(String(b.pm_status ?? ''))
           break
         case 'cost':
-          cmp = (a.pm_costimpacteur ?? 0) - (b.pm_costimpacteur ?? 0)
+          cmp = Number(a.pm_costimpacteur ?? 0) - Number(b.pm_costimpacteur ?? 0)
           break
         case 'schedule':
-          cmp = (a.pm_scheduleimpactdays ?? 0) - (b.pm_scheduleimpactdays ?? 0)
+          cmp = Number(a.pm_scheduleimpactdays ?? 0) - Number(b.pm_scheduleimpactdays ?? 0)
           break
         case 'requestor':
           cmp = (a.pm_requestorname ?? '').localeCompare(b.pm_requestorname ?? '')
@@ -320,8 +342,9 @@ export default function ChangeRequestsPage() {
       pm_benefitsimpact: '',
       pm_requestorname: '',
       pm_projectcode: '',
-      pm_programmename: '',
       pm_submissiondate: new Date().toISOString().split('T')[0],
+      _pm_programmelookup_value: '',
+      _pm_project_value: '',
     })
     setShowFormModal(true)
   }, [])
@@ -341,14 +364,32 @@ export default function ChangeRequestsPage() {
       pm_benefitsimpact: cr.pm_benefitsimpact ?? '',
       pm_requestorname: cr.pm_requestorname ?? '',
       pm_projectcode: cr.pm_projectcode ?? '',
-      pm_programmename: cr.pm_programmename ?? '',
       pm_submissiondate: (cr.pm_submissiondate ?? '').split('T')[0] ?? '',
+      _pm_programmelookup_value: cr._pm_programmelookup_value ?? '',
+      _pm_project_value: cr._pm_project_value ?? '',
     })
     setShowFormModal(true)
   }, [])
 
+  // ─── Auto-generate reference ───────────────────────────────────────────────
+
+  const autoGenerateReference = useCallback((): string => {
+    // Find the highest existing reference number
+    let maxNum = 0
+    for (const cr of changeRequests) {
+      const ref = cr.pm_changerequestreference || ''
+      const match = ref.match(/^CR-(\d+)$/i)
+      if (match) {
+        const num = parseInt(match[1], 10)
+        if (num > maxNum) maxNum = num
+      }
+    }
+    const nextNum = maxNum + 1
+    return `CR-${String(nextNum).padStart(3, '0')}`
+  }, [changeRequests])
+
   const handleSave = async () => {
-    if (!formData.pm_changerequesttitle.trim()) {
+    if (!String(formData.pm_changerequesttitle || '').trim()) {
       setError('Change request title is required.')
       return
     }
@@ -360,6 +401,8 @@ export default function ChangeRequestsPage() {
         await updateChangeRequest(editingCR.pm_changerequestid, payload)
         setSuccessMsg('Change request updated successfully.')
       } else {
+        // Auto-generate reference for new change requests
+        payload.pm_changerequestreference = autoGenerateReference()
         await createChangeRequest(payload)
         setSuccessMsg('Change request created successfully.')
       }
@@ -787,14 +830,61 @@ export default function ChangeRequestsPage() {
                 placeholder="e.g., John Smith" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField label="Project Code" fullWidth size="small" value={formData.pm_projectcode}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_projectcode: e.target.value }))}
-                placeholder="e.g., PRJ-001" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+              <FormControl fullWidth size="small">
+                <InputLabel>Programme</InputLabel>
+                <Select
+                  value={formData._pm_programmelookup_value || ''}
+                  label="Programme"
+                  onChange={(e) => setFormData((f) => ({
+                    ...f,
+                    _pm_programmelookup_value: e.target.value,
+                    _pm_project_value: '', // Clear project when programme changes
+                  }))}
+                  sx={{ borderRadius: 2 }}
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {programmes.map((prog) => (
+                    <MenuItem key={prog.pm_programmeid} value={prog.pm_programmeid}>
+                      {prog.pm_programmename}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField label="Programme" fullWidth size="small" value={formData.pm_programmename}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_programmename: e.target.value }))}
-                placeholder="e.g., Digital Transformation" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+              <FormControl fullWidth size="small">
+                <InputLabel>Project</InputLabel>
+                <Select
+                  value={formData._pm_project_value || ''}
+                  label="Project"
+                  onChange={(e) => {
+                    const projectId = e.target.value
+                    const selectedProject = projects.find((p) => p.pm_projectid === projectId)
+                    setFormData((f) => ({
+                      ...f,
+                      _pm_project_value: projectId,
+                      pm_projectcode: selectedProject?.pm_projectcode || '',
+                    }))
+                  }}
+                  sx={{ borderRadius: 2 }}
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {projects
+                    .filter((proj) => {
+                      // Cascade: if a programme is selected, only show projects linked to that programme
+                      const selectedProgrammeId = formData._pm_programmelookup_value
+                      if (!selectedProgrammeId) return true
+                      const progId = proj._pm_programme_value?.replace(/[{}]/g, '').trim().toLowerCase()
+                      const selectedId = String(selectedProgrammeId).replace(/[{}]/g, '').trim().toLowerCase()
+                      return progId === selectedId
+                    })
+                    .map((proj) => (
+                      <MenuItem key={proj.pm_projectid} value={proj.pm_projectid}>
+                        {proj.pm_projectname}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Submission Date" type="date" fullWidth size="small" value={formData.pm_submissiondate}
@@ -812,7 +902,7 @@ export default function ChangeRequestsPage() {
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField label="Cost Impact (EUR)" type="number" fullWidth size="small" value={formData.pm_costimpacteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_costimpacteur: Number(e.target.value) }))}
-                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>\u20AC</Typography>, sx: { borderRadius: 2 } } }} />
+                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>&euro;</Typography>, sx: { borderRadius: 2 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField label="Schedule Impact (days)" type="number" fullWidth size="small" value={formData.pm_scheduleimpactdays}
@@ -844,7 +934,7 @@ export default function ChangeRequestsPage() {
         <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
           <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>Cancel</Button>
           <Button onClick={handleSave} variant="contained"
-            disabled={!formData.pm_changerequesttitle.trim() || actionLoading}
+            disabled={!String(formData.pm_changerequesttitle || '').trim() || actionLoading}
             sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}>
             {actionLoading ? 'Saving...' : editingCR ? 'Update Change Request' : 'Submit Change Request'}
           </Button>

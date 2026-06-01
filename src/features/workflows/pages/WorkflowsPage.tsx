@@ -333,10 +333,10 @@ export default function WorkflowsPage() {
       <PageHeader
         title="Workflow Automation"
         subtitle="Manage workflow templates, track active instances, and review approval steps."
-        action={pageTab < 2 ? {
-          label: pageTab === 0 ? 'New Workflow' : 'New Instance',
+        action={pageTab === 0 ? {
+          label: 'New Workflow',
           icon: <AddIcon />,
-          onClick: pageTab === 0 ? openCreateWf : undefined,
+          onClick: openCreateWf,
         } : undefined}
       />
       {pageTab === 0 && <ExportButton data={filteredWorkflows} columns={workflowExportColumns} filename="WorkflowTemplates" />}

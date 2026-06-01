@@ -1,10 +1,10 @@
-export interface ExportColumn {
-  key: string
+export interface ExportColumn<T = any> {
+  key: keyof T
   label: string
-  format?: (value: any, row: any) => string
+  format?: (value: any, row: T) => string
 }
 
-export function exportToCsv(filename: string, columns: ExportColumn[], data: any[]): void {
+export function exportToCsv<T>(filename: string, columns: ExportColumn<T>[], data: T[]): void {
   if (!data.length) return
 
   const header = columns.map((col) => '"' + col.label + '"').join(',')

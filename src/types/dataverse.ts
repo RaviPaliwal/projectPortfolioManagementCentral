@@ -470,7 +470,9 @@ export interface RiskMitigationActionModel {
 export interface WorkflowModel {
   pm_workflowid?: string
   pm_workflowname?: string
-  pm_description?: string
+  pm_workflowdescription?: string
+  pm_workflowtype?: number | string
+  pm_workflowtypename?: string
   pm_module?: string
   pm_triggerentity?: string
   pm_triggerevent?: string
@@ -478,6 +480,10 @@ export interface WorkflowModel {
   pm_version?: number
   pm_isactive?: boolean
   pm_approvalsteps?: string
+  pm_workflowstatus?: number | string
+  pm_workflowstatusname?: string
+  pm_entitytype?: string
+  pm_entitytypename?: string
   statecode?: number
   statuscode?: number
 }
@@ -485,12 +491,18 @@ export interface WorkflowModel {
 export interface WorkflowInstanceModel {
   pm_workflowinstanceid?: string
   pm_instancename?: string
+  pm_instanceidentifier?: string
   pm_workflowtemplate?: string
   pm_workflowlookupname?: string
   pm_entityid?: string
   pm_entityname?: string
   pm_entitytype?: string
   pm_initiatedby?: string
+  pm_initiationdate?: string
+  pm_completiondate?: string
+  pm_workflowname?: string
+  pm_workflowstatus?: number | string
+  pm_workflowstatusname?: string
   pm_status?: number | string
   pm_statusname?: string
   pm_startdate?: string
@@ -498,6 +510,7 @@ export interface WorkflowInstanceModel {
   pm_currentstep?: number
   pm_sladuedate?: string
   _pm_workflowlookup_value?: string
+  _pm_workflow_value?: string
   statecode?: number
 }
 
@@ -506,13 +519,17 @@ export interface WorkflowApprovalStepModel {
   pm_stepname?: string
   pm_steporder?: number
   pm_approvername?: string
+  pm_approvalstatus?: number | string
+  pm_approvalstatusname?: string
   pm_decisionstatus?: number | string
   pm_decisionstatusname?: string
   pm_decisiondate?: string
   pm_decisionnotes?: string
+  pm_notes?: string
   pm_duedate?: string
   pm_isparallelstep?: boolean
   pm_delegatename?: string
+  _pm_workflowinstance_value?: string
   pm_notificationtimestamp?: string
   pm_workflowinstanceid?: string
   pm_workflowinstancelookupname?: string

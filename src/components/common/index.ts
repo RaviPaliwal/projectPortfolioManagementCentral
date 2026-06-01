@@ -57,3 +57,4 @@ export type { GanttTaskData, GanttMilestoneData, GanttChartProps } from "./Gantt
 
 export { ExportButton } from "./ExportButton/ExportButton"
 export type { ExportButtonProps } from "./ExportButton/ExportButton"
+export type { ExportColumn } from '../../utils/exportUtils'

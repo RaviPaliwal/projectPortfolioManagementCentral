@@ -21,6 +21,8 @@ import {
   Pm_riskmitigationactionsService,
   Pm_changerequestsService,
   Pm_projectapprovalrequestsService,
+  Pm_skillsService,
+  Pm_resourceskillsService,
   Pm_workflowsService,
   Pm_workflowinstancesService,
   Pm_workflowapprovalstepsService,
@@ -45,11 +47,16 @@ import type { Pm_fiscalperiods } from '../generated/models/Pm_fiscalperiodsModel
 import type { Pm_projectgatereviews } from '../generated/models/Pm_projectgatereviewsModel'
 import type { Pm_benefits } from '../generated/models/Pm_benefitsModel'
 import type { Pm_workflows } from '../generated/models/Pm_workflowsModel'
+import { Pm_workflowinstancespm_status } from '../generated/models/Pm_workflowinstancesModel'
 import type { Pm_workflowinstances } from '../generated/models/Pm_workflowinstancesModel'
 import type { Pm_workflowapprovalsteps } from '../generated/models/Pm_workflowapprovalstepsModel'
 import type { Pm_performancemeasures } from '../generated/models/Pm_performancemeasuresModel'
+import { Pm_changerequestspm_changetype, Pm_changerequestspm_prioritylevel, Pm_changerequestspm_status } from '../generated/models/Pm_changerequestsModel'
 import type { Pm_changerequests } from '../generated/models/Pm_changerequestsModel'
 import type { Pm_projectapprovalrequests } from '../generated/models/Pm_projectapprovalrequestsModel'
+import { Pm_skillspm_skillcategory } from '../generated/models/Pm_skillsModel'
+import type { Pm_skills } from '../generated/models/Pm_skillsModel'
+import type { Pm_resourceskills } from '../generated/models/Pm_resourceskillsModel'
 import type {
   InitiativeModel,
   PortfolioModel,
@@ -76,6 +83,8 @@ import type {
   WorkflowApprovalStepModel,
   ChangeRequestModel,
   ApprovalRequestModel,
+  SkillModel,
+  ResourceSkillModel,
 } from '@/types/dataverse'
 
 const unwrapList = <T>(result: any): T[] => {
@@ -2582,6 +2591,8 @@ export async function deletePerformanceMeasure(id: string): Promise<void> {
 }
 
 export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
+  // IMPORTANT: Do NOT include lookup alias fields (pm_fiscalperiodname, pm_programmelookupname, pm_projectname)
+  // in the getAll select list — they cause Dataverse to return zero rows.
   const result = await Pm_cashflowentriesService.getAll({
     filter: 'statecode eq 0',
     select: [
@@ -2589,14 +2600,113 @@ export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
       'pm_transactiondate', 'pm_transactiondirection', 'pm_transactiontype',
       'pm_category', 'pm_description', 'pm_invoicenumber',
       'pm_financialperiod', 'pm_programme', 'pm_projectcode',
-      'pm_fiscalperiodname', 'pm_programmelookupname', 'pm_projectname',
+      '_pm_fiscalperiod_value', '_pm_programmelookup_value', '_pm_project_value',
     ],
     orderBy: ['pm_transactiondate desc'],
     top: 500,
   })
-  return unwrapList<Pm_cashflowentries>(result).map(mapCashflowEntry)
+  const list = unwrapList<Pm_cashflowentries>(result).map(mapCashflowEntry)
+
+  // Resolve lookup names for programme, project, and fiscal period from GUIDs
+  try {
+    const programmeIds = Array.from(new Set(list.map((e) => e._pm_programmelookup_value).filter(Boolean))) as string[]
+    const projectIds = Array.from(new Set(list.map((e) => e._pm_project_value).filter(Boolean))) as string[]
+    const fiscalPeriodIds = Array.from(new Set(list.map((e) => e._pm_fiscalperiod_value).filter(Boolean))) as string[]
+
+    const [programmesResult, projectsResult, fiscalPeriodsResult] = await Promise.all([
+      programmeIds.length > 0
+        ? Pm_programmesService.getAll({ filter: programmeIds.map((id) => `pm_programmeid eq '${id}'`).join(' or '), select: ['pm_programmeid', 'pm_programmename'], top: 500 })
+        : Promise.resolve(null),
+      projectIds.length > 0
+        ? Pm_projectsService.getAll({ filter: projectIds.map((id) => `pm_projectid eq '${id}'`).join(' or '), select: ['pm_projectid', 'pm_projectname'], top: 500 })
+        : Promise.resolve(null),
+      fiscalPeriodIds.length > 0
+        ? Pm_fiscalperiodsService.getAll({ filter: fiscalPeriodIds.map((id) => `pm_fiscalperiodid eq '${id}'`).join(' or '), select: ['pm_fiscalperiodid', 'pm_periodname'], top: 500 })
+        : Promise.resolve(null),
+    ])
+
+    const programmeNameById = new Map<string, string>()
+    if (programmesResult) {
+      const programmes = unwrapList<Pm_programmes>(programmesResult)
+      for (const p of programmes) {
+        if (p.pm_programmeid && p.pm_programmename) programmeNameById.set(p.pm_programmeid.replace(/[{}]/g, '').trim().toLowerCase(), p.pm_programmename)
+      }
+    }
+
+    const projectNameById = new Map<string, string>()
+    if (projectsResult) {
+      const projects = unwrapList<Pm_projects>(projectsResult)
+      for (const p of projects) {
+        if (p.pm_projectid && p.pm_projectname) projectNameById.set(p.pm_projectid.replace(/[{}]/g, '').trim().toLowerCase(), p.pm_projectname)
+      }
+    }
+
+    const fiscalPeriodNameById = new Map<string, string>()
+    if (fiscalPeriodsResult) {
+      const fPeriods = unwrapList<Pm_fiscalperiods>(fiscalPeriodsResult)
+      for (const fp of fPeriods) {
+        if (fp.pm_fiscalperiodid && fp.pm_periodname) fiscalPeriodNameById.set(fp.pm_fiscalperiodid.replace(/[{}]/g, '').trim().toLowerCase(), fp.pm_periodname)
+      }
+    }
+
+    for (const entry of list) {
+      const normProgId = entry._pm_programmelookup_value?.replace(/[{}]/g, '').trim().toLowerCase()
+      const normProjId = entry._pm_project_value?.replace(/[{}]/g, '').trim().toLowerCase()
+      const normFiscId = entry._pm_fiscalperiod_value?.replace(/[{}]/g, '').trim().toLowerCase()
+      if (normProgId && programmeNameById.has(normProgId)) entry.pm_programmelookupname = programmeNameById.get(normProgId)
+      if (normProjId && projectNameById.has(normProjId)) entry.pm_projectname = projectNameById.get(normProjId)
+      if (normFiscId && fiscalPeriodNameById.has(normFiscId)) entry.pm_fiscalperiodname = fiscalPeriodNameById.get(normFiscId)
+    }
+  } catch (err) {
+    try { console.warn('[dataverseService] fetchCashflowEntries: failed to resolve lookup names', err) } catch (e) {}
+  }
+
+  return list
 }
 
+
+
+// ── Cashflow Lookup Helpers ────────────────────────────────────────────
+
+export interface ProgrammeLookupItem {
+  pm_programmeid: string
+  pm_programmename: string
+}
+
+export interface ProjectLookupItem {
+  pm_projectid: string
+  pm_projectname: string
+  pm_projectcode?: string
+  _pm_programme_value?: string
+}
+
+export async function fetchProgrammesForLookup(): Promise<ProgrammeLookupItem[]> {
+  const result = await Pm_programmesService.getAll({
+    filter: 'statecode eq 0',
+    select: ['pm_programmeid', 'pm_programmename'],
+    orderBy: ['pm_programmename asc'],
+    top: 500,
+  })
+  return unwrapList<Pm_programmes>(result).map((item) => ({
+    pm_programmeid: item.pm_programmeid,
+    pm_programmename: item.pm_programmename || '',
+  }))
+}
+
+export async function fetchProjectsForLookup(): Promise<ProjectLookupItem[]> {
+  const result = await Pm_projectsService.getAll({
+    filter: 'statecode eq 0',
+    select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_programme_value'],
+    orderBy: ['pm_projectname asc'],
+    top: 500,
+  })
+  return unwrapList<Pm_projects>(result).map((item) => ({
+    pm_projectid: item.pm_projectid,
+    pm_projectname: item.pm_projectname || '',
+    pm_projectcode: item.pm_projectcode || '',
+    _pm_programme_value: item._pm_programme_value,
+  }))
+}
 
 // ── Risk Functions ────────────────────────────────────────────────────
 
@@ -2884,18 +2994,19 @@ const mapChangeRequest = (item: Pm_changerequests): ChangeRequestModel => ({
 })
 
 export async function fetchChangeRequests(): Promise<ChangeRequestModel[]> {
+  // IMPORTANT: Do NOT include lookup alias fields (pm_programmename, pm_projectname, pm_programmelookupname, pm_changetypename, pm_prioritylevelname, pm_statusname)
+  // in the getAll select list — they cause Dataverse to return zero rows.
   const selectFields = [
     'pm_changerequestid', 'pm_changerequesttitle', 'pm_changerequestreference',
-    'pm_changetype', 'pm_changetypename',
-    'pm_prioritylevel', 'pm_prioritylevelname',
-    'pm_status', 'pm_statusname',
+    'pm_changetype',
+    'pm_prioritylevel',
+    'pm_status',
     'pm_changedescription', 'pm_justification',
     'pm_costimpacteur', 'pm_scheduleimpactdays',
     'pm_baselineupdated', 'pm_benefitsimpact',
     'pm_requestorname', 'pm_submissiondate',
     'pm_decisiondate', 'pm_decisionmaker',
-    'pm_projectcode', 'pm_programmename',
-    'pm_projectname', 'pm_programmelookupname',
+    'pm_projectcode',
     '_pm_project_value', '_pm_programmelookup_value',
   ]
   const options = {
@@ -2909,6 +3020,59 @@ export async function fetchChangeRequests(): Promise<ChangeRequestModel[]> {
     const fallbackResult = await Pm_changerequestsService.getAll(options)
     list = unwrapList<Pm_changerequests>(fallbackResult).map(mapChangeRequest)
   }
+
+  // Resolve optionset display names from model constants
+  for (const cr of list) {
+    if (cr.pm_changetype != null) cr.pm_changetypename = Pm_changerequestspm_changetype[cr.pm_changetype as keyof typeof Pm_changerequestspm_changetype]
+    if (cr.pm_prioritylevel != null) cr.pm_prioritylevelname = Pm_changerequestspm_prioritylevel[cr.pm_prioritylevel as keyof typeof Pm_changerequestspm_prioritylevel]
+    if (cr.pm_status != null) cr.pm_statusname = Pm_changerequestspm_status[cr.pm_status as keyof typeof Pm_changerequestspm_status]
+  }
+
+  // Resolve lookup names for programme and project from GUIDs
+  try {
+    const programmeIds = Array.from(new Set(list.map((e) => e._pm_programmelookup_value).filter(Boolean))) as string[]
+    const projectIds = Array.from(new Set(list.map((e) => e._pm_project_value).filter(Boolean))) as string[]
+
+    const [programmesResult, projectsResult] = await Promise.all([
+      programmeIds.length > 0
+        ? Pm_programmesService.getAll({ filter: programmeIds.map((id) => `pm_programmeid eq '${id}'`).join(' or '), select: ['pm_programmeid', 'pm_programmename'], top: 500 })
+        : Promise.resolve(null),
+      projectIds.length > 0
+        ? Pm_projectsService.getAll({ filter: projectIds.map((id) => `pm_projectid eq '${id}'`).join(' or '), select: ['pm_projectid', 'pm_projectname'], top: 500 })
+        : Promise.resolve(null),
+    ])
+
+    const programmeNameById = new Map<string, string>()
+    if (programmesResult) {
+      const programmes = unwrapList<Pm_programmes>(programmesResult)
+      for (const p of programmes) {
+        if (p.pm_programmeid && p.pm_programmename) programmeNameById.set(p.pm_programmeid.replace(/[{}]/g, '').trim().toLowerCase(), p.pm_programmename)
+      }
+    }
+
+    const projectNameById = new Map<string, string>()
+    if (projectsResult) {
+      const projects = unwrapList<Pm_projects>(projectsResult)
+      for (const p of projects) {
+        if (p.pm_projectid && p.pm_projectname) projectNameById.set(p.pm_projectid.replace(/[{}]/g, '').trim().toLowerCase(), p.pm_projectname)
+      }
+    }
+
+    for (const cr of list) {
+      const normProgId = cr._pm_programmelookup_value?.replace(/[{}]/g, '').trim().toLowerCase()
+      const normProjId = cr._pm_project_value?.replace(/[{}]/g, '').trim().toLowerCase()
+      if (normProgId && programmeNameById.has(normProgId)) {
+        cr.pm_programmename = programmeNameById.get(normProgId)
+        cr.pm_programmelookupname = programmeNameById.get(normProgId)
+      }
+      if (normProjId && projectNameById.has(normProjId)) {
+        cr.pm_projectname = projectNameById.get(normProjId)
+      }
+    }
+  } catch (err) {
+    try { console.warn('[dataverseService] fetchChangeRequests: failed to resolve lookup names', err) } catch (e) {}
+  }
+
   return list
 }
 
@@ -2924,6 +3088,20 @@ export async function createChangeRequest(payload: Partial<ChangeRequestModel>):
     statecode: 0,
     statuscode: 1,
   }
+  // Handle programme OData bind
+  if (payload._pm_programmelookup_value) {
+    const programmeId = payload._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (programmeId) {
+      cleanPayload['pm_ProgrammeLookup@odata.bind'] = '/pm_programmes(' + programmeId + ')'
+    }
+  }
+  // Handle project OData bind
+  if (payload._pm_project_value) {
+    const projectId = payload._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = '/pm_projects(' + projectId + ')'
+    }
+  }
   const result = await Pm_changerequestsService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_changerequests>(result)
   return item ? mapChangeRequest(item) : null
@@ -2935,6 +3113,20 @@ export async function updateChangeRequest(id: string, changes: Partial<ChangeReq
     if (value !== undefined && value !== null &&
         key !== 'pm_changerequestid' && key !== '_pm_project_value' && key !== '_pm_programmelookup_value') {
       cleanPayload[key] = value
+    }
+  }
+  // Handle programme OData bind
+  if (changes._pm_programmelookup_value) {
+    const programmeId = changes._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (programmeId) {
+      cleanPayload['pm_ProgrammeLookup@odata.bind'] = '/pm_programmes(' + programmeId + ')'
+    }
+  }
+  // Handle project OData bind
+  if (changes._pm_project_value) {
+    const projectId = changes._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = '/pm_projects(' + projectId + ')'
     }
   }
   const result = await Pm_changerequestsService.update(id, cleanPayload as any)
@@ -3027,13 +3219,15 @@ const mapApprovalRequest = (item: Pm_projectapprovalrequests): ApprovalRequestMo
 })
 
 export async function fetchApprovalRequests(): Promise<ApprovalRequestModel[]> {
+  // IMPORTANT: Do NOT include lookup alias fields (pm_approvalstagename, pm_decisionstatusname, pm_entitytypename, pm_prioritylevelname)
+  // in the getAll select list — they cause Dataverse to return zero rows.
   const result = await Pm_projectapprovalrequestsService.getAll({
     select: [
       'pm_projectapprovalrequestid', 'pm_requesttitle',
-      'pm_approvalstage', 'pm_approvalstagename',
-      'pm_decisionstatus', 'pm_decisionstatusname',
-      'pm_entitytype', 'pm_entitytypename',
-      'pm_prioritylevel', 'pm_prioritylevelname',
+      'pm_approvalstage',
+      'pm_decisionstatus',
+      'pm_entitytype',
+      'pm_prioritylevel',
       'pm_approvername',
       'pm_decisiondate', 'pm_decisionnotes',
       'pm_duedate',
@@ -3080,15 +3274,18 @@ const mapSkill = (item: Pm_skills): SkillModel => ({
   pm_skillid: item.pm_skillid,
   pm_skillname: item.pm_skillname,
   pm_skillcategory: item.pm_skillcategory,
-  pm_skillcategoryname: item.pm_skillcategoryname,
+  pm_skillcategoryname: Pm_skillspm_skillcategory[Number(item.pm_skillcategory)] ?? item.pm_skillcategoryname,
   pm_skilldescription: item.pm_skilldescription,
   pm_isactive: item.pm_isactive,
   statecode: item.statecode,
 })
 
 export async function fetchSkills(): Promise<SkillModel[]> {
+  // IMPORTANT: Do NOT include lookup alias fields (pm_skillcategoryname) in the
+  // getAll select list — they cause Dataverse to return zero rows.
+  // Resolve category display names from the option set constant.
   const result = await Pm_skillsService.getAll({
-    select: ['pm_skillid', 'pm_skillname', 'pm_skillcategory', 'pm_skillcategoryname', 'pm_skilldescription', 'pm_isactive'],
+    select: ['pm_skillid', 'pm_skillname', 'pm_skillcategory', 'pm_skilldescription', 'pm_isactive'],
     orderBy: ['pm_skillname asc'],
     top: 500,
   })
@@ -3140,7 +3337,7 @@ const mapResourceSkill = (item: Pm_resourceskills): ResourceSkillModel => ({
   pm_resourceid: item.pm_resourceid,
   pm_resourcename: item.pm_resourcename,
   pm_proficiencylevel: item.pm_proficiencylevel,
-  pm_proficiencylevelname: item.pm_proficiencylevelname,
+  pm_proficiencylevelname: undefined as string | undefined,
   pm_yearsofexperience: item.pm_yearsofexperience,
   pm_certificationexpirydate: item.pm_certificationexpirydate,
   pm_certificationname: item.pm_certificationname,
@@ -3152,13 +3349,78 @@ const mapResourceSkill = (item: Pm_resourceskills): ResourceSkillModel => ({
 })
 
 export async function fetchResourceSkills(): Promise<ResourceSkillModel[]> {
+  // IMPORTANT: Do NOT include lookup display name alias fields (pm_resourcename,
+  // pm_skillname, pm_proficiencylevelname) in the getAll select list — they cause
+  // Dataverse to return zero rows. Resolve display names from lookup GUIDs.
   const result = await Pm_resourceskillsService.getAll({
-    select: ['pm_resourceskillid', 'pm_skillid', 'pm_skillname', 'pm_resourceid', 'pm_resourcename', 'pm_proficiencylevel', 'pm_proficiencylevelname', 'pm_yearsofexperience', 'pm_certificationexpirydate', 'pm_certificationname', 'pm_certified', 'pm_primaryskill', '_pm_resource_value', '_pm_skill_value'],
-    orderBy: ['pm_skillname asc', 'pm_resourcename asc'],
+    select: ['pm_resourceskillid', 'pm_skillid', 'pm_resourceid', 'pm_proficiencylevel', 'pm_yearsofexperience', 'pm_certificationexpirydate', 'pm_certificationname', 'pm_certified', 'pm_primaryskill', '_pm_resource_value', '_pm_skill_value', 'statecode'],
+    orderBy: ['pm_skillid asc', 'pm_resourceid asc'],
     top: 500,
   })
   try { console.debug('[dataverseService] fetchResourceSkills result:', result) } catch (e) {}
-  return unwrapList<Pm_resourceskills>(result).map(mapResourceSkill)
+  let list = unwrapList<Pm_resourceskills>(result).map(mapResourceSkill)
+
+  // Resolve resource display names from the resource lookup GUIDs
+  try {
+    const resourceIds = Array.from(new Set(list.map((rs) => normalizeLookupId(rs._pm_resource_value)).filter(Boolean))) as string[]
+    if (resourceIds.length > 0) {
+      const resourcesResult = await Pm_resourcesService.getAll({
+        filter: resourceIds.map((id) => `pm_resourceid eq '${id}'`).join(' or '),
+        select: ['pm_resourceid', 'pm_fullname'],
+        top: 500,
+      })
+      const resources = unwrapList<any>(resourcesResult)
+      const resourceNameById = new Map<string, string>()
+      for (const res of resources) {
+        if (res.pm_resourceid && res.pm_fullname) {
+          const normalizedId = normalizeLookupId(res.pm_resourceid)
+          if (normalizedId) {
+            resourceNameById.set(normalizedId, res.pm_fullname.trim())
+          }
+        }
+      }
+      for (const rs of list) {
+        const normalizedValue = normalizeLookupId(rs._pm_resource_value)
+        if (normalizedValue && resourceNameById.has(normalizedValue)) {
+          (rs as any).pm_resourcename = resourceNameById.get(normalizedValue)
+        }
+      }
+    }
+  } catch (err) {
+    try { console.warn('[dataverseService] fetchResourceSkills: failed to resolve resource names', err) } catch (e) {}
+  }
+
+  // Resolve skill display names from the skill lookup GUIDs
+  try {
+    const skillIds = Array.from(new Set(list.map((rs) => normalizeLookupId(rs._pm_skill_value)).filter(Boolean))) as string[]
+    if (skillIds.length > 0) {
+      const skillsResult = await Pm_skillsService.getAll({
+        filter: skillIds.map((id) => `pm_skillid eq '${id}'`).join(' or '),
+        select: ['pm_skillid', 'pm_skillname'],
+        top: 500,
+      })
+      const skills = unwrapList<any>(skillsResult)
+      const skillNameById = new Map<string, string>()
+      for (const sk of skills) {
+        if (sk.pm_skillid && sk.pm_skillname) {
+          const normalizedId = normalizeLookupId(sk.pm_skillid)
+          if (normalizedId) {
+            skillNameById.set(normalizedId, sk.pm_skillname.trim())
+          }
+        }
+      }
+      for (const rs of list) {
+        const normalizedValue = normalizeLookupId(rs._pm_skill_value)
+        if (normalizedValue && skillNameById.has(normalizedValue)) {
+          (rs as any).pm_skillname = skillNameById.get(normalizedValue)
+        }
+      }
+    }
+  } catch (err) {
+    try { console.warn('[dataverseService] fetchResourceSkills: failed to resolve skill names', err) } catch (e) {}
+  }
+
+  return list
 }
 
 export async function createResourceSkill(payload: Partial<ResourceSkillModel>): Promise<ResourceSkillModel | null> {
@@ -3214,53 +3476,64 @@ export async function deleteResourceSkill(id: string): Promise<void> {
 
 // ── Workflow Functions ────────────────────────────────────────────────
 
-const mapWorkflow = (item: Pm_workflows): WorkflowModel => ({
-  pm_workflowid: item.pm_workflowid,
-  pm_workflowname: item.pm_workflowname,
-  pm_workflowdescription: item.pm_workflowdescription,
-  pm_workflowtype: item.pm_workflowtype,
-  pm_workflowtypename: item.pm_workflowtypename,
-  pm_workflowstatus: item.pm_workflowstatus,
-  pm_workflowstatusname: item.pm_workflowstatusname,
-  pm_entitytype: item.pm_entitytype,
-  pm_entitytypename: item.pm_entitytypename,
-  statecode: item.statecode,
-})
+const mapWorkflow = (item: Pm_workflows): WorkflowModel => {
+  const raw = item as any
+  return {
+    pm_workflowid: item.pm_workflowid,
+    pm_workflowname: item.pm_workflowname,
+    pm_workflowdescription: item.pm_description,
+    pm_workflowtype: raw.pm_workflowtype,
+    pm_workflowtypename: raw.pm_workflowtypename,
+    pm_workflowstatus: raw.pm_workflowstatus ?? item.statecode ?? item.statuscode,
+    pm_workflowstatusname: raw.pm_workflowstatusname ?? (item.statecode === 0 ? 'Active' : 'Inactive'),
+    pm_entitytype: raw.pm_entitytype,
+    statecode: item.statecode,
+  }
+}
 
-const mapWorkflowInstance = (item: Pm_workflowinstances): WorkflowInstanceModel => ({
-  pm_workflowinstanceid: item.pm_workflowinstanceid,
-  pm_workflowname: item.pm_workflowname,
-  pm_entityid: item.pm_entityid,
-  pm_instanceidentifier: item.pm_instanceidentifier,
-  pm_workflowstatus: item.pm_workflowstatus,
-  pm_workflowstatusname: item.pm_workflowstatusname,
-  pm_initiatedby: item.pm_initiatedby,
-  pm_initiationdate: item.pm_initiationdate,
-  pm_completiondate: item.pm_completiondate,
-  _pm_workflow_value: item._pm_workflow_value,
-  statecode: item.statecode,
-})
+const mapWorkflowInstance = (item: Pm_workflowinstances): WorkflowInstanceModel => {
+  const raw = item as any
+  return {
+    pm_workflowinstanceid: item.pm_workflowinstanceid,
+    pm_workflowname: item.pm_workflowlookupname ?? raw.pm_workflowname ?? raw.pm_workflowtemplate,
+    pm_entityid: item.pm_entityid,
+    pm_instanceidentifier: item.pm_instancename ?? raw.pm_instanceidentifier,
+    pm_workflowstatus: raw.pm_workflowstatus ?? item.pm_status,
+    pm_workflowstatusname: Pm_workflowinstancespm_status[Number(item.pm_status)] ?? item.pm_statusname,
+    pm_initiatedby: item.pm_initiatedby,
+    pm_initiationdate: raw.pm_initiationdate ?? item.pm_startdate,
+    pm_completiondate: item.pm_completeddate ?? raw.pm_completiondate,
+    _pm_workflow_value: raw._pm_workflow_value ?? item._pm_workflowlookup_value,
+    statecode: item.statecode,
+  }
+}
 
-const mapWorkflowApprovalStep = (item: Pm_workflowapprovalsteps): WorkflowApprovalStepModel => ({
-  pm_workflowapprovalstepid: item.pm_workflowapprovalstepid,
-  pm_stepname: item.pm_stepname,
-  pm_steporder: item.pm_steporder,
-  pm_approvername: item.pm_approvername,
-  pm_approvalstatus: item.pm_approvalstatus,
-  pm_approvalstatusname: item.pm_approvalstatusname,
-  pm_notes: item.pm_notes,
-  pm_decisiondate: item.pm_decisiondate,
-  _pm_workflowinstance_value: item._pm_workflowinstance_value,
-  statecode: item.statecode,
-})
+const mapWorkflowApprovalStep = (item: Pm_workflowapprovalsteps): WorkflowApprovalStepModel => {
+  const raw = item as any
+  return {
+    pm_workflowapprovalstepid: item.pm_workflowapprovalstepid,
+    pm_stepname: item.pm_stepname,
+    pm_steporder: item.pm_steporder,
+    pm_approvername: item.pm_approvername,
+    pm_decisionstatus: item.pm_decisionstatus,
+    pm_decisionstatusname: item.pm_decisionstatusname ?? raw.pm_decisionstatusname,
+    pm_notes: raw.pm_notes,
+    pm_decisiondate: item.pm_decisiondate,
+    _pm_workflowinstance_value: item._pm_workflowinstancelookup_value ?? raw._pm_workflowinstance_value,
+    statecode: item.statecode,
+  }
+}
 
 export async function fetchWorkflows(): Promise<WorkflowModel[]> {
+  // IMPORTANT: Do NOT include fields that are not part of the generated
+  // workflow entity model, since invalid select names can cause Dataverse to
+  // return empty results.
   const result = await Pm_workflowsService.getAll({
     select: [
-      'pm_workflowid', 'pm_workflowname', 'pm_workflowdescription',
-      'pm_workflowtype', 'pm_workflowtypename',
-      'pm_workflowstatus', 'pm_workflowstatusname',
-      'pm_entitytype', 'pm_entitytypename',
+      'pm_workflowid', 'pm_workflowname', 'pm_description',
+      'pm_module', 'pm_triggerentity', 'pm_triggerevent',
+      'pm_triggercondition', 'pm_version', 'pm_isactive',
+      'pm_approvalsteps', 'statecode', 'statuscode',
     ],
     orderBy: ['pm_workflowname asc'],
     top: 500,
@@ -3299,15 +3572,19 @@ export async function deleteWorkflow(id: string): Promise<void> {
 }
 
 export async function fetchWorkflowInstances(): Promise<WorkflowInstanceModel[]> {
+  // IMPORTANT: Do NOT include VirtualType alias fields (pm_statusname) in the getAll
+  // select list — they can cause Dataverse to return zero rows.
+  // Resolve status name from the option set constant.
   const result = await Pm_workflowinstancesService.getAll({
     select: [
-      'pm_workflowinstanceid', 'pm_workflowname',
-      'pm_entityid', 'pm_instanceidentifier',
-      'pm_workflowstatus', 'pm_workflowstatusname',
-      'pm_initiatedby', 'pm_initiationdate', 'pm_completiondate',
-      '_pm_workflow_value',
+      'pm_workflowinstanceid', 'pm_instancename',
+      'pm_entityid', 'pm_entitytype',
+      'pm_entityname', 'pm_workflowtemplate',
+      'pm_initiatedby', 'pm_status',
+      'pm_completeddate', 'pm_startdate',
+      '_pm_workflowlookup_value',
     ],
-    orderBy: ['pm_initiationdate desc'],
+    orderBy: ['pm_startdate desc'],
     top: 500,
   })
   try { console.debug('[dataverseService] fetchWorkflowInstances result:', result) } catch (e) {}
@@ -3319,9 +3596,9 @@ export async function fetchWorkflowApprovalSteps(instanceId: string): Promise<Wo
     filter: `_pm_workflowinstance_value eq '${instanceId}'`,
     select: [
       'pm_workflowapprovalstepid', 'pm_stepname', 'pm_steporder',
-      'pm_approvername', 'pm_approvalstatus', 'pm_approvalstatusname',
-      'pm_notes', 'pm_decisiondate',
-      '_pm_workflowinstance_value',
+      'pm_approvername', 'pm_decisionstatus', 'pm_decisionstatusname',
+      'pm_decisionnotes', 'pm_decisiondate',
+      'pm_duedate', '_pm_workflowinstancelookup_value',
     ],
     orderBy: ['pm_steporder asc'],
     top: 200,
