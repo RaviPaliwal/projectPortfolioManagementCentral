@@ -764,7 +764,7 @@ export default function ApprovalRequestsPage() {
 
       <KpiCardRow items={kpiCards} />
 
-      <Paper sx={{ mt: 3, borderRadius: 2, overflow: 'hidden' }}>
+      <Paper sx={{ mt: 3, borderRadius: 1.15, overflow: 'hidden' }}>
         <SearchFilterBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}

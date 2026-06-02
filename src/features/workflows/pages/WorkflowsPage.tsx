@@ -37,7 +37,6 @@ import type { KpiCardItem, FilterOption } from '@/components/common'
 // Sub-page imports
 import WorkflowCreatePage from './WorkflowCreatePage'
 import WorkflowEditPage from './WorkflowEditPage'
-import WorkflowStepConfigPage from './WorkflowStepConfigPage'
 
 const STATUS_LABELS: Record<string, string> = { '0': 'Active', '1': 'Inactive' }
 const INSTANCE_STATUS_LABELS: Record<string, string> = { '0': 'Completed', '1': 'Active' }
@@ -79,7 +78,7 @@ type StepSortField = 'name' | 'order' | 'approver' | 'decision'
 type SortDir = 'asc' | 'desc'
 interface SortState<T> { field: T; dir: SortDir }
 
-type ViewMode = 'list' | 'create' | 'edit' | 'steps'
+type ViewMode = 'list' | 'create' | 'edit'
 
 export default function WorkflowsPage() {
   const theme = useTheme()
@@ -121,7 +120,7 @@ export default function WorkflowsPage() {
   const [wfActionLoading, setWfActionLoading] = useState<string | null>(null)
   const { currentUser } = useUser()
   const [dialogStep, setDialogStep] = useState(0)
-  const WF_STEPS = ['Basic Information', 'Settings', 'Review & Save']
+  const WF_STEPS = ['Basic Information', 'Approval Steps', 'Workflow Settings', 'Review & Save']
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -285,83 +284,30 @@ export default function WorkflowsPage() {
   // ─── Sub-page Dialogs ───
   const handleDialogClose = () => { if (!actionLoading) navigateTo('list') }
   
-  const dialogSx = { '& .MuiDialog-paper': { borderRadius: 3, maxWidth: 900, width: '100%' } }
+  const dialogSx = { '& .MuiDialog-paper': { borderRadius: 1.15, maxWidth: 900, width: '100%', minHeight: '80vh' } }
 
   return (
     <>
       {/* Create Workflow Dialog */}
       <Dialog open={view === 'create'} onClose={handleDialogClose} maxWidth="md" fullWidth sx={dialogSx}>
-        <DialogTitle sx={{ px: 3, pt: 2.5, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-            <Avatar sx={{ width: 36, height: 36, bgcolor: '#6366f1', borderRadius: 1.5 }}>
-              <AccountTreeIcon sx={{ fontSize: 20, color: '#fff' }} />
-            </Avatar>
-            <Typography variant="h6" sx={{ fontWeight: 700, flex: 1 }}>Create Workflow Template</Typography>
-            <IconButton size="small" aria-label="Close" onClick={handleDialogClose} sx={{ borderRadius: 1.5, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-          <Typography variant="caption" color="text.secondary" sx={{ ml: 7 }}>
-            Step {dialogStep + 1} of {WF_STEPS.length}: {WF_STEPS[dialogStep]}
-          </Typography>
+        <DialogTitle sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>Create New Workflow</Typography>
+          <IconButton size="small" onClick={handleDialogClose} sx={{ borderRadius: 1.15 }}><CloseIcon fontSize="small" /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 3 }}>
+        <DialogContent sx={{ p: 4 }}>
           <WorkflowCreatePage onStepChange={setDialogStep} onCreated={() => { loadData(); navigateTo('list') }} />
         </DialogContent>
       </Dialog>
 
       {/* Edit Workflow Dialog */}
       <Dialog open={view === 'edit' && !!viewWorkflow} onClose={handleDialogClose} maxWidth="md" fullWidth sx={dialogSx}>
-        <DialogTitle sx={{ px: 3, pt: 2.5, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-            <Avatar sx={{ width: 36, height: 36, bgcolor: '#6366f1', borderRadius: 1.5 }}>
-              <EditIcon sx={{ fontSize: 20, color: '#fff' }} />
-            </Avatar>
-            <Typography variant="h6" sx={{ fontWeight: 700, flex: 1 }}>
-              Edit: {viewWorkflow?.pm_workflowname ?? 'Workflow'}
-            </Typography>
-            <IconButton size="small" aria-label="Close" onClick={handleDialogClose} sx={{ borderRadius: 1.5, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-          <Typography variant="caption" color="text.secondary" sx={{ ml: 7 }}>
-            Step {dialogStep + 1} of {WF_STEPS.length}: {WF_STEPS[dialogStep]}
-          </Typography>
+        <DialogTitle sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>Edit Workflow Template</Typography>
+          <IconButton size="small" onClick={handleDialogClose} sx={{ borderRadius: 1.15 }}><CloseIcon fontSize="small" /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 3 }}>
+        <DialogContent sx={{ p: 4 }}>
           {viewWorkflow && (
             <WorkflowEditPage workflow={viewWorkflow} onStepChange={setDialogStep} onSaved={() => { loadData(); navigateTo('list') }} />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Step Config Dialog */}
-      <Dialog open={view === 'steps' && !!viewWorkflow} onClose={handleDialogClose} maxWidth="xl" fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3, minHeight: '60vh', maxHeight: '92vh' } } }}>
-        <DialogTitle sx={{
-          display: 'flex', alignItems: 'center', gap: 1.5, px: 3, pt: 2.5, pb: 1.5,
-          borderBottom: '1px solid', borderColor: 'divider',
-          background: 'linear-gradient(135deg, #f8f9ff 0%, #fff 100%)',
-        }}>
-          <Avatar sx={{ width: 36, height: 36, bgcolor: '#8b5cf6', borderRadius: 1.5 }}>
-            <SettingsIcon sx={{ fontSize: 20, color: '#fff' }} />
-          </Avatar>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
-              Step Configuration
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 400, fontSize: '0.75rem' }}>
-              {viewWorkflow?.pm_workflowname ?? 'Workflow'}
-            </Typography>
-          </Box>
-          <IconButton size="small" aria-label="Close" onClick={handleDialogClose}
-            sx={{ borderRadius: 1.5, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 3 }}>
-          {viewWorkflow && (
-            <WorkflowStepConfigPage workflow={viewWorkflow} />
           )}
         </DialogContent>
       </Dialog>
@@ -396,14 +342,14 @@ export default function WorkflowsPage() {
       <TabPanel value={pageTab} index={0} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField size="small" placeholder="Search templates..." value={wfSearch} onChange={(e) => { setWfSearch(e.target.value); setWfPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+            <TextField size="small" placeholder="Search templates..." value={wfSearch} onChange={(e) => { setWfSearch(e.target.value); setWfPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Status</InputLabel>
-              <Select value={wfStatusFilter} label="Status" onChange={(e) => { setWfStatusFilter(e.target.value); setWfPage(0) }} sx={{ borderRadius: 2 }}>
+              <Select value={wfStatusFilter} label="Status" onChange={(e) => { setWfStatusFilter(e.target.value); setWfPage(0) }} sx={{ borderRadius: 1.15 }}>
                 {STATUS_FILTERS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </Select>
             </FormControl>
-            {(wfSearch || wfStatusFilter) && <Button size="small" onClick={() => { setWfSearch(''); setWfStatusFilter(''); setWfPage(0) }} sx={{ borderRadius: 2 }}>Clear</Button>}
+            {(wfSearch || wfStatusFilter) && <Button size="small" onClick={() => { setWfSearch(''); setWfStatusFilter(''); setWfPage(0) }} sx={{ borderRadius: 1.15 }}>Clear</Button>}
           </Box>
           <TableShell loading={loading} empty={filteredWorkflows.length === 0} emptyIcon={<AccountTreeIcon />}
             emptyTitle={wfSearch || wfStatusFilter ? 'No templates match.' : 'No workflow templates yet.'}
@@ -439,9 +385,8 @@ export default function WorkflowsPage() {
                       <StatusTag label={String(stepTemplates.filter((s) => s._pm_workflowlookup_value === wf.pm_workflowid).length)} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
                     </TableCell>
                     <TableCell align="right">
-                      <IconButton size="small" onClick={() => navigateTo('steps', wf)} sx={{ borderRadius: 1.5, color: '#8b5cf6' }} title="Configure Steps"><SettingsIcon sx={{ fontSize: 18 }} /></IconButton>
-                      <IconButton size="small" onClick={() => navigateTo('edit', wf)} sx={{ borderRadius: 1.5 }} title="Edit"><EditIcon sx={{ fontSize: 18 }} /></IconButton>
-                      <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: wf.pm_workflowid!, type: 'workflow' })} sx={{ borderRadius: 1.5 }} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
+                      <IconButton size="small" onClick={() => navigateTo('edit', wf)} sx={{ borderRadius: 1.15 }} title="Edit"><EditIcon sx={{ fontSize: 18 }} /></IconButton>
+                      <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: wf.pm_workflowid!, type: 'workflow' })} sx={{ borderRadius: 1.15 }} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -461,14 +406,14 @@ export default function WorkflowsPage() {
       <TabPanel value={pageTab} index={1} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField size="small" placeholder="Search instances..." value={instSearch} onChange={(e) => { setInstSearch(e.target.value); setInstPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+            <TextField size="small" placeholder="Search instances..." value={instSearch} onChange={(e) => { setInstSearch(e.target.value); setInstPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Status</InputLabel>
-              <Select value={instStatusFilter} label="Status" onChange={(e) => { setInstStatusFilter(e.target.value); setInstPage(0) }} sx={{ borderRadius: 2 }}>
+              <Select value={instStatusFilter} label="Status" onChange={(e) => { setInstStatusFilter(e.target.value); setInstPage(0) }} sx={{ borderRadius: 1.15 }}>
                 {INSTANCE_STATUS_FILTERS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </Select>
             </FormControl>
-            {(instSearch || instStatusFilter) && <Button size="small" onClick={() => { setInstSearch(''); setInstStatusFilter(''); setInstPage(0) }} sx={{ borderRadius: 2 }}>Clear</Button>}
+            {(instSearch || instStatusFilter) && <Button size="small" onClick={() => { setInstSearch(''); setInstStatusFilter(''); setInstPage(0) }} sx={{ borderRadius: 1.15 }}>Clear</Button>}
           </Box>
           <TableShell loading={loading} empty={filteredInstances.length === 0} emptyIcon={<PlayArrowIcon />} emptyTitle={instSearch || instStatusFilter ? 'No instances match.' : 'No workflow instances yet.'}>
             <Table stickyHeader size="small" sx={{ minWidth: 800 }}>
@@ -495,7 +440,7 @@ export default function WorkflowsPage() {
                     <TableCell align="center"><StatusTag label={INSTANCE_STATUS_LABELS[String(inst.pm_workflowstatus ?? '')] ?? 'Unknown'} color={INSTANCE_STATUS_COLORS[String(inst.pm_workflowstatus ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600 }} /></TableCell>
                     <TableCell><Typography variant="body2" color="text.secondary">{formatDate((inst as any).pm_initiationdate)}</Typography></TableCell>
                     <TableCell align="right">
-                      <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' }) }} sx={{ borderRadius: 1.5 }}><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
+                      <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' }) }} sx={{ borderRadius: 1.15 }}><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -515,9 +460,9 @@ export default function WorkflowsPage() {
       <TabPanel value={pageTab} index={2} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField size="small" placeholder="Search steps..." value={stepSearch} onChange={(e) => { setStepSearch(e.target.value); setStepPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 2 } } }} />
-            {selectedInstanceId && <Chip icon={<ScheduleIcon />} label={'Instance: ' + selectedInstanceId.substring(0, 8) + '...'} onDelete={() => setSelectedInstanceId(null)} size="small" color="primary" variant="outlined" sx={{ borderRadius: 8 }} />}
-            {stepSearch && <Button size="small" onClick={() => { setStepSearch(''); setStepPage(0) }} sx={{ borderRadius: 2 }}>Clear</Button>}
+            <TextField size="small" placeholder="Search steps..." value={stepSearch} onChange={(e) => { setStepSearch(e.target.value); setStepPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
+            {selectedInstanceId && <Chip icon={<ScheduleIcon />} label={'Instance: ' + selectedInstanceId.substring(0, 8) + '...'} onDelete={() => setSelectedInstanceId(null)} size="small" color="primary" variant="outlined" sx={{ borderRadius: 1.15 }} />}
+            {stepSearch && <Button size="small" onClick={() => { setStepSearch(''); setStepPage(0) }} sx={{ borderRadius: 1.15 }}>Clear</Button>}
           </Box>
           <TableShell loading={stepsLoading} empty={filteredSteps.length === 0} emptyIcon={<HistoryIcon />}
             emptyTitle={!selectedInstanceId ? 'Select an instance to view its approval steps.' : (stepSearch ? 'No steps match.' : 'No approval steps found.')}>
@@ -558,7 +503,7 @@ export default function WorkflowsPage() {
       </TabPanel>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
+      <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}>
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>{deleteConfirm?.type === 'workflow' ? 'Delete Workflow' : 'Delete Instance'}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">
@@ -566,8 +511,8 @@ export default function WorkflowsPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>Cancel</Button>
-          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>Cancel</Button>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             {actionLoading ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>

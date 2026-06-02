@@ -811,7 +811,7 @@ export default function HolidaysPage() {
 
             </Button>
 
-            <Button variant="outlined" startIcon={<FlagIcon />} size="small" onClick={() => setShowSeedConfirm(true)} sx={{ borderRadius: 2, fontWeight: 600 }}>
+            <Button variant="outlined" startIcon={<FlagIcon />} size="small" onClick={() => setShowSeedConfirm(true)} sx={{ borderRadius: 1.15, fontWeight: 600 }}>
 
               Seed Irish Holidays for {calendarYear}
 
@@ -867,7 +867,7 @@ export default function HolidaysPage() {
 
             onClick={() => navigateYear(-1)}
 
-            sx={{ bgcolor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 2, p: 1.5 }}
+            sx={{ bgcolor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 1.15, p: 1.5 }}
 
           >
 
@@ -885,7 +885,7 @@ export default function HolidaysPage() {
 
             onClick={() => navigateYear(1)}
 
-            sx={{ bgcolor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 2, p: 1.5 }}
+            sx={{ bgcolor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 1.15, p: 1.5 }}
 
           >
 
@@ -913,7 +913,7 @@ export default function HolidaysPage() {
 
                 <Card variant="outlined" sx={{
 
-                  borderRadius: 3,
+                  borderRadius: 1.15,
 
                   height: '100%',
 
@@ -973,7 +973,7 @@ export default function HolidaysPage() {
 
                               p: 1,
 
-                              borderRadius: 1.5,
+                              borderRadius: 1.15,
 
                               bgcolor: isDark ? '#1a2332' : '#f8fafc',
 
@@ -1314,13 +1314,13 @@ export default function HolidaysPage() {
 
           <Box sx={{ display: 'flex', gap: 0.5 }}>
 
-            <IconButton size="small" color="error" onClick={() => selectedHoliday?.pm_holidayid && setDeleteConfirm(selectedHoliday.pm_holidayid)} sx={{ borderRadius: 1.5 }}>
+            <IconButton size="small" color="error" onClick={() => selectedHoliday?.pm_holidayid && setDeleteConfirm(selectedHoliday.pm_holidayid)} sx={{ borderRadius: 1.15 }}>
 
               <DeleteIcon sx={{ fontSize: 20 }} />
 
             </IconButton>
 
-            <IconButton size="small" onClick={() => selectedHoliday && openEdit(selectedHoliday)} sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.5 }}>
+            <IconButton size="small" onClick={() => selectedHoliday && openEdit(selectedHoliday)} sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}>
 
               <EditIcon sx={{ fontSize: 20 }} />
 
@@ -1336,7 +1336,7 @@ export default function HolidaysPage() {
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
 
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
 
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
 
@@ -1360,7 +1360,7 @@ export default function HolidaysPage() {
 
                   <StatusTag
                     icon={<PublicIcon sx={{ fontSize: 14 }} />}
-                    label={selectedHoliday.pm_isfixeddate ? 'Fixed Date' : 'Variable Date'} color={selectedHoliday.pm_isfixeddate ? 'primary' : 'warning'} size="small" sx={{ fontWeight: 600, borderRadius: 8 }} />
+                    label={selectedHoliday.pm_isfixeddate ? 'Fixed Date' : 'Variable Date'} color={selectedHoliday.pm_isfixeddate ? 'primary' : 'warning'} size="small" sx={{ fontWeight: 600, borderRadius: 1.15 }} />
 
                 </Box>
 
@@ -1404,11 +1404,11 @@ export default function HolidaysPage() {
 
       {/* Create/Edit Dialog */}
 
-      <Dialog open={showForm} onClose={() => !actionLoading && setShowForm(false)} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
+      <Dialog open={showForm} onClose={() => !actionLoading && setShowForm(false)} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}>
 
         <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
 
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#f59e0b', borderRadius: 1.5 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: '#f59e0b', borderRadius: 1.15 }}>
 
             {editingHoliday ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <CelebrationIcon sx={{ fontSize: 18, color: '#fff' }} />}
 
@@ -1448,7 +1448,7 @@ export default function HolidaysPage() {
 
                 onChange={(e) => setFormData((f) => ({ ...f, pm_holidayname: e.target.value }))}
 
-                placeholder="e.g., Christmas Day" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="e.g., Christmas Day" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
 
             </Grid>
 
@@ -1458,7 +1458,7 @@ export default function HolidaysPage() {
 
                 onChange={(e) => setFormData((f) => ({ ...f, pm_holidaydate: e.target.value }))}
 
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }} />
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }} />
 
             </Grid>
 
@@ -1468,7 +1468,7 @@ export default function HolidaysPage() {
 
                 <InputLabel>Country</InputLabel>
 
-                <Select value={formData.pm_country} label="Country" onChange={(e) => setFormData((f) => ({ ...f, pm_country: e.target.value }))} sx={{ borderRadius: 2 }}>
+                <Select value={formData.pm_country} label="Country" onChange={(e) => setFormData((f) => ({ ...f, pm_country: e.target.value }))} sx={{ borderRadius: 1.15 }}>
 
                   {COUNTRY_OPTIONS.filter((o) => o.value).map((opt) => (
 
@@ -1490,7 +1490,7 @@ export default function HolidaysPage() {
 
                 <Select value={formData.pm_isfixeddate ? 'fixed' : 'variable'} label="Date Type"
 
-                  onChange={(e) => setFormData((f) => ({ ...f, pm_isfixeddate: e.target.value === 'fixed' }))} sx={{ borderRadius: 2 }}>
+                  onChange={(e) => setFormData((f) => ({ ...f, pm_isfixeddate: e.target.value === 'fixed' }))} sx={{ borderRadius: 1.15 }}>
 
                   <MenuItem value="fixed">Fixed Date</MenuItem>
 
@@ -1508,7 +1508,7 @@ export default function HolidaysPage() {
 
                 onChange={(e) => setFormData((f) => ({ ...f, pm_year: parseInt(e.target.value, 10) || new Date().getFullYear() }))}
 
-                slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
 
             </Grid>
 
@@ -1522,7 +1522,7 @@ export default function HolidaysPage() {
 
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>Status</Typography>
 
-                    <Select value={0} size="small" sx={{ borderRadius: 2, minWidth: 100 }}>
+                    <Select value={0} size="small" sx={{ borderRadius: 1.15, minWidth: 100 }}>
 
                       <MenuItem value={0}>Active</MenuItem>
 
@@ -1542,7 +1542,7 @@ export default function HolidaysPage() {
 
                 onChange={(e) => setFormData((f) => ({ ...f, pm_notes: e.target.value }))}
 
-                placeholder="Additional information about this holiday..." slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="Additional information about this holiday..." slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
 
             </Grid>
 
@@ -1552,13 +1552,13 @@ export default function HolidaysPage() {
 
         <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
 
-          <Button onClick={() => setShowForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>Cancel</Button>
+          <Button onClick={() => setShowForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>Cancel</Button>
 
           <Button onClick={handleSave} variant="contained"
 
             disabled={!formData.pm_holidayname.trim() || !formData.pm_holidaydate || actionLoading}
 
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}>
+            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}>
 
             {actionLoading ? 'Saving...' : editingHoliday ? 'Update Holiday' : 'Create Holiday'}
 
@@ -1570,7 +1570,7 @@ export default function HolidaysPage() {
 
       {/* Delete Confirmation */}
 
-      <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
+      <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}>
 
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Holiday</DialogTitle>
 
@@ -1586,9 +1586,9 @@ export default function HolidaysPage() {
 
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
 
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>Cancel</Button>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>Cancel</Button>
 
-          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
 
             {actionLoading ? 'Removing...' : 'Remove'}
 
@@ -1600,7 +1600,7 @@ export default function HolidaysPage() {
 
       {/* Seed Irish Holidays Confirmation */}
 
-      <Dialog open={showSeedConfirm} onClose={() => !seeding && setShowSeedConfirm(false)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
+      <Dialog open={showSeedConfirm} onClose={() => !seeding && setShowSeedConfirm(false)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}>
 
         <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
 
@@ -1640,9 +1640,9 @@ export default function HolidaysPage() {
 
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
 
-          <Button onClick={() => setShowSeedConfirm(false)} variant="outlined" disabled={seeding} sx={{ borderRadius: 2 }}>Cancel</Button>
+          <Button onClick={() => setShowSeedConfirm(false)} variant="outlined" disabled={seeding} sx={{ borderRadius: 1.15 }}>Cancel</Button>
 
-          <Button onClick={handleSeedIrishHolidays} variant="contained" color="success" disabled={seeding} startIcon={<FlagIcon />} sx={{ borderRadius: 2, fontWeight: 600 }}>
+          <Button onClick={handleSeedIrishHolidays} variant="contained" color="success" disabled={seeding} startIcon={<FlagIcon />} sx={{ borderRadius: 1.15, fontWeight: 600 }}>
 
             {seeding ? 'Adding...' : 'Add 9 Holidays'}
 

@@ -66,7 +66,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
     backgroundColor: isDark ? '#1e293b' : '#ffffff',
     border: `1px solid ${gridColor}`,
     color: textColor,
-    borderRadius: 8,
+    borderRadius: 1.15,
     fontSize: 13,
   }
 

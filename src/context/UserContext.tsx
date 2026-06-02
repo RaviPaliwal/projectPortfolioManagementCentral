@@ -114,7 +114,7 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
               </Box>
             )
           }}
-          sx={{ borderRadius: 2 }}
+          sx={{ borderRadius: 1.15 }}
         >
           {users.map((user) => (
             <MenuItem key={user.systemuserid} value={user.systemuserid}>
@@ -163,7 +163,7 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
         onClose={() => setAnchorEl(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{ paper: { sx: { borderRadius: 3, minWidth: 260, maxHeight: 400, mt: 1 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.15, minWidth: 260, maxHeight: 400, mt: 1 } } }}
       >
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Switch User</Typography>
@@ -177,7 +177,7 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
                 key={user.systemuserid}
                 selected={isActive}
                 onClick={() => { setCurrentUser(user); setAnchorEl(null) }}
-                sx={{ borderRadius: 1.5, mx: 0.5, my: 0.25 }}
+                sx={{ borderRadius: 1.15, mx: 0.5, my: 0.25 }}
               >
                 <ListItemAvatar>
                   <Badge

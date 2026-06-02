@@ -38,10 +38,10 @@ export const MeasureFormDialog = ({
       onClose={() => !actionLoading && onClose()}
       maxWidth="sm"
       fullWidth
-      slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+      slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
     >
       <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Avatar sx={{ width: 32, height: 32, bgcolor: '#22c55e', borderRadius: 1.5 }}>
+        <Avatar sx={{ width: 32, height: 32, bgcolor: '#22c55e', borderRadius: 1.15 }}>
           <TrackChangesIcon sx={{ fontSize: 18, color: '#fff' }} />
         </Avatar>
         Add Performance Measure
@@ -60,7 +60,7 @@ export const MeasureFormDialog = ({
               value={formData.pm_measurename}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_measurename: e.target.value }))}
               placeholder="e.g., Q1 2026 Cost Savings"
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -71,7 +71,7 @@ export const MeasureFormDialog = ({
               size="small"
               value={formData.pm_reportingperiod}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_reportingperiod: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -81,7 +81,7 @@ export const MeasureFormDialog = ({
                 value={formData.pm_evidenced}
                 label="Evidenced"
                 onChange={(e) => setFormData((f: any) => ({ ...f, pm_evidenced: e.target.value as number }))}
-                sx={{ borderRadius: 2 }}
+                sx={{ borderRadius: 1.15 }}
               >
                 <MenuItem value={0}>No</MenuItem>
                 <MenuItem value={1}>Yes</MenuItem>
@@ -96,7 +96,7 @@ export const MeasureFormDialog = ({
               size="small"
               value={formData.pm_plannedvalue}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_plannedvalue: Number(e.target.value) || 0 }))}
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -107,7 +107,7 @@ export const MeasureFormDialog = ({
               size="small"
               value={formData.pm_actualvalue}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_actualvalue: Number(e.target.value) || 0 }))}
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -118,7 +118,7 @@ export const MeasureFormDialog = ({
               size="small"
               value={formData.pm_cumulativeplanned}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_cumulativeplanned: Number(e.target.value) || 0 }))}
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -129,7 +129,7 @@ export const MeasureFormDialog = ({
               size="small"
               value={formData.pm_cumulativeactual}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_cumulativeactual: Number(e.target.value) || 0 }))}
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
@@ -142,20 +142,20 @@ export const MeasureFormDialog = ({
               value={formData.pm_notes}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_notes: e.target.value }))}
               placeholder="Any additional context about this measure..."
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
         </Grid>
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-        <Button onClick={onClose} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+        <Button onClick={onClose} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
           Cancel
         </Button>
         <Button
           onClick={onSave}
           variant="contained"
           disabled={!formData.pm_measurename.trim() || actionLoading}
-          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}
+          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
         >
           {actionLoading ? 'Adding...' : 'Add Measure'}
         </Button>

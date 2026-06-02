@@ -94,10 +94,10 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   return (
     <Box sx={{ mb: 3 }}>
       {/* Back button + header */}
-      <Paper sx={{ mb: 2.5, borderRadius: 2, overflow: 'hidden' }}>
+      <Paper sx={{ mb: 2.5, borderRadius: 1.15, overflow: 'hidden' }}>
         <Box sx={{ px: 3, pt: 2.5, pb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-            <IconButton onClick={onBack} size="small" sx={{ mt: 0.5, borderRadius: 1.5 }}>
+            <IconButton onClick={onBack} size="small" sx={{ mt: 0.5, borderRadius: 1.15 }}>
               <ArrowBackIcon />
             </IconButton>
             <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -121,24 +121,24 @@ export const Project360View: React.FC<Project360ViewProps> = ({
 
       {/* ── Quick Info Cards ──────────────────────────────────── */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 2.5 }}>
-        <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid #3b82f6' }}>
+        <Paper sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #3b82f6' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Budget</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>{currency(project.pm_approvedbudgeteur)}</Typography>
         </Paper>
-        <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid #f59e0b' }}>
+        <Paper sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #f59e0b' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Actual Spend</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>{currency(project.pm_actualcosteur)}</Typography>
         </Paper>
-        <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid #22c55e' }}>
+        <Paper sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #22c55e' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>% Complete</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>{project.pm_percentcomplete ?? 0}%</Typography>
           <LinearProgress
             variant="determinate"
             value={project.pm_percentcomplete ?? 0}
-            sx={{ mt: 0.5, height: 4, borderRadius: 2, bgcolor: theme.palette.action.hover }}
+            sx={{ mt: 0.5, height: 4, borderRadius: 1.15, bgcolor: theme.palette.action.hover }}
           />
         </Paper>
-        <Paper sx={{ p: 2, borderRadius: 1.5, borderLeft: `3px solid ${RAG_COLORS[String(project.pm_ragstatus)] ?? '#6b7280'}` }}>
+        <Paper sx={{ p: 2, borderRadius: 1.15, borderLeft: `3px solid ${RAG_COLORS[String(project.pm_ragstatus)] ?? '#6b7280'}` }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Schedule</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             {project.pm_plannedenddate
@@ -149,7 +149,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
       </Box>
 
       {/* ── Action Buttons Bar ────────────────────────────────── */}
-      <Paper sx={{ px: 2.5, py: 1.5, mb: 2.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+      <Paper sx={{ px: 2.5, py: 1.5, mb: 2.5, borderRadius: 1.15, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mr: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>Actions:</Typography>
         <Button size="small" variant="outlined" startIcon={<FlagIcon />} onClick={onAddMilestone}>Milestone</Button>
         <Button size="small" variant="outlined" color="error" startIcon={<ErrorIcon />} onClick={onLogRisk}>Risk</Button>
@@ -161,7 +161,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
       </Paper>
 
       {/* ── Tabbed Content ────────────────────────────────────── */}
-      <Paper sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
+      <Paper sx={{ borderRadius: 1.15, overflow: 'hidden' }}>
         <Tabs
           value={activeTab}
           onChange={(_, v) => setActiveTab(v)}

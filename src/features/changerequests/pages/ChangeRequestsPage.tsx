@@ -477,7 +477,7 @@ export default function ChangeRequestsPage() {
                 value={statusFilter}
                 label="Status"
                 onChange={(e) => handleStatusFilterChange(e.target.value)}
-                sx={{ borderRadius: 2, bgcolor: isDark ? '#1e293b' : '#fff' }}
+                sx={{ borderRadius: 1.15, bgcolor: isDark ? '#1e293b' : '#fff' }}
               >
                 {STATUS_FILTER_OPTIONS.map((opt) => (
                   <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
@@ -691,15 +691,15 @@ export default function ChangeRequestsPage() {
                   }
                 }}
                 startIcon={<SendIcon sx={{ fontSize: 16 }} />}
-                sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 12, py: 0.5 }}
+                sx={{ borderRadius: 1.15, fontWeight: 600, fontSize: 12, py: 0.5 }}
               >
                 {approvalLoading ? 'Submitting...' : 'Submit for Approval'}
               </Button>
             )}
-            <IconButton size="small" color="error" onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)} sx={{ borderRadius: 1.5 }}>
+            <IconButton size="small" color="error" onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)} sx={{ borderRadius: 1.15 }}>
               <DeleteIcon sx={{ fontSize: 20 }} />
             </IconButton>
-            <IconButton size="small" onClick={() => selectedCR && openEditForm(selectedCR)} sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.5 }}>
+            <IconButton size="small" onClick={() => selectedCR && openEditForm(selectedCR)} sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}>
               <EditIcon sx={{ fontSize: 20 }} />
             </IconButton>
           </Box>
@@ -712,19 +712,19 @@ export default function ChangeRequestsPage() {
           <>
             <TabPanel value={detailTab} index={0} pt={0}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <GppMaybeIcon sx={{ fontSize: 16 }} /> Impact Summary
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center', borderLeft: '3px solid #ef4444' }}>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, textAlign: 'center', borderLeft: '3px solid #ef4444' }}>
                       <AttachMoneyIcon sx={{ fontSize: 20, color: '#ef4444', mb: 0.5 }} />
                       <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '\"JetBrains Mono\", monospace', fontSize: 16 }}>
                         {selectedCR.pm_costimpacteur != null ? '\u20AC' + numberFormatter.format(selectedCR.pm_costimpacteur) : '\u2014'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">Cost Impact</Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center', borderLeft: '3px solid #f59e0b' }}>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, textAlign: 'center', borderLeft: '3px solid #f59e0b' }}>
                       <ScheduleIcon sx={{ fontSize: 20, color: '#f59e0b', mb: 0.5 }} />
                       <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '\"JetBrains Mono\", monospace', fontSize: 16 }}>
                         {selectedCR.pm_scheduleimpactdays != null ? selectedCR.pm_scheduleimpactdays + ' days' : '\u2014'}
@@ -738,7 +738,7 @@ export default function ChangeRequestsPage() {
                   </Box>
                 </Paper>
 
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <DescriptionIcon sx={{ fontSize: 16 }} /> Description
                   </Typography>
@@ -748,7 +748,7 @@ export default function ChangeRequestsPage() {
                 </Paper>
 
                 {selectedCR.pm_justification && (
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <VerifiedIcon sx={{ fontSize: 16 }} /> Justification
                     </Typography>
@@ -759,7 +759,7 @@ export default function ChangeRequestsPage() {
                 )}
 
                 {selectedCR.pm_benefitsimpact && (
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <EmojiEventsIcon sx={{ fontSize: 16 }} /> Benefits Impact
                     </Typography>
@@ -772,7 +772,7 @@ export default function ChangeRequestsPage() {
             </TabPanel>
 
             <TabPanel value={detailTab} index={1} pt={0}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <AssignmentIcon sx={{ fontSize: 16 }} /> Change Request Details
                 </Typography>
@@ -832,11 +832,11 @@ export default function ChangeRequestsPage() {
         maxWidth="md"
         fullWidth
         slotProps={{
-          paper: { sx: { borderRadius: 3 } },
+          paper: { sx: { borderRadius: 1.15 } },
         }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.5 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.15 }}>
             {editingCR ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <AddIcon sx={{ fontSize: 18, color: '#fff' }} />}
           </Avatar>
           {editingCR ? 'Edit Change Request' : 'New Change Request'}
@@ -855,14 +855,14 @@ export default function ChangeRequestsPage() {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Change Request Title" required fullWidth size="small" value={formData.pm_changerequesttitle}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_changerequesttitle: e.target.value }))}
-                placeholder="e.g., Add new reporting module" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="e.g., Add new reporting module" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Change Type</InputLabel>
                 <Select value={formData.pm_changetype} label="Change Type"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_changetype: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}>
+                  sx={{ borderRadius: 1.15 }}>
                   <MenuItem value={0}>Scope</MenuItem>
                   <MenuItem value={1}>Schedule</MenuItem>
                   <MenuItem value={2}>Resource</MenuItem>
@@ -874,7 +874,7 @@ export default function ChangeRequestsPage() {
                 <InputLabel>Priority</InputLabel>
                 <Select value={formData.pm_prioritylevel} label="Priority"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_prioritylevel: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}>
+                  sx={{ borderRadius: 1.15 }}>
                   <MenuItem value={0}>Medium</MenuItem>
                   <MenuItem value={1}>High</MenuItem>
                 </Select>
@@ -883,7 +883,7 @@ export default function ChangeRequestsPage() {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Requestor Name" fullWidth size="small" value={formData.pm_requestorname}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_requestorname: e.target.value }))}
-                placeholder="e.g., John Smith" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="e.g., John Smith" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
@@ -896,7 +896,7 @@ export default function ChangeRequestsPage() {
                     _pm_programmelookup_value: e.target.value,
                     _pm_project_value: '', // Clear project when programme changes
                   }))}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value=""><em>None</em></MenuItem>
                   {programmes.map((prog) => (
@@ -922,7 +922,7 @@ export default function ChangeRequestsPage() {
                       pm_projectcode: selectedProject?.pm_projectcode || '',
                     }))
                   }}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value=""><em>None</em></MenuItem>
                   {projects
@@ -945,7 +945,7 @@ export default function ChangeRequestsPage() {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Submission Date" type="date" fullWidth size="small" value={formData.pm_submissiondate}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_submissiondate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }} />
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
           </Grid>
 
@@ -958,12 +958,12 @@ export default function ChangeRequestsPage() {
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField label="Cost Impact (EUR)" type="number" fullWidth size="small" value={formData.pm_costimpacteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_costimpacteur: Number(e.target.value) }))}
-                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>&euro;</Typography>, sx: { borderRadius: 2 } } }} />
+                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>&euro;</Typography>, sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField label="Schedule Impact (days)" type="number" fullWidth size="small" value={formData.pm_scheduleimpactdays}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_scheduleimpactdays: Number(e.target.value) }))}
-                slotProps={{ input: { endAdornment: <Typography variant="caption" sx={{ ml: 0.5, color: 'text.secondary' }}>days</Typography>, sx: { borderRadius: 2 } } }} />
+                slotProps={{ input: { endAdornment: <Typography variant="caption" sx={{ ml: 0.5, color: 'text.secondary' }}>days</Typography>, sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'center' }}>
               <FormControlLabel
@@ -973,39 +973,39 @@ export default function ChangeRequestsPage() {
             <Grid size={{ xs: 12 }}>
               <TextField label="Description of Change" fullWidth multiline rows={3} size="small" value={formData.pm_changedescription}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_changedescription: e.target.value }))}
-                placeholder="Describe the proposed change in detail..." slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="Describe the proposed change in detail..." slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField label="Justification" fullWidth multiline rows={2} size="small" value={formData.pm_justification}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_justification: e.target.value }))}
-                placeholder="Why is this change necessary?" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="Why is this change necessary?" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField label="Benefits Impact" fullWidth multiline rows={2} size="small" value={formData.pm_benefitsimpact}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_benefitsimpact: e.target.value }))}
-                placeholder="How does this change affect expected benefits?" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="How does this change affect expected benefits?" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>Cancel</Button>
+          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>Cancel</Button>
           <Button onClick={handleSave} variant="contained"
             disabled={!String(formData.pm_changerequesttitle || '').trim() || actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}>
+            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}>
             {actionLoading ? 'Saving...' : editingCR ? 'Update Change Request' : 'Submit Change Request'}
           </Button>
         </DialogActions>
       </Dialog>
 
       <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
+        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}>
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Change Request</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">Are you sure you want to remove this change request? This action cannot be undone.</Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>Cancel</Button>
-          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>Cancel</Button>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             {actionLoading ? 'Removing...' : 'Remove'}
           </Button>
         </DialogActions>

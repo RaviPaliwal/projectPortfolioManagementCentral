@@ -26,7 +26,7 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
         {risks.length > 0 ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {risks.map((r) => (
-              <Paper key={r.pm_riskid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Paper key={r.pm_riskid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: RAG_COLORS[String(r.pm_ragstatus)] ?? '#6b7280', flexShrink: 0 }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{r.pm_risktitle}</Typography>
@@ -37,7 +37,7 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
             ))}
           </Box>
         ) : (
-          <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, textAlign: 'center' }}>
+          <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.15, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">No risks logged.</Typography>
           </Paper>
         )}
@@ -50,7 +50,7 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
         {issues.length > 0 ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {issues.map((i: any) => (
-              <Paper key={i.pm_issueid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Paper key={i.pm_issueid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <WarningAmberIcon sx={{ fontSize: 16, color: i.pm_prioritylevel === '1' || i.pm_prioritylevel === 1 ? '#ef4444' : '#f59e0b' }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{i.pm_issuetitle}</Typography>
@@ -61,7 +61,7 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
             ))}
           </Box>
         ) : (
-          <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, textAlign: 'center' }}>
+          <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.15, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">No issues logged.</Typography>
           </Paper>
         )}

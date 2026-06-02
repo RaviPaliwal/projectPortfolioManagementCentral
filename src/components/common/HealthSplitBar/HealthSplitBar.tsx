@@ -47,7 +47,7 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
           sx={{
             flex: 1,
             height: 6,
-            borderRadius: 3,
+            borderRadius: 1.15,
             overflow: 'hidden',
             display: 'flex',
             bgcolor: isDark ? '#334155' : '#e2e8f0',
@@ -102,7 +102,7 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
   return (
     <Box
       sx={{
-        borderRadius: 2,
+        borderRadius: 1.15,
         border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
         bgcolor: isDark ? '#0f172a' : '#ffffff',
         overflow: 'hidden',
@@ -130,7 +130,7 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
           sx={{
             width: 32,
             height: 32,
-            borderRadius: 1.5,
+            borderRadius: 1.15,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -169,7 +169,7 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
             <Box
               key={block.label}
               sx={{
-                borderRadius: 1.5,
+                borderRadius: 1.15,
                 bgcolor: block.bg,
                 border: `1px solid ${block.border}`,
                 p: 1.5,
@@ -218,7 +218,7 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
           sx={{
             width: '100%',
             height: 10,
-            borderRadius: 5,
+            borderRadius: 1.15,
             overflow: 'hidden',
             display: 'flex',
             bgcolor: isDark ? '#1e293b' : '#f1f5f9',

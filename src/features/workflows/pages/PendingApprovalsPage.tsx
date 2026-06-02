@@ -202,10 +202,10 @@ export default function PendingApprovalsPage() {
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setPage(0) }}
             sx={{ minWidth: 280 }}
-            slotProps={{ input: { sx: { borderRadius: 2 } } }}
+            slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
           />
           {searchQuery && (
-            <Button size="small" onClick={() => { setSearchQuery(''); setPage(0) }} sx={{ borderRadius: 2 }}>
+            <Button size="small" onClick={() => { setSearchQuery(''); setPage(0) }} sx={{ borderRadius: 1.15 }}>
               Clear
             </Button>
           )}
@@ -363,7 +363,7 @@ export default function PendingApprovalsPage() {
                           disabled={actionLoading === step.pm_workflowapprovalstepid}
                           onClick={() => handleApprove(step)}
                           startIcon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
-                          sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
+                          sx={{ borderRadius: 1.15, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
                         >
                           Approve
                         </Button>
@@ -374,7 +374,7 @@ export default function PendingApprovalsPage() {
                           disabled={actionLoading === step.pm_workflowapprovalstepid}
                           onClick={() => setRejectDialog({ open: true, step, reason: '' })}
                           startIcon={<CancelOutlinedIcon sx={{ fontSize: 16 }} />}
-                          sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
+                          sx={{ borderRadius: 1.15, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
                         >
                           Reject
                         </Button>
@@ -409,7 +409,7 @@ export default function PendingApprovalsPage() {
         onClose={() => !actionLoading && setRejectDialog({ open: false, step: null, reason: '' })}
         maxWidth="sm"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
           <CancelOutlinedIcon sx={{ color: '#ef4444' }} />
@@ -427,7 +427,7 @@ export default function PendingApprovalsPage() {
             value={rejectDialog.reason}
             onChange={(e) => setRejectDialog((prev) => ({ ...prev, reason: e.target.value }))}
             placeholder="Explain why this step is being rejected..."
-            slotProps={{ input: { sx: { borderRadius: 2 } } }}
+            slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             autoFocus
           />
         </DialogContent>
@@ -436,7 +436,7 @@ export default function PendingApprovalsPage() {
             onClick={() => setRejectDialog({ open: false, step: null, reason: '' })}
             variant="outlined"
             disabled={!!actionLoading}
-            sx={{ borderRadius: 2 }}
+            sx={{ borderRadius: 1.15 }}
           >
             Cancel
           </Button>
@@ -446,7 +446,7 @@ export default function PendingApprovalsPage() {
             color="error"
             disabled={!!actionLoading}
             startIcon={actionLoading ? undefined : <CancelOutlinedIcon />}
-            sx={{ borderRadius: 2, fontWeight: 600 }}
+            sx={{ borderRadius: 1.15, fontWeight: 600 }}
           >
             {actionLoading ? 'Rejecting...' : 'Reject Step'}
           </Button>

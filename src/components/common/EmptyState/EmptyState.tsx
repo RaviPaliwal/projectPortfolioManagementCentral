@@ -59,7 +59,7 @@ export const EmptyState = ({ icon, title, description, action, sx = {} }: EmptyS
           variant="outlined"
           startIcon={action.icon}
           onClick={action.onClick}
-          sx={{ borderRadius: 2, px: 3 }}
+          sx={{ borderRadius: 1.15, px: 3 }}
         >
           {action.label}
         </Button>

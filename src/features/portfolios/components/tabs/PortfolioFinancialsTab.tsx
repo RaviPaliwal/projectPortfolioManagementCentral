@@ -22,7 +22,7 @@ export const PortfolioFinancialsTab: React.FC<PortfolioFinancialsTabProps> = ({
   return (
     <TabPanel value={tabValue} index={index} pt={0}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-        <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+        <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <MoneyIcon sx={{ fontSize: 18 }} /> Budget Overview
           </Typography>
@@ -48,7 +48,7 @@ export const PortfolioFinancialsTab: React.FC<PortfolioFinancialsTabProps> = ({
           />
         </Paper>
 
-        <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+        <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
             Budget Variance
           </Typography>

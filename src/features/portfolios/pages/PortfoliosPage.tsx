@@ -217,7 +217,7 @@ export default function PortfoliosPage() {
           <IconButton
             size="small"
             onClick={() => setEditInfo('Edit functionality will be available in a future update.')}
-            sx={{ borderRadius: 1.5 }}
+            sx={{ borderRadius: 1.15 }}
           >
             <EditIcon />
           </IconButton>

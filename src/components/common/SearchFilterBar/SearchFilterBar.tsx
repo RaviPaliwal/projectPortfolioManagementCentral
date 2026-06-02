@@ -73,7 +73,7 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
                 <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
               </InputAdornment>
             ),
-            sx: { borderRadius: 2, fontSize: fontSizes.base },
+            sx: { borderRadius: 1.15, fontSize: fontSizes.base },
           },
         }}
         sx={{ flex: '1 1 260px', maxWidth: 420 }}
@@ -86,7 +86,7 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
             value={filterValue ?? ''}
             label={filterLabel}
             onChange={(e) => onFilterChange(e.target.value)}
-            sx={{ borderRadius: 2, fontSize: fontSizes.base }}
+            sx={{ borderRadius: 1.15, fontSize: fontSizes.base }}
           >
             {filterOptions.map((opt) => (
               <MenuItem key={opt.value} value={opt.value}>
@@ -104,7 +104,7 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
             value={secondaryFilterValue ?? ''}
             label={secondaryFilterLabel}
             onChange={(e) => onSecondaryFilterChange(e.target.value)}
-            sx={{ borderRadius: 2, fontSize: fontSizes.base }}
+            sx={{ borderRadius: 1.15, fontSize: fontSizes.base }}
           >
             {secondaryFilterOptions.map((opt) => (
               <MenuItem key={opt.value} value={opt.value}>

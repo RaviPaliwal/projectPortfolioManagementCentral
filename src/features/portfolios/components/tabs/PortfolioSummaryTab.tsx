@@ -84,13 +84,13 @@ export const PortfolioSummaryTab: React.FC<PortfolioSummaryTabProps> = ({
         ) : null}
 
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, textAlign: 'center' }}>
             <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
               {programmeCount}
             </Typography>
             <Typography variant="caption" color="text.secondary">Programmes</Typography>
           </Paper>
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, textAlign: 'center' }}>
             <Typography variant="h5" sx={{ fontWeight: 700, color: 'secondary.main' }}>
               {projectCount}
             </Typography>

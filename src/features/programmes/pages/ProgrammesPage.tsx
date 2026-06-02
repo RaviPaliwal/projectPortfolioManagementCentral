@@ -388,7 +388,7 @@ export default function ProgrammesPage() {
         <Paper
           sx={{
             mb: 3,
-            borderRadius: 1.5,
+            borderRadius: 1.15,
             border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
             bgcolor: isDark ? '#0f172a' : '#ffffff',
             overflow: 'hidden',
@@ -453,14 +453,14 @@ export default function ProgrammesPage() {
 
               {/* Quick stats mini-cards */}
               <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-                <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>
+                <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1.15, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>
                     Budget
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>
                     {currencyFormatter.format(prog?.pm_budgeteur ?? 0)}
                   </Typography>
                 </Paper>
-                <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
+                <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1.15, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>
                     Actual Spend
                   </Typography>
@@ -468,7 +468,7 @@ export default function ProgrammesPage() {
                     {currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}
                   </Typography>
                 </Paper>
-                <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
+                <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1.15, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>
                     Projects
                   </Typography>
@@ -482,7 +482,7 @@ export default function ProgrammesPage() {
         </Paper>
 
         {/* ═══ Tabs ═══ */}
-        <Paper sx={{ borderRadius: 1.5, overflow: 'hidden', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}` }}>
+        <Paper sx={{ borderRadius: 1.15, overflow: 'hidden', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}` }}>
           <Tabs
             value={detailTab}
             onChange={(_, v) => setDetailTab(v)}
@@ -497,7 +497,7 @@ export default function ProgrammesPage() {
                 minHeight: 44,
                 py: 1.5,
                 px: 2.5,
-                borderRadius: 1,
+                borderRadius: 1.15,
                 mx: 0.25,
                 transition: 'all 0.15s ease',
                 '&:hover': { bgcolor: isDark ? '#1e293b' : '#f1f5f9' },
@@ -507,7 +507,7 @@ export default function ProgrammesPage() {
               },
               '& .MuiTabs-indicator': {
                 height: 3,
-                borderRadius: 1.5,
+                borderRadius: 1.15,
               },
             }}
           >
@@ -529,37 +529,37 @@ export default function ProgrammesPage() {
                       <DescriptionIcon sx={{ fontSize: 16, color: 'primary.main' }} /> Key Details
                     </Typography>
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
+                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.15 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Phase
                         </Typography>
                         <StatusChip status={prog?.pm_programmephase} type="prog_phase" size="medium" />
                       </Paper>
-                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
+                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.15 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Programme Manager
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_programmemanager || '—'}</Typography>
                       </Paper>
-                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
+                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.15 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Sponsor
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_sponsorname || '—'}</Typography>
                       </Paper>
-                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
+                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.15 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Business Unit
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_businessunit || '—'}</Typography>
                       </Paper>
-                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
+                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.15 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Parent Portfolio
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_portfolioname || '—'}</Typography>
                       </Paper>
-                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1 }}>
+                      <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.15 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                           Budget
                         </Typography>
@@ -571,7 +571,7 @@ export default function ProgrammesPage() {
                   {/* Right column — Description & Actions */}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {prog?.pm_programmedescription && (
-                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, flex: 1 }}>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, flex: 1 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
                           <LightbulbIcon sx={{ fontSize: 16, color: '#f59e0b' }} /> Business Objectives
                         </Typography>
@@ -580,15 +580,15 @@ export default function ProgrammesPage() {
                         </Typography>
                       </Paper>
                     )}
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         <TrackChangesIcon sx={{ fontSize: 16, color: 'primary.main' }} /> Actions
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                        <Button variant="outlined" size="small" disabled sx={{ borderRadius: 1, textTransform: 'none' }}>
+                        <Button variant="outlined" size="small" disabled sx={{ borderRadius: 1.15, textTransform: 'none' }}>
                           Update Phase
                         </Button>
-                        <Button variant="outlined" size="small" disabled sx={{ borderRadius: 1, textTransform: 'none' }}>
+                        <Button variant="outlined" size="small" disabled sx={{ borderRadius: 1.15, textTransform: 'none' }}>
                           Request Gate Review
                         </Button>
                       </Box>
@@ -604,7 +604,7 @@ export default function ProgrammesPage() {
             {/* ═══ Tab 2: Project Portfolio ═══ */}
             <TabPanel value={detailTab} index={1}>
               {detailProjects.length > 0 ? (
-                <TableContainer sx={{ maxHeight: 420, borderRadius: 1, border: `1px solid ${theme.palette.divider}` }}>
+                <TableContainer sx={{ maxHeight: 420, borderRadius: 1.15, border: `1px solid ${theme.palette.divider}` }}>
                   <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
                     <TableHead>
                       <TableRow>
@@ -649,7 +649,7 @@ export default function ProgrammesPage() {
                                 sx={{
                                   width: 60,
                                   height: 6,
-                                  borderRadius: 3,
+                                  borderRadius: 1.15,
                                   bgcolor: isDark ? '#334155' : '#e2e8f0',
                                   overflow: 'hidden',
                                 }}
@@ -658,7 +658,7 @@ export default function ProgrammesPage() {
                                   sx={{
                                     width: `${Math.min(proj.pm_percentcomplete ?? 0, 100)}%`,
                                     height: '100%',
-                                    borderRadius: 3,
+                                    borderRadius: 1.15,
                                     bgcolor: (proj.pm_percentcomplete ?? 0) >= 100 ? '#22c55e' : '#0ea5e9',
                                     transition: 'width 0.4s ease',
                                   }}
@@ -690,19 +690,19 @@ export default function ProgrammesPage() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {/* Summary cards row */}
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' }, gap: 2 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, borderLeft: `3px solid #0ea5e9` }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: `3px solid #0ea5e9` }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>Programme Budget</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
                   </Paper>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, borderLeft: `3px solid #f59e0b` }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: `3px solid #f59e0b` }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>Actual Spend</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}</Typography>
                   </Paper>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, borderLeft: `3px solid #22c55e` }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: `3px solid #22c55e` }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>Child Projects Budget</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currencyFormatter.format(detailProjects.reduce((s, p) => s + (p.pm_approvedbudgeteur ?? 0), 0))}</Typography>
                   </Paper>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, borderLeft: `3px solid ${((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? '#ef4444' : '#22c55e'}` }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: `3px solid ${((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? '#ef4444' : '#22c55e'}` }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>Variance</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 700, color: ((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? '#ef4444' : '#22c55e', fontFamily: '"JetBrains Mono", monospace' }}>
                       {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
@@ -711,7 +711,7 @@ export default function ProgrammesPage() {
                 </Box>
 
                 {/* Budget utilization bar */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.75 }}>
                       <MoneyIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Budget Utilization
@@ -742,7 +742,7 @@ export default function ProgrammesPage() {
                     sx={{
                       width: '100%',
                       height: 10,
-                      borderRadius: 5,
+                      borderRadius: 1.15,
                       bgcolor: isDark ? '#1e293b' : '#e2e8f0',
                       overflow: 'hidden',
                     }}
@@ -751,7 +751,7 @@ export default function ProgrammesPage() {
                       sx={{
                         width: `${prog?.pm_budgeteur && prog.pm_budgeteur > 0 ? Math.min(((prog.pm_actualspendeur ?? 0) / prog.pm_budgeteur) * 100, 100) : 0}%`,
                         height: '100%',
-                        borderRadius: 5,
+                        borderRadius: 1.15,
                         bgcolor: (() => {
                           const ratio = prog?.pm_budgeteur && prog.pm_budgeteur > 0 ? (prog.pm_actualspendeur ?? 0) / prog.pm_budgeteur : 0
                           return ratio > 0.9 ? '#ef4444' : ratio > 0.7 ? '#f59e0b' : '#22c55e'
@@ -766,11 +766,11 @@ export default function ProgrammesPage() {
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
                   {/* Project-level financial breakdown */}
                   {detailProjects.length > 0 && (
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1 }}>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>Project Budget Breakdown</Typography>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                         {detailProjects.map((proj) => (
-                          <Paper key={proj.pm_projectid} variant="outlined" sx={{ px: 1.5, py: 1, borderRadius: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Paper key={proj.pm_projectid} variant="outlined" sx={{ px: 1.5, py: 1, borderRadius: 1.15, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography variant="body2" sx={{ fontWeight: 500, flex: 1 }}>{proj.pm_projectname ?? 'Untitled'}</Typography>
                             <Box sx={{ textAlign: 'right' }}>
                               <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', display: 'block' }}>{currencyFormatter.format(proj.pm_approvedbudgeteur ?? 0)}</Typography>
@@ -783,13 +783,13 @@ export default function ProgrammesPage() {
                   )}
 
                   {/* Funding source placeholder */}
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, bgcolor: isDark ? '#1e293b' : '#f8fafc', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: 150 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, bgcolor: isDark ? '#1e293b' : '#f8fafc', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: 150 }}>
                     <MoneyIcon sx={{ fontSize: 32, color: 'text.disabled', mb: 1.5 }} />
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Funding Allocation</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontSize: fontSizes.smMd }}>
                       Allocate top-level funding from sources.
                     </Typography>
-                    <Button variant="outlined" size="small" disabled sx={{ borderRadius: 1, textTransform: 'none' }}>
+                    <Button variant="outlined" size="small" disabled sx={{ borderRadius: 1.15, textTransform: 'none' }}>
                       Allocate Funding
                     </Button>
                     <Typography variant="caption" color="text.disabled" sx={{ mt: 1, fontSize: fontSizes.xs }}>
@@ -816,7 +816,7 @@ export default function ProgrammesPage() {
                     {detailRisks.filter((r) => r.pm_escalated).length > 0 ? (
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                         {detailRisks.filter((r) => r.pm_escalated).map((risk) => (
-                          <Paper key={risk.pm_riskid} variant="outlined" sx={{ p: 1.75, borderRadius: 1, borderLeft: '3px solid #ef4444' }}>
+                          <Paper key={risk.pm_riskid} variant="outlined" sx={{ p: 1.75, borderRadius: 1.15, borderLeft: '3px solid #ef4444' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" sx={{ fontWeight: 700 }}>{risk.pm_risktitle ?? 'Untitled Risk'}</Typography>
                               <StatusChip status={risk.pm_ragstatus} type="rag" size="small" />
@@ -837,7 +837,7 @@ export default function ProgrammesPage() {
                         ))}
                       </Box>
                     ) : (
-                      <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1, textAlign: 'center' }}>
+                      <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15, textAlign: 'center' }}>
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: fontSizes.smMd }}>No escalated risks.</Typography>
                       </Paper>
                     )}
@@ -854,7 +854,7 @@ export default function ProgrammesPage() {
                     {detailRisks.filter((r) => !r.pm_escalated).length > 0 ? (
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                         {detailRisks.filter((r) => !r.pm_escalated).map((risk) => (
-                          <Paper key={risk.pm_riskid} variant="outlined" sx={{ p: 1.75, borderRadius: 1, borderLeft: '3px solid #f59e0b' }}>
+                          <Paper key={risk.pm_riskid} variant="outlined" sx={{ p: 1.75, borderRadius: 1.15, borderLeft: '3px solid #f59e0b' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" sx={{ fontWeight: 700 }}>{risk.pm_risktitle ?? 'Untitled Risk'}</Typography>
                               <StatusChip status={risk.pm_ragstatus} type="rag" size="small" />
@@ -869,7 +869,7 @@ export default function ProgrammesPage() {
                         ))}
                       </Box>
                     ) : (
-                      <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1, textAlign: 'center' }}>
+                      <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15, textAlign: 'center' }}>
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: fontSizes.smMd }}>No programme-level risks.</Typography>
                       </Paper>
                     )}
@@ -888,7 +888,7 @@ export default function ProgrammesPage() {
                   {detailIssues.length > 0 ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                       {detailIssues.map((issue) => (
-                        <Paper key={issue.pm_issueid} variant="outlined" sx={{ p: 1.75, borderRadius: 1, borderLeft: `3px solid ${issue.pm_prioritylevel === 1 ? '#ef4444' : issue.pm_prioritylevel === 0 ? '#f59e0b' : '#0ea5e9'}` }}>
+                        <Paper key={issue.pm_issueid} variant="outlined" sx={{ p: 1.75, borderRadius: 1.15, borderLeft: `3px solid ${issue.pm_prioritylevel === 1 ? '#ef4444' : issue.pm_prioritylevel === 0 ? '#f59e0b' : '#0ea5e9'}` }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                             <Typography variant="body2" sx={{ fontWeight: 700 }}>{issue.pm_issuetitle ?? 'Untitled Issue'}</Typography>
                             <StatusChip status={issue.pm_ragstatus} type="rag" size="small" />
@@ -916,7 +916,7 @@ export default function ProgrammesPage() {
                       ))}
                     </Box>
                   ) : (
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1, textAlign: 'center' }}>
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15, textAlign: 'center' }}>
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: fontSizes.smMd }}>No issues reported.</Typography>
                     </Paper>
                   )}
@@ -1167,8 +1167,8 @@ export default function ProgrammesPage() {
       {/* ── Detail Loading Overlay (when navigating to detail) ─────────────── */}
       {selectedProgrammeId && detailLoading && (
         <Box sx={{ p: 4, textAlign: 'center' }}>
-          <Skeleton variant="rounded" height={80} sx={{ mb: 2, borderRadius: 3 }} />
-          <Skeleton variant="rounded" height={300} sx={{ borderRadius: 3 }} />
+          <Skeleton variant="rounded" height={80} sx={{ mb: 2, borderRadius: 1.15 }} />
+          <Skeleton variant="rounded" height={300} sx={{ borderRadius: 1.15 }} />
         </Box>
       )}
 
@@ -1191,7 +1191,7 @@ export default function ProgrammesPage() {
                 size="small"
                 value={createForm.pm_programmename}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_programmename: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -1201,7 +1201,7 @@ export default function ProgrammesPage() {
                   value={createForm.pm_portfolioValue}
                   label="Parent Portfolio"
                   onChange={(e) => setCreateForm((f) => ({ ...f, pm_portfolioValue: e.target.value }))}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value="">None</MenuItem>
                   {portfolios.map((p) => (
@@ -1217,7 +1217,7 @@ export default function ProgrammesPage() {
                 size="small"
                 value={createForm.pm_programmemanager}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_programmemanager: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -1227,7 +1227,7 @@ export default function ProgrammesPage() {
                 size="small"
                 value={createForm.pm_sponsorname}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_sponsorname: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -1237,7 +1237,7 @@ export default function ProgrammesPage() {
                   value={createForm.pm_programmephase}
                   label="Phase"
                   onChange={(e) => setCreateForm((f) => ({ ...f, pm_programmephase: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value={0}>Delivery</MenuItem>
                   <MenuItem value={1}>Planning</MenuItem>
@@ -1252,7 +1252,7 @@ export default function ProgrammesPage() {
                   value={createForm.pm_ragstatus}
                   label="RAG Status"
                   onChange={(e) => setCreateForm((f) => ({ ...f, pm_ragstatus: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value={1}>Green</MenuItem>
                   <MenuItem value={0}>Amber</MenuItem>
@@ -1272,7 +1272,7 @@ export default function ProgrammesPage() {
                 variant="outlined"
                 sx={{
                   p: 1.5,
-                  borderRadius: 2,
+                  borderRadius: 1.15,
                   bgcolor: isDark ? '#1e293b' : '#f8fafc',
                   borderColor: isDark ? '#334155' : '#e2e8f0',
                 }}
@@ -1331,7 +1331,7 @@ export default function ProgrammesPage() {
                 size="small"
                 value={createForm.pm_businessunit}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_businessunit: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -1342,7 +1342,7 @@ export default function ProgrammesPage() {
                 size="small"
                 value={createForm.pm_startdate}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_startdate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -1353,7 +1353,7 @@ export default function ProgrammesPage() {
                 size="small"
                 value={createForm.pm_enddate}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_enddate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
@@ -1365,7 +1365,7 @@ export default function ProgrammesPage() {
                 rows={3}
                 value={createForm.pm_programmedescription}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_programmedescription: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
           </Grid>
@@ -1393,7 +1393,7 @@ export default function ProgrammesPage() {
         fullWidth
         slotProps={{
           paper: {
-            sx: { borderRadius: 3, overflow: 'visible' },
+            sx: { borderRadius: 1.15, overflow: 'visible' },
           },
         }}
       >
@@ -1430,7 +1430,7 @@ export default function ProgrammesPage() {
           <Button
             variant="contained"
             onClick={() => setConfirmDialog({ open: false, name: '' })}
-            sx={{ borderRadius: 2, px: 4, bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' } }}
+            sx={{ borderRadius: 1.15, px: 4, bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' } }}
           >
             Got it
           </Button>

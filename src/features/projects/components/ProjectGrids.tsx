@@ -232,7 +232,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                       sx={{
                         width: 64,
                         height: 6,
-                        borderRadius: 3,
+                        borderRadius: 1.15,
                         bgcolor: theme.palette.action.hover,
                         '& .MuiLinearProgress-bar': {
                           bgcolor: (project.pm_percentcomplete ?? 0) >= 100 ? '#22c55e' : '#3b82f6',

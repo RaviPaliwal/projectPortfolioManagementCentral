@@ -18,7 +18,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project 
       <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Project Details</Typography>
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 6 }}>
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
             <Box sx={{ mb: 2 }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Project Name</Typography>
               <Typography variant="body1" sx={{ fontWeight: 600 }}>{project.pm_projectname}</Typography>
@@ -34,7 +34,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project 
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
             <Box sx={{ mb: 2 }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Project Manager</Typography>
               <Typography variant="body1">{project.pm_projectmanager || 'Unassigned'}</Typography>
@@ -50,7 +50,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project 
           </Paper>
         </Grid>
         <Grid size={{ xs: 12 }}>
-           <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+           <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
              <Grid container spacing={2}>
                <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Portfolio</Typography>

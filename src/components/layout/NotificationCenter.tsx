@@ -132,7 +132,7 @@ export const NotificationCenter = () => {
                       severity={alert.severity}
                       variant="outlined"
                       sx={{
-                        borderRadius: 2,
+                        borderRadius: 1.15,
                         width: '100%',
                         '& .MuiAlert-message': { fontWeight: 500, fontSize: fontSizes.sm },
                       }}

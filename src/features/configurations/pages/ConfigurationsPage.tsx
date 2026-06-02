@@ -54,7 +54,7 @@ const ConfigTile = ({ title, description, icon, onClick, color }: ConfigTileProp
             sx={{ 
               width: 48, 
               height: 48, 
-              borderRadius: 2, 
+              borderRadius: 1.15, 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',

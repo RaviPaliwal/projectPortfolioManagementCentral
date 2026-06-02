@@ -64,7 +64,7 @@ export const RiskHeatmap = ({ risks }: RiskHeatmapProps) => {
   }, [risks])
 
   return (
-    <Paper sx={{ p: 3, borderRadius: 2, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+    <Paper sx={{ p: 3, borderRadius: 1.15, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
         Inherent Risk Heatmap
       </Typography>

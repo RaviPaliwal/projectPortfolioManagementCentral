@@ -437,7 +437,7 @@ export default function FundingSourcesPage() {
                 value={statusFilter}
                 label="Status"
                 onChange={(e) => handleStatusFilterChange(e.target.value)}
-                sx={{ borderRadius: 2 }}
+                sx={{ borderRadius: 1.15 }}
               >
                 {STATUS_FILTER_OPTIONS.map((opt) => (
                   <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
@@ -572,7 +572,7 @@ export default function FundingSourcesPage() {
                           sx={{
                             width: 60,
                             height: 4,
-                            borderRadius: 2,
+                            borderRadius: 1.15,
                             bgcolor: isDark ? '#334155' : '#e2e8f0',
                             overflow: 'hidden',
                             ml: 'auto',
@@ -584,7 +584,7 @@ export default function FundingSourcesPage() {
                               width: `${Math.min(utilPct, 100)}%`,
                               height: '100%',
                               bgcolor: utilPct > 90 ? '#ef4444' : utilPct > 70 ? '#f59e0b' : '#22c55e',
-                              borderRadius: 2,
+                              borderRadius: 1.15,
                               transition: 'width 0.3s ease',
                             }}
                           />
@@ -666,14 +666,14 @@ export default function FundingSourcesPage() {
               size="small"
               color="error"
               onClick={() => selectedSource?.pm_fundingsourceid && setDeleteConfirm(selectedSource.pm_fundingsourceid)}
-              sx={{ borderRadius: 1.5 }}
+              sx={{ borderRadius: 1.15 }}
             >
               <DeleteIcon sx={{ fontSize: 20 }} />
             </IconButton>
             <IconButton
               size="small"
               onClick={() => selectedSource && openEditForm(selectedSource)}
-              sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.5 }}
+              sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}
             >
               <EditIcon sx={{ fontSize: 20 }} />
             </IconButton>
@@ -689,12 +689,12 @@ export default function FundingSourcesPage() {
             {/* Overview Tab */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {/* Funding Amounts */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <SavingsIcon sx={{ fontSize: 16 }} /> Funding Allocation
                 </Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderLeft: '3px solid #22c55e' }}>
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #22c55e' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                       Total Amount
                     </Typography>
@@ -702,7 +702,7 @@ export default function FundingSourcesPage() {
                       {currencyFormatter.format(selectedSource.pm_totalamounteur ?? 0)}
                     </Typography>
                   </Paper>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderLeft: '3px solid #0ea5e9' }}>
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #0ea5e9' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                       Allocated
                     </Typography>
@@ -710,7 +710,7 @@ export default function FundingSourcesPage() {
                       {currencyFormatter.format(selectedSource.pm_allocatedamounteur ?? 0)}
                     </Typography>
                   </Paper>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderLeft: '3px solid #f59e0b' }}>
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #f59e0b' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                       Available
                     </Typography>
@@ -727,13 +727,13 @@ export default function FundingSourcesPage() {
                         {((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur * 100).toFixed(1)}%
                       </Typography>
                     </Box>
-                    <Box sx={{ width: '100%', height: 8, borderRadius: 4, bgcolor: isDark ? '#334155' : '#e2e8f0', overflow: 'hidden' }}>
+                    <Box sx={{ width: '100%', height: 8, borderRadius: 1.15, bgcolor: isDark ? '#334155' : '#e2e8f0', overflow: 'hidden' }}>
                       <Box
                         sx={{
                           width: `${Math.min(((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur) * 100, 100)}%`,
                           height: '100%',
                           bgcolor: ((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur) > 0.9 ? '#ef4444' : ((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur) > 0.7 ? '#f59e0b' : '#22c55e',
-                          borderRadius: 4,
+                          borderRadius: 1.15,
                           transition: 'width 0.3s ease',
                         }}
                       />
@@ -743,7 +743,7 @@ export default function FundingSourcesPage() {
               </Paper>
 
               {/* Details */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <DescriptionIcon sx={{ fontSize: 16 }} /> Source Details
                 </Typography>
@@ -805,10 +805,10 @@ export default function FundingSourcesPage() {
         onClose={() => !actionLoading && setShowFormModal(false)}
         maxWidth="md"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#6366f1', borderRadius: 1.5 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: '#6366f1', borderRadius: 1.15 }}>
             {editingSource ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <AccountBalanceIcon sx={{ fontSize: 18, color: '#fff' }} />}
           </Avatar>
           {editingSource ? 'Edit Funding Source' : 'Add Funding Source'}
@@ -838,7 +838,7 @@ export default function FundingSourcesPage() {
                 value={formData.pm_fundingsourcename}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_fundingsourcename: e.target.value }))}
                 placeholder="e.g., EU Horizon Grant 2026"
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -848,7 +848,7 @@ export default function FundingSourcesPage() {
                   value={formData.pm_fundingtype}
                   label="Funding Type"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_fundingtype: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value={0}>Capital</MenuItem>
                   <MenuItem value={1}>EU</MenuItem>
@@ -864,7 +864,7 @@ export default function FundingSourcesPage() {
                   value={formData.pm_fundingstatus}
                   label="Status"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_fundingstatus: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value={0}>Active</MenuItem>
                   <MenuItem value={1}>Exhausted</MenuItem>
@@ -879,7 +879,7 @@ export default function FundingSourcesPage() {
                 value={formData.pm_fundingbody}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_fundingbody: e.target.value }))}
                 placeholder="e.g., European Commission"
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -890,7 +890,7 @@ export default function FundingSourcesPage() {
                 value={formData.pm_referencecode}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_referencecode: e.target.value }))}
                 placeholder="e.g., FS-2026-001"
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
           </Grid>
@@ -912,7 +912,7 @@ export default function FundingSourcesPage() {
                 size="small"
                 value={formData.pm_totalamounteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_totalamounteur: Number(e.target.value) || 0 }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
@@ -923,7 +923,7 @@ export default function FundingSourcesPage() {
                 size="small"
                 value={formData.pm_allocatedamounteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_allocatedamounteur: Number(e.target.value) || 0 }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
@@ -934,7 +934,7 @@ export default function FundingSourcesPage() {
                 size="small"
                 value={formData.pm_availableamounteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_availableamounteur: Number(e.target.value) || 0 }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
           </Grid>
@@ -956,7 +956,7 @@ export default function FundingSourcesPage() {
                 size="small"
                 value={formData.pm_effectivefromdate}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_effectivefromdate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -967,20 +967,20 @@ export default function FundingSourcesPage() {
                 size="small"
                 value={formData.pm_effectivetodate}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_effectivetodate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             Cancel
           </Button>
           <Button
             onClick={handleSaveSource}
             variant="contained"
             disabled={!formData.pm_fundingsourcename.trim() || actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}
+            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
           >
             {actionLoading ? 'Saving...' : editingSource ? 'Update Source' : 'Create Source'}
           </Button>
@@ -993,7 +993,7 @@ export default function FundingSourcesPage() {
         onClose={() => !actionLoading && setDeleteConfirm(null)}
         maxWidth="xs"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Funding Source</DialogTitle>
         <DialogContent>
@@ -1002,10 +1002,10 @@ export default function FundingSourcesPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             Cancel
           </Button>
-          <Button onClick={handleDeleteSource} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={handleDeleteSource} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             {actionLoading ? 'Removing...' : 'Remove'}
           </Button>
         </DialogActions>

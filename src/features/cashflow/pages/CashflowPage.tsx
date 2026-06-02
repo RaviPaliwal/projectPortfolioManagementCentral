@@ -646,12 +646,12 @@ export default function CashflowPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Success / Error alerts */}
       {successMsg && (
-        <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ borderRadius: 2 }}>
+        <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ borderRadius: 1.15 }}>
           {successMsg}
         </Alert>
       )}
       {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ borderRadius: 2 }}>
+        <Alert severity="error" onClose={() => setError(null)} sx={{ borderRadius: 1.15 }}>
           {error}
         </Alert>
       )}
@@ -671,7 +671,7 @@ export default function CashflowPage() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={openCreateDialog}
-            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, px: 3 }}
+            sx={{ borderRadius: 1.15, textTransform: 'none', fontWeight: 600, px: 3 }}
           >
             Add Entry
           </Button>
@@ -691,7 +691,7 @@ export default function CashflowPage() {
         elevation={0}
         sx={{
           border: `1px solid ${theme.palette.divider}`,
-          borderRadius: 3,
+          borderRadius: 1.15,
           overflow: 'hidden',
         }}
       >
@@ -743,14 +743,14 @@ export default function CashflowPage() {
             <IconButton
               size="small"
               onClick={() => { closeDrawer(); openEditDialog(selectedEntry) }}
-              sx={{ color: 'primary.main', '&:hover': { bgcolor: 'primary.main' + '15' }, borderRadius: 1.5 }}
+              sx={{ color: 'primary.main', '&:hover': { bgcolor: 'primary.main' + '15' }, borderRadius: 1.15 }}
             >
               <EditIcon sx={{ fontSize: 20 }} />
             </IconButton>
             <IconButton
               size="small"
               onClick={() => { setDeleteTarget(selectedEntry); closeDrawer() }}
-              sx={{ color: 'error.main', '&:hover': { bgcolor: 'error.main' + '15' }, borderRadius: 1.5 }}
+              sx={{ color: 'error.main', '&:hover': { bgcolor: 'error.main' + '15' }, borderRadius: 1.15 }}
             >
               <DeleteIcon sx={{ fontSize: 20 }} />
             </IconButton>
@@ -763,7 +763,7 @@ export default function CashflowPage() {
             {/* Impact Summary Card */}
             <Paper
               variant="outlined"
-              sx={{ p: 2.5, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'grey.50' }}
+              sx={{ p: 2.5, borderRadius: 1.15, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'grey.50' }}
             >
               <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <AccountBalanceIcon sx={{ fontSize: 16 }} />
@@ -815,7 +815,7 @@ export default function CashflowPage() {
 
             {/* Description */}
             {selectedEntry.pm_description && (
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <DescriptionIcon sx={{ fontSize: 16 }} />
                   Description
@@ -827,7 +827,7 @@ export default function CashflowPage() {
             )}
 
             {/* Invoice & Financial Period */}
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
               <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <ReceiptLongIcon sx={{ fontSize: 16 }} />
                 Reference Details
@@ -853,7 +853,7 @@ export default function CashflowPage() {
             </Paper>
 
             {/* Programme & Project */}
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
               <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <BusinessIcon sx={{ fontSize: 16 }} />
                 Linked Entities
@@ -959,7 +959,7 @@ export default function CashflowPage() {
         onClose={closeDialog}
         maxWidth="md"
         fullWidth
-        sx={{ '& .MuiPaper-root': { borderRadius: 3 } }}
+        sx={{ '& .MuiPaper-root': { borderRadius: 1.15 } }}
       >
         <DialogTitle sx={{ pb: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -1151,14 +1151,14 @@ export default function CashflowPage() {
           </Grid>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-          <Button onClick={closeDialog} sx={{ borderRadius: 2, textTransform: 'none' }}>
+          <Button onClick={closeDialog} sx={{ borderRadius: 1.15, textTransform: 'none' }}>
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleSave}
             disabled={dialogLoading}
-            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+            sx={{ borderRadius: 1.15, textTransform: 'none', fontWeight: 600 }}
           >
             {dialogLoading ? 'Saving...' : dialogMode === 'create' ? 'Create Entry' : 'Save Changes'}
           </Button>
@@ -1169,7 +1169,7 @@ export default function CashflowPage() {
       <Dialog
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
-        sx={{ '& .MuiPaper-root': { borderRadius: 3, maxWidth: 400 } }}
+        sx={{ '& .MuiPaper-root': { borderRadius: 1.15, maxWidth: 400 } }}
       >
         <DialogTitle sx={{ pb: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>Delete Cashflow Entry</Typography>
@@ -1180,7 +1180,7 @@ export default function CashflowPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-          <Button onClick={() => setDeleteTarget(null)} sx={{ borderRadius: 2, textTransform: 'none' }}>
+          <Button onClick={() => setDeleteTarget(null)} sx={{ borderRadius: 1.15, textTransform: 'none' }}>
             Cancel
           </Button>
           <Button
@@ -1188,7 +1188,7 @@ export default function CashflowPage() {
             color="error"
             onClick={handleDelete}
             disabled={actionLoading}
-            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+            sx={{ borderRadius: 1.15, textTransform: 'none', fontWeight: 600 }}
           >
             {actionLoading ? 'Deleting...' : 'Delete'}
           </Button>

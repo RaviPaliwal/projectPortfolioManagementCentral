@@ -403,12 +403,12 @@ export default function IssuesPage() {
 
       {/* Success / Error */}
       {successMsg && (
-        <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ mb: 2, borderRadius: 2 }}>
+        <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ mb: 2, borderRadius: 1.15 }}>
           {successMsg}
         </Alert>
       )}
       {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: 2 }}>
+        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: 1.15 }}>
           {error}
         </Alert>
       )}
@@ -431,7 +431,7 @@ export default function IssuesPage() {
                   value={statusFilter}
                   label="Status"
                   onChange={(e) => { setStatusFilter(e.target.value) }}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value="">All</MenuItem>
                   <MenuItem value="0">In Progress</MenuItem>
@@ -444,7 +444,7 @@ export default function IssuesPage() {
                   value={priorityFilter}
                   label="Priority"
                   onChange={(e) => { setPriorityFilter(e.target.value) }}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value="">All</MenuItem>
                   <MenuItem value="1">Critical</MenuItem>
@@ -458,7 +458,7 @@ export default function IssuesPage() {
                   value={categoryFilter}
                   label="Category"
                   onChange={(e) => { setCategoryFilter(e.target.value) }}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value="">All</MenuItem>
                   <MenuItem value="0">Dependency</MenuItem>
@@ -471,7 +471,7 @@ export default function IssuesPage() {
                   value={ragFilter}
                   label="RAG"
                   onChange={(e) => { setRagFilter(e.target.value) }}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value="">All</MenuItem>
                   <MenuItem value="2">Red</MenuItem>
@@ -729,14 +729,14 @@ export default function IssuesPage() {
               <IconButton
                 size="small"
                 onClick={() => { handleOpenEdit(selectedIssue, new MouseEvent('click') as any); setDrawerOpen(false) }}
-                sx={{ borderRadius: 1.5 }}
+                sx={{ borderRadius: 1.15 }}
               >
                 <EditIcon fontSize="small" />
               </IconButton>
               <IconButton
                 size="small"
                 onClick={() => { setDeleteTarget(selectedIssue); setDrawerOpen(false) }}
-                sx={{ borderRadius: 1.5, color: 'error.main' }}
+                sx={{ borderRadius: 1.15, color: 'error.main' }}
               >
                 <DeleteIcon fontSize="small" />
               </IconButton>
@@ -750,7 +750,7 @@ export default function IssuesPage() {
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Box
                 sx={{
-                  flex: 1, p: 2, borderRadius: 2,
+                  flex: 1, p: 2, borderRadius: 1.15,
                   bgcolor: PRIORITY_COLORS[String(selectedIssue.pm_prioritylevel ?? '')] === 'error' ? '#fce4ec' :
                            PRIORITY_COLORS[String(selectedIssue.pm_prioritylevel ?? '')] === 'warning' ? '#fff3e0' : '#e3f2fd',
                 }}
@@ -765,7 +765,7 @@ export default function IssuesPage() {
               </Box>
               <Box
                 sx={{
-                  flex: 1, p: 2, borderRadius: 2,
+                  flex: 1, p: 2, borderRadius: 1.15,
                   bgcolor: selectedIssue.pm_escalationstatus ? '#fce4ec' : '#f5f5f5',
                 }}
               >
@@ -782,7 +782,7 @@ export default function IssuesPage() {
               </Box>
               <Box
                 sx={{
-                  flex: 1, p: 2, borderRadius: 2,
+                  flex: 1, p: 2, borderRadius: 1.15,
                   bgcolor: RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] === 'error' ? '#fce4ec' :
                            RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] === 'warning' ? '#fff3e0' : '#e8f5e9',
                 }}
@@ -815,7 +815,7 @@ export default function IssuesPage() {
                 { icon: <CalendarTodayIcon fontSize="inherit" />, label: 'Actual Resolution', value: selectedIssue.pm_actualresolutiondate ? new Date(selectedIssue.pm_actualresolutiondate).toLocaleDateString() : '—' },
                 { icon: <FlagIcon fontSize="inherit" />, label: 'Reference', value: selectedIssue.pm_issuereference || '—' },
               ].map((info, i) => (
-                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 1, bgcolor: 'grey.50' }}>
+                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 1.15, bgcolor: 'grey.50' }}>
                   <Box sx={{ color: 'text.secondary', display: 'flex' }}>{info.icon}</Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">{info.label}</Typography>
@@ -839,7 +839,7 @@ export default function IssuesPage() {
 
             {/* Linked Risk */}
             {selectedIssue.pm_linkedrisk && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 1, bgcolor: '#f3e5f5' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 1.15, bgcolor: '#f3e5f5' }}>
                 <ReportProblemIcon color="warning" fontSize="small" />
                 <Typography variant="body2">
                   <strong>Linked Risk:</strong> {selectedIssue.pm_linkedrisk}
@@ -853,7 +853,7 @@ export default function IssuesPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* Resolution Details */}
             {selectedIssue.pm_resolutiondetails ? (
-              <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#e8f5e9' }}>
+              <Box sx={{ p: 2, borderRadius: 1.15, bgcolor: '#e8f5e9' }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                   <CheckCircleIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5, color: 'success.main' }} />
                   Resolution Details
@@ -863,7 +863,7 @@ export default function IssuesPage() {
                 </Typography>
               </Box>
             ) : (
-              <Box sx={{ p: 3, borderRadius: 2, bgcolor: '#f5f5f5', textAlign: 'center' }}>
+              <Box sx={{ p: 3, borderRadius: 1.15, bgcolor: '#f5f5f5', textAlign: 'center' }}>
                 <CheckCircleIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
                 <Typography variant="body2" color="text.secondary">
                   No resolution details recorded yet.
@@ -876,7 +876,7 @@ export default function IssuesPage() {
 
             {/* Status Timeline */}
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'grey.50' }}>
+              <Box sx={{ p: 1.5, borderRadius: 1.15, bgcolor: 'grey.50' }}>
                 <Typography variant="caption" color="text.secondary">Status</Typography>
                 <Box sx={{ mt: 0.5 }}>
                   <StatusTag
@@ -885,7 +885,7 @@ export default function IssuesPage() {
                   />
                 </Box>
               </Box>
-              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'grey.50' }}>
+              <Box sx={{ p: 1.5, borderRadius: 1.15, bgcolor: 'grey.50' }}>
                 <Typography variant="caption" color="text.secondary">Escalation</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
                   <ArrowCircleUpIcon

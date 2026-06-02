@@ -659,14 +659,14 @@ export default function SkillsPage() {
                 size="small"
                 color="error"
                 onClick={() => { setDeleteType('skill'); selectedSkill?.pm_skillid && setDeleteConfirm(selectedSkill.pm_skillid) }}
-                sx={{ borderRadius: 1.5 }}
+                sx={{ borderRadius: 1.15 }}
               >
                 <DeleteIcon sx={{ fontSize: 20 }} />
               </IconButton>
               <IconButton
                 size="small"
                 onClick={() => selectedSkill && openEditSkill(selectedSkill)}
-                sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.5 }}
+                sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}
               >
                 <EditIcon sx={{ fontSize: 20 }} />
               </IconButton>
@@ -676,7 +676,7 @@ export default function SkillsPage() {
           {selectedSkill && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {/* Skill Details */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <AutoAwesomeIcon sx={{ fontSize: 16 }} /> Skill Details
                 </Typography>
@@ -705,7 +705,7 @@ export default function SkillsPage() {
               </Paper>
 
               {/* Resource Count */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <PersonIcon sx={{ fontSize: 16 }} /> Resources with this Skill
                 </Typography>
@@ -743,10 +743,10 @@ export default function SkillsPage() {
           onClose={() => !actionLoading && setShowSkillForm(false)}
           maxWidth="sm"
           fullWidth
-          slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+          slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
         >
           <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: '#8b5cf6', borderRadius: 1.5 }}>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: '#8b5cf6', borderRadius: 1.15 }}>
               {editingSkill ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <PsychologyIcon sx={{ fontSize: 18, color: '#fff' }} />}
             </Avatar>
             {editingSkill ? 'Edit Skill' : 'Add New Skill'}
@@ -772,7 +772,7 @@ export default function SkillsPage() {
                   size="small"
                   value={skillFormData.pm_skillname}
                   onChange={(e) => setSkillFormData((f) => ({ ...f, pm_skillname: e.target.value }))}
-                  slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -782,7 +782,7 @@ export default function SkillsPage() {
                     value={skillFormData.pm_skillcategory}
                     label="Category"
                     onChange={(e) => setSkillFormData((f) => ({ ...f, pm_skillcategory: e.target.value as number }))}
-                    sx={{ borderRadius: 2 }}
+                    sx={{ borderRadius: 1.15 }}
                   >
                     <MenuItem value={0}>Technical</MenuItem>
                     <MenuItem value={1}>Functional</MenuItem>
@@ -801,20 +801,20 @@ export default function SkillsPage() {
                   value={skillFormData.pm_skilldescription}
                   onChange={(e) => setSkillFormData((f) => ({ ...f, pm_skilldescription: e.target.value }))}
                   placeholder="Brief description of the skill and what it encompasses..."
-                  slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
                 />
               </Grid>
             </Grid>
           </DialogContent>
           <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Button onClick={() => setShowSkillForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+            <Button onClick={() => setShowSkillForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
               Cancel
             </Button>
             <Button
               onClick={handleSaveSkill}
               variant="contained"
               disabled={!skillFormData.pm_skillname.trim() || actionLoading}
-              sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}
+              sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
             >
               {actionLoading ? 'Saving...' : editingSkill ? 'Update Skill' : 'Create Skill'}
             </Button>
@@ -993,10 +993,10 @@ export default function SkillsPage() {
           onClose={() => !actionLoading && setShowRsForm(false)}
           maxWidth="sm"
           fullWidth
-          slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+          slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
         >
           <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.5 }}>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.15 }}>
               {editingRs ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <LinkIcon sx={{ fontSize: 18, color: '#fff' }} />}
             </Avatar>
             {editingRs ? 'Edit Mapping' : 'Add Resource-Skill Mapping'}
@@ -1030,7 +1030,7 @@ export default function SkillsPage() {
                         _pm_skill_value: skillId,
                       }))
                     }}
-                    sx={{ borderRadius: 2 }}
+                    sx={{ borderRadius: 1.15 }}
                   >
                     {skills.map((s) => (
                       <MenuItem key={s.pm_skillid} value={s.pm_skillid ?? ''}>
@@ -1048,7 +1048,7 @@ export default function SkillsPage() {
                   value={rsFormData.pm_resourcename}
                   onChange={(e) => setRsFormData((f) => ({ ...f, pm_resourcename: e.target.value, _pm_resource_value: e.target.value }))}
                   placeholder="e.g., John Doe"
-                  slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
@@ -1058,7 +1058,7 @@ export default function SkillsPage() {
                     value={rsFormData.pm_proficiencylevel}
                     label="Proficiency Level"
                     onChange={(e) => setRsFormData((f) => ({ ...f, pm_proficiencylevel: e.target.value as number }))}
-                    sx={{ borderRadius: 2 }}
+                    sx={{ borderRadius: 1.15 }}
                   >
                     <MenuItem value={0}>Beginner</MenuItem>
                     <MenuItem value={1}>Intermediate</MenuItem>
@@ -1075,7 +1075,7 @@ export default function SkillsPage() {
                   size="small"
                   value={rsFormData.pm_yearsofexperience}
                   onChange={(e) => setRsFormData((f) => ({ ...f, pm_yearsofexperience: Number(e.target.value) }))}
-                  slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
@@ -1086,7 +1086,7 @@ export default function SkillsPage() {
                   value={rsFormData.pm_certificationname}
                   onChange={(e) => setRsFormData((f) => ({ ...f, pm_certificationname: e.target.value }))}
                   placeholder="e.g., AWS Certified"
-                  slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -1097,7 +1097,7 @@ export default function SkillsPage() {
                   size="small"
                   value={rsFormData.pm_certificationexpirydate}
                   onChange={(e) => setRsFormData((f) => ({ ...f, pm_certificationexpirydate: e.target.value }))}
-                  slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+                  slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -1109,7 +1109,7 @@ export default function SkillsPage() {
                         value={rsFormData.pm_certified ? 'yes' : 'no'}
                         onChange={(e) => setRsFormData((f) => ({ ...f, pm_certified: e.target.value === 'yes' }))}
                         size="small"
-                        sx={{ borderRadius: 2, minWidth: 100 }}
+                        sx={{ borderRadius: 1.15, minWidth: 100 }}
                       >
                         <MenuItem value="yes">Yes</MenuItem>
                         <MenuItem value="no">No</MenuItem>
@@ -1123,7 +1123,7 @@ export default function SkillsPage() {
                         value={rsFormData.pm_primaryskill ? 'yes' : 'no'}
                         onChange={(e) => setRsFormData((f) => ({ ...f, pm_primaryskill: e.target.value === 'yes' }))}
                         size="small"
-                        sx={{ borderRadius: 2, minWidth: 100 }}
+                        sx={{ borderRadius: 1.15, minWidth: 100 }}
                       >
                         <MenuItem value="yes">Yes</MenuItem>
                         <MenuItem value="no">No</MenuItem>
@@ -1135,14 +1135,14 @@ export default function SkillsPage() {
             </Grid>
           </DialogContent>
           <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Button onClick={() => setShowRsForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+            <Button onClick={() => setShowRsForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
               Cancel
             </Button>
             <Button
               onClick={handleSaveRs}
               variant="contained"
               disabled={actionLoading}
-              sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}
+              sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
             >
               {actionLoading ? 'Saving...' : editingRs ? 'Update Mapping' : 'Create Mapping'}
             </Button>
@@ -1156,7 +1156,7 @@ export default function SkillsPage() {
         onClose={() => !actionLoading && setDeleteConfirm(null)}
         maxWidth="xs"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
           {deleteType === 'skill' ? 'Remove Skill' : 'Remove Mapping'}
@@ -1169,10 +1169,10 @@ export default function SkillsPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             Cancel
           </Button>
-          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             {actionLoading ? 'Removing...' : 'Remove'}
           </Button>
         </DialogActions>

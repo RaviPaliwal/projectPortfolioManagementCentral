@@ -52,7 +52,7 @@ export function TimesheetEntryList({
             startIcon={<AddIcon />}
             onClick={onAddEntry}
             disabled={actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2 }}
+            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}
           >
             Add Entry
           </Button>
@@ -62,7 +62,7 @@ export function TimesheetEntryList({
       {entries.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {entries.map((entry) => (
-            <Paper key={entry.pm_timesheetentryid} variant="outlined" sx={{ p: 1.5, borderRadius: 2, position: 'relative' }}>
+            <Paper key={entry.pm_timesheetentryid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, position: 'relative' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -124,7 +124,7 @@ export function TimesheetEntryList({
               size="small"
               startIcon={<AddIcon />}
               onClick={onAddEntry}
-              sx={{ borderRadius: 2 }}
+              sx={{ borderRadius: 1.15 }}
             >
               Log your first entry
             </Button>
@@ -134,7 +134,7 @@ export function TimesheetEntryList({
 
       {/* Summary */}
       {entries.length > 0 && (
-        <Paper variant="outlined" sx={{ mt: 2, p: 2, borderRadius: 2, bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
+        <Paper variant="outlined" sx={{ mt: 2, p: 2, borderRadius: 1.15, bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, mb: 1, display: 'block' }}>
             Period Summary
           </Typography>

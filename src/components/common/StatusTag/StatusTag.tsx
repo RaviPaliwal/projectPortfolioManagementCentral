@@ -41,7 +41,7 @@ export const StatusTag = ({
     gap: 0.75,
     px: size === 'small' ? 1 : 1.5,
     py: size === 'small' ? 0.25 : 0.5,
-    borderRadius: 1.5, // 12px with default spacing
+    borderRadius: 1.15, // 12px with default spacing
     fontWeight: 700,
     fontSize: size === 'small' ? '0.725rem' : '0.8125rem',
     whiteSpace: 'nowrap',

@@ -220,7 +220,7 @@ export default function DashboardPage() {
       />
 
       {/* Refreshing overlay */}
-      {refreshing && <LinearProgress sx={{ mb: 1.5, borderRadius: 1 }} />}
+      {refreshing && <LinearProgress sx={{ mb: 1.5, borderRadius: 1.15 }} />}
 
       {/* KPI Cards — Standardized Row */}
       <KpiCardRow items={kpiItems} loading={loading} />
@@ -270,13 +270,13 @@ export default function DashboardPage() {
             {loading ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {[...Array(3)].map((_, i) => (
-                  <Box key={i} sx={{ height: 120, bgcolor: 'action.hover', borderRadius: 2 }} />
+                  <Box key={i} sx={{ height: 120, bgcolor: 'action.hover', borderRadius: 1.15 }} />
                 ))}
               </Box>
             ) : approvals.length > 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {approvals.slice(0, 3).map((request) => (
-                  <Paper key={request.pm_initiativeid} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Paper key={request.pm_initiativeid} variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{request.pm_name ?? 'Approval request'}</Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                       {request.pm_portfolioname ?? 'Portfolio not set'} · {request.pm_requestorname ?? 'Unknown'}
@@ -357,7 +357,7 @@ export default function DashboardPage() {
             <Grid container spacing={1.5}>
               {projects.map((project) => (
                 <Grid size={{ xs: 12, sm: 6 }} key={project.pm_projectid}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{project.pm_projectname ?? 'Untitled'}</Typography>
                       <StatusChip status={project.pm_ragstatus} type="rag" />

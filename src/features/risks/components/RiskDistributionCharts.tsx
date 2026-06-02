@@ -65,7 +65,7 @@ export const RiskDistributionCharts = ({ risks }: RiskDistributionChartsProps) =
     <Grid container spacing={2.5} sx={{ mb: 3 }}>
       {/* Severity Distribution Pie Chart */}
       <Grid size={{ xs: 12, md: 4 }}>
-        <Paper sx={{ p: 3, borderRadius: 2, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+        <Paper sx={{ p: 3, borderRadius: 1.15, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             Severity Distribution
           </Typography>
@@ -92,7 +92,7 @@ export const RiskDistributionCharts = ({ risks }: RiskDistributionChartsProps) =
                   </Pie>
                   <RechartsTooltip
                     contentStyle={{
-                      borderRadius: 8,
+                      borderRadius: 1.15,
                       border: `1px solid ${theme.palette.divider}`,
                       background: isDark ? '#1e293b' : '#ffffff',
                     }}
@@ -129,7 +129,7 @@ export const RiskDistributionCharts = ({ risks }: RiskDistributionChartsProps) =
 
       {/* Category Distribution Bar Chart */}
       <Grid size={{ xs: 12, md: 5 }}>
-        <Paper sx={{ p: 3, borderRadius: 2, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+        <Paper sx={{ p: 3, borderRadius: 1.15, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             Risk by Category
           </Typography>
@@ -155,7 +155,7 @@ export const RiskDistributionCharts = ({ risks }: RiskDistributionChartsProps) =
                   />
                   <RechartsTooltip
                     contentStyle={{
-                      borderRadius: 8,
+                      borderRadius: 1.15,
                       border: `1px solid ${theme.palette.divider}`,
                       background: isDark ? '#1e293b' : '#ffffff',
                     }}
@@ -179,7 +179,7 @@ export const RiskDistributionCharts = ({ risks }: RiskDistributionChartsProps) =
 
       {/* Risk Summary Stats */}
       <Grid size={{ xs: 12, md: 3 }}>
-        <Paper sx={{ p: 3, borderRadius: 2, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+        <Paper sx={{ p: 3, borderRadius: 1.15, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             Risk Summary
           </Typography>
@@ -187,7 +187,7 @@ export const RiskDistributionCharts = ({ risks }: RiskDistributionChartsProps) =
             Key metrics at a glance.
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 1, borderRadius: 1.5, bgcolor: isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.04)' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 1, borderRadius: 1.15, bgcolor: isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.04)' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ef4444' }} />
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>High Risk</Typography>
@@ -196,7 +196,7 @@ export const RiskDistributionCharts = ({ risks }: RiskDistributionChartsProps) =
                 {severityChartData.find(d => d.name === 'High')?.value ?? 0}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 1, borderRadius: 1.5, bgcolor: isDark ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.04)' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 1, borderRadius: 1.15, bgcolor: isDark ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.04)' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f59e0b' }} />
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>Medium Risk</Typography>
@@ -205,7 +205,7 @@ export const RiskDistributionCharts = ({ risks }: RiskDistributionChartsProps) =
                 {severityChartData.find(d => d.name === 'Medium')?.value ?? 0}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 1, borderRadius: 1.5, bgcolor: isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.04)' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.5, py: 1, borderRadius: 1.15, bgcolor: isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.04)' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#22c55e' }} />
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>Low Risk</Typography>

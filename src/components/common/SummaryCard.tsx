@@ -132,9 +132,9 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
               value={progress}
               sx={{
                 height: 8,
-                borderRadius: 4,
+                borderRadius: 1.15,
                 backgroundColor: theme.palette.mode === 'light' ? '#e0e0e0' : '#424242',
-                '& .MuiLinearProgress-bar': { borderRadius: 4 },
+                '& .MuiLinearProgress-bar': { borderRadius: 1.15 },
               }}
             />
           </Box>
@@ -234,19 +234,19 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
       {/* Metrics grid */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 1.5, mb: 2 }}>
-        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 2 }}>
+        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 1.15 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>{tasks.length}</Typography>
           <Typography variant="caption" color="text.secondary">Total Tasks</Typography>
         </Box>
-        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 2 }}>
+        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 1.15 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main' }}>{completedTasks}</Typography>
           <Typography variant="caption" color="text.secondary">Completed</Typography>
         </Box>
-        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 2 }}>
+        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 1.15 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, color: 'warning.main' }}>{milestones.length}</Typography>
           <Typography variant="caption" color="text.secondary">Milestones</Typography>
         </Box>
-        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 2 }}>
+        <Box sx={{ textAlign: 'center', p: 1.5, bgcolor: theme.palette.action.hover, borderRadius: 1.15 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, color: 'info.main' }}>{overallProgress}%</Typography>
           <Typography variant="caption" color="text.secondary">Progress</Typography>
         </Box>
@@ -279,9 +279,9 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
           value={overallProgress}
           sx={{
             height: 10,
-            borderRadius: 5,
+            borderRadius: 1.15,
             backgroundColor: theme.palette.mode === 'light' ? '#e0e0e0' : '#424242',
-            '& .MuiLinearProgress-bar': { borderRadius: 5 },
+            '& .MuiLinearProgress-bar': { borderRadius: 1.15 },
           }}
         />
       </Box>
@@ -302,7 +302,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                   alignItems: 'center',
                   p: 1.5,
                   bgcolor: theme.palette.action.hover,
-                  borderRadius: 1.5,
+                  borderRadius: 1.15,
                 }}
               >
                 <Box>
@@ -316,7 +316,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                     sx={{
                       width: 60,
                       height: 6,
-                      borderRadius: 3,
+                      borderRadius: 1.15,
                       bgcolor: theme.palette.mode === 'light' ? '#e0e0e0' : '#424242',
                     }}
                   />
@@ -346,7 +346,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                   alignItems: 'center',
                   p: 1.5,
                   bgcolor: theme.palette.action.hover,
-                  borderRadius: 1.5,
+                  borderRadius: 1.15,
                 }}
               >
                 <Box>

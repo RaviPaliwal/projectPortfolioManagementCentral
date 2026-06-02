@@ -22,7 +22,7 @@ class PageErrorBoundary extends Component<EBProps, EBState> {
     if (this.state.error) {
       return (
         <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
-          <Paper sx={{ p: 4, maxWidth: 560, textAlign: 'center', borderRadius: 3 }}>
+          <Paper sx={{ p: 4, maxWidth: 560, textAlign: 'center', borderRadius: 1.15 }}>
             <ErrorOutlineIcon sx={{ fontSize: 56, color: 'error.main', mb: 2 }} />
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
               {this.props.pageName ?? 'This page'} encountered an error
@@ -90,7 +90,7 @@ const getTheme = (mode: PaletteMode) =>
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 16,
+            borderRadius: 1.155 * 12,
             border: `1px solid ${mode === 'light' ? '#e2e8f0' : '#334155'}`,
             transition: 'all 0.2s ease-in-out',
           },
@@ -98,14 +98,15 @@ const getTheme = (mode: PaletteMode) =>
       },
       MuiButton: {
         styleOverrides: {
-          root: { textTransform: 'none', fontWeight: 600, borderRadius: 10, padding: '8px 20px', fontSize: fontSizes.smMd },
+          root: { textTransform: 'none', fontWeight: 600, borderRadius: 1.155 * 12, padding: '8px 20px', fontSize: fontSizes.smMd },
         },
       },
-      MuiChip: { styleOverrides: { root: { fontWeight: 600, fontSize: fontSizes.sm, borderRadius: 8 } } },
-      MuiDialog: { styleOverrides: { paper: { borderRadius: 16 } } },
+      MuiChip: { styleOverrides: { root: { fontWeight: 600, fontSize: fontSizes.sm, borderRadius: 1.155 * 12 } } },
+      MuiDialog: { styleOverrides: { paper: { borderRadius: 1.155 * 12 } } },
       MuiTab: { styleOverrides: { root: { textTransform: 'none', fontWeight: 600, fontSize: fontSizes.smMd } } },
       MuiTableCell: { styleOverrides: { root: { fontSize: fontSizes.sm } } },
-      MuiInputBase: { styleOverrides: { root: { fontSize: fontSizes.base } } },
+      MuiInputBase: { styleOverrides: { root: { fontSize: fontSizes.base, borderRadius: 1.155 * 12 } } },
+      MuiPaper: { styleOverrides: { rounded: { borderRadius: 1.155 * 12 } } },
     },
   })
 

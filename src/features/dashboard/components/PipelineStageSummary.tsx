@@ -58,7 +58,7 @@ export const PipelineStageSummary = ({ initiatives, loading }: PipelineStageSumm
                 sx={{
                   px: 1.25,
                   py: 0.25,
-                  borderRadius: 1,
+                  borderRadius: 1.15,
                   bgcolor: `${stage.color}18`,
                   minWidth: 32,
                   textAlign: 'center',

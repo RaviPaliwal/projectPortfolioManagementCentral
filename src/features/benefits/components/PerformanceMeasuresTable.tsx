@@ -43,14 +43,14 @@ export const PerformanceMeasuresTable = ({
           size="small"
           startIcon={<AddIcon />}
           onClick={onAddClick}
-          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2 }}
+          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}
         >
           Add Measure
         </Button>
       </Box>
 
       {measures.length === 0 ? (
-        <Paper variant="outlined" sx={{ textAlign: 'center', py: 6, borderRadius: 2 }}>
+        <Paper variant="outlined" sx={{ textAlign: 'center', py: 6, borderRadius: 1.15 }}>
           <TrackChangesIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1.5 }} />
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             No performance measures recorded.
@@ -59,13 +59,13 @@ export const PerformanceMeasuresTable = ({
             Add measures to track progress against this benefit's target values per reporting period.
           </Typography>
           <Box sx={{ mt: 2 }}>
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={onAddClick} sx={{ borderRadius: 2 }}>
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={onAddClick} sx={{ borderRadius: 1.15 }}>
               Add first measure
             </Button>
           </Box>
         </Paper>
       ) : (
-        <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Paper variant="outlined" sx={{ borderRadius: 1.15, overflow: 'hidden' }}>
           <Table size="small">
             <TableHead>
               <TableRow>

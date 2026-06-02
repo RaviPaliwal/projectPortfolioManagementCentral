@@ -39,7 +39,7 @@ export const ActiveProjectsGrid = ({ projects, loading, onViewAll }: ActiveProje
                 variant="outlined"
                 sx={{
                   p: 2,
-                  borderRadius: 2,
+                  borderRadius: 1.15,
                   transition: 'all 0.2s',
                   '&:hover': { borderColor: 'primary.main', boxShadow: 1 },
                 }}

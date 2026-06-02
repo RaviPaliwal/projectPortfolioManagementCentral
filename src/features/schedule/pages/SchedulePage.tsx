@@ -506,7 +506,7 @@ export default function SchedulePage() {
 
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 140 }}>
-        <Box sx={{ flex: 1, position: 'relative', height: 8, bgcolor: theme.palette.action.hover, borderRadius: 4, overflow: 'hidden' }}>
+        <Box sx={{ flex: 1, position: 'relative', height: 8, bgcolor: theme.palette.action.hover, borderRadius: 1.15, overflow: 'hidden' }}>
           <Box
             sx={{
               position: 'absolute',
@@ -515,7 +515,7 @@ export default function SchedulePage() {
               height: '100%',
               width: `${Math.min(pct, 100)}%`,
               bgcolor: color,
-              borderRadius: 4,
+              borderRadius: 1.15,
               transition: 'width 0.3s ease',
             }}
           />
@@ -568,7 +568,7 @@ export default function SchedulePage() {
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
       {/* ── Project Selector + Action Buttons ──────────────────────────── */}
-      <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2 }}>
+      <Paper sx={{ p: 2.5, mb: 3, borderRadius: 1.15 }}>
         <Grid container component="div" spacing={2} sx={{ alignItems: 'center' }}>
           <Grid size={{ xs: 12, sm: 4 }}>
             <FormControl fullWidth size="small">
@@ -577,7 +577,7 @@ export default function SchedulePage() {
                 value={selectedProjectId}
                 label="Select Project"
                 onChange={(e) => setSelectedProjectId(e.target.value)}
-                sx={{ borderRadius: 2 }}
+                sx={{ borderRadius: 1.15 }}
               >
                 <MenuItem value="">
                   <em>Choose a project...</em>
@@ -635,7 +635,7 @@ export default function SchedulePage() {
 
       {!selectedProjectId ? (
         /* ── No project selected ─────────────────────────────────────── */
-        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
+        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 1.15 }}>
           <AccountTreeIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600, mb: 1 }}>
             Select a Project
@@ -778,7 +778,7 @@ export default function SchedulePage() {
                               sx={{
                                 width: 4,
                                 height: 28,
-                                borderRadius: 2,
+                                borderRadius: 1.15,
                                 bgcolor: getTaskLevelColor(level),
                                 flexShrink: 0,
                               }}
@@ -1457,7 +1457,7 @@ export default function SchedulePage() {
           {detailTask && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {/* Progress */}
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, mb: 1, display: 'block' }}>
                   Progress
                 </Typography>
@@ -1468,7 +1468,7 @@ export default function SchedulePage() {
                       value={detailTask.pm_percentcomplete ?? 0}
                       sx={{
                         height: 10,
-                        borderRadius: 5,
+                        borderRadius: 1.15,
                         bgcolor: theme.palette.action.hover,
                         '& .MuiLinearProgress-bar': {
                           bgcolor: (detailTask.pm_percentcomplete ?? 0) >= 100 ? '#22c55e' : '#3b82f6',
@@ -1485,7 +1485,7 @@ export default function SchedulePage() {
               {/* Schedule details */}
               <Grid container spacing={2}>
                 <Grid size={{ xs: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
                       Planned Start
                     </Typography>
@@ -1495,7 +1495,7 @@ export default function SchedulePage() {
                   </Paper>
                 </Grid>
                 <Grid size={{ xs: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
                       Planned End
                     </Typography>
@@ -1505,7 +1505,7 @@ export default function SchedulePage() {
                   </Paper>
                 </Grid>
                 <Grid size={{ xs: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
                       Duration
                     </Typography>
@@ -1515,7 +1515,7 @@ export default function SchedulePage() {
                   </Paper>
                 </Grid>
                 <Grid size={{ xs: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
                       Lag
                     </Typography>
@@ -1528,7 +1528,7 @@ export default function SchedulePage() {
 
               {/* Description */}
               {detailTask.pm_taskdescription && (
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
                     Description
                   </Typography>
@@ -1539,7 +1539,7 @@ export default function SchedulePage() {
               )}
 
               {/* Resource */}
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
                   Assigned Resource
                 </Typography>
@@ -1556,7 +1556,7 @@ export default function SchedulePage() {
           {detailTask && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {/* Predecessor */}
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 1 }}>
                   <LinkIcon sx={{ fontSize: 14, verticalAlign: 'middle', mr: 0.5 }} />
                   Predecessor
@@ -1590,7 +1590,7 @@ export default function SchedulePage() {
               </Paper>
 
               {/* Critical path info */}
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 1 }}>
                   <ScheduleIcon sx={{ fontSize: 14, verticalAlign: 'middle', mr: 0.5 }} />
                   Schedule Info

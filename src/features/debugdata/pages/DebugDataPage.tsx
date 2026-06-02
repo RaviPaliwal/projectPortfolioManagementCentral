@@ -341,7 +341,7 @@ export default function DebugDataPage() {
               sx={{
                 maxHeight: 600,
                 border: `1px solid ${theme.palette.divider}`,
-                borderRadius: 2,
+                borderRadius: 1.15,
                 '& .MuiTableCell-root': {
                   fontSize: '0.75rem',
                   fontFamily: '"Fira Code", "Cascadia Code", "JetBrains Mono", monospace',

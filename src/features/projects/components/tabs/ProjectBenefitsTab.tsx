@@ -21,7 +21,7 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({ benefits
       {benefits.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {benefits.map((b) => (
-            <Paper key={b.pm_benefitid} variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Paper key={b.pm_benefitid} variant="outlined" sx={{ p: 2, borderRadius: 1.15, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box sx={{ flex: 1 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>{b.pm_benefitname}</Typography>
                 <Typography variant="caption" color="text.secondary">

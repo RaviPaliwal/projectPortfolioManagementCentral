@@ -471,7 +471,7 @@ export default function GateReviewsPage() {
                 value={outcomeFilter}
                 label="Outcome"
                 onChange={(e) => handleOutcomeFilterChange(e.target.value)}
-                sx={{ borderRadius: 2 }}
+                sx={{ borderRadius: 1.15 }}
               >
                 {OUTCOME_FILTER_OPTIONS.map((opt) => (
                   <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
@@ -663,14 +663,14 @@ export default function GateReviewsPage() {
               size="small"
               color="error"
               onClick={() => selectedReview?.pm_projectgatereviewid && setDeleteConfirm(selectedReview.pm_projectgatereviewid)}
-              sx={{ borderRadius: 1.5 }}
+              sx={{ borderRadius: 1.15 }}
             >
               <DeleteIcon sx={{ fontSize: 20 }} />
             </IconButton>
             <IconButton
               size="small"
               onClick={() => selectedReview && openEditForm(selectedReview)}
-              sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.5 }}
+              sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}
             >
               <EditIcon sx={{ fontSize: 20 }} />
             </IconButton>
@@ -689,7 +689,7 @@ export default function GateReviewsPage() {
             <TabPanel value={detailTab} index={0} pt={0}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 {/* Gate Info Card */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <FactCheckIcon sx={{ fontSize: 16 }} /> Review Information
                   </Typography>
@@ -714,12 +714,12 @@ export default function GateReviewsPage() {
                 </Paper>
 
                 {/* Dates Card */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <CalendarMonthIcon sx={{ fontSize: 16 }} /> Key Dates
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderLeft: '3px solid #0ea5e9' }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #0ea5e9' }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                         Planned Review Date
                       </Typography>
@@ -729,7 +729,7 @@ export default function GateReviewsPage() {
                           : 'Not scheduled'}
                       </Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderLeft: '3px solid #22c55e' }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #22c55e' }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                         Actual Review Date
                       </Typography>
@@ -744,7 +744,7 @@ export default function GateReviewsPage() {
 
                 {/* Notes Card */}
                 {selectedReview.pm_reviewnotes && (
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <DescriptionIcon sx={{ fontSize: 16 }} /> Review Notes
                     </Typography>
@@ -760,7 +760,7 @@ export default function GateReviewsPage() {
             <TabPanel value={detailTab} index={1} pt={0}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 {/* Conditions */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <RuleIcon sx={{ fontSize: 16, color: '#f59e0b' }} /> Conditions for Approval
                   </Typography>
@@ -769,7 +769,7 @@ export default function GateReviewsPage() {
                       sx={{
                         p: 2,
                         bgcolor: isDark ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.05)',
-                        borderRadius: 2,
+                        borderRadius: 1.15,
                         border: '1px solid',
                         borderColor: isDark ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.15)',
                       }}
@@ -791,7 +791,7 @@ export default function GateReviewsPage() {
                 </Paper>
 
                 {/* Documents */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <DescriptionIcon sx={{ fontSize: 16, color: '#0ea5e9' }} /> Documents
                   </Typography>
@@ -800,7 +800,7 @@ export default function GateReviewsPage() {
                       sx={{
                         p: 2,
                         bgcolor: isDark ? 'rgba(14,165,233,0.08)' : 'rgba(14,165,233,0.05)',
-                        borderRadius: 2,
+                        borderRadius: 1.15,
                         border: '1px solid',
                         borderColor: isDark ? 'rgba(14,165,233,0.2)' : 'rgba(14,165,233,0.15)',
                       }}
@@ -837,10 +837,10 @@ export default function GateReviewsPage() {
         onClose={() => !actionLoading && setShowFormModal(false)}
         maxWidth="md"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#6366f1', borderRadius: 1.5 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: '#6366f1', borderRadius: 1.15 }}>
             {editingReview ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <FactCheckIcon sx={{ fontSize: 18, color: '#fff' }} />}
           </Avatar>
           {editingReview ? 'Edit Gate Review' : 'Schedule Gate Review'}
@@ -870,7 +870,7 @@ export default function GateReviewsPage() {
                 value={formData.pm_gatename}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_gatename: e.target.value }))}
                 placeholder="e.g., Gate 1 — Business Case Review"
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -880,7 +880,7 @@ export default function GateReviewsPage() {
                   value={formData.pm_gatestage}
                   label="Gate Stage"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_gatestage: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value={0}>Gate 1</MenuItem>
                   <MenuItem value={1}>Gate 2</MenuItem>
@@ -896,7 +896,7 @@ export default function GateReviewsPage() {
                   value={formData.pm_reviewoutcome}
                   label="Outcome"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_reviewoutcome: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value={2}>Not Yet Reviewed</MenuItem>
                   <MenuItem value={0}>Approved</MenuItem>
@@ -911,7 +911,7 @@ export default function GateReviewsPage() {
                   value={formData.pm_reviewstatus}
                   label="Status"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_reviewstatus: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 1.15 }}
                 >
                   <MenuItem value={1}>Scheduled</MenuItem>
                   <MenuItem value={0}>Complete</MenuItem>
@@ -926,7 +926,7 @@ export default function GateReviewsPage() {
                 value={formData.pm_leadreviewer}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_leadreviewer: e.target.value }))}
                 placeholder="e.g., Jane Smith"
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -937,7 +937,7 @@ export default function GateReviewsPage() {
                 value={formData.pm_projectcode}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_projectcode: e.target.value }))}
                 placeholder="e.g., PRJ-001 or Programme Name"
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
           </Grid>
@@ -959,7 +959,7 @@ export default function GateReviewsPage() {
                 size="small"
                 value={formData.pm_plannedreviewdate}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_plannedreviewdate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -970,7 +970,7 @@ export default function GateReviewsPage() {
                 size="small"
                 value={formData.pm_actualreviewdate}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_actualreviewdate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
           </Grid>
@@ -994,7 +994,7 @@ export default function GateReviewsPage() {
                 value={formData.pm_reviewnotes}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_reviewnotes: e.target.value }))}
                 placeholder="Summary of the review discussion, findings, and decisions..."
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
@@ -1007,7 +1007,7 @@ export default function GateReviewsPage() {
                 value={formData.pm_reviewconditions}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_reviewconditions: e.target.value }))}
                 placeholder="If Conditional Approval, list conditions that must be met..."
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
@@ -1018,20 +1018,20 @@ export default function GateReviewsPage() {
                 value={formData.pm_documentsurl}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_documentsurl: e.target.value }))}
                 placeholder="https://sharepoint.com/... or other document link"
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
               />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             Cancel
           </Button>
           <Button
             onClick={handleSaveReview}
             variant="contained"
             disabled={!formData.pm_gatename.trim() || actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}
+            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
           >
             {actionLoading ? 'Saving...' : editingReview ? 'Update Review' : 'Schedule Review'}
           </Button>
@@ -1044,7 +1044,7 @@ export default function GateReviewsPage() {
         onClose={() => !actionLoading && setDeleteConfirm(null)}
         maxWidth="xs"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Gate Review</DialogTitle>
         <DialogContent>
@@ -1053,10 +1053,10 @@ export default function GateReviewsPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             Cancel
           </Button>
-          <Button onClick={handleDeleteReview} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={handleDeleteReview} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             {actionLoading ? 'Removing...' : 'Remove'}
           </Button>
         </DialogActions>

@@ -47,10 +47,10 @@ export const BenefitFormDialog = ({
       onClose={() => !actionLoading && onClose()}
       maxWidth="md"
       fullWidth
-      slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+      slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
     >
       <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Avatar sx={{ width: 32, height: 32, bgcolor: '#6366f1', borderRadius: 1.5 }}>
+        <Avatar sx={{ width: 32, height: 32, bgcolor: '#6366f1', borderRadius: 1.15 }}>
           {editingBenefit ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <EmojiEventsIcon sx={{ fontSize: 18, color: '#fff' }} />}
         </Avatar>
         {editingBenefit ? 'Edit Benefit' : 'Register Benefit'}
@@ -80,7 +80,7 @@ export const BenefitFormDialog = ({
               value={formData.pm_benefitname}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_benefitname: e.target.value }))}
               placeholder="e.g., Cost Savings from Automation"
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -90,7 +90,7 @@ export const BenefitFormDialog = ({
                 value={formData.pm_benefitcategory}
                 label="Category"
                 onChange={(e) => setFormData((f: any) => ({ ...f, pm_benefitcategory: e.target.value as number }))}
-                sx={{ borderRadius: 2 }}
+                sx={{ borderRadius: 1.15 }}
               >
                 <MenuItem value={0}>Financial</MenuItem>
                 <MenuItem value={1}>Operational</MenuItem>
@@ -108,7 +108,7 @@ export const BenefitFormDialog = ({
               value={formData.pm_benefitreference}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_benefitreference: e.target.value }))}
               placeholder="e.g., BEN-001"
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -118,7 +118,7 @@ export const BenefitFormDialog = ({
                 value={formData.pm_benefitstatus}
                 label="Status"
                 onChange={(e) => setFormData((f: any) => ({ ...f, pm_benefitstatus: e.target.value as number }))}
-                sx={{ borderRadius: 2 }}
+                sx={{ borderRadius: 1.15 }}
               >
                 <MenuItem value={0}>Identified</MenuItem>
                 <MenuItem value={1}>In Progress</MenuItem>
@@ -135,7 +135,7 @@ export const BenefitFormDialog = ({
                 value={formData.pm_ragstatus}
                 label="Assessment (RAG)"
                 onChange={(e) => setFormData((f: any) => ({ ...f, pm_ragstatus: e.target.value as number }))}
-                sx={{ borderRadius: 2 }}
+                sx={{ borderRadius: 1.15 }}
               >
                 <MenuItem value={1}>Green — On Track</MenuItem>
                 <MenuItem value={0}>Amber — At Risk</MenuItem>
@@ -150,7 +150,7 @@ export const BenefitFormDialog = ({
                 value={formData.pm_benefittype}
                 label="Benefit Type"
                 onChange={(e) => setFormData((f: any) => ({ ...f, pm_benefittype: e.target.value as number }))}
-                sx={{ borderRadius: 2 }}
+                sx={{ borderRadius: 1.15 }}
               >
                 <MenuItem value={0}>Quantitative</MenuItem>
                 <MenuItem value={1}>Qualitative</MenuItem>
@@ -165,7 +165,7 @@ export const BenefitFormDialog = ({
               value={formData.pm_benifitownername}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_benifitownername: e.target.value }))}
               placeholder="e.g., Sarah Connor"
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -176,7 +176,7 @@ export const BenefitFormDialog = ({
               value={formData.pm_projectcode}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_projectcode: e.target.value }))}
               placeholder="e.g., PRJ-001 or Programme Name"
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
         </Grid>
@@ -198,7 +198,7 @@ export const BenefitFormDialog = ({
               size="small"
               value={formData.pm_baselinevalue}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_baselinevalue: Number(e.target.value) || 0 }))}
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -209,7 +209,7 @@ export const BenefitFormDialog = ({
               size="small"
               value={formData.pm_targetvalue}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_targetvalue: Number(e.target.value) || 0 }))}
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -220,7 +220,7 @@ export const BenefitFormDialog = ({
               value={formData.pm_unitofmeasure}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_unitofmeasure: e.target.value }))}
               placeholder="e.g., EUR, %, hours, FTE"
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -231,7 +231,7 @@ export const BenefitFormDialog = ({
               size="small"
               value={formData.pm_realisationstartdate}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_realisationstartdate: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -242,7 +242,7 @@ export const BenefitFormDialog = ({
               size="small"
               value={formData.pm_realisationenddate}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_realisationenddate: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
         </Grid>
@@ -266,20 +266,20 @@ export const BenefitFormDialog = ({
               value={formData.pm_benefitdescription}
               onChange={(e) => setFormData((f: any) => ({ ...f, pm_benefitdescription: e.target.value }))}
               placeholder="Describe the expected benefit, how it will be measured, and the approach to realisation..."
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
         </Grid>
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-        <Button onClick={onClose} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+        <Button onClick={onClose} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
           Cancel
         </Button>
         <Button
           onClick={onSave}
           variant="contained"
           disabled={!formData.pm_benefitname.trim() || actionLoading}
-          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}
+          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
         >
           {actionLoading ? 'Saving...' : editingBenefit ? 'Update Benefit' : 'Register Benefit'}
         </Button>

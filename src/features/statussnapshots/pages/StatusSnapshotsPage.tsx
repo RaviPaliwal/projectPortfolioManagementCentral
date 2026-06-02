@@ -519,7 +519,7 @@ export default function StatusSnapshotsPage() {
               return (
                 <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dim.key}>
                   <Card variant="outlined" sx={{
-                    borderRadius: 3,
+                    borderRadius: 1.15,
                     height: '100%',
                     transition: 'box-shadow 0.2s ease, transform 0.2s ease',
                     '&:hover': {
@@ -534,7 +534,7 @@ export default function StatusSnapshotsPage() {
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                        <Box sx={{ flex: 1, height: 12, borderRadius: 6, overflow: 'hidden', bgcolor: isDark ? '#1e293b' : '#f1f5f9', display: 'flex' }}>
+                        <Box sx={{ flex: 1, height: 12, borderRadius: 1.15, overflow: 'hidden', bgcolor: isDark ? '#1e293b' : '#f1f5f9', display: 'flex' }}>
                           <Box sx={{ width: greenPct + '%', bgcolor: '#22c55e', transition: 'width 0.5s ease' }} />
                           <Box sx={{ width: amberPct + '%', bgcolor: '#f59e0b', transition: 'width 0.5s ease' }} />
                           <Box sx={{ width: redPct + '%', bgcolor: '#ef4444', transition: 'width 0.5s ease' }} />
@@ -561,7 +561,7 @@ export default function StatusSnapshotsPage() {
                   <CalendarMonthIcon sx={{ color: '#0ea5e9' }} />
                   13-Period Fiscal Year Distribution
                 </Typography>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                   <Grid container spacing={1.5}>
                     {FISCAL_PERIOD_OPTIONS.filter((o) => o.value).map((period) => {
                       const count = snapshots.filter((s) => s.pm_reportingperiod === period.value).length
@@ -572,7 +572,7 @@ export default function StatusSnapshotsPage() {
                           <Box
                             sx={{
                               p: 1.5,
-                              borderRadius: 2,
+                              borderRadius: 1.15,
                               border: '1px solid',
                               borderColor: isDark ? '#334155' : '#e2e8f0',
                               bgcolor: isDark ? '#1a2332' : '#f8fafc',
@@ -591,7 +591,7 @@ export default function StatusSnapshotsPage() {
                             <LinearProgress
                               variant="determinate"
                               value={pct}
-                              sx={{ mt: 1, borderRadius: 4, height: 4, bgcolor: isDark ? '#1e293b' : '#e2e8f0' }}
+                              sx={{ mt: 1, borderRadius: 1.15, height: 4, bgcolor: isDark ? '#1e293b' : '#e2e8f0' }}
                             />
                           </Box>
                         </Grid>
@@ -745,10 +745,10 @@ export default function StatusSnapshotsPage() {
         )}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <IconButton size="small" color="error" onClick={() => selectedSnapshot?.pm_projectstatussnapshotid && setDeleteConfirm(selectedSnapshot.pm_projectstatussnapshotid)} sx={{ borderRadius: 1.5 }}>
+            <IconButton size="small" color="error" onClick={() => selectedSnapshot?.pm_projectstatussnapshotid && setDeleteConfirm(selectedSnapshot.pm_projectstatussnapshotid)} sx={{ borderRadius: 1.15 }}>
               <DeleteIcon sx={{ fontSize: 20 }} />
             </IconButton>
-            <IconButton size="small" onClick={() => selectedSnapshot && openEdit(selectedSnapshot)} sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.5 }}>
+            <IconButton size="small" onClick={() => selectedSnapshot && openEdit(selectedSnapshot)} sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}>
               <EditIcon sx={{ fontSize: 20 }} />
             </IconButton>
           </Box>
@@ -757,7 +757,7 @@ export default function StatusSnapshotsPage() {
         {selectedSnapshot && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {/* RAG Status Cards */}
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <AutoAwesomeIcon sx={{ fontSize: 16 }} /> RAG Status Ratings
               </Typography>
@@ -766,7 +766,7 @@ export default function StatusSnapshotsPage() {
                   <Grid size={{ xs: 6, sm: 4 }} key={dim.key}>
                     <Box sx={{
                       p: 1.5,
-                      borderRadius: 2,
+                      borderRadius: 1.15,
                       bgcolor: isDark ? '#1a2332' : '#f8fafc',
                       border: '1px solid',
                       borderColor: isDark ? '#334155' : '#e2e8f0',
@@ -783,7 +783,7 @@ export default function StatusSnapshotsPage() {
 
             {/* Highlights & Lowlights */}
             {(selectedSnapshot.pm_projecthighlights || selectedSnapshot.pm_projectlowlights) && (
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <VisibilityIcon sx={{ fontSize: 16 }} /> Highlights & Lowlights
                 </Typography>
@@ -791,7 +791,7 @@ export default function StatusSnapshotsPage() {
                   {selectedSnapshot.pm_projecthighlights && (
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Highlights</Typography>
-                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: isDark ? '#052e16' : '#f0fdf4', borderColor: '#22c55e40' }}>
+                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, bgcolor: isDark ? '#052e16' : '#f0fdf4', borderColor: '#22c55e40' }}>
                         <Typography variant="body2">{selectedSnapshot.pm_projecthighlights}</Typography>
                       </Paper>
                     </Grid>
@@ -799,7 +799,7 @@ export default function StatusSnapshotsPage() {
                   {selectedSnapshot.pm_projectlowlights && (
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Lowlights</Typography>
-                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: isDark ? '#450a0a' : '#fef2f2', borderColor: '#ef444440' }}>
+                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, bgcolor: isDark ? '#450a0a' : '#fef2f2', borderColor: '#ef444440' }}>
                         <Typography variant="body2">{selectedSnapshot.pm_projectlowlights}</Typography>
                       </Paper>
                     </Grid>
@@ -809,7 +809,7 @@ export default function StatusSnapshotsPage() {
             )}
 
             {/* Details */}
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <AssignmentIcon sx={{ fontSize: 16 }} /> Snapshot Details
               </Typography>
@@ -838,7 +838,7 @@ export default function StatusSnapshotsPage() {
             </Paper>
 
             {selectedSnapshot.pm_actionitems && (
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <ReportIcon sx={{ fontSize: 16 }} /> Action Items
                 </Typography>
@@ -850,9 +850,9 @@ export default function StatusSnapshotsPage() {
       </DetailDrawer>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={showForm} onClose={() => !actionLoading && setShowForm(false)} maxWidth="md" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
+      <Dialog open={showForm} onClose={() => !actionLoading && setShowForm(false)} maxWidth="md" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}>
         <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#8b5cf6', borderRadius: 1.5 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: '#8b5cf6', borderRadius: 1.15 }}>
             {editingSnapshot ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <AssessmentIcon sx={{ fontSize: 18, color: '#fff' }} />}
           </Avatar>
           {editingSnapshot ? 'Edit Status Snapshot' : 'Add New Status Snapshot'}
@@ -872,12 +872,12 @@ export default function StatusSnapshotsPage() {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Snapshot Name" required fullWidth size="small" value={formData.pm_snapshotname}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_snapshotname: e.target.value }))}
-                placeholder="e.g., Q1 2026 Status Report" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="e.g., Q1 2026 Status Report" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Entity Type</InputLabel>
-                <Select value={formData.pm_entitytype} label="Entity Type" onChange={(e) => setFormData((f) => ({ ...f, pm_entitytype: e.target.value }))} sx={{ borderRadius: 2 }}>
+                <Select value={formData.pm_entitytype} label="Entity Type" onChange={(e) => setFormData((f) => ({ ...f, pm_entitytype: e.target.value }))} sx={{ borderRadius: 1.15 }}>
                   {ENTITY_TYPE_OPTIONS.filter((o) => o.value).map((opt) => (
                     <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                   ))}
@@ -887,12 +887,12 @@ export default function StatusSnapshotsPage() {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Project Code" fullWidth size="small" value={formData.pm_projectcode}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_projectcode: e.target.value }))}
-                placeholder="e.g., PROJ-001" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="e.g., PROJ-001" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Reporting Period</InputLabel>
-                <Select value={formData.pm_reportingperiod} label="Reporting Period" onChange={(e) => setFormData((f) => ({ ...f, pm_reportingperiod: e.target.value }))} sx={{ borderRadius: 2 }}>
+                <Select value={formData.pm_reportingperiod} label="Reporting Period" onChange={(e) => setFormData((f) => ({ ...f, pm_reportingperiod: e.target.value }))} sx={{ borderRadius: 1.15 }}>
                   {FISCAL_PERIOD_OPTIONS.filter((o) => o.value).map((opt) => (
                     <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                   ))}
@@ -912,7 +912,7 @@ export default function StatusSnapshotsPage() {
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Overall RAG</InputLabel>
-                <Select value={formData.pm_overallragstatus} label="Overall RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_overallragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <Select value={formData.pm_overallragstatus} label="Overall RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_overallragstatus: Number(e.target.value) }))} sx={{ borderRadius: 1.15 }}>
                   <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: '#22c55e' }} /> Green</Box></MenuItem>
                   <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: '#f59e0b' }} /> Amber</Box></MenuItem>
                   <MenuItem value={2}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ErrorIcon sx={{ fontSize: 16, color: '#ef4444' }} /> Red</Box></MenuItem>
@@ -922,7 +922,7 @@ export default function StatusSnapshotsPage() {
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Cost RAG</InputLabel>
-                <Select value={formData.pm_costragstatus} label="Cost RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_costragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <Select value={formData.pm_costragstatus} label="Cost RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_costragstatus: Number(e.target.value) }))} sx={{ borderRadius: 1.15 }}>
                   <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: '#22c55e' }} /> Green</Box></MenuItem>
                   <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: '#f59e0b' }} /> Amber</Box></MenuItem>
                 </Select>
@@ -931,7 +931,7 @@ export default function StatusSnapshotsPage() {
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Schedule RAG</InputLabel>
-                <Select value={formData.pm_scheduleragstatus} label="Schedule RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_scheduleragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <Select value={formData.pm_scheduleragstatus} label="Schedule RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_scheduleragstatus: Number(e.target.value) }))} sx={{ borderRadius: 1.15 }}>
                   <MenuItem value={1}><CheckCircleIcon sx={{ fontSize: 16, color: '#22c55e' }} /> Green</MenuItem>
                   <MenuItem value={0}><WarningAmberIcon sx={{ fontSize: 16, color: '#f59e0b' }} /> Amber</MenuItem>
                   <MenuItem value={2}><ErrorIcon sx={{ fontSize: 16, color: '#ef4444' }} /> Red</MenuItem>
@@ -941,7 +941,7 @@ export default function StatusSnapshotsPage() {
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Risk RAG</InputLabel>
-                <Select value={formData.pm_riskragstatus} label="Risk RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_riskragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <Select value={formData.pm_riskragstatus} label="Risk RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_riskragstatus: Number(e.target.value) }))} sx={{ borderRadius: 1.15 }}>
                   <MenuItem value={1}><CheckCircleIcon sx={{ fontSize: 16, color: '#22c55e' }} /> Green</MenuItem>
                   <MenuItem value={0}><WarningAmberIcon sx={{ fontSize: 16, color: '#f59e0b' }} /> Amber</MenuItem>
                   <MenuItem value={2}><ErrorIcon sx={{ fontSize: 16, color: '#ef4444' }} /> Red</MenuItem>
@@ -951,7 +951,7 @@ export default function StatusSnapshotsPage() {
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Resource RAG</InputLabel>
-                <Select value={formData.pm_resourceragstatus} label="Resource RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_resourceragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <Select value={formData.pm_resourceragstatus} label="Resource RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_resourceragstatus: Number(e.target.value) }))} sx={{ borderRadius: 1.15 }}>
                   <MenuItem value={0}><CheckCircleIcon sx={{ fontSize: 16, color: '#22c55e' }} /> Green</MenuItem>
                   <MenuItem value={1}><WarningAmberIcon sx={{ fontSize: 16, color: '#f59e0b' }} /> Amber</MenuItem>
                 </Select>
@@ -960,7 +960,7 @@ export default function StatusSnapshotsPage() {
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Benefits RAG</InputLabel>
-                <Select value={formData.pm_benefitsragstatus} label="Benefits RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_benefitsragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <Select value={formData.pm_benefitsragstatus} label="Benefits RAG" onChange={(e) => setFormData((f) => ({ ...f, pm_benefitsragstatus: Number(e.target.value) }))} sx={{ borderRadius: 1.15 }}>
                   <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: '#22c55e' }} /> Green</Box></MenuItem>
                   <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ChecklistIcon sx={{ fontSize: 16, color: '#94a3b8' }} /> Not Set</Box></MenuItem>
                 </Select>
@@ -979,42 +979,42 @@ export default function StatusSnapshotsPage() {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Submitted Date" type="date" fullWidth size="small" value={formData.pm_submissiondate}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_submissiondate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }} />
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Submitted By" fullWidth size="small" value={formData.pm_submittedby}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_submittedby: e.target.value }))}
-                placeholder="e.g., John Smith" slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="e.g., John Smith" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField label="Highlights" fullWidth multiline rows={2} size="small" value={formData.pm_projecthighlights}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_projecthighlights: e.target.value }))}
-                placeholder="Key achievements and positive developments..." slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="Key achievements and positive developments..." slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField label="Lowlights" fullWidth multiline rows={2} size="small" value={formData.pm_projectlowlights}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_projectlowlights: e.target.value }))}
-                placeholder="Issues, risks, or areas needing attention..." slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="Issues, risks, or areas needing attention..." slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField label="Action Items" fullWidth multiline rows={2} size="small" value={formData.pm_actionitems}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_actionitems: e.target.value }))}
-                placeholder="Follow-up actions required..." slotProps={{ input: { sx: { borderRadius: 2 } } }} />
+                placeholder="Follow-up actions required..." slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={() => setShowForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>Cancel</Button>
+          <Button onClick={() => setShowForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>Cancel</Button>
           <Button onClick={handleSave} variant="contained"
             disabled={!formData.pm_snapshotname.trim() || actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}>
+            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}>
             {actionLoading ? 'Saving...' : editingSnapshot ? 'Update Snapshot' : 'Create Snapshot'}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation */}
-      <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
+      <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}>
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Snapshot</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">
@@ -1022,8 +1022,8 @@ export default function StatusSnapshotsPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>Cancel</Button>
-          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>Cancel</Button>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             {actionLoading ? 'Removing...' : 'Remove'}
           </Button>
         </DialogActions>

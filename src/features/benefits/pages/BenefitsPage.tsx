@@ -429,7 +429,7 @@ export default function BenefitsPage() {
           <>
             <TabPanel value={detailTab} index={0} pt={0}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <EmojiEventsIcon sx={{ fontSize: 16 }} /> Benefit Information
                   </Typography>
@@ -461,12 +461,12 @@ export default function BenefitsPage() {
                   </Box>
                 </Paper>
 
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <TrackChangesIcon sx={{ fontSize: 16 }} /> Target & Performance
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderLeft: '3px solid #6366f1' }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #6366f1' }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: '0.7rem' }}>
                         Baseline Value
                       </Typography>
@@ -474,7 +474,7 @@ export default function BenefitsPage() {
                         {selectedBenefit.pm_baselinevalue != null ? selectedBenefit.pm_baselinevalue.toLocaleString() : '—'}
                       </Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderLeft: '3px solid #22c55e' }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #22c55e' }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: '0.7rem' }}>
                         Target Value
                       </Typography>
@@ -484,7 +484,7 @@ export default function BenefitsPage() {
                     </Paper>
                   </Box>
                   {selectedBenefit.pm_targetvalue != null && selectedBenefit.pm_baselinevalue != null && selectedBenefit.pm_targetvalue > 0 && (
-                    <Box sx={{ mt: 2, p: 1.5, borderRadius: 2, bgcolor: isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.05)' }}>
+                    <Box sx={{ mt: 2, p: 1.5, borderRadius: 1.15, bgcolor: isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.05)' }}>
                       <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <TrendingUpIcon sx={{ fontSize: 16, color: '#22c55e' }} />
                         {Math.round((((selectedBenefit.pm_targetvalue - selectedBenefit.pm_baselinevalue) / selectedBenefit.pm_baselinevalue) * 100) * 10) / 10}% improvement target
@@ -494,7 +494,7 @@ export default function BenefitsPage() {
                 </Paper>
 
                 {selectedBenefit.pm_benefitdescription && (
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <DescriptionIcon sx={{ fontSize: 16 }} /> Description
                     </Typography>
@@ -504,7 +504,7 @@ export default function BenefitsPage() {
                   </Paper>
                 )}
 
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <TimelineIcon sx={{ fontSize: 16 }} /> Realisation Schedule
                   </Typography>
@@ -558,7 +558,7 @@ export default function BenefitsPage() {
         onClose={() => !actionLoading && setDeleteConfirm(null)}
         maxWidth="xs"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Benefit</DialogTitle>
         <DialogContent>
@@ -567,10 +567,10 @@ export default function BenefitsPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             Cancel
           </Button>
-          <Button onClick={handleDeleteBenefit} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+          <Button onClick={handleDeleteBenefit} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
             {actionLoading ? 'Removing...' : 'Remove'}
           </Button>
         </DialogActions>

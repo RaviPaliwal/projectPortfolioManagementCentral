@@ -126,7 +126,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
                 selected={isActive}
                 onClick={() => onChangeTab(tab.key)}
                 sx={{
-                  borderRadius: 2,
+                  borderRadius: 1.15,
                   mb: 0.5,
                   py: 1.25,
                   px: 2,

@@ -19,7 +19,7 @@ export function ExportButton({ filename, columns, data, disabled, label = 'Expor
       onClick={() => exportToCsv(filename, columns, data)}
       disabled={disabled || !data.length}
       size="small"
-      sx={{ borderRadius: 2, fontWeight: 600, whiteSpace: 'nowrap' }}
+      sx={{ borderRadius: 1.15, fontWeight: 600, whiteSpace: 'nowrap' }}
     >
       {label}
     </Button>

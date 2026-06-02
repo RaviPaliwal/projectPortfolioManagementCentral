@@ -163,7 +163,7 @@ export default function MyTasksWidget() {
 
   if (!currentUser) {
     return (
-      <Paper sx={{ p: 3, borderRadius: 3 }}>
+      <Paper sx={{ p: 3, borderRadius: 1.15 }}>
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <PersonIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
           <Typography variant="body1" color="text.secondary">No user selected</Typography>
@@ -174,7 +174,7 @@ export default function MyTasksWidget() {
   }
 
   return (
-    <Paper sx={{ p: 3, borderRadius: 1 }}>
+    <Paper sx={{ p: 3, borderRadius: 1.15 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
         <Box>
@@ -196,13 +196,13 @@ export default function MyTasksWidget() {
       </Box>
 
       {/* Error */}
-      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 1.15 }}>{error}</Alert>}
 
       {/* Loading */}
       {loading ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} variant="rounded" height={72} sx={{ borderRadius: 2 }} />
+            <Skeleton key={i} variant="rounded" height={72} sx={{ borderRadius: 1.15 }} />
           ))}
         </Box>
       ) : totalTasks === 0 ? (
@@ -226,7 +226,7 @@ export default function MyTasksWidget() {
                   sx={{
                     flex: 1,
                     p: 1.5,
-                    borderRadius: 2,
+                    borderRadius: 1.15,
                     textAlign: 'center',
                     borderLeft: `3px solid ${group.color}`,
                   }}
@@ -252,7 +252,7 @@ export default function MyTasksWidget() {
                 variant="outlined"
                 sx={{
                   p: 2,
-                  borderRadius: 2,
+                  borderRadius: 1.15,
                   borderLeft: '3px solid #f59e0b',
                   transition: 'all 0.15s ease',
                   '&:hover': { bgcolor: isDark ? '#1e293b' : '#f8fafc' },
@@ -291,7 +291,7 @@ export default function MyTasksWidget() {
                 variant="outlined"
                 sx={{
                   p: 2,
-                  borderRadius: 2,
+                  borderRadius: 1.15,
                   borderLeft: '3px solid #6366f1',
                   transition: 'all 0.15s ease',
                   '&:hover': { bgcolor: isDark ? '#1e293b' : '#f8fafc' },
@@ -332,7 +332,7 @@ export default function MyTasksWidget() {
                     disabled={actionLoading === req.pm_projectapprovalrequestid}
                     onClick={() => handleApprove(req)}
                     startIcon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
-                    sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 12, py: 0.5 }}
+                    sx={{ borderRadius: 1.15, fontWeight: 600, fontSize: 12, py: 0.5 }}
                   >
                     Approve
                   </Button>
@@ -343,7 +343,7 @@ export default function MyTasksWidget() {
                     disabled={actionLoading === req.pm_projectapprovalrequestid}
                     onClick={() => setRejectDialog({ open: true, request: req, reason: '' })}
                     startIcon={<CancelOutlinedIcon sx={{ fontSize: 16 }} />}
-                    sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 12, py: 0.5 }}
+                    sx={{ borderRadius: 1.15, fontWeight: 600, fontSize: 12, py: 0.5 }}
                   >
                     Reject
                   </Button>
@@ -360,7 +360,7 @@ export default function MyTasksWidget() {
                 size="small"
                 endIcon={<ArrowForwardIcon />}
                 onClick={navigateToPending}
-                sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 2 }}
+                sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 1.15 }}
               >
                 View all {totalTasks} tasks
               </Button>
@@ -372,7 +372,7 @@ export default function MyTasksWidget() {
               <Button
                 size="small"
                 endIcon={<ArrowForwardIcon />}
-                sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 2 }}
+                sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 1.15 }}
               >
                 View all {totalTasks} tasks
               </Button>
@@ -387,7 +387,7 @@ export default function MyTasksWidget() {
         onClose={() => !actionLoading && setRejectDialog({ open: false, request: null, reason: '' })}
         maxWidth="sm"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700 }}>Reject Request</DialogTitle>
         <DialogContent>
@@ -402,7 +402,7 @@ export default function MyTasksWidget() {
             value={rejectDialog.reason}
             onChange={(e) => setRejectDialog((prev) => ({ ...prev, reason: e.target.value }))}
             placeholder="Optional: explain why this request is being rejected..."
-            slotProps={{ input: { sx: { borderRadius: 2 } } }}
+            slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             autoFocus
           />
         </DialogContent>
@@ -411,7 +411,7 @@ export default function MyTasksWidget() {
             onClick={() => setRejectDialog({ open: false, request: null, reason: '' })}
             variant="outlined"
             disabled={!!actionLoading}
-            sx={{ borderRadius: 2 }}
+            sx={{ borderRadius: 1.15 }}
           >
             Cancel
           </Button>
@@ -421,7 +421,7 @@ export default function MyTasksWidget() {
             color="error"
             disabled={!!actionLoading}
             startIcon={actionLoading ? undefined : <CancelOutlinedIcon />}
-            sx={{ borderRadius: 2, fontWeight: 600 }}
+            sx={{ borderRadius: 1.15, fontWeight: 600 }}
           >
             {actionLoading ? 'Rejecting...' : 'Reject'}
           </Button>

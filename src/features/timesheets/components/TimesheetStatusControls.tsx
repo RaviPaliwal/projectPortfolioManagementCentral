@@ -57,7 +57,7 @@ export function TimesheetStatusControls({
           startIcon={<SendIcon />}
           onClick={() => onStatusUpdate(1)}
           disabled={loading}
-          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, whiteSpace: 'nowrap' }}
+          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, whiteSpace: 'nowrap' }}
         >
           {loading ? 'Submitting...' : 'Submit'}
         </Button>
@@ -72,7 +72,7 @@ export function TimesheetStatusControls({
             startIcon={<ApproveIcon />}
             onClick={() => onStatusUpdate(0)}
             disabled={loading}
-            sx={{ borderRadius: 2, whiteSpace: 'nowrap' }}
+            sx={{ borderRadius: 1.15, whiteSpace: 'nowrap' }}
           >
             {loading ? 'Approving...' : 'Approve'}
           </Button>
@@ -83,7 +83,7 @@ export function TimesheetStatusControls({
             startIcon={<RejectIcon />}
             onClick={() => setShowRejectDialog(true)}
             disabled={loading}
-            sx={{ borderRadius: 2, whiteSpace: 'nowrap' }}
+            sx={{ borderRadius: 1.15, whiteSpace: 'nowrap' }}
           >
             Reject
           </Button>
@@ -94,7 +94,7 @@ export function TimesheetStatusControls({
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ px: 1, py: 0.5, bgcolor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 1 }}
+          sx={{ px: 1, py: 0.5, bgcolor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 1.15 }}
         >
           {isApproved && `Approved ${approvalDate ? formatDate(approvalDate) : ''}`}
           {isRejected && `Rejected${rejectionReason ? `: ${rejectionReason}` : ''}`}
@@ -116,11 +116,11 @@ export function TimesheetStatusControls({
             rows={3}
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
-            slotProps={{ input: { sx: { borderRadius: 2 } } }}
+            slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
           />
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setShowRejectDialog(false)} variant="outlined" sx={{ borderRadius: 2 }}>
+          <Button onClick={() => setShowRejectDialog(false)} variant="outlined" sx={{ borderRadius: 1.15 }}>
             Cancel
           </Button>
           <Button
@@ -128,7 +128,7 @@ export function TimesheetStatusControls({
             variant="contained"
             color="error"
             disabled={!rejectReason.trim() || loading}
-            sx={{ borderRadius: 2 }}
+            sx={{ borderRadius: 1.15 }}
           >
             {loading ? 'Rejecting...' : 'Reject Timesheet'}
           </Button>

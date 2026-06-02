@@ -54,10 +54,10 @@ export function TimesheetEntryFormDialog({
       onClose={() => !loading && onClose()}
       maxWidth="sm"
       fullWidth
-      slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+      slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
     >
       <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.5 }}>
+        <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.15 }}>
           <AccessTimeIcon sx={{ fontSize: 18, color: '#fff' }} />
         </Avatar>
         Log Time Entry
@@ -77,7 +77,7 @@ export function TimesheetEntryFormDialog({
               size="small"
               value={form.pm_workdate}
               onChange={(e) => setForm((f) => ({ ...f, pm_workdate: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -89,7 +89,7 @@ export function TimesheetEntryFormDialog({
               size="small"
               value={form.pm_hoursworked}
               onChange={(e) => setForm((f) => ({ ...f, pm_hoursworked: Number(e.target.value) }))}
-              slotProps={{ input: { sx: { borderRadius: 2 }, inputProps: { min: 0, max: 24, step: 0.5 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 }, inputProps: { min: 0, max: 24, step: 0.5 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
@@ -100,7 +100,7 @@ export function TimesheetEntryFormDialog({
               value={form._pm_project_value}
               onChange={(e) => setForm((f) => ({ ...f, _pm_project_value: e.target.value }))}
               placeholder="Enter project ID or GUID"
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
@@ -113,7 +113,7 @@ export function TimesheetEntryFormDialog({
               value={form.pm_worknotes}
               onChange={(e) => setForm((f) => ({ ...f, pm_worknotes: e.target.value }))}
               placeholder="What did you work on?"
-              slotProps={{ input: { sx: { borderRadius: 2 } } }}
+              slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
@@ -131,14 +131,14 @@ export function TimesheetEntryFormDialog({
         </Grid>
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-        <Button onClick={onClose} variant="outlined" disabled={loading} sx={{ borderRadius: 2 }}>
+        <Button onClick={onClose} variant="outlined" disabled={loading} sx={{ borderRadius: 1.15 }}>
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
           disabled={!form.pm_workdate || form.pm_hoursworked <= 0 || loading}
-          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}
+          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
         >
           {loading ? 'Adding...' : 'Add Entry'}
         </Button>

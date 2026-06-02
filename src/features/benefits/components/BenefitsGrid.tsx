@@ -104,7 +104,7 @@ export const BenefitsGrid = ({
               value={statusFilter}
               label="Status"
               onChange={(e) => onStatusFilterChange(e.target.value)}
-              sx={{ borderRadius: 2 }}
+              sx={{ borderRadius: 1.15 }}
             >
               {STATUS_FILTER_OPTIONS.map((opt) => (
                 <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>

@@ -16,7 +16,7 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({ resources }) => 
       {resources.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {resources.map((alloc: any) => (
-            <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>{alloc._pm_resource_value ?? alloc.pm_resourceid ?? 'Unknown resource'}</Typography>
                 <Typography variant="caption" color="text.secondary">{alloc.pm_assignmentrole ?? '—'} &middot; {alloc.pm_allocatedhours ?? 0}h allocated</Typography>

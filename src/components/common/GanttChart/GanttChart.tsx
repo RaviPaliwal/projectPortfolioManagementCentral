@@ -251,7 +251,7 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
         ref={scrollRef}
         sx={{
           overflow: 'auto',
-          border: 1, borderColor: 'divider', borderRadius: 2,
+          border: 1, borderColor: 'divider', borderRadius: 1.15,
           bgcolor: isDark ? '#0f172a' : '#ffffff',
           height: height ?? 480,
         }}
@@ -291,7 +291,7 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
                 }}
               >
                 {item.level && item.level > 1 && (
-                  <Box sx={{ width: 3, height: 20, borderRadius: 1.5, bgcolor: getTaskColor(item, isDark), flexShrink: 0, opacity: 0.5 }} />
+                  <Box sx={{ width: 3, height: 20, borderRadius: 1.15, bgcolor: getTaskColor(item, isDark), flexShrink: 0, opacity: 0.5 }} />
                 )}
                 <Box sx={{ minWidth: 0, flex: 1 }}>
                   <Typography
@@ -444,7 +444,7 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
           { c: '#22c55e', l: 'Complete', t: 'bar' },
         ].map((x) => (
           <Box key={x.l} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            {x.t === 'bar' && <Box sx={{ width: 14, height: 4, borderRadius: 2, bgcolor: x.c }} />}
+            {x.t === 'bar' && <Box sx={{ width: 14, height: 4, borderRadius: 1.15, bgcolor: x.c }} />}
             {x.t === 'dia' && (
               <Box sx={{
                 width: 0, height: 0,

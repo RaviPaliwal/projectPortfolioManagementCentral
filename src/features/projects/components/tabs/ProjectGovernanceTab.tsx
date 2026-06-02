@@ -24,7 +24,7 @@ export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gate
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Gate Reviews ({gateReviews.length})</Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {gateReviews.map((g) => (
-              <Paper key={g.pm_projectgatereviewid} variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Paper key={g.pm_projectgatereviewid} variant="outlined" sx={{ p: 2, borderRadius: 1.15, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{g.pm_gatename}</Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -59,7 +59,7 @@ export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gate
             Request Phase Change
           </Button>
         </Box>
-        <Paper variant="outlined" sx={{ mt: 3, p: 2, borderRadius: 1.5, maxWidth: 480, mx: 'auto', bgcolor: theme.palette.action.hover }}>
+        <Paper variant="outlined" sx={{ mt: 3, p: 2, borderRadius: 1.15, maxWidth: 480, mx: 'auto', bgcolor: theme.palette.action.hover }}>
           <Typography variant="caption" color="text.secondary">
             Gate reviews require PMO approval before proceeding. A workflow instance will be created and assigned to the portfolio director.
           </Typography>
