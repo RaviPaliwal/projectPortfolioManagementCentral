@@ -59,6 +59,7 @@ import {
   TableFooter,
   TableShell,
   ExportButton,
+  Breadcrumbs,
 } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { fontSizes } from '@/styles'
@@ -372,114 +373,34 @@ export default function ProgrammesPage() {
     return (
       <Box>
         {/* ── Detail View ─────────────────────────────────────────────────── */}
+        
+        <Breadcrumbs 
+          items={[
+            { label: 'Programmes', path: 'list' },
+            { label: prog?.pm_programmename ?? 'Detail' }
+          ]} 
+          onNavigate={() => closeDetail()}
+        />
 
-        {/* Back button */}
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={closeDetail}
-          variant="text"
-          size="small"
-          sx={{ mb: 1.5, color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
-        >
-          Back to Programmes
-        </Button>
-
-        {/* ═══ Header Container (Hero Banner) ═══ */}
-        <Paper
-          sx={{
-            mb: 3,
-            borderRadius: 1.15,
-            border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-            bgcolor: isDark ? '#0f172a' : '#ffffff',
-            overflow: 'hidden',
-            position: 'relative',
-          }}
-        >
-          {/* Left accent bar colored by RAG */}
-          <Box
-            sx={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 5,
-              bgcolor: accentColor,
-            }}
-          />
-
-          <Box sx={{ pl: 4, pr: 3, py: 2.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1.5 }}>
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.75 }}>
-                  <AccountTreeIcon sx={{ color: 'primary.main', fontSize: 22 }} />
-                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                    {prog?.pm_programmename ?? 'Programme'}
-                  </Typography>
-                  <StatusChip status={prog?.pm_ragstatus} type="rag" size="small" />
-                  <StatusChip status={prog?.pm_programmephase} type="prog_phase" size="small" />
-                </Box>
-                <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', alignItems: 'center' }}>
-                  {prog?.pm_programmemanager && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">{prog.pm_programmemanager}</Typography>
-                    </Box>
-                  )}
-                  {prog?.pm_sponsorname && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <FlagIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">Sponsor: {prog.pm_sponsorname}</Typography>
-                    </Box>
-                  )}
-                  {prog?.pm_portfolioname && (
-                    <StatusTag
-                      label={prog.pm_portfolioname}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
-                  )}
-                  {prog?.pm_startdate && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <CalendarTodayIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(prog.pm_startdate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                        {prog?.pm_enddate ? ` – ${new Date(prog.pm_enddate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : ''}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-
-              {/* Quick stats mini-cards */}
-              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-                <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1.15, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>
-                    Budget
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>
-                    {currencyFormatter.format(prog?.pm_budgeteur ?? 0)}
-                  </Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1.15, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>
-                    Actual Spend
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}
-                  </Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ px: 1.5, py: 0.75, borderRadius: 1.15, textAlign: 'center', bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>
-                    Projects
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {detailProjects.length}
-                  </Typography>
-                </Paper>
-              </Box>
+        <PageHeader
+          title={prog?.pm_programmename ?? 'Programme Detail'}
+          subtitle={prog?.pm_programmemanager ? `Manager: ${prog.pm_programmemanager}` : undefined}
+          actionElement={
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+              <StatusChip status={prog?.pm_ragstatus} type="rag" size="small" />
+              <StatusChip status={prog?.pm_programmephase} type="prog_phase" size="small" />
+              {prog?.pm_portfolioname && (
+                <StatusTag
+                  label={prog.pm_portfolioname}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{ fontWeight: 600 }}
+                />
+              )}
             </Box>
-          </Box>
-        </Paper>
+          }
+        />
 
         {/* ═══ Tabs ═══ */}
         <Paper sx={{ borderRadius: 1.15, overflow: 'hidden', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}` }}>

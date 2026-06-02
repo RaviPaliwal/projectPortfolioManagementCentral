@@ -7,10 +7,16 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  Paper,
+  TableContainer,
 } from '@mui/material'
-import { StatusTag } from '@/components/common'
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
+import PieChartIcon from '@mui/icons-material/PieChart'
+
+import { StatusTag, VarianceDisplay } from '@/components/common'
 import type { BudgetLineModel } from '@/types/dataverse'
 import { currency } from '../../constants'
+import { fontSizes } from '@/styles'
 
 interface ProjectFinancialsTabProps {
   budgetLines: BudgetLineModel[]
@@ -19,49 +25,74 @@ interface ProjectFinancialsTabProps {
 export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ budgetLines }) => {
   const totalBudget = budgetLines.reduce((s, b) => s + (b.pm_approvedbudgeteur ?? 0), 0)
   const totalSpent = budgetLines.reduce((s, b) => s + (b.pm_actualspendeur ?? 0), 0)
+  const variance = totalBudget - totalSpent
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Budget Breakdown</Typography>
-        <StatusTag label={`Total: ${currency(totalBudget)}`} size="small" color="primary" />
-        <StatusTag label={`Spent: ${currency(totalSpent)}`} size="small" color={totalSpent > totalBudget ? 'error' : 'default'} />
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Financial Summary Cards */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #3b82f6' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Total Budget</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currency(totalBudget)}</Typography>
+        </Paper>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #f59e0b' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Total Actuals</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currency(totalSpent)}</Typography>
+        </Paper>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: `3px solid ${variance < 0 ? '#ef4444' : '#22c55e'}` }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Variance</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: variance < 0 ? '#ef4444' : '#22c55e', fontFamily: '"JetBrains Mono", monospace' }}>
+            {variance < 0 ? '-' : '+'}{currency(Math.abs(variance))}
+          </Typography>
+        </Paper>
       </Box>
-      {budgetLines.length > 0 ? (
-        <Table size="small" sx={{ minWidth: 600 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Line Item</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Category</TableCell>
-              <TableCell sx={{ fontWeight: 700 }} align="right">Budget</TableCell>
-              <TableCell sx={{ fontWeight: 700 }} align="right">Actual</TableCell>
-              <TableCell sx={{ fontWeight: 700 }} align="right">Variance</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {budgetLines.map((b) => {
-              const variance = (b.pm_approvedbudgeteur ?? 0) - (b.pm_actualspendeur ?? 0)
-              return (
-                <TableRow key={b.pm_budgetlineid}>
-                  <TableCell><Typography variant="body2" sx={{ fontWeight: 600 }}>{b.pm_budgetlinename}</Typography></TableCell>
-                  <TableCell><StatusTag label={['Staff', 'Contractors', 'Licences', 'Infrastructure'][Number(b.pm_costcategory)] ?? '—'} size="small" /></TableCell>
-                  <TableCell align="right">{currency(b.pm_approvedbudgeteur)}</TableCell>
-                  <TableCell align="right">{currency(b.pm_actualspendeur)}</TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" sx={{ color: variance >= 0 ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
-                      {variance >= 0 ? '+' : ''}{currency(variance)}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      ) : (
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-          No budget lines yet. Use the Actions bar above to add one.
+
+      <Box>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <PieChartIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Budget Breakdown
         </Typography>
-      )}
+        
+        {budgetLines.length > 0 ? (
+          <TableContainer sx={{ border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1.15 }}>
+            <Table size="small" sx={{ minWidth: 600 }}>
+              <TableHead>
+                <TableRow sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0f172a' : '#f8fafc' }}>
+                  <TableCell sx={{ fontWeight: 700 }}>Line Item</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Category</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="right">Budget</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="right">Actual</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="right">Variance</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {budgetLines.map((b) => {
+                  const lineVariance = (b.pm_approvedbudgeteur ?? 0) - (b.pm_actualspendeur ?? 0)
+                  return (
+                    <TableRow key={b.pm_budgetlineid} hover>
+                      <TableCell><Typography variant="body2" sx={{ fontWeight: 600 }}>{b.pm_budgetlinename}</Typography></TableCell>
+                      <TableCell><StatusTag label={['Staff', 'Contractors', 'Licences', 'Infrastructure'][Number(b.pm_costcategory)] ?? '—'} size="small" variant="outlined" /></TableCell>
+                      <TableCell align="right" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>{currency(b.pm_approvedbudgeteur)}</TableCell>
+                      <TableCell align="right" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>{currency(b.pm_actualspendeur)}</TableCell>
+                      <TableCell align="right">
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <VarianceDisplay budget={b.pm_approvedbudgeteur} consumed={b.pm_actualspendeur} />
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Paper variant="outlined" sx={{ p: 4, borderRadius: 1.15, textAlign: 'center', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderStyle: 'dashed' }}>
+            <AccountBalanceWalletIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1.5 }} />
+            <Typography variant="body2" color="text.secondary">
+              No budget lines yet. Use the Actions bar above to add one.
+            </Typography>
+          </Paper>
+        )}
+      </Box>
     </Box>
   )
 }

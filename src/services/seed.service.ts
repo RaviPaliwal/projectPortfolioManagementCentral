@@ -3,7 +3,9 @@ import {
   Pm_resourceallocationsService, 
   Pm_timesheetsService, 
   Pm_timesheetentriesService,
-  Pm_projectsService
+  Pm_projectsService,
+  Pm_projecttasksService,
+  Pm_projectmilestonesService,
 } from '@/generated'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
 import { unwrapList, unwrapSingle } from './common'
@@ -20,6 +22,100 @@ const primaryKeyMap: Record<string, string> = {
   pm_resourceallocations: 'pm_resourceallocationid',
   pm_timesheets: 'pm_timesheetid',
   pm_timesheetentries: 'pm_timesheetentryid',
+  pm_projecttasks: 'pm_projecttaskid',
+  pm_projectmilestones: 'pm_projectmilestoneid',
+}
+
+/**
+ * Creates a sample WBS (Work Breakdown Structure) for a specific project.
+ * Includes nested tasks, milestones, and basic dependencies.
+ */
+export async function seedProjectSchedule(projectId: string): Promise<SeedResult[]> {
+  const results: SeedResult[] = []
+  let taskCount = 0
+  let milestoneCount = 0
+
+  const today = new Date()
+  const formatDate = (d: Date) => d.toISOString().split('T')[0]
+
+  const tasks = [
+    { name: 'Phase 1: Initiation', wbs: '1', level: 1, duration: 5, startOffset: 0, percent: 100 },
+    { name: 'Project Charter Definition', wbs: '1.1', level: 2, duration: 2, startOffset: 0, percent: 100 },
+    { name: 'Stakeholder Analysis', wbs: '1.2', level: 2, duration: 3, startOffset: 2, percent: 100 },
+    { name: 'Phase 2: Planning', wbs: '2', level: 1, duration: 10, startOffset: 5, percent: 60 },
+    { name: 'Requirements Gathering', wbs: '2.1', level: 2, duration: 5, startOffset: 5, percent: 100 },
+    { name: 'Solution Architecture', wbs: '2.2', level: 2, duration: 5, startOffset: 10, percent: 20 },
+    { name: 'Detailed Design', wbs: '2.3', level: 2, duration: 8, startOffset: 15, percent: 0 },
+    { name: 'Phase 3: Execution', wbs: '3', level: 1, duration: 20, startOffset: 23, percent: 0 },
+    { name: 'Development - Sprint 1', wbs: '3.1', level: 2, duration: 10, startOffset: 23, percent: 0 },
+    { name: 'Development - Sprint 2', wbs: '3.2', level: 2, duration: 10, startOffset: 33, percent: 0 },
+  ]
+
+  const milestones = [
+    { name: 'Project Kick-off', type: 1, offset: 0, status: 2 },
+    { name: 'Charter Approved', type: 1, offset: 5, status: 2 },
+    { name: 'Requirements Baseline', type: 0, offset: 10, status: 2 },
+    { name: 'Design Review', type: 1, offset: 23, status: 1 },
+    { name: 'Go-Live Ready', type: 0, offset: 50, status: 1 },
+  ]
+
+  try {
+    // 1. Create Tasks
+    const createdTasks: any[] = []
+    for (const t of tasks) {
+      const start = new Date(today)
+      start.setDate(today.getDate() + t.startOffset)
+      const end = new Date(start)
+      end.setDate(start.getDate() + t.duration)
+
+      const payload: any = {
+        pm_taskname: t.name,
+        pm_wbsnumber: t.wbs,
+        pm_tasklevel: t.level,
+        pm_durationdays: t.duration,
+        pm_plannedstartdate: formatDate(start),
+        pm_plannedenddate: formatDate(end),
+        pm_percentcomplete: t.percent,
+        pm_taskstatus: t.percent === 100 ? '0' : '1',
+        pm_oncriticalpath: t.level === 1,
+        statecode: 0,
+        statuscode: 1,
+      }
+      payload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+
+      const result = await Pm_projecttasksService.create(payload as any)
+      const unwrapped = unwrapSingle<any>(result)
+      if (unwrapped) createdTasks.push(unwrapped)
+      taskCount++
+    }
+
+    // 2. Create Milestones
+    for (const m of milestones) {
+      const date = new Date(today)
+      date.setDate(today.getDate() + m.offset)
+
+      const payload: any = {
+        pm_milestonename: m.name,
+        pm_milestonetype: m.type,
+        pm_planneddate: formatDate(date),
+        pm_status: m.status,
+        statecode: 0,
+        statuscode: 1,
+      }
+      payload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+
+      await Pm_projectmilestonesService.create(payload as any)
+      milestoneCount++
+    }
+
+    results.push({ table: 'pm_projecttasks', created: taskCount })
+    results.push({ table: 'pm_projectmilestones', created: milestoneCount })
+
+  } catch (err: any) {
+    results.push({ table: 'schedule', created: taskCount, error: err?.message || String(err) })
+  }
+
+  return results
 }
 
 /**

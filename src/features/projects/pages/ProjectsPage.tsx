@@ -15,7 +15,7 @@ import {
   fetchProjectsFull,
   fetchMilestonesDueThisMonth,
 } from '@/services'
-import { PageHeader, KpiCardRow } from '@/components/common'
+import { PageHeader, KpiCardRow, Breadcrumbs } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 

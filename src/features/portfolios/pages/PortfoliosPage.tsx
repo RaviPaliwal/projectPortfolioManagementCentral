@@ -27,6 +27,7 @@ import {
   DetailDrawer,
   ExportButton,
   KpiCardRow,
+  Breadcrumbs,
 } from '@/components/common'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/utils/exportUtils'

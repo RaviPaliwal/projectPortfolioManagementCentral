@@ -31,6 +31,7 @@ import {
   Switch,
   FormControlLabel,
   TablePagination,
+  Divider,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -45,6 +46,8 @@ import LinkIcon from '@mui/icons-material/Link'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import SpeedIcon from '@mui/icons-material/Speed'
+import SearchIcon from '@mui/icons-material/Search'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import {
   fetchProjectsFull,
   fetchScheduleData,
@@ -52,8 +55,9 @@ import {
   updateScheduleTask,
   deleteScheduleTask,
   createProjectMilestone,
+  seedProjectSchedule,
 } from '@/services'
-import { PageHeader, KpiCardRow, TableShell, TableFooter, DetailDrawer, SearchFilterBar, TabPanel, GanttChart, ExportButton, StatusTag } from '@/components/common'
+import { PageHeader, KpiCardRow, TableShell, TableFooter, DetailDrawer, SearchFilterBar, TabPanel, GanttChart, ExportButton, StatusTag, Breadcrumbs, StatusChip } from '@/components/common'
 import type { GanttTaskData, GanttMilestoneData } from '@/components/common'
 import { fontSizes } from '@/styles'
 import type { KpiCardItem, FilterOption } from '@/components/common'
@@ -189,13 +193,13 @@ export default function SchedulePage() {
     const load = async () => {
       setProjectsLoading(true)
       try {
-        console.log('🔍 [SchedulePage] Fetching projects...')
         const list = await fetchProjectsFull()
-        console.log('🔍 [SchedulePage] Projects loaded:', list?.length ?? 0, 'items')
-        if (list?.length > 0) console.log('🔍 [SchedulePage] Sample project:', JSON.stringify(list[0], null, 2).slice(0, 500))
         setProjects(list)
+        // Auto-select first project if none selected
+        if (list?.length > 0 && !selectedProjectId) {
+          setSelectedProjectId(list[0].pm_projectid ?? '')
+        }
       } catch (err) {
-        console.error('[SchedulePage] load projects error:', err)
         setError('Unable to load projects.')
       } finally {
         setProjectsLoading(false)
@@ -209,11 +213,7 @@ export default function SchedulePage() {
     setLoading(true)
     setError(null)
     try {
-      console.log('🔍 [SchedulePage] Fetching schedule for project:', projectId)
       const data = await fetchScheduleData(projectId)
-      console.log('🔍 [SchedulePage] Tasks loaded:', data.tasks?.length ?? 0, '| Milestones:', data.milestones?.length ?? 0)
-      if (data.tasks?.length > 0) console.log('🔍 [SchedulePage] Sample task:', JSON.stringify(data.tasks[0], null, 2).slice(0, 500))
-      if (data.milestones?.length > 0) console.log('🔍 [SchedulePage] Sample milestone:', JSON.stringify(data.milestones[0], null, 2).slice(0, 500))
       setTasks(data.tasks)
       setMilestones(data.milestones)
     } catch (err) {
@@ -235,8 +235,8 @@ export default function SchedulePage() {
     }
   }, [selectedProjectId, loadSchedule])
 
-    // ── View mode (table vs gantt) ───────────────────────────────────────
-  const [viewMode, setViewMode] = useState<'table' | 'gantt'>('table')
+  // ── View mode (table vs gantt) ───────────────────────────────────────
+  // REMOVED viewMode state as per user request for unified view
 
   // ── Gantt data conversion ──────────────────────────────────────────────
   const ganttTasks = useMemo((): GanttTaskData[] => {
@@ -492,6 +492,22 @@ export default function SchedulePage() {
     }
   }
 
+  const handleSeedSchedule = async () => {
+    if (!selectedProjectId) return
+    setIsSaving(true)
+    setError(null)
+    try {
+      await seedProjectSchedule(selectedProjectId)
+      setSuccessMsg('Sample schedule generated successfully.')
+      await loadSchedule(selectedProjectId)
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Failed to generate sample schedule.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handleEditFromDrawer = () => {
     if (!detailTask) return
     setTaskForm({ ...detailTask })
@@ -556,6 +572,12 @@ export default function SchedulePage() {
   // ══════════════════════════════════════════════════════════════════════════
   return (
     <Box>
+      <Breadcrumbs 
+        items={[
+          { label: 'Schedule Management' }
+        ]} 
+      />
+
       <PageHeader
         title="Schedule Management"
         subtitle="Manage WBS hierarchy, task dependencies, and milestones across projects."
@@ -569,16 +591,29 @@ export default function SchedulePage() {
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
       {/* ── Project Selector + Action Buttons ──────────────────────────── */}
-      <Paper sx={{ p: 2.5, mb: 3, borderRadius: 1.15 }}>
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: 2.5, 
+          mb: 3, 
+          borderRadius: 1.15,
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#ffffff'
+        }}
+      >
         <Grid container component="div" spacing={2} sx={{ alignItems: 'center' }}>
-          <Grid size={{ xs: 12, sm: 4 }}>
+          <Grid size={{ xs: 12, sm: 5, md: 4 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Select Project</InputLabel>
+              <InputLabel sx={{ fontWeight: 600 }}>Active Project</InputLabel>
               <Select
                 value={selectedProjectId}
-                label="Select Project"
+                label="Active Project"
                 onChange={(e) => setSelectedProjectId(e.target.value)}
-                sx={{ borderRadius: 1.15 }}
+                sx={{ 
+                  borderRadius: 1.15,
+                  fontWeight: 600,
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : '#f8fafc'
+                }}
               >
                 <MenuItem value="">
                   <em>Choose a project...</em>
@@ -595,414 +630,288 @@ export default function SchedulePage() {
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12, sm: 8 }}>
-            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          <Grid size={{ xs: 12, sm: 7, md: 8 }}>
+            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                disabled={!selectedProjectId}
+                disabled={!selectedProjectId || loading}
                 onClick={() => { setTaskForm({ ...defaultTaskForm, _pm_project_value: selectedProjectId }); setIsAddingTask(true) }}
-                size="small"
+                sx={{ borderRadius: 1.15, textTransform: 'none', fontWeight: 600 }}
               >
                 Add Task
               </Button>
               <Button
                 variant="outlined"
                 startIcon={<FlagIcon />}
-                disabled={!selectedProjectId}
+                disabled={!selectedProjectId || loading}
                 onClick={() => setIsAddingMilestone(true)}
-                size="small"
+                sx={{ borderRadius: 1.15, textTransform: 'none', fontWeight: 600 }}
               >
                 Add Milestone
               </Button>
             </Box>
           </Grid>
         </Grid>
-        {selectedProject && (
-          <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="caption" color="text.secondary">
-              {selectedProject.pm_projectcode && `${selectedProject.pm_projectcode} · `}
-              {selectedProject.pm_projectmanager ?? 'No manager'}
-            </Typography>
-            <StatusTag
-              label={`${tasks.length} tasks, ${milestones.length} milestones`}
-              size="small"
-              variant="outlined"
-              sx={{ fontWeight: 600 }}
-            />
-          </Box>
-        )}
       </Paper>
 
       {!selectedProjectId ? (
         /* ── No project selected ─────────────────────────────────────── */
-        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 1.15 }}>
-          <AccountTreeIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 2 }} />
-          <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600, mb: 1 }}>
-            Select a Project
+        <Paper variant="outlined" sx={{ p: 8, textAlign: 'center', borderRadius: 1.15, borderStyle: 'dashed', bgcolor: 'transparent' }}>
+          <Box sx={{ position: 'relative', display: 'inline-block' }}>
+            <AccountTreeIcon sx={{ fontSize: 64, color: 'primary.main', opacity: 0.2 }} />
+            <SearchIcon sx={{ position: 'absolute', bottom: -4, right: -4, fontSize: 24, color: 'primary.main' }} />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 800, mt: 2, mb: 1, color: 'text.primary' }}>
+            No Project Selected
           </Typography>
-          <Typography variant="body2" color="text.disabled">
-            Choose a project from the dropdown above to view and manage its schedule.
+          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mx: 'auto', mb: 3 }}>
+            Please choose a project from the dropdown above to manage its WBS, track task progress, and visualize the project timeline.
           </Typography>
         </Paper>
       ) : (
-        <>
-          {/* ── KPI Cards ───────────────────────────────────────────────── */}
-          <KpiCardRow items={kpiItems} loading={loading} />
+        <Grid container component="div" spacing={3}>
+          {/* ── Left Sidebar: Project Details ───────────────────────────── */}
+          <Grid size={{ xs: 12, md: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, color: 'primary.main' }}>
+                  Project Overview
+                </Typography>
+                
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase', fontSize: fontSizes.xs }}>
+                      Current Phase
+                    </Typography>
+                    <StatusChip status={selectedProject?.pm_projectphase} type="phase" size="medium" />
+                  </Box>
 
-          {/* ── View Tabs ───────────────────────────────────────────────── */}
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-            <Tabs
-              value={viewMode}
-              onChange={(_, v) => setViewMode(v)}
-              textColor="primary"
-              indicatorColor="primary"
-            >
-              <Tab label="Table View" value="table" />
-              <Tab label="Gantt Chart" value="gantt" />
-            </Tabs>
-          </Box>
+                  <Divider sx={{ borderStyle: 'dashed' }} />
 
-          {/* ── Gantt Chart View ───────────────────────────────────────── */}
-          {viewMode === 'gantt' && (
-            <Paper sx={{ p: 2, mb: 3, overflow: 'hidden' }}>
-              <GanttChart
-                tasks={ganttTasks}
-                milestones={ganttMilestones}
-                onTaskClick={handleGanttTaskClick}
-                height={500}
-              />
-            </Paper>
-          )}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: 'primary.main', color: 'white', display: 'flex' }}>
+                      <SpeedIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Project Manager</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>{selectedProject?.pm_projectmanager || 'Unassigned'}</Typography>
+                    </Box>
+                  </Box>
 
-          {/* ── Schedule Table View ────────────────────────────────────── */}
-          {viewMode === 'table' && (
-          <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-            <SearchFilterBar
-              searchQuery={searchQuery}
-              onSearchChange={handleSearchChange}
-              searchPlaceholder="Search tasks by name, WBS, or resource..."
-              filterValue={statusFilter}
-              onFilterChange={handleStatusFilterChange}
-              filterLabel="Filter by Status"
-              filterOptions={[
-                { value: '', label: 'All Statuses' },
-                { value: '1', label: 'In Progress' },
-                { value: '0', label: 'Complete' },
-              ]}
-              onClear={handleClearFilters}
-            />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: 'secondary.main', color: 'white', display: 'flex' }}>
+                      <CalendarMonthIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Timeline</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {formatDate(selectedProject?.pm_plannedstartdate)} — {formatDate(selectedProject?.pm_plannedenddate)}
+                      </Typography>
+                    </Box>
+                  </Box>
 
-            <TableShell
-              loading={loading}
-              empty={filteredTasks.length === 0 && milestones.length === 0}
-              emptyIcon={<AccountTreeIcon />}
-              emptyTitle={searchQuery || statusFilter ? 'No tasks match your criteria.' : 'No tasks yet. Add one to get started.'}
-              emptyAction={!searchQuery && !statusFilter ? (
-                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => { setTaskForm({ ...defaultTaskForm, _pm_project_value: selectedProjectId }); setIsAddingTask(true) }}>
-                  Create your first task
-                </Button>
-              ) : undefined}
-            >
-              <Table stickyHeader size="small" sx={{ minWidth: 1100 }}>
-                <TableHead>
-                  <TableRow>
-                    {[
-                      { field: 'pm_wbsnumber', label: 'WBS' },
-                      { field: 'pm_taskname', label: 'Task Name' },
-                      { field: 'pm_tasklevel', label: 'Level' },
-                      { field: 'pm_assignedresource', label: 'Resource' },
-                      { field: 'pm_plannedstartdate', label: 'Start' },
-                      { field: 'pm_plannedenddate', label: 'End' },
-                      { field: 'pm_percentcomplete', label: 'Progress' },
-                      { field: 'pm_taskstatus', label: 'Status' },
-                      { label: 'Dependencies' },
-                      { label: '' },
-                    ].map((col) => (
-                      <TableCell
-                        key={col.field ?? col.label}
-                        sx={{
-                          fontWeight: 700,
-                          bgcolor: isDark ? '#1e293b' : '#f8fafc',
-                          borderBottom: `2px solid ${theme.palette.divider}`,
-                          px: 2,
-                          py: 1.5,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {col.field ? <SortHeader field={col.field} label={col.label} /> : col.label}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {/* Task rows */}
-                  {paginatedTasks.map((task, idx) => {
-                    const level = task.pm_tasklevel ?? 1
-                    const indent = getWbsPrefix(level)
-                    const predTask = task._pm_predecessortask_value ? taskById.get(task._pm_predecessortask_value) : null
-                    const isOverdue = !(String(task.pm_taskstatus) === '0') && task.pm_plannedenddate && new Date(task.pm_plannedenddate) < new Date()
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: '#8b5cf6', color: 'white', display: 'flex' }}>
+                      <AccountTreeIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Structure</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {selectedProject?.pm_programmename || 'Stand-alone Project'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Paper>
 
-                    return (
-                      <TableRow
-                        key={task.pm_projecttaskid}
-                        hover
-                        onClick={() => handleRowClick(task)}
-                        sx={{
-                          cursor: 'pointer',
-                          bgcolor: idx % 2 === 1 ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)') : 'transparent',
-                          '& td': { borderBottom: '1px solid #efefef', py: 1.2, px: 2 },
-                          '&:hover': { bgcolor: isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.04)' },
-                          transition: 'background-color 0.15s',
-                          opacity: String(task.pm_taskstatus) === '0' ? 0.7 : 1,
-                        }}
-                      >
-                        {/* WBS */}
-                        <TableCell>
-                          <Typography
-                            variant="caption"
+              {/* Statistics Card */}
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99, 102, 241, 0.05)' : '#f8fafc' }}>
+                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, mb: 1.5, display: 'block', textTransform: 'uppercase' }}>
+                   Schedule Stats
+                 </Typography>
+                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                       <Typography variant="body2" color="text.secondary">Total Tasks</Typography>
+                       <Typography variant="body2" sx={{ fontWeight: 700 }}>{tasks.length}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                       <Typography variant="body2" color="text.secondary">Milestones</Typography>
+                       <Typography variant="body2" sx={{ fontWeight: 700 }}>{milestones.length}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                       <Typography variant="body2" color="text.secondary">Completed</Typography>
+                       <Typography variant="body2" sx={{ fontWeight: 700, color: 'success.main' }}>{completedTasks}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                       <Typography variant="body2" color="text.secondary">Avg. Progress</Typography>
+                       <Typography variant="body2" sx={{ fontWeight: 700 }}>{tasks.length > 0 ? Math.round(tasks.reduce((s, t) => s + (t.pm_percentcomplete ?? 0), 0) / tasks.length) : 0}%</Typography>
+                    </Box>
+                 </Box>
+              </Paper>
+            </Box>
+          </Grid>
+
+          {/* ── Main Content: Gantt + Table ─────────────────────────────── */}
+          <Grid size={{ xs: 12, md: 9 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              
+              {/* KPIs Row */}
+              <KpiCardRow items={kpiItems} loading={loading} />
+
+              {/* Gantt Chart Section */}
+              <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.15, overflow: 'hidden' }}>
+                <Box sx={{ p: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0f172a' : '#f8fafc', borderBottom: (theme) => `1px solid ${theme.palette.divider}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>Project Timeline (Gantt)</Typography>
+                  <StatusTag label="Interactive" size="small" color="primary" variant="outlined" />
+                </Box>
+                <Box sx={{ p: 2 }}>
+                  <GanttChart
+                    tasks={ganttTasks}
+                    milestones={ganttMilestones}
+                    onTaskClick={handleGanttTaskClick}
+                    height={400}
+                  />
+                </Box>
+              </Paper>
+
+              {/* Detailed Task List Section */}
+              <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: 1.15 }}>
+                <Box sx={{ p: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0f172a' : '#f8fafc', borderBottom: (theme) => `1px solid ${theme.palette.divider}` }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>Detailed Task List & Work Breakdown</Typography>
+                </Box>
+                
+                <SearchFilterBar
+                  searchQuery={searchQuery}
+                  onSearchChange={handleSearchChange}
+                  searchPlaceholder="Search tasks..."
+                  filterValue={statusFilter}
+                  onFilterChange={handleStatusFilterChange}
+                  filterLabel="Status"
+                  filterOptions={[
+                    { value: '', label: 'All Statuses' },
+                    { value: '1', label: 'In Progress' },
+                    { value: '0', label: 'Complete' },
+                  ]}
+                  onClear={handleClearFilters}
+                />
+
+                <TableShell
+                  loading={loading}
+                  empty={filteredTasks.length === 0 && milestones.length === 0}
+                  emptyIcon={<AccountTreeIcon />}
+                  emptyTitle={searchQuery || statusFilter ? 'No matches found.' : 'No schedule data.'}
+                  emptyAction={!searchQuery && !statusFilter ? (
+                    <Button variant="outlined" startIcon={<AutoAwesomeIcon />} onClick={handleSeedSchedule} disabled={isSaving} sx={{ borderRadius: 1.15 }}>
+                      Generate Sample WBS
+                    </Button>
+                  ) : undefined}
+                >
+                  <Table stickyHeader size="small" sx={{ minWidth: 1000 }}>
+                    <TableHead>
+                      <TableRow>
+                        {[
+                          { field: 'pm_wbsnumber', label: 'WBS' },
+                          { field: 'pm_taskname', label: 'Task' },
+                          { field: 'pm_assignedresource', label: 'Resource' },
+                          { field: 'pm_plannedstartdate', label: 'Start' },
+                          { field: 'pm_plannedenddate', label: 'End' },
+                          { field: 'pm_percentcomplete', label: 'Progress' },
+                          { field: 'pm_taskstatus', label: 'Status' },
+                          { label: 'Deps' },
+                          { label: '' },
+                        ].map((col) => (
+                          <TableCell
+                            key={col.field ?? col.label}
                             sx={{
                               fontWeight: 700,
-                              fontFamily: 'monospace',
-                              color: getTaskLevelColor(level),
-                              fontSize: fontSizes.xs,
+                              bgcolor: isDark ? '#1e293b' : '#f8fafc',
+                              borderBottom: `2px solid ${theme.palette.divider}`,
+                              py: 1.5,
                             }}
                           >
-                            {indent}{task.pm_wbsnumber ?? '—'}
-                          </Typography>
-                        </TableCell>
-
-                        {/* Task Name */}
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Box
-                              sx={{
-                                width: 4,
-                                height: 28,
-                                borderRadius: 1.15,
-                                bgcolor: getTaskLevelColor(level),
-                                flexShrink: 0,
-                              }}
-                            />
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontWeight: 600,
-                                  fontSize: level <= 1 ? fontSizes.sm : fontSizes.smMd,
-                                }}
-                              >
-                                {indent}{task.pm_taskname}
-                              </Typography>
-                              {task.pm_taskdescription && (
-                                <Typography variant="caption" color="text.secondary" sx={{
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 1,
-                                  WebkitBoxOrient: 'vertical',
-                                  overflow: 'hidden',
-                                  maxWidth: 280,
-                                }}>
-                                  {task.pm_taskdescription}
-                                </Typography>
-                              )}
-                            </Box>
-                            {task.pm_ismilestone && (
-                              <FlagIcon sx={{ fontSize: 14, color: '#f59e0b' }} />
-                            )}
-                          </Box>
-                        </TableCell>
-
-                        {/* Level */}
-                        <TableCell>
-                          <Typography variant="caption" color="text.secondary">
-                            L{level}
-                          </Typography>
-                        </TableCell>
-
-                        {/* Resource */}
-                        <TableCell>
-                          <Typography variant="body2">
-                            {task.pm_assignedresource || '—'}
-                          </Typography>
-                        </TableCell>
-
-                        {/* Start */}
-                        <TableCell>
-                          <Typography variant="caption" color="text.secondary">
-                            {formatDate(task.pm_plannedstartdate)}
-                          </Typography>
-                        </TableCell>
-
-                        {/* End */}
-                        <TableCell>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: isOverdue ? '#ef4444' : 'text.secondary',
-                              fontWeight: isOverdue ? 600 : 400,
-                            }}
-                          >
-                            {formatDate(task.pm_plannedenddate)}
-                            {isOverdue && ' ⚠'}
-                          </Typography>
-                        </TableCell>
-
-                        {/* Progress */}
-                        <TableCell>
-                          <DurationBar task={task} />
-                        </TableCell>
-
-                        {/* Status */}
-                        <TableCell>
-                        <StatusTag
-                            label={STATUS_LABELS[String(task.pm_taskstatus)] ?? '—'}
-                            color={STATUS_COLORS[String(task.pm_taskstatus)] ?? 'default'}
-                            size="small"
-                            variant={String(task.pm_taskstatus) === '0' ? 'filled' : 'outlined'}
-                            sx={{ fontWeight: 600 }}
-                          />
-                        </TableCell>
-
-                        {/* Dependencies */}
-                        <TableCell>
-                          {predTask ? (
-                            <Tooltip title={`Predecessor: ${predTask.pm_taskname ?? 'Unknown'}`}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <LinkIcon sx={{ fontSize: 12, color: '#3b82f6' }} />
-                                <Typography variant="caption" sx={{ color: '#3b82f6', fontWeight: 500 }}>
-                                  {predTask.pm_wbsnumber ?? '—'}
-                                </Typography>
-                                {task.pm_lagdays ? (
-                                  <Typography variant="caption" color="text.secondary">
-                                    +{task.pm_lagdays}d
-                                  </Typography>
-                                ) : null}
-                              </Box>
-                            </Tooltip>
-                          ) : (
-                            <Typography variant="caption" color="text.disabled">—</Typography>
-                          )}
-                        </TableCell>
-
-                        {/* Actions */}
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 0.5 }} onClick={(e) => e.stopPropagation()}>
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                setTaskForm({ ...task })
-                                setDetailTask(task)
-                                setIsEditingTask(true)
-                              }}
-                            >
-                              <EditIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => setDeleteTarget(task)}
-                            >
-                              <DeleteIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                          </Box>
-                        </TableCell>
+                            {col.field ? <SortHeader field={col.field} label={col.label} /> : col.label}
+                          </TableCell>
+                        ))}
                       </TableRow>
-                    )
-                  })}
+                    </TableHead>
+                    <TableBody>
+                      {paginatedTasks.map((task, idx) => {
+                        const level = task.pm_tasklevel ?? 1
+                        const indent = getWbsPrefix(level)
+                        const predTask = task._pm_predecessortask_value ? taskById.get(task._pm_predecessortask_value) : null
+                        const isOverdue = !(String(task.pm_taskstatus) === '0') && task.pm_plannedenddate && new Date(task.pm_plannedenddate) < new Date()
 
-                  {/* Milestone rows */}
-                  {milestones.map((ms, idx) => (
-                    <TableRow
-                      key={`ms-${ms.pm_projectmilestoneid}`}
-                      sx={{
-                        bgcolor: isDark ? 'rgba(245, 158, 11, 0.04)' : 'rgba(245, 158, 11, 0.03)',
-                        '& td': { borderBottom: '1px solid #efefef', py: 1.2, px: 2 },
-                      }}
-                    >
-                      <TableCell>
-                        <Typography variant="caption" sx={{ fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace' }}>
-                          ⚑
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <FlagIcon sx={{ fontSize: 16, color: '#f59e0b' }} />
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {ms.pm_milestonename}
-                          </Typography>
-                          <StatusTag
-                            label={ms.pm_milestonetype === '0' || ms.pm_milestonetype === 0 ? 'Delivery' : 'Governance'}
-                            size="small"
-                            variant="outlined"
-                            sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }}
-                          />
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="caption" color="text.secondary">—</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{ms.pm_owner || '—'}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatDate(ms.pm_planneddate)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="caption" color="text.secondary">—</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <DurationBar task={{ pm_percentcomplete: ms.pm_status === '2' || ms.pm_status === 2 ? 100 : ms.pm_status === '0' || ms.pm_status === 0 ? 50 : 0, pm_durationdays: 0 }} />
-                      </TableCell>
-                      <TableCell>
-                        <StatusTag
-                          label={MILESTONE_STATUS_LABELS[String(ms.pm_status)] ?? '—'}
-                          color={MILESTONE_STATUS_COLORS[String(ms.pm_status)] ?? 'default'}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontWeight: 600 }}
-                        />
-                      </TableCell>
-                      <TableCell />
-                      <TableCell />
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableShell>
+                        return (
+                          <TableRow
+                            key={task.pm_projecttaskid}
+                            hover
+                            onClick={() => handleRowClick(task)}
+                            sx={{
+                              cursor: 'pointer',
+                              bgcolor: idx % 2 === 1 ? (isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)') : 'transparent',
+                            }}
+                          >
+                            <TableCell><Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 600, color: getTaskLevelColor(level) }}>{indent}{task.pm_wbsnumber}</Typography></TableCell>
+                            <TableCell>
+                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: level === 1 ? 700 : 500 }}>{indent}{task.pm_taskname}</Typography>
+                                  {task.pm_ismilestone && <FlagIcon sx={{ fontSize: 14, color: '#f59e0b' }} />}
+                               </Box>
+                            </TableCell>
+                            <TableCell><Typography variant="body2">{task.pm_assignedresource || '—'}</Typography></TableCell>
+                            <TableCell><Typography variant="caption" color="text.secondary">{formatDate(task.pm_plannedstartdate)}</Typography></TableCell>
+                            <TableCell>
+                              <Typography variant="caption" sx={{ color: isOverdue ? '#ef4444' : 'text.secondary', fontWeight: isOverdue ? 700 : 400 }}>
+                                {formatDate(task.pm_plannedenddate)}{isOverdue && ' !'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell><DurationBar task={task} /></TableCell>
+                            <TableCell>
+                              <StatusTag
+                                label={STATUS_LABELS[String(task.pm_taskstatus)] ?? '—'}
+                                color={STATUS_COLORS[String(task.pm_taskstatus)] ?? 'default'}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {predTask ? (
+                                <Tooltip title={`Predecessor: ${predTask.pm_taskname}`}>
+                                  <LinkIcon sx={{ fontSize: 16, color: 'primary.main', opacity: 0.6 }} />
+                                </Tooltip>
+                              ) : '—'}
+                            </TableCell>
+                            <TableCell>
+                              <Box sx={{ display: 'flex' }}>
+                                <IconButton size="small" onClick={(e) => { e.stopPropagation(); setTaskForm({ ...task }); setDetailTask(task); setIsEditingTask(true) }}>
+                                  <EditIcon sx={{ fontSize: 16 }} />
+                                </IconButton>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableShell>
 
-            {!loading && filteredTasks.length > 0 && (
-              <TableFooter
-                filteredCount={filteredTasks.length}
-                totalCount={tasks.length}
-                totals={[
-                  { label: 'Milestones', value: String(milestones.length) },
-                ]}
-              >
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', gap: 2 }}>
-                  <span>Critical path: <strong>{tasks.filter((t) => t.pm_oncriticalpath).length}</strong> tasks</span>
-                  <span>Avg completion: <strong>{tasks.length > 0 ? Math.round(tasks.reduce((s, t) => s + (t.pm_percentcomplete ?? 0), 0) / tasks.length) : 0}%</strong></span>
-                </Typography>
-              </TableFooter>
-            )}
-            {!loading && filteredTasks.length > 0 && (
-              <TablePagination
-                component="div"
-                count={filteredTasks.length}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[25, 50, 100]}
-                sx={{
-                  borderTop: `1px solid ${theme.palette.divider}`,
-                  '.MuiTablePagination-toolbar': { minHeight: 48 },
-                }}
-              />
-            )}
-          </Paper>
-        )}
-        </>
+                {!loading && filteredTasks.length > 0 && (
+                  <TablePagination
+                    component="div"
+                    count={filteredTasks.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[25, 50, 100]}
+                    sx={{ borderTop: `1px solid ${theme.palette.divider}` }}
+                  />
+                )}
+              </Paper>
+            </Box>
+          </Grid>
+        </Grid>
       )}
 
       {/* ── Create Task Dialog ──────────────────────────────────────────── */}

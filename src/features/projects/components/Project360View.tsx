@@ -10,6 +10,7 @@ import {
   Button,
   Skeleton,
   useTheme,
+  Tooltip,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import FlagIcon from '@mui/icons-material/Flag'
@@ -23,8 +24,12 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import ErrorIcon from '@mui/icons-material/Error'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import SettingsIcon from '@mui/icons-material/Settings'
+import PersonIcon from '@mui/icons-material/Person'
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 
-import { StatusChip, StatusTag } from '@/components/common'
+import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 import { RAG_COLORS, phaseLabel, currency } from '../constants'
 import { fontSizes } from '@/styles'
@@ -79,6 +84,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onAddTask
 }) => {
   const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const [activeTab, setActiveTab] = useState(0)
 
   const tabs = [
@@ -91,62 +97,39 @@ export const Project360View: React.FC<Project360ViewProps> = ({
     { label: 'Governance', icon: <HowToRegIcon fontSize="small" /> },
   ]
 
-  return (
-    <Box sx={{ mb: 3 }}>
-      {/* Back button + header */}
-      <Paper sx={{ mb: 2.5, borderRadius: 1.15, overflow: 'hidden' }}>
-        <Box sx={{ px: 3, pt: 2.5, pb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-            <IconButton onClick={onBack} size="small" sx={{ mt: 0.5, borderRadius: 1.15 }}>
-              <ArrowBackIcon />
-            </IconButton>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.3 }}>{project.pm_projectname}</Typography>
-                <StatusChip status={project.pm_ragstatus} type="rag" />
-                <StatusTag label={phaseLabel(project.pm_projectphase)} size="small" variant="outlined" />
-              </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-                {project.pm_projectcode}
-                {project.pm_projectmanager ? ` · Manager: ${project.pm_projectmanager}` : ''}
-                {project.pm_projectsponsor ? ` · Sponsor: ${project.pm_projectsponsor}` : ''}
-                {project.pm_businessunit ? ` · ${project.pm_businessunit}` : ''}
-                {project.pm_portfolioname ? ` · Portfolio: ${project.pm_portfolioname}` : ''}
-                {project.pm_programmename ? ` · Programme: ${project.pm_programmename}` : ''}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-      </Paper>
+  // RAG color for accent bar
+  const ragVal = project.pm_ragstatus?.toString()
+  const accentColor = ragVal === '2' ? '#ef4444' : ragVal === '0' ? '#f59e0b' : '#22c55e'
 
-      {/* ── Quick Info Cards ──────────────────────────────────── */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 2.5 }}>
-        <Paper sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #3b82f6' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Budget</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>{currency(project.pm_approvedbudgeteur)}</Typography>
-        </Paper>
-        <Paper sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #f59e0b' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Actual Spend</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>{currency(project.pm_actualcosteur)}</Typography>
-        </Paper>
-        <Paper sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #22c55e' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>% Complete</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>{project.pm_percentcomplete ?? 0}%</Typography>
-          <LinearProgress
-            variant="determinate"
-            value={project.pm_percentcomplete ?? 0}
-            sx={{ mt: 0.5, height: 4, borderRadius: 1.15, bgcolor: theme.palette.action.hover }}
-          />
-        </Paper>
-        <Paper sx={{ p: 2, borderRadius: 1.15, borderLeft: `3px solid ${RAG_COLORS[String(project.pm_ragstatus)] ?? '#6b7280'}` }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Schedule</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            {project.pm_plannedenddate
-              ? new Date(project.pm_plannedenddate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-              : '—'}
-          </Typography>
-        </Paper>
-      </Box>
+  return (
+    <Box>
+      <Breadcrumbs 
+        items={[
+          { label: 'Project Portfolio', path: 'list' },
+          { label: project.pm_projectname ?? 'Detail' }
+        ]} 
+        onNavigate={() => onBack()}
+      />
+
+      <PageHeader
+        title={project.pm_projectname ?? 'Project Detail'}
+        subtitle={project.pm_projectmanager ? `Manager: ${project.pm_projectmanager}` : project.pm_projectcode ? `Code: ${project.pm_projectcode}` : undefined}
+        actionElement={
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            <StatusChip status={project.pm_ragstatus} type="rag" size="small" />
+            <StatusTag label={phaseLabel(project.pm_projectphase)} size="small" variant="outlined" />
+            {project.pm_projectcode && (
+              <StatusTag
+                label={project.pm_projectcode}
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}
+              />
+            )}
+          </Box>
+        }
+      />
 
       {/* ── Action Buttons Bar ────────────────────────────────── */}
       <Paper sx={{ px: 2.5, py: 1.5, mb: 2.5, borderRadius: 1.15, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>

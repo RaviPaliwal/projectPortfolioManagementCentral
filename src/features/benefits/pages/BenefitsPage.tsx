@@ -421,7 +421,6 @@ export default function BenefitsPage() {
             <StatusTag
               label={RAG_LABELS[String(selectedBenefit.pm_ragstatus) as keyof typeof RAG_LABELS]}
               color={String(selectedBenefit.pm_ragstatus) === '1' ? 'success' : String(selectedBenefit.pm_ragstatus) === '2' ? 'error' : 'warning'}
-              variant="filled"
             />
           </Box>
         )}
