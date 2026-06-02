@@ -12,18 +12,23 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import ScheduleIcon from '@mui/icons-material/Schedule'
 import HistoryIcon from '@mui/icons-material/History'
 import SettingsIcon from '@mui/icons-material/Settings'
 import PowerIcon from '@mui/icons-material/Power'
 import PowerOffIcon from '@mui/icons-material/PowerOff'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import CloseIcon from '@mui/icons-material/Close'
 import type { WorkflowModel, WorkflowInstanceModel, WorkflowApprovalStepModel, WorkflowStepTemplateModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
+import { useUser } from '@/context/UserContext'
 import {
   fetchWorkflows, deleteWorkflow,
   fetchWorkflowInstances, fetchWorkflowApprovalSteps, deleteWorkflowInstance,
   fetchWorkflowStepTemplates,
+  approveWorkflowStep,
+  rejectWorkflowStep,
 } from '@/lib/dataverseClient'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, TabPanel, ExportButton } from '@/components/common'
@@ -113,6 +118,10 @@ export default function WorkflowsPage() {
   const [stepsLoading, setStepsLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; type: 'workflow' | 'instance' } | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [wfActionLoading, setWfActionLoading] = useState<string | null>(null)
+  const { currentUser } = useUser()
+  const [dialogStep, setDialogStep] = useState(0)
+  const WF_STEPS = ['Basic Information', 'Settings', 'Review & Save']
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -273,28 +282,105 @@ export default function WorkflowsPage() {
     </TableHead>
   )
 
-  // ─── Sub-page Views ───
-  if (view === 'create') {
-    return <WorkflowCreatePage onBack={() => navigateTo('list')} onCreated={() => { loadData(); navigateTo('list') }} />
-  }
-  if (view === 'edit' && viewWorkflow) {
-    return <WorkflowEditPage workflow={viewWorkflow} onBack={() => navigateTo('list')} onSaved={() => { loadData(); navigateTo('list') }} />
-  }
-  if (view === 'steps' && viewWorkflow) {
-    return <WorkflowStepConfigPage workflow={viewWorkflow} onBack={() => navigateTo('list')} />
-  }
+  // ─── Sub-page Dialogs ───
+  const handleDialogClose = () => { if (!actionLoading) navigateTo('list') }
+  
+  const dialogSx = { '& .MuiDialog-paper': { borderRadius: 3, maxWidth: 900, width: '100%' } }
 
-  // ─── Main List View ───
   return (
-    <Box>
+    <>
+      {/* Create Workflow Dialog */}
+      <Dialog open={view === 'create'} onClose={handleDialogClose} maxWidth="md" fullWidth sx={dialogSx}>
+        <DialogTitle sx={{ px: 3, pt: 2.5, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+            <Avatar sx={{ width: 36, height: 36, bgcolor: '#6366f1', borderRadius: 1.5 }}>
+              <AccountTreeIcon sx={{ fontSize: 20, color: '#fff' }} />
+            </Avatar>
+            <Typography variant="h6" sx={{ fontWeight: 700, flex: 1 }}>Create Workflow Template</Typography>
+            <IconButton size="small" aria-label="Close" onClick={handleDialogClose} sx={{ borderRadius: 1.5, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ ml: 7 }}>
+            Step {dialogStep + 1} of {WF_STEPS.length}: {WF_STEPS[dialogStep]}
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <WorkflowCreatePage onStepChange={setDialogStep} onCreated={() => { loadData(); navigateTo('list') }} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Workflow Dialog */}
+      <Dialog open={view === 'edit' && !!viewWorkflow} onClose={handleDialogClose} maxWidth="md" fullWidth sx={dialogSx}>
+        <DialogTitle sx={{ px: 3, pt: 2.5, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+            <Avatar sx={{ width: 36, height: 36, bgcolor: '#6366f1', borderRadius: 1.5 }}>
+              <EditIcon sx={{ fontSize: 20, color: '#fff' }} />
+            </Avatar>
+            <Typography variant="h6" sx={{ fontWeight: 700, flex: 1 }}>
+              Edit: {viewWorkflow?.pm_workflowname ?? 'Workflow'}
+            </Typography>
+            <IconButton size="small" aria-label="Close" onClick={handleDialogClose} sx={{ borderRadius: 1.5, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ ml: 7 }}>
+            Step {dialogStep + 1} of {WF_STEPS.length}: {WF_STEPS[dialogStep]}
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          {viewWorkflow && (
+            <WorkflowEditPage workflow={viewWorkflow} onStepChange={setDialogStep} onSaved={() => { loadData(); navigateTo('list') }} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Step Config Dialog */}
+      <Dialog open={view === 'steps' && !!viewWorkflow} onClose={handleDialogClose} maxWidth="xl" fullWidth
+        slotProps={{ paper: { sx: { borderRadius: 3, minHeight: '60vh', maxHeight: '92vh' } } }}>
+        <DialogTitle sx={{
+          display: 'flex', alignItems: 'center', gap: 1.5, px: 3, pt: 2.5, pb: 1.5,
+          borderBottom: '1px solid', borderColor: 'divider',
+          background: 'linear-gradient(135deg, #f8f9ff 0%, #fff 100%)',
+        }}>
+          <Avatar sx={{ width: 36, height: 36, bgcolor: '#8b5cf6', borderRadius: 1.5 }}>
+            <SettingsIcon sx={{ fontSize: 20, color: '#fff' }} />
+          </Avatar>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
+              Step Configuration
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 400, fontSize: '0.75rem' }}>
+              {viewWorkflow?.pm_workflowname ?? 'Workflow'}
+            </Typography>
+          </Box>
+          <IconButton size="small" aria-label="Close" onClick={handleDialogClose}
+            sx={{ borderRadius: 1.5, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          {viewWorkflow && (
+            <WorkflowStepConfigPage workflow={viewWorkflow} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+
+      {/* ─── Main List View ─── */}
+      <Box>
       <PageHeader
         title="Workflow Automation"
         subtitle="Manage workflow templates, track active instances, and review approval steps."
-        action={pageTab === 0 ? { label: 'New Workflow', icon: <AddIcon />, onClick: () => navigateTo('create') } : undefined}
+        actionElement={
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {pageTab === 0 && <ExportButton data={filteredWorkflows} columns={workflowExportColumns} filename="WorkflowTemplates" />}
+            {pageTab === 1 && <ExportButton data={filteredInstances} columns={instanceExportColumns} filename="WorkflowInstances" />}
+            {pageTab === 2 && filteredSteps.length > 0 && <ExportButton data={filteredSteps} columns={stepExportColumns} filename="WorkflowApprovalSteps" />}
+            {pageTab === 0 && <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigateTo('create')}>New Workflow</Button>}
+          </Box>
+        }
       />
-      {pageTab === 0 && <ExportButton data={filteredWorkflows} columns={workflowExportColumns} filename="WorkflowTemplates" />}
-      {pageTab === 1 && <ExportButton data={filteredInstances} columns={instanceExportColumns} filename="WorkflowInstances" />}
-      {pageTab === 2 && filteredSteps.length > 0 && <ExportButton data={filteredSteps} columns={stepExportColumns} filename="WorkflowApprovalSteps" />}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
       {!loading && <KpiCardRow items={kpiItems} />}
@@ -350,7 +436,7 @@ export default function WorkflowsPage() {
                       <Chip label={STATUS_LABELS[String(wf.pm_workflowstatus ?? '')] || (wf.pm_workflowstatus === 0 ? 'Active' : 'Inactive')} color={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? 'success' : 'default'} size="small" icon={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? <PowerIcon /> : <PowerOffIcon />} sx={{ fontWeight: 600, borderRadius: 8 }} />
                     </TableCell>
                     <TableCell align="center">
-                      <Chip label={String(stepTemplates.filter((s) => s.pm_module === wf.pm_workflowid).length)} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8 }} />
+                      <Chip label={String(stepTemplates.filter((s) => s._pm_workflowlookup_value === wf.pm_workflowid).length)} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8 }} />
                     </TableCell>
                     <TableCell align="right">
                       <IconButton size="small" onClick={() => navigateTo('steps', wf)} sx={{ borderRadius: 1.5, color: '#8b5cf6' }} title="Configure Steps"><SettingsIcon sx={{ fontSize: 18 }} /></IconButton>
@@ -486,6 +572,7 @@ export default function WorkflowsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+      </Box>
+    </>
   )
 }

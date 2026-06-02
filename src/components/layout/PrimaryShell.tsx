@@ -37,8 +37,9 @@ import SavingsIcon from '@mui/icons-material/Savings'
 import PsychologyIcon from '@mui/icons-material/Psychology'
 import AccountTreeWorkflowIcon from '@mui/icons-material/AccountTree'
 import { UserSelector } from '@/context/UserContext'
+import { useEffect } from 'react'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'approvalrequests' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'debug'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'approvalrequests' | 'fundingsources' | 'skills' | 'workflows' | 'pendingapprovals' | 'holidays' | 'statussnapshots' | 'debug'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -60,6 +61,7 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'approvalrequests', label: 'Approvals', icon: <RateReviewIcon /> },
   { key: 'fundingsources', label: 'Funding Sources', icon: <SavingsIcon /> },
   { key: 'workflows', label: 'Workflows', icon: <AccountTreeWorkflowIcon /> },
+  { key: 'pendingapprovals', label: 'Approvals Queue', icon: <RateReviewIcon /> },
   { key: 'skills', label: 'Skills & Mapping', icon: <PsychologyIcon /> },
   { key: 'holidays', label: 'Holiday Calendar', icon: <CalendarMonthIcon /> },
   { key: 'statussnapshots', label: 'Status Snapshots', icon: <AssessmentIcon /> },
@@ -78,6 +80,18 @@ const DRAWER_WIDTH = 260
 
 export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, themeMode, children }: PrimaryShellProps) {
   const theme = useTheme()
+
+  // Listen for custom navigation events (e.g. from MyTasksWidget)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail?.tab && detail.tab !== activeTab) {
+        onChangeTab(detail.tab as TabKey)
+      }
+    }
+    window.addEventListener('navigate', handler)
+    return () => window.removeEventListener('navigate', handler)
+  }, [activeTab, onChangeTab])
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>

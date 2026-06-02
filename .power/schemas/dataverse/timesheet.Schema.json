@@ -249,14 +249,6 @@
           "x-ms-read-only": true,
           "maxLength": 850
         },
-        "pm_ownername": {
-          "type": "string",
-          "title": "Owner / Resource",
-          "x-ms-dataverse-attribute": "pm_ownername",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_ownername",
-          "maxLength": 100
-        },
         "pm_periodenddate": {
           "type": "string",
           "title": "Period End",

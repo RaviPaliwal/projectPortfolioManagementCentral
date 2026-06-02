@@ -18,6 +18,7 @@ import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
+import SendIcon from '@mui/icons-material/Send'
 import DescriptionIcon from '@mui/icons-material/Description'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import PeopleIcon from '@mui/icons-material/People'
@@ -30,8 +31,11 @@ import {
   deleteChangeRequest,
   fetchProgrammesForLookup,
   fetchProjectsForLookup,
+  startWorkflowForEntity,
+  fetchWorkflows,
 } from '@/lib/dataverseClient'
 import type { ChangeRequestModel } from '@/types/dataverse'
+import { useUser } from '@/context/UserContext'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/lib/dataverseClient'
 import { fontSizes } from '@/styles'
 import type { ExportColumn } from '@/utils/exportUtils'
@@ -163,6 +167,8 @@ export default function ChangeRequestsPage() {
   })
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [approvalLoading, setApprovalLoading] = useState(false)
+  const { currentUser } = useUser()
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -640,6 +646,56 @@ export default function ChangeRequestsPage() {
         )}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
+            {selectedCR && String(selectedCR.pm_status) === '1' && (
+              <Button
+                size="small"
+                variant="contained"
+                color="success"
+                disabled={approvalLoading}
+                onClick={async () => {
+                  if (!selectedCR?.pm_changerequestid) return
+                  setApprovalLoading(true)
+                  setError(null)
+                  try {
+                    // Find an active workflow for the ChangeRequests module
+                    const workflows = await fetchWorkflows()
+                    // Match by pm_module first, then fall back to workflow name containing 'change request'
+                    const crWorkflow = workflows.find(
+                      (wf) => (wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0') && (
+                        wf.pm_module?.toLowerCase() === 'changerequest' ||
+                        wf.pm_module?.toLowerCase() === 'changerequests' ||
+                        (wf.pm_workflowname ?? '').toLowerCase().includes('change request')
+                      )
+                    )
+                    if (!crWorkflow?.pm_workflowid) {
+                      setError('No active workflow template found for Change Requests. Create one in Workflows first.')
+                      return
+                    }
+                    const result = await startWorkflowForEntity(
+                      crWorkflow.pm_workflowid,
+                      selectedCR.pm_changerequestid,
+                      'ChangeRequest',
+                      currentUser?.fullname ?? 'Unknown'
+                    )
+                    if (result) {
+                      setSuccessMsg('Change request submitted for approval!')
+                    } else {
+                      setError('Failed to start workflow. Check that the workflow has step templates configured.')
+                    }
+                  } catch (err) {
+                    console.error('[ChangeRequestsPage] Submit for approval error:', err)
+                    setError('Unable to submit for approval.')
+                  } finally {
+                    setApprovalLoading(false)
+                    setTimeout(() => setSuccessMsg(null), 4000)
+                  }
+                }}
+                startIcon={<SendIcon sx={{ fontSize: 16 }} />}
+                sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 12, py: 0.5 }}
+              >
+                {approvalLoading ? 'Submitting...' : 'Submit for Approval'}
+              </Button>
+            )}
             <IconButton size="small" color="error" onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)} sx={{ borderRadius: 1.5 }}>
               <DeleteIcon sx={{ fontSize: 20 }} />
             </IconButton>

@@ -28,7 +28,6 @@ export interface Pm_timesheetsBase {
   pm_approvaldate?: string;
   pm_approvedby?: string;
   "pm_fiscalperiod1@odata.bind"?: string;
-  pm_ownername?: string;
   pm_periodenddate?: string;
   pm_periodstartdate?: string;
   pm_rejectionreason?: string;

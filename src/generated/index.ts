@@ -5,6 +5,7 @@
 
 // Models
 export * as CommonModels from './models/CommonModels';
+export * as ManageTeamsModel from './models/ManageTeamsModel';
 export * as Pm_benefitsModel from './models/Pm_benefitsModel';
 export * as Pm_budgetlinesModel from './models/Pm_budgetlinesModel';
 export * as Pm_cashflowentriesModel from './models/Pm_cashflowentriesModel';
@@ -37,11 +38,14 @@ export * as Pm_workflowapprovalstepsModel from './models/Pm_workflowapprovalstep
 export * as Pm_workflowinstancesModel from './models/Pm_workflowinstancesModel';
 export * as Pm_workflowsModel from './models/Pm_workflowsModel';
 export * as Pm_workflowsteptemplatesModel from './models/Pm_workflowsteptemplatesModel';
+export * as RemoveMembersTeamModel from './models/RemoveMembersTeamModel';
 export * as SystemusersModel from './models/SystemusersModel';
 export * as TeammembershipsModel from './models/TeammembershipsModel';
 export * as TeamsModel from './models/TeamsModel';
 
 // Services
+export * from './services/AddMembersTeamService';
+export * from './services/ManageTeamsService';
 export * from './services/Pm_benefitsService';
 export * from './services/Pm_budgetlinesService';
 export * from './services/Pm_cashflowentriesService';
@@ -74,6 +78,7 @@ export * from './services/Pm_workflowapprovalstepsService';
 export * from './services/Pm_workflowinstancesService';
 export * from './services/Pm_workflowsService';
 export * from './services/Pm_workflowsteptemplatesService';
+export * from './services/RemoveMembersTeamService';
 export * from './services/SystemusersService';
 export * from './services/TeammembershipsService';
 export * from './services/TeamsService';

@@ -5,13 +5,14 @@ import {
   Alert, Avatar, Divider, CircularProgress, FormControl,
   InputLabel, Select, MenuItem, Switch, FormControlLabel,
 } from '@mui/material'
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+
 import EditIcon from '@mui/icons-material/Edit'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import SettingsIcon from '@mui/icons-material/Settings'
 import PublishIcon from '@mui/icons-material/Publish'
 
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
+import { useEffect } from 'react'
 import { fontSizes } from '@/styles'
 import { updateWorkflow } from '@/lib/dataverseClient'
 import type { WorkflowModel } from '@/types/dataverse'
@@ -36,11 +37,11 @@ const MODULES = [
  
 interface Props {
   workflow: WorkflowModel
-  onBack: () => void
+  onStepChange?: (step: number) => void
   onSaved?: () => void
 }
  
-export default function WorkflowEditPage({ workflow, onBack, onSaved }: Props) {
+export default function WorkflowEditPage({ workflow, onStepChange, onSaved }: Props) {
   const [activeStep, setActiveStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,7 +58,9 @@ export default function WorkflowEditPage({ workflow, onBack, onSaved }: Props) {
   })
  
   const u = useCallback((k: string, v: unknown) => setF((p) => ({ ...p, [k]: v })), [])
- 
+
+  useEffect(() => { onStepChange?.(activeStep) }, [activeStep, onStepChange])
+
   const handleSave = async () => {
     setSaving(true)
     setError(null)
@@ -93,20 +96,6 @@ export default function WorkflowEditPage({ workflow, onBack, onSaved }: Props) {
  
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Button startIcon={<ArrowBackIcon />} onClick={onBack} sx={{ borderRadius: 2 }}>Back</Button>
-        <Avatar sx={{ width: 40, height: 40, bgcolor: '#6366f1', borderRadius: 2 }}>
-          <EditIcon sx={{ fontSize: 20, color: '#fff' }} />
-        </Avatar>
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>Edit: {workflow.pm_workflowname}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            Step {activeStep + 1} of {STEPS.length}: {STEPS[activeStep]}
-          </Typography>
-        </Box>
-      </Box>
- 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
  
       {/* Stepper */}

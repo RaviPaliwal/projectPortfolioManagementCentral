@@ -40,6 +40,7 @@ export interface Pm_workflowsteptemplatesBase {
   pm_status?: Pm_workflowsteptemplatespm_status;
   pm_statusreason?: string;
   pm_steporder?: number;
+  "pm_workflowLookup@odata.bind"?: string;
   pm_workflowname: string;
   pm_workflowsteptemplateid: string;
   statecode: Pm_workflowsteptemplatesstatecode;
@@ -67,6 +68,7 @@ export interface Pm_workflowsteptemplates extends Pm_workflowsteptemplatesBase {
   pm_assignetypename?: string;
   pm_isparallelname?: string;
   pm_statusname?: string;
+  pm_workflowlookupname?: string;
   statecodename?: string;
   statuscodename?: string;
   versionnumber?: number;
@@ -84,4 +86,6 @@ export interface Pm_workflowsteptemplates extends Pm_workflowsteptemplatesBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
+  pm_workflowlookup?: object;
+  _pm_workflowlookup_value?: string;
 }

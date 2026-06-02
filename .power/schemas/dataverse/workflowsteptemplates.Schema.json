@@ -427,6 +427,22 @@
           "x-ms-dataverse-type": "IntegerType",
           "x-ms-schema-name": "pm_stepOrder"
         },
+        "pm_workflowlookup": {
+          "type": "string",
+          "title": "Workflow Lookup",
+          "x-ms-dataverse-attribute": "pm_workflowlookup",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_workflowLookup"
+        },
+        "pm_workflowlookupname": {
+          "type": "string",
+          "title": "pm_workflowlookupname",
+          "x-ms-dataverse-attribute": "pm_workflowlookupname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_workflowLookupName",
+          "x-ms-read-only": true,
+          "maxLength": 850
+        },
         "pm_workflowname": {
           "type": "string",
           "title": "Step Name",

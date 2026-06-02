@@ -52,7 +52,7 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         orderBy: ['fullname asc'],
         top: 200,
       })
-      const list = unwrapUserList(result)
+      const list = unwrapUserList(result).filter(u => !u.fullname?.startsWith('#'))
       setUsers(list)
       if (!currentUser && list.length > 0) {
         setCurrentUser(list[0])

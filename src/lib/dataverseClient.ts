@@ -29,6 +29,7 @@
   Pm_workflowsteptemplatesService,
   SystemusersService,
   TeamsService,
+  ManageTeamsService
 } from '../generated'
 import type { Pm_initiatives } from '../generated/models/Pm_initiativesModel'
 import type { Pm_portfolios } from '../generated/models/Pm_portfoliosModel'
@@ -280,7 +281,7 @@ const mapResourceAllocation = (item: Pm_resourceallocations): ResourceAllocation
 const mapTimesheet = (item: Pm_timesheets): TimesheetModel => ({
   pm_timesheetid: item.pm_timesheetid,
   pm_timesheetname: item.pm_timesheetname,
-  pm_ownername: item.pm_ownername,
+  pm_ownername: item.owneridname,
   pm_periodstartdate: item.pm_periodstartdate,
   pm_periodenddate: item.pm_periodenddate,
   pm_timesheetstatus: item.pm_timesheetstatus,
@@ -2045,7 +2046,7 @@ export async function fetchTimesheets(): Promise<TimesheetModel[]> {
   const options = {
     select: selectFields,
     orderBy: ['pm_periodenddate desc', 'pm_timesheetname asc'],
-    top: 500,
+    top: 500      
   }
   const result = await Pm_timesheetsService.getAll({ ...options, filter: "statecode eq 0" })
   try { console.debug('[dataverseService] fetchTimesheets result:', result) } catch (e) {}
@@ -2055,6 +2056,37 @@ export async function fetchTimesheets(): Promise<TimesheetModel[]> {
     const fallbackResult = await Pm_timesheetsService.getAll(options)
     list = unwrapList<Pm_timesheets>(fallbackResult).map(mapTimesheet)
   }
+ 
+  // Resolve resource display names from the resource lookup GUIDs
+  try {
+    const resourceIds = Array.from(new Set(list.map((ts) => normalizeLookupId(ts._pm_resource_value)).filter(Boolean))) as string[]
+    if (resourceIds.length > 0) {
+      const resourcesResult = await Pm_resourcesService.getAll({
+        filter: resourceIds.map((id) => `pm_resourceid eq '${id}'`).join(' or '),
+        select: ['pm_resourceid', 'pm_fullname'],
+        top: 500,
+      })
+      const resources = unwrapList<any>(resourcesResult)
+      const resourceNameById = new Map<string, string>()
+      for (const res of resources) {
+        if (res.pm_resourceid && res.pm_fullname) {
+          const normalizedId = normalizeLookupId(res.pm_resourceid)
+          if (normalizedId) {
+            resourceNameById.set(normalizedId, res.pm_fullname.trim())
+          }
+        }
+      }
+      for (const ts of list) {
+        const normalizedValue = normalizeLookupId(ts._pm_resource_value)
+        if (normalizedValue && resourceNameById.has(normalizedValue)) {
+          (ts as any).pm_resourcename = resourceNameById.get(normalizedValue)
+        }
+      }
+    }
+  } catch (err) {
+    try { console.warn('[dataverseService] fetchTimesheets: failed to resolve resource names', err) } catch (e) {}
+  }
+ 
   return list
 }
 
@@ -3495,6 +3527,7 @@ const mapWorkflow = (item: Pm_workflows): WorkflowModel => {
     pm_workflowtypename: raw.pm_workflowtypename,
     pm_workflowstatus: raw.pm_workflowstatus ?? item.statecode ?? item.statuscode,
     pm_workflowstatusname: raw.pm_workflowstatusname ?? (item.statecode === 0 ? 'Active' : 'Inactive'),
+    pm_module: item.pm_module,
     pm_entitytype: raw.pm_entitytype,
     statecode: item.statecode,
   }
@@ -3552,6 +3585,7 @@ export async function fetchWorkflows(): Promise<WorkflowModel[]> {
 }
 
 export async function createWorkflow(payload: Partial<WorkflowModel>): Promise<WorkflowModel | null> {
+  console.log('[dataverseService] createWorkflow called with payload:', JSON.stringify(payload, null, 2))
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null && value !== '') {
@@ -3562,14 +3596,38 @@ export async function createWorkflow(payload: Partial<WorkflowModel>): Promise<W
     statecode: 0,
     statuscode: 1,
   }
-  const result = await Pm_workflowsService.create({ ...defaults, ...cleanPayload } as any)
+  // Remap frontend fields to actual Dataverse field names
+  if ('pm_workflowdescription' in cleanPayload) {
+    cleanPayload.pm_description = cleanPayload.pm_workflowdescription
+    delete cleanPayload.pm_workflowdescription
+  }
+  if ('pm_workflowstatus' in cleanPayload) {
+    cleanPayload.statecode = cleanPayload.pm_workflowstatus
+    delete cleanPayload.pm_workflowstatus
+  }
+
+  const body = { ...defaults, ...cleanPayload }
+  console.log('[dataverseService] createWorkflow sending body:', JSON.stringify(body, null, 2))
+  const result = await Pm_workflowsService.create(body as any)
+  console.log('[dataverseService] createWorkflow raw result:', JSON.stringify(result, null, 2))
   try { console.debug('[dataverseService] createWorkflow payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_workflows>(result)
+  console.log('[dataverseService] createWorkflow unwrapped item:', JSON.stringify(item, null, 2))
   return item ? mapWorkflow(item) : null
 }
 
 export async function updateWorkflow(id: string, changes: Partial<WorkflowModel>): Promise<WorkflowModel | null> {
-  const result = await Pm_workflowsService.update(id, changes as any)
+  // Remap frontend fields to actual Dataverse field names
+  const payload: Record<string, any> = { ...changes }
+  if ('pm_workflowdescription' in payload) {
+    payload.pm_description = payload.pm_workflowdescription
+    delete payload.pm_workflowdescription
+  }
+  if ('pm_workflowstatus' in payload) {
+    payload.statecode = payload.pm_workflowstatus
+    delete payload.pm_workflowstatus
+  }
+  const result = await Pm_workflowsService.update(id, payload as any)
   try { console.debug('[dataverseService] updateWorkflow id/changes/result:', id, changes, result) } catch (e) {}
   const item = unwrapSingle<Pm_workflows>(result)
   return item ? mapWorkflow(item) : null
@@ -3588,7 +3646,6 @@ const mapWorkflowStepTemplate = (item: Pm_workflowsteptemplates): WorkflowStepTe
   pm_workflowname: item.pm_workflowname,
   pm_steporder: item.pm_steporder,
   pm_assignetype: (item as any).pm_assignetype,
-  pm_assignetypename: (item as any).pm_assignetypename,
   pm_assigneeid: item.pm_assigneeid,
   pm_displayname: item.pm_displayname,
   pm_description: item.pm_description,
@@ -3598,9 +3655,8 @@ const mapWorkflowStepTemplate = (item: Pm_workflowsteptemplates): WorkflowStepTe
   pm_isparallel: item.pm_isparallel,
   pm_conditionsjson: item.pm_conditionsjson,
   pm_status: (item as any).pm_status,
-  pm_statusname: (item as any).pm_statusname,
   pm_statusreason: item.pm_statusreason,
-  pm_module: (item as any).pm_module,
+  _pm_workflowlookup_value: (item as any)._pm_workflowlookup_value,
   statecode: (item as any).statecode,
 })
 
@@ -3637,6 +3693,7 @@ export async function fetchOwnerTeams(): Promise<TeamOption[]> {
     const result = await TeamsService.getAll({
       select: ['teamid', 'name', 'description', 'teamtype', 'systemmanaged'],
       orderBy: ['name asc'],
+      filter: "_administratorid_value ne 9280b346-649b-4cb2-a9bc-2de1e4d66c48 and name ne 'org34d5ddb1'", // Only return non-admin teams
       top: 500,
     })
     const list = unwrapList<Teams>(result)
@@ -3719,35 +3776,66 @@ export async function fetchTeamMembers(teamId: string): Promise<Systemusers[]> {
 }
 
 
-export async function addTeamMember(teamId: string, userId: string): Promise<boolean> {
-  console.warn('[dataverseService] addTeamMember is not implemented in this client.');
-  return false
+/**
+ * Executes the Power Automate cloud flow cleanly via the generated SDK wrapper.
+ * This completely avoids raw fetch handlers and manual token management.
+ */
+export async function manageTeamMember(teamId: string, userId: string, action: 'Add' | 'Remove'): Promise<boolean> {
+  try {
+    console.debug(`[dataverseService] manageTeamMember: processing ${action} via ManageTeamsService wrapper`);
+ 
+    // Call your auto-generated wrapper directly.
+    // The SDK seamlessly handles token lifecycle routing automatically!
+    const result = await ManageTeamsService.Run({
+      text: teamId,
+      text_1: userId,
+      text_2: action
+    } as any);
+ 
+    if (result && result.success) {
+      console.log(`[dataverseService] Flow successfully executed for action: ${action}`);
+      return true;
+    } else {
+      console.warn(`[dataverseService] Flow returned a failure status:`, result?.error);
+      return false;
+    }
+ 
+  } catch (err) {
+    console.warn(`[dataverseService] manageTeamMember service execution failed:`, err);
+    return false;
+  }
 }
-
-export async function removeTeamMember(teamId: string, userId: string): Promise<boolean> {
-  console.warn('[dataverseService] removeTeamMember is not implemented in this client.');
-  return false
-}
-
 export async function fetchWorkflowStepTemplates(workflowId?: string): Promise<WorkflowStepTemplateModel[]> {
+  console.log('[dataverseService] fetchWorkflowStepTemplates called, workflowId:', workflowId)
   const options: any = {
-    select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assignetypename', 'pm_assigneeid', 'pm_displayname', 'pm_description', 'pm_sladays', 'pm_allowdelegation', 'pm_approvalrequired', 'pm_isparallel', 'pm_conditionsjson', 'pm_status', 'pm_statusname', 'pm_statusreason', 'pm_module'],
+    select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assigneeid', 'pm_displayname', 'pm_description', 'pm_sladays', 'pm_allowdelegation', 'pm_approvalrequired', 'pm_isparallel', 'pm_conditionsjson', 'pm_status', 'pm_statusreason', '_pm_workflowlookup_value'],
     orderBy: ['pm_steporder asc'],
     top: 200,
   }
   if (workflowId) {
-    options.filter = "pm_module eq '" + workflowId + "'"
+    options.filter = "_pm_workflowlookup_value eq '" + workflowId + "'"
   }
   const result = await Pm_workflowsteptemplatesService.getAll(options)
-  try { console.debug('[dataverseService] fetchWorkflowStepTemplates result:', result) } catch (e) {}
-  return unwrapList<Pm_workflowsteptemplates>(result).map(mapWorkflowStepTemplate)
+  console.log('[dataverseService] fetchWorkflowStepTemplates raw result:', JSON.stringify(result, null, 2))
+  const items = unwrapList<Pm_workflowsteptemplates>(result)
+  console.log('[dataverseService] fetchWorkflowStepTemplates unwrapped count:', items.length)
+  return items.map(mapWorkflowStepTemplate)
 }
 
 export async function createWorkflowStepTemplate(payload: Partial<WorkflowStepTemplateModel>): Promise<WorkflowStepTemplateModel | null> {
+  console.log('[dataverseService] createWorkflowStepTemplate called with payload:', JSON.stringify(payload, null, 2))
   const cleanPayload: Record<string, any> = {}
+  let workflowBindValue: string | undefined
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && key !== 'pm_workflowsteptemplateid') {
-      cleanPayload[key] = value
+    if (value !== undefined && value !== null && key !== 'pm_workflowsteptemplateid' && key !== 'pm_module') {
+      if (key === '_pm_workflowlookup_value') {
+        const lookupId = String(value).replace(/[{}]/g, '').trim().toLowerCase()
+        if (lookupId) {
+          workflowBindValue = lookupId
+        }
+      } else {
+        cleanPayload[key] = value
+      }
     }
   }
   const defaults: Record<string, any> = {
@@ -3755,22 +3843,43 @@ export async function createWorkflowStepTemplate(payload: Partial<WorkflowStepTe
     statuscode: 1,
     pm_status: 1,
   }
-  const result = await Pm_workflowsteptemplatesService.create({ ...defaults, ...cleanPayload } as any)
-  try { console.debug('[dataverseService] createWorkflowStepTemplate payload/result:', cleanPayload, result) } catch (e) {}
+  // Handle workflow OData bind
+  if (workflowBindValue) {
+    cleanPayload['pm_workflowLookup@odata.bind'] = `/pm_workflows(${workflowBindValue})`
+  }
+  const body = { ...defaults, ...cleanPayload }
+  console.log('[dataverseService] createWorkflowStepTemplate sending body:', JSON.stringify(body, null, 2))
+  const result = await Pm_workflowsteptemplatesService.create(body as any)
+  console.log('[dataverseService] createWorkflowStepTemplate raw result:', JSON.stringify(result, null, 2))
   const item = unwrapSingle<Pm_workflowsteptemplates>(result)
+  console.log('[dataverseService] createWorkflowStepTemplate unwrapped item:', item ? 'found' : 'null')
   return item ? mapWorkflowStepTemplate(item) : null
 }
 
 export async function updateWorkflowStepTemplate(id: string, changes: Partial<WorkflowStepTemplateModel>): Promise<WorkflowStepTemplateModel | null> {
+  console.log('[dataverseService] updateWorkflowStepTemplate called with id:', id, 'changes:', JSON.stringify(changes, null, 2))
   const cleanPayload: Record<string, any> = {}
+  let workflowBindValue: string | undefined
   for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null && key !== 'pm_workflowsteptemplateid') {
-      cleanPayload[key] = value
+    if (value !== undefined && value !== null && key !== 'pm_workflowsteptemplateid' && key !== 'pm_module') {
+      if (key === '_pm_workflowlookup_value') {
+        const lookupId = String(value).replace(/[{}]/g, '').trim().toLowerCase()
+        if (lookupId) {
+          workflowBindValue = lookupId
+        }
+      } else {
+        cleanPayload[key] = value
+      }
     }
   }
+  if (workflowBindValue) {
+    cleanPayload['pm_workflowLookup@odata.bind'] = `/pm_workflows(${workflowBindValue})`
+  }
+  console.log('[dataverseService] updateWorkflowStepTemplate sending body:', JSON.stringify(cleanPayload, null, 2))
   const result = await Pm_workflowsteptemplatesService.update(id, cleanPayload as any)
-  try { console.debug('[dataverseService] updateWorkflowStepTemplate id/changes/result:', id, cleanPayload, result) } catch (e) {}
+  console.log('[dataverseService] updateWorkflowStepTemplate raw result:', JSON.stringify(result, null, 2))
   const item = unwrapSingle<Pm_workflowsteptemplates>(result)
+  console.log('[dataverseService] updateWorkflowStepTemplate unwrapped item:', item ? 'found' : 'null')
   return item ? mapWorkflowStepTemplate(item) : null
 }
 
@@ -3810,8 +3919,16 @@ export async function fetchWorkflowApprovalSteps(instanceId: string): Promise<Wo
     orderBy: ['pm_steporder asc'],
     top: 200,
   })
-  try { console.debug('[dataverseService] fetchWorkflowApprovalSteps result:', result) } catch (e) {}
-  return unwrapList<Pm_workflowapprovalsteps>(result).map(mapWorkflowApprovalStep)
+  const steps = unwrapList<Pm_workflowapprovalsteps>(result)
+  console.log(`[dataverseService] fetchWorkflowApprovalSteps for instance ${instanceId}:`, JSON.stringify(steps.map((s) => ({
+    id: s.pm_workflowapprovalstepid,
+    name: s.pm_stepname,
+    order: s.pm_steporder,
+    approver: s.pm_approvername,
+    status: s.pm_decisionstatus,
+    due: s.pm_duedate,
+  })), null, 2))
+  return steps.map(mapWorkflowApprovalStep)
 }
 
 export async function createWorkflowApprovalStep(payload: Partial<WorkflowApprovalStepModel>): Promise<WorkflowApprovalStepModel | null> {
@@ -3841,6 +3958,407 @@ export async function createWorkflowApprovalStep(payload: Partial<WorkflowApprov
 export async function deleteWorkflowInstance(id: string): Promise<void> {
   try { console.debug('[dataverseService] deleteWorkflowInstance id:', id) } catch (e) {}
   await Pm_workflowinstancesService.delete(id)
+}
+
+
+
+// ── Approval Routing Engine ──────────────────────────────────────────────
+
+/**
+ * Starts a workflow for a given entity by creating a WorkflowInstance
+ * and then creating WorkflowApprovalStep records for each step template.
+ * Steps are created in order; only step 1 is marked Pending, the rest are
+ * left without a decision status until they become active.
+ */
+export async function startWorkflowForEntity(
+  templateId: string,
+  entityId: string,
+  entityType: string,
+  initiatedBy: string
+): Promise<WorkflowInstanceModel | null> {
+  console.log('[dataverseService] startWorkflowForEntity:', { templateId, entityId, entityType, initiatedBy })
+
+  // 1. Fetch step templates for this workflow, ordered by step order
+  const stepTemplates = await fetchWorkflowStepTemplates(templateId)
+  const activeSteps = stepTemplates
+    .filter((s) => s.pm_status === 1 || s.pm_status === '1')
+    .sort((a, b) => (a.pm_steporder ?? 0) - (b.pm_steporder ?? 0))
+
+  if (activeSteps.length === 0) {
+    console.warn('[dataverseService] startWorkflowForEntity: no active step templates found')
+    return null
+  }
+
+  const now = new Date().toISOString()
+
+  // 2. Create the WorkflowInstance
+  const instancePayload: Record<string, any> = {
+    pm_instancename: `${entityType} - ${entityId.substring(0, 8)}`,
+    pm_entityid: entityId,
+    pm_entitytype: entityType,
+    pm_initiatedby: initiatedBy,
+    pm_status: 1, // Active
+    pm_currentstep: 1,
+    pm_startdate: now,
+    statecode: 0,
+    statuscode: 1,
+  }
+  // Link to workflow template
+  const normalizedTemplateId = normalizeLookupId(templateId)
+  if (normalizedTemplateId) {
+    instancePayload['pm_workflowLookup@odata.bind'] = `/pm_workflows(${normalizedTemplateId})`
+  }
+
+  const instanceResult = await Pm_workflowinstancesService.create(instancePayload as any)
+  const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
+  if (!instance?.pm_workflowinstanceid) {
+    console.error('[dataverseService] startWorkflowForEntity: failed to create instance')
+    return null
+  }
+
+  const instanceId = instance.pm_workflowinstanceid
+  console.log('[dataverseService] startWorkflowForEntity: instance created', JSON.stringify({
+    instanceId,
+    entityId,
+    entityType,
+    initiatedBy,
+    templateId,
+    stepCount: activeSteps.length,
+  }, null, 2))
+
+  // 3. Resolve assignee names (fetch users and teams for display)
+  let systemUsers: Systemusers[] = []
+  let ownerTeams: TeamOption[] = []
+  try {
+    systemUsers = await fetchSystemUsers()
+    ownerTeams = await fetchOwnerTeams()
+  } catch {
+    // Non-critical — names will just be empty
+  }
+
+  // Build lookup maps
+  const userById = new Map<string, string>()
+  for (const u of systemUsers) {
+    const uid = normalizeLookupId(u.systemuserid)
+    if (uid && u.fullname) userById.set(uid, u.fullname)
+  }
+  const teamById = new Map<string, string>()
+  for (const t of ownerTeams) {
+    const tid = normalizeLookupId(t.id)
+    if (tid) teamById.set(tid, t.name)
+  }
+
+  // Create approval steps for each step template
+  let allStepsCreated = true
+  for (let i = 0; i < activeSteps.length; i++) {
+    const tpl = activeSteps[i]
+    const isFirstStep = i === 0
+
+    // Resolve the assignee display name from GUID
+    let assigneeDisplayName = ''
+    if (tpl.pm_assigneeid) {
+      const normalizedId = normalizeLookupId(tpl.pm_assigneeid)
+      if (tpl.pm_assignetype === 1 || tpl.pm_assignetype === '1') {
+        // Team
+        assigneeDisplayName = teamById.get(normalizedId ?? '') ?? ''
+      } else {
+        // User
+        assigneeDisplayName = userById.get(normalizedId ?? '') ?? ''
+      }
+    }
+
+    const stepPayload: Record<string, any> = {
+      pm_stepname: tpl.pm_displayname || `Step ${tpl.pm_steporder ?? i + 1}`,
+      pm_steporder: i + 1,
+      pm_assigneedisplayname: assigneeDisplayName,
+      // Store the raw user/team GUID from the step template as the approver reference
+      pm_approvername: tpl.pm_assigneeid || '',
+      // Do NOT set ownerid/owneridtype — OwnerType field; let the client auto-assign
+      pm_assigneetype: tpl.pm_assignetype ?? 0,
+      pm_isparallelstep: tpl.pm_isparallel ?? false,
+      statecode: 0,
+      statuscode: 1,
+    }
+
+    // Only set decision status for the first step (Pending = 1)
+    if (isFirstStep) {
+      stepPayload.pm_decisionstatus = 1
+    }
+
+    // Only set due date if SLA days are configured
+    if (tpl.pm_sladays) {
+      stepPayload.pm_duedate = new Date(Date.now() + tpl.pm_sladays * 86400000).toISOString()
+    }
+
+    // Link to the workflow template
+    if (normalizedTemplateId) {
+      stepPayload['pm_WorkflowTemplate@odata.bind'] = `/pm_workflows(${normalizedTemplateId})`
+    }
+
+    // Link to the instance via the instance lookup GUID
+    const normalizedInstanceId = normalizeLookupId(instanceId)
+    if (normalizedInstanceId) {
+      stepPayload['pm_WorkflowInstanceLookup@odata.bind'] = `/pm_workflowinstances(${normalizedInstanceId})`
+    }
+
+    try {
+      const stepResult = await Pm_workflowapprovalstepsService.create(stepPayload as any)
+      const createdStep = unwrapSingle<Pm_workflowapprovalsteps>(stepResult)
+      if (createdStep?.pm_workflowapprovalstepid) {
+        console.log(`[dataverseService] Created step ${i + 1}: ${stepPayload.pm_stepname} (id: ${createdStep.pm_workflowapprovalstepid})`)
+      } else {
+        console.error(`[dataverseService] Step ${i + 1} creation returned no ID - raw:`, JSON.stringify(stepResult).slice(0, 500))
+        allStepsCreated = false
+      }
+    } catch (err) {
+      console.error(`[dataverseService] Failed to create step ${i + 1}:`, err)
+      allStepsCreated = false
+    }
+  }
+
+  // If any step creation failed, clean up the instance to avoid orphans
+  if (!allStepsCreated) {
+    console.warn('[dataverseService] Not all steps were created — deleting orphaned instance')
+    try {
+      await Pm_workflowinstancesService.delete(instanceId)
+    } catch (cleanupErr) {
+      console.error('[dataverseService] Failed to clean up orphaned instance:', cleanupErr)
+    }
+    return null
+  }
+
+  // Fetch back and return the created instance
+  return mapWorkflowInstance(instance)
+}
+
+/**
+ * Approves a workflow approval step. If this is the last step, marks the
+ * instance as Completed. Otherwise, advances to the next step.
+ */
+export async function approveWorkflowStep(
+  stepId: string,
+  approverName: string,
+  notes?: string
+): Promise<boolean> {
+  console.log('[dataverseService] approveWorkflowStep:', { stepId, approverName, notes })
+
+  try {
+    const now = new Date().toISOString()
+
+    // Update the step as Approved
+    await Pm_workflowapprovalstepsService.update(stepId, {
+      pm_decisionstatus: 0, // Approved
+      pm_decisiondate: now,
+      pm_decisionnotes: notes || undefined,
+      pm_approvername: approverName,
+    } as any)
+
+    // Fetch the current step to find its instance
+    const stepResult = await Pm_workflowapprovalstepsService.get(stepId, {
+      select: ['pm_workflowapprovalstepid', 'pm_steporder', 'pm_stepname',
+               '_pm_workflowinstancelookup_value', '_pm_workflowtemplate_value'],
+    })
+    const step = unwrapSingle<Pm_workflowapprovalsteps>(stepResult)
+    if (!step) {
+      console.warn('[dataverseService] approveWorkflowStep: could not fetch step after update')
+      return true
+    }
+
+    const instanceLookup = step._pm_workflowinstancelookup_value
+    if (!instanceLookup) {
+      console.warn('[dataverseService] approveWorkflowStep: step has no instance lookup')
+      return true
+    }
+
+    // Fetch the workflow instance
+    const instanceResult = await Pm_workflowinstancesService.get(instanceLookup, {
+      select: ['pm_workflowinstanceid', 'pm_currentstep', 'pm_status', 'pm_workflowtemplate'],
+    })
+    const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
+    if (!instance) {
+      console.warn('[dataverseService] approveWorkflowStep: could not fetch instance')
+      return true
+    }
+
+    const currentStepOrder = step.pm_steporder ?? 1
+
+    // Check if there's a next step
+    const nextStepsResult = await Pm_workflowapprovalstepsService.getAll({
+      filter: `_pm_workflowinstancelookup_value eq '${normalizeLookupId(instanceLookup)}' and pm_steporder gt ${currentStepOrder}`,
+      select: ['pm_workflowapprovalstepid', 'pm_steporder'],
+      orderBy: ['pm_steporder asc'],
+      top: 1,
+    })
+    const nextSteps = unwrapList<Pm_workflowapprovalsteps>(nextStepsResult)
+
+    if (nextSteps.length > 0) {
+      // Advance to next step - mark it as Pending
+      const nextStep = nextSteps[0]
+      await Pm_workflowapprovalstepsService.update(nextStep.pm_workflowapprovalstepid!, {
+        pm_decisionstatus: 1, // Pending
+      } as any)
+
+      // Update the instance: increment current step
+      await Pm_workflowinstancesService.update(instanceLookup, {
+        pm_currentstep: currentStepOrder + 1,
+      } as any)
+      console.log(`[dataverseService] Advanced to step ${currentStepOrder + 1}`, JSON.stringify({
+        instanceId: instanceLookup,
+        fromStep: currentStepOrder,
+        toStep: currentStepOrder + 1,
+        nextStepId: nextStep.pm_workflowapprovalstepid,
+      }))
+    } else {
+      // This was the last step — mark the instance as Completed
+      await Pm_workflowinstancesService.update(instanceLookup, {
+        pm_status: 0, // Completed
+        pm_completeddate: now,
+        pm_currentstep: currentStepOrder,
+      } as any)
+      console.log('[dataverseService] All steps approved — instance marked as Completed')
+    }
+
+    return true
+  } catch (err) {
+    console.error('[dataverseService] approveWorkflowStep failed:', err)
+    return false
+  }
+}
+
+/**
+ * Rejects a workflow approval step, marking the entire instance as Rejected.
+ */
+export async function rejectWorkflowStep(
+  stepId: string,
+  approverName: string,
+  reason: string
+): Promise<boolean> {
+  console.log('[dataverseService] rejectWorkflowStep:', { stepId, approverName, reason })
+
+  try {
+    const now = new Date().toISOString()
+
+    // Update the step as Rejected — mark it as inactive so we can distinguish
+    // it from pending steps (which remain active with decisionstatus = 1)
+    await Pm_workflowapprovalstepsService.update(stepId, {
+      pm_decisionstatus: 1, // Keep as Pending for status display
+      pm_decisiondate: now,
+      pm_decisionnotes: reason,
+      pm_approvername: approverName,
+      statecode: 1, // Inactive — clearly marks this as rejected
+    } as any)
+
+    // Fetch step for instance info
+    const stepResult = await Pm_workflowapprovalstepsService.get(stepId, {
+      select: ['_pm_workflowinstancelookup_value'],
+    })
+    const step = unwrapSingle<Pm_workflowapprovalsteps>(stepResult)
+    const instanceLookup = step?._pm_workflowinstancelookup_value
+
+    if (instanceLookup) {
+      // Mark the entire instance as Completed with Rejected notes
+      // Since there's no "Rejected" status in the model, we complete it
+      // and set status to Inactive
+      await Pm_workflowinstancesService.update(instanceLookup, {
+        pm_status: 0, // Completed
+        pm_completeddate: now,
+      } as any)
+
+      // Also set the instance to Inactive to indicate it was rejected
+      await Pm_workflowinstancesService.update(instanceLookup, {
+        statecode: 1, // Inactive
+      } as any)
+    }
+
+    return true
+  } catch (err) {
+    console.error('[dataverseService] rejectWorkflowStep failed:', err)
+    return false
+  }
+}
+
+/**
+ * Fetches all pending workflow approval steps where the user (or their teams)
+ * are the assignee. Returns steps sorted by due date (urgent first).
+ */
+export async function fetchPendingWorkflowApprovals(
+  userId: string,
+): Promise<WorkflowApprovalStepModel[]> {
+  try {
+    // Fetch all approval steps that are Pending (decisionstatus = 1)
+    const allPendingResult = await Pm_workflowapprovalstepsService.getAll({
+      filter: "pm_decisionstatus eq 1",
+      select: [
+        'pm_workflowapprovalstepid', 'pm_stepname', 'pm_steporder',
+        'pm_approvername', 'pm_assigneedisplayname', 'pm_assigneetype',
+        'pm_decisionstatus',
+        'pm_decisiondate', 'pm_decisionnotes',
+        'pm_duedate', 'pm_isparallelstep',
+        '_pm_workflowinstancelookup_value', '_pm_workflowtemplate_value',
+      ],
+      orderBy: ['pm_duedate asc'],
+      top: 500,
+    })
+
+    const allPending = unwrapList<Pm_workflowapprovalsteps>(allPendingResult)
+   
+
+    // Filter by user display name OR user ID (whichever matches)
+    const userLower = userId.toLowerCase()
+    const userIdLower = normalizeLookupId(userId) ?? ''
+    const filtered = allPending.filter((step) => {
+      // Check by display name
+      const assigneeName = (step.pm_approvername || step.pm_assigneedisplayname || '').toLowerCase()
+      if (assigneeName === userLower) return true
+      // Note: pm_assigneeid is not stored on the approval step model,
+      // but we check the step's raw assignee lookup if available
+      const rawStep = step as any
+      if (rawStep._pm_assignee_value) {
+        const stepAssigneeId = normalizeLookupId(rawStep._pm_assignee_value)
+        if (stepAssigneeId === userIdLower) return true
+      }
+      return false
+    })
+
+    console.log(`[dataverseService] Matched ${filtered.length} steps for user "${userId}" out of ${allPending.length} total pending steps`)
+    // Map to our model
+    const result = filtered.map(mapWorkflowApprovalStep)
+
+    // For each step, try to enrich with the instance info (workflow name, entity details)
+    for (const step of result) {
+      const instanceLookup = step._pm_workflowinstance_value
+      if (instanceLookup) {
+        try {
+          const instanceResult = await Pm_workflowinstancesService.get(instanceLookup, {
+            select: ['pm_workflowinstanceid', 'pm_instancename', 'pm_entityid', 'pm_entitytype', 'pm_initiatedby', 'pm_workflowtemplate', 'pm_workflowlookupname'],
+          })
+          const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
+          if (instance) {
+            ;(step as any).pm_workflowinstancelookupname = instance.pm_workflowlookupname || instance.pm_instancename
+            ;(step as any).pm_entityid = instance.pm_entityid
+            ;(step as any).pm_entitytype = instance.pm_entitytype
+            ;(step as any).pm_initiatedby = instance.pm_initiatedby
+            ;(step as any).pm_workflowtemplate = instance.pm_workflowtemplate
+          }
+        } catch {
+          // Non-critical enrichment
+        }
+      }
+    }
+
+    return result
+  } catch (err) {
+    console.error('[dataverseService] fetchPendingWorkflowApprovals failed:', err)
+    return []
+  }
+}
+
+/**
+ * Fetches all workflow approval steps for a given instance.
+ * Extended version that includes notes and assignee info.
+ */
+export async function fetchWorkflowApprovalStepsExtended(instanceId: string): Promise<WorkflowApprovalStepModel[]> {
+  return fetchWorkflowApprovalSteps(instanceId)
 }
 
 

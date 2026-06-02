@@ -23,6 +23,7 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
 import ScheduleIcon from '@mui/icons-material/Schedule'
 import PersonIcon from '@mui/icons-material/Person'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import RateReviewIcon from '@mui/icons-material/RateReview'
 
 import { useUser } from '@/context/UserContext'
 import {
@@ -41,6 +42,9 @@ interface TaskGroup {
 }
 
 export default function MyTasksWidget() {
+  const navigateToPending = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('navigate', { detail: { tab: 'pendingapprovals' } }))
+  }, [])
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const { currentUser } = useUser()
@@ -354,6 +358,20 @@ export default function MyTasksWidget() {
           </Box>
 
           {/* More tasks indicator */}
+          {/* View all approvals button */}
+          {totalTasks > 0 && (
+            <Box sx={{ textAlign: 'center', mt: 1 }}>
+              <Button
+                size="small"
+                endIcon={<ArrowForwardIcon />}
+                onClick={navigateToPending}
+                sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 2 }}
+              >
+                View all {totalTasks} tasks
+              </Button>
+            </Box>
+          )}
+
           {myInitiatives.length + myApprovalRequests.length > 6 && (
             <Box sx={{ textAlign: 'center', mt: 1 }}>
               <Button

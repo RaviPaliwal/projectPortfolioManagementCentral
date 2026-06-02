@@ -1,0 +1,47 @@
+{
+  "name": "RemoveMembersTeam",
+  "title": "RemoveMembersTeam",
+  "type": "Microsoft.PowerApps/dataverseOperation",
+  "properties": {
+    "displayName": "RemoveMembersTeam",
+    "swagger": {
+      "swagger": "2.0",
+      "info": {
+        "title": "RemoveMembersTeam",
+        "version": "1.0"
+      },
+      "basePath": "/api/data/v9.2",
+      "paths": {
+        "/teams({id})/Microsoft.Dynamics.CRM.RemoveMembersTeam": {
+          "post": {
+            "operationId": "RemoveMembersTeam",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "required": true,
+                "type": "string",
+                "x-ms-dataverse-type": "UniqueidentifierType",
+                "x-ms-csdl-type": "Edm.Guid"
+              },
+              {
+                "name": "Members",
+                "in": "body",
+                "required": true,
+                "type": "array",
+                "x-ms-dataverse-type": "LookupCollectionType",
+                "x-ms-csdl-type": "Collection(mscrm.systemuser)"
+              }
+            ],
+            "responses": {
+              "204": {
+                "description": "No Content"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "entitySetName": "teams"
+}

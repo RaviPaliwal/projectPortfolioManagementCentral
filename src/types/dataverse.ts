@@ -562,7 +562,6 @@ export interface WorkflowStepTemplateModel {
   pm_workflowname?: string
   pm_steporder?: number
   pm_assignetype?: number | string
-  pm_assignetypename?: string
   pm_assigneeid?: string
   pm_displayname?: string
   pm_description?: string
@@ -572,9 +571,8 @@ export interface WorkflowStepTemplateModel {
   pm_isparallel?: boolean
   pm_conditionsjson?: string
   pm_status?: number | string
-  pm_statusname?: string
   pm_statusreason?: string
-  pm_module?: string
+  _pm_workflowlookup_value?: string
   statecode?: number
 }
 

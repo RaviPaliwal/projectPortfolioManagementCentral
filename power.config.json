@@ -9,7 +9,20 @@
   "buildEntryPoint": "index.html",
   "localAppUrl": "http://localhost:3000",
   "logoPath": "Default",
-  "connectionReferences": {},
+  "connectionReferences": {
+    "8f36d1ea-1b81-4b16-b8c0-871f0359548b": {
+      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+      "displayName": "Logic flows",
+      "dataSources": [
+        "manageteams"
+      ],
+      "workflowDetails": {
+        "workflowEntityId": "2b8560e4-505e-f111-a826-6045bd56f0ba",
+        "workflowDisplayName": "manageTeams",
+        "workflowName": "c2e0b2d4-4236-d895-9872-30e06ce49724"
+      }
+    }
+  },
   "databaseReferences": {
     "default.cds": {
       "dataSources": {
@@ -186,6 +199,11 @@
         "teammembership": {
           "entitySetName": "teammemberships",
           "logicalName": "teammembership",
+          "isHidden": false
+        },
+        "environment_39a902ba": {
+          "entitySetName": "Environment",
+          "logicalName": "environment_39a902ba",
           "isHidden": false
         }
       },
