@@ -8,7 +8,12 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import GppGoodIcon from '@mui/icons-material/GppGood'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
+import ArrowCircleUpIcon from '@mui/icons-material/ArrowCircleUp'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import FlagIcon from '@mui/icons-material/Flag'
+import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
+import TaskAltIcon from '@mui/icons-material/TaskAlt'
+import HistoryIcon from '@mui/icons-material/History'
 import {
   fetchAllRisks,
   createRiskFull,
@@ -183,12 +188,32 @@ export default function RisksPage() {
   }
 
   // KPIs
-  const openRisks = risks.filter((r) => String(r.pm_riskstatus ?? '') === '1')
-  const highRisk = risks.filter((r) => {
-    const score = riskScore(r.pm_inherentprobability, r.pm_inherentimpact)
-    return score >= 8
-  })
-  const inMitigation = risks.filter((r) => String(r.pm_riskstatus ?? '') === '0')
+  const kpiItems = useMemo(() => {
+    const total = risks.length
+    const open = risks.filter((r) => String(r.pm_riskstatus ?? '') === '1').length
+    const mitigation = risks.filter((r) => String(r.pm_riskstatus ?? '') === '0').length
+    const high = risks.filter((r) => {
+      const score = riskScore(r.pm_inherentprobability, r.pm_inherentimpact)
+      return score >= 8
+    }).length
+    const escalated = risks.filter((r) => r.pm_escalated).length
+    const closed = risks.filter((r) => String(r.pm_riskstatus ?? '') === '2' || String(r.pm_riskstatus ?? '') === 'Inactive').length // Assuming 2 or Inactive as closed
+
+    return [
+      { label: "Total Risks", value: total, color: "#0ea5e9", icon: <WarningAmberIcon /> },
+      { 
+        label: "Open Risks", 
+        value: open, 
+        color: "#f59e0b", 
+        icon: <GppMaybeIcon />,
+        subtitle: total > 0 ? `${Math.round((open / total) * 100)}% of total` : 'None open'
+      },
+      { label: "High / Critical", value: high, color: "#ef4444", icon: <ArrowUpwardIcon /> },
+      { label: "In Mitigation", value: mitigation, color: "#22c55e", icon: <GppGoodIcon /> },
+      { label: "Escalated", value: escalated, color: "#ef4444", icon: <ArrowCircleUpIcon />, subtitle: 'Active escalations' },
+      { label: "Closed", value: closed, color: "#64748b", icon: <CheckCircleIcon />, subtitle: 'Resolved/Inactive' },
+    ]
+  }, [risks])
 
   return (
     <Box>
@@ -219,18 +244,7 @@ export default function RisksPage() {
 
       {/* KPI Cards using KpiCardRow */}
       <KpiCardRow
-        items={[
-          { label: "Total Risks", value: risks.length, color: "#0ea5e9", icon: <WarningAmberIcon /> },
-          { 
-            label: "Open Risks", 
-            value: openRisks.length, 
-            color: "#f59e0b", 
-            icon: <GppMaybeIcon />,
-            subtitle: openRisks.length > 0 ? `${Math.round((openRisks.length / Math.max(risks.length, 1)) * 100)}% of total` : 'None open'
-          },
-          { label: "High / Critical", value: highRisk.length, color: "#ef4444", icon: <ArrowUpwardIcon /> },
-          { label: "In Mitigation", value: inMitigation.length, color: "#22c55e", icon: <GppGoodIcon /> },
-        ]}
+        items={kpiItems}
         loading={loading}
       />
 

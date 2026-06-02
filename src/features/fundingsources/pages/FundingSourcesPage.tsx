@@ -37,6 +37,8 @@ import DescriptionIcon from '@mui/icons-material/Description'
 import BusinessIcon from '@mui/icons-material/Business'
 import SavingsIcon from '@mui/icons-material/Savings'
 import EuroIcon from '@mui/icons-material/Euro'
+import PlayCircleFilledIcon from '@mui/icons-material/PlayCircleFilled'
+import StopCircleIcon from '@mui/icons-material/StopCircle'
 import {
   fetchFundingSources,
   createFundingSource,

@@ -29,6 +29,8 @@ import GroupIcon from '@mui/icons-material/Group'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import SearchIcon from '@mui/icons-material/Search'
 import ShieldIcon from '@mui/icons-material/Shield'
+import GroupAddIcon from '@mui/icons-material/GroupAdd'
+import PeopleIcon from '@mui/icons-material/People'
  
 // 1. Import the unified manageTeamMember function
 import { fetchOwnerTeams, fetchTeamMembers, manageTeamMember } from '@/services'
@@ -234,7 +236,7 @@ export default function TeamUserManagementPage() {
                   </ListItemIcon>
                   <ListItemText 
                     primary={team.name} 
-                    primaryTypographyProps={{ variant: 'body2', fontWeight: selectedTeam?.id === team.id ? 700 : 500 }}
+                    slotProps={{ primary: { variant: 'body2', sx: { fontWeight: selectedTeam?.id === team.id ? 700 : 500 } } }}
                   />
                 </ListItemButton>
               ))
@@ -255,7 +257,7 @@ export default function TeamUserManagementPage() {
                 />
                 <Divider />
                 <CardContent>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+                  <Stack component="div" direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: 'center' }}>
                     <Autocomplete
                       fullWidth
                       options={availableUsers}
@@ -315,7 +317,7 @@ export default function TeamUserManagementPage() {
                           <ListItemText
                             primary={member.fullname || 'Unknown User'}
                             secondary={member.internalemailaddress || 'No email available'}
-                            primaryTypographyProps={{ fontWeight: 600 }}
+                            slotProps={{ primary: { sx: { fontWeight: 600 } } }}
                           />
                           <ListItemSecondaryAction>
                             <IconButton 

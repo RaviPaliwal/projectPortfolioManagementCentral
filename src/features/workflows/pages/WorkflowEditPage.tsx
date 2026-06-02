@@ -236,10 +236,12 @@ export default function WorkflowEditPage({ workflow, onStepChange, onSaved }: Pr
           {STEPS.map((label, idx) => (
             <Step key={label}>
               <StepLabel
-                StepIconProps={{
-                  sx: {
-                    '&.Mui-active': { color: 'primary.main' },
-                    '&.Mui-completed': { color: 'success.main' },
+                slotProps={{
+                  stepIcon: {
+                    sx: {
+                      '&.Mui-active': { color: 'primary.main' },
+                      '&.Mui-completed': { color: 'success.main' },
+                    }
                   }
                 }}
               >
@@ -381,7 +383,7 @@ export default function WorkflowEditPage({ workflow, onStepChange, onSaved }: Pr
                   <Typography variant="body2" sx={{ fontWeight: 800 }}>Version Update</Typography>
                   <Typography variant="caption" color="text.secondary">Versioning is auto-incremented on save</Typography>
                 </Box>
-                <Stack direction="row" spacing={1.5} alignItems="center">
+                <Stack component="div" direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                   <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>v{currentVersion}.0</Typography>
                   <HistoryIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                   <StatusTag label={`v${nextVersion}.0`} color="info" sx={{ fontWeight: 800, px: 2 }} />
@@ -520,7 +522,7 @@ export default function WorkflowEditPage({ workflow, onStepChange, onSaved }: Pr
           Back
         </Button>
         
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack component="div" direction="row" spacing={2} sx={{ alignItems: 'center' }}>
           {activeStep < STEPS.length - 1 ? (
             <Button 
               variant="contained" 

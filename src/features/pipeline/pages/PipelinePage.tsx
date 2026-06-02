@@ -50,8 +50,10 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ScienceIcon from '@mui/icons-material/Science'
+import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import InfoIcon from '@mui/icons-material/Info'
 import SearchIcon from '@mui/icons-material/Search'
+import PauseCircleFilledIcon from '@mui/icons-material/PauseCircleFilled'
 import {
   fetchInitiatives,
   createInitiative,
@@ -252,6 +254,20 @@ export default function PipelinePage() {
       subtitle: 'Intake velocity',
       icon: <TrendingUpIcon />,
       color: '#8b5cf6',
+    },
+    {
+      label: 'Deferred',
+      value: initiatives.filter((i) => String(i.pm_pipelinestatus) === '2').length,
+      subtitle: 'On hold',
+      icon: <PauseCircleFilledIcon />,
+      color: '#f59e0b',
+    },
+    {
+      label: 'Rejected',
+      value: initiatives.filter((i) => String(i.pm_pipelinestatus) === '3').length,
+      subtitle: 'Not proceeding',
+      icon: <CancelIcon />,
+      color: '#ef4444',
     },
   ]
 

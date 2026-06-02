@@ -184,10 +184,12 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
           {STEPS.map((label, idx) => (
             <Step key={label}>
               <StepLabel
-                StepIconProps={{
-                  sx: {
-                    '&.Mui-active': { color: 'primary.main' },
-                    '&.Mui-completed': { color: 'success.main' },
+                slotProps={{
+                  stepIcon: {
+                    sx: {
+                      '&.Mui-active': { color: 'primary.main' },
+                      '&.Mui-completed': { color: 'success.main' },
+                    }
                   }
                 }}
               >
@@ -466,7 +468,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
           Back
         </Button>
 
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack component="div" direction="row" spacing={2} sx={{ alignItems: 'center' }}>
           {activeStep < STEPS.length - 1 ? (
             <Button 
               variant="contained" 

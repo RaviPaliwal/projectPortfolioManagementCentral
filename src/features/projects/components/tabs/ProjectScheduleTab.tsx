@@ -61,7 +61,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ mileston
     <Box sx={{ pt: 1 }}>
       {/* ── Integrated Project Timeline ── */}
       <Box>
-        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
+        <Stack component="div" direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
           <Box sx={{ width: 40, height: 40, bgcolor: 'primary.lighter', color: 'primary.main', borderRadius: 1.15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <AssignmentIcon sx={{ fontSize: 22 }} />
           </Box>

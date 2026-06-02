@@ -88,6 +88,8 @@ import EventBusyIcon from '@mui/icons-material/EventBusy'
 import ChecklistIcon from '@mui/icons-material/Checklist'
 
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
+import UpcomingIcon from '@mui/icons-material/Upcoming'
+import EventRepeatIcon from '@mui/icons-material/EventRepeat'
 
 import type { Pm_holidaies } from '../../../generated/models/Pm_holidaiesModel'
 
@@ -361,6 +363,8 @@ export default function HolidaysPage() {
 
     const fixedDates = holidays.filter((h) => h.pm_isfixeddate === true)
 
+    const upcoming = holidays.filter((h) => h.pm_holidaydate && new Date(h.pm_holidaydate) >= new Date()).length
+
     return [
 
       {
@@ -407,6 +411,20 @@ export default function HolidaysPage() {
 
       {
 
+        label: 'Upcoming',
+
+        value: upcoming,
+
+        subtitle: 'Future holidays',
+
+        icon: <UpcomingIcon />,
+
+        color: '#0ea5e9',
+
+      },
+
+      {
+
         label: 'Fixed Date',
 
         value: fixedDates.length,
@@ -416,6 +434,20 @@ export default function HolidaysPage() {
         icon: <TodayIcon />,
 
         color: '#f59e0b',
+
+      },
+
+      {
+
+        label: 'Variable Date',
+
+        value: total - fixedDates.length,
+
+        subtitle: (total > 0 ? (((total - fixedDates.length) / (total || 1)) * 100).toFixed(0) : 0) + '% are variable',
+
+        icon: <EventRepeatIcon />,
+
+        color: '#6366f1',
 
       },
 

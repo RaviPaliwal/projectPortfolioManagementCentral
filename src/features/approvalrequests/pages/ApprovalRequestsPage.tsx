@@ -18,6 +18,8 @@ import DescriptionIcon from '@mui/icons-material/Description'
 import EventIcon from '@mui/icons-material/Event'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import PersonIcon from '@mui/icons-material/Person'
+import CancelIcon from '@mui/icons-material/Cancel'
+import FlagIcon from '@mui/icons-material/Flag'
 
 import {
   fetchApprovalRequests,
@@ -252,7 +254,9 @@ export default function ApprovalRequestsPage() {
     const total = requests.length
     const pending = requests.filter((r) => String(r.pm_decisionstatus) === '0').length
     const approved = requests.filter((r) => String(r.pm_decisionstatus) === '1').length
-    const highPriority = requests.filter((r) => String(r.pm_prioritylevel) !== '0').length
+    const rejected = requests.filter((r) => String(r.pm_decisionstatus) === '2').length
+    const highPriority = requests.filter((r) => String(r.pm_prioritylevel) === '1').length
+    const urgentPriority = requests.filter((r) => String(r.pm_prioritylevel) === '2').length
 
     return [
       {
@@ -276,9 +280,21 @@ export default function ApprovalRequestsPage() {
         color: '#22c55e',
       },
       {
+        label: 'Rejected',
+        value: String(rejected),
+        icon: <CancelIcon />,
+        color: '#ef4444',
+      },
+      {
         label: 'High Priority',
         value: String(highPriority),
         icon: <PriorityHighIcon />,
+        color: '#f97316',
+      },
+      {
+        label: 'Urgent Priority',
+        value: String(urgentPriority),
+        icon: <FlagIcon />,
         color: '#ef4444',
       },
     ]

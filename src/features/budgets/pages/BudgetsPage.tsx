@@ -40,6 +40,8 @@ import SourceIcon from '@mui/icons-material/Source'
 import NotesIcon from '@mui/icons-material/Notes'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import AssessmentIcon from '@mui/icons-material/Assessment'
+import AssignmentIcon from '@mui/icons-material/Assignment'
 import {
   fetchBudgetLines,
   createBudgetLine,
@@ -210,11 +212,25 @@ export default function BudgetsPage() {
         color: '#0ea5e9',
       },
       {
+        label: 'Total Revised',
+        value: `€${numberFormatter.format(totalRevised)}`,
+        subtitle: 'Revised budget across all lines',
+        icon: <AssessmentIcon />,
+        color: '#6366f1',
+      },
+      {
         label: 'Actual Spend',
         value: `€${numberFormatter.format(totalActual)}`,
         subtitle: `${utilization}% of original budget utilized`,
         icon: <TrendingDownIcon />,
         color: utilization > 85 ? '#ef4444' : utilization > 65 ? '#f59e0b' : '#22c55e',
+      },
+      {
+        label: 'Committed Spend',
+        value: `€${numberFormatter.format(totalCommitted)}`,
+        subtitle: 'Purchase orders / commitments',
+        icon: <AssignmentIcon />,
+        color: '#8b5cf6',
       },
       {
         label: 'Budget Remaining',

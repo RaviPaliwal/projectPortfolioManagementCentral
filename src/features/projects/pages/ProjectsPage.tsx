@@ -4,6 +4,8 @@ import {
   Alert,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import GppGoodIcon from '@mui/icons-material/GppGood'
+import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import EventNoteIcon from '@mui/icons-material/EventNote'
 import ErrorIcon from '@mui/icons-material/Error'
@@ -94,7 +96,21 @@ export default function ProjectsPage() {
       color: '#22c55e',
     },
     {
-      label: 'Projects at Risk',
+      label: 'On Track',
+      value: projects.filter((p) => String(p.pm_ragstatus) === '1').length,
+      subtitle: 'Green status',
+      icon: <GppGoodIcon />,
+      color: '#22c55e',
+    },
+    {
+      label: 'At Risk',
+      value: projects.filter((p) => String(p.pm_ragstatus) === '0').length,
+      subtitle: 'Amber status',
+      icon: <GppMaybeIcon />,
+      color: '#f59e0b',
+    },
+    {
+      label: 'Critical',
       value: projects.filter((p) => String(p.pm_ragstatus) === '2').length,
       icon: <ErrorIcon />,
       color: '#ef4444',
@@ -107,8 +123,9 @@ export default function ProjectsPage() {
       color: '#3b82f6',
     },
     {
-      label: 'Milestones Due This Month',
+      label: 'Milestones Due',
       value: milestonesDue,
+      subtitle: 'This month',
       icon: <EventNoteIcon />,
       color: '#8b5cf6',
     },

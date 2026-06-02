@@ -24,6 +24,8 @@ import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
+import TaskAltIcon from '@mui/icons-material/TaskAlt'
+import HistoryIcon from '@mui/icons-material/History'
 import {
   fetchBenefits,
   createBenefit,
@@ -166,9 +168,21 @@ export default function BenefitsPage() {
       {
         label: 'Total Benefits',
         value: total,
-        subtitle: `${realised} realised, ${inProgress} in progress`,
         icon: <EmojiEventsIcon />,
         color: '#6366f1',
+      },
+      {
+        label: 'Realised',
+        value: realised,
+        subtitle: realised > 0 ? `${((realised / (total || 1)) * 100).toFixed(0)}% completion` : 'None realised',
+        icon: <TaskAltIcon />,
+        color: '#22c55e',
+      },
+      {
+        label: 'In Progress',
+        value: inProgress,
+        icon: <HistoryIcon />,
+        color: '#f59e0b',
       },
       {
         label: 'On Track',

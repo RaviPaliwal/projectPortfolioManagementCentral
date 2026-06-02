@@ -40,6 +40,8 @@ import PersonIcon from '@mui/icons-material/Person'
 import DescriptionIcon from '@mui/icons-material/Description'
 import RuleIcon from '@mui/icons-material/Rule'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import TaskAltIcon from '@mui/icons-material/TaskAlt'
+import Filter1Icon from '@mui/icons-material/Filter1'
 import {
   fetchGateReviews,
   createGateReview,
@@ -197,6 +199,7 @@ export default function GateReviewsPage() {
     const completed = gateReviews.filter((g) => String(g.pm_reviewstatus) === '0').length
     const conditional = gateReviews.filter((g) => String(g.pm_reviewoutcome) === '1').length
     const approved = gateReviews.filter((g) => String(g.pm_reviewoutcome) === '0').length
+    const gate1 = gateReviews.filter((g) => String(g.pm_gatestage) === '0').length
     return [
       {
         label: 'Total Reviews',
@@ -213,6 +216,13 @@ export default function GateReviewsPage() {
         color: '#0ea5e9',
       },
       {
+        label: 'Completed',
+        value: completed,
+        subtitle: 'Reviews finalized',
+        icon: <TaskAltIcon />,
+        color: '#22c55e',
+      },
+      {
         label: 'Approved',
         value: approved,
         subtitle: `${approved > 0 ? `${((approved / (completed || 1)) * 100).toFixed(0)}% completion rate` : 'None approved'}`,
@@ -225,6 +235,13 @@ export default function GateReviewsPage() {
         subtitle: conditional > 0 ? `${conditional} review(s) with conditions` : 'No conditions outstanding',
         icon: <WarningAmberIcon />,
         color: conditional > 0 ? '#f59e0b' : '#64748b',
+      },
+      {
+        label: 'Gate 1',
+        value: gate1,
+        subtitle: 'Initial reviews',
+        icon: <Filter1Icon />,
+        color: '#6366f1',
       },
     ]
   }, [gateReviews])

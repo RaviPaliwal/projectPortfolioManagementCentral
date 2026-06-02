@@ -22,6 +22,8 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import CategoryIcon from '@mui/icons-material/Category'
 import PersonIcon from '@mui/icons-material/Person'
+import TaskAltIcon from '@mui/icons-material/TaskAlt'
+import HistoryIcon from '@mui/icons-material/History'
 import {
   fetchAllIssues,
   createIssueFull,
@@ -189,6 +191,8 @@ export default function IssuesPage() {
     if (!i.pm_targetresolutiondate) return false
     return new Date(i.pm_targetresolutiondate) < new Date()
   }).length
+  const resolvedIssues = issues.filter((i) => String(i.pm_issuestatus ?? '') === '1').length
+  const criticalIssues = issues.filter((i) => String(i.pm_prioritylevel ?? '') === '1').length
 
   const kpiCards: KpiCardItem[] = [
     {
@@ -204,6 +208,20 @@ export default function IssuesPage() {
       icon: <WarningAmberIcon />,
       color: '#f59e0b',
       subtitle: totalIssues > 0 ? `${Math.round((openIssues / totalIssues) * 100)}% of total` : undefined,
+    },
+    {
+      label: 'Resolved',
+      value: resolvedIssues,
+      icon: <CheckCircleIcon />,
+      color: '#22c55e',
+      subtitle: totalIssues > 0 ? `${Math.round((resolvedIssues / totalIssues) * 100)}% resolution rate` : undefined,
+    },
+    {
+      label: 'Critical',
+      value: criticalIssues,
+      icon: <NewReleasesIcon />,
+      color: '#ef4444',
+      subtitle: 'Requiring immediate action',
     },
     {
       label: 'Escalated',

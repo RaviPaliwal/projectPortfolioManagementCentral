@@ -49,6 +49,7 @@ import LocalAtmIcon from '@mui/icons-material/LocalAtm'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import InsightsIcon from '@mui/icons-material/Insights'
+import EuroIcon from '@mui/icons-material/Euro'
 import {
   fetchResources,
   createResource,

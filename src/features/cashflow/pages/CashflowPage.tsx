@@ -18,6 +18,8 @@ import CategoryIcon from '@mui/icons-material/Category'
 import DescriptionIcon from '@mui/icons-material/Description'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import BusinessIcon from '@mui/icons-material/Business'
+import AssessmentIcon from '@mui/icons-material/Assessment'
+import TimelineIcon from '@mui/icons-material/Timeline'
 
 import {
   fetchCashflowEntries,
@@ -276,6 +278,8 @@ export default function CashflowPage() {
       .filter((e) => String(e.pm_transactiondirection) === '0')
       .reduce((sum, e) => sum + (e.pm_amounteur ?? 0), 0)
     const netFlow = totalInflow - totalOutflow
+    const actualCount = entries.filter((e) => String(e.pm_transactiontype) === '0').length
+    const forecastCount = entries.filter((e) => String(e.pm_transactiontype) === '1').length
 
     return [
       {
@@ -283,6 +287,18 @@ export default function CashflowPage() {
         value: entries.length.toString(),
         icon: <ReceiptIcon />,
         color: '#6366f1',
+      },
+      {
+        label: 'Actual Entries',
+        value: String(actualCount),
+        icon: <AssessmentIcon />,
+        color: '#0ea5e9',
+      },
+      {
+        label: 'Forecast Entries',
+        value: String(forecastCount),
+        icon: <TimelineIcon />,
+        color: '#8b5cf6',
       },
       {
         label: 'Total Inflow',

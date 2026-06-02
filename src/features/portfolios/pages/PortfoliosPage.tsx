@@ -14,6 +14,11 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import BusinessIcon from '@mui/icons-material/Business'
 import PersonIcon from '@mui/icons-material/Person'
+import TaskAltIcon from '@mui/icons-material/TaskAlt'
+import FolderIcon from '@mui/icons-material/Folder'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import GppMaybeIcon from '@mui/icons-material/GppMaybe'
+import ErrorIcon from '@mui/icons-material/Error'
 import { fetchPortfolioHierarchy } from '@/services'
 
 import {
@@ -162,16 +167,44 @@ export default function PortfoliosPage() {
           <KpiCardRow
             items={[
               {
+                label: "Total Portfolios",
+                value: portfolioList.length,
+                subtitle: "Active portfolios",
+                icon: <FolderIcon />,
+                color: "#6366f1"
+              },
+              {
+                label: "Green Health",
+                value: kpiHealth.green,
+                subtitle: "On track",
+                icon: <CheckCircleIcon />,
+                color: "#22c55e"
+              },
+              {
+                label: "Amber Health",
+                value: kpiHealth.amber,
+                subtitle: "At risk",
+                icon: <GppMaybeIcon />,
+                color: "#f59e0b"
+              },
+              {
+                label: "Red Health",
+                value: kpiHealth.red,
+                subtitle: "Critical",
+                icon: <ErrorIcon />,
+                color: "#ef4444"
+              },
+              {
                 label: "Total Portfolio Value",
                 value: currencyFormatter.format(totalBudget),
-                subtitle: `Across ${portfolioList.length} portfolio${portfolioList.length !== 1 ? 's' : ''}`,
+                subtitle: `Across ${portfolioList.length} portfolios`,
                 icon: <AccountBalanceWalletIcon />,
                 color: "#0ea5e9"
               },
               {
-                label: "Total Consumed / Actuals",
+                label: "Total Consumed",
                 value: currencyFormatter.format(totalConsumed),
-                subtitle: totalBudget > 0 ? `${((totalConsumed / totalBudget) * 100).toFixed(1)}% of total budget consumed` : 'No budget data',
+                subtitle: totalBudget > 0 ? `${((totalConsumed / totalBudget) * 100).toFixed(1)}% consumed` : 'No budget data',
                 icon: <TrendingDownIcon />,
                 color: "#f59e0b"
               }

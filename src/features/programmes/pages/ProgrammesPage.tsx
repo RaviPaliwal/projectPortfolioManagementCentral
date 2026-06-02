@@ -938,6 +938,27 @@ export default function ProgrammesPage() {
       color: '#0ea5e9',
     },
     {
+      label: 'On Track (Green)',
+      value: kpiData.green,
+      subtitle: 'Healthy state',
+      icon: <CheckCircleIcon />,
+      color: '#22c55e',
+    },
+    {
+      label: 'At Risk (Amber)',
+      value: kpiData.amber,
+      subtitle: 'Needs monitoring',
+      icon: <WarningAmberIcon />,
+      color: '#f59e0b',
+    },
+    {
+      label: 'Critical (Red)',
+      value: kpiData.red,
+      subtitle: 'Requires intervention',
+      icon: <ErrorIcon />,
+      color: '#ef4444',
+    },
+    {
       label: 'Total Budget',
       value: currencyFormatter.format(kpiData.totalBudget),
       icon: <AccountBalanceWalletIcon />,

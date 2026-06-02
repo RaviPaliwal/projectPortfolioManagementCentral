@@ -44,6 +44,7 @@ import VerifiedIcon from '@mui/icons-material/Verified'
 import SchoolIcon from '@mui/icons-material/School'
 import StarIcon from '@mui/icons-material/Star'
 import PersonIcon from '@mui/icons-material/Person'
+import EngineeringIcon from '@mui/icons-material/Engineering'
 import type { SkillModel, ResourceSkillModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
 import {

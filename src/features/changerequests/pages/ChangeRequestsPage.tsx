@@ -23,6 +23,8 @@ import DescriptionIcon from '@mui/icons-material/Description'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import PeopleIcon from '@mui/icons-material/People'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
+import TimerIcon from '@mui/icons-material/Timer'
+import CategoryIcon from '@mui/icons-material/Category'
 
 import {
   fetchChangeRequests,
@@ -207,12 +209,12 @@ export default function ChangeRequestsPage() {
     const approved = changeRequests.filter((cr) => String(cr.pm_status) === '0').length
     const totalCostImpact = changeRequests.reduce((s, cr) => s + (cr.pm_costimpacteur ?? 0), 0)
     const totalScheduleImpact = changeRequests.reduce((s, cr) => s + (cr.pm_scheduleimpactdays ?? 0), 0)
+    const scopeChanges = changeRequests.filter((cr) => String(cr.pm_changetype) === '0').length
 
     return [
       {
         label: 'Total Requests',
         value: String(total),
-        subtitle: 'Total change requests logged',
         icon: <ChangeCircleIcon />,
         color: '#0ea5e9',
       },
@@ -228,14 +230,25 @@ export default function ChangeRequestsPage() {
         value: String(approved),
         subtitle: total > 0 ? Math.round((approved / total) * 100) + '% approval rate' : 'No approvals yet',
         icon: <CheckCircleIcon />,
-        color: '#b3ecc8',
+        color: '#22c55e',
       },
       {
         label: 'Total Cost Impact',
         value: '\u20AC' + numberFormatter.format(totalCostImpact),
-        subtitle: totalScheduleImpact > 0 ? totalScheduleImpact + ' days schedule impact' : 'No schedule impact',
         icon: <AttachMoneyIcon />,
         color: totalCostImpact > 100000 ? '#ef4444' : '#8b5cf6',
+      },
+      {
+        label: 'Schedule Impact',
+        value: `${totalScheduleImpact} days`,
+        icon: <TimerIcon />,
+        color: '#f97316',
+      },
+      {
+        label: 'Scope Changes',
+        value: String(scopeChanges),
+        icon: <CategoryIcon />,
+        color: '#6366f1',
       },
     ]
   }, [changeRequests])

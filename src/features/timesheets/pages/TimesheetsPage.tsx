@@ -33,6 +33,7 @@ import {
   TabPanel,
   ExportButton,
   KpiCardRow,
+  StatusTag,
 } from '@/components/common'
 import { formatDate } from '@/utils/formatters'
 import { TIMESHEET_STATUS_LABELS, TIMESHEET_STATUS_COLORS } from '@/constants/mappings'
@@ -232,6 +233,7 @@ export default function TimesheetsPage() {
     const pending = timesheets.filter((t) => String(t.pm_timesheetstatus) === '1').length
     const drafts = timesheets.filter((t) => String(t.pm_timesheetstatus) === '3').length
     const approved = timesheets.filter((t) => String(t.pm_timesheetstatus) === '0').length
+    const rejected = timesheets.filter((t) => String(t.pm_timesheetstatus) === '2').length
     const totalHours = timesheets.reduce((s, t) => s + (t.pm_totalhours ?? 0), 0)
 
     return [
@@ -248,6 +250,20 @@ export default function TimesheetsPage() {
         subtitle: `${pending > 0 ? `${((pending / (total || 1)) * 100).toFixed(0)}% of total` : 'No submissions'}`,
         icon: <ScheduleIcon />,
         color: '#f59e0b',
+      },
+      {
+        label: 'Approved',
+        value: approved,
+        subtitle: 'Finalized entries',
+        icon: <CheckCircleIcon />,
+        color: '#22c55e',
+      },
+      {
+        label: 'Rejected',
+        value: rejected,
+        subtitle: 'Requires correction',
+        icon: <CancelIcon />,
+        color: '#ef4444',
       },
       {
         label: 'Drafts',

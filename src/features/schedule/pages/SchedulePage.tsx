@@ -44,6 +44,7 @@ import ScheduleIcon from '@mui/icons-material/Schedule'
 import LinkIcon from '@mui/icons-material/Link'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
+import SpeedIcon from '@mui/icons-material/Speed'
 import {
   fetchProjectsFull,
   fetchScheduleData,
