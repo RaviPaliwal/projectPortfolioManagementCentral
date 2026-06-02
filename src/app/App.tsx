@@ -45,7 +45,7 @@ class PageErrorBoundary extends Component<EBProps, EBState> {
 }
 import './App.css'
 import PrimaryShell, { type TabKey, tabs } from '@/components/layout/PrimaryShell'
-import { pageMap } from './routes'
+import { getPageMap } from './routes'
 
 const palette = {
   primary: { main: '#0ea5e9', light: '#38bdf8', dark: '#0284c7', contrastText: '#ffffff' },
@@ -114,6 +114,7 @@ function App() {
   const [themeMode, setThemeMode] = useState<PaletteMode>('light')
 
   const theme = useMemo(() => getTheme(themeMode), [themeMode])
+  const pageMap = useMemo(() => getPageMap(setActiveTab), [setActiveTab])
 
   const toggleTheme = () => {
     setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'))

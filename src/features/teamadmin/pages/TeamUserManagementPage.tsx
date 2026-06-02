@@ -22,8 +22,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import GroupIcon from '@mui/icons-material/Group'
  
 // 1. Import the unified manageTeamMember function
-import { fetchOwnerTeams, fetchTeamMembers, manageTeamMember } from '@/lib/dataverseClient'
-import type { TeamOption } from '@/lib/dataverseClient'
+import { fetchOwnerTeams, fetchTeamMembers, manageTeamMember } from '@/services'
+import type { TeamOption } from '@/services'
 import { useUser, type SystemUser } from '@/context/UserContext'
 export default function TeamUserManagementPage() {
   const { users } = useUser()

@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import {
-  Box, Typography, Avatar, Select, MenuItem, FormControl, Chip,
+  Box, Typography, Avatar, Select, MenuItem, FormControl,
   Tooltip, Popover, List, ListItemButton, ListItemAvatar,
   ListItemText, Badge,
 } from '@mui/material'
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import { SystemusersService } from '@/generated'
+import { StatusTag } from '@/components/common'
 
 
 export interface SystemUser {
@@ -142,23 +142,18 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
   return (
     <>
       <Tooltip title={`Signed in as ${currentUser?.fullname ?? 'Unknown'}`}>
-        <Chip
-          avatar={
+        <StatusTag
+          icon={
             <Avatar sx={{ bgcolor: '#0ea5e9', width: 24, height: 24 }}>
               {currentUser?.fullname?.charAt(0)?.toUpperCase() ?? '?'}
             </Avatar>
           }
           label={currentUser?.fullname?.split(' ')[0] ?? 'User'}
           variant="outlined"
-          size="small"
           onClick={(e) => setAnchorEl(e.currentTarget)}
-          deleteIcon={<SwapHorizIcon />}
-          onDelete={(e) => setAnchorEl(e.currentTarget)}
           sx={{
-            borderRadius: 8,
             fontWeight: 600,
             cursor: 'pointer',
-            '& .MuiChip-avatar': { ml: '2px' },
           }}
         />
       </Tooltip>
@@ -205,7 +200,7 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
                   }}
                 />
                 {isActive && (
-                  <Chip label="Active" size="small" color="success" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8, height: 22, fontSize: 11 }} />
+                  <StatusTag label="Active" color="success" variant="outlined" />
                 )}
               </ListItemButton>
             )

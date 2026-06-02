@@ -7,9 +7,6 @@ export type { CardProps } from "./Card/Card"
 export { Badge } from "./Badge/Badge"
 export type { BadgeProps } from "./Badge/Badge"
 
-export { Chip } from "./Chip/Chip"
-export type { ChipProps } from "./Chip/Chip"
-
 export { Breadcrumbs } from "./Breadcrumbs/Breadcrumbs"
 export type { BreadcrumbsProps, BreadcrumbItem } from "./Breadcrumbs/Breadcrumbs"
 
@@ -58,3 +55,9 @@ export type { GanttTaskData, GanttMilestoneData, GanttChartProps } from "./Gantt
 export { ExportButton } from "./ExportButton/ExportButton"
 export type { ExportButtonProps } from "./ExportButton/ExportButton"
 export type { ExportColumn } from '../../utils/exportUtils'
+
+export { MetricTile } from './MetricTile/MetricTile'
+export { StatusProgressBar } from './StatusProgressBar/StatusProgressBar'
+export { EmptyState } from './EmptyState/EmptyState'
+export { StatusTag } from './StatusTag/StatusTag'
+export type { StatusTagProps, StatusTagColor } from './StatusTag/StatusTag'

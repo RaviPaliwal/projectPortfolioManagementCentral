@@ -1,10 +1,11 @@
-import { Card, CardContent, Typography, Box, Chip, LinearProgress, useTheme } from '@mui/material'
+import { Card, CardContent, Typography, Box, LinearProgress, useTheme } from '@mui/material'
 import { type ReactNode } from 'react'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import ErrorIcon from '@mui/icons-material/Error'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import { StatusTag } from './StatusTag/StatusTag'
 
 // ─── StatusChip ────────────────────────────────────────────────────────────
 export interface StatusChipProps {
@@ -13,19 +14,19 @@ export interface StatusChipProps {
   size?: 'small' | 'medium'
 }
 
-const RAG_CONFIG: Record<string, { color: 'success' | 'warning' | 'error' | 'default'; icon: React.ReactElement; label: string }> = {
-  '1': { color: 'success', icon: <CheckCircleIcon sx={{ fontSize: 14 }} />, label: 'Green' },
-  '0': { color: 'warning', icon: <WarningAmberIcon sx={{ fontSize: 14 }} />, label: 'Amber' },
-  '2': { color: 'error', icon: <ErrorIcon sx={{ fontSize: 14 }} />, label: 'Red' },
+const RAG_CONFIG: Record<string, { color: string; icon: React.ReactElement; label: string }> = {
+  '1': { color: 'success', icon: <CheckCircleIcon />, label: 'Green' },
+  '0': { color: 'warning', icon: <WarningAmberIcon />, label: 'Amber' },
+  '2': { color: 'error', icon: <ErrorIcon />, label: 'Red' },
 }
 
-const PHASE_LABELS: Record<string, { label: string; color: 'info' | 'primary' | 'secondary' }> = {
+const PHASE_LABELS: Record<string, { label: string; color: string }> = {
   '0': { label: 'Execution', color: 'primary' },
   '1': { label: 'Planning', color: 'info' },
   '2': { label: 'Closure', color: 'secondary' },
 }
 
-const PROG_PHASE_LABELS: Record<string, { label: string; color: 'info' | 'primary' | 'secondary' }> = {
+const PROG_PHASE_LABELS: Record<string, { label: string; color: string }> = {
   '0': { label: 'Delivery', color: 'primary' },
   '1': { label: 'Planning', color: 'info' },
   '2': { label: 'Initiation', color: 'secondary' },
@@ -35,26 +36,24 @@ export const StatusChip: React.FC<StatusChipProps> = ({ status, type = 'rag', si
   const statusStr = status?.toString() ?? ''
 
   if (type === 'rag') {
-    const cfg = RAG_CONFIG[statusStr] ?? { color: 'default' as const, icon: <VisibilityIcon sx={{ fontSize: 14 }} />, label: 'Not Set' }
+    const cfg = RAG_CONFIG[statusStr] ?? { color: 'default', icon: <VisibilityIcon />, label: 'Not Set' }
     return (
-      <Chip
+      <StatusTag
         icon={cfg.icon}
         label={cfg.label}
         color={cfg.color}
         size={size}
-        variant="outlined"
-        sx={{ fontWeight: 600, borderRadius: 8 }}
       />
     )
   }
 
   if (type === 'prog_phase') {
-    const cfg = PROG_PHASE_LABELS[statusStr] ?? { label: 'Unknown', color: 'default' as const }
-    return <Chip label={cfg.label} size={size} variant="outlined" color={cfg.color} sx={{ fontWeight: 600, borderRadius: 8 }} />
+    const cfg = PROG_PHASE_LABELS[statusStr] ?? { label: 'Unknown', color: 'default' }
+    return <StatusTag label={cfg.label} size={size} color={cfg.color} />
   }
 
-  const cfg = PHASE_LABELS[statusStr] ?? { label: 'Unknown', color: 'default' as const }
-  return <Chip label={cfg.label} size={size} variant="outlined" color={cfg.color} sx={{ fontWeight: 600, borderRadius: 8 }} />
+  const cfg = PHASE_LABELS[statusStr] ?? { label: 'Unknown', color: 'default' }
+  return <StatusTag label={cfg.label} size={size} color={cfg.color} />
 }
 
 // ─── SummaryCard ────────────────────────────────────────────────────────────
@@ -112,8 +111,8 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
           )}
           {status && (
             <Box sx={{ mt: 1 }}>
-              <Chip
-                label={status.charAt(0).toUpperCase() + status.slice(1)}
+              <StatusTag
+                label={status}
                 size="small"
                 color={statusColors[status]}
                 variant="outlined"
@@ -228,9 +227,9 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
       {/* Info chips */}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-        {manager && <Chip icon={<VisibilityIcon sx={{ fontSize: 14 }} />} label={manager} size="small" variant="outlined" />}
-        {portfolioName && <Chip label={`Portfolio: ${portfolioName}`} size="small" variant="outlined" color="primary" />}
-        {programmeName && <Chip label={`Programme: ${programmeName}`} size="small" variant="outlined" color="secondary" />}
+        {manager && <StatusTag icon={<VisibilityIcon sx={{ fontSize: 14 }} />} label={manager} size="small" variant="outlined" />}
+        {portfolioName && <StatusTag label={`Portfolio: ${portfolioName}`} size="small" variant="outlined" color="primary" />}
+        {programmeName && <StatusTag label={`Programme: ${programmeName}`} size="small" variant="outlined" color="secondary" />}
       </Box>
 
       {/* Metrics grid */}

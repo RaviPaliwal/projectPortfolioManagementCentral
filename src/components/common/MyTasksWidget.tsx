@@ -3,7 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  Chip,
   Button,
   Skeleton,
   Alert,
@@ -26,12 +25,13 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import RateReviewIcon from '@mui/icons-material/RateReview'
 
 import { useUser } from '@/context/UserContext'
+import { StatusTag } from '@/components/common'
 import {
   fetchPendingApprovalRequests,
   fetchApprovalRequests,
   updateInitiativeStatus,
   updateApprovalRequest,
-} from '@/lib/dataverseClient'
+} from '@/services'
 import type { InitiativeModel, ApprovalRequestModel } from '@/types/dataverse'
 
 interface TaskGroup {
@@ -186,17 +186,12 @@ export default function MyTasksWidget() {
             Tasks requiring your attention
           </Typography>
         </Box>
-        <Chip
-          avatar={
-            <Avatar sx={{ bgcolor: totalTasks > 0 ? '#ef4444' : '#22c55e', width: 22, height: 22, fontSize: 11 }}>
-              {totalTasks}
-            </Avatar>
-          }
+        <StatusTag
           label={totalTasks === 1 ? '1 task' : `${totalTasks} tasks`}
           color={totalTasks > 0 ? 'error' : 'success'}
           size="small"
           variant="filled"
-          sx={{ fontWeight: 700, borderRadius: 8 }}
+          sx={{ fontWeight: 700 }}
         />
       </Box>
 
@@ -269,13 +264,13 @@ export default function MyTasksWidget() {
                       {initiative.pm_name || 'Untitled Initiative'}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <Chip
+                      <StatusTag
                         icon={<LightbulbIcon sx={{ fontSize: 13 }} />}
                         label="Pending Review"
                         size="small"
                         color="warning"
                         variant="outlined"
-                        sx={{ fontWeight: 600, borderRadius: 8, height: 22, fontSize: 11 }}
+                        sx={{ fontWeight: 600, height: 22, fontSize: 11 }}
                       />
                       {initiative.pm_portfolioname && (
                         <Typography variant="caption" color="text.secondary">
@@ -308,20 +303,20 @@ export default function MyTasksWidget() {
                       {req.pm_requesttitle || 'Untitled Request'}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <Chip
+                      <StatusTag
                         icon={<ScheduleIcon sx={{ fontSize: 13 }} />}
                         label="Awaiting Decision"
                         size="small"
                         color="info"
                         variant="outlined"
-                        sx={{ fontWeight: 600, borderRadius: 8, height: 22, fontSize: 11 }}
+                        sx={{ fontWeight: 600, height: 22, fontSize: 11 }}
                       />
                       {req.pm_entitytypename && (
-                        <Chip
+                        <StatusTag
                           label={req.pm_entitytypename}
                           size="small"
                           variant="outlined"
-                          sx={{ fontWeight: 600, borderRadius: 8, height: 22, fontSize: 11 }}
+                          sx={{ fontWeight: 600, height: 22, fontSize: 11 }}
                         />
                       )}
                     </Box>

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
-  Box, Paper, Typography, Chip, useTheme,
+  Box, Paper, Typography, useTheme,
   Table, TableBody, TableCell, TableHead, TableRow,
   TableSortLabel, TablePagination, Button, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -19,9 +19,9 @@ import {
   fetchPendingWorkflowApprovals,
   approveWorkflowStep,
   rejectWorkflowStep,
-} from '@/lib/dataverseClient'
+} from '@/services'
 import type { WorkflowApprovalStepModel } from '@/types/dataverse'
-import { PageHeader, TableShell, TableFooter } from '@/components/common'
+import { PageHeader, TableShell, TableFooter, StatusTag } from '@/components/common'
 
 const APPROVAL_STATUS_LABELS: Record<string, string> = { '0': 'Approved', '1': 'Pending' }
 const APPROVAL_STATUS_COLORS: Record<string, 'success' | 'warning'> = { '0': 'success', '1': 'warning' }
@@ -309,11 +309,11 @@ export default function PendingApprovalsPage() {
                       </Box>
                     </TableCell>
                     <TableCell align="center">
-                      <Chip
+                      <StatusTag
                         label={'#' + (step.pm_steporder ?? '—')}
                         size="small"
                         variant="outlined"
-                        sx={{ fontWeight: 600, borderRadius: 8, fontFamily: '"JetBrains Mono", monospace' }}
+                        sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}
                       />
                     </TableCell>
                     <TableCell>
@@ -344,10 +344,10 @@ export default function PendingApprovalsPage() {
                           {formatDate(step.pm_duedate)}
                         </Typography>
                         {isOverdue && (
-                          <Chip label="Overdue" size="small" color="error" sx={{ height: 20, fontSize: 10, fontWeight: 700, borderRadius: 6 }} />
+                          <StatusTag label="Overdue" size="small" color="error" />
                         )}
                         {isUrgent && !isOverdue && (
-                          <Chip label="Urgent" size="small" color="warning" sx={{ height: 20, fontSize: 10, fontWeight: 700, borderRadius: 6 }} />
+                          <StatusTag label="Urgent" size="small" color="warning" />
                         )}
                       </Box>
                     </TableCell>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
-  Box, Chip, IconButton, Tooltip, Typography, TextField, Select, MenuItem,
+  Box, IconButton, Tooltip, Typography, TextField, Select, MenuItem,
   Button, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress,
   Avatar, Switch, FormControlLabel, FormControl, InputLabel,
   Table, TableHead, TableBody, TableRow, TableCell, TableSortLabel,
@@ -27,11 +27,11 @@ import {
   createIssueFull,
   updateIssueFull,
   deleteIssue,
-} from '@/lib/dataverseClient'
+} from '@/services'
 import type { IssueModel } from '@/types/dataverse'
 
 import type { ExportColumn } from '@/utils/exportUtils'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -615,40 +615,30 @@ export default function IssuesPage() {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Chip
+                      <StatusTag
                         label={CATEGORY_LABELS[issue.pm_issuecategory ?? ''] ?? '—'}
-                        size="small"
-                        variant="outlined"
                         color={String(issue.pm_issuecategory ?? '') === '1' ? 'info' : 'default'}
-                        sx={{ borderRadius: 8, fontWeight: 500 }}
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip
+                      <StatusTag
                         icon={PRIORITY_ICONS[p] ?? undefined}
                         label={PRIORITY_LABELS[p] ?? '—'}
-                        size="small"
                         color={PRIORITY_COLORS[p] ?? 'default'}
-                        variant={p === '1' ? 'filled' : 'outlined'}
-                        sx={{ borderRadius: 8, fontWeight: 600 }}
+                        variant={p === '1' ? 'filled' : 'filled'}
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip
+                      <StatusTag
                         label={RAG_LABELS[rag] ?? '—'}
-                        size="small"
                         color={RAG_COLORS[rag] ?? 'default'}
-                        variant="outlined"
-                        sx={{ borderRadius: 8, fontWeight: 500 }}
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip
+                      <StatusTag
                         label={STATUS_LABELS[String(issue.pm_issuestatus ?? '')] ?? '—'}
-                        size="small"
                         color={STATUS_COLORS[String(issue.pm_issuestatus ?? '')] ?? 'default'}
-                        variant={String(issue.pm_issuestatus ?? '') === '1' ? 'filled' : 'outlined'}
-                        sx={{ borderRadius: 8, fontWeight: 500 }}
+                        variant={String(issue.pm_issuestatus ?? '') === '1' ? 'filled' : 'filled'}
                       />
                     </TableCell>
                     <TableCell>
@@ -708,33 +698,24 @@ export default function IssuesPage() {
         title={selectedIssue?.pm_issuetitle ?? ''}
         subtitle={selectedIssue && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-            <Chip
+            <StatusTag
               label={priorityLabel(selectedIssue.pm_prioritylevel)}
               color={PRIORITY_COLORS[String(selectedIssue.pm_prioritylevel ?? '')] ?? 'default'}
-              size="small"
-              variant={String(selectedIssue.pm_prioritylevel ?? '') === '1' ? 'filled' : 'outlined'}
-              sx={{ fontWeight: 600, borderRadius: 8 }}
+              variant={String(selectedIssue.pm_prioritylevel ?? '') === '1' ? 'filled' : 'filled'}
             />
-            <Chip
+            <StatusTag
               label={STATUS_LABELS[String(selectedIssue.pm_issuestatus ?? '')] ?? '—'}
               color={STATUS_COLORS[String(selectedIssue.pm_issuestatus ?? '')] ?? 'default'}
-              size="small"
-              variant={String(selectedIssue.pm_issuestatus ?? '') === '1' ? 'filled' : 'outlined'}
-              sx={{ fontWeight: 600, borderRadius: 8 }}
+              variant={String(selectedIssue.pm_issuestatus ?? '') === '1' ? 'filled' : 'filled'}
             />
-            <Chip
+            <StatusTag
               label={CATEGORY_LABELS[String(selectedIssue.pm_issuecategory ?? '')] ?? '—'}
-              size="small"
-              variant="outlined"
-              sx={{ fontWeight: 600, borderRadius: 8 }}
             />
             {selectedIssue.pm_escalationstatus && (
-              <Chip
+              <StatusTag
                 icon={<ArrowCircleUpIcon sx={{ fontSize: 14 }} />}
                 label="Escalated"
                 color="error"
-                size="small"
-                sx={{ fontWeight: 600, borderRadius: 8 }}
               />
             )}
           </Box>
@@ -898,11 +879,9 @@ export default function IssuesPage() {
               <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'grey.50' }}>
                 <Typography variant="caption" color="text.secondary">Status</Typography>
                 <Box sx={{ mt: 0.5 }}>
-                  <Chip
+                  <StatusTag
                     label={STATUS_LABELS[String(selectedIssue.pm_issuestatus ?? '')] ?? '—'}
                     color={STATUS_COLORS[String(selectedIssue.pm_issuestatus ?? '')] ?? 'default'}
-                    size="small"
-                    sx={{ fontWeight: 600, borderRadius: 8 }}
                   />
                 </Box>
               </Box>

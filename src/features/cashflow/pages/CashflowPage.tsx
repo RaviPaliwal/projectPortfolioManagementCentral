@@ -26,11 +26,11 @@ import {
   deleteCashflowEntry,
   fetchProgrammesForLookup,
   fetchProjectsForLookup,
-} from '@/lib/dataverseClient'
+} from '@/services'
 import type { CashflowEntryModel } from '@/types/dataverse'
-import type { ProgrammeLookupItem, ProjectLookupItem } from '@/lib/dataverseClient'
+import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import type { ExportColumn } from '@/utils/exportUtils'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 
 const DIRECTION_LABELS: Record<string, string> = {
@@ -582,27 +582,21 @@ export default function CashflowPage() {
         </Typography>
       </TableCell>
       <TableCell>
-        <Chip
+        <StatusTag
           label={DIRECTION_LABELS[String(entry.pm_transactiondirection ?? '')] || '—'}
-          size="small"
           color={DIRECTION_COLORS[String(entry.pm_transactiondirection ?? '')] || 'default'}
-          variant="outlined"
         />
       </TableCell>
       <TableCell>
-        <Typography variant="body2" color="text.secondary">
-          {TXN_TYPE_LABELS[String(entry.pm_transactiontype ?? '')] || '—'}
-        </Typography>
+        <StatusTag
+          label={TXN_TYPE_LABELS[String(entry.pm_transactiontype ?? '')] || '—'}
+          color="info"
+        />
       </TableCell>
       <TableCell>
-        <Chip
+        <StatusTag
           label={CATEGORY_LABELS[String(entry.pm_category ?? '')] || '—'}
-          size="small"
-          sx={{
-            bgcolor: `${CATEGORY_COLORS[String(entry.pm_category ?? '')]}20`,
-            color: CATEGORY_COLORS[String(entry.pm_category ?? '')],
-            fontWeight: 500,
-          }}
+          color={CATEGORY_COLORS[String(entry.pm_category ?? '')]}
         />
       </TableCell>
       <TableCell>
@@ -792,31 +786,27 @@ export default function CashflowPage() {
                 <Grid size={6}>
                   <Typography variant="caption" color="text.secondary">Direction</Typography>
                   <Box sx={{ mt: 0.5 }}>
-                    <Chip
+                    <StatusTag
                       label={DIRECTION_LABELS[String(selectedEntry.pm_transactiondirection ?? '')] || '—'}
-                      size="small"
                       color={DIRECTION_COLORS[String(selectedEntry.pm_transactiondirection ?? '')] || 'default'}
-                      variant="outlined"
                     />
                   </Box>
                 </Grid>
                 <Grid size={6}>
                   <Typography variant="caption" color="text.secondary">Transaction Type</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {TXN_TYPE_LABELS[String(selectedEntry.pm_transactiontype ?? '')] || '—'}
-                  </Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    <StatusTag
+                      label={TXN_TYPE_LABELS[String(selectedEntry.pm_transactiontype ?? '')] || '—'}
+                      color="info"
+                    />
+                  </Box>
                 </Grid>
                 <Grid size={6}>
                   <Typography variant="caption" color="text.secondary">Category</Typography>
                   <Box sx={{ mt: 0.5 }}>
-                    <Chip
+                    <StatusTag
                       label={CATEGORY_LABELS[String(selectedEntry.pm_category ?? '')] || '—'}
-                      size="small"
-                      sx={{
-                        bgcolor: `${CATEGORY_COLORS[String(selectedEntry.pm_category ?? '')]}20`,
-                        color: CATEGORY_COLORS[String(selectedEntry.pm_category ?? '')],
-                        fontWeight: 500,
-                      }}
+                      color={CATEGORY_COLORS[String(selectedEntry.pm_category ?? '')]}
                     />
                   </Box>
                 </Grid>

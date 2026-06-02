@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Box, Paper, Typography, TextField, Button, Alert, Avatar, Chip,
+  Box, Paper, Typography, TextField, Button, Alert, Avatar,
   CircularProgress, FormControl, InputLabel, Select, MenuItem,
   Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
   Autocomplete,
@@ -20,10 +20,11 @@ import {
   fetchWorkflowStepTemplates, createWorkflowStepTemplate,
   updateWorkflowStepTemplate, deleteWorkflowStepTemplate,
   fetchOwnerTeams,
-} from '@/lib/dataverseClient'
-import type { TeamOption as DataverseTeamOption } from '@/lib/dataverseClient'
+} from '@/services'
+import type { TeamOption as DataverseTeamOption } from '@/services'
 import { useUser } from '@/context/UserContext'
 import type { WorkflowModel, WorkflowStepTemplateModel } from '@/types/dataverse'
+import { StatusTag } from '@/components/common'
  
 type TeamOptionUI = {
   value: string
@@ -243,9 +244,9 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <DragIndicatorIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{step.pm_workflowname ?? 'Unnamed'}</Typography>
-                  {step.pm_displayname && <Chip size="small" label={step.pm_displayname} sx={{ fontSize: '0.7rem', height: 20 }} />}
-                  {step.pm_approvalrequired ? <Chip size="small" label="Approval" color="warning" variant="outlined" sx={{ fontSize: '0.7rem', height: 20 }} /> : null}
-                  {step.pm_isparallel ? <Chip size="small" label="Parallel" color="info" variant="outlined" sx={{ fontSize: '0.7rem', height: 20 }} /> : null}
+                  {step.pm_displayname && <StatusTag size="small" label={step.pm_displayname} />}
+                  {step.pm_approvalrequired ? <StatusTag size="small" label="Approval" color="warning" variant="outlined" /> : null}
+                  {step.pm_isparallel ? <StatusTag size="small" label="Parallel" color="info" variant="outlined" /> : null}
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import {
   Box, Paper, Typography, TextField, Button, Stepper, Step, StepLabel,
-  Alert, Avatar, Chip, Divider, CircularProgress, FormControl,
+  Alert, Avatar, Divider, CircularProgress, FormControl,
   InputLabel, Select, MenuItem, Switch, FormControlLabel,
 } from '@mui/material'
 
@@ -12,7 +12,8 @@ import PublishIcon from '@mui/icons-material/Publish'
 
 import { useEffect } from 'react'
 import { fontSizes } from '@/styles'
-import { createWorkflow } from '@/lib/dataverseClient'
+import { createWorkflow } from '@/services'
+import { StatusTag } from '@/components/common'
  
 const STEPS = ['Basic Information', 'Settings', 'Review & Save']
  
@@ -161,7 +162,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
               Configure activation status. Version is auto-assigned (v1).
             </Typography>
             <Divider />
-            <Chip label="Version: v1 (auto)" size="small" sx={{ alignSelf: 'flex-start', fontWeight: 600 }} />
+            <StatusTag label="Version: v1 (auto)" size="small" sx={{ alignSelf: 'flex-start', fontWeight: 600 }} />
             <FormControlLabel
               control={
                 <Switch checked={f.pm_isactive} onChange={(e) => u('pm_isactive', e.target.checked)} color="primary" />
@@ -206,8 +207,8 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
                 Settings
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                <Chip label="v1" size="small" sx={{ fontWeight: 600 }} />
-                <Chip label={f.pm_isactive ? 'Active' : 'Inactive'} color={f.pm_isactive ? 'success' : 'default'} size="small" sx={{ fontWeight: 600 }} />
+                <StatusTag label="v1" size="small" sx={{ fontWeight: 600 }} />
+                <StatusTag label={f.pm_isactive ? 'Active' : 'Inactive'} color={f.pm_isactive ? 'success' : 'default'} size="small" sx={{ fontWeight: 600 }} />
               </Box>
             </Paper>
           </Box>

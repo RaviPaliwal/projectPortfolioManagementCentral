@@ -4,7 +4,6 @@ import {
   Paper,
   Typography,
   Alert,
-  Chip,
   useTheme,
   Table,
   TableBody,
@@ -43,7 +42,6 @@ import PersonIcon from '@mui/icons-material/Person'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import DescriptionIcon from '@mui/icons-material/Description'
 import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown'
-import HowToRegIcon from '@mui/icons-material/HowToReg'
 import RateReviewIcon from '@mui/icons-material/RateReview'
 import CancelIcon from '@mui/icons-material/Cancel'
 import TransformIcon from '@mui/icons-material/Transform'
@@ -63,14 +61,15 @@ import {
   createApprovalRequest,
   fetchPipelineKpis,
   fetchPortfolioHierarchy,
-} from '@/lib/dataverseClient'
+} from '@/services'
+
 import { useUser } from '@/context/UserContext'
 import type { InitiativeModel, PortfolioModel } from '@/types/dataverse'
-import type { PipelineKpis } from '@/lib/dataverseClient'
+import type { PipelineKpis } from '@/services'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TabPanel, TableFooter, TableShell, DetailDrawer, SearchFilterBar } from '@/components/common'
-import type { KpiCardItem, FilterOption } from '@/components/common'
-import { ExportButton } from '@/components/common'
+import type { KpiCardItem, FilterOption} from '@/components/common'
+import { ExportButton,StatusTag } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 
 // ── Export columns ────────────────────────────────────────────────────────────
@@ -119,7 +118,7 @@ function StrategicScoreDisplay({ score }: { score?: number }) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
         <Rating value={score} readOnly size="small" precision={0.5} max={5} sx={{ fontSize: fontSizes.smMd }} />
-        <Chip label="High" size="small" color="success" variant="outlined" sx={{ fontWeight: 600, fontSize: fontSizes.xs, height: 20 }} />
+        <StatusTag label="High" size="small" color="success" variant="outlined" sx={{ fontWeight: 600, fontSize: fontSizes.xs, height: 20 }} />
       </Box>
     )
   }
@@ -127,13 +126,13 @@ function StrategicScoreDisplay({ score }: { score?: number }) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
         <Rating value={score} readOnly size="small" precision={0.5} max={5} sx={{ fontSize: fontSizes.smMd }} />
-        <Chip label="Medium" size="small" color="warning" variant="outlined" sx={{ fontWeight: 600, fontSize: fontSizes.xs, height: 20 }} />
+        <StatusTag label="Medium" size="small" color="warning" variant="outlined" sx={{ fontWeight: 600, fontSize: fontSizes.xs, height: 20 }} />
       </Box>
     )
   }
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>        <Rating value={score} readOnly size="small" precision={0.5} max={5} sx={{ fontSize: fontSizes.smMd }} />
-      <Chip label="Low" size="small" color="default" variant="outlined" sx={{ fontWeight: 600, fontSize: fontSizes.xs, height: 20 }} />
+      <StatusTag label="Low" size="small" color="default" variant="outlined" sx={{ fontWeight: 600, fontSize: fontSizes.xs, height: 20 }} />
     </Box>
   )
 }
@@ -478,26 +477,27 @@ export default function PipelinePage() {
         </Typography>
       )}
       {selectedInitiative.pm_portfolioname && (
-        <Chip
+        <StatusTag
           label={selectedInitiative.pm_portfolioname}
           size="small"
           color="primary"
           variant="outlined"
-          sx={{ fontWeight: 600, borderRadius: 8, fontSize: fontSizes.xs, height: 22 }}
+          sx={{ fontWeight: 600, fontSize: fontSizes.xs, height: 22 }}
         />
       )}
+
       {selectedInitiative.pm_submissiondate && (
         <Typography variant="body2" color="text.secondary">
           <CalendarTodayIcon sx={{ fontSize: 13, mr: 0.5, verticalAlign: 'text-bottom' }} />
           Submitted: {new Date(selectedInitiative.pm_submissiondate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
         </Typography>
       )}
-      <Chip
+      <StatusTag
         label={STATUS_CONFIG[String(selectedInitiative.pm_pipelinestatus ?? '')]?.label ?? 'Draft'}
         color={STATUS_CONFIG[String(selectedInitiative.pm_pipelinestatus ?? '')]?.color ?? 'default'}
         size="small"
         variant="outlined"
-        sx={{ fontWeight: 600, borderRadius: 8 }}
+        sx={{ fontWeight: 600 }}
       />
     </>
   )
@@ -626,12 +626,12 @@ export default function PipelinePage() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip
+                      <StatusTag
                         label={statusCfg.label}
                         color={statusCfg.color}
                         size="small"
                         variant="outlined"
-                        sx={{ fontWeight: 600, borderRadius: 8 }}
+                        sx={{ fontWeight: 600 }}
                       />
                     </TableCell>
                   </TableRow>
@@ -763,11 +763,11 @@ export default function PipelinePage() {
                         {selectedInitiative.pm_strategicalignmentscore?.toFixed(1) ?? '—'}
                       </Typography>
                       {selectedInitiative.pm_strategicalignmentscore != null && (
-                        <Chip
+                        <StatusTag
                           label={selectedInitiative.pm_strategicalignmentscore >= 4 ? 'High' : selectedInitiative.pm_strategicalignmentscore >= 2.5 ? 'Medium' : 'Low'}
                           color={selectedInitiative.pm_strategicalignmentscore >= 4 ? 'success' : selectedInitiative.pm_strategicalignmentscore >= 2.5 ? 'warning' : 'default'}
                           size="small" variant="filled"
-                          sx={{ fontWeight: 700, borderRadius: 8 }}
+                          sx={{ fontWeight: 700 }}
                         />
                       )}
                     </Box>
@@ -985,7 +985,7 @@ export default function PipelinePage() {
             <InfoIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
             <Typography variant="body2" color="text.secondary">
               Status will be set to{' '}
-              <Chip label="Under Review" size="small" color="info" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8, height: 22 }} />
+              <StatusTag label="Under Review" size="small" color="info" variant="outlined" sx={{ fontWeight: 600, height: 22 }} />
               {' '}by default. This can be changed later from the initiative detail panel.
             </Typography>
           </Box>
@@ -1111,7 +1111,7 @@ export default function PipelinePage() {
                           }}
                         />
                         {isSelected && (
-                          <Chip label="Selected" size="small" color="primary" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8, height: 22, fontSize: 11 }} />
+                          <StatusTag label="Selected" size="small" color="primary" variant="outlined" sx={{ fontWeight: 600, height: 22, fontSize: 11 }} />
                         )}
                       </ListItemButton>
                     )

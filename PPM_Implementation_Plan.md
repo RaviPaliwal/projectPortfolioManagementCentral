@@ -47,7 +47,8 @@ src/
 │   ├── models/             # 31 Dataverse entity model definitions
 │   └── services/           # 31 Dataverse API service stubs
 ├── lib/
-│   └── dataverseClient.ts  # Central data access layer (6000+ lines)
+│   └── dataverseClient.ts  # (Backup) Central data access layer (6000+ lines)
+├── services/               # Modularized service layer (Refactored from dataverseClient)
 ├── styles/                 # Theme tokens & font sizes
 ├── types/
 │   └── dataverse.ts        # TypeScript interfaces for all entities
@@ -157,7 +158,7 @@ All generated with full CRUD operations for all Dataverse entities.
 
 Each page follows the established pattern:
 - `src/features/{module}/pages/{Module}Page.tsx` — Main page component
-- Data services imported from `@/lib/dataverseClient`
+- Data services imported from `@/services`
 - Models imported from `@/types/dataverse`
 - Common components from `@/components/common`
 - Routes registered in `src/app/routes.tsx`

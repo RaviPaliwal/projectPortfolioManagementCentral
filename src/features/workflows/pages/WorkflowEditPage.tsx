@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react'
-import Chip from '@mui/material/Chip'
 import {
   Box, Paper, Typography, TextField, Button, Stepper, Step, StepLabel,
   Alert, Avatar, Divider, CircularProgress, FormControl,
@@ -14,8 +13,9 @@ import PublishIcon from '@mui/icons-material/Publish'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import { useEffect } from 'react'
 import { fontSizes } from '@/styles'
-import { updateWorkflow } from '@/lib/dataverseClient'
+import { updateWorkflow } from '@/services'
 import type { WorkflowModel } from '@/types/dataverse'
+import { StatusTag } from '@/components/common'
  
 const STEPS = ['Basic Information', 'Settings', 'Review & Save']
  
@@ -145,7 +145,7 @@ export default function WorkflowEditPage({ workflow, onStepChange, onSaved }: Pr
               Settings
             </Typography>
             <Divider />
-            <Chip label={'Version: v' + ((Number((workflow as any).pm_version) || 1) + 1) + ' (auto)'} size="small" sx={{ alignSelf: 'flex-start', fontWeight: 600 }} />
+            <StatusTag label={'Version: v' + ((Number((workflow as any).pm_version) || 1) + 1) + ' (auto)'} size="small" sx={{ alignSelf: 'flex-start', fontWeight: 600 }} />
             <FormControl size="small" sx={{ minWidth: 160 }}>
               <InputLabel>Status</InputLabel>
               <Select value={f.pm_workflowstatus} label="Status" onChange={(e) => u('pm_workflowstatus', e.target.value as number)} sx={{ borderRadius: 2 }}>

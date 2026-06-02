@@ -29,9 +29,9 @@ import {
   fetchWorkflowStepTemplates,
   approveWorkflowStep,
   rejectWorkflowStep,
-} from '@/lib/dataverseClient'
+} from '@/services'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, TabPanel, ExportButton } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, TabPanel, ExportButton, StatusTag } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 
 // Sub-page imports
@@ -411,7 +411,7 @@ export default function WorkflowsPage() {
             <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
               {renderTableHeader([
                 { label: 'Workflow Name', sortable: true, active: wfSort.field === 'name', dir: wfSort.dir, onClick: () => handleWfSort('name') },
-                { label: 'Entity Type', sortable: true, active: wfSort.field === 'entity', dir: wfSort.dir, onClick: () => handleWfSort('entity') },
+                { label: 'Module Name', sortable: true, active: wfSort.field === 'entity', dir: wfSort.dir, onClick: () => handleWfSort('entity') },
                 { label: 'Status', sortable: true, active: wfSort.field === 'status', dir: wfSort.dir, onClick: () => handleWfSort('status'), align: 'center' },
                 { label: 'Steps', align: 'center' },
                 { label: '', align: 'right' },
@@ -431,12 +431,12 @@ export default function WorkflowsPage() {
                         </Box>
                       </Box>
                     </TableCell>
-                    <TableCell><Typography variant="body2">{(wf as any).pm_entitytypename || '\u2014'}</Typography></TableCell>
+                    <TableCell><Typography variant="body2">{(wf as any).pm_module || '\u2014'}</Typography></TableCell>
                     <TableCell align="center">
-                      <Chip label={STATUS_LABELS[String(wf.pm_workflowstatus ?? '')] || (wf.pm_workflowstatus === 0 ? 'Active' : 'Inactive')} color={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? 'success' : 'default'} size="small" icon={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? <PowerIcon /> : <PowerOffIcon />} sx={{ fontWeight: 600, borderRadius: 8 }} />
+                      <StatusTag label={STATUS_LABELS[String(wf.pm_workflowstatus ?? '')] || (wf.pm_workflowstatus === 0 ? 'Active' : 'Inactive')} color={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? 'success' : 'default'} size="small" icon={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? <PowerIcon sx={{ fontSize: 14 }} /> : <PowerOffIcon sx={{ fontSize: 14 }} />} sx={{ fontWeight: 600 }} />
                     </TableCell>
                     <TableCell align="center">
-                      <Chip label={String(stepTemplates.filter((s) => s._pm_workflowlookup_value === wf.pm_workflowid).length)} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8 }} />
+                      <StatusTag label={String(stepTemplates.filter((s) => s._pm_workflowlookup_value === wf.pm_workflowid).length)} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
                     </TableCell>
                     <TableCell align="right">
                       <IconButton size="small" onClick={() => navigateTo('steps', wf)} sx={{ borderRadius: 1.5, color: '#8b5cf6' }} title="Configure Steps"><SettingsIcon sx={{ fontSize: 18 }} /></IconButton>
@@ -492,7 +492,7 @@ export default function WorkflowsPage() {
                     </TableCell>
                     <TableCell><Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.xs }}>{(inst as any).pm_entityid ? ((inst as any).pm_entityid).substring(0, 8) + '...' : '\u2014'}</Typography></TableCell>
                     <TableCell><Typography variant="body2">{(inst as any).pm_initiatedby || '\u2014'}</Typography></TableCell>
-                    <TableCell align="center"><Chip label={INSTANCE_STATUS_LABELS[String(inst.pm_workflowstatus ?? '')] ?? 'Unknown'} color={INSTANCE_STATUS_COLORS[String(inst.pm_workflowstatus ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600, borderRadius: 8 }} /></TableCell>
+                    <TableCell align="center"><StatusTag label={INSTANCE_STATUS_LABELS[String(inst.pm_workflowstatus ?? '')] ?? 'Unknown'} color={INSTANCE_STATUS_COLORS[String(inst.pm_workflowstatus ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600 }} /></TableCell>
                     <TableCell><Typography variant="body2" color="text.secondary">{formatDate((inst as any).pm_initiationdate)}</Typography></TableCell>
                     <TableCell align="right">
                       <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' }) }} sx={{ borderRadius: 1.5 }}><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
@@ -539,9 +539,9 @@ export default function WorkflowsPage() {
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{step.pm_stepname ?? 'Unnamed Step'}</Typography>
                       </Box>
                     </TableCell>
-                    <TableCell align="center"><Chip label={'#' + (step.pm_steporder ?? '\u2014')} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8, fontFamily: '"JetBrains Mono", monospace' }} /></TableCell>
+                    <TableCell align="center"><StatusTag label={'#' + (step.pm_steporder ?? '\u2014')} size="small" variant="outlined" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }} /></TableCell>
                     <TableCell><Typography variant="body2">{step.pm_approvername || '\u2014'}</Typography></TableCell>
-                    <TableCell align="center"><Chip label={APPROVAL_STATUS_LABELS[String(step.pm_decisionstatus ?? '')] ?? 'Unknown'} color={APPROVAL_STATUS_COLORS[String(step.pm_decisionstatus ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600, borderRadius: 8 }} /></TableCell>
+                    <TableCell align="center"><StatusTag label={APPROVAL_STATUS_LABELS[String(step.pm_decisionstatus ?? '')] ?? 'Unknown'} color={APPROVAL_STATUS_COLORS[String(step.pm_decisionstatus ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600 }} /></TableCell>
                     <TableCell><Typography variant="body2" color="text.secondary">{formatDate(step.pm_decisiondate)}</Typography></TableCell>
                   </TableRow>
                 ))}

@@ -55,16 +55,20 @@ import {
   updateResource,
   deleteResource,
   fetchResourceAllocations,
+
+} from '@/services/resource.service'
+import {
   fetchCapacityAllocationData,
   fetchPlannedVsActualData,
   fetchUtilizationByProjectData,
-  fetchDepartmentDemandData,
-} from '@/lib/dataverseClient'
+  fetchDepartmentDemandData
+} from '@/services/chart.service'
 import type { ExportColumn } from '@/utils/exportUtils'
 import type { ResourceModel, ResourceAllocationModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
+import  { StatusTag } from '@/components/common'
 import {
   BarChart,
   Bar,
@@ -469,14 +473,14 @@ export default function ResourcesPage() {
       <PageHeader
         title="Resources"
         subtitle="Manage your workforce — staff, contractors, and suppliers across departments and roles."
-  actionElement={
-    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-      <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-        Add Resource
-      </Button>
-      <ExportButton filename="resources" columns={resourceExportColumns} data={filteredResources} />
-    </Box>
-  }
+        actionElement={
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+              Add Resource
+            </Button>
+            <ExportButton filename="resources" columns={resourceExportColumns} data={filteredResources} />
+          </Box>
+        }
       />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
@@ -512,543 +516,542 @@ export default function ResourcesPage() {
       )}
 
       {pageTab === 0 && (
-      <Box>
-      {/* ── KPI Row ──────────────────────────────────── */}
-      {!loading && <KpiCardRow items={kpiItems} />}
+        <Box>
+          {/* ── KPI Row ──────────────────────────────────── */}
+          {!loading && <KpiCardRow items={kpiItems} />}
 
-      {/* ── Resource Grid ─────────────────────────────── */}
-      <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-        <SearchFilterBar
-          searchQuery={searchQuery}
-          onSearchChange={handleSearchChange}
-          searchPlaceholder="Search by name, role, department, email..."
-          filterValue={categoryFilter}
-          onFilterChange={handleCategoryFilterChange}
-          filterLabel="Category"
-          filterOptions={CATEGORY_FILTER_OPTIONS}
-          secondaryFilterValue={departmentFilter}
-          onSecondaryFilterChange={handleDepartmentFilterChange}
-          secondaryFilterLabel="Department"
-          secondaryFilterOptions={departmentOptions}
-          onClear={() => { setSearchQuery(''); setCategoryFilter(''); setDepartmentFilter(''); setPage(0) }}
-        />
-        <TableShell
-          loading={loading}
-          empty={filteredResources.length === 0}
-          emptyIcon={<GroupsIcon />}
-          emptyTitle={searchQuery || categoryFilter || departmentFilter ? 'No resources match your criteria.' : 'No resources found.'}
-          emptyAction={!searchQuery && !categoryFilter && !departmentFilter ? (
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreateForm}>
-              Add your first resource
-            </Button>
-          ) : undefined}
-        >
-          <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Name
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'department'} direction={sort.field === 'department' ? sort.dir : 'asc'} onClick={() => handleSort('department')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Department
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'role'} direction={sort.field === 'role' ? sort.dir : 'asc'} onClick={() => handleSort('role')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Role
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'category'} direction={sort.field === 'category' ? sort.dir : 'asc'} onClick={() => handleSort('category')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Category
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'capacity'} direction={sort.field === 'capacity' ? sort.dir : 'asc'} onClick={() => handleSort('capacity')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Daily Capacity
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'costrate'} direction={sort.field === 'costrate' ? sort.dir : 'asc'} onClick={() => handleSort('costrate')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Daily Rate
-                  </TableSortLabel>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginatedResources.map((resource, idx) => (
-                <TableRow
-                  key={resource.pm_resourceid}
-                  hover
-                  onClick={() => handleRowClick(resource)}
-                  sx={{
-                    cursor: 'pointer',
-                    bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
-                    '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                    transition: 'background-color 0.15s ease',
-                    '& td': { px: 2.5, py: 1.25 },
-                  }}
-                >
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', fontSize: fontSizes.sm, fontWeight: 700 }}>
-                        {(resource.pm_fullname ?? '?').charAt(0).toUpperCase()}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {resource.pm_fullname ?? 'Unnamed'}
+          {/* ── Resource Grid ─────────────────────────────── */}
+          <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+            <SearchFilterBar
+              searchQuery={searchQuery}
+              onSearchChange={handleSearchChange}
+              searchPlaceholder="Search by name, role, department, email..."
+              filterValue={categoryFilter}
+              onFilterChange={handleCategoryFilterChange}
+              filterLabel="Category"
+              filterOptions={CATEGORY_FILTER_OPTIONS}
+              secondaryFilterValue={departmentFilter}
+              onSecondaryFilterChange={handleDepartmentFilterChange}
+              secondaryFilterLabel="Department"
+              secondaryFilterOptions={departmentOptions}
+              onClear={() => { setSearchQuery(''); setCategoryFilter(''); setDepartmentFilter(''); setPage(0) }}
+            />
+            <TableShell
+              loading={loading}
+              empty={filteredResources.length === 0}
+              emptyIcon={<GroupsIcon />}
+              emptyTitle={searchQuery || categoryFilter || departmentFilter ? 'No resources match your criteria.' : 'No resources found.'}
+              emptyAction={!searchQuery && !categoryFilter && !departmentFilter ? (
+                <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreateForm}>
+                  Add your first resource
+                </Button>
+              ) : undefined}
+            >
+              <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Name
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'department'} direction={sort.field === 'department' ? sort.dir : 'asc'} onClick={() => handleSort('department')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Department
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'role'} direction={sort.field === 'role' ? sort.dir : 'asc'} onClick={() => handleSort('role')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Role
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'category'} direction={sort.field === 'category' ? sort.dir : 'asc'} onClick={() => handleSort('category')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Category
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'capacity'} direction={sort.field === 'capacity' ? sort.dir : 'asc'} onClick={() => handleSort('capacity')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Daily Capacity
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'costrate'} direction={sort.field === 'costrate' ? sort.dir : 'asc'} onClick={() => handleSort('costrate')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Daily Rate
+                      </TableSortLabel>
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paginatedResources.map((resource, idx) => (
+                    <TableRow
+                      key={resource.pm_resourceid}
+                      hover
+                      onClick={() => handleRowClick(resource)}
+                      sx={{
+                        cursor: 'pointer',
+                        bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                        '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                        transition: 'background-color 0.15s ease',
+                        '& td': { px: 2.5, py: 1.25 },
+                      }}
+                    >
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', fontSize: fontSizes.sm, fontWeight: 700 }}>
+                            {(resource.pm_fullname ?? '?').charAt(0).toUpperCase()}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {resource.pm_fullname ?? 'Unnamed'}
+                            </Typography>
+                            {resource.pm_positiontitle && (
+                              <Typography variant="caption" color="text.secondary">
+                                {resource.pm_positiontitle}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {resource.pm_departmentname || '—'}
                         </Typography>
-                        {resource.pm_positiontitle && (
-                          <Typography variant="caption" color="text.secondary">
-                            {resource.pm_positiontitle}
-                          </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {resource.pm_primaryrole || '—'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <StatusTag
+                          label={CATEGORY_LABELS[String(resource.pm_resourcecategory ?? '')] ?? 'Unknown'}
+                          color={CATEGORY_COLORS[String(resource.pm_resourcecategory ?? '')] ?? 'default'}
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontWeight: 600 }}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                          {resource.pm_dailyworkcapacity ?? '—'}h
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', color: 'text.secondary' }}>
+                          {resource.pm_dailycostrate ? currencyFormatter.format(resource.pm_dailycostrate) : '—'}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableShell>
+
+            {!loading && filteredResources.length > 0 && (
+              <TableFooter
+                filteredCount={filteredResources.length}
+                totalCount={resources.length}
+                itemLabel="resource"
+              />
+            )}
+            {!loading && filteredResources.length > 0 && (
+              <TablePagination
+                component="div"
+                count={filteredResources.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[25, 50, 100]}
+              />
+            )}
+          </Paper>
+
+          {/* ── Detail Drawer ────────────────────────────── */}
+          <DetailDrawer
+            open={!!selectedResource}
+            onClose={handleCloseDetail}
+            icon={<PersonIcon sx={{ color: '#0ea5e9', fontSize: 22 }} />}
+            title={selectedResource?.pm_fullname ?? ''}
+            subtitle={selectedResource && (
+              <>
+                {selectedResource.pm_positiontitle && (
+                  <Typography variant="body2" color="text.secondary">
+                    <BadgeIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                    {selectedResource.pm_positiontitle}
+                  </Typography>
+                )}
+                {selectedResource.pm_departmentname && (
+                  <Typography variant="body2" color="text.secondary">
+                    <BusinessCenterIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                    {selectedResource.pm_departmentname}
+                  </Typography>
+                )}
+                {selectedResource.pm_contactemail && (
+                  <Typography variant="body2" color="text.secondary">
+                    <EmailIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                    {selectedResource.pm_contactemail}
+                  </Typography>
+                )}
+                <StatusTag
+                  label={CATEGORY_LABELS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'Unknown'}
+                  color={CATEGORY_COLORS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'default'}
+                  size="small"
+                  variant="outlined"
+                />
+              </>
+            )}
+            headerActions={
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => selectedResource?.pm_resourceid && setDeleteConfirm(selectedResource.pm_resourceid)}
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  <DeleteIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => selectedResource && openEditForm(selectedResource)}
+                  sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.5 }}
+                >
+                  <EditIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+              </Box>
+            }
+            tabs={[
+              { label: 'Overview' },
+              { label: 'Assignments', count: resourceAllocations.length },
+            ]}
+            tabValue={detailTab}
+            onTabChange={(v) => { setDetailTab(v); setError(null) }}
+          >
+            {selectedResource && (
+              <>
+                {/* Overview Tab */}
+                <TabPanel value={detailTab} index={0} pt={0}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    {/* Quick Stats */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderLeft: '3px solid #0ea5e9' }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
+                          Daily Capacity
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                          {selectedResource.pm_dailyworkcapacity ?? '—'}h
+                        </Typography>
+                      </Paper>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderLeft: '3px solid #22c55e' }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
+                          Daily Rate
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                          {selectedResource.pm_dailycostrate ? currencyFormatter.format(selectedResource.pm_dailycostrate) : '—'}
+                        </Typography>
+                      </Paper>
+                    </Box>
+
+                    {/* Details */}
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <PersonIcon sx={{ fontSize: 16 }} /> Resource Details
+                      </Typography>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Primary Role</Typography>
+                          <Typography variant="body2">{selectedResource.pm_primaryrole || '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Department</Typography>
+                          <Typography variant="body2">{selectedResource.pm_departmentname || '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Contact Email</Typography>
+                          <Typography variant="body2">{selectedResource.pm_contactemail || '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Supplier</Typography>
+                          <Typography variant="body2">{selectedResource.pm_suppliercompany || '—'}</Typography>
+                        </Box>
+                        {selectedResource.pm_contractstartdate && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Contract Start</Typography>
+                            <Typography variant="body2">{new Date(selectedResource.pm_contractstartdate).toLocaleDateString()}</Typography>
+                          </Box>
+                        )}
+                        {selectedResource.pm_contractenddate && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Contract End</Typography>
+                            <Typography variant="body2">{new Date(selectedResource.pm_contractenddate).toLocaleDateString()}</Typography>
+                          </Box>
                         )}
                       </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {resource.pm_departmentname || '—'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {resource.pm_primaryrole || '—'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={CATEGORY_LABELS[String(resource.pm_resourcecategory ?? '')] ?? 'Unknown'}
-                      color={CATEGORY_COLORS[String(resource.pm_resourcecategory ?? '')] ?? 'default'}
-                      size="small"
-                      variant="outlined"
-                      sx={{ fontWeight: 600, borderRadius: 8 }}
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                      {resource.pm_dailyworkcapacity ?? '—'}h
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', color: 'text.secondary' }}>
-                      {resource.pm_dailycostrate ? currencyFormatter.format(resource.pm_dailycostrate) : '—'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableShell>
+                    </Paper>
 
-        {!loading && filteredResources.length > 0 && (
-          <TableFooter
-            filteredCount={filteredResources.length}
-            totalCount={resources.length}
-            itemLabel="resource"
-          />
-        )}
-        {!loading && filteredResources.length > 0 && (
-          <TablePagination
-            component="div"
-            count={filteredResources.length}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[25, 50, 100]}
-          />
-        )}
-      </Paper>
-
-      {/* ── Detail Drawer ────────────────────────────── */}
-      <DetailDrawer
-        open={!!selectedResource}
-        onClose={handleCloseDetail}
-        icon={<PersonIcon sx={{ color: '#0ea5e9', fontSize: 22 }} />}
-        title={selectedResource?.pm_fullname ?? ''}
-        subtitle={selectedResource && (
-          <>
-            {selectedResource.pm_positiontitle && (
-              <Typography variant="body2" color="text.secondary">
-                <BadgeIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                {selectedResource.pm_positiontitle}
-              </Typography>
-            )}
-            {selectedResource.pm_departmentname && (
-              <Typography variant="body2" color="text.secondary">
-                <BusinessCenterIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                {selectedResource.pm_departmentname}
-              </Typography>
-            )}
-            {selectedResource.pm_contactemail && (
-              <Typography variant="body2" color="text.secondary">
-                <EmailIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                {selectedResource.pm_contactemail}
-              </Typography>
-            )}
-            <Chip
-              label={CATEGORY_LABELS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'Unknown'}
-              color={CATEGORY_COLORS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'default'}
-              size="small"
-              variant="outlined"
-              sx={{ fontWeight: 600, borderRadius: 8 }}
-            />
-          </>
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => selectedResource?.pm_resourceid && setDeleteConfirm(selectedResource.pm_resourceid)}
-              sx={{ borderRadius: 1.5 }}
-            >
-              <DeleteIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={() => selectedResource && openEditForm(selectedResource)}
-              sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.5 }}
-            >
-              <EditIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          </Box>
-        }
-        tabs={[
-          { label: 'Overview' },
-          { label: 'Assignments', count: resourceAllocations.length },
-        ]}
-        tabValue={detailTab}
-        onTabChange={(v) => { setDetailTab(v); setError(null) }}
-      >
-        {selectedResource && (
-          <>
-            {/* Overview Tab */}
-            <TabPanel value={detailTab} index={0} pt={0}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                {/* Quick Stats */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderLeft: '3px solid #0ea5e9' }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
-                      Daily Capacity
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                      {selectedResource.pm_dailyworkcapacity ?? '—'}h
-                    </Typography>
-                  </Paper>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderLeft: '3px solid #22c55e' }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
-                      Daily Rate
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                      {selectedResource.pm_dailycostrate ? currencyFormatter.format(selectedResource.pm_dailycostrate) : '—'}
-                    </Typography>
-                  </Paper>
-                </Box>
-
-                {/* Details */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <PersonIcon sx={{ fontSize: 16 }} /> Resource Details
-                  </Typography>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Primary Role</Typography>
-                      <Typography variant="body2">{selectedResource.pm_primaryrole || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Department</Typography>
-                      <Typography variant="body2">{selectedResource.pm_departmentname || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Contact Email</Typography>
-                      <Typography variant="body2">{selectedResource.pm_contactemail || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Supplier</Typography>
-                      <Typography variant="body2">{selectedResource.pm_suppliercompany || '—'}</Typography>
-                    </Box>
-                    {selectedResource.pm_contractstartdate && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Contract Start</Typography>
-                        <Typography variant="body2">{new Date(selectedResource.pm_contractstartdate).toLocaleDateString()}</Typography>
-                      </Box>
-                    )}
-                    {selectedResource.pm_contractenddate && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Contract End</Typography>
-                        <Typography variant="body2">{new Date(selectedResource.pm_contractenddate).toLocaleDateString()}</Typography>
-                      </Box>
-                    )}
+                    {/* Total Allocations Summary */}
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <WorkIcon sx={{ fontSize: 16 }} /> Current Allocation
+                      </Typography>
+                      {resourceAllocations.length > 0 ? (
+                        <>
+                          <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
+                            {resourceAllocations.reduce((s, a) => s + (a.pm_allocatedhours ?? 0), 0)}h
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Total allocated hours across {resourceAllocations.length} assignment{resourceAllocations.length !== 1 ? 's' : ''}
+                          </Typography>
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No current assignments. Allocate this resource to projects from the Assignments tab.
+                        </Typography>
+                      )}
+                    </Paper>
                   </Box>
-                </Paper>
+                </TabPanel>
 
-                {/* Total Allocations Summary */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <WorkIcon sx={{ fontSize: 16 }} /> Current Allocation
-                  </Typography>
+                {/* Assignments Tab */}
+                <TabPanel value={detailTab} index={1} pt={0}>
                   {resourceAllocations.length > 0 ? (
-                    <>
-                      <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
-                        {resourceAllocations.reduce((s, a) => s + (a.pm_allocatedhours ?? 0), 0)}h
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Total allocated hours across {resourceAllocations.length} assignment{resourceAllocations.length !== 1 ? 's' : ''}
-                      </Typography>
-                    </>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      {resourceAllocations.map((alloc) => (
+                        <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Box>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                                {alloc.pm_assignmentrole || 'Unspecified Role'}
+                              </Typography>
+                              {(alloc.pm_startdate || alloc.pm_enddate) && (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+                                  <CalendarTodayIcon sx={{ fontSize: 12 }} />
+                                  {alloc.pm_startdate ? new Date(alloc.pm_startdate).toLocaleDateString() : '—'}
+                                  {' → '}
+                                  {alloc.pm_enddate ? new Date(alloc.pm_enddate).toLocaleDateString() : '—'}
+                                </Typography>
+                              )}
+                            </Box>
+                            <Box sx={{ textAlign: 'right' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                                {alloc.pm_allocatedhours ?? 0}h
+                              </Typography>
+                              {alloc.pm_allocationpercentage != null && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {alloc.pm_allocationpercentage}%
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        </Paper>
+                      ))}
+                    </Box>
                   ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No current assignments. Allocate this resource to projects from the Assignments tab.
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
+                      No assignments for this resource yet.
                     </Typography>
                   )}
-                </Paper>
-              </Box>
-            </TabPanel>
-
-            {/* Assignments Tab */}
-            <TabPanel value={detailTab} index={1} pt={0}>
-              {resourceAllocations.length > 0 ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {resourceAllocations.map((alloc) => (
-                    <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                            {alloc.pm_assignmentrole || 'Unspecified Role'}
-                          </Typography>
-                          {(alloc.pm_startdate || alloc.pm_enddate) && (
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
-                              <CalendarTodayIcon sx={{ fontSize: 12 }} />
-                              {alloc.pm_startdate ? new Date(alloc.pm_startdate).toLocaleDateString() : '—'}
-                              {' → '}
-                              {alloc.pm_enddate ? new Date(alloc.pm_enddate).toLocaleDateString() : '—'}
-                            </Typography>
-                          )}
-                        </Box>
-                        <Box sx={{ textAlign: 'right' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                            {alloc.pm_allocatedhours ?? 0}h
-                          </Typography>
-                          {alloc.pm_allocationpercentage != null && (
-                            <Typography variant="caption" color="text.secondary">
-                              {alloc.pm_allocationpercentage}%
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </Paper>
-                  ))}
-                </Box>
-              ) : (
-                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
-                  No assignments for this resource yet.
-                </Typography>
-              )}
-            </TabPanel>
-          </>
-        )}
-      </DetailDrawer>
-
-      {/* ── Create/Edit Modal ──────────────────────── */}
-      <Dialog
-        open={showFormModal}
-        onClose={() => !actionLoading && setShowFormModal(false)}
-        maxWidth="md"
-        fullWidth
-        slotProps={{
-          paper: { sx: { borderRadius: 3 } },
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.5 }}>
-            {editingResource ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <PersonIcon sx={{ fontSize: 18, color: '#fff' }} />}
-          </Avatar>
-          {editingResource ? 'Edit Resource' : 'Add New Resource'}
-        </DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            {editingResource ? `Update details for ${editingResource.pm_fullname}.` : 'Add a new team member, contractor, or supplier to the resource pool.'}
-          </Typography>
-
-          {/* Basic Information */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <PersonIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-              Basic Information
-            </Typography>
-            <Divider sx={{ flex: 1 }} />
-          </Box>
-          <Grid container spacing={2.5} sx={{ mb: 3 }}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Full Name"
-                required
-                fullWidth
-                size="small"
-                value={formData.pm_fullname}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_fullname: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={formData.pm_resourcecategory}
-                  label="Category"
-                  onChange={(e) => setFormData((f) => ({ ...f, pm_resourcecategory: e.target.value as number }))}
-                  sx={{ borderRadius: 2 }}
-                >
-                  <MenuItem value={0}>Internal Staff</MenuItem>
-                  <MenuItem value={1}>Contractor</MenuItem>
-                  <MenuItem value={2}>Supplier</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Department"
-                fullWidth
-                size="small"
-                value={formData.pm_departmentname}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_departmentname: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Position / Title"
-                fullWidth
-                size="small"
-                value={formData.pm_positiontitle}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_positiontitle: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Primary Role"
-                fullWidth
-                size="small"
-                value={formData.pm_primaryrole}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_primaryrole: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Contact Email"
-                fullWidth
-                size="small"
-                value={formData.pm_contactemail}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_contactemail: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
-              />
-            </Grid>
-            {formData.pm_resourcecategory === 1 && (
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  label="Supplier / Company"
-                  fullWidth
-                  size="small"
-                  value={formData.pm_suppliercompany}
-                  onChange={(e) => setFormData((f) => ({ ...f, pm_suppliercompany: e.target.value }))}
-                  slotProps={{ input: { sx: { borderRadius: 2 } } }}
-                />
-              </Grid>
+                </TabPanel>
+              </>
             )}
-          </Grid>
+          </DetailDrawer>
 
-          {/* Capacity & Rate */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <LocalAtmIcon sx={{ fontSize: 18, color: '#22c55e' }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-              Capacity & Rate
-            </Typography>
-            <Divider sx={{ flex: 1 }} />
-          </Box>
-          <Grid container spacing={2.5} sx={{ mb: 3 }}>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                label="Daily Capacity (hours)"
-                type="number"
-                fullWidth
-                size="small"
-                value={formData.pm_dailyworkcapacity}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_dailyworkcapacity: Number(e.target.value) }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                label="Daily Cost Rate (EUR)"
-                type="number"
-                fullWidth
-                size="small"
-                value={formData.pm_dailycostrate}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_dailycostrate: Number(e.target.value) }))}
-                slotProps={{ input: { sx: { borderRadius: 2 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                label="Contract End Date"
-                type="date"
-                fullWidth
-                size="small"
-                value={formData.pm_contractenddate}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_contractenddate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSaveResource}
-            variant="contained"
-            disabled={!formData.pm_fullname.trim() || actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}
+          {/* ── Create/Edit Modal ──────────────────────── */}
+          <Dialog
+            open={showFormModal}
+            onClose={() => !actionLoading && setShowFormModal(false)}
+            maxWidth="md"
+            fullWidth
+            slotProps={{
+              paper: { sx: { borderRadius: 3 } },
+            }}
           >
-            {actionLoading ? 'Saving...' : editingResource ? 'Update Resource' : 'Create Resource'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.5 }}>
+                {editingResource ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <PersonIcon sx={{ fontSize: 18, color: '#fff' }} />}
+              </Avatar>
+              {editingResource ? 'Edit Resource' : 'Add New Resource'}
+            </DialogTitle>
+            <DialogContent sx={{ pt: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {editingResource ? `Update details for ${editingResource.pm_fullname}.` : 'Add a new team member, contractor, or supplier to the resource pool.'}
+              </Typography>
 
-      {/* ── Delete Confirmation ────────────────────── */}
-      <Dialog
-        open={!!deleteConfirm}
-        onClose={() => !actionLoading && setDeleteConfirm(null)}
-        maxWidth="xs"
-        fullWidth
-        slotProps={{
-          paper: { sx: { borderRadius: 3 } },
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Resource</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            Are you sure you want to remove this resource? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
-            Cancel
-          </Button>
-          <Button onClick={handleDeleteResource} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 2 }}>
-            {actionLoading ? 'Removing...' : 'Remove'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-      </Box>
+              {/* Basic Information */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <PersonIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+                  Basic Information
+                </Typography>
+                <Divider sx={{ flex: 1 }} />
+              </Box>
+              <Grid container spacing={2.5} sx={{ mb: 3 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Full Name"
+                    required
+                    fullWidth
+                    size="small"
+                    value={formData.pm_fullname}
+                    onChange={(e) => setFormData((f) => ({ ...f, pm_fullname: e.target.value }))}
+                    slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Category</InputLabel>
+                    <Select
+                      value={formData.pm_resourcecategory}
+                      label="Category"
+                      onChange={(e) => setFormData((f) => ({ ...f, pm_resourcecategory: e.target.value as number }))}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      <MenuItem value={0}>Internal Staff</MenuItem>
+                      <MenuItem value={1}>Contractor</MenuItem>
+                      <MenuItem value={2}>Supplier</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Department"
+                    fullWidth
+                    size="small"
+                    value={formData.pm_departmentname}
+                    onChange={(e) => setFormData((f) => ({ ...f, pm_departmentname: e.target.value }))}
+                    slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Position / Title"
+                    fullWidth
+                    size="small"
+                    value={formData.pm_positiontitle}
+                    onChange={(e) => setFormData((f) => ({ ...f, pm_positiontitle: e.target.value }))}
+                    slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Primary Role"
+                    fullWidth
+                    size="small"
+                    value={formData.pm_primaryrole}
+                    onChange={(e) => setFormData((f) => ({ ...f, pm_primaryrole: e.target.value }))}
+                    slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Contact Email"
+                    fullWidth
+                    size="small"
+                    value={formData.pm_contactemail}
+                    onChange={(e) => setFormData((f) => ({ ...f, pm_contactemail: e.target.value }))}
+                    slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  />
+                </Grid>
+                {formData.pm_resourcecategory === 1 && (
+                  <Grid size={{ xs: 12 }}>
+                    <TextField
+                      label="Supplier / Company"
+                      fullWidth
+                      size="small"
+                      value={formData.pm_suppliercompany}
+                      onChange={(e) => setFormData((f) => ({ ...f, pm_suppliercompany: e.target.value }))}
+                      slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                    />
+                  </Grid>
+                )}
+              </Grid>
+
+              {/* Capacity & Rate */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <LocalAtmIcon sx={{ fontSize: 18, color: '#22c55e' }} />
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+                  Capacity & Rate
+                </Typography>
+                <Divider sx={{ flex: 1 }} />
+              </Box>
+              <Grid container spacing={2.5} sx={{ mb: 3 }}>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField
+                    label="Daily Capacity (hours)"
+                    type="number"
+                    fullWidth
+                    size="small"
+                    value={formData.pm_dailyworkcapacity}
+                    onChange={(e) => setFormData((f) => ({ ...f, pm_dailyworkcapacity: Number(e.target.value) }))}
+                    slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField
+                    label="Daily Cost Rate (EUR)"
+                    type="number"
+                    fullWidth
+                    size="small"
+                    value={formData.pm_dailycostrate}
+                    onChange={(e) => setFormData((f) => ({ ...f, pm_dailycostrate: Number(e.target.value) }))}
+                    slotProps={{ input: { sx: { borderRadius: 2 } } }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField
+                    label="Contract End Date"
+                    type="date"
+                    fullWidth
+                    size="small"
+                    value={formData.pm_contractenddate}
+                    onChange={(e) => setFormData((f) => ({ ...f, pm_contractenddate: e.target.value }))}
+                    slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 2 } } }}
+                  />
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveResource}
+                variant="contained"
+                disabled={!formData.pm_fullname.trim() || actionLoading}
+                sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 2, fontWeight: 600 }}
+              >
+                {actionLoading ? 'Saving...' : editingResource ? 'Update Resource' : 'Create Resource'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* ── Delete Confirmation ────────────────────── */}
+          <Dialog
+            open={!!deleteConfirm}
+            onClose={() => !actionLoading && setDeleteConfirm(null)}
+            maxWidth="xs"
+            fullWidth
+            slotProps={{
+              paper: { sx: { borderRadius: 3 } },
+            }}
+          >
+            <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Resource</DialogTitle>
+            <DialogContent>
+              <Typography variant="body2" color="text.secondary">
+                Are you sure you want to remove this resource? This action cannot be undone.
+              </Typography>
+            </DialogContent>
+            <DialogActions sx={{ p: 2.5, gap: 1 }}>
+              <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+                Cancel
+              </Button>
+              <Button onClick={handleDeleteResource} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 2 }}>
+                {actionLoading ? 'Removing...' : 'Remove'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </Box>
       )}
     </Box>
   )
@@ -1139,11 +1142,11 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
     const hasData = capacityData.length > 0
     const stackedData = hasData
       ? capacityData.map((d) => {
-          const capped = Math.min(d.allocated, d.capacity)
-          const available = Math.max(0, d.capacity - d.allocated)
-          const overage = Math.max(0, d.allocated - d.capacity)
-          return { resource: d.resource, allocated: capped, available, overage, percentage: d.percentage }
-        })
+        const capped = Math.min(d.allocated, d.capacity)
+        const available = Math.max(0, d.capacity - d.allocated)
+        const overage = Math.max(0, d.allocated - d.capacity)
+        return { resource: d.resource, allocated: capped, available, overage, percentage: d.percentage }
+      })
       : [{ resource: 'No Data', allocated: 0, available: 160, overage: 0, percentage: 0 }]
 
     return (
@@ -1321,28 +1324,28 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
             <Legend />
             {hasData
               ? roles.map((role, idx) => (
-                  <Area
-                    key={role}
-                    type="monotone"
-                    dataKey={role}
-                    stroke={ROLE_COLORS[idx % ROLE_COLORS.length]}
-                    fill={ROLE_COLORS[idx % ROLE_COLORS.length]}
-                    fillOpacity={0.15}
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                ))
+                <Area
+                  key={role}
+                  type="monotone"
+                  dataKey={role}
+                  stroke={ROLE_COLORS[idx % ROLE_COLORS.length]}
+                  fill={ROLE_COLORS[idx % ROLE_COLORS.length]}
+                  fillOpacity={0.15}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              ))
               : (
-                  <Area
-                    type="monotone"
-                    dataKey="No Data"
-                    stroke="#94a3b8"
-                    fill="#94a3b8"
-                    fillOpacity={0.15}
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                )
+                <Area
+                  type="monotone"
+                  dataKey="No Data"
+                  stroke="#94a3b8"
+                  fill="#94a3b8"
+                  fillOpacity={0.15}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              )
             }
           </AreaChart>
         </ResponsiveContainer>
@@ -1491,17 +1494,17 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
             <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
               {deptDemand.length > 0
                 ? (() => {
-                    const byMonth = new Map<string, number>()
-                    for (const d of deptDemand) {
-                      byMonth.set(d.month, (byMonth.get(d.month) ?? 0) + d.hours)
-                    }
-                    let maxMonth = ''
-                    let maxHours = 0
-                    for (const [m, h] of byMonth) {
-                      if (h > maxHours) { maxMonth = m; maxHours = h }
-                    }
-                    return `${maxMonth} (${maxHours}h)`
-                  })()
+                  const byMonth = new Map<string, number>()
+                  for (const d of deptDemand) {
+                    byMonth.set(d.month, (byMonth.get(d.month) ?? 0) + d.hours)
+                  }
+                  let maxMonth = ''
+                  let maxHours = 0
+                  for (const [m, h] of byMonth) {
+                    if (h > maxHours) { maxMonth = m; maxHours = h }
+                  }
+                  return `${maxMonth} (${maxHours}h)`
+                })()
                 : '—'}
             </Typography>
           </CardContent>

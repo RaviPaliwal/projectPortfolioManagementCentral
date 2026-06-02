@@ -5,7 +5,6 @@ import {
   Typography,
   Alert,
   Skeleton,
-  Chip,
   useTheme,
   Button,
   Dialog,
@@ -46,9 +45,11 @@ import AssignmentLateIcon from '@mui/icons-material/AssignmentLate'
 import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import { fetchPortfolioHierarchy, fetchProgrammeDetails, createProgramme } from '@/lib/dataverseClient'
+import {fetchProgrammeDetails, createProgramme } from '@/services/programme.service'
+import {fetchPortfolioHierarchy } from '@/services/portfolio.service'
 import {
   StatusChip,
+  StatusTag,
   PageHeader,
   KpiCardRow,
   HealthSplitBar,
@@ -431,12 +432,11 @@ export default function ProgrammesPage() {
                     </Box>
                   )}
                   {prog?.pm_portfolioname && (
-                    <Chip
+                    <StatusTag
                       label={prog.pm_portfolioname}
                       size="small"
                       color="primary"
                       variant="outlined"
-                      sx={{ fontWeight: 600, borderRadius: 1, height: 24, fontSize: fontSizes.xs }}
                     />
                   )}
                   {prog?.pm_startdate && (
@@ -811,7 +811,7 @@ export default function ProgrammesPage() {
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                         Escalated Risks
                       </Typography>
-                      <Chip label={detailRisks.filter((r) => r.pm_escalated).length} size="small" color="error" sx={{ fontWeight: 700, fontSize: fontSizes.xs, borderRadius: 1, height: 20 }} />
+                      <StatusTag label={detailRisks.filter((r) => r.pm_escalated).length} size="small" color="error" />
                     </Box>
                     {detailRisks.filter((r) => r.pm_escalated).length > 0 ? (
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -827,11 +827,10 @@ export default function ProgrammesPage() {
                             <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                               {risk.pm_riskowner && <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>Owner: {risk.pm_riskowner}</Typography>}
                               {risk.pm_inherentscore !== undefined && <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>Score: {risk.pm_inherentscore}</Typography>}
-                              <Chip
+                              <StatusTag
                                 label={RISK_CATEGORY_LABELS[risk.pm_riskcategory?.toString() ?? ''] ?? 'Unknown'}
                                 size="small"
                                 variant="outlined"
-                                sx={{ fontSize: fontSizes.xs, fontWeight: 600, borderRadius: 1, height: 20 }}
                               />
                             </Box>
                           </Paper>
@@ -850,7 +849,7 @@ export default function ProgrammesPage() {
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                         Programme Risks
                       </Typography>
-                      <Chip label={detailRisks.filter((r) => !r.pm_escalated).length} size="small" color="warning" sx={{ fontWeight: 700, fontSize: fontSizes.xs, borderRadius: 1, height: 20 }} />
+                      <StatusTag label={detailRisks.filter((r) => !r.pm_escalated).length} size="small" color="warning" />
                     </Box>
                     {detailRisks.filter((r) => !r.pm_escalated).length > 0 ? (
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -859,11 +858,10 @@ export default function ProgrammesPage() {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                               <Typography variant="body2" sx={{ fontWeight: 700 }}>{risk.pm_risktitle ?? 'Untitled Risk'}</Typography>
                               <StatusChip status={risk.pm_ragstatus} type="rag" size="small" />
-                              <Chip
+                              <StatusTag
                                 label={RISK_CATEGORY_LABELS[risk.pm_riskcategory?.toString() ?? ''] ?? 'Unknown'}
                                 size="small"
                                 variant="outlined"
-                                sx={{ fontSize: fontSizes.xs, fontWeight: 600, borderRadius: 1, height: 20 }}
                               />
                             </Box>
                             {risk.pm_riskowner && <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>Owner: {risk.pm_riskowner}</Typography>}
@@ -885,7 +883,7 @@ export default function ProgrammesPage() {
                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                       Issues
                     </Typography>
-                    <Chip label={detailIssues.length} size="small" color="warning" sx={{ fontWeight: 700, fontSize: fontSizes.xs, borderRadius: 1, height: 20 }} />
+                    <StatusTag label={detailIssues.length} size="small" color="warning" />
                   </Box>
                   {detailIssues.length > 0 ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -894,14 +892,13 @@ export default function ProgrammesPage() {
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                             <Typography variant="body2" sx={{ fontWeight: 700 }}>{issue.pm_issuetitle ?? 'Untitled Issue'}</Typography>
                             <StatusChip status={issue.pm_ragstatus} type="rag" size="small" />
-                            <Chip
+                            <StatusTag
                               label={ISSUE_PRIORITY_LABELS[issue.pm_prioritylevel?.toString() ?? ''] ?? 'Unknown'}
                               size="small"
                               color={issue.pm_prioritylevel === 1 ? 'error' : issue.pm_prioritylevel === 0 ? 'warning' : 'default'}
-                              sx={{ fontSize: fontSizes.xs, fontWeight: 600, borderRadius: 1, height: 20 }}
                             />
                             {issue.pm_escalationstatus && (
-                              <Chip label="Escalated" size="small" color="error" sx={{ fontSize: fontSizes.xs, fontWeight: 600, borderRadius: 1, height: 20 }} />
+                              <StatusTag label="Escalated" size="small" color="error" />
                             )}
                           </Box>
                           {issue.pm_issuedescription && (
@@ -1095,12 +1092,11 @@ export default function ProgrammesPage() {
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Chip
+                          <StatusTag
                             label={programme.pm_portfolioname || '—'}
                             size="small"
                             variant="outlined"
                             color={programme.pm_portfolioname ? 'primary' : 'default'}
-                            sx={{ fontWeight: 600, borderRadius: 8, fontSize: fontSizes.xs, height: 22 }}
                           />
                         </TableCell>
                         <TableCell>

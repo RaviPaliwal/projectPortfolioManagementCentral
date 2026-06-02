@@ -3,8 +3,8 @@ let c = fs.readFileSync('src/features/workflows/pages/WorkflowsPage.tsx', 'utf8'
 
 if (!c.includes('fetchWorkflowStepTemplates')) {
   c = c.replace(
-    "import {\n  fetchWorkflows, createWorkflow, updateWorkflow, deleteWorkflow,\n  fetchWorkflowInstances, fetchWorkflowApprovalSteps, deleteWorkflowInstance,\n} from '@/lib/dataverseClient'",
-    "import {\n  fetchWorkflows, createWorkflow, updateWorkflow, deleteWorkflow,\n  fetchWorkflowInstances, fetchWorkflowApprovalSteps, deleteWorkflowInstance,\n  fetchWorkflowStepTemplates, createWorkflowStepTemplate, updateWorkflowStepTemplate, deleteWorkflowStepTemplate,\n} from '@/lib/dataverseClient'"
+    "import {\n  fetchWorkflows, createWorkflow, updateWorkflow, deleteWorkflow,\n  fetchWorkflowInstances, fetchWorkflowApprovalSteps, deleteWorkflowInstance,\n} from '@/services'",
+    "import {\n  fetchWorkflows, createWorkflow, updateWorkflow, deleteWorkflow,\n  fetchWorkflowInstances, fetchWorkflowApprovalSteps, deleteWorkflowInstance,\n  fetchWorkflowStepTemplates, createWorkflowStepTemplate, updateWorkflowStepTemplate, deleteWorkflowStepTemplate,\n} from '@/services'"
   );
   console.log('Added step template imports');
 }

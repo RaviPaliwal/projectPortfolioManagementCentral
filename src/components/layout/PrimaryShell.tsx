@@ -36,19 +36,20 @@ import RateReviewIcon from '@mui/icons-material/RateReview'
 import SavingsIcon from '@mui/icons-material/Savings'
 import PsychologyIcon from '@mui/icons-material/Psychology'
 import AccountTreeWorkflowIcon from '@mui/icons-material/AccountTree'
+import SettingsIcon from '@mui/icons-material/Settings'
 import { UserSelector } from '@/context/UserContext'
 import { useEffect } from 'react'
+import NotificationCenter from './NotificationCenter'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'approvalrequests' | 'fundingsources' | 'skills' | 'workflows' | 'pendingapprovals' | 'holidays' | 'statussnapshots' | 'debug'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'approvalrequests' | 'fundingsources' | 'skills' | 'workflows' | 'pendingapprovals' | 'holidays' | 'statussnapshots' | 'debug'
 
-export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
+export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?: boolean }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
   { key: 'portfolios', label: 'Portfolios', icon: <AccountTreeIcon /> },
   { key: 'programmes', label: 'Programmes', icon: <FolderOpenIcon /> },
   { key: 'projects', label: 'Projects', icon: <TaskIcon /> },
   { key: 'pipeline', label: 'Pipeline', icon: <TimelineIcon /> },
   { key: 'resources', label: 'Resources', icon: <PeopleIcon /> },
-  { key: 'teamadmin', label: 'Team Admin', icon: <PeopleIcon /> },
   { key: 'timesheets', label: 'Timesheets', icon: <AccessTimeIcon /> },
   { key: 'budgets', label: 'Budgets', icon: <AccountBalanceWalletIcon /> },
   { key: 'gatereviews', label: 'Gate Reviews', icon: <FactCheckIcon /> },
@@ -60,12 +61,16 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode }> = [
   { key: 'cashflow', label: 'Cashflow', icon: <AccountBalanceIcon /> },
   { key: 'approvalrequests', label: 'Approvals', icon: <RateReviewIcon /> },
   { key: 'fundingsources', label: 'Funding Sources', icon: <SavingsIcon /> },
-  { key: 'workflows', label: 'Workflows', icon: <AccountTreeWorkflowIcon /> },
   { key: 'pendingapprovals', label: 'Approvals Queue', icon: <RateReviewIcon /> },
-  { key: 'skills', label: 'Skills & Mapping', icon: <PsychologyIcon /> },
-  { key: 'holidays', label: 'Holiday Calendar', icon: <CalendarMonthIcon /> },
   { key: 'statussnapshots', label: 'Status Snapshots', icon: <AssessmentIcon /> },
+  { key: 'configurations', label: 'Configurations', icon: <SettingsIcon /> },
   { key: 'debug', label: 'Debug', icon: <BugReportIcon /> },
+  
+  // Hidden sub-navigation items (accessible via Configurations or deep links)
+  { key: 'workflows', label: 'Workflows', icon: <AccountTreeWorkflowIcon />, hidden: true },
+  { key: 'teamadmin', label: 'Team Admin', icon: <PeopleIcon />, hidden: true },
+  { key: 'skills', label: 'Skills & Mapping', icon: <PsychologyIcon />, hidden: true },
+  { key: 'holidays', label: 'Holiday Calendar', icon: <CalendarMonthIcon />, hidden: true },
 ]
 
 interface PrimaryShellProps {
@@ -93,6 +98,8 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
     return () => window.removeEventListener('navigate', handler)
   }, [activeTab, onChangeTab])
 
+  const sidebarTabs = tabs.filter(t => !t.hidden)
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Sidebar */}
@@ -111,7 +118,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
       >
         {/* Navigation */}
         <List sx={{ px: 1.5, py: 2 }}>
-          {tabs.map((tab) => {
+          {sidebarTabs.map((tab) => {
             const isActive = activeTab === tab.key
             return (
               <ListItemButton
@@ -171,9 +178,27 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
               >
                 PPM Central
               </Typography>
-              {activeTab !== 'dashboard' && tabs.find((tab) => tab.key === activeTab) && (
+              {activeTab !== 'dashboard' && (
                 <>
                   <Typography variant="caption" color="text.disabled">/</Typography>
+                  {['workflows', 'teamadmin', 'skills', 'holidays'].includes(activeTab) && (
+                    <>
+                      <Typography
+                        variant="body2"
+                        onClick={() => onChangeTab('configurations')}
+                        sx={{
+                          fontWeight: 600,
+                          color: 'text.secondary',
+                          cursor: 'pointer',
+                          transition: 'color 0.15s ease',
+                          '&:hover': { color: 'primary.main' },
+                        }}
+                      >
+                        Configurations
+                      </Typography>
+                      <Typography variant="caption" color="text.disabled">/</Typography>
+                    </>
+                  )}
                   <Typography
                     variant="body2"
                     onClick={() => onChangeTab(activeTab)}
@@ -185,13 +210,14 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
                       '&:hover': { color: 'primary.main' },
                     }}
                   >
-                    {tabs.find((tab) => tab.key === activeTab)?.label}
+                    {tabs.find((tab) => tab.key === activeTab)?.label || activeTab}
                   </Typography>
                 </>
               )}
             </Box>
             <Box sx={{ flex: 1 }} />
             <UserSelector />
+            <NotificationCenter />
             <IconButton onClick={onToggleTheme} sx={{ color: 'text.secondary' }}>
               {themeMode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
             </IconButton>

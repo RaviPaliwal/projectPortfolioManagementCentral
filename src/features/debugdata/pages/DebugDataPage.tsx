@@ -15,7 +15,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
   Alert,
   CircularProgress,
   IconButton,
@@ -41,9 +40,10 @@ import StorageIcon from '@mui/icons-material/Storage'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
 import WarningIcon from '@mui/icons-material/Warning'
-import { getAvailableTables, debugQueryTable, seedAllResourceData, truncateResourceData } from '@/lib/dataverseClient'
+import { getAvailableTables, debugQueryTable, seedAllResourceData, truncateResourceData } from '@/services'
 import AddIcon from '@mui/icons-material/Add'
-import type { DebugQueryOptions } from '@/lib/dataverseClient'
+import { StatusTag } from '@/components/common'
+import type { DebugQueryOptions } from '@/services'
 
 const ALL_TABLES = getAvailableTables()
 
@@ -272,16 +272,14 @@ export default function DebugDataPage() {
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
                 Results: {selectedTable}
               </Typography>
-              <Chip
+              <StatusTag
                 label={`${results.count} row${results.count !== 1 ? 's' : ''}`}
                 color={results.count > 0 ? 'success' : 'default'}
-                size="small"
                 variant="outlined"
               />
-              <Chip
+              <StatusTag
                 label={`${results.columns.length} columns`}
                 color="info"
-                size="small"
                 variant="outlined"
               />
             </Box>
@@ -428,14 +426,13 @@ export default function DebugDataPage() {
         </Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
           {ALL_TABLES.map((t) => (
-            <Chip
+            <StatusTag
               key={t}
               label={t}
-              size="small"
               variant={t === selectedTable ? 'filled' : 'outlined'}
               color={t === selectedTable ? 'primary' : 'default'}
               onClick={() => setSelectedTable(t)}
-              clickable
+              sx={{ cursor: 'pointer' }}
             />
           ))}
         </Box>
@@ -450,14 +447,12 @@ export default function DebugDataPage() {
             'pm_departmentname ne null',
             'contains(pm_fullname, \'John\')',
           ].map((ex) => (
-            <Chip
+            <StatusTag
               key={ex}
               label={ex}
-              size="small"
               variant="outlined"
-              clickable
               onClick={() => setFilterStr(ex)}
-              sx={{ fontFamily: '"Fira Code", "Cascadia Code", monospace', fontSize: '0.7rem' }}
+              sx={{ fontFamily: '"Fira Code", "Cascadia Code", monospace', fontSize: '0.7rem', cursor: 'pointer' }}
             />
           ))}
         </Box>

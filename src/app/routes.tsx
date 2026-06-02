@@ -24,8 +24,9 @@ import PendingApprovalsPage from '@/features/workflows/pages/PendingApprovalsPag
 import HolidaysPage from '@/features/holidays/pages/HolidaysPage'
 import StatusSnapshotsPage from '@/features/statussnapshots/pages/StatusSnapshotsPage'
 import TeamUserManagementPage from '@/features/teamadmin/pages/TeamUserManagementPage'
+import ConfigurationsPage from '@/features/configurations/pages/ConfigurationsPage'
 
-export const pageMap: Record<TabKey, ReactNode> = {
+export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, ReactNode> => ({
   dashboard: <DashboardPage />,
   cashflow: <CashflowPage />,
   portfolios: <PortfoliosPage />,
@@ -50,4 +51,5 @@ export const pageMap: Record<TabKey, ReactNode> = {
   teamadmin: <TeamUserManagementPage />,
   holidays: <HolidaysPage />,
   statussnapshots: <StatusSnapshotsPage />,
-}
+  configurations: <ConfigurationsPage onNavigate={onNavigate} />,
+})

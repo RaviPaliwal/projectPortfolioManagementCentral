@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
-  Box, Paper, Typography, Alert, Chip, useTheme,
+  Box, Paper, Typography, Alert, useTheme,
   Table, TableBody, TableCell, TableHead, TableRow,
   TableSortLabel, TablePagination, Button, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -33,13 +33,13 @@ import {
   fetchProjectsForLookup,
   startWorkflowForEntity,
   fetchWorkflows,
-} from '@/lib/dataverseClient'
+} from '@/services'
 import type { ChangeRequestModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
-import type { ProgrammeLookupItem, ProjectLookupItem } from '@/lib/dataverseClient'
+import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
 import type { ExportColumn } from '@/utils/exportUtils'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 
 const CHANGE_TYPE_LABELS: Record<string, string> = {
@@ -228,7 +228,7 @@ export default function ChangeRequestsPage() {
         value: String(approved),
         subtitle: total > 0 ? Math.round((approved / total) * 100) + '% approval rate' : 'No approvals yet',
         icon: <CheckCircleIcon />,
-        color: '#22c55e',
+        color: '#b3ecc8',
       },
       {
         label: 'Total Cost Impact',
@@ -567,13 +567,13 @@ export default function ChangeRequestsPage() {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip label={CHANGE_TYPE_LABELS[String(cr.pm_changetype ?? '')] ?? 'Unknown'} color={CHANGE_TYPE_COLORS[String(cr.pm_changetype ?? '')] ?? 'default'} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: 8 }} />
+                    <StatusTag label={CHANGE_TYPE_LABELS[String(cr.pm_changetype ?? '')] ?? 'Unknown'} color={CHANGE_TYPE_COLORS[String(cr.pm_changetype ?? '')] ?? 'default'} />
                   </TableCell>
                   <TableCell>
-                    <Chip label={PRIORITY_LABELS[String(cr.pm_prioritylevel ?? '')] ?? 'Unknown'} color={PRIORITY_COLORS[String(cr.pm_prioritylevel ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600, borderRadius: 8 }} />
+                    <StatusTag label={PRIORITY_LABELS[String(cr.pm_prioritylevel ?? '')] ?? 'Unknown'} color={PRIORITY_COLORS[String(cr.pm_prioritylevel ?? '')] ?? 'default'} />
                   </TableCell>
                   <TableCell>
-                    <Chip label={STATUS_LABELS[String(cr.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(cr.pm_status ?? '')] ?? 'default'} size="small" variant={String(cr.pm_status) === '0' ? 'filled' : 'outlined'} sx={{ fontWeight: 600, borderRadius: 8 }} />
+                    <StatusTag label={STATUS_LABELS[String(cr.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(cr.pm_status ?? '')] ?? 'default'} variant={String(cr.pm_status) === '0' ? 'filled' : 'filled'} />
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2" sx={{ fontFamily: '\"JetBrains Mono\", monospace', fontWeight: 600 }}>
@@ -636,7 +636,7 @@ export default function ChangeRequestsPage() {
         title={selectedCR?.pm_changerequesttitle ?? ''}
         subtitle={selectedCR && (
           <>
-            <Chip label={STATUS_LABELS[String(selectedCR.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(selectedCR.pm_status ?? '')] ?? 'default'} size="small" variant={String(selectedCR.pm_status) === '0' ? 'filled' : 'outlined'} sx={{ fontWeight: 600, borderRadius: 8 }} />
+            <StatusTag label={STATUS_LABELS[String(selectedCR.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(selectedCR.pm_status ?? '')] ?? 'default'} variant={String(selectedCR.pm_status) === '0' ? 'filled' : 'filled'} />
             {selectedCR.pm_changerequestreference && (
               <Typography variant="body2" color="text.secondary" sx={{ ml: 1, display: 'inline', fontFamily: '\"JetBrains Mono\", monospace' }}>
                 {selectedCR.pm_changerequestreference}
@@ -734,7 +734,7 @@ export default function ChangeRequestsPage() {
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 2 }}>
                     <Typography variant="caption" color="text.secondary">Baseline Updated:</Typography>
-                    <Chip label={selectedCR.pm_baselineupdated ? 'Yes' : 'No'} color={selectedCR.pm_baselineupdated ? 'warning' : 'default'} size="small" sx={{ fontWeight: 600, borderRadius: 8 }} />
+                    <StatusTag label={selectedCR.pm_baselineupdated ? 'Yes' : 'No'} color={selectedCR.pm_baselineupdated ? 'warning' : 'default'} />
                   </Box>
                 </Paper>
 
