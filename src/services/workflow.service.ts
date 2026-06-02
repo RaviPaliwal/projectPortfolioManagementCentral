@@ -3,6 +3,12 @@ import {
   Pm_workflowinstancesService,
   Pm_workflowapprovalstepsService,
   Pm_workflowsteptemplatesService,
+  Pm_projectsService,
+  Pm_programmesService,
+  Pm_portfoliosService,
+  Pm_changerequestsService,
+  Pm_budgetlinesService,
+  Pm_initiativesService,
 } from '@/generated'
 import type { Pm_workflows } from '@/generated/models/Pm_workflowsModel'
 import type { Pm_workflowinstances } from '@/generated/models/Pm_workflowinstancesModel'
@@ -14,6 +20,8 @@ import type {
   WorkflowInstanceModel,
   WorkflowApprovalStepModel,
   WorkflowStepTemplateModel,
+  WorkflowConfig,
+  WorkflowPostApprovalAction,
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from '@/services/common'
 import { fetchSystemUsers, fetchOwnerTeams} from '@/services/team.service'
@@ -406,6 +414,133 @@ export async function startWorkflowForEntity(
   return mapWorkflowInstance(instance)
 }
 
+/**
+ * Generic helper to update a field on any supported entity.
+ */
+async function updateEntityField(entityType: string, entityId: string, field: string, value: any): Promise<void> {
+  const payload = { [field]: value }
+  const normalizedId = normalizeLookupId(entityId)
+  if (!normalizedId) return
+
+  try {
+    switch (entityType.toLowerCase()) {
+      case 'project':
+      case 'pm_project':
+        await Pm_projectsService.update(normalizedId, payload as any)
+        break
+      case 'programme':
+      case 'pm_programme':
+        await Pm_programmesService.update(normalizedId, payload as any)
+        break
+      case 'portfolio':
+      case 'pm_portfolio':
+        await Pm_portfoliosService.update(normalizedId, payload as any)
+        break
+      case 'changerequest':
+      case 'pm_changerequest':
+        await Pm_changerequestsService.update(normalizedId, payload as any)
+        break
+      case 'budgetline':
+      case 'pm_budgetline':
+        await Pm_budgetlinesService.update(normalizedId, payload as any)
+        break
+      case 'initiative':
+      case 'pm_initiative':
+        await Pm_initiativesService.update(normalizedId, payload as any)
+        break
+      default:
+        console.warn(`[WorkflowEngine] Unsupported entity type for automated update: ${entityType}`)
+    }
+  } catch (err) {
+    console.error(`[WorkflowEngine] Failed to update ${entityType} ${entityId}:`, err)
+  }
+}
+
+/**
+ * Parses and executes actions defined in the workflow configuration.
+ */
+async function executePostApprovalActions(
+  actions: WorkflowPostApprovalAction[] | undefined,
+  entityType?: string,
+  entityId?: string
+): Promise<void> {
+  if (!actions || !entityType || !entityId) return
+  
+  for (const action of actions) {
+    if (action.field && action.value !== undefined) {
+      await updateEntityField(entityType, entityId, action.field, action.value)
+    }
+  }
+}
+
+/**
+ * Fetches the full data for any supported entity.
+ */
+async function fetchEntityData(entityType: string, entityId: string): Promise<any> {
+  const normalizedId = normalizeLookupId(entityId)
+  if (!normalizedId) return null
+
+  try {
+    let result: any
+    switch (entityType.toLowerCase()) {
+      case 'project':
+      case 'pm_project':
+        result = await Pm_projectsService.get(normalizedId)
+        break
+      case 'programme':
+      case 'pm_programme':
+        result = await Pm_programmesService.get(normalizedId)
+        break
+      case 'portfolio':
+      case 'pm_portfolio':
+        result = await Pm_portfoliosService.get(normalizedId)
+        break
+      case 'changerequest':
+      case 'pm_changerequest':
+        result = await Pm_changerequestsService.get(normalizedId)
+        break
+      case 'budgetline':
+      case 'pm_budgetline':
+        result = await Pm_budgetlinesService.get(normalizedId)
+        break
+      default:
+        console.warn(`[WorkflowEngine] Unsupported entity type for data fetch: ${entityType}`)
+        return null
+    }
+    return unwrapSingle<any>(result)
+  } catch (err) {
+    console.error(`[WorkflowEngine] Failed to fetch entity data for condition evaluation:`, err)
+    return null
+  }
+}
+
+/**
+ * Evaluates a JSON condition against entity data.
+ * Simple format: { field: string, operator: 'gt'|'lt'|'eq'|'ne'|'contains', value: any }
+ */
+function evaluateCondition(data: any, conditionJson?: string): boolean {
+  if (!conditionJson || conditionJson.trim() === '') return true
+  try {
+    const config = JSON.parse(conditionJson)
+    if (!config || !config.field) return true
+
+    const actualValue = data[config.field]
+    const targetValue = config.value
+
+    switch (config.operator) {
+      case 'eq': return actualValue == targetValue
+      case 'ne': return actualValue != targetValue
+      case 'gt': return Number(actualValue) > Number(targetValue)
+      case 'lt': return Number(actualValue) < Number(targetValue)
+      case 'contains': return String(actualValue).toLowerCase().includes(String(targetValue).toLowerCase())
+      default: return true
+    }
+  } catch (e) {
+    console.error('[WorkflowEngine] Condition evaluation error:', e)
+    return true // Default to true on error to avoid blocking workflow
+  }
+}
+
 export async function approveWorkflowStep(
   stepId: string,
   approverName: string,
@@ -413,6 +548,8 @@ export async function approveWorkflowStep(
 ): Promise<boolean> {
   try {
     const now = new Date().toISOString()
+    
+    // 1. Update the current step to Approved
     await Pm_workflowapprovalstepsService.update(stepId, {
       pm_decisionstatus: 0,
       pm_decisiondate: now,
@@ -420,47 +557,100 @@ export async function approveWorkflowStep(
       pm_approvername: approverName,
     } as any)
 
+    // 2. Get step details to find the instance and current order
     const stepResult = await Pm_workflowapprovalstepsService.get(stepId, {
       select: ['pm_workflowapprovalstepid', 'pm_steporder', 'pm_stepname',
                '_pm_workflowinstancelookup_value', '_pm_workflowtemplate_value'],
     })
     const step = unwrapSingle<Pm_workflowapprovalsteps>(stepResult)
-    if (!step) return true
+    if (!step || !step._pm_workflowinstancelookup_value) return true
 
     const instanceLookup = step._pm_workflowinstancelookup_value
-    if (!instanceLookup) return true
+    const workflowTemplateId = step._pm_workflowtemplate_value
 
+    // 3. Get instance details for entity info
     const instanceResult = await Pm_workflowinstancesService.get(instanceLookup, {
-      select: ['pm_workflowinstanceid', 'pm_currentstep', 'pm_status', 'pm_workflowtemplate'],
+      select: ['pm_workflowinstanceid', 'pm_currentstep', 'pm_status', 'pm_entityid', 'pm_entitytype', '_pm_workflowlookup_value'],
     })
     const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
     if (!instance) return true
 
+    const finalWorkflowTemplateId = workflowTemplateId || instance._pm_workflowlookup_value
     const currentStepOrder = step.pm_steporder ?? 1
 
-    const nextStepsResult = await Pm_workflowapprovalstepsService.getAll({
-      filter: `_pm_workflowinstancelookup_value eq '${normalizeLookupId(instanceLookup)}' and pm_steporder gt ${currentStepOrder}`,
-      select: ['pm_workflowapprovalstepid', 'pm_steporder'],
-      orderBy: ['pm_steporder asc'],
-      top: 1,
-    })
-    const nextSteps = unwrapList<Pm_workflowapprovalsteps>(nextStepsResult)
+    // 4. Fetch entity data for condition evaluation
+    const entityData = await fetchEntityData(instance.pm_entitytype ?? '', instance.pm_entityid ?? '')
 
-    if (nextSteps.length > 0) {
-      const nextStep = nextSteps[0]
-      await Pm_workflowapprovalstepsService.update(nextStep.pm_workflowapprovalstepid!, {
-        pm_decisionstatus: 1,
+    // 5. Fetch all remaining steps for this instance
+    const allStepsResult = await Pm_workflowapprovalstepsService.getAll({
+      filter: `_pm_workflowinstancelookup_value eq '${normalizeLookupId(instanceLookup)}' and pm_steporder gt ${currentStepOrder}`,
+      select: ['pm_workflowapprovalstepid', 'pm_steporder', 'pm_stepname'],
+      orderBy: ['pm_steporder asc'],
+      top: 100,
+    })
+    const remainingSteps = unwrapList<Pm_workflowapprovalsteps>(allStepsResult)
+
+    // 6. Fetch step templates to get conditions
+    let stepTemplates: WorkflowStepTemplateModel[] = []
+    if (finalWorkflowTemplateId) {
+      stepTemplates = await fetchWorkflowStepTemplates(finalWorkflowTemplateId)
+    }
+
+    // 7. Route to the next valid step, skipping those with unmet conditions
+    let nextStepToActivate: Pm_workflowapprovalsteps | null = null
+    const stepsToSkip: string[] = []
+
+    for (const s of remainingSteps) {
+      const tpl = stepTemplates.find(t => t.pm_steporder === s.pm_steporder)
+      const conditionMet = evaluateCondition(entityData, tpl?.pm_conditionsjson)
+      
+      if (conditionMet) {
+        nextStepToActivate = s
+        break
+      } else {
+        stepsToSkip.push(s.pm_workflowapprovalstepid!)
+      }
+    }
+
+    // 8. Execute skips
+    for (const skipId of stepsToSkip) {
+      await Pm_workflowapprovalstepsService.update(skipId, {
+        pm_decisionstatus: 0, // Mark as "Approved" (implicitly skipped)
+        pm_decisionnotes: 'Auto-skipped: conditions not met.',
+        pm_decisiondate: now,
+      } as any)
+    }
+
+    if (nextStepToActivate) {
+      // Activate the next valid step
+      await Pm_workflowapprovalstepsService.update(nextStepToActivate.pm_workflowapprovalstepid!, {
+        pm_decisionstatus: 1, // Pending
       } as any)
 
       await Pm_workflowinstancesService.update(instanceLookup, {
-        pm_currentstep: currentStepOrder + 1,
+        pm_currentstep: nextStepToActivate.pm_steporder,
       } as any)
     } else {
+      // ═══ WORKFLOW COMPLETE (All remaining skipped or none left) ═══
       await Pm_workflowinstancesService.update(instanceLookup, {
-        pm_status: 0,
+        pm_status: 0, // Completed
         pm_completeddate: now,
-        pm_currentstep: currentStepOrder,
+        pm_currentstep: remainingSteps.length > 0 ? remainingSteps[remainingSteps.length-1].pm_steporder : currentStepOrder,
       } as any)
+
+      // Execute "On Complete" Actions
+      if (finalWorkflowTemplateId) {
+        try {
+          const tplResult = await Pm_workflowsService.get(finalWorkflowTemplateId, { select: ['pm_triggercondition'] })
+          const tpl = unwrapSingle<Pm_workflows>(tplResult)
+          if (tpl?.pm_triggercondition) {
+            const config = JSON.parse(tpl.pm_triggercondition) as WorkflowConfig
+            await executePostApprovalActions(config.onComplete, instance.pm_entitytype, instance.pm_entityid)
+          }
+        } catch (e) {
+          console.warn('[WorkflowEngine] Failed to execute completion actions:', e)
+        }
+      }
     }
 
     return true
@@ -486,19 +676,39 @@ export async function rejectWorkflowStep(
     } as any)
 
     const stepResult = await Pm_workflowapprovalstepsService.get(stepId, {
-      select: ['_pm_workflowinstancelookup_value'],
+      select: ['_pm_workflowinstancelookup_value', '_pm_workflowtemplate_value'],
     })
     const step = unwrapSingle<Pm_workflowapprovalsteps>(stepResult)
     const instanceLookup = step?._pm_workflowinstancelookup_value
 
     if (instanceLookup) {
+      const instanceResult = await Pm_workflowinstancesService.get(instanceLookup, {
+        select: ['pm_workflowinstanceid', 'pm_entityid', 'pm_entitytype', '_pm_workflowlookup_value'],
+      })
+      const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
+
       await Pm_workflowinstancesService.update(instanceLookup, {
         pm_status: 0,
         pm_completeddate: now,
-      } as any)
-      await Pm_workflowinstancesService.update(instanceLookup, {
         statecode: 1,
       } as any)
+
+      // Execute "On Reject" Actions
+      if (instance) {
+        const templateId = step?._pm_workflowtemplate_value || instance._pm_workflowlookup_value
+        if (templateId) {
+          try {
+            const tplResult = await Pm_workflowsService.get(templateId, { select: ['pm_triggercondition'] })
+            const tpl = unwrapSingle<Pm_workflows>(tplResult)
+            if (tpl?.pm_triggercondition) {
+              const config = JSON.parse(tpl.pm_triggercondition) as WorkflowConfig
+              await executePostApprovalActions(config.onReject, instance.pm_entitytype, instance.pm_entityid)
+            }
+          } catch (e) {
+            console.warn('[WorkflowEngine] Failed to execute rejection actions:', e)
+          }
+        }
+      }
     }
 
     return true

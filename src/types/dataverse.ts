@@ -557,6 +557,16 @@ export interface HolidayModel {
   statecode?: number
 }
 
+export interface WorkflowPostApprovalAction {
+  field: string
+  value: any
+}
+
+export interface WorkflowConfig {
+  onComplete?: WorkflowPostApprovalAction[]
+  onReject?: WorkflowPostApprovalAction[]
+}
+
 export interface WorkflowStepTemplateModel {
   pm_workflowsteptemplateid?: string
   pm_workflowname?: string
