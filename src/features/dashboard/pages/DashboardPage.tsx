@@ -102,7 +102,6 @@ export default function DashboardPage() {
 
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true)
-    console.log('[DashboardPage] load dashboard data start')
     try {
       const [dashboard, activeProjects, pendingApprovals, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData] = await Promise.all([
         fetchDashboardMetrics(),
@@ -120,7 +119,6 @@ export default function DashboardPage() {
         fetchAllRisks(),
         fetchAllIssues(),
       ])
-      console.log('[DashboardPage] load dashboard data success')
       setMetrics(dashboard)
       setProjects(activeProjects.slice(0, 6))
       setApprovals(pendingApprovals)

@@ -34,7 +34,7 @@ import { createWorkflow, createWorkflowStepTemplate, fetchOwnerTeams } from '@/s
 import type { TeamOption } from '@/services'
 import { useUser, type SystemUser } from '@/context/UserContext'
 import type { WorkflowStepTemplateModel } from '@/types/dataverse'
-import { StatusTag, PageHeader } from '@/components/common'
+import { StatusTag, PageHeader, ConditionBuilder, PostApprovalActionBuilder } from '@/components/common'
 
 const STEPS = ['Basic Information', 'Approval Steps', 'Workflow Settings', 'Review & Create']
 
@@ -74,6 +74,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
     pm_workflowdescription: '',
     pm_module: '',
     pm_isactive: true,
+    pm_triggercondition: '', // JSON string for onComplete/onReject actions
   })
 
   // Steps State
@@ -83,7 +84,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
   const [stepFormData, setStepFormData] = useState({
     pm_workflowname: '', pm_steporder: 1, pm_assignetype: 0, pm_assigneeid: '',
     pm_displayname: '', pm_description: '', pm_sladays: 5, pm_allowdelegation: false,
-    pm_approvalrequired: true, pm_isparallel: false,
+    pm_approvalrequired: true, pm_isparallel: false, pm_conditionsjson: '',
   })
 
   const u = useCallback((k: string, v: unknown) => setF((p) => ({ ...p, [k]: v })), [])
@@ -100,6 +101,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
       pm_module: f.pm_module,
       pm_isactive: f.pm_isactive,
       pm_workflowstatus: f.pm_isactive ? 0 : 1,
+      pm_triggercondition: f.pm_triggercondition,
       pm_version: 1,
     }
     try {
@@ -136,6 +138,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
       pm_workflowname: '', pm_steporder: stepTemplates.length + 1, pm_assignetype: 0,
       pm_assigneeid: '', pm_displayname: '', pm_description: '', pm_sladays: 5,
       pm_allowdelegation: false, pm_approvalrequired: true, pm_isparallel: false,
+      pm_conditionsjson: '',
     })
     setShowStepForm(true)
   }
@@ -154,6 +157,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
       pm_allowdelegation: !!s.pm_allowdelegation,
       pm_approvalrequired: s.pm_approvalrequired !== false,
       pm_isparallel: !!s.pm_isparallel,
+      pm_conditionsjson: s.pm_conditionsjson || '',
     })
     setShowStepForm(true)
   }
@@ -354,6 +358,18 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
                   sx={{ m: 0, alignItems: 'flex-start' }}
                 />
               </Paper>
+
+              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.15 }}>
+                <Typography variant="body2" sx={{ fontWeight: 800, mb: 1 }}>Post-Approval Actions</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                  Define automated actions to trigger when the workflow completes or is rejected.
+                </Typography>
+                <PostApprovalActionBuilder 
+                  moduleName={f.pm_module}
+                  value={f.pm_triggercondition}
+                  onChange={(val) => u('pm_triggercondition', val)}
+                />
+              </Paper>
             </Stack>
           </Box>
         )}
@@ -532,6 +548,18 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
               control={<Switch checked={stepFormData.pm_approvalrequired} onChange={(e) => setStepFormData(p => ({ ...p, pm_approvalrequired: e.target.checked }))} />}
               label={<Typography variant="body2">Approval Required (vs. Notification Only)</Typography>}
             />
+            
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Routing Conditions (Optional)</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                If conditions are not met, this step will be automatically skipped.
+              </Typography>
+              <ConditionBuilder
+                moduleName={f.pm_module}
+                value={stepFormData.pm_conditionsjson}
+                onChange={(val) => setStepFormData(p => ({ ...p, pm_conditionsjson: val }))}
+              />
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>

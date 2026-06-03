@@ -168,16 +168,11 @@ export default function BudgetsPage() {
     setLoading(true)
     setError(null)
     try {
-      console.log('🔍 [BudgetsPage] Fetching data...')
       const [lines, sources, periods] = await Promise.all([
         fetchBudgetLines(),
         fetchFundingSources(),
         fetchFinancialPeriods(),
       ])
-      console.log('🔍 [BudgetsPage] Budget lines loaded:', lines?.length ?? 0, 'items')
-      if (lines?.length > 0) console.log('🔍 [BudgetsPage] Sample budget line:', JSON.stringify(lines[0], null, 2).slice(0, 500))
-      console.log('🔍 [BudgetsPage] Funding sources:', sources?.length ?? 0, 'items')
-      console.log('🔍 [BudgetsPage] Financial periods:', periods?.length ?? 0, 'items')
       setBudgetLines(lines)
       setFundingSources(sources)
       setFinancialPeriods(periods)

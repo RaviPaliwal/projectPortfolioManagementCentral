@@ -160,10 +160,7 @@ export default function IssuesPage() {
     setLoading(true)
     setError(null)
     try {
-      console.log('🔍 [IssuesPage] Fetching data...')
       const data = await fetchAllIssues()
-      console.log('🔍 [IssuesPage] Issues loaded:', data?.length ?? 0, 'items')
-      if (data?.length > 0) console.log('🔍 [IssuesPage] Sample issue:', JSON.stringify(data[0], null, 2).slice(0, 500))
       setIssues(data)
     } catch (err: any) {
       console.error('[IssuesPage] load error:', err)
