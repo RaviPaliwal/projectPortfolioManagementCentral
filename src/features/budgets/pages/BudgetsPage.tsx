@@ -52,7 +52,7 @@ import {
 } from '@/services'
 import type { BudgetLineModel, FundingSourceModel, FinancialPeriodModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 
@@ -106,10 +106,10 @@ const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', cu
 const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 
 const getVarianceColor = (variance?: number): string => {
-  if (variance == null) return '#64748b'
-  if (variance > 0) return '#22c55e' // Under budget — positive variance
-  if (variance < 0) return '#ef4444' // Over budget — negative variance
-  return '#64748b'
+  if (variance == null) return 'text.secondary'
+  if (variance > 0) return 'success.main' // Under budget — positive variance
+  if (variance < 0) return 'error.main' // Over budget — negative variance
+  return 'text.secondary'
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -204,35 +204,35 @@ export default function BudgetsPage() {
         value: `€${numberFormatter.format(totalBudget)}`,
         subtitle: 'Approved budget across all lines',
         icon: <AccountBalanceWalletIcon />,
-        color: '#0ea5e9',
+        color: 'primary.main',
       },
       {
         label: 'Total Revised',
         value: `€${numberFormatter.format(totalRevised)}`,
         subtitle: 'Revised budget across all lines',
         icon: <AssessmentIcon />,
-        color: '#6366f1',
+        color: 'primary.main',
       },
       {
         label: 'Actual Spend',
         value: `€${numberFormatter.format(totalActual)}`,
         subtitle: `${utilization}% of original budget utilized`,
         icon: <TrendingDownIcon />,
-        color: utilization > 85 ? '#ef4444' : utilization > 65 ? '#f59e0b' : '#22c55e',
+        color: utilization > 85 ? 'error.main' : utilization > 65 ? 'warning.main' : 'success.main',
       },
       {
         label: 'Committed Spend',
         value: `€${numberFormatter.format(totalCommitted)}`,
         subtitle: 'Purchase orders / commitments',
         icon: <AssignmentIcon />,
-        color: '#8b5cf6',
+        color: 'secondary.main',
       },
       {
         label: 'Budget Remaining',
         value: `€${numberFormatter.format(Math.max(0, budgetRemaining))}`,
         subtitle: `${Math.max(0, budgetRemaining) >= 0 ? 'Revised budget less actual + committed' : 'Exceeded'}`,
         icon: <SavingsIcon />,
-        color: budgetRemaining < 0 ? '#ef4444' : '#22c55e',
+        color: budgetRemaining < 0 ? 'error.main' : 'success.main',
       },
       {
         label: 'Net Variance',
@@ -496,37 +496,37 @@ export default function BudgetsPage() {
           <Table stickyHeader size="small" sx={{ minWidth: 1100 }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Budget Line
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'category'} direction={sort.field === 'category' ? sort.dir : 'asc'} onClick={() => handleSort('category')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Category
                   </TableSortLabel>
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'budget'} direction={sort.field === 'budget' ? sort.dir : 'asc'} onClick={() => handleSort('budget')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Approved Budget
                   </TableSortLabel>
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'revised'} direction={sort.field === 'revised' ? sort.dir : 'asc'} onClick={() => handleSort('revised')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Revised Budget
                   </TableSortLabel>
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'actual'} direction={sort.field === 'actual' ? sort.dir : 'asc'} onClick={() => handleSort('actual')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Actual Spend
                   </TableSortLabel>
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'variance'} direction={sort.field === 'variance' ? sort.dir : 'asc'} onClick={() => handleSort('variance')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Variance
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   Entity
                 </TableCell>
               </TableRow>
@@ -543,7 +543,7 @@ export default function BudgetsPage() {
                     onClick={() => handleRowClick(line)}
                     sx={{
                       cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                       '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
@@ -551,7 +551,7 @@ export default function BudgetsPage() {
                   >
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', fontSize: fontSizes.sm, fontWeight: 700 }}>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
                           {(line.pm_budgetlinename ?? 'B').charAt(0).toUpperCase()}
                         </Avatar>
                         <Box>
@@ -594,10 +594,10 @@ export default function BudgetsPage() {
                             width: '100%',
                             maxWidth: 100,
                             height: 4,
-                            borderRadius: 1.15,
+                            borderRadius: 1.5,
                             bgcolor: isDark ? '#334155' : '#e2e8f0',
                             '& .MuiLinearProgress-bar': {
-                              bgcolor: ut > 85 ? '#ef4444' : ut > 65 ? '#f59e0b' : '#22c55e',
+                              bgcolor: ut > 85 ? 'error.main' : ut > 65 ? 'warning.main' : 'success.main',
                             },
                           }}
                         />
@@ -605,7 +605,7 @@ export default function BudgetsPage() {
                     </TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
-                        {isOverBudget && <WarningAmberIcon sx={{ fontSize: 16, color: '#ef4444' }} />}
+                        {isOverBudget && <WarningAmberIcon sx={{ fontSize: 16, color: 'error.main' }} />}
                         <Typography
                           variant="body2"
                           sx={{
@@ -658,39 +658,35 @@ export default function BudgetsPage() {
       <DetailDrawer
         open={!!selectedBudget}
         onClose={handleCloseDetail}
-        icon={<AccountBalanceWalletIcon sx={{ color: '#0ea5e9', fontSize: 22 }} />}
+        icon={<AccountBalanceWalletIcon sx={{ color: 'primary.main', fontSize: fontSizes.xl }} />}
         title={selectedBudget?.pm_budgetlinename ?? ''}
         subtitle={selectedBudget && (
-          <>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <StatusTag
               label={CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] ?? 'Unknown'}
               color={CATEGORY_COLORS[String(selectedBudget.pm_costcategory ?? '')] ?? 'default'}
             />
             {selectedBudget.pm_fundingsourcename && (
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 1, display: 'inline' }}>
-                <SourceIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+              <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                <SourceIcon sx={{ fontSize: fontSizes.sm, mr: 0.5 }} />
                 {selectedBudget.pm_fundingsourcename}
               </Typography>
             )}
-          </>
+          </Box>
         )}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => selectedBudget?.pm_budgetlineid && setDeleteConfirm(selectedBudget.pm_budgetlineid)}
-              sx={{ borderRadius: 1.15 }}
-            >
-              <DeleteIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-            <IconButton
-              size="small"
+            <ActionIcon
+              icon={<EditIcon />}
               onClick={() => selectedBudget && openEditForm(selectedBudget)}
-              sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}
-            >
-              <EditIcon sx={{ fontSize: 20 }} />
-            </IconButton>
+              label="Edit Budget"
+            />
+            <ActionIcon
+              icon={<DeleteIcon />}
+              onClick={() => selectedBudget?.pm_budgetlineid && setDeleteConfirm(selectedBudget.pm_budgetlineid)}
+              label="Delete Budget"
+              color="error"
+            />
           </Box>
         }
         tabs={[
@@ -706,9 +702,9 @@ export default function BudgetsPage() {
             <TabPanel value={detailTab} index={0} pt={0}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 {/* Budget Utilization */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <AccountBalanceWalletIcon sx={{ fontSize: 16 }} /> Budget Utilization
+                    <AccountBalanceWalletIcon sx={{ fontSize: fontSizes.md }} /> Budget Utilization
                   </Typography>
                   <Box sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
@@ -724,17 +720,17 @@ export default function BudgetsPage() {
                       value={budgetUtilization(selectedBudget)}
                       sx={{
                         height: 8,
-                        borderRadius: 1.15,
-                        bgcolor: isDark ? '#334155' : '#e2e8f0',
+                        borderRadius: 1.5,
+                        bgcolor: isDark ? 'divider' : '#e2e8f0',
                         '& .MuiLinearProgress-bar': {
-                          bgcolor: budgetUtilization(selectedBudget) > 85 ? '#ef4444'
-                            : budgetUtilization(selectedBudget) > 65 ? '#f59e0b' : '#22c55e',
+                          bgcolor: budgetUtilization(selectedBudget) > 85 ? 'error.main'
+                            : budgetUtilization(selectedBudget) > 65 ? 'warning.main' : 'success.main',
                         },
                       }}
                     />
                   </Box>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #0ea5e9' }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                         Revised Budget
                       </Typography>
@@ -742,7 +738,7 @@ export default function BudgetsPage() {
                         {selectedBudget.pm_revisedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_revisedbudgeteur) : '—'}
                       </Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #22c55e' }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: (theme) => `3px solid ${theme.palette.success.main}` }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                         Actual Spend
                       </Typography>
@@ -754,26 +750,26 @@ export default function BudgetsPage() {
                 </Paper>
 
                 {/* Variance Display */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <CurrencyExchangeIcon sx={{ fontSize: 16 }} /> Variance Analysis
+                    <CurrencyExchangeIcon sx={{ fontSize: fontSizes.md }} /> Variance Analysis
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
                     <Paper
                       variant="outlined"
                       sx={{
                         p: 2,
-                        borderRadius: 1.15,
+                        borderRadius: 1.5,
                         textAlign: 'center',
-                        borderColor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0 ? '#22c55e' : '#ef4444',
+                        borderColor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0 ? 'success.main' : 'error.main',
                         bgcolor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
                           ? (isDark ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.05)')
                           : (isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)'),
                       }}
                     >
                       {selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
-                        ? <VerifiedIcon sx={{ fontSize: 24, color: '#22c55e', mb: 0.5 }} />
-                        : <WarningAmberIcon sx={{ fontSize: 24, color: '#ef4444', mb: 0.5 }} />
+                        ? <VerifiedIcon sx={{ fontSize: 24, color: 'success.main', mb: 0.5 }} />
+                        : <WarningAmberIcon sx={{ fontSize: 24, color: 'error.main', mb: 0.5 }} />
                       }
                       <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: getVarianceColor(selectedBudget.pm_varianceeur) }}>
                         {selectedBudget.pm_varianceeur != null
@@ -782,13 +778,13 @@ export default function BudgetsPage() {
                       </Typography>
                       <Typography variant="caption" color="text.secondary">Variance</Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, textAlign: 'center' }}>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center' }}>
                       <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
                         {selectedBudget.pm_committedspendeur != null ? currencyFormatter.format(selectedBudget.pm_committedspendeur) : '—'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">Committed Spend</Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, textAlign: 'center' }}>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center' }}>
                       <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
                         {selectedBudget.pm_forecastspendeur != null ? currencyFormatter.format(selectedBudget.pm_forecastspendeur) : '—'}
                       </Typography>
@@ -796,13 +792,13 @@ export default function BudgetsPage() {
                     </Paper>
                   </Box>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate at Completion</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
                         {selectedBudget.pm_estimateatcompletioneur != null ? currencyFormatter.format(selectedBudget.pm_estimateatcompletioneur) : '—'}
                       </Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate to Complete</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
                         {selectedBudget.pm_estimatetocompleteeur != null ? currencyFormatter.format(selectedBudget.pm_estimatetocompleteeur) : '—'}
@@ -815,9 +811,9 @@ export default function BudgetsPage() {
 
             {/* Details Tab */}
             <TabPanel value={detailTab} index={1} pt={0}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <CategoryIcon sx={{ fontSize: 16 }} /> Line Details
+                  <CategoryIcon sx={{ fontSize: fontSizes.md }} /> Line Details
                 </Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                   <Box>
@@ -872,11 +868,11 @@ export default function BudgetsPage() {
         maxWidth="md"
         fullWidth
         slotProps={{
-          paper: { sx: { borderRadius: 1.15 } },
+          paper: { sx: { borderRadius: 1.5 } },
         }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.15 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: 1.5 }}>
             {editingBudget ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <AccountBalanceWalletIcon sx={{ fontSize: 18, color: '#fff' }} />}
           </Avatar>
           {editingBudget ? 'Edit Budget Line' : 'Add Budget Line'}
@@ -888,7 +884,7 @@ export default function BudgetsPage() {
 
           {/* Basic Information */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <AccountBalanceWalletIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
+            <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
               Basic Information
             </Typography>
@@ -903,7 +899,7 @@ export default function BudgetsPage() {
                 size="small"
                 value={formData.pm_budgetlinename}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_budgetlinename: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -913,7 +909,7 @@ export default function BudgetsPage() {
                   value={formData.pm_costcategory}
                   label="Cost Category"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_costcategory: e.target.value as number }))}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 1.5 }}
                 >
                   <MenuItem value={0}>Staff</MenuItem>
                   <MenuItem value={1}>Contractors</MenuItem>
@@ -930,7 +926,7 @@ export default function BudgetsPage() {
                 value={formData.pm_portfolio}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_portfolio: e.target.value }))}
                 placeholder="e.g., Corporate Portfolio"
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -941,7 +937,7 @@ export default function BudgetsPage() {
                 value={formData.pm_programme}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_programme: e.target.value }))}
                 placeholder="e.g., Digital Transformation"
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -952,7 +948,7 @@ export default function BudgetsPage() {
                 value={formData.pm_projectcode}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_projectcode: e.target.value }))}
                 placeholder="e.g., PRJ-001"
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -963,14 +959,14 @@ export default function BudgetsPage() {
                 value={formData.pm_fundingsourcename}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_fundingsourcename: e.target.value }))}
                 placeholder="e.g., EU Grant, Capital"
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
           </Grid>
 
           {/* Financial Figures */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <CurrencyExchangeIcon sx={{ fontSize: 18, color: '#22c55e' }} />
+            <CurrencyExchangeIcon sx={{ fontSize: 18, color: 'success.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
               Financial Figures (EUR)
             </Typography>
@@ -985,7 +981,7 @@ export default function BudgetsPage() {
                 size="small"
                 value={formData.pm_approvedbudgeteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_approvedbudgeteur: Number(e.target.value) }))}
-                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
@@ -996,7 +992,7 @@ export default function BudgetsPage() {
                 size="small"
                 value={formData.pm_revisedbudgeteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_revisedbudgeteur: Number(e.target.value) }))}
-                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
@@ -1007,7 +1003,7 @@ export default function BudgetsPage() {
                 size="small"
                 value={formData.pm_actualspendeur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_actualspendeur: Number(e.target.value) }))}
-                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
@@ -1018,7 +1014,7 @@ export default function BudgetsPage() {
                 size="small"
                 value={formData.pm_committedspendeur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_committedspendeur: Number(e.target.value) }))}
-                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
@@ -1029,7 +1025,7 @@ export default function BudgetsPage() {
                 size="small"
                 value={formData.pm_forecastspendeur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_forecastspendeur: Number(e.target.value) }))}
-                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
@@ -1040,14 +1036,14 @@ export default function BudgetsPage() {
                 size="small"
                 value={computeVariance(formData)}
                 disabled
-                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
           </Grid>
 
           {/* Notes */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <NotesIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
+            <NotesIcon sx={{ fontSize: 18, color: 'secondary.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
               Notes
             </Typography>
@@ -1064,20 +1060,20 @@ export default function BudgetsPage() {
                 value={formData.pm_notes}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_notes: e.target.value }))}
                 placeholder="Optional notes about this budget line..."
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             Cancel
           </Button>
           <Button
             onClick={handleSaveBudget}
             variant="contained"
             disabled={!formData.pm_budgetlinename.trim() || actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
+            sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
           >
             {actionLoading ? 'Saving...' : editingBudget ? 'Update Budget Line' : 'Create Budget Line'}
           </Button>
@@ -1091,7 +1087,7 @@ export default function BudgetsPage() {
         maxWidth="xs"
         fullWidth
         slotProps={{
-          paper: { sx: { borderRadius: 1.15 } },
+          paper: { sx: { borderRadius: 1.5 } },
         }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Budget Line</DialogTitle>
@@ -1101,10 +1097,10 @@ export default function BudgetsPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             Cancel
           </Button>
-          <Button onClick={handleDeleteBudget} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={handleDeleteBudget} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             {actionLoading ? 'Removing...' : 'Remove'}
           </Button>
         </DialogActions>

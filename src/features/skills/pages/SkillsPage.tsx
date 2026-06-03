@@ -58,7 +58,7 @@ import {
   deleteResourceSkill,
 } from '@/services/skill.service'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -215,28 +215,28 @@ export default function SkillsPage() {
         value: totalSkills,
         subtitle: 'In the skills catalog',
         icon: <PsychologyIcon />,
-        color: '#0ea5e9',
+        color: 'primary.main',
       },
       {
         label: 'Active',
         value: activeSkills,
         subtitle: `${totalSkills > 0 ? ((activeSkills / totalSkills) * 100).toFixed(0) : 0}% of catalog`,
         icon: <CheckCircleIcon />,
-        color: '#22c55e',
+        color: 'success.main',
       },
       {
         label: 'Resource-Skill Mappings',
         value: totalMappings,
         subtitle: 'Across all resources',
         icon: <LinkIcon />,
-        color: '#8b5cf6',
+        color: 'secondary.main',
       },
       {
         label: 'Certifications',
         value: certifiedSkills,
         subtitle: `${primarySkills > 0 ? primarySkills : 0} marked as primary skill`,
         icon: <WorkspacePremiumIcon />,
-        color: '#f59e0b',
+        color: 'warning.main',
       },
     ]
   }, [skills, resourceSkills])
@@ -463,11 +463,11 @@ export default function SkillsPage() {
   const getProficiencyColor = (level?: number | string): string => {
     const lvl = Number(level) || 0
     switch (lvl) {
-      case 0: return '#94a3b8'
-      case 1: return '#0ea5e9'
-      case 2: return '#8b5cf6'
-      case 3: return '#22c55e'
-      default: return '#94a3b8'
+      case 0: return 'text.disabled'
+      case 1: return 'primary.main'
+      case 2: return 'secondary.main'
+      case 3: return 'success.main'
+      default: return 'text.disabled'
     }
   }
 
@@ -539,7 +539,7 @@ export default function SkillsPage() {
             <Table stickyHeader size="small" sx={{ minWidth: 600 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     <TableSortLabel
                       active={skillSort.field === 'name'}
                       direction={skillSort.field === 'name' ? skillSort.dir : 'asc'}
@@ -549,7 +549,7 @@ export default function SkillsPage() {
                       Skill
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     <TableSortLabel
                       active={skillSort.field === 'category'}
                       direction={skillSort.field === 'category' ? skillSort.dir : 'asc'}
@@ -559,10 +559,10 @@ export default function SkillsPage() {
                       Category
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     Description
                   </TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     Status
                   </TableCell>
                 </TableRow>
@@ -575,7 +575,7 @@ export default function SkillsPage() {
                     onClick={() => setSelectedSkill(skill)}
                     sx={{
                       cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                       '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
@@ -583,7 +583,7 @@ export default function SkillsPage() {
                   >
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#8b5cf6', fontSize: fontSizes.sm, fontWeight: 700 }}>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
                           {(skill.pm_skillname ?? 'S').charAt(0).toUpperCase()}
                         </Avatar>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -643,7 +643,7 @@ export default function SkillsPage() {
         <DetailDrawer
           open={!!selectedSkill}
           onClose={() => setSelectedSkill(null)}
-          icon={<PsychologyIcon sx={{ color: '#8b5cf6', fontSize: 22 }} />}
+          icon={<PsychologyIcon sx={{ color: 'secondary.main', fontSize: 22 }} />}
           title={selectedSkill?.pm_skillname ?? ''}
           subtitle={selectedSkill && (
             <StatusTag
@@ -656,28 +656,25 @@ export default function SkillsPage() {
           )}
           headerActions={
             <Box sx={{ display: 'flex', gap: 0.5 }}>
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => { setDeleteType('skill'); selectedSkill?.pm_skillid && setDeleteConfirm(selectedSkill.pm_skillid) }}
-                sx={{ borderRadius: 1.15 }}
-              >
-                <DeleteIcon sx={{ fontSize: 20 }} />
-              </IconButton>
-              <IconButton
-                size="small"
+              <ActionIcon
+                icon={<EditIcon />}
                 onClick={() => selectedSkill && openEditSkill(selectedSkill)}
-                sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}
-              >
-                <EditIcon sx={{ fontSize: 20 }} />
-              </IconButton>
+                label="Edit Skill"
+                color="primary"
+              />
+              <ActionIcon
+                icon={<DeleteIcon />}
+                onClick={() => { setDeleteType('skill'); selectedSkill?.pm_skillid && setDeleteConfirm(selectedSkill.pm_skillid) }}
+                label="Delete Skill"
+                color="error"
+              />
             </Box>
           }
         >
           {selectedSkill && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {/* Skill Details */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <AutoAwesomeIcon sx={{ fontSize: 16 }} /> Skill Details
                 </Typography>
@@ -706,7 +703,7 @@ export default function SkillsPage() {
               </Paper>
 
               {/* Resource Count */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <PersonIcon sx={{ fontSize: 16 }} /> Resources with this Skill
                 </Typography>
@@ -744,10 +741,10 @@ export default function SkillsPage() {
           onClose={() => !actionLoading && setShowSkillForm(false)}
           maxWidth="sm"
           fullWidth
-          slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
+          slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
         >
           <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: '#8b5cf6', borderRadius: 1.15 }}>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', borderRadius: 1.5 }}>
               {editingSkill ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <PsychologyIcon sx={{ fontSize: 18, color: '#fff' }} />}
             </Avatar>
             {editingSkill ? 'Edit Skill' : 'Add New Skill'}
@@ -758,7 +755,7 @@ export default function SkillsPage() {
             </Typography>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <PsychologyIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
+              <PsychologyIcon sx={{ fontSize: 18, color: 'secondary.main' }} />
               <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
                 Skill Information
               </Typography>
@@ -773,7 +770,7 @@ export default function SkillsPage() {
                   size="small"
                   value={skillFormData.pm_skillname}
                   onChange={(e) => setSkillFormData((f) => ({ ...f, pm_skillname: e.target.value }))}
-                  slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -783,7 +780,7 @@ export default function SkillsPage() {
                     value={skillFormData.pm_skillcategory}
                     label="Category"
                     onChange={(e) => setSkillFormData((f) => ({ ...f, pm_skillcategory: e.target.value as number }))}
-                    sx={{ borderRadius: 1.15 }}
+                    sx={{ borderRadius: 1.5 }}
                   >
                     <MenuItem value={0}>Technical</MenuItem>
                     <MenuItem value={1}>Functional</MenuItem>
@@ -802,20 +799,20 @@ export default function SkillsPage() {
                   value={skillFormData.pm_skilldescription}
                   onChange={(e) => setSkillFormData((f) => ({ ...f, pm_skilldescription: e.target.value }))}
                   placeholder="Brief description of the skill and what it encompasses..."
-                  slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                 />
               </Grid>
             </Grid>
           </DialogContent>
           <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Button onClick={() => setShowSkillForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+            <Button onClick={() => setShowSkillForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
               Cancel
             </Button>
             <Button
               onClick={handleSaveSkill}
               variant="contained"
               disabled={!skillFormData.pm_skillname.trim() || actionLoading}
-              sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
+              sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
             >
               {actionLoading ? 'Saving...' : editingSkill ? 'Update Skill' : 'Create Skill'}
             </Button>
@@ -849,7 +846,7 @@ export default function SkillsPage() {
             <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     <TableSortLabel
                       active={rsSort.field === 'skill'}
                       direction={rsSort.field === 'skill' ? rsSort.dir : 'asc'}
@@ -859,7 +856,7 @@ export default function SkillsPage() {
                       Skill
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     <TableSortLabel
                       active={rsSort.field === 'resource'}
                       direction={rsSort.field === 'resource' ? rsSort.dir : 'asc'}
@@ -869,7 +866,7 @@ export default function SkillsPage() {
                       Resource
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     <TableSortLabel
                       active={rsSort.field === 'proficiency'}
                       direction={rsSort.field === 'proficiency' ? rsSort.dir : 'asc'}
@@ -879,7 +876,7 @@ export default function SkillsPage() {
                       Proficiency
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     <TableSortLabel
                       active={rsSort.field === 'experience'}
                       direction={rsSort.field === 'experience' ? rsSort.dir : 'asc'}
@@ -889,10 +886,10 @@ export default function SkillsPage() {
                       Years
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     Certification
                   </TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     Primary
                   </TableCell>
                 </TableRow>
@@ -903,7 +900,7 @@ export default function SkillsPage() {
                     key={rs.pm_resourceskillid}
                     hover
                     sx={{
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                       '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
@@ -911,7 +908,7 @@ export default function SkillsPage() {
                   >
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#8b5cf6', fontSize: fontSizes.sm, fontWeight: 700 }}>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
                           {(rs.pm_skillname ?? 'S').charAt(0).toUpperCase()}
                         </Avatar>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -946,7 +943,7 @@ export default function SkillsPage() {
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         {rs.pm_certified ? (
-                          <VerifiedIcon sx={{ fontSize: 16, color: '#22c55e' }} />
+                          <VerifiedIcon sx={{ fontSize: 16, color: 'success.main' }} />
                         ) : (
                           <SchoolIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
                         )}
@@ -957,7 +954,7 @@ export default function SkillsPage() {
                     </TableCell>
                     <TableCell align="center">
                       {rs.pm_primaryskill ? (
-                        <StarIcon sx={{ fontSize: 20, color: '#f59e0b' }} />
+                        <StarIcon sx={{ fontSize: 20, color: 'warning.main' }} />
                       ) : (
                         <Typography variant="caption" color="text.disabled">—</Typography>
                       )}
@@ -994,10 +991,10 @@ export default function SkillsPage() {
           onClose={() => !actionLoading && setShowRsForm(false)}
           maxWidth="sm"
           fullWidth
-          slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
+          slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
         >
           <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.15 }}>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: 1.5 }}>
               {editingRs ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <LinkIcon sx={{ fontSize: 18, color: '#fff' }} />}
             </Avatar>
             {editingRs ? 'Edit Mapping' : 'Add Resource-Skill Mapping'}
@@ -1008,7 +1005,7 @@ export default function SkillsPage() {
             </Typography>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <LinkIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
+              <LinkIcon sx={{ fontSize: 18, color: 'primary.main' }} />
               <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
                 Mapping Information
               </Typography>
@@ -1031,7 +1028,7 @@ export default function SkillsPage() {
                         _pm_skill_value: skillId,
                       }))
                     }}
-                    sx={{ borderRadius: 1.15 }}
+                    sx={{ borderRadius: 1.5 }}
                   >
                     {skills.map((s) => (
                       <MenuItem key={s.pm_skillid} value={s.pm_skillid ?? ''}>
@@ -1049,7 +1046,7 @@ export default function SkillsPage() {
                   value={rsFormData.pm_resourcename}
                   onChange={(e) => setRsFormData((f) => ({ ...f, pm_resourcename: e.target.value, _pm_resource_value: e.target.value }))}
                   placeholder="e.g., John Doe"
-                  slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
@@ -1059,7 +1056,7 @@ export default function SkillsPage() {
                     value={rsFormData.pm_proficiencylevel}
                     label="Proficiency Level"
                     onChange={(e) => setRsFormData((f) => ({ ...f, pm_proficiencylevel: e.target.value as number }))}
-                    sx={{ borderRadius: 1.15 }}
+                    sx={{ borderRadius: 1.5 }}
                   >
                     <MenuItem value={0}>Beginner</MenuItem>
                     <MenuItem value={1}>Intermediate</MenuItem>
@@ -1076,7 +1073,7 @@ export default function SkillsPage() {
                   size="small"
                   value={rsFormData.pm_yearsofexperience}
                   onChange={(e) => setRsFormData((f) => ({ ...f, pm_yearsofexperience: Number(e.target.value) }))}
-                  slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
@@ -1087,7 +1084,7 @@ export default function SkillsPage() {
                   value={rsFormData.pm_certificationname}
                   onChange={(e) => setRsFormData((f) => ({ ...f, pm_certificationname: e.target.value }))}
                   placeholder="e.g., AWS Certified"
-                  slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -1098,7 +1095,7 @@ export default function SkillsPage() {
                   size="small"
                   value={rsFormData.pm_certificationexpirydate}
                   onChange={(e) => setRsFormData((f) => ({ ...f, pm_certificationexpirydate: e.target.value }))}
-                  slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
+                  slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -1110,7 +1107,7 @@ export default function SkillsPage() {
                         value={rsFormData.pm_certified ? 'yes' : 'no'}
                         onChange={(e) => setRsFormData((f) => ({ ...f, pm_certified: e.target.value === 'yes' }))}
                         size="small"
-                        sx={{ borderRadius: 1.15, minWidth: 100 }}
+                        sx={{ borderRadius: 1.5, minWidth: 100 }}
                       >
                         <MenuItem value="yes">Yes</MenuItem>
                         <MenuItem value="no">No</MenuItem>
@@ -1124,7 +1121,7 @@ export default function SkillsPage() {
                         value={rsFormData.pm_primaryskill ? 'yes' : 'no'}
                         onChange={(e) => setRsFormData((f) => ({ ...f, pm_primaryskill: e.target.value === 'yes' }))}
                         size="small"
-                        sx={{ borderRadius: 1.15, minWidth: 100 }}
+                        sx={{ borderRadius: 1.5, minWidth: 100 }}
                       >
                         <MenuItem value="yes">Yes</MenuItem>
                         <MenuItem value="no">No</MenuItem>
@@ -1136,14 +1133,14 @@ export default function SkillsPage() {
             </Grid>
           </DialogContent>
           <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Button onClick={() => setShowRsForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+            <Button onClick={() => setShowRsForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
               Cancel
             </Button>
             <Button
               onClick={handleSaveRs}
               variant="contained"
               disabled={actionLoading}
-              sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
+              sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
             >
               {actionLoading ? 'Saving...' : editingRs ? 'Update Mapping' : 'Create Mapping'}
             </Button>
@@ -1157,7 +1154,7 @@ export default function SkillsPage() {
         onClose={() => !actionLoading && setDeleteConfirm(null)}
         maxWidth="xs"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
           {deleteType === 'skill' ? 'Remove Skill' : 'Remove Mapping'}
@@ -1170,10 +1167,10 @@ export default function SkillsPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             Cancel
           </Button>
-          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             {actionLoading ? 'Removing...' : 'Remove'}
           </Button>
         </DialogActions>

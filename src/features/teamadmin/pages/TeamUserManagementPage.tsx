@@ -194,8 +194,8 @@ export default function TeamUserManagementPage() {
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '300px 1fr' }, gap: 3, alignItems: 'flex-start' }}>
         
         {/* Left Column: Team List */}
-        <Paper sx={{ borderRadius: 1.15, overflow: 'hidden', height: 'fit-content' }}>
-          <Box sx={{ p: 2, bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
+        <Paper sx={{ borderRadius: 1.5, overflow: 'hidden', height: 'fit-content' }}>
+          <Box sx={{ p: 2, bgcolor: isDark ? 'background.paper' : 'background.default' }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
               <GroupIcon sx={{ fontSize: 18 }} /> Security Teams
             </Typography>
@@ -208,7 +208,7 @@ export default function TeamUserManagementPage() {
               slotProps={{
                 input: {
                   startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1, fontSize: 18 }} />,
-                  sx: { borderRadius: 1.15, bgcolor: theme.palette.background.paper }
+                  sx: { borderRadius: 1.5, bgcolor: theme.palette.background.paper }
                 }
               }}
             />
@@ -249,7 +249,7 @@ export default function TeamUserManagementPage() {
           {selectedTeam ? (
             <>
               {/* Add Member Card */}
-              <Card sx={{ borderRadius: 1.15, boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
+              <Card sx={{ borderRadius: 1.5, boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
                 <CardHeader 
                   title="Add New Member" 
                   titleTypographyProps={{ variant: 'subtitle1', fontWeight: 700 }}
@@ -267,13 +267,13 @@ export default function TeamUserManagementPage() {
                       isOptionEqualToValue={(option, value) => option.systemuserid === value.systemuserid}
                       renderInput={(params) => <TextField {...params} label="Select user to add" size="small" />}
                       disabled={saving}
-                      slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
+                      slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
                     />
                     <Button 
                       variant="contained" 
                       onClick={handleAddMember} 
                       disabled={!selectedUser || saving}
-                      sx={{ borderRadius: 1.15, fontWeight: 600, whiteSpace: 'nowrap', px: 3, height: 40 }}
+                      sx={{ borderRadius: 1.5, fontWeight: 600, whiteSpace: 'nowrap', px: 3, height: 40 }}
                     >
                       {saving ? 'Adding...' : 'Add to Team'}
                     </Button>
@@ -285,7 +285,7 @@ export default function TeamUserManagementPage() {
               </Card>
 
               {/* Members List Card */}
-              <Card sx={{ borderRadius: 1.15, boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
+              <Card sx={{ borderRadius: 1.5, boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
                 <CardHeader 
                   title={`Members of ${selectedTeam.name}`}
                   titleTypographyProps={{ variant: 'subtitle1', fontWeight: 700 }}
@@ -308,7 +308,7 @@ export default function TeamUserManagementPage() {
                           sx={{ '&:hover': { bgcolor: 'action.hover' } }}
                         >
                           <ListItemIcon>
-                            <Avatar sx={{ width: 36, height: 32, bgcolor: isDark ? 'grey.800' : 'grey.100', color: 'text.secondary', borderRadius: 1.15 }}>
+                            <Avatar sx={{ width: 36, height: 32, bgcolor: isDark ? 'grey.800' : 'grey.100', color: 'text.secondary', borderRadius: 1.5 }}>
                               <Typography variant="caption" sx={{ fontWeight: 700 }}>
                                 {(member.fullname || '?').charAt(0).toUpperCase()}
                               </Typography>
@@ -338,7 +338,7 @@ export default function TeamUserManagementPage() {
               </Card>
             </>
           ) : (
-            <Paper sx={{ p: 10, textAlign: 'center', borderRadius: 1.15, border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
+            <Paper sx={{ p: 10, textAlign: 'center', borderRadius: 1.5, border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
               <GroupIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
               <Typography variant="h6" color="text.secondary">Select a team from the left to manage members</Typography>
             </Paper>

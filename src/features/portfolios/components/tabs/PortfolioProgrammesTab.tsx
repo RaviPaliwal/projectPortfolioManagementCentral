@@ -19,7 +19,7 @@ export const PortfolioProgrammesTab: React.FC<PortfolioProgrammesTabProps> = ({
       {programmes.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {programmes.map((prog) => (
-            <Paper key={prog.pm_programmeid} variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
+            <Paper key={prog.pm_programmeid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>

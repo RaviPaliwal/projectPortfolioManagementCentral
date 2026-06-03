@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import {
   Box,
-  Button,
   Typography,
   Dialog,
   DialogTitle,
@@ -13,6 +12,7 @@ import {
 import SendIcon from '@mui/icons-material/Send'
 import ApproveIcon from '@mui/icons-material/ThumbUp'
 import RejectIcon from '@mui/icons-material/ThumbDown'
+import { ActionIcon, Button } from '@/components/common'
 import { formatDate } from '@/utils/formatters'
 
 interface TimesheetStatusControlsProps {
@@ -51,42 +51,28 @@ export function TimesheetStatusControls({
   return (
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
       {isDraft && (
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<SendIcon />}
+        <ActionIcon
+          icon={<SendIcon />}
           onClick={() => onStatusUpdate(1)}
-          disabled={loading}
-          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, whiteSpace: 'nowrap' }}
-        >
-          {loading ? 'Submitting...' : 'Submit'}
-        </Button>
+          label="Submit Timesheet"
+          color="primary"
+        />
       )}
 
       {isSubmitted && (
         <>
-          <Button
-            variant="contained"
-            size="small"
-            color="success"
-            startIcon={<ApproveIcon />}
+          <ActionIcon
+            icon={<ApproveIcon />}
             onClick={() => onStatusUpdate(0)}
-            disabled={loading}
-            sx={{ borderRadius: 1.15, whiteSpace: 'nowrap' }}
-          >
-            {loading ? 'Approving...' : 'Approve'}
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            color="error"
-            startIcon={<RejectIcon />}
+            label="Approve"
+            color="success"
+          />
+          <ActionIcon
+            icon={<RejectIcon />}
             onClick={() => setShowRejectDialog(true)}
-            disabled={loading}
-            sx={{ borderRadius: 1.15, whiteSpace: 'nowrap' }}
-          >
-            Reject
-          </Button>
+            label="Reject"
+            color="error"
+          />
         </>
       )}
 
@@ -94,7 +80,7 @@ export function TimesheetStatusControls({
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ px: 1, py: 0.5, bgcolor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 1.15 }}
+          sx={{ px: 1, py: 0.5, bgcolor: 'background.default', borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}
         >
           {isApproved && `Approved ${approvalDate ? formatDate(approvalDate) : ''}`}
           {isRejected && `Rejected${rejectionReason ? `: ${rejectionReason}` : ''}`}
@@ -116,11 +102,11 @@ export function TimesheetStatusControls({
             rows={3}
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
-            slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+            slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
           />
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setShowRejectDialog(false)} variant="outlined" sx={{ borderRadius: 1.15 }}>
+          <Button onClick={() => setShowRejectDialog(false)} variant="outlined" sx={{ borderRadius: 1.5 }}>
             Cancel
           </Button>
           <Button
@@ -128,7 +114,7 @@ export function TimesheetStatusControls({
             variant="contained"
             color="error"
             disabled={!rejectReason.trim() || loading}
-            sx={{ borderRadius: 1.15 }}
+            sx={{ borderRadius: 1.5 }}
           >
             {loading ? 'Rejecting...' : 'Reject Timesheet'}
           </Button>

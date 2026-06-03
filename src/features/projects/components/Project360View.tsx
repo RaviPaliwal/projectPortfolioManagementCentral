@@ -99,7 +99,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
 
   // RAG color for accent bar
   const ragVal = project.pm_ragstatus?.toString()
-  const accentColor = ragVal === '2' ? '#ef4444' : ragVal === '0' ? '#f59e0b' : '#22c55e'
+  const accentColor = ragVal === '2' ? 'error.main' : ragVal === '0' ? 'warning.main' : 'success.main'
 
   return (
     <Box>
@@ -132,7 +132,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
       />
 
       {/* ── Action Buttons Bar ────────────────────────────────── */}
-      <Paper sx={{ px: 2.5, py: 1.5, mb: 2.5, borderRadius: 1.15, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+      <Paper sx={{ px: 2.5, py: 1.5, mb: 2.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mr: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>Actions:</Typography>
         <Button size="small" variant="outlined" startIcon={<FlagIcon />} onClick={onAddMilestone}>Milestone</Button>
         <Button size="small" variant="outlined" color="error" startIcon={<ErrorIcon />} onClick={onLogRisk}>Risk</Button>
@@ -144,7 +144,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
       </Paper>
 
       {/* ── Tabbed Content ────────────────────────────────────── */}
-      <Paper sx={{ borderRadius: 1.15, overflow: 'hidden' }}>
+      <Paper sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
         <Tabs
           value={activeTab}
           onChange={(_, v) => setActiveTab(v)}

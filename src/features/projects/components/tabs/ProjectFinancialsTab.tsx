@@ -31,17 +31,17 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ budg
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Financial Summary Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #3b82f6' }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid #3b82f6' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Total Budget</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currency(totalBudget)}</Typography>
         </Paper>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #f59e0b' }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Total Actuals</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currency(totalSpent)}</Typography>
         </Paper>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: `3px solid ${variance < 0 ? '#ef4444' : '#22c55e'}` }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: `3px solid ${variance < 0 ? 'error.main' : 'success.main'}` }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Variance</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: variance < 0 ? '#ef4444' : '#22c55e', fontFamily: '"JetBrains Mono", monospace' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: variance < 0 ? 'error.main' : 'success.main', fontFamily: '"JetBrains Mono", monospace' }}>
             {variance < 0 ? '-' : '+'}{currency(Math.abs(variance))}
           </Typography>
         </Paper>
@@ -53,10 +53,10 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ budg
         </Typography>
         
         {budgetLines.length > 0 ? (
-          <TableContainer sx={{ border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1.15 }}>
+          <TableContainer sx={{ border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1.5 }}>
             <Table size="small" sx={{ minWidth: 600 }}>
               <TableHead>
-                <TableRow sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0f172a' : '#f8fafc' }}>
+                <TableRow sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0f172a' : 'background.default' }}>
                   <TableCell sx={{ fontWeight: 700 }}>Line Item</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Category</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="right">Budget</TableCell>
@@ -85,7 +85,7 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ budg
             </Table>
           </TableContainer>
         ) : (
-          <Paper variant="outlined" sx={{ p: 4, borderRadius: 1.15, textAlign: 'center', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderStyle: 'dashed' }}>
+          <Paper variant="outlined" sx={{ p: 4, borderRadius: 1.5, textAlign: 'center', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'background.default', borderStyle: 'dashed' }}>
             <AccountBalanceWalletIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1.5 }} />
             <Typography variant="body2" color="text.secondary">
               No budget lines yet. Use the Actions bar above to add one.

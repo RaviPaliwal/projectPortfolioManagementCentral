@@ -54,7 +54,7 @@ export const PortfolioSummaryTab: React.FC<PortfolioSummaryTabProps> = ({
           </Box>
           
           {(portfolio.pm_startdate || portfolio.pm_enddate) && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.5, borderRadius: 1.15, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#f8fafc' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.5, borderRadius: 1.5, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'background.default' }}>
               <CalendarTodayIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
               <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
                 {formatDate(portfolio.pm_startdate)} — {formatDate(portfolio.pm_enddate)}
@@ -70,19 +70,19 @@ export const PortfolioSummaryTab: React.FC<PortfolioSummaryTabProps> = ({
               <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Portfolio Details
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-              <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.5 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3, fontSize: fontSizes.xs }}>Owner</Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>{portfolio.pm_portfolioowner || '—'}</Typography>
               </Paper>
-              <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.5 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3, fontSize: fontSizes.xs }}>Business Unit</Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>{portfolio.pm_businessunit || '—'}</Typography>
               </Paper>
-              <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.15, textAlign: 'center' }}>
+              <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.5, textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3, fontSize: fontSizes.xs }}>Programmes</Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>{programmeCount}</Typography>
               </Paper>
-              <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.15, textAlign: 'center' }}>
+              <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.5, textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3, fontSize: fontSizes.xs }}>Projects</Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: 'secondary.main' }}>{projectCount}</Typography>
               </Paper>
@@ -105,9 +105,9 @@ export const PortfolioSummaryTab: React.FC<PortfolioSummaryTabProps> = ({
             {portfolio.pm_strategicobjective && (
               <Box sx={{ mt: 1 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <LightbulbIcon sx={{ fontSize: 18, color: '#f59e0b' }} /> Strategic Objective
+                  <LightbulbIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Strategic Objective
                 </Typography>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderStyle: 'dashed' }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'background.default', borderStyle: 'dashed' }}>
                   <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8, fontStyle: 'italic' }}>
                     "{portfolio.pm_strategicobjective}"
                   </Typography>

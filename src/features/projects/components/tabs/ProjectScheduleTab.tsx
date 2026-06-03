@@ -62,7 +62,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ mileston
       {/* ── Integrated Project Timeline ── */}
       <Box>
         <Stack component="div" direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3 }}>
-          <Box sx={{ width: 40, height: 40, bgcolor: 'primary.lighter', color: 'primary.main', borderRadius: 1.15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ width: 40, height: 40, bgcolor: 'primary.lighter', color: 'primary.main', borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <AssignmentIcon sx={{ fontSize: 22 }} />
           </Box>
           <Box>
@@ -71,9 +71,9 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ mileston
           </Box>
         </Stack>
         
-        <Paper variant="outlined" sx={{ borderRadius: 1.15, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+        <Paper variant="outlined" sx={{ borderRadius: 1.5, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
           <Table size="small">
-            <TableHead sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.03)' : '#f8fafc' }}>
+            <TableHead sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'background.default' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase', py: 1.5, pl: 3 }}>Schedule Item</TableCell>
                 <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase' }}>Responsible</TableCell>
@@ -143,7 +143,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ mileston
                           <LinearProgress 
                             variant="determinate" 
                             value={(item as any).progress || 0} 
-                            sx={{ height: 6, borderRadius: 1.15, bgcolor: theme.palette.action.hover, '& .MuiLinearProgress-bar': { borderRadius: 1.15, bgcolor: (item as any).progress === 100 ? 'success.main' : 'primary.main' } }} 
+                            sx={{ height: 6, borderRadius: 1.5, bgcolor: theme.palette.action.hover, '& .MuiLinearProgress-bar': { borderRadius: 1.5, bgcolor: (item as any).progress === 100 ? 'success.main' : 'primary.main' } }} 
                           />
                         </Box>
                       ) : (

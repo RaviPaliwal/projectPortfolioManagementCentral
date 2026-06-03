@@ -54,7 +54,7 @@ const ConfigTile = ({ title, description, icon, onClick, color }: ConfigTileProp
             sx={{ 
               width: 48, 
               height: 48, 
-              borderRadius: 1.15, 
+              borderRadius: 1.5, 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
@@ -104,14 +104,14 @@ export default function ConfigurationsPage({ onNavigate }: ConfigurationsPagePro
       title: 'Skills & Mapping',
       description: 'Define resource skills and manage proficiency levels across the organization.',
       icon: <PsychologyIcon fontSize="large" />,
-      color: '#8b5cf6'
+      color: 'secondary.main'
     },
     {
       key: 'holidays' as TabKey,
       title: 'Holiday Calendar',
       description: 'Configure official public holidays and non-working periods for scheduling.',
       icon: <CalendarMonthIcon fontSize="large" />,
-      color: '#f59e0b'
+      color: 'warning.main'
     }
   ]
 
@@ -120,7 +120,6 @@ export default function ConfigurationsPage({ onNavigate }: ConfigurationsPagePro
       <PageHeader 
         title="System Configurations" 
         subtitle="Manage global system settings, business rules, and administrative structures."
-        caption="Configuration Dashboard"
       />
 
       <Grid container spacing={3} sx={{ mt: 1 }}>

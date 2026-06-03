@@ -62,5 +62,6 @@ export { EmptyState } from './EmptyState/EmptyState'
 export { StatusTag } from './StatusTag/StatusTag'
 export type { StatusTagProps, StatusTagColor } from './StatusTag/StatusTag'
 
+export { ActionIcon } from './ActionIcon/ActionIcon'
 export { ConditionBuilder } from './ConditionBuilder/ConditionBuilder'
 export { PostApprovalActionBuilder } from './ConditionBuilder/PostApprovalActionBuilder'

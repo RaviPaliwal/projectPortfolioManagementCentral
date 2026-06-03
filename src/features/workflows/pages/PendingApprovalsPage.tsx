@@ -202,10 +202,10 @@ export default function PendingApprovalsPage() {
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setPage(0) }}
             sx={{ minWidth: 280 }}
-            slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+            slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
           />
           {searchQuery && (
-            <Button size="small" onClick={() => { setSearchQuery(''); setPage(0) }} sx={{ borderRadius: 1.15 }}>
+            <Button size="small" onClick={() => { setSearchQuery(''); setPage(0) }} sx={{ borderRadius: 1.5 }}>
               Clear
             </Button>
           )}
@@ -279,7 +279,7 @@ export default function PendingApprovalsPage() {
                     key={step.pm_workflowapprovalstepid}
                     hover
                     sx={{
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                       '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
@@ -291,7 +291,7 @@ export default function PendingApprovalsPage() {
                           sx={{
                             width: 32,
                             height: 32,
-                            bgcolor: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : '#6366f1',
+                            bgcolor: isOverdue ? 'error.main' : isUrgent ? 'warning.main' : 'secondary.main',
                             fontSize: 12,
                             fontWeight: 700,
                           }}
@@ -331,13 +331,13 @@ export default function PendingApprovalsPage() {
                         <ScheduleIcon
                           sx={{
                             fontSize: 14,
-                            color: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : 'text.secondary',
+                            color: isOverdue ? 'error.main' : isUrgent ? 'warning.main' : 'text.secondary',
                           }}
                         />
                         <Typography
                           variant="body2"
                           sx={{
-                            color: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : 'inherit',
+                            color: isOverdue ? 'error.main' : isUrgent ? 'warning.main' : 'inherit',
                             fontWeight: isOverdue || isUrgent ? 600 : 400,
                           }}
                         >
@@ -363,7 +363,7 @@ export default function PendingApprovalsPage() {
                           disabled={actionLoading === step.pm_workflowapprovalstepid}
                           onClick={() => handleApprove(step)}
                           startIcon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
-                          sx={{ borderRadius: 1.15, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
+                          sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
                         >
                           Approve
                         </Button>
@@ -374,7 +374,7 @@ export default function PendingApprovalsPage() {
                           disabled={actionLoading === step.pm_workflowapprovalstepid}
                           onClick={() => setRejectDialog({ open: true, step, reason: '' })}
                           startIcon={<CancelOutlinedIcon sx={{ fontSize: 16 }} />}
-                          sx={{ borderRadius: 1.15, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
+                          sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
                         >
                           Reject
                         </Button>
@@ -409,10 +409,10 @@ export default function PendingApprovalsPage() {
         onClose={() => !actionLoading && setRejectDialog({ open: false, step: null, reason: '' })}
         maxWidth="sm"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CancelOutlinedIcon sx={{ color: '#ef4444' }} />
+          <CancelOutlinedIcon sx={{ color: 'error.main' }} />
           Reject Approval Step
         </DialogTitle>
         <DialogContent>
@@ -427,7 +427,7 @@ export default function PendingApprovalsPage() {
             value={rejectDialog.reason}
             onChange={(e) => setRejectDialog((prev) => ({ ...prev, reason: e.target.value }))}
             placeholder="Explain why this step is being rejected..."
-            slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+            slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             autoFocus
           />
         </DialogContent>
@@ -436,7 +436,7 @@ export default function PendingApprovalsPage() {
             onClick={() => setRejectDialog({ open: false, step: null, reason: '' })}
             variant="outlined"
             disabled={!!actionLoading}
-            sx={{ borderRadius: 1.15 }}
+            sx={{ borderRadius: 1.5 }}
           >
             Cancel
           </Button>
@@ -446,7 +446,7 @@ export default function PendingApprovalsPage() {
             color="error"
             disabled={!!actionLoading}
             startIcon={actionLoading ? undefined : <CancelOutlinedIcon />}
-            sx={{ borderRadius: 1.15, fontWeight: 600 }}
+            sx={{ borderRadius: 1.5, fontWeight: 600 }}
           >
             {actionLoading ? 'Rejecting...' : 'Reject Step'}
           </Button>

@@ -25,7 +25,6 @@ import {
   MenuItem,
   Divider,
   Avatar,
-  IconButton,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -47,7 +46,7 @@ import {
 } from '@/services'
 import type { FundingSourceModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon } from '@/components/common'
 import type { KpiCardItem, FilterOption, ExportColumn } from '@/components/common'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -187,28 +186,28 @@ export default function FundingSourcesPage() {
         value: total,
         subtitle: `${active} active, ${exhausted} exhausted`,
         icon: <AccountBalanceIcon />,
-        color: '#6366f1',
+        color: 'primary.main',
       },
       {
         label: 'Total Funding',
         value: currencyFormatter.format(totalAmount),
         subtitle: 'Across all sources',
         icon: <EuroIcon />,
-        color: '#22c55e',
+        color: 'success.main',
       },
       {
         label: 'Allocated',
         value: currencyFormatter.format(allocatedAmount),
         subtitle: `${totalAmount > 0 ? ((allocatedAmount / totalAmount) * 100).toFixed(0) : 0}% of total`,
         icon: <SavingsIcon />,
-        color: '#0ea5e9',
+        color: 'info.main',
       },
       {
         label: 'Available',
         value: currencyFormatter.format(Math.max(0, totalAmount - allocatedAmount)),
         subtitle: `${totalAmount > 0 ? ((Math.max(0, totalAmount - allocatedAmount) / totalAmount) * 100).toFixed(0) : 0}% unallocated`,
         icon: <AttachMoneyIcon />,
-        color: '#f59e0b',
+        color: 'warning.main',
       },
     ]
   }, [fundingSources])
@@ -439,7 +438,7 @@ export default function FundingSourcesPage() {
                 value={statusFilter}
                 label="Status"
                 onChange={(e) => handleStatusFilterChange(e.target.value)}
-                sx={{ borderRadius: 1.15 }}
+                sx={{ borderRadius: 1.5 }}
               >
                 {STATUS_FILTER_OPTIONS.map((opt) => (
                   <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
@@ -464,42 +463,42 @@ export default function FundingSourcesPage() {
           <Table stickyHeader size="small" sx={{ minWidth: 1100 }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'name'} direction={getSortDir('name')} onClick={() => handleSort('name')} sx={{ fontWeight: 700 }}>
                     Source
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'type'} direction={getSortDir('type')} onClick={() => handleSort('type')} sx={{ fontWeight: 700 }}>
                     Type
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'status'} direction={getSortDir('status')} onClick={() => handleSort('status')} sx={{ fontWeight: 700 }}>
                     Status
                   </TableSortLabel>
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'total'} direction={getSortDir('total')} onClick={() => handleSort('total')} sx={{ fontWeight: 700 }}>
                     Total Amount
                   </TableSortLabel>
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'allocated'} direction={getSortDir('allocated')} onClick={() => handleSort('allocated')} sx={{ fontWeight: 700 }}>
                     Allocated
                   </TableSortLabel>
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'available'} direction={getSortDir('available')} onClick={() => handleSort('available')} sx={{ fontWeight: 700 }}>
                     Available
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'body'} direction={getSortDir('body')} onClick={() => handleSort('body')} sx={{ fontWeight: 700 }}>
                     Funding Body
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'fromdate'} direction={getSortDir('fromdate')} onClick={() => handleSort('fromdate')} sx={{ fontWeight: 700 }}>
                     Effective
                   </TableSortLabel>
@@ -519,7 +518,7 @@ export default function FundingSourcesPage() {
                     onClick={() => handleRowClick(source)}
                     sx={{
                       cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                       '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
@@ -527,7 +526,7 @@ export default function FundingSourcesPage() {
                   >
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#6366f1', fontSize: fontSizes.sm, fontWeight: 700 }}>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
                           {(source.pm_fundingsourcename ?? 'F').charAt(0).toUpperCase()}
                         </Avatar>
                         <Box>
@@ -573,7 +572,7 @@ export default function FundingSourcesPage() {
                           sx={{
                             width: 60,
                             height: 4,
-                            borderRadius: 1.15,
+                            borderRadius: 1.5,
                             bgcolor: isDark ? '#334155' : '#e2e8f0',
                             overflow: 'hidden',
                             ml: 'auto',
@@ -584,8 +583,8 @@ export default function FundingSourcesPage() {
                             sx={{
                               width: `${Math.min(utilPct, 100)}%`,
                               height: '100%',
-                              bgcolor: utilPct > 90 ? '#ef4444' : utilPct > 70 ? '#f59e0b' : '#22c55e',
-                              borderRadius: 1.15,
+                              bgcolor: utilPct > 90 ? 'error.main' : utilPct > 70 ? 'warning.main' : 'success.main',
+                              borderRadius: 1.5,
                               transition: 'width 0.3s ease',
                             }}
                           />
@@ -642,7 +641,7 @@ export default function FundingSourcesPage() {
       <DetailDrawer
         open={!!selectedSource}
         onClose={handleCloseDetail}
-        icon={<AccountBalanceIcon sx={{ color: '#6366f1', fontSize: 22 }} />}
+        icon={<AccountBalanceIcon sx={{ color: 'secondary.main', fontSize: 22 }} />}
         title={selectedSource?.pm_fundingsourcename ?? ''}
         subtitle={selectedSource && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
@@ -663,21 +662,18 @@ export default function FundingSourcesPage() {
         )}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <IconButton
-              size="small"
+            <ActionIcon
+              label="Delete"
               color="error"
               onClick={() => selectedSource?.pm_fundingsourceid && setDeleteConfirm(selectedSource.pm_fundingsourceid)}
-              sx={{ borderRadius: 1.15 }}
-            >
-              <DeleteIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-            <IconButton
-              size="small"
+              icon={<DeleteIcon />}
+            />
+            <ActionIcon
+              label="Edit"
+              color="primary"
               onClick={() => selectedSource && openEditForm(selectedSource)}
-              sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}
-            >
-              <EditIcon sx={{ fontSize: 20 }} />
-            </IconButton>
+              icon={<EditIcon />}
+            />
           </Box>
         }
         tabs={[
@@ -690,12 +686,12 @@ export default function FundingSourcesPage() {
             {/* Overview Tab */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {/* Funding Amounts */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <SavingsIcon sx={{ fontSize: 16 }} /> Funding Allocation
                 </Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #22c55e' }}>
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'success.main' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                       Total Amount
                     </Typography>
@@ -703,7 +699,7 @@ export default function FundingSourcesPage() {
                       {currencyFormatter.format(selectedSource.pm_totalamounteur ?? 0)}
                     </Typography>
                   </Paper>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #0ea5e9' }}>
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'primary.main' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                       Allocated
                     </Typography>
@@ -711,7 +707,7 @@ export default function FundingSourcesPage() {
                       {currencyFormatter.format(selectedSource.pm_allocatedamounteur ?? 0)}
                     </Typography>
                   </Paper>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #f59e0b' }}>
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                       Available
                     </Typography>
@@ -728,13 +724,13 @@ export default function FundingSourcesPage() {
                         {((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur * 100).toFixed(1)}%
                       </Typography>
                     </Box>
-                    <Box sx={{ width: '100%', height: 8, borderRadius: 1.15, bgcolor: isDark ? '#334155' : '#e2e8f0', overflow: 'hidden' }}>
+                    <Box sx={{ width: '100%', height: 8, borderRadius: 1.5, bgcolor: isDark ? '#334155' : '#e2e8f0', overflow: 'hidden' }}>
                       <Box
                         sx={{
                           width: `${Math.min(((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur) * 100, 100)}%`,
                           height: '100%',
-                          bgcolor: ((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur) > 0.9 ? '#ef4444' : ((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur) > 0.7 ? '#f59e0b' : '#22c55e',
-                          borderRadius: 1.15,
+                          bgcolor: ((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur) > 0.9 ? 'error.main' : ((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur) > 0.7 ? 'warning.main' : 'success.main',
+                          borderRadius: 1.5,
                           transition: 'width 0.3s ease',
                         }}
                       />
@@ -744,7 +740,7 @@ export default function FundingSourcesPage() {
               </Paper>
 
               {/* Details */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <DescriptionIcon sx={{ fontSize: 16 }} /> Source Details
                 </Typography>
@@ -806,10 +802,10 @@ export default function FundingSourcesPage() {
         onClose={() => !actionLoading && setShowFormModal(false)}
         maxWidth="md"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#6366f1', borderRadius: 1.15 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', borderRadius: 1.5 }}>
             {editingSource ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <AccountBalanceIcon sx={{ fontSize: 18, color: '#fff' }} />}
           </Avatar>
           {editingSource ? 'Edit Funding Source' : 'Add Funding Source'}
@@ -823,7 +819,7 @@ export default function FundingSourcesPage() {
 
           {/* Basic Information */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <BusinessIcon sx={{ fontSize: 18, color: '#6366f1' }} />
+            <BusinessIcon sx={{ fontSize: 18, color: 'secondary.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
               Basic Information
             </Typography>
@@ -839,7 +835,7 @@ export default function FundingSourcesPage() {
                 value={formData.pm_fundingsourcename}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_fundingsourcename: e.target.value }))}
                 placeholder="e.g., EU Horizon Grant 2026"
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -849,7 +845,7 @@ export default function FundingSourcesPage() {
                   value={formData.pm_fundingtype}
                   label="Funding Type"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_fundingtype: e.target.value as number }))}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 1.5 }}
                 >
                   <MenuItem value={0}>Capital</MenuItem>
                   <MenuItem value={1}>EU</MenuItem>
@@ -865,7 +861,7 @@ export default function FundingSourcesPage() {
                   value={formData.pm_fundingstatus}
                   label="Status"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_fundingstatus: e.target.value as number }))}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 1.5 }}
                 >
                   <MenuItem value={0}>Active</MenuItem>
                   <MenuItem value={1}>Exhausted</MenuItem>
@@ -880,7 +876,7 @@ export default function FundingSourcesPage() {
                 value={formData.pm_fundingbody}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_fundingbody: e.target.value }))}
                 placeholder="e.g., European Commission"
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -891,14 +887,14 @@ export default function FundingSourcesPage() {
                 value={formData.pm_referencecode}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_referencecode: e.target.value }))}
                 placeholder="e.g., FS-2026-001"
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
           </Grid>
 
           {/* Funding Amounts */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <EuroIcon sx={{ fontSize: 18, color: '#22c55e' }} />
+            <EuroIcon sx={{ fontSize: 18, color: 'success.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
               Funding Amounts (EUR)
             </Typography>
@@ -913,7 +909,7 @@ export default function FundingSourcesPage() {
                 size="small"
                 value={formData.pm_totalamounteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_totalamounteur: Number(e.target.value) || 0 }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
@@ -924,7 +920,7 @@ export default function FundingSourcesPage() {
                 size="small"
                 value={formData.pm_allocatedamounteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_allocatedamounteur: Number(e.target.value) || 0 }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
@@ -935,14 +931,14 @@ export default function FundingSourcesPage() {
                 size="small"
                 value={formData.pm_availableamounteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_availableamounteur: Number(e.target.value) || 0 }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
           </Grid>
 
           {/* Effective Dates */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <CalendarTodayIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
+            <CalendarTodayIcon sx={{ fontSize: 18, color: 'warning.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
               Effective Dates
             </Typography>
@@ -957,7 +953,7 @@ export default function FundingSourcesPage() {
                 size="small"
                 value={formData.pm_effectivefromdate}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_effectivefromdate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -968,20 +964,20 @@ export default function FundingSourcesPage() {
                 size="small"
                 value={formData.pm_effectivetodate}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_effectivetodate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             Cancel
           </Button>
           <Button
             onClick={handleSaveSource}
             variant="contained"
             disabled={!formData.pm_fundingsourcename.trim() || actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
+            sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
           >
             {actionLoading ? 'Saving...' : editingSource ? 'Update Source' : 'Create Source'}
           </Button>
@@ -994,7 +990,7 @@ export default function FundingSourcesPage() {
         onClose={() => !actionLoading && setDeleteConfirm(null)}
         maxWidth="xs"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Funding Source</DialogTitle>
         <DialogContent>
@@ -1003,10 +999,10 @@ export default function FundingSourcesPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             Cancel
           </Button>
-          <Button onClick={handleDeleteSource} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={handleDeleteSource} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             {actionLoading ? 'Removing...' : 'Remove'}
           </Button>
         </DialogActions>

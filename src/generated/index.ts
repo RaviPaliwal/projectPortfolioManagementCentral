@@ -44,7 +44,6 @@ export * as TeammembershipsModel from './models/TeammembershipsModel';
 export * as TeamsModel from './models/TeamsModel';
 
 // Services
-export * from './services/AddMembersTeamService';
 export * from './services/ManageTeamsService';
 export * from './services/Pm_benefitsService';
 export * from './services/Pm_budgetlinesService';

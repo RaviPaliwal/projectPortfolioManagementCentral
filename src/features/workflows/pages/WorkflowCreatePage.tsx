@@ -180,7 +180,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
 
   return (
     <Box sx={{ pt: 2 }}>
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 1.15 }} onClose={() => setError(null)}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 1.5 }} onClose={() => setError(null)}>{error}</Alert>}
 
       {/* Stepper */}
       <Box sx={{ mb: 6 }}>
@@ -228,12 +228,12 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
                 value={f.pm_workflowname}
                 onChange={(e) => u('pm_workflowname', e.target.value)}
                 placeholder="e.g. Project Approval Process"
-                slotProps={{ input: { sx: { borderRadius: 1.15, fontWeight: 600 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5, fontWeight: 600 } } }}
                 autoFocus
               />
               <FormControl fullWidth>
                 <InputLabel sx={{ fontWeight: 500 }}>Target Module</InputLabel>
-                <Select value={f.pm_module} label="Target Module" onChange={(e) => u('pm_module', e.target.value)} sx={{ borderRadius: 1.15, fontWeight: 600 }}>
+                <Select value={f.pm_module} label="Target Module" onChange={(e) => u('pm_module', e.target.value)} sx={{ borderRadius: 1.5, fontWeight: 600 }}>
                   {MODULES.map((o) => <MenuItem key={o.value} value={o.value} disabled={!o.value}>{o.label}</MenuItem>)}
                 </Select>
               </FormControl>
@@ -242,7 +242,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
                 value={f.pm_workflowdescription}
                 onChange={(e) => u('pm_workflowdescription', e.target.value)}
                 placeholder="Optional purpose of this workflow..."
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Stack>
           </Box>
@@ -253,7 +253,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <Stack spacing={1}>
                 <Typography variant="h6" sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ width: 32, height: 32, bgcolor: '#f5f3ff', color: '#8b5cf6', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Box sx={{ width: 32, height: 32, bgcolor: '#f5f3ff', color: 'secondary.main', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <LayersIcon sx={{ fontSize: 18 }} />
                   </Box>
                   Approval Chain
@@ -266,7 +266,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
                 variant="contained" 
                 startIcon={<AddIcon />} 
                 onClick={openAddStep} 
-                sx={{ borderRadius: 1.15, textTransform: 'none', fontWeight: 700, bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' }, boxShadow: 'none' }}
+                sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 700, bgcolor: 'secondary.main', '&:hover': { bgcolor: '#7c3aed' }, boxShadow: 'none' }}
               >
                 Add Step
               </Button>
@@ -275,7 +275,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
             <Divider />
 
             {stepTemplates.length === 0 ? (
-              <Box sx={{ py: 12, textAlign: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa', borderRadius: 1.15, border: '2px dashed', borderColor: 'divider' }}>
+              <Box sx={{ py: 12, textAlign: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa', borderRadius: 1.5, border: '2px dashed', borderColor: 'divider' }}>
                 <LayersIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2, opacity: 0.3 }} />
                 <Typography color="text.secondary" variant="body2" sx={{ fontWeight: 500 }}>No approval steps defined yet.</Typography>
                 <Button size="small" onClick={openAddStep} sx={{ mt: 2, fontWeight: 700 }}>Add your first step</Button>
@@ -283,7 +283,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
             ) : (
               <Stack spacing={2}>
                 {stepTemplates.map((step, idx) => (
-                  <Paper key={idx} variant="outlined" sx={{ p: 2.5, borderRadius: 1.15, display: 'flex', alignItems: 'center', gap: 3, borderLeft: '4px solid', borderLeftColor: 'primary.main', bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fff' }}>
+                  <Paper key={idx} variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 3, borderLeft: '4px solid', borderLeftColor: 'primary.main', bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fff' }}>
                     <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontWeight: 800, fontSize: 14 }}>{idx + 1}</Avatar>
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>{step.pm_workflowname}</Typography>
@@ -307,8 +307,8 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
                       </Stack>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      <IconButton size="small" onClick={() => openEditStep(idx)} sx={{ borderRadius: 1.15, bgcolor: 'action.hover' }}><EditIcon fontSize="small" /></IconButton>
-                      <IconButton size="small" color="error" onClick={() => deleteStep(idx)} sx={{ borderRadius: 1.15, bgcolor: 'error.lighter' }}><DeleteIcon fontSize="small" /></IconButton>
+                      <IconButton size="small" onClick={() => openEditStep(idx)} sx={{ borderRadius: 1.5, bgcolor: 'action.hover' }}><EditIcon fontSize="small" /></IconButton>
+                      <IconButton size="small" color="error" onClick={() => deleteStep(idx)} sx={{ borderRadius: 1.5, bgcolor: 'error.lighter' }}><DeleteIcon fontSize="small" /></IconButton>
                     </Box>
                   </Paper>
                 ))}
@@ -332,7 +332,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
             </Stack>
 
             <Stack spacing={3}>
-              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.15, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa' }}>
+              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa' }}>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 800 }}>Initial Version</Typography>
                   <Typography variant="caption" color="text.secondary">Default version for new templates</Typography>
@@ -340,7 +340,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
                 <StatusTag label="v1.0.0" color="info" sx={{ fontWeight: 800, px: 2 }} />
               </Paper>
 
-              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5 }}>
                 <FormControlLabel
                   control={
                     <Switch checked={f.pm_isactive} onChange={(e) => u('pm_isactive', e.target.checked)} color="primary" />
@@ -359,7 +359,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
                 />
               </Paper>
 
-              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5 }}>
                 <Typography variant="body2" sx={{ fontWeight: 800, mb: 1 }}>Post-Approval Actions</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
                   Define automated actions to trigger when the workflow completes or is rejected.
@@ -391,7 +391,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
             <Grid container spacing={3}>
               <Grid size={{ xs: 12, md: 5 }}>
                 <Stack spacing={3}>
-                  <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.15, bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fcfcfc' }}>
+                  <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fcfcfc' }}>
                     <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, color: 'text.disabled', mb: 2.5, display: 'block' }}>
                       Template Details
                     </Typography>
@@ -425,7 +425,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
               </Grid>
 
               <Grid size={{ xs: 12, md: 7 }}>
-                <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.15, height: '100%' }}>
+                <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, height: '100%' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                     <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, color: 'text.disabled', display: 'block' }}>
                       Approval Sequence ({stepTemplates.length})
@@ -479,7 +479,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
           variant="text" 
           onClick={() => setActiveStep((s) => Math.max(0, s - 1))} 
           disabled={activeStep === 0 || saving} 
-          sx={{ borderRadius: 1.15, px: 3, fontWeight: 800, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
+          sx={{ borderRadius: 1.5, px: 3, fontWeight: 800, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
         >
           Back
         </Button>
@@ -490,7 +490,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
               variant="contained" 
               onClick={() => setActiveStep((s) => s + 1)} 
               disabled={!f.pm_workflowname.trim() || !f.pm_module || (activeStep === 1 && stepTemplates.length === 0)}
-              sx={{ borderRadius: 1.15, fontWeight: 800, px: 6, py: 1.25, boxShadow: 'none', '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' } }}
+              sx={{ borderRadius: 1.5, fontWeight: 800, px: 6, py: 1.25, boxShadow: 'none', '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' } }}
             >
               Continue
             </Button>
@@ -500,7 +500,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
               onClick={handleSave} 
               disabled={saving || !f.pm_workflowname.trim()}
               startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <PublishIcon />}
-              sx={{ bgcolor: 'success.main', '&:hover': { bgcolor: 'success.dark' }, borderRadius: 1.15, fontWeight: 800, px: 6, py: 1.25, boxShadow: 'none' }}
+              sx={{ bgcolor: 'success.main', '&:hover': { bgcolor: 'success.dark' }, borderRadius: 1.5, fontWeight: 800, px: 6, py: 1.25, boxShadow: 'none' }}
             >
               {saving ? 'Creating...' : 'Finalize & Create'}
             </Button>
@@ -509,7 +509,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
       </Box>
 
       {/* Step Add/Edit Dialog */}
-      <Dialog open={showStepForm} onClose={() => setShowStepForm(false)} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}>
+      <Dialog open={showStepForm} onClose={() => setShowStepForm(false)} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}>
         <DialogTitle sx={{ fontWeight: 700 }}>{editingStepIdx !== null ? 'Edit Step' : 'Add Approval Step'}</DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
           <Stack spacing={2.5} sx={{ mt: 1 }}>
@@ -563,8 +563,8 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setShowStepForm(false)} variant="outlined" sx={{ borderRadius: 1.15 }}>Cancel</Button>
-          <Button onClick={saveStep} variant="contained" disabled={!stepFormData.pm_workflowname || !stepFormData.pm_assigneeid} sx={{ borderRadius: 1.15 }}>{editingStepIdx !== null ? 'Update Step' : 'Add Step'}</Button>
+          <Button onClick={() => setShowStepForm(false)} variant="outlined" sx={{ borderRadius: 1.5 }}>Cancel</Button>
+          <Button onClick={saveStep} variant="contained" disabled={!stepFormData.pm_workflowname || !stepFormData.pm_assigneeid} sx={{ borderRadius: 1.5 }}>{editingStepIdx !== null ? 'Update Step' : 'Add Step'}</Button>
         </DialogActions>
       </Dialog>
     </Box>

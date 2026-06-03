@@ -36,7 +36,8 @@ import {
   deletePerformanceMeasure,
 } from '@/services'
 import type { BenefitModel, PerformanceMeasureModel } from '@/types/dataverse'
-import { PageHeader, KpiCardRow, DetailDrawer, TabPanel, ExportButton, StatusTag } from '@/components/common'
+import { PageHeader, KpiCardRow, DetailDrawer, TabPanel, ExportButton, StatusTag, ActionIcon } from '@/components/common'
+import { fontSizes } from '@/styles/fontSizes'
 import { formatDate, currencyFormatter } from '@/utils/formatters'
 import { RAG_COLORS, RAG_LABELS } from '@/constants/mappings'
 import {
@@ -169,41 +170,41 @@ export default function BenefitsPage() {
         label: 'Total Benefits',
         value: total,
         icon: <EmojiEventsIcon />,
-        color: '#6366f1',
+        color: 'primary.main',
       },
       {
         label: 'Realised',
         value: realised,
         subtitle: realised > 0 ? `${((realised / (total || 1)) * 100).toFixed(0)}% completion` : 'None realised',
         icon: <TaskAltIcon />,
-        color: '#22c55e',
+        color: 'success.main',
       },
       {
         label: 'In Progress',
         value: inProgress,
         icon: <HistoryIcon />,
-        color: '#f59e0b',
+        color: 'warning.main',
       },
       {
         label: 'On Track',
         value: onTrack,
         subtitle: onTrack > 0 ? `${((onTrack / (total || 1)) * 100).toFixed(0)}% of total` : 'None tracked',
         icon: <CheckCircleIcon />,
-        color: '#22c55e',
+        color: 'success.main',
       },
       {
         label: 'At Risk',
         value: atRisk,
         subtitle: atRisk > 0 ? `${atRisk} benefit(s) flagged red` : 'No red-flagged benefits',
         icon: <WarningAmberIcon />,
-        color: atRisk > 0 ? '#ef4444' : '#64748b',
+        color: atRisk > 0 ? 'error.main' : 'text.secondary',
       },
       {
         label: 'Target Value',
         value: currencyFormatter.format(totalTarget),
         subtitle: `vs ${currencyFormatter.format(totalBaseline)} baseline`,
         icon: <AttachMoneyIcon />,
-        color: '#0ea5e9',
+        color: 'primary.main',
       },
     ]
   }, [benefits])
@@ -406,7 +407,7 @@ export default function BenefitsPage() {
       <DetailDrawer
         open={!!selectedBenefit}
         onClose={handleCloseDetail}
-        icon={<EmojiEventsIcon sx={{ color: '#6366f1', fontSize: 22 }} />}
+        icon={<EmojiEventsIcon sx={{ color: 'primary.main', fontSize: fontSizes.xl }} />}
         title={selectedBenefit?.pm_benefitname ?? ''}
         subtitle={selectedBenefit && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
@@ -426,12 +427,17 @@ export default function BenefitsPage() {
         )}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <IconButton size="small" onClick={() => selectedBenefit && openEditForm(selectedBenefit)}>
-              <EditIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-            <IconButton size="small" color="error" onClick={() => selectedBenefit?.pm_benefitid && setDeleteConfirm(selectedBenefit.pm_benefitid)}>
-              <DeleteIcon sx={{ fontSize: 20 }} />
-            </IconButton>
+            <ActionIcon
+              icon={<EditIcon />}
+              onClick={() => selectedBenefit && openEditForm(selectedBenefit)}
+              label="Edit Benefit"
+            />
+            <ActionIcon
+              icon={<DeleteIcon />}
+              onClick={() => selectedBenefit?.pm_benefitid && setDeleteConfirm(selectedBenefit.pm_benefitid)}
+              label="Delete Benefit"
+              color="error"
+            />
           </Box>
         }
         tabs={[{ label: 'Overview' }, { label: 'Performance Measures' }]}
@@ -442,9 +448,9 @@ export default function BenefitsPage() {
           <>
             <TabPanel value={detailTab} index={0} pt={0}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <EmojiEventsIcon sx={{ fontSize: 16 }} /> Benefit Information
+                    <EmojiEventsIcon sx={{ fontSize: fontSizes.md }} /> Benefit Information
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                     <Box>
@@ -474,21 +480,21 @@ export default function BenefitsPage() {
                   </Box>
                 </Paper>
 
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <TrackChangesIcon sx={{ fontSize: 16 }} /> Target & Performance
+                    <TrackChangesIcon sx={{ fontSize: fontSizes.md }} /> Target & Performance
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #6366f1' }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.sm }}>
                         Baseline Value
                       </Typography>
                       <Typography variant="h6" sx={{ fontWeight: 700 }}>
                         {selectedBenefit.pm_baselinevalue != null ? selectedBenefit.pm_baselinevalue.toLocaleString() : '—'}
                       </Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, borderLeft: '3px solid #22c55e' }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: (theme) => `3px solid ${theme.palette.success.main}` }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.sm }}>
                         Target Value
                       </Typography>
                       <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -497,9 +503,9 @@ export default function BenefitsPage() {
                     </Paper>
                   </Box>
                   {selectedBenefit.pm_targetvalue != null && selectedBenefit.pm_baselinevalue != null && selectedBenefit.pm_targetvalue > 0 && (
-                    <Box sx={{ mt: 2, p: 1.5, borderRadius: 1.15, bgcolor: isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.05)' }}>
+                    <Box sx={{ mt: 2, p: 1.5, borderRadius: 1.5, bgcolor: isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.05)' }}>
                       <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <TrendingUpIcon sx={{ fontSize: 16, color: '#22c55e' }} />
+                        <TrendingUpIcon sx={{ fontSize: fontSizes.md, color: 'success.main' }} />
                         {Math.round((((selectedBenefit.pm_targetvalue - selectedBenefit.pm_baselinevalue) / selectedBenefit.pm_baselinevalue) * 100) * 10) / 10}% improvement target
                       </Typography>
                     </Box>
@@ -507,9 +513,9 @@ export default function BenefitsPage() {
                 </Paper>
 
                 {selectedBenefit.pm_benefitdescription && (
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <DescriptionIcon sx={{ fontSize: 16 }} /> Description
+                      <DescriptionIcon sx={{ fontSize: fontSizes.md }} /> Description
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {selectedBenefit.pm_benefitdescription}
@@ -517,9 +523,9 @@ export default function BenefitsPage() {
                   </Paper>
                 )}
 
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <TimelineIcon sx={{ fontSize: 16 }} /> Realisation Schedule
+                    <TimelineIcon sx={{ fontSize: fontSizes.md }} /> Realisation Schedule
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                     <Box>
@@ -571,7 +577,7 @@ export default function BenefitsPage() {
         onClose={() => !actionLoading && setDeleteConfirm(null)}
         maxWidth="xs"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Benefit</DialogTitle>
         <DialogContent>
@@ -580,10 +586,10 @@ export default function BenefitsPage() {
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             Cancel
           </Button>
-          <Button onClick={handleDeleteBenefit} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={handleDeleteBenefit} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             {actionLoading ? 'Removing...' : 'Remove'}
           </Button>
         </DialogActions>

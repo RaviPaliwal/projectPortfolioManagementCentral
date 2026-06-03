@@ -141,7 +141,7 @@ export const RiskDetailView = ({
       {/* Strategy comparison using Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={6}>
-          <Card variant="outlined" sx={{ borderRadius: 1.15, bgcolor: `${getScoreColor(selectedRiskScore)}10` }}>
+          <Card variant="outlined" sx={{ borderRadius: 1.5, bgcolor: `${getScoreColor(selectedRiskScore)}10` }}>
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                 Before
@@ -156,7 +156,7 @@ export const RiskDetailView = ({
           </Card>
         </Grid>
         <Grid size={6}>
-          <Card variant="outlined" sx={{ borderRadius: 1.15, bgcolor: `${getScoreColor(selectedResidualScore)}10` }}>
+          <Card variant="outlined" sx={{ borderRadius: 1.5, bgcolor: `${getScoreColor(selectedResidualScore)}10` }}>
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                 After
@@ -181,7 +181,7 @@ export const RiskDetailView = ({
       </Box>
 
       {selectedRisk.pm_escalated && (
-        <Alert severity="error" icon={<FlagIcon />} sx={{ borderRadius: 1.15, mb: 2 }}>
+        <Alert severity="error" icon={<FlagIcon />} sx={{ borderRadius: 1.5, mb: 2 }}>
           This risk has been escalated.
         </Alert>
       )}
@@ -204,7 +204,7 @@ export const RiskDetailView = ({
           {mitigationActions.map((action) => {
             const actionStatus = String(action.pm_status ?? '')
             return (
-              <Card key={action.pm_riskmitigationactionid} variant="outlined" sx={{ borderRadius: 1.15, '&:hover': { borderColor: 'primary.light' } }}>
+              <Card key={action.pm_riskmitigationactionid} variant="outlined" sx={{ borderRadius: 1.5, '&:hover': { borderColor: 'primary.light' } }}>
                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>
@@ -254,7 +254,7 @@ export const RiskDetailView = ({
           })}
         </Box>
       ) : (
-        <Box sx={{ p: 3, borderRadius: 1.15, bgcolor: 'grey.50', textAlign: 'center', mb: 3 }}>
+        <Box sx={{ p: 3, borderRadius: 1.5, bgcolor: 'grey.50', textAlign: 'center', mb: 3 }}>
           <AssignmentIcon sx={{ fontSize: 32, color: 'text.disabled', mb: 1 }} />
           <Typography variant="body2" color="text.secondary">
             No mitigation actions recorded for this risk.
@@ -267,11 +267,11 @@ export const RiskDetailView = ({
 
       {/* Strategy summary alert */}
       {(selectedRisk.pm_responsestrategy === undefined || String(selectedRisk.pm_responsestrategy) === '') ? (
-        <Alert severity="info" sx={{ borderRadius: 1.15 }}>
+        <Alert severity="info" sx={{ borderRadius: 1.5 }}>
           No mitigation strategy has been defined for this risk. Edit the risk to add a response strategy and residual scores.
         </Alert>
       ) : (
-        <Alert severity="success" icon={<CheckCircleIcon />} sx={{ borderRadius: 1.15 }}>
+        <Alert severity="success" icon={<CheckCircleIcon />} sx={{ borderRadius: 1.5 }}>
           Risk has a defined response strategy ({STRATEGY_LABELS[String(selectedRisk.pm_responsestrategy)] ?? '—'}).
           {selectedResidualScore > 0 && selectedRiskScore > 0 && selectedResidualScore < selectedRiskScore
             ? ` Expected score reduction: ${selectedRiskScore} → ${selectedResidualScore}`

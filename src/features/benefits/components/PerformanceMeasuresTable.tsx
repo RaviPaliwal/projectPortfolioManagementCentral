@@ -43,14 +43,14 @@ export const PerformanceMeasuresTable = ({
           size="small"
           startIcon={<AddIcon />}
           onClick={onAddClick}
-          sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}
+          sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5 }}
         >
           Add Measure
         </Button>
       </Box>
 
       {measures.length === 0 ? (
-        <Paper variant="outlined" sx={{ textAlign: 'center', py: 6, borderRadius: 1.15 }}>
+        <Paper variant="outlined" sx={{ textAlign: 'center', py: 6, borderRadius: 1.5 }}>
           <TrackChangesIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1.5 }} />
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             No performance measures recorded.
@@ -59,13 +59,13 @@ export const PerformanceMeasuresTable = ({
             Add measures to track progress against this benefit's target values per reporting period.
           </Typography>
           <Box sx={{ mt: 2 }}>
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={onAddClick} sx={{ borderRadius: 1.15 }}>
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={onAddClick} sx={{ borderRadius: 1.5 }}>
               Add first measure
             </Button>
           </Box>
         </Paper>
       ) : (
-        <Paper variant="outlined" sx={{ borderRadius: 1.15, overflow: 'hidden' }}>
+        <Paper variant="outlined" sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -139,7 +139,7 @@ export const PerformanceMeasuresTable = ({
             </TableBody>
           </Table>
           {/* Cumulative summary */}
-          <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider', bgcolor: isDark ? '#1a2332' : '#f8fafc' }}>
+          <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider', bgcolor: isDark ? '#1a2332' : 'background.default' }}>
             <Typography variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary', mb: 1, display: 'block' }}>
               Cumulative Performance
             </Typography>
@@ -160,7 +160,7 @@ export const PerformanceMeasuresTable = ({
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary">Overall Variance</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700, color: overallVariance >= 0 ? '#22c55e' : '#ef4444' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: overallVariance >= 0 ? 'success.main' : 'error.main' }}>
                         {overallVariance >= 0 ? '+' : ''}{overallVariance.toFixed(1)}%
                       </Typography>
                     </Box>

@@ -39,7 +39,7 @@ export function TimesheetEntryList({
     <Box>
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <AccessTimeIcon sx={{ fontSize: 16, color: '#8b5cf6' }} />
+          <AccessTimeIcon sx={{ fontSize: 16, color: 'secondary.main' }} />
           Time Entries
           <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5, fontWeight: 400 }}>
             ({totalHours.toFixed(1)}h total)
@@ -52,7 +52,7 @@ export function TimesheetEntryList({
             startIcon={<AddIcon />}
             onClick={onAddEntry}
             disabled={actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}
+            sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5 }}
           >
             Add Entry
           </Button>
@@ -62,7 +62,7 @@ export function TimesheetEntryList({
       {entries.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {entries.map((entry) => (
-            <Paper key={entry.pm_timesheetentryid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.15, position: 'relative' }}>
+            <Paper key={entry.pm_timesheetentryid} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, position: 'relative' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -124,7 +124,7 @@ export function TimesheetEntryList({
               size="small"
               startIcon={<AddIcon />}
               onClick={onAddEntry}
-              sx={{ borderRadius: 1.15 }}
+              sx={{ borderRadius: 1.5 }}
             >
               Log your first entry
             </Button>
@@ -134,25 +134,25 @@ export function TimesheetEntryList({
 
       {/* Summary */}
       {entries.length > 0 && (
-        <Paper variant="outlined" sx={{ mt: 2, p: 2, borderRadius: 1.15, bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
+        <Paper variant="outlined" sx={{ mt: 2, p: 2, borderRadius: 1.5, bgcolor: isDark ? 'background.paper' : 'background.default' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, mb: 1, display: 'block' }}>
             Period Summary
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: '#22c55e' }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'success.main' }}>
                 {totalHours.toFixed(1)}h
               </Typography>
               <Typography variant="caption" color="text.secondary">Total</Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: '#0ea5e9' }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
                 {chargeableHours.toFixed(1)}h
               </Typography>
               <Typography variant="caption" color="text.secondary">Chargeable</Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: '#f59e0b' }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'warning.main' }}>
                 {nonChargeableHours.toFixed(1)}h
               </Typography>
               <Typography variant="caption" color="text.secondary">Non-Chargeable</Typography>

@@ -27,19 +27,19 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Risk & Issue KPI Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #6366f1' }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'secondary.main' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Total Risks</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>{risks.length}</Typography>
           <Typography variant="caption" color="text.secondary">{escalatedRisks} Critical / Escalated</Typography>
         </Paper>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #f59e0b' }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Total Issues</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>{issues.length}</Typography>
           <Typography variant="caption" color="text.secondary">{criticalIssues} High Priority</Typography>
         </Paper>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: `3px solid ${escalatedRisks + criticalIssues > 0 ? '#ef4444' : '#22c55e'}` }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: `3px solid ${escalatedRisks + criticalIssues > 0 ? 'error.main' : 'success.main'}` }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Health Factor</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: escalatedRisks + criticalIssues > 0 ? '#ef4444' : '#22c55e' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: escalatedRisks + criticalIssues > 0 ? 'error.main' : 'success.main' }}>
             {escalatedRisks + criticalIssues === 0 ? 'Good' : escalatedRisks + criticalIssues < 3 ? 'Caution' : 'Critical'}
           </Typography>
         </Paper>
@@ -54,7 +54,7 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
           {risks.length > 0 ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
               {risks.map((r) => (
-                <Paper key={r.pm_riskid} variant="outlined" sx={{ p: 1.75, borderRadius: 1.15, display: 'flex', alignItems: 'center', gap: 1.5, transition: 'all 0.15s ease', '&:hover': { bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#f8fafc' } }}>
+                <Paper key={r.pm_riskid} variant="outlined" sx={{ p: 1.75, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, transition: 'all 0.15s ease', '&:hover': { bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'background.default' } }}>
                   <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: RAG_COLORS[String(r.pm_ragstatus)] ?? '#6b7280', flexShrink: 0, boxShadow: `0 0 0 2px ${RAG_COLORS[String(r.pm_ragstatus)]}33` }} />
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>{r.pm_risktitle}</Typography>
@@ -65,7 +65,7 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
               ))}
             </Box>
           ) : (
-            <Paper variant="outlined" sx={{ p: 4, borderRadius: 1.15, textAlign: 'center', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderStyle: 'dashed' }}>
+            <Paper variant="outlined" sx={{ p: 4, borderRadius: 1.5, textAlign: 'center', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'background.default', borderStyle: 'dashed' }}>
               <Typography variant="body2" color="text.secondary">No risks logged.</Typography>
             </Paper>
           )}
@@ -73,13 +73,13 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
         {/* Issues list */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <WarningAmberIcon sx={{ fontSize: 18, color: '#f59e0b' }} /> Project Issues ({issues.length})
+            <WarningAmberIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Project Issues ({issues.length})
           </Typography>
           {issues.length > 0 ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
               {issues.map((i: any) => (
-                <Paper key={i.pm_issueid} variant="outlined" sx={{ p: 1.75, borderRadius: 1.15, display: 'flex', alignItems: 'center', gap: 1.5, transition: 'all 0.15s ease', '&:hover': { bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#f8fafc' } }}>
-                  <ErrorIcon sx={{ fontSize: 16, color: i.pm_prioritylevel === '1' || i.pm_prioritylevel === 1 ? '#ef4444' : '#f59e0b' }} />
+                <Paper key={i.pm_issueid} variant="outlined" sx={{ p: 1.75, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, transition: 'all 0.15s ease', '&:hover': { bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'background.default' } }}>
+                  <ErrorIcon sx={{ fontSize: 16, color: i.pm_prioritylevel === '1' || i.pm_prioritylevel === 1 ? 'error.main' : 'warning.main' }} />
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>{i.pm_issuetitle}</Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>{i.pm_issueowner ?? 'Unassigned'} {i.pm_targetresolutiondate ? `· Due: ${new Date(i.pm_targetresolutiondate).toLocaleDateString()}` : ''}</Typography>
@@ -89,7 +89,7 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
               ))}
             </Box>
           ) : (
-            <Paper variant="outlined" sx={{ p: 4, borderRadius: 1.15, textAlign: 'center', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderStyle: 'dashed' }}>
+            <Paper variant="outlined" sx={{ p: 4, borderRadius: 1.5, textAlign: 'center', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'background.default', borderStyle: 'dashed' }}>
               <Typography variant="body2" color="text.secondary">No issues logged.</Typography>
             </Paper>
           )}

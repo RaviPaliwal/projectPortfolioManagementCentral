@@ -63,7 +63,7 @@ export const PortfolioHealthSnapshot = ({
             {portfolioSnapshot.length > 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                 {portfolioSnapshot.map((portfolio) => (
-                  <Box key={portfolio.pm_portfolioid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.25, bgcolor: theme.palette.action.hover, borderRadius: 1.15 }}>
+                  <Box key={portfolio.pm_portfolioid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.25, bgcolor: theme.palette.action.hover, borderRadius: 1.5 }}>
                     <Box sx={{ minWidth: 0, flex: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {portfolio.pm_portfolioname ?? 'Unnamed'}
@@ -89,7 +89,7 @@ export const PortfolioHealthSnapshot = ({
             {programmeSnapshot.length > 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                 {programmeSnapshot.map((programme) => (
-                  <Box key={programme.pm_programmeid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.25, bgcolor: theme.palette.action.hover, borderRadius: 1.15 }}>
+                  <Box key={programme.pm_programmeid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.25, bgcolor: theme.palette.action.hover, borderRadius: 1.5 }}>
                     <Box sx={{ minWidth: 0, flex: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {programme.pm_programmename ?? 'Unnamed'}

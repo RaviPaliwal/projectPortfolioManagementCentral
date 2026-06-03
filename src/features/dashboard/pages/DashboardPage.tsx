@@ -184,12 +184,12 @@ export default function DashboardPage() {
     : '0'
 
   const kpiItems = [
-    { label: 'Active Portfolios', value: metrics.totalActivePortfolios, icon: <ViewsIcon />, color: '#0ea5e9', subtitle: `${metrics.totalActiveProjects} active projects` },
-    { label: 'Approved Budget', value: currencyFormatter.format(metrics.totalApprovedBudget), icon: <AccountBalanceWalletIcon />, color: '#22c55e', subtitle: `Pipeline: ${currencyFormatter.format(pipelineKpis.totalEstimatedCost)}` },
-    { label: 'Actual Spend', value: currencyFormatter.format(metrics.totalActualSpend), icon: <TrendingDownIcon />, color: '#f59e0b', subtitle: `${budgetPct}% of budget consumed` },
-    { label: 'Red / Amber', value: metrics.projectsInRed + metrics.projectsInAmber, icon: <WarningIcon />, color: '#ef4444', subtitle: `${pipelineKpis.pendingApprovals} pending approvals` },
-    { label: 'Pipeline Value', value: currencyFormatter.format(metrics.pipelineValue), icon: <TimelineIcon />, color: '#8b5cf6', subtitle: `${pipelineKpis.totalActiveInitiatives} initiatives` },
-    { label: 'RAG Health', value: `${metrics.projectsInGreen}/${metrics.projectsInAmber}/${metrics.projectsInRed}`, icon: <CheckCircleIcon />, color: '#22c55e', subtitle: 'G / A / R ratio' },
+    { label: 'Active Portfolios', value: metrics.totalActivePortfolios, icon: <ViewsIcon />, color: 'primary.main', subtitle: `${metrics.totalActiveProjects} active projects` },
+    { label: 'Approved Budget', value: currencyFormatter.format(metrics.totalApprovedBudget), icon: <AccountBalanceWalletIcon />, color: 'success.main', subtitle: `Pipeline: ${currencyFormatter.format(pipelineKpis.totalEstimatedCost)}` },
+    { label: 'Actual Spend', value: currencyFormatter.format(metrics.totalActualSpend), icon: <TrendingDownIcon />, color: 'warning.main', subtitle: `${budgetPct}% of budget consumed` },
+    { label: 'Red / Amber', value: metrics.projectsInRed + metrics.projectsInAmber, icon: <WarningIcon />, color: 'error.main', subtitle: `${pipelineKpis.pendingApprovals} pending approvals` },
+    { label: 'Pipeline Value', value: currencyFormatter.format(metrics.pipelineValue), icon: <TimelineIcon />, color: 'secondary.main', subtitle: `${pipelineKpis.totalActiveInitiatives} initiatives` },
+    { label: 'RAG Health', value: `${metrics.projectsInGreen}/${metrics.projectsInAmber}/${metrics.projectsInRed}`, icon: <CheckCircleIcon />, color: 'success.main', subtitle: 'G / A / R ratio' },
   ]
 
   return (
@@ -218,7 +218,7 @@ export default function DashboardPage() {
       />
 
       {/* Refreshing overlay */}
-      {refreshing && <LinearProgress sx={{ mb: 1.5, borderRadius: 1.15 }} />}
+      {refreshing && <LinearProgress sx={{ mb: 1.5, borderRadius: 1.5 }} />}
 
       {/* KPI Cards — Standardized Row */}
       <KpiCardRow items={kpiItems} loading={loading} />
@@ -268,13 +268,13 @@ export default function DashboardPage() {
             {loading ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {[...Array(3)].map((_, i) => (
-                  <Box key={i} sx={{ height: 120, bgcolor: 'action.hover', borderRadius: 1.15 }} />
+                  <Box key={i} sx={{ height: 120, bgcolor: 'action.hover', borderRadius: 1.5 }} />
                 ))}
               </Box>
             ) : approvals.length > 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {approvals.slice(0, 3).map((request) => (
-                  <Paper key={request.pm_initiativeid} variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
+                  <Paper key={request.pm_initiativeid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{request.pm_name ?? 'Approval request'}</Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                       {request.pm_portfolioname ?? 'Portfolio not set'} · {request.pm_requestorname ?? 'Unknown'}
@@ -355,7 +355,7 @@ export default function DashboardPage() {
             <Grid container spacing={1.5}>
               {projects.map((project) => (
                 <Grid size={{ xs: 12, sm: 6 }} key={project.pm_projectid}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{project.pm_projectname ?? 'Untitled'}</Typography>
                       <StatusChip status={project.pm_ragstatus} type="rag" />

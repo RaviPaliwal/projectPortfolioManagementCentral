@@ -104,7 +104,7 @@ export const BenefitsGrid = ({
               value={statusFilter}
               label="Status"
               onChange={(e) => onStatusFilterChange(e.target.value)}
-              sx={{ borderRadius: 1.15 }}
+              sx={{ borderRadius: 1.5 }}
             >
               {STATUS_FILTER_OPTIONS.map((opt) => (
                 <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
@@ -133,37 +133,37 @@ export const BenefitsGrid = ({
         <Table stickyHeader size="small" sx={{ minWidth: 1000 }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_benefitname'} direction={sort.field === 'pm_benefitname' ? sort.dir : 'asc'} onClick={() => setSort('pm_benefitname')}>
                   Benefit
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_benefitcategory'} direction={sort.field === 'pm_benefitcategory' ? sort.dir : 'asc'} onClick={() => setSort('pm_benefitcategory')}>
                   Category
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_benefitstatus'} direction={sort.field === 'pm_benefitstatus' ? sort.dir : 'asc'} onClick={() => setSort('pm_benefitstatus')}>
                   Status
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_baselinevalue'} direction={sort.field === 'pm_baselinevalue' ? sort.dir : 'asc'} onClick={() => setSort('pm_baselinevalue')}>
                   Baseline
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_targetvalue'} direction={sort.field === 'pm_targetvalue' ? sort.dir : 'asc'} onClick={() => setSort('pm_targetvalue')}>
                   Target
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_ragstatus'} direction={sort.field === 'pm_ragstatus' ? sort.dir : 'asc'} onClick={() => setSort('pm_ragstatus')}>
                   RAG
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_benifitownername'} direction={sort.field === 'pm_benifitownername' ? sort.dir : 'asc'} onClick={() => setSort('pm_benifitownername')}>
                   Owner
                 </TableSortLabel>
@@ -179,7 +179,7 @@ export const BenefitsGrid = ({
                 selected={selectedId === benefit.pm_benefitid}
                 sx={{
                   cursor: 'pointer',
-                  bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                  bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                   '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                   '&.Mui-selected': { bgcolor: isDark ? '#1e3a5f' : '#e0e7ff' },
                   transition: 'background-color 0.15s ease',
@@ -188,7 +188,7 @@ export const BenefitsGrid = ({
               >
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Avatar sx={{ width: 32, height: 32, bgcolor: RAG_COLORS[String(benefit.pm_ragstatus) as keyof typeof RAG_COLORS] || '#f59e0b', fontSize: fontSizes.sm, fontWeight: 700 }}>
+                    <Avatar sx={{ width: 32, height: 32, bgcolor: RAG_COLORS[String(benefit.pm_ragstatus) as keyof typeof RAG_COLORS] || 'warning.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
                       {(benefit.pm_benefitname ?? 'B').charAt(0).toUpperCase()}
                     </Avatar>
                     <Box>

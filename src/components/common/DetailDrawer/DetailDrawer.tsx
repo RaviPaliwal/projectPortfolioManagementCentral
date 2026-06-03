@@ -1,7 +1,8 @@
-import { Box, Typography, IconButton, Drawer, Tabs, Tab, useTheme } from '@mui/material'
+import { Box, Typography, Drawer, Tabs, Tab, useTheme } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import type { ReactNode, SyntheticEvent } from 'react'
-import { fontSizes } from '../../../styles' 
+import { ActionIcon } from '../ActionIcon/ActionIcon'
+import { fontSizes } from '@/styles'
 
 export interface DetailDrawerTab {
   label: string
@@ -80,11 +81,9 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
                 </Box>
               )}
             </Box>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0, ml: 2 }}>
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexShrink: 0, ml: 2 }}>
               {headerActions}
-              <IconButton size="small" onClick={onClose}>
-                <CloseIcon fontSize="small" />
-              </IconButton>
+              <ActionIcon icon={<CloseIcon />} onClick={onClose} label="Close" />
             </Box>
           </Box>
         </Box>

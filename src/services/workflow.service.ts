@@ -222,7 +222,8 @@ function evaluateCondition(data: any, conditionJson?: string): boolean {
     return evaluateSingleRule(data, config)
   } catch (e) {
     console.error('[WorkflowEngine] Condition evaluation error:', e)
-    return true
+    // Fail closed — return false so the step is skipped rather than incorrectly passed
+    return false
   }
 }
 
@@ -548,10 +549,30 @@ export async function startWorkflowForEntity(
     if (tid) teamById.set(tid, t.name)
   }
 
+  // Fetch entity data once for condition evaluation
+  let entityData: any = null
+  let entityDataFetched = false
+
+  const createdStepIds: string[] = []
   let allStepsCreated = true
+  let createdAnyStep = false
   for (let i = 0; i < activeSteps.length; i++) {
     const tpl = activeSteps[i]
-    const isFirstStep = i === 0
+
+    // Evaluate step condition before creating the approval step
+    if (tpl.pm_conditionsjson && tpl.pm_conditionsjson.trim() !== '') {
+      if (!entityDataFetched) {
+        entityData = await fetchEntityData(entityType, entityId)
+        entityDataFetched = true
+      }
+      const shouldCreate = evaluateCondition(entityData, tpl.pm_conditionsjson)
+      if (!shouldCreate) {
+        continue
+      }
+    }
+
+    // Use a boolean flag instead of index so condition-skips don't break first-step logic
+    const isFirstStep = !createdAnyStep
 
     let assigneeDisplayName = ''
     if (tpl.pm_assigneeid) {
@@ -594,7 +615,10 @@ export async function startWorkflowForEntity(
     try {
       const stepResult = await Pm_workflowapprovalstepsService.create(stepPayload as any)
       const createdStep = unwrapSingle<Pm_workflowapprovalsteps>(stepResult)
-      if (!createdStep?.pm_workflowapprovalstepid) {
+      if (createdStep?.pm_workflowapprovalstepid) {
+        createdStepIds.push(createdStep.pm_workflowapprovalstepid)
+        createdAnyStep = true
+      } else {
         allStepsCreated = false
       }
     } catch (err) {
@@ -603,6 +627,20 @@ export async function startWorkflowForEntity(
   }
 
   if (!allStepsCreated) {
+    // Clean up: delete instance and any orphaned steps
+    try {
+      await Pm_workflowinstancesService.delete(instanceId)
+    } catch { }
+    for (const sid of createdStepIds) {
+      try {
+        await Pm_workflowapprovalstepsService.delete(sid)
+      } catch { }
+    }
+    return null
+  }
+
+  // If no steps were created (all skipped by conditions), return null
+  if (createdStepIds.length === 0) {
     try {
       await Pm_workflowinstancesService.delete(instanceId)
     } catch { }
@@ -619,6 +657,17 @@ export async function approveWorkflowStep(
 ): Promise<boolean> {
   try {
     const now = new Date().toISOString()
+
+    // Guard against double-approval: check the step hasn't already been decided
+    const preCheck = await Pm_workflowapprovalstepsService.get(stepId, {
+      select: ['pm_workflowapprovalstepid', 'pm_decisionstatus'],
+    })
+    const preStep = unwrapSingle<Pm_workflowapprovalsteps>(preCheck)
+    if (preStep && (preStep as any).pm_decisionstatus === 0) {
+      // Already approved — skip
+      return true
+    }
+
     await Pm_workflowapprovalstepsService.update(stepId, {
       pm_decisionstatus: 0,
       pm_decisiondate: now,
@@ -698,6 +747,31 @@ export async function rejectWorkflowStep(
 ): Promise<boolean> {
   try {
     const now = new Date().toISOString()
+
+    // Guard against double-rejection: check the step hasn't already been decided
+    const preCheck = await Pm_workflowapprovalstepsService.get(stepId, {
+      select: ['pm_workflowapprovalstepid', 'pm_decisionstatus', '_pm_workflowinstancelookup_value'],
+    })
+    const preStep = unwrapSingle<Pm_workflowapprovalsteps>(preCheck)
+    if (!preStep) return true
+
+    // Fetch instance for entity info needed by post-rejection actions
+    const instanceLookup = preStep._pm_workflowinstancelookup_value
+    let entityType: string | undefined
+    let entityId: string | undefined
+    if (instanceLookup) {
+      try {
+        const instResult = await Pm_workflowinstancesService.get(instanceLookup, {
+          select: ['pm_workflowinstanceid', 'pm_entitytype', 'pm_entityid', 'pm_workflowtemplate', '_pm_workflowlookup_value'],
+        })
+        const instance = unwrapSingle<Pm_workflowinstances>(instResult)
+        if (instance) {
+          entityType = instance.pm_entitytype
+          entityId = instance.pm_entityid
+        }
+      } catch { }
+    }
+
     await Pm_workflowapprovalstepsService.update(stepId, {
       pm_decisionstatus: 1,
       pm_decisiondate: now,
@@ -705,12 +779,6 @@ export async function rejectWorkflowStep(
       pm_approvername: approverName,
       statecode: 1,
     } as any)
-
-    const stepResult = await Pm_workflowapprovalstepsService.get(stepId, {
-      select: ['_pm_workflowinstancelookup_value'],
-    })
-    const step = unwrapSingle<Pm_workflowapprovalsteps>(stepResult)
-    const instanceLookup = step?._pm_workflowinstancelookup_value
 
     if (instanceLookup) {
       await Pm_workflowinstancesService.update(instanceLookup, {
@@ -720,6 +788,25 @@ export async function rejectWorkflowStep(
       await Pm_workflowinstancesService.update(instanceLookup, {
         statecode: 1,
       } as any)
+
+      // Execute "On Reject" post-approval actions
+      const stepResult = await Pm_workflowapprovalstepsService.get(stepId, {
+        select: ['_pm_workflowtemplate_value'],
+      })
+      const step = unwrapSingle<Pm_workflowapprovalsteps>(stepResult)
+      const templateId = step?._pm_workflowtemplate_value
+      if (templateId && entityType && entityId) {
+        try {
+          const tplResult = await Pm_workflowsService.get(templateId, { select: ['pm_triggercondition'] })
+          const tpl = unwrapSingle<Pm_workflows>(tplResult)
+          if (tpl?.pm_triggercondition) {
+            const config = JSON.parse(tpl.pm_triggercondition) as WorkflowConfig
+            await executePostApprovalActions(config.onReject, entityType, entityId)
+          }
+        } catch (e) {
+          console.warn('[WorkflowEngine] Failed to execute rejection actions:', e)
+        }
+      }
     }
 
     return true

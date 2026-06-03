@@ -170,7 +170,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                   key={col.field}
                   sx={{
                     fontWeight: 700,
-                    bgcolor: isDark ? '#1e293b' : '#f8fafc',
+                    bgcolor: isDark ? 'background.paper' : 'background.default',
                     borderBottom: `2px solid ${theme.palette.divider}`,
                     px: 2.5,
                     py: 1.5,
@@ -232,10 +232,10 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                       sx={{
                         width: 64,
                         height: 6,
-                        borderRadius: 1.15,
+                        borderRadius: 1.5,
                         bgcolor: theme.palette.action.hover,
                         '& .MuiLinearProgress-bar': {
-                          bgcolor: (project.pm_percentcomplete ?? 0) >= 100 ? '#22c55e' : '#3b82f6',
+                          bgcolor: (project.pm_percentcomplete ?? 0) >= 100 ? 'success.main' : '#3b82f6',
                         },
                       }}
                     />

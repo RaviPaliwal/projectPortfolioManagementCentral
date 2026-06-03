@@ -177,44 +177,44 @@ export const RiskTable = ({
         <Table stickyHeader size="small" sx={{ minWidth: 1000 }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5, width: 50 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5, width: 50 }}>
                 #
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_risktitle'} direction={sort.field === 'pm_risktitle' ? sort.dir : 'asc'} onClick={() => setSort('pm_risktitle')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                   Risk Title
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_riskcategory'} direction={sort.field === 'pm_riskcategory' ? sort.dir : 'asc'} onClick={() => setSort('pm_riskcategory')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                   Category
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_ragstatus'} direction={sort.field === 'pm_ragstatus' ? sort.dir : 'asc'} onClick={() => setSort('pm_ragstatus')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                   RAG
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 Owner
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 Probability
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 Impact
               </TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_inherentscore'} direction={sort.field === 'pm_inherentscore' ? sort.dir : 'asc'} onClick={() => setSort('pm_inherentscore')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                   Score
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_riskstatus'} direction={sort.field === 'pm_riskstatus' ? sort.dir : 'asc'} onClick={() => setSort('pm_riskstatus')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                   Status
                 </TableSortLabel>
               </TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 Actions
               </TableCell>
             </TableRow>
@@ -229,7 +229,7 @@ export const RiskTable = ({
                   onClick={() => onSelect(risk)}
                   sx={{
                     cursor: 'pointer',
-                    bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                    bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                     '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                     transition: 'background-color 0.15s ease',
                     '& td': { px: 2.5, py: 1.25 },
@@ -264,7 +264,7 @@ export const RiskTable = ({
                   <TableCell>
                     <StatusTag
                       label={RISK_CATEGORY_LABELS[String(risk.pm_riskcategory ?? '')] ?? '—'}
-                      color={RISK_CATEGORY_COLORS[String(risk.pm_riskcategory ?? '')] ?? '#94a3b8'}
+                      color={RISK_CATEGORY_COLORS[String(risk.pm_riskcategory ?? '')] ?? 'text.disabled'}
                     />
                   </TableCell>
                   <TableCell>
@@ -300,7 +300,7 @@ export const RiskTable = ({
                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
                       {risk.pm_escalated && (
                         <Tooltip title="Escalated">
-                          <FlagIcon sx={{ fontSize: 18, color: '#ef4444' }} />
+                          <FlagIcon sx={{ fontSize: 18, color: 'error.main' }} />
                         </Tooltip>
                       )}
                       <IconButton

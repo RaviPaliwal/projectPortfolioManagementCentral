@@ -200,17 +200,17 @@ export default function RisksPage() {
     const closed = risks.filter((r) => String(r.pm_riskstatus ?? '') === '2' || String(r.pm_riskstatus ?? '') === 'Inactive').length // Assuming 2 or Inactive as closed
 
     return [
-      { label: "Total Risks", value: total, color: "#0ea5e9", icon: <WarningAmberIcon /> },
+      { label: "Total Risks", value: total, color: "'primary.main'", icon: <WarningAmberIcon /> },
       { 
         label: "Open Risks", 
         value: open, 
-        color: "#f59e0b", 
+        color: "'warning.main'", 
         icon: <GppMaybeIcon />,
         subtitle: total > 0 ? `${Math.round((open / total) * 100)}% of total` : 'None open'
       },
-      { label: "High / Critical", value: high, color: "#ef4444", icon: <ArrowUpwardIcon /> },
-      { label: "In Mitigation", value: mitigation, color: "#22c55e", icon: <GppGoodIcon /> },
-      { label: "Escalated", value: escalated, color: "#ef4444", icon: <ArrowCircleUpIcon />, subtitle: 'Active escalations' },
+      { label: "High / Critical", value: high, color: "'error.main'", icon: <ArrowUpwardIcon /> },
+      { label: "In Mitigation", value: mitigation, color: "'success.main'", icon: <GppGoodIcon /> },
+      { label: "Escalated", value: escalated, color: "'error.main'", icon: <ArrowCircleUpIcon />, subtitle: 'Active escalations' },
       { label: "Closed", value: closed, color: "#64748b", icon: <CheckCircleIcon />, subtitle: 'Resolved/Inactive' },
     ]
   }, [risks])
@@ -219,12 +219,12 @@ export default function RisksPage() {
     <Box>
       {/* Success / Error alerts */}
       {successMsg && (
-        <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ mb: 2, borderRadius: 1.15 }}>
+        <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ mb: 2, borderRadius: 1.5 }}>
           {successMsg}
         </Alert>
       )}
       {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: 1.15 }}>
+        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: 1.5 }}>
           {error}
         </Alert>
       )}
@@ -279,14 +279,14 @@ export default function RisksPage() {
         subtitle={selectedRisk && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
             <Box component="span" sx={{
-              px: 1, py: 0.25, borderRadius: 1.15, fontSize: '0.75rem', fontWeight: 600,
-              bgcolor: `${RISK_CATEGORY_COLORS[String(selectedRisk.pm_riskcategory ?? '')] ?? '#94a3b8'}20`,
-              color: RISK_CATEGORY_COLORS[String(selectedRisk.pm_riskcategory ?? '')] ?? '#94a3b8'
+              px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600,
+              bgcolor: `${RISK_CATEGORY_COLORS[String(selectedRisk.pm_riskcategory ?? '')] ?? 'text.disabled'}20`,
+              color: RISK_CATEGORY_COLORS[String(selectedRisk.pm_riskcategory ?? '')] ?? 'text.disabled'
             }}>
               {RISK_CATEGORY_LABELS[String(selectedRisk.pm_riskcategory ?? '')] ?? '—'}
             </Box>
             <Box component="span" sx={{
-              px: 1, py: 0.25, borderRadius: 1.15, fontSize: '0.75rem', fontWeight: 600,
+              px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600,
               border: '1px solid',
               borderColor: RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'error' ? 'error.main' : RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'warning' ? 'warning.main' : 'success.main',
               color: RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'error' ? 'error.main' : RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'warning' ? 'warning.main' : 'success.main',
@@ -294,7 +294,7 @@ export default function RisksPage() {
               {RAG_LABELS[String(selectedRisk.pm_ragstatus ?? '')] ?? '—'}
             </Box>
             {selectedRisk.pm_escalated && (
-              <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 1.15, fontSize: '0.75rem', fontWeight: 600, bgcolor: 'error.main', color: 'white', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600, bgcolor: 'error.main', color: 'white', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <FlagIcon sx={{ fontSize: 12 }} /> Escalated
               </Box>
             )}

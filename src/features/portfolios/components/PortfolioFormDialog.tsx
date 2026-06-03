@@ -112,7 +112,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                 size="small"
                 value={createForm.pm_portfolioname}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_portfolioname: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -122,7 +122,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                 size="small"
                 value={createForm.pm_portfolioowner}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_portfolioowner: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -132,7 +132,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                   value={createForm.pm_portfoliostatus}
                   label="Status"
                   onChange={(e) => setCreateForm((f) => ({ ...f, pm_portfoliostatus: e.target.value as number }))}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 1.5 }}
                 >
                   <MenuItem value={0}>Active</MenuItem>
                   <MenuItem value={1}>On Hold</MenuItem>
@@ -146,7 +146,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                   value={createForm.pm_ragstatus}
                   label="RAG Status"
                   onChange={(e) => setCreateForm((f) => ({ ...f, pm_ragstatus: e.target.value as number }))}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 1.5 }}
                 >
                   <MenuItem value={1}>Green</MenuItem>
                   <MenuItem value={0}>Amber</MenuItem>
@@ -162,7 +162,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                 size="small"
                 value={createForm.pm_approvedbudgeteur}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_approvedbudgeteur: Number(e.target.value) }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -173,7 +173,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                 size="small"
                 value={createForm.pm_startdate}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_startdate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -184,7 +184,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                 size="small"
                 value={createForm.pm_enddate}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_enddate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
@@ -196,7 +196,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                 rows={2}
                 value={createForm.pm_portfoliodescription}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_portfoliodescription: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
@@ -208,7 +208,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                 rows={2}
                 value={createForm.pm_strategicobjective}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_strategicobjective: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
           </Grid>
@@ -221,7 +221,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
             onClick={handleCreatePortfolio}
             variant="contained"
             disabled={!createForm.pm_portfolioname.trim() || actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' } }}
+            sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}
           >
             {actionLoading ? 'Creating...' : 'Create Portfolio'}
           </Button>
@@ -236,7 +236,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
         fullWidth
         slotProps={{
           paper: {
-            sx: { borderRadius: 1.15, overflow: 'visible' },
+            sx: { borderRadius: 1.5, overflow: 'visible' },
           },
         }}
       >
@@ -249,7 +249,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
             width: 56,
             height: 56,
             borderRadius: '50%',
-            bgcolor: '#22c55e',
+            bgcolor: 'success.main',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -274,9 +274,9 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
             variant="contained"
             onClick={() => setConfirmDialog({ open: false, name: '' })}
             sx={{
-              bgcolor: '#0078D4',
-              '&:hover': { bgcolor: '#006cbe' },
-              borderRadius: 1.15,
+              bgcolor: 'primary.main',
+              '&:hover': { bgcolor: 'primary.dark' },
+              borderRadius: 1.5,
               px: 4,
               fontWeight: 600,
             }}

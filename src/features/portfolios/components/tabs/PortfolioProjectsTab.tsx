@@ -19,7 +19,7 @@ export const PortfolioProjectsTab: React.FC<PortfolioProjectsTabProps> = ({
       {projects.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {projects.map((proj) => (
-            <Paper key={proj.pm_projectid} variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
+            <Paper key={proj.pm_projectid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>

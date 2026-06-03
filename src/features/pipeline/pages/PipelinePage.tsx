@@ -231,43 +231,43 @@ export default function PipelinePage() {
       value: kpis.totalActiveInitiatives,
       subtitle: 'Ideas in the hopper',
       icon: <LightbulbIcon />,
-      color: '#0ea5e9',
+      color: 'primary.main',
     },
     {
       label: 'Pending Approvals',
       value: kpis.pendingApprovals,
       subtitle: 'Awaiting decision',
       icon: <WarningAmberIcon />,
-      color: '#f59e0b',
-      valueColor: '#f59e0b',
+      color: 'warning.main',
+      valueColor: 'warning.main',
     },
     {
       label: 'Total Est. Pipeline Cost',
       value: currencyFormatter.format(kpis.totalEstimatedCost),
       subtitle: 'Potential financial demand',
       icon: <CurrencyExchangeIcon />,
-      color: '#22c55e',
+      color: 'success.main',
     },
     {
       label: 'Approved This Month',
       value: kpis.approvedThisMonth,
       subtitle: 'Intake velocity',
       icon: <TrendingUpIcon />,
-      color: '#8b5cf6',
+      color: 'secondary.main',
     },
     {
       label: 'Deferred',
       value: initiatives.filter((i) => String(i.pm_pipelinestatus) === '2').length,
       subtitle: 'On hold',
       icon: <PauseCircleFilledIcon />,
-      color: '#f59e0b',
+      color: 'warning.main',
     },
     {
       label: 'Rejected',
       value: initiatives.filter((i) => String(i.pm_pipelinestatus) === '3').length,
       subtitle: 'Not proceeding',
       icon: <CancelIcon />,
-      color: '#ef4444',
+      color: 'error.main',
     },
   ]
 
@@ -567,27 +567,27 @@ export default function PipelinePage() {
           <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Initiative Name
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'sponsor'} direction={sort.field === 'sponsor' ? sort.dir : 'asc'} onClick={() => handleSort('sponsor')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Business Sponsor
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'strategicScore'} direction={sort.field === 'strategicScore' ? sort.dir : 'asc'} onClick={() => handleSort('strategicScore')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Strategic Alignment
                   </TableSortLabel>
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'estimatedCost'} direction={sort.field === 'estimatedCost' ? sort.dir : 'asc'} onClick={() => handleSort('estimatedCost')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Estimated Cost
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'status'} direction={sort.field === 'status' ? sort.dir : 'asc'} onClick={() => handleSort('status')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Status
                   </TableSortLabel>
@@ -604,7 +604,7 @@ export default function PipelinePage() {
                     onClick={() => handleRowClick(initiative)}
                     sx={{
                       cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                       '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
@@ -612,7 +612,7 @@ export default function PipelinePage() {
                   >
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <LightbulbIcon sx={{ fontSize: 18, color: '#f59e0b', opacity: 0.7 }} />
+                        <LightbulbIcon sx={{ fontSize: 18, color: 'warning.main', opacity: 0.7 }} />
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {initiative.pm_name ?? 'Untitled Initiative'}
@@ -684,7 +684,7 @@ export default function PipelinePage() {
       <DetailDrawer
         open={!!selectedInitiative}
         onClose={handleCloseDetail}
-        icon={<LightbulbIcon sx={{ color: '#f59e0b', fontSize: 22 }} />}
+        icon={<LightbulbIcon sx={{ color: 'warning.main', fontSize: 22 }} />}
         title={selectedInitiative?.pm_name ?? ''}
         subtitle={drawerSubtitle}
         tabs={[
@@ -704,39 +704,39 @@ export default function PipelinePage() {
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <DescriptionIcon sx={{ fontSize: 16 }} /> Business Case
                   </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: isDark ? 'background.paper' : 'background.default' }}>
                     <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                       {selectedInitiative.pm_businesscase}
                     </Typography>
                   </Paper>
                 </Box>
               ) : (
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, textAlign: 'center' }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center' }}>
                   <Typography variant="body2" color="text.secondary">No business case provided.</Typography>
                 </Paper>
               )}
 
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #0ea5e9' }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'primary.main' }}>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Est. Cost</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—'}</Typography>
                 </Paper>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #22c55e' }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'success.main' }}>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Est. Benefits</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—'}</Typography>
                 </Paper>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #f59e0b' }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Priority Score</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>{selectedInitiative.pm_priorityscore ?? '—'}</Typography>
                 </Paper>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #8b5cf6' }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'secondary.main' }}>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Strategic Alignment</Typography>
                   <Box sx={{ mt: 0.5 }}><StrategicScoreDisplay score={selectedInitiative.pm_strategicalignmentscore} /></Box>
                 </Paper>
               </Box>
 
               {selectedInitiative.pm_submissiondate && (
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <CalendarTodayIcon sx={{ fontSize: 16 }} /> Timeline
                   </Typography>
@@ -753,7 +753,7 @@ export default function PipelinePage() {
         <TabPanel value={detailTab} index={1} pt={0}>
           {selectedInitiative && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.75 }}>
                   <ThumbsUpDownIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Strategic Alignment Score
                 </Typography>
@@ -765,10 +765,10 @@ export default function PipelinePage() {
                       <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{editScore.toFixed(1)}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button variant="contained" size="small" onClick={handleSaveScore} disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+                      <Button variant="contained" size="small" onClick={handleSaveScore} disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
                         {actionLoading ? 'Saving...' : 'Save Score'}
                       </Button>
-                      <Button variant="outlined" size="small" onClick={() => setEditScoreMode(false)} sx={{ borderRadius: 1.15 }}>Cancel</Button>
+                      <Button variant="outlined" size="small" onClick={() => setEditScoreMode(false)} sx={{ borderRadius: 1.5 }}>Cancel</Button>
                     </Box>
                   </Box>
                 ) : (
@@ -789,16 +789,16 @@ export default function PipelinePage() {
                     </Box>
                     <Button variant="outlined" size="small" startIcon={<EditIcon />}
                       onClick={() => { setEditScore(selectedInitiative.pm_strategicalignmentscore ?? 0); setEditScoreMode(true) }}
-                      sx={{ borderRadius: 1.15 }}>
+                      sx={{ borderRadius: 1.5 }}>
                       Edit Score
                     </Button>
                   </Box>
                 )}
               </Paper>
 
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <TrendingUpIcon sx={{ fontSize: 18, color: '#f59e0b' }} /> Priority Score
+                  <TrendingUpIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Priority Score
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
                   {selectedInitiative.pm_priorityscore ?? '—'}
@@ -816,12 +816,12 @@ export default function PipelinePage() {
           {selectedInitiative && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {[
-                { icon: <RateReviewIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />, title: 'Request Approval', desc: 'Assign a reviewer and submit to the investment board for review.', color: '#0ea5e9', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: () => setShowReviewerDialog(true), btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '0' || String(selectedInitiative.pm_pipelinestatus) === '3' },
-                { icon: <TransformIcon sx={{ fontSize: 18, color: '#22c55e' }} />, title: 'Convert to Project', desc: 'Create a new project from this approved initiative.', color: '#22c55e', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
-                { icon: <CancelIcon sx={{ fontSize: 18, color: '#f59e0b' }} />, title: 'Defer Initiative', desc: 'Postpone the initiative if it lacks immediate funding or strategic fit.', color: '#f59e0b', btnLabel: 'Defer', btnVariant: 'outlined' as const, btnColor: 'warning' as const, onClick: handleDefer, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '2' || String(selectedInitiative.pm_pipelinestatus) === '3' },
-                { icon: <ErrorIcon sx={{ fontSize: 18, color: '#ef4444' }} />, title: 'Reject Initiative', desc: 'Close the initiative if it lacks strategic value or funding.', color: '#ef4444', btnLabel: 'Reject', btnVariant: 'outlined' as const, btnColor: 'error' as const, onClick: handleReject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '3' },
+                { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Assign a reviewer and submit to the investment board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: () => setShowReviewerDialog(true), btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '0' || String(selectedInitiative.pm_pipelinestatus) === '3' },
+                { icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />, title: 'Convert to Project', desc: 'Create a new project from this approved initiative.', color: 'success.main', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
+                { icon: <CancelIcon sx={{ fontSize: 18, color: 'warning.main' }} />, title: 'Defer Initiative', desc: 'Postpone the initiative if it lacks immediate funding or strategic fit.', color: 'warning.main', btnLabel: 'Defer', btnVariant: 'outlined' as const, btnColor: 'warning' as const, onClick: handleDefer, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '2' || String(selectedInitiative.pm_pipelinestatus) === '3' },
+                { icon: <ErrorIcon sx={{ fontSize: 18, color: 'error.main' }} />, title: 'Reject Initiative', desc: 'Close the initiative if it lacks strategic value or funding.', color: 'error.main', btnLabel: 'Reject', btnVariant: 'outlined' as const, btnColor: 'error' as const, onClick: handleReject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '3' },
               ].map((action, idx) => (
-                <Paper key={idx} variant="outlined" sx={{ p: 2.5, borderRadius: 1.15, borderLeft: `3px solid ${action.color}`, transition: 'all 0.2s', '&:hover': { bgcolor: isDark ? '#1e293b' : '#f8fafc' } }}>
+                <Paper key={idx} variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, borderLeft: `3px solid ${action.color}`, transition: 'all 0.2s', '&:hover': { bgcolor: isDark ? 'background.paper' : 'background.default' } }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Box>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -831,7 +831,7 @@ export default function PipelinePage() {
                     </Box>
                     <Button variant={action.btnVariant} size="small" color={action.btnColor}
                       onClick={action.onClick} disabled={actionLoading || action.btnDisabled}
-                      sx={{ borderRadius: 1.15, whiteSpace: 'nowrap', ml: 2 }}>
+                      sx={{ borderRadius: 1.5, whiteSpace: 'nowrap', ml: 2 }}>
                       {actionLoading ? 'Processing...' : action.btnLabel}
                     </Button>
                   </Box>
@@ -849,11 +849,11 @@ export default function PipelinePage() {
         maxWidth="md"
         fullWidth
         slotProps={{
-          paper: { sx: { borderRadius: 1.15 } },
+          paper: { sx: { borderRadius: 1.5 } },
         }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#f59e0b', borderRadius: 1.15 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: 'warning.main', borderRadius: 1.5 }}>
             <LightbulbIcon sx={{ fontSize: 18, color: '#fff' }} />
           </Avatar>
           New Initiative
@@ -865,7 +865,7 @@ export default function PipelinePage() {
 
           {/* ── Section: Basic Information ── */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <DescriptionIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
+            <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
               Basic Information
             </Typography>
@@ -881,7 +881,7 @@ export default function PipelinePage() {
                 value={createForm.pm_initiativename}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_initiativename: e.target.value }))}
                 slotProps={{
-                  input: { sx: { borderRadius: 1.15 } },
+                  input: { sx: { borderRadius: 1.5 } },
                 }}
               />
             </Grid>
@@ -892,7 +892,7 @@ export default function PipelinePage() {
                 size="small"
                 value={createForm.pm_requestorname}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_requestorname: e.target.value }))}
-                slotProps={{ input: { startAdornment: <PersonIcon sx={{ fontSize: 18, mr: 0.75, color: 'action.active' }} />, sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { startAdornment: <PersonIcon sx={{ fontSize: 18, mr: 0.75, color: 'action.active' }} />, sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -902,10 +902,10 @@ export default function PipelinePage() {
                   value={createForm._pm_portfolio_value}
                   label="Portfolio (optional)"
                   onChange={(e) => setCreateForm((f) => ({ ...f, _pm_portfolio_value: e.target.value }))}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 1.5 }}
                 >
                   <MenuItem value="">
-                    <em style={{ color: '#94a3b8' }}>No portfolio</em>
+                    <em style={{ color: 'text.disabled' }}>No portfolio</em>
                   </MenuItem>
                   {portfolios.map((p) => (
                     <MenuItem key={p.pm_portfolioid} value={p.pm_portfolioid}>
@@ -925,7 +925,7 @@ export default function PipelinePage() {
                   value={createForm.pm_initiativetype}
                   label="Initiative Type"
                   onChange={(e) => setCreateForm((f) => ({ ...f, pm_initiativetype: e.target.value as number }))}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 1.5 }}
                 >
                   <MenuItem value={2}>Initiative</MenuItem>
                   <MenuItem value={0}>Project</MenuItem>
@@ -937,7 +937,7 @@ export default function PipelinePage() {
 
           {/* ── Section: Financial Estimates ── */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <MonetizationOnIcon sx={{ fontSize: 18, color: '#22c55e' }} />
+            <MonetizationOnIcon sx={{ fontSize: 18, color: 'success.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
               Financial Estimates
             </Typography>
@@ -953,7 +953,7 @@ export default function PipelinePage() {
                 value={createForm.pm_estimatedcosteur}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedcosteur: Number(e.target.value) }))}
                 slotProps={{
-                  input: { startAdornment: <CurrencyExchangeIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} />, sx: { borderRadius: 1.15 } },
+                  input: { startAdornment: <CurrencyExchangeIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} />, sx: { borderRadius: 1.5 } },
                 }}
               />
             </Grid>
@@ -966,7 +966,7 @@ export default function PipelinePage() {
                 value={createForm.pm_estimatedbenefitseur}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedbenefitseur: Number(e.target.value) }))}
                 slotProps={{
-                  input: { startAdornment: <TrendingUpIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} />, sx: { borderRadius: 1.15 } },
+                  input: { startAdornment: <TrendingUpIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} />, sx: { borderRadius: 1.5 } },
                 }}
               />
             </Grid>
@@ -974,7 +974,7 @@ export default function PipelinePage() {
 
           {/* ── Section: Business Case ── */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <ScienceIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
+            <ScienceIcon sx={{ fontSize: 18, color: 'secondary.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
               Business Case
             </Typography>
@@ -990,15 +990,15 @@ export default function PipelinePage() {
                 rows={4}
                 value={createForm.pm_businesscasedescription}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_businesscasedescription: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                 placeholder="Describe the problem, opportunity, and strategic rationale for this initiative..."
               />
             </Grid>
           </Grid>
 
           {/* ── Status badge ── */}
-          <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, bgcolor: isDark ? '#1e293b' : '#f0f9ff', borderRadius: 1.15, border: '1px solid', borderColor: isDark ? '#334155' : '#bae6fd' }}>
-            <InfoIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
+          <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, bgcolor: isDark ? 'background.paper' : '#f0f9ff', borderRadius: 1.5, border: '1px solid', borderColor: isDark ? '#334155' : '#bae6fd' }}>
+            <InfoIcon sx={{ fontSize: 18, color: 'primary.main' }} />
             <Typography variant="body2" color="text.secondary">
               Status will be set to{' '}
               <StatusTag label="Under Review" size="small" color="info" variant="outlined" sx={{ fontWeight: 600, height: 22 }} />
@@ -1011,7 +1011,7 @@ export default function PipelinePage() {
             onClick={() => setShowCreateModal(false)}
             variant="outlined"
             disabled={actionLoading}
-            sx={{ borderRadius: 1.15 }}
+            sx={{ borderRadius: 1.5 }}
           >
             Cancel
           </Button>
@@ -1021,9 +1021,9 @@ export default function PipelinePage() {
             disabled={!createForm.pm_initiativename.trim() || actionLoading}
             startIcon={actionLoading ? undefined : <AddIcon />}
             sx={{
-              bgcolor: '#0078D4',
-              '&:hover': { bgcolor: '#006cbe' },
-              borderRadius: 1.15,
+              bgcolor: 'primary.main',
+              '&:hover': { bgcolor: 'primary.dark' },
+              borderRadius: 1.5,
               fontWeight: 600,
             }}
           >
@@ -1038,10 +1038,10 @@ export default function PipelinePage() {
         onClose={() => !actionLoading && setShowReviewerDialog(false)}
         maxWidth="sm"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.15 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: 1.5 }}>
             <RateReviewIcon sx={{ fontSize: 18, color: '#fff' }} />
           </Avatar>
           Assign Reviewer
@@ -1061,7 +1061,7 @@ export default function PipelinePage() {
             value={reviewDueDate}
             onChange={(e) => setReviewDueDate(e.target.value)}
             slotProps={{
-              input: { startAdornment: <InputAdornment position="start"><CalendarTodayIcon sx={{ fontSize: 16, color: 'action.active' }} /></InputAdornment>, sx: { borderRadius: 1.15 } },
+              input: { startAdornment: <InputAdornment position="start"><CalendarTodayIcon sx={{ fontSize: 16, color: 'action.active' }} /></InputAdornment>, sx: { borderRadius: 1.5 } },
               inputLabel: { shrink: true },
             }}
             sx={{ mb: 2.5 }}
@@ -1075,13 +1075,13 @@ export default function PipelinePage() {
             value={reviewerSearch}
             onChange={(e) => setReviewerSearch(e.target.value)}
             slotProps={{
-              input: { startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: 'action.active' }} /></InputAdornment>, sx: { borderRadius: 1.15 } },
+              input: { startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: 'action.active' }} /></InputAdornment>, sx: { borderRadius: 1.5 } },
             }}
             sx={{ mb: 1.5 }}
           />
 
           {/* Reviewers list */}
-          <Paper variant="outlined" sx={{ maxHeight: 280, overflow: 'auto', borderRadius: 1.15 }}>
+          <Paper variant="outlined" sx={{ maxHeight: 280, overflow: 'auto', borderRadius: 1.5 }}>
             {systemUsers.length === 0 ? (
               <Box sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">No users available.</Typography>
@@ -1105,7 +1105,7 @@ export default function PipelinePage() {
                           setSelectedReviewerName(user.fullname)
                         }}
                         sx={{
-                          borderRadius: 1.15,
+                          borderRadius: 1.5,
                           mx: 0.5,
                           my: 0.25,
                           '&.Mui-selected': {
@@ -1114,7 +1114,7 @@ export default function PipelinePage() {
                         }}
                       >
                         <ListItemAvatar>
-                          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', fontSize: 14 }}>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 14 }}>
                             {user.fullname?.charAt(0)?.toUpperCase() ?? '?'}
                           </Avatar>
                         </ListItemAvatar>
@@ -1141,7 +1141,7 @@ export default function PipelinePage() {
             onClick={() => { setShowReviewerDialog(false); setSelectedReviewerId(null); setSelectedReviewerName(null); setReviewDueDate('') }}
             variant="outlined"
             disabled={actionLoading}
-            sx={{ borderRadius: 1.15 }}
+            sx={{ borderRadius: 1.5 }}
           >
             Cancel
           </Button>
@@ -1151,9 +1151,9 @@ export default function PipelinePage() {
             disabled={!selectedReviewerId || actionLoading}
             startIcon={actionLoading ? undefined : <RateReviewIcon />}
             sx={{
-              bgcolor: '#0078D4',
-              '&:hover': { bgcolor: '#006cbe' },
-              borderRadius: 1.15,
+              bgcolor: 'primary.main',
+              '&:hover': { bgcolor: 'primary.dark' },
+              borderRadius: 1.5,
               fontWeight: 600,
             }}
           >
@@ -1170,7 +1170,7 @@ export default function PipelinePage() {
         fullWidth
         slotProps={{
           paper: {
-            sx: { borderRadius: 1.15, overflow: 'visible' },
+            sx: { borderRadius: 1.5, overflow: 'visible' },
           },
         }}
       >
@@ -1183,7 +1183,7 @@ export default function PipelinePage() {
             width: 56,
             height: 56,
             borderRadius: '50%',
-            bgcolor: '#22c55e',
+            bgcolor: 'success.main',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1208,9 +1208,9 @@ export default function PipelinePage() {
             variant="contained"
             onClick={() => setConfirmDialog({ open: false, name: '' })}
             sx={{
-              bgcolor: '#0078D4',
-              '&:hover': { bgcolor: '#006cbe' },
-              borderRadius: 1.15,
+              bgcolor: 'primary.main',
+              '&:hover': { bgcolor: 'primary.dark' },
+              borderRadius: 1.5,
               px: 4,
               fontWeight: 600,
             }}

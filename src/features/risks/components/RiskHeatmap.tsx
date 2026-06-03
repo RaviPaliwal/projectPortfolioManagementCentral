@@ -64,7 +64,7 @@ export const RiskHeatmap = ({ risks }: RiskHeatmapProps) => {
   }, [risks])
 
   return (
-    <Paper sx={{ p: 3, borderRadius: 1.15, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+    <Paper sx={{ p: 3, borderRadius: 1.5, border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
         Inherent Risk Heatmap
       </Typography>
@@ -82,9 +82,9 @@ export const RiskHeatmap = ({ risks }: RiskHeatmapProps) => {
               type: 'heatmap',
               colorscale: [
                 [0, '#dbeafe'],
-                [0.33, '#22c55e'],
-                [0.66, '#f59e0b'],
-                [1, '#ef4444'],
+                [0.33, 'success.main'],
+                [0.66, 'warning.main'],
+                [1, 'error.main'],
               ],
               showscale: true,
               colorbar: {
@@ -119,7 +119,7 @@ export const RiskHeatmap = ({ risks }: RiskHeatmapProps) => {
                 showarrow: false,
                 font: {
                   size: val > 0 ? 16 : 0,
-                  color: val >= 5 ? '#ffffff' : isDark ? '#e2e8f0' : '#1e293b',
+                  color: val >= 5 ? '#ffffff' : isDark ? '#e2e8f0' : 'background.paper',
                 },
                 bgcolor: val > 0 ? 'transparent' : 'transparent',
                 borderpad: 0,

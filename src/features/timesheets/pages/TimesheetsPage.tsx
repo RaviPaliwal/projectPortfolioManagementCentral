@@ -242,42 +242,42 @@ export default function TimesheetsPage() {
         value: total,
         subtitle: 'All active timesheets',
         icon: <EventNoteIcon />,
-        color: '#0ea5e9',
+        color: 'primary.main',
       },
       {
         label: 'Pending Approval',
         value: pending,
         subtitle: `${pending > 0 ? `${((pending / (total || 1)) * 100).toFixed(0)}% of total` : 'No submissions'}`,
         icon: <ScheduleIcon />,
-        color: '#f59e0b',
+        color: 'warning.main',
       },
       {
         label: 'Approved',
         value: approved,
         subtitle: 'Finalized entries',
         icon: <CheckCircleIcon />,
-        color: '#22c55e',
+        color: 'success.main',
       },
       {
         label: 'Rejected',
         value: rejected,
         subtitle: 'Requires correction',
         icon: <CancelIcon />,
-        color: '#ef4444',
+        color: 'error.main',
       },
       {
         label: 'Drafts',
         value: drafts,
         subtitle: `${drafts > 0 ? `${drafts} timesheet${drafts !== 1 ? 's' : ''}` : 'All submitted'}`,
         icon: <EditNoteIcon />,
-        color: '#8b5cf6',
+        color: 'secondary.main',
       },
       {
         label: 'Hours Logged',
         value: `${totalHours.toLocaleString()}h`,
         subtitle: `Across ${approved} approved`,
         icon: <AccessTimeIcon />,
-        color: '#22c55e',
+        color: 'success.main',
       },
     ]
   }, [timesheets])
@@ -321,7 +321,7 @@ export default function TimesheetsPage() {
       <DetailDrawer
         open={!!selectedTimesheet}
         onClose={handleCloseDetail}
-        icon={<EventNoteIcon sx={{ color: '#8b5cf6', fontSize: 22 }} />}
+        icon={<EventNoteIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
         title={selectedTimesheet?.pm_timesheetname ?? ''}
         subtitle={
           selectedTimesheet && (

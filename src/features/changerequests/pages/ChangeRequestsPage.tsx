@@ -41,7 +41,7 @@ import { useUser } from '@/context/UserContext'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
 import type { ExportColumn } from '@/utils/exportUtils'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 
 const CHANGE_TYPE_LABELS: Record<string, string> = {
@@ -216,39 +216,39 @@ export default function ChangeRequestsPage() {
         label: 'Total Requests',
         value: String(total),
         icon: <ChangeCircleIcon />,
-        color: '#0ea5e9',
+        color: 'primary.main',
       },
       {
         label: 'Under Review',
         value: String(underReview),
         subtitle: underReview > 0 ? Math.round((underReview / total) * 100) + '% of total' : 'No pending reviews',
         icon: <HourglassEmptyIcon />,
-        color: '#f59e0b',
+        color: 'warning.main',
       },
       {
         label: 'Approved',
         value: String(approved),
         subtitle: total > 0 ? Math.round((approved / total) * 100) + '% approval rate' : 'No approvals yet',
         icon: <CheckCircleIcon />,
-        color: '#22c55e',
+        color: 'success.main',
       },
       {
         label: 'Total Cost Impact',
         value: '\u20AC' + numberFormatter.format(totalCostImpact),
         icon: <AttachMoneyIcon />,
-        color: totalCostImpact > 100000 ? '#ef4444' : '#8b5cf6',
+        color: totalCostImpact > 100000 ? 'error.main' : 'secondary.main',
       },
       {
         label: 'Schedule Impact',
         value: `${totalScheduleImpact} days`,
         icon: <TimerIcon />,
-        color: '#f97316',
+        color: 'warning.main',
       },
       {
         label: 'Scope Changes',
         value: String(scopeChanges),
         icon: <CategoryIcon />,
-        color: '#6366f1',
+        color: 'secondary.main',
       },
     ]
   }, [changeRequests])
@@ -485,12 +485,12 @@ export default function ChangeRequestsPage() {
           filterOptions={TYPE_FILTER_OPTIONS}
           extraFilters={
             <FormControl size="small" sx={{ minWidth: 160 }}>
-              <InputLabel sx={{ fontSize: 14 }}>Status</InputLabel>
+              <InputLabel sx={{ fontSize: fontSizes.base }}>Status</InputLabel>
               <Select
                 value={statusFilter}
                 label="Status"
                 onChange={(e) => handleStatusFilterChange(e.target.value)}
-                sx={{ borderRadius: 1.15, bgcolor: isDark ? '#1e293b' : '#fff' }}
+                sx={{ borderRadius: 1.5, bgcolor: isDark ? 'background.paper' : '#fff' }}
               >
                 {STATUS_FILTER_OPTIONS.map((opt) => (
                   <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
@@ -515,32 +515,32 @@ export default function ChangeRequestsPage() {
           <Table stickyHeader size="small" sx={{ minWidth: 1200 }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'title'} direction={sort.field === 'title' ? sort.dir : 'asc'} onClick={() => handleSort('title')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Title</TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'reference'} direction={sort.field === 'reference' ? sort.dir : 'asc'} onClick={() => handleSort('reference')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Ref</TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'type'} direction={sort.field === 'type' ? sort.dir : 'asc'} onClick={() => handleSort('type')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Type</TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'priority'} direction={sort.field === 'priority' ? sort.dir : 'asc'} onClick={() => handleSort('priority')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Priority</TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'status'} direction={sort.field === 'status' ? sort.dir : 'asc'} onClick={() => handleSort('status')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Status</TableSortLabel>
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'cost'} direction={sort.field === 'cost' ? sort.dir : 'asc'} onClick={() => handleSort('cost')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Cost Impact</TableSortLabel>
                 </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'schedule'} direction={sort.field === 'schedule' ? sort.dir : 'asc'} onClick={() => handleSort('schedule')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Schedule</TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'requestor'} direction={sort.field === 'requestor' ? sort.dir : 'asc'} onClick={() => handleSort('requestor')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Requestor</TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>Entity</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>Entity</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'date'} direction={sort.field === 'date' ? sort.dir : 'asc'} onClick={() => handleSort('date')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Date</TableSortLabel>
                 </TableCell>
               </TableRow>
@@ -553,7 +553,7 @@ export default function ChangeRequestsPage() {
                   onClick={() => handleRowClick(cr)}
                   sx={{
                     cursor: 'pointer',
-                    bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                    bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                     '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                     transition: 'background-color 0.15s ease',
                     '& td': { px: 2.5, py: 1.25 },
@@ -561,7 +561,7 @@ export default function ChangeRequestsPage() {
                 >
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', fontSize: 12, fontWeight: 700 }}>
+                      <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 12, fontWeight: 700 }}>
                         {(cr.pm_changerequesttitle ?? 'CR').charAt(0).toUpperCase()}
                       </Avatar>
                       <Box>
@@ -600,7 +600,7 @@ export default function ChangeRequestsPage() {
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                      <PeopleIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                      <PeopleIcon sx={{ fontSize: fontSizes.base, color: 'text.secondary' }} />
                       <Typography variant="body2">{cr.pm_requestorname || '\u2014'}</Typography>
                     </Box>
                   </TableCell>
@@ -645,7 +645,7 @@ export default function ChangeRequestsPage() {
       <DetailDrawer
         open={!!selectedCR}
         onClose={handleCloseDetail}
-        icon={<ChangeCircleIcon sx={{ color: '#0ea5e9', fontSize: 22 }} />}
+        icon={<ChangeCircleIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
         title={selectedCR?.pm_changerequesttitle ?? ''}
         subtitle={selectedCR && (
           <>
@@ -704,17 +704,23 @@ export default function ChangeRequestsPage() {
                   }
                 }}
                 startIcon={<SendIcon sx={{ fontSize: 16 }} />}
-                sx={{ borderRadius: 1.15, fontWeight: 600, fontSize: 12, py: 0.5 }}
+                sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 12, py: 0.5 }}
               >
                 {approvalLoading ? 'Submitting...' : 'Submit for Approval'}
               </Button>
             )}
-            <IconButton size="small" color="error" onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)} sx={{ borderRadius: 1.15 }}>
-              <DeleteIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-            <IconButton size="small" onClick={() => selectedCR && openEditForm(selectedCR)} sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}>
-              <EditIcon sx={{ fontSize: 20 }} />
-            </IconButton>
+            <ActionIcon
+              label="Delete"
+              color="error"
+              onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)}
+              icon={<DeleteIcon />}
+            />
+            <ActionIcon
+              label="Edit"
+              color="primary"
+              onClick={() => selectedCR && openEditForm(selectedCR)}
+              icon={<EditIcon />}
+            />
           </Box>
         }
         tabs={[{ label: 'Overview' }, { label: 'Details' }]}
@@ -725,20 +731,20 @@ export default function ChangeRequestsPage() {
           <>
             <TabPanel value={detailTab} index={0} pt={0}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <GppMaybeIcon sx={{ fontSize: 16 }} /> Impact Summary
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, textAlign: 'center', borderLeft: '3px solid #ef4444' }}>
-                      <AttachMoneyIcon sx={{ fontSize: 20, color: '#ef4444', mb: 0.5 }} />
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center', borderLeft: '3px solid', borderLeftColor: 'error.main' }}>
+                      <AttachMoneyIcon sx={{ fontSize: 20, color: 'error.main', mb: 0.5 }} />
                       <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '\"JetBrains Mono\", monospace', fontSize: 16 }}>
                         {selectedCR.pm_costimpacteur != null ? '\u20AC' + numberFormatter.format(selectedCR.pm_costimpacteur) : '\u2014'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">Cost Impact</Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, textAlign: 'center', borderLeft: '3px solid #f59e0b' }}>
-                      <ScheduleIcon sx={{ fontSize: 20, color: '#f59e0b', mb: 0.5 }} />
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center', borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
+                      <ScheduleIcon sx={{ fontSize: 20, color: 'warning.main', mb: 0.5 }} />
                       <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '\"JetBrains Mono\", monospace', fontSize: 16 }}>
                         {selectedCR.pm_scheduleimpactdays != null ? selectedCR.pm_scheduleimpactdays + ' days' : '\u2014'}
                       </Typography>
@@ -751,7 +757,7 @@ export default function ChangeRequestsPage() {
                   </Box>
                 </Paper>
 
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <DescriptionIcon sx={{ fontSize: 16 }} /> Description
                   </Typography>
@@ -761,7 +767,7 @@ export default function ChangeRequestsPage() {
                 </Paper>
 
                 {selectedCR.pm_justification && (
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <VerifiedIcon sx={{ fontSize: 16 }} /> Justification
                     </Typography>
@@ -772,7 +778,7 @@ export default function ChangeRequestsPage() {
                 )}
 
                 {selectedCR.pm_benefitsimpact && (
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <EmojiEventsIcon sx={{ fontSize: 16 }} /> Benefits Impact
                     </Typography>
@@ -785,7 +791,7 @@ export default function ChangeRequestsPage() {
             </TabPanel>
 
             <TabPanel value={detailTab} index={1} pt={0}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <AssignmentIcon sx={{ fontSize: 16 }} /> Change Request Details
                 </Typography>
@@ -845,11 +851,11 @@ export default function ChangeRequestsPage() {
         maxWidth="md"
         fullWidth
         slotProps={{
-          paper: { sx: { borderRadius: 1.15 } },
+          paper: { sx: { borderRadius: 1.5 } },
         }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.15 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: 1.5 }}>
             {editingCR ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <AddIcon sx={{ fontSize: 18, color: '#fff' }} />}
           </Avatar>
           {editingCR ? 'Edit Change Request' : 'New Change Request'}
@@ -860,7 +866,7 @@ export default function ChangeRequestsPage() {
           </Typography>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <ChangeCircleIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
+            <ChangeCircleIcon sx={{ fontSize: 18, color: 'primary.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11, color: 'text.secondary' }}>Basic Information</Typography>
             <Divider sx={{ flex: 1 }} />
           </Box>
@@ -868,14 +874,14 @@ export default function ChangeRequestsPage() {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Change Request Title" required fullWidth size="small" value={formData.pm_changerequesttitle}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_changerequesttitle: e.target.value }))}
-                placeholder="e.g., Add new reporting module" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
+                placeholder="e.g., Add new reporting module" slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Change Type</InputLabel>
                 <Select value={formData.pm_changetype} label="Change Type"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_changetype: e.target.value as number }))}
-                  sx={{ borderRadius: 1.15 }}>
+                  sx={{ borderRadius: 1.5 }}>
                   <MenuItem value={0}>Scope</MenuItem>
                   <MenuItem value={1}>Schedule</MenuItem>
                   <MenuItem value={2}>Resource</MenuItem>
@@ -887,7 +893,7 @@ export default function ChangeRequestsPage() {
                 <InputLabel>Priority</InputLabel>
                 <Select value={formData.pm_prioritylevel} label="Priority"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_prioritylevel: e.target.value as number }))}
-                  sx={{ borderRadius: 1.15 }}>
+                  sx={{ borderRadius: 1.5 }}>
                   <MenuItem value={0}>Medium</MenuItem>
                   <MenuItem value={1}>High</MenuItem>
                 </Select>
@@ -896,7 +902,7 @@ export default function ChangeRequestsPage() {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Requestor Name" fullWidth size="small" value={formData.pm_requestorname}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_requestorname: e.target.value }))}
-                placeholder="e.g., John Smith" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
+                placeholder="e.g., John Smith" slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
@@ -909,7 +915,7 @@ export default function ChangeRequestsPage() {
                     _pm_programmelookup_value: e.target.value,
                     _pm_project_value: '', // Clear project when programme changes
                   }))}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 1.5 }}
                 >
                   <MenuItem value=""><em>None</em></MenuItem>
                   {programmes.map((prog) => (
@@ -935,7 +941,7 @@ export default function ChangeRequestsPage() {
                       pm_projectcode: selectedProject?.pm_projectcode || '',
                     }))
                   }}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 1.5 }}
                 >
                   <MenuItem value=""><em>None</em></MenuItem>
                   {projects
@@ -958,12 +964,12 @@ export default function ChangeRequestsPage() {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Submission Date" type="date" fullWidth size="small" value={formData.pm_submissiondate}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_submissiondate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }} />
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }} />
             </Grid>
           </Grid>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <GppMaybeIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
+            <GppMaybeIcon sx={{ fontSize: 18, color: 'warning.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11, color: 'text.secondary' }}>Impact Details</Typography>
             <Divider sx={{ flex: 1 }} />
           </Box>
@@ -971,12 +977,12 @@ export default function ChangeRequestsPage() {
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField label="Cost Impact (EUR)" type="number" fullWidth size="small" value={formData.pm_costimpacteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_costimpacteur: Number(e.target.value) }))}
-                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>&euro;</Typography>, sx: { borderRadius: 1.15 } } }} />
+                slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>&euro;</Typography>, sx: { borderRadius: 1.5 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField label="Schedule Impact (days)" type="number" fullWidth size="small" value={formData.pm_scheduleimpactdays}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_scheduleimpactdays: Number(e.target.value) }))}
-                slotProps={{ input: { endAdornment: <Typography variant="caption" sx={{ ml: 0.5, color: 'text.secondary' }}>days</Typography>, sx: { borderRadius: 1.15 } } }} />
+                slotProps={{ input: { endAdornment: <Typography variant="caption" sx={{ ml: 0.5, color: 'text.secondary' }}>days</Typography>, sx: { borderRadius: 1.5 } } }} />
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'center' }}>
               <FormControlLabel
@@ -986,39 +992,39 @@ export default function ChangeRequestsPage() {
             <Grid size={{ xs: 12 }}>
               <TextField label="Description of Change" fullWidth multiline rows={3} size="small" value={formData.pm_changedescription}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_changedescription: e.target.value }))}
-                placeholder="Describe the proposed change in detail..." slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
+                placeholder="Describe the proposed change in detail..." slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField label="Justification" fullWidth multiline rows={2} size="small" value={formData.pm_justification}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_justification: e.target.value }))}
-                placeholder="Why is this change necessary?" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
+                placeholder="Why is this change necessary?" slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField label="Benefits Impact" fullWidth multiline rows={2} size="small" value={formData.pm_benefitsimpact}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_benefitsimpact: e.target.value }))}
-                placeholder="How does this change affect expected benefits?" slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
+                placeholder="How does this change affect expected benefits?" slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>Cancel</Button>
+          <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>Cancel</Button>
           <Button onClick={handleSave} variant="contained"
             disabled={!String(formData.pm_changerequesttitle || '').trim() || actionLoading}
-            sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}>
+            sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}>
             {actionLoading ? 'Saving...' : editingCR ? 'Update Change Request' : 'Submit Change Request'}
           </Button>
         </DialogActions>
       </Dialog>
 
       <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}>
+        slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}>
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Change Request</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">Are you sure you want to remove this change request? This action cannot be undone.</Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>Cancel</Button>
-          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>Cancel</Button>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             {actionLoading ? 'Removing...' : 'Remove'}
           </Button>
         </DialogActions>

@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, useTheme } from '@mui/material'
+import { Box, Paper, Typography, useTheme, Skeleton } from '@mui/material'
 import type { ReactNode } from 'react'
 import { fontSizes } from '../../../styles'
 
@@ -15,6 +15,40 @@ export interface MetricTileProps {
 export const MetricTile = ({ label, value, subtitle, icon, color, valueColor, loading }: MetricTileProps) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  if (loading) {
+    return (
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          height: '100%',
+          borderRadius: 1.15,
+          position: 'relative',
+          overflow: 'hidden',
+          bgcolor: isDark ? 'background.paper' : '#fff',
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+          <Skeleton variant="text" width="40%" height={20} />
+          <Skeleton variant="circular" width={24} height={24} />
+        </Box>
+        <Skeleton variant="text" width="60%" height={40} />
+        <Skeleton variant="text" width="80%" height={20} />
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: "5px",
+            height: "100%",
+            bgcolor: color || 'primary.main',
+            opacity: 0.2,
+          }}
+        />
+      </Paper>
+    )
+  }
 
   return (
     <Paper

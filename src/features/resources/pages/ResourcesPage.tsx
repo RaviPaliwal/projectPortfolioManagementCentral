@@ -67,7 +67,7 @@ import {
 import type { ExportColumn } from '@/utils/exportUtils'
 import type { ResourceModel, ResourceAllocationModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, ActionIcon } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import  { StatusTag } from '@/components/common'
 import {
@@ -257,28 +257,28 @@ export default function ResourcesPage() {
         value: total,
         subtitle: 'Active team members',
         icon: <GroupsIcon />,
-        color: '#0ea5e9',
+        color: 'primary.main',
       },
       {
         label: 'Internal Staff',
         value: internal,
         subtitle: `${total > 0 ? ((internal / total) * 100).toFixed(0) : 0}% of workforce`,
         icon: <BadgeIcon />,
-        color: '#22c55e',
+        color: 'success.main',
       },
       {
         label: 'Contractors',
         value: contractors,
         subtitle: `${total > 0 ? ((contractors / total) * 100).toFixed(0) : 0}% of workforce`,
         icon: <EngineeringIcon />,
-        color: '#f59e0b',
+        color: 'warning.main',
       },
       {
         label: 'Total Daily Capacity',
         value: `${totalCapacity} hrs`,
         subtitle: 'Across all active resources',
         icon: <WorkIcon />,
-        color: '#8b5cf6',
+        color: 'secondary.main',
       },
     ]
   }, [resources])
@@ -551,32 +551,32 @@ export default function ResourcesPage() {
               <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                       <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                         Name
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                       <TableSortLabel active={sort.field === 'department'} direction={sort.field === 'department' ? sort.dir : 'asc'} onClick={() => handleSort('department')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                         Department
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                       <TableSortLabel active={sort.field === 'role'} direction={sort.field === 'role' ? sort.dir : 'asc'} onClick={() => handleSort('role')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                         Role
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                       <TableSortLabel active={sort.field === 'category'} direction={sort.field === 'category' ? sort.dir : 'asc'} onClick={() => handleSort('category')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                         Category
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                       <TableSortLabel active={sort.field === 'capacity'} direction={sort.field === 'capacity' ? sort.dir : 'asc'} onClick={() => handleSort('capacity')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                         Daily Capacity
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                       <TableSortLabel active={sort.field === 'costrate'} direction={sort.field === 'costrate' ? sort.dir : 'asc'} onClick={() => handleSort('costrate')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                         Daily Rate
                       </TableSortLabel>
@@ -591,7 +591,7 @@ export default function ResourcesPage() {
                       onClick={() => handleRowClick(resource)}
                       sx={{
                         cursor: 'pointer',
-                        bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                        bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                         '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                         transition: 'background-color 0.15s ease',
                         '& td': { px: 2.5, py: 1.25 },
@@ -599,7 +599,7 @@ export default function ResourcesPage() {
                     >
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', fontSize: fontSizes.sm, fontWeight: 700 }}>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
                             {(resource.pm_fullname ?? '?').charAt(0).toUpperCase()}
                           </Avatar>
                           <Box>
@@ -673,7 +673,7 @@ export default function ResourcesPage() {
           <DetailDrawer
             open={!!selectedResource}
             onClose={handleCloseDetail}
-            icon={<PersonIcon sx={{ color: '#0ea5e9', fontSize: 22 }} />}
+            icon={<PersonIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
             title={selectedResource?.pm_fullname ?? ''}
             subtitle={selectedResource && (
               <>
@@ -705,21 +705,18 @@ export default function ResourcesPage() {
             )}
             headerActions={
               <Box sx={{ display: 'flex', gap: 0.5 }}>
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => selectedResource?.pm_resourceid && setDeleteConfirm(selectedResource.pm_resourceid)}
-                  sx={{ borderRadius: 1.15 }}
-                >
-                  <DeleteIcon sx={{ fontSize: 20 }} />
-                </IconButton>
-                <IconButton
-                  size="small"
+                <ActionIcon
+                  icon={<EditIcon />}
                   onClick={() => selectedResource && openEditForm(selectedResource)}
-                  sx={{ bgcolor: '#0078D4', color: '#fff', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15 }}
-                >
-                  <EditIcon sx={{ fontSize: 20 }} />
-                </IconButton>
+                  label="Edit Resource"
+                  color="primary"
+                />
+                <ActionIcon
+                  icon={<DeleteIcon />}
+                  onClick={() => selectedResource?.pm_resourceid && setDeleteConfirm(selectedResource.pm_resourceid)}
+                  label="Delete Resource"
+                  color="error"
+                />
               </Box>
             }
             tabs={[
@@ -736,7 +733,7 @@ export default function ResourcesPage() {
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                     {/* Quick Stats */}
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #0ea5e9' }}>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'primary.main' }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                           Daily Capacity
                         </Typography>
@@ -744,7 +741,7 @@ export default function ResourcesPage() {
                           {selectedResource.pm_dailyworkcapacity ?? '—'}h
                         </Typography>
                       </Paper>
-                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.15, borderLeft: '3px solid #22c55e' }}>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'success.main' }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
                           Daily Rate
                         </Typography>
@@ -755,7 +752,7 @@ export default function ResourcesPage() {
                     </Box>
 
                     {/* Details */}
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <PersonIcon sx={{ fontSize: 16 }} /> Resource Details
                       </Typography>
@@ -792,7 +789,7 @@ export default function ResourcesPage() {
                     </Paper>
 
                     {/* Total Allocations Summary */}
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.15 }}>
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <WorkIcon sx={{ fontSize: 16 }} /> Current Allocation
                       </Typography>
@@ -819,7 +816,7 @@ export default function ResourcesPage() {
                   {resourceAllocations.length > 0 ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                       {resourceAllocations.map((alloc) => (
-                        <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 2, borderRadius: 1.15 }}>
+                        <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <Box>
                               <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
@@ -865,11 +862,11 @@ export default function ResourcesPage() {
             maxWidth="md"
             fullWidth
             slotProps={{
-              paper: { sx: { borderRadius: 1.15 } },
+              paper: { sx: { borderRadius: 1.5 } },
             }}
           >
             <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', borderRadius: 1.15 }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: 1.5 }}>
                 {editingResource ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <PersonIcon sx={{ fontSize: 18, color: '#fff' }} />}
               </Avatar>
               {editingResource ? 'Edit Resource' : 'Add New Resource'}
@@ -881,7 +878,7 @@ export default function ResourcesPage() {
 
               {/* Basic Information */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <PersonIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
+                <PersonIcon sx={{ fontSize: 18, color: 'primary.main' }} />
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
                   Basic Information
                 </Typography>
@@ -896,7 +893,7 @@ export default function ResourcesPage() {
                     size="small"
                     value={formData.pm_fullname}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_fullname: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -906,7 +903,7 @@ export default function ResourcesPage() {
                       value={formData.pm_resourcecategory}
                       label="Category"
                       onChange={(e) => setFormData((f) => ({ ...f, pm_resourcecategory: e.target.value as number }))}
-                      sx={{ borderRadius: 1.15 }}
+                      sx={{ borderRadius: 1.5 }}
                     >
                       <MenuItem value={0}>Internal Staff</MenuItem>
                       <MenuItem value={1}>Contractor</MenuItem>
@@ -921,7 +918,7 @@ export default function ResourcesPage() {
                     size="small"
                     value={formData.pm_departmentname}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_departmentname: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -931,7 +928,7 @@ export default function ResourcesPage() {
                     size="small"
                     value={formData.pm_positiontitle}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_positiontitle: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -941,7 +938,7 @@ export default function ResourcesPage() {
                     size="small"
                     value={formData.pm_primaryrole}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_primaryrole: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -951,7 +948,7 @@ export default function ResourcesPage() {
                     size="small"
                     value={formData.pm_contactemail}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_contactemail: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                   />
                 </Grid>
                 {formData.pm_resourcecategory === 1 && (
@@ -962,7 +959,7 @@ export default function ResourcesPage() {
                       size="small"
                       value={formData.pm_suppliercompany}
                       onChange={(e) => setFormData((f) => ({ ...f, pm_suppliercompany: e.target.value }))}
-                      slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                      slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                     />
                   </Grid>
                 )}
@@ -970,7 +967,7 @@ export default function ResourcesPage() {
 
               {/* Capacity & Rate */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <LocalAtmIcon sx={{ fontSize: 18, color: '#22c55e' }} />
+                <LocalAtmIcon sx={{ fontSize: 18, color: 'success.main' }} />
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
                   Capacity & Rate
                 </Typography>
@@ -985,7 +982,7 @@ export default function ResourcesPage() {
                     size="small"
                     value={formData.pm_dailyworkcapacity}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_dailyworkcapacity: Number(e.target.value) }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }}>
@@ -996,7 +993,7 @@ export default function ResourcesPage() {
                     size="small"
                     value={formData.pm_dailycostrate}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_dailycostrate: Number(e.target.value) }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
+                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }}>
@@ -1007,20 +1004,20 @@ export default function ResourcesPage() {
                     size="small"
                     value={formData.pm_contractenddate}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_contractenddate: e.target.value }))}
-                    slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.15 } } }}
+                    slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
                   />
                 </Grid>
               </Grid>
             </DialogContent>
             <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+              <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
                 Cancel
               </Button>
               <Button
                 onClick={handleSaveResource}
                 variant="contained"
                 disabled={!formData.pm_fullname.trim() || actionLoading}
-                sx={{ bgcolor: '#0078D4', '&:hover': { bgcolor: '#006cbe' }, borderRadius: 1.15, fontWeight: 600 }}
+                sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
               >
                 {actionLoading ? 'Saving...' : editingResource ? 'Update Resource' : 'Create Resource'}
               </Button>
@@ -1034,7 +1031,7 @@ export default function ResourcesPage() {
             maxWidth="xs"
             fullWidth
             slotProps={{
-              paper: { sx: { borderRadius: 1.15 } },
+              paper: { sx: { borderRadius: 1.5 } },
             }}
           >
             <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Remove Resource</DialogTitle>
@@ -1044,10 +1041,10 @@ export default function ResourcesPage() {
               </Typography>
             </DialogContent>
             <DialogActions sx={{ p: 2.5, gap: 1 }}>
-              <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+              <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
                 Cancel
               </Button>
-              <Button onClick={handleDeleteResource} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+              <Button onClick={handleDeleteResource} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
                 {actionLoading ? 'Removing...' : 'Remove'}
               </Button>
             </DialogActions>
@@ -1072,25 +1069,25 @@ interface ForecastingViewProps {
 }
 
 const DONUT_COLORS = [
-  '#0ea5e9', '#8b5cf6', '#f97316', '#06b6d4',
-  '#ec4899', '#14b8a6', '#eab308', '#6366f1', '#84cc16', '#a855f7',
+  'primary.main', 'secondary.main', '#f97316', '#06b6d4',
+  '#ec4899', '#14b8a6', '#eab308', 'secondary.main', '#84cc16', '#a855f7',
 ]
 
 const ROLE_COLORS = [
-  '#0ea5e9', '#8b5cf6', '#f97316', '#06b6d4',
-  '#ec4899', '#14b8a6', '#eab308', '#6366f1',
+  'primary.main', 'secondary.main', '#f97316', '#06b6d4',
+  '#ec4899', '#14b8a6', '#eab308', 'secondary.main',
   '#84cc16', '#a855f7',
 ]
 
 function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, deptDemand, loading, resources, isDark, theme }: ForecastingViewProps) {
-  const textColor = isDark ? '#f8fafc' : '#0f172a'
+  const textColor = isDark ? 'background.default' : '#0f172a'
   const gridColor = isDark ? '#334155' : '#e6eef7'
 
   const tooltipStyle = {
-    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+    backgroundColor: isDark ? 'background.paper' : '#ffffff',
     border: `1px solid ${gridColor}`,
     color: textColor,
-    borderRadius: 1.15,
+    borderRadius: 1.5,
     fontSize: 13,
   }
 
@@ -1105,27 +1102,27 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
         label: 'Overall Utilization',
         value: `${overallUtilization}%`,
         icon: <TrendingUpIcon />,
-        color: overallUtilization > 100 ? '#ef4444' : overallUtilization > 80 ? '#f59e0b' : '#22c55e',
+        color: overallUtilization > 100 ? 'error.main' : overallUtilization > 80 ? 'warning.main' : 'success.main',
         trend: `${totalAllocated}h / ${totalCapacity}h`,
       },
       {
         label: 'Total Capacity (monthly)',
         value: `${totalCapacity}h`,
         icon: <TimelineIcon />,
-        color: '#0ea5e9',
+        color: 'primary.main',
       },
       {
         label: 'Total Allocated',
         value: `${totalAllocated}h`,
         icon: <WorkIcon />,
-        color: '#8b5cf6',
+        color: 'secondary.main',
         trend: `${capacityData.length} resources`,
       },
       {
         label: 'Over-allocated',
         value: overAllocated,
         icon: <InsightsIcon />,
-        color: overAllocated > 0 ? '#ef4444' : '#22c55e',
+        color: overAllocated > 0 ? 'error.main' : 'success.main',
         trend: overAllocated > 0 ? 'Needs attention' : 'All clear',
       },
     ]
@@ -1180,7 +1177,7 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
                 const { x, y, width, height, payload } = props
                 if (!hasData) return null
                 const pct = payload.percentage
-                const fill = pct > 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : '#22c55e'
+                const fill = pct > 100 ? 'error.main' : pct > 80 ? 'warning.main' : 'success.main'
                 return <rect x={x} y={y} width={width} height={height} fill={fill} />
               }}
             />
@@ -1190,15 +1187,15 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
         {hasData && (
           <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center', mt: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '2px', bgcolor: '#22c55e' }} />
+              <Box sx={{ width: 12, height: 12, borderRadius: '2px', bgcolor: 'success.main' }} />
               <Typography variant="caption">≤ 80% (Healthy)</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '2px', bgcolor: '#f59e0b' }} />
+              <Box sx={{ width: 12, height: 12, borderRadius: '2px', bgcolor: 'warning.main' }} />
               <Typography variant="caption">80–100% (At Risk)</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '2px', bgcolor: '#ef4444' }} />
+              <Box sx={{ width: 12, height: 12, borderRadius: '2px', bgcolor: 'error.main' }} />
               <Typography variant="caption">&gt; 100% (Over-allocated)</Typography>
             </Box>
           </Box>
@@ -1233,8 +1230,8 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
               return [`${value}h`, 'Actual']
             }} />
             <Legend formatter={(value: string) => (value === 'planned' ? 'Planned Hours' : 'Actual Hours')} />
-            <Bar dataKey="planned" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="actual" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="planned" fill="'primary.main'" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="actual" fill="'warning.main'" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </>
@@ -1340,8 +1337,8 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
                 <Area
                   type="monotone"
                   dataKey="No Data"
-                  stroke="#94a3b8"
-                  fill="#94a3b8"
+                  stroke="'text.disabled'"
+                  fill="'text.disabled'"
                   fillOpacity={0.15}
                   strokeWidth={2}
                   dot={false}
@@ -1382,13 +1379,13 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
         <Table size="small" sx={{ minWidth: 600 }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>Month</TableCell>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default' }}>Month</TableCell>
               {roles.map((role) => (
-                <TableCell key={role} align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc' }}>
+                <TableCell key={role} align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default' }}>
                   {role}
                 </TableCell>
               ))}
-              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', color: 'primary.main' }}>Total</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', color: 'primary.main' }}>Total</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -1426,23 +1423,23 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
 
       {/* Two-column chart layout */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 3, mb: 3 }}>
-        <Paper elevation={1} sx={{ p: 3, borderRadius: 1.15 }}>
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <WorkIcon sx={{ color: '#0ea5e9', fontSize: 20 }} />
+            <WorkIcon sx={{ color: 'primary.main', fontSize: 20 }} />
             <Typography variant="h6" sx={{ fontWeight: 700 }}>Capacity vs. Allocation</Typography>
           </Box>
           {renderCapacityAllocation()}
         </Paper>
 
-        <Paper elevation={1} sx={{ p: 3, borderRadius: 1.15 }}>
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <TimelineIcon sx={{ color: '#8b5cf6', fontSize: 20 }} />
+            <TimelineIcon sx={{ color: 'secondary.main', fontSize: 20 }} />
             <Typography variant="h6" sx={{ fontWeight: 700 }}>Planned vs. Actual</Typography>
           </Box>
           {renderPlannedVsActual()}
         </Paper>
 
-        <Paper elevation={1} sx={{ p: 3, borderRadius: 1.15 }}>
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <InsightsIcon sx={{ color: '#f97316', fontSize: 20 }} />
             <Typography variant="h6" sx={{ fontWeight: 700 }}>Utilization by Project</Typography>
@@ -1450,9 +1447,9 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
           {renderUtilizationByProject()}
         </Paper>
 
-        <Paper elevation={1} sx={{ p: 3, borderRadius: 1.15 }}>
+        <Paper elevation={1} sx={{ p: 3, borderRadius: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <GroupsIcon sx={{ color: '#22c55e', fontSize: 20 }} />
+            <GroupsIcon sx={{ color: 'success.main', fontSize: 20 }} />
             <Typography variant="h6" sx={{ fontWeight: 700 }}>Department Demand Forecast</Typography>
           </Box>
           {renderDeptDemand()}
@@ -1460,9 +1457,9 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
       </Box>
 
       {/* Monthly Demand Table */}
-      <Paper elevation={1} sx={{ p: 3, borderRadius: 1.15, mb: 3 }}>
+      <Paper elevation={1} sx={{ p: 3, borderRadius: 1.5, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <CalendarTodayIcon sx={{ color: '#6366f1', fontSize: 20 }} />
+          <CalendarTodayIcon sx={{ color: 'secondary.main', fontSize: 20 }} />
           <Typography variant="h6" sx={{ fontWeight: 700 }}>Monthly Demand Forecast — Role Breakdown</Typography>
         </Box>
         {renderDemandTable()}
@@ -1470,7 +1467,7 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
 
       {/* Summary Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' }, gap: 2 }}>
-        <Card variant="outlined" sx={{ borderRadius: 1.15 }}>
+        <Card variant="outlined" sx={{ borderRadius: 1.5 }}>
           <CardContent>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
               Most Allocated Resource
@@ -1487,7 +1484,7 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
             )}
           </CardContent>
         </Card>
-        <Card variant="outlined" sx={{ borderRadius: 1.15 }}>
+        <Card variant="outlined" sx={{ borderRadius: 1.5 }}>
           <CardContent>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
               Peak Demand Month
@@ -1510,7 +1507,7 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
             </Typography>
           </CardContent>
         </Card>
-        <Card variant="outlined" sx={{ borderRadius: 1.15 }}>
+        <Card variant="outlined" sx={{ borderRadius: 1.5 }}>
           <CardContent>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
               Resource Count

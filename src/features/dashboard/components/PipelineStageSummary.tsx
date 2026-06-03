@@ -3,10 +3,10 @@ import { Box, Paper, Typography, Skeleton, Divider } from '@mui/material'
 import type { InitiativeModel } from '@/types/dataverse'
 
 const PIPELINE_STAGES: Record<number, { label: string; color: string }> = {
-  1: { label: 'Under Review', color: '#f59e0b' },
-  2: { label: 'Screening', color: '#0ea5e9' },
-  0: { label: 'Approved', color: '#22c55e' },
-  3: { label: 'Rejected', color: '#ef4444' },
+  1: { label: 'Under Review', color: 'warning.main' },
+  2: { label: 'Screening', color: 'primary.main' },
+  0: { label: 'Approved', color: 'success.main' },
+  3: { label: 'Rejected', color: 'error.main' },
 }
 
 interface PipelineStageSummaryProps {
@@ -58,7 +58,7 @@ export const PipelineStageSummary = ({ initiatives, loading }: PipelineStageSumm
                 sx={{
                   px: 1.25,
                   py: 0.25,
-                  borderRadius: 1.15,
+                  borderRadius: 1.5,
                   bgcolor: `${stage.color}18`,
                   minWidth: 32,
                   textAlign: 'center',

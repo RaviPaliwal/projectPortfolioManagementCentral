@@ -176,7 +176,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
           )}
         </Box>
         <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}
-          sx={{ bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' }, borderRadius: 1.15, fontWeight: 600, textTransform: 'none', px: 2.5, boxShadow: '0 2px 8px rgba(139,92,246,0.25)' }}>
+          sx={{ bgcolor: 'secondary.main', '&:hover': { bgcolor: '#7c3aed' }, borderRadius: 1.5, fontWeight: 600, textTransform: 'none', px: 2.5, boxShadow: '0 2px 8px rgba(139,92,246,0.25)' }}>
           Add Step
         </Button>
       </Box>
@@ -187,19 +187,19 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
       {/* Empty State */}
       {!loading && sortedSteps.length === 0 && (
         <Paper sx={{
-          p: 6, textAlign: 'center', borderRadius: 1.15,
+          p: 6, textAlign: 'center', borderRadius: 1.5,
           border: '2px dashed', borderColor: 'divider',
           bgcolor: 'transparent',
         }}>
-          <Avatar sx={{ width: 64, height: 64, mx: 'auto', mb: 2, bgcolor: '#f3e8ff', borderRadius: 1.15 }}>
-            <SettingsIcon sx={{ fontSize: 32, color: '#8b5cf6' }} />
+          <Avatar sx={{ width: 64, height: 64, mx: 'auto', mb: 2, bgcolor: '#f3e8ff', borderRadius: 1.5 }}>
+            <SettingsIcon sx={{ fontSize: 32, color: 'secondary.main' }} />
           </Avatar>
           <Typography variant="h6" color="text.secondary" sx={{ mb: 0.5, fontWeight: 600 }}>No Steps Configured</Typography>
           <Typography variant="body2" color="text.disabled" sx={{ mb: 3, maxWidth: 360, mx: 'auto' }}>
             Define approval steps for this workflow. Each step represents a stage in the approval process.
           </Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}
-            sx={{ bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' }, borderRadius: 1.15, fontWeight: 600, textTransform: 'none', px: 3, boxShadow: '0 2px 8px rgba(139,92,246,0.25)' }}>
+            sx={{ bgcolor: 'secondary.main', '&:hover': { bgcolor: '#7c3aed' }, borderRadius: 1.5, fontWeight: 600, textTransform: 'none', px: 3, boxShadow: '0 2px 8px rgba(139,92,246,0.25)' }}>
             Configure First Step
           </Button>
         </Paper>
@@ -220,20 +220,20 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
             return (
             <Paper key={step.pm_workflowsteptemplateid} variant="outlined"
               sx={{
-                p: 2.5, mb: 1.5, borderRadius: 1.15,
+                p: 2.5, mb: 1.5, borderRadius: 1.5,
                 display: 'flex', alignItems: 'center', gap: 2,
                 transition: 'all 0.2s ease',
                 borderLeft: '3px solid',
-                borderLeftColor: isLast ? '#22c55e' : '#6366f1',
+                borderLeftColor: isLast ? 'success.main' : 'secondary.main',
                 '&:hover': {
                   boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                   transform: 'translateX(4px)',
-                  borderLeftColor: '#8b5cf6',
+                  borderLeftColor: 'secondary.main',
                 },
               }}>
               <Avatar sx={{
                 width: 44, height: 44,
-                bgcolor: idx === sortedSteps.length - 1 ? '#22c55e' : '#6366f1',
+                bgcolor: idx === sortedSteps.length - 1 ? 'success.main' : 'secondary.main',
                 fontSize: '0.9rem', fontWeight: 700,
                 boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
                 zIndex: 1,
@@ -250,7 +250,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {Number(step.pm_assignetype) === 1 ? <GroupIcon sx={{ fontSize: 14, color: '#f59e0b' }} /> : <PersonIcon sx={{ fontSize: 14, color: '#0ea5e9' }} />}
+                    {Number(step.pm_assignetype) === 1 ? <GroupIcon sx={{ fontSize: 14, color: 'warning.main' }} /> : <PersonIcon sx={{ fontSize: 14, color: 'primary.main' }} />}
                     <Typography variant="caption" color="text.secondary">
                       {Number(step.pm_assignetype) === 1 ? 'Team' : 'User'}: {(() => {
                         if (Number(step.pm_assignetype) === 1) {
@@ -264,17 +264,17 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                   </Box>
                   {step.pm_sladays != null && step.pm_sladays > 0 && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <TimerIcon sx={{ fontSize: 14, color: '#ef4444' }} />
+                      <TimerIcon sx={{ fontSize: 14, color: 'error.main' }} />
                       <Typography variant="caption" color="text.secondary">SLA: {step.pm_sladays}d</Typography>
                     </Box>
                   )}
                 </Box>
               </Box>
               <Box sx={{ display: 'flex', gap: 0.5 }}>
-                <IconButton size="small" onClick={() => openEdit(step)} sx={{ borderRadius: 1.15 }}>
+                <IconButton size="small" onClick={() => openEdit(step)} sx={{ borderRadius: 1.5 }}>
                   <EditIcon sx={{ fontSize: 18 }} />
                 </IconButton>
-                <IconButton size="small" color="error" onClick={() => setDeleteConfirm(step.pm_workflowsteptemplateid!)} sx={{ borderRadius: 1.15 }}>
+                <IconButton size="small" color="error" onClick={() => setDeleteConfirm(step.pm_workflowsteptemplateid!)} sx={{ borderRadius: 1.5 }}>
                   <DeleteIcon sx={{ fontSize: 18 }} />
                 </IconButton>
               </Box>
@@ -288,7 +288,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
         slotProps={{
           paper: {
             sx: {
-              borderRadius: 1.15,
+              borderRadius: 1.5,
               maxHeight: '90vh',
             },
           },
@@ -300,7 +300,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
           background: 'linear-gradient(135deg, #f8f9ff 0%, #fff 100%)',
           borderBottom: '1px solid', borderColor: 'divider',
         }}>
-          <Avatar sx={{ width: 36, height: 36, bgcolor: '#8b5cf6', borderRadius: 1.15 }}>
+          <Avatar sx={{ width: 36, height: 36, bgcolor: 'secondary.main', borderRadius: 1.5 }}>
             {editing ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <SettingsIcon sx={{ fontSize: 18, color: '#fff' }} />}
           </Avatar>
           <Box>
@@ -319,28 +319,28 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
               <TextField label="Step Name" required fullWidth size="small" value={formData.pm_workflowname}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_workflowname: e.target.value }))}
                 placeholder="e.g. PMO Review"
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
               <TextField label="Display Name" fullWidth size="small" value={formData.pm_displayname}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_displayname: e.target.value }))}
                 placeholder="Shown in task lists"
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
               <TextField label="Description" fullWidth multiline rows={2} size="small" value={formData.pm_description}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_description: e.target.value }))}
                 sx={{ gridColumn: '1 / -1' }}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
             </Box>
 
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
               <TextField label="Order" type="number" size="small" value={formData.pm_steporder}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_steporder: Number(e.target.value) }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
               <TextField label="SLA Days" type="number" size="small" value={formData.pm_sladays}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_sladays: Number(e.target.value) }))}
-                slotProps={{ input: { sx: { borderRadius: 1.15 } } }} />
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
               <FormControl size="small">
                 <InputLabel>Assignee Type</InputLabel>
                 <Select value={formData.pm_assignetype} label="Assignee Type"
-                  onChange={(e) => setFormData((f) => ({ ...f, pm_assignetype: e.target.value as number, pm_assigneeid: '' }))} sx={{ borderRadius: 1.15 }}>
+                  onChange={(e) => setFormData((f) => ({ ...f, pm_assignetype: e.target.value as number, pm_assigneeid: '' }))} sx={{ borderRadius: 1.5 }}>
                   <MenuItem value={0}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <PersonIcon sx={{ fontSize: 16 }} /> Individual User
@@ -371,7 +371,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                   getOptionLabel={(o) => o.label}
                   isOptionEqualToValue={(o, v) => o.value === v.value}
                   noOptionsText={isTeam ? 'No teams found' : 'No users found'}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.15 } }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
                   renderInput={(params) => (
                     <TextField {...params} label={isTeam ? 'Team' : 'Assignee'} placeholder={isTeam ? 'Search teams...' : 'Search users...'} />
                   )}
@@ -380,7 +380,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                     if (option.type === 'team') {
                       return (
                         <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.75 }}>
-                          <Avatar sx={{ width: 28, height: 28, bgcolor: '#f59e0b' }}>
+                          <Avatar sx={{ width: 28, height: 28, bgcolor: 'warning.main' }}>
                             <GroupIcon sx={{ fontSize: 16 }} />
                           </Avatar>
                           <Box>
@@ -392,7 +392,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                     }
                     return (
                       <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.75 }}>
-                        <Avatar sx={{ width: 28, height: 28, fontSize: 11, bgcolor: '#0ea5e9' }}>
+                        <Avatar sx={{ width: 28, height: 28, fontSize: 11, bgcolor: 'primary.main' }}>
                           {option.label?.charAt(0)?.toUpperCase() ?? '?'}
                         </Avatar>
                         <Box>
@@ -419,20 +419,20 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                 onClick={() => setFormData((f) => ({ ...f, pm_approvalrequired: !f.pm_approvalrequired }))}
                 startIcon={formData.pm_approvalrequired ? <CheckCircleIcon /> : null}
                 sx={{
-                  borderRadius: 1.15, textTransform: 'none', fontWeight: 600, px: 2,
-                  bgcolor: formData.pm_approvalrequired ? '#8b5cf6' : undefined,
+                  borderRadius: 1.5, textTransform: 'none', fontWeight: 600, px: 2,
+                  bgcolor: formData.pm_approvalrequired ? 'secondary.main' : undefined,
                   '&:hover': { bgcolor: formData.pm_approvalrequired ? '#7c3aed' : undefined },
                 }}>
                 {formData.pm_approvalrequired ? 'Approval Required' : 'Approval Optional'}
               </Button>
               <Button size="medium" variant={formData.pm_isparallel ? 'contained' : 'outlined'} color="info"
                 onClick={() => setFormData((f) => ({ ...f, pm_isparallel: !f.pm_isparallel }))}
-                sx={{ borderRadius: 1.15, textTransform: 'none', fontWeight: 600, px: 2 }}>
+                sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600, px: 2 }}>
                 {formData.pm_isparallel ? 'Parallel Execution' : 'Sequential Execution'}
               </Button>
               <Button size="medium" variant={formData.pm_allowdelegation ? 'contained' : 'outlined'} color="secondary"
                 onClick={() => setFormData((f) => ({ ...f, pm_allowdelegation: !f.pm_allowdelegation }))}
-                sx={{ borderRadius: 1.15, textTransform: 'none', fontWeight: 600, px: 2 }}>
+                sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600, px: 2 }}>
                 {formData.pm_allowdelegation ? 'Delegation Allowed' : 'No Delegation'}
               </Button>
             </Box>
@@ -449,13 +449,13 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
               {editing ? 'Modify the step details below.' : 'Fill in the details for the new step.'}
             </Typography>
           </Box>
-          <Button onClick={() => setShowForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15, textTransform: 'none', fontWeight: 600, px: 3 }}>
+          <Button onClick={() => setShowForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600, px: 3 }}>
             Cancel
           </Button>
           <Button onClick={handleSave} variant="contained" disabled={!formData.pm_workflowname.trim() || actionLoading}
             sx={{
-              bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' },
-              borderRadius: 1.15, fontWeight: 600, textTransform: 'none', px: 3,
+              bgcolor: 'secondary.main', '&:hover': { bgcolor: '#7c3aed' },
+              borderRadius: 1.5, fontWeight: 600, textTransform: 'none', px: 3,
             }}>
             {actionLoading ? 'Saving...' : editing ? 'Update Step' : 'Create Step'}
           </Button>
@@ -463,12 +463,12 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
       </Dialog>
  
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}>
+      <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}>
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Delete Step Template</DialogTitle>
         <DialogContent><Typography variant="body2" color="text.secondary">Are you sure? This cannot be undone.</Typography></DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>Cancel</Button>
-          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.15 }}>
+          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>Cancel</Button>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
             {actionLoading ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>

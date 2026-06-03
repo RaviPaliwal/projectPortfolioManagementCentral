@@ -97,25 +97,25 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
         <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_portfolioname'} direction={sort.field === 'pm_portfolioname' ? sort.dir : 'asc'} onClick={() => setSort('pm_portfolioname')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Portfolio Name</TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_portfolioowner'} direction={sort.field === 'pm_portfolioowner' ? sort.dir : 'asc'} onClick={() => setSort('pm_portfolioowner')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Owner / Sponsor</TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_portfoliostatus'} direction={sort.field === 'pm_portfoliostatus' ? sort.dir : 'asc'} onClick={() => setSort('pm_portfoliostatus')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Status</TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_ragstatus'} direction={sort.field === 'pm_ragstatus' ? sort.dir : 'asc'} onClick={() => setSort('pm_ragstatus')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>RAG Status</TableSortLabel>
               </TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_approvedbudgeteur'} direction={sort.field === 'pm_approvedbudgeteur' ? sort.dir : 'asc'} onClick={() => setSort('pm_approvedbudgeteur')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Total Budget</TableSortLabel>
               </TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_actualspendeur'} direction={sort.field === 'pm_actualspendeur' ? sort.dir : 'asc'} onClick={() => setSort('pm_actualspendeur')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Consumed</TableSortLabel>
               </TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Variance</Typography>
               </TableCell>
             </TableRow>
@@ -131,7 +131,7 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                   onClick={() => onRowClick(portfolio)}
                   sx={{
                     cursor: 'pointer',
-                    bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                    bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                     '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                     transition: 'background-color 0.15s ease',
                     '& td': { px: 2.5, py: 1.25 },
@@ -167,14 +167,14 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
-                    <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', color: isDark ? '#94a3b8' : '#64748b' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', color: isDark ? 'text.disabled' : '#64748b' }}>
                       {currencyFormatter.format(portfolio.pm_actualspendeur ?? 0)}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
                     <VarianceDisplay budget={portfolio.pm_approvedbudgeteur} consumed={portfolio.pm_actualspendeur} />
                     {isNegative && (
-                      <Typography variant="caption" sx={{ color: '#ef4444', fontWeight: 500, display: 'block' }}>
+                      <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 500, display: 'block' }}>
                         Over budget
                       </Typography>
                     )}

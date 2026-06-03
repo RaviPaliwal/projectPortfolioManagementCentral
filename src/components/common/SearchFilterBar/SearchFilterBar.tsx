@@ -1,4 +1,5 @@
 import { Box, TextField, InputAdornment, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import type { ReactNode } from 'react'
 import { fontSizes } from '../../../styles'
@@ -9,8 +10,8 @@ export interface FilterOption {
 }
 
 export interface SearchFilterBarProps {
-  searchQuery: string
-  onSearchChange: (value: string) => void
+  searchQuery?: string
+  onSearchChange?: (value: string) => void
   searchPlaceholder?: string
   /** Optional filter dropdown */
   filterValue?: string
@@ -28,10 +29,12 @@ export interface SearchFilterBarProps {
   onClear?: () => void
   /** If true, show clear button even when no filters active */
   showClear?: boolean
+  /** MUI SxProps */
+  sx?: SxProps<Theme>
 } 
 
 export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
-  searchQuery,
+  searchQuery = '',
   onSearchChange,
   searchPlaceholder = 'Search...',
   filterValue,
@@ -45,6 +48,7 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   extraFilters,
   onClear,
   showClear,
+  sx,
 }) => {
   const hasFilters = searchQuery || (filterValue && filterValue !== 'all' && filterValue !== '') || (secondaryFilterValue && secondaryFilterValue !== 'all' && secondaryFilterValue !== '') || showClear
 
@@ -59,25 +63,28 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
         gap: 2,
         flexWrap: 'wrap',
         alignItems: 'center',
+        ...sx,
       }}
     >
-      <TextField
-        size="small"
-        placeholder={searchPlaceholder}
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
-              </InputAdornment>
-            ),
-            sx: { borderRadius: 1.15, fontSize: fontSizes.base },
-          },
-        }}
-        sx={{ flex: '1 1 260px', maxWidth: 420 }}
-      />
+      {onSearchChange && (
+        <TextField
+          size="small"
+          placeholder={searchPlaceholder}
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                </InputAdornment>
+              ),
+              sx: { borderRadius: 1.15, fontSize: fontSizes.base },
+            },
+          }}
+          sx={{ flex: '1 1 260px', maxWidth: 420 }}
+        />
+      )}
 
       {filterOptions && onFilterChange && filterLabel && (
         <FormControl size="small" sx={{ minWidth: 180 }}>

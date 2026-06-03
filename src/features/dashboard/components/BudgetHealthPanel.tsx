@@ -51,7 +51,7 @@ export const BudgetHealthPanel = ({ totalApprovedBudget, totalActualSpend, loadi
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, display: 'block', mb: 0.25 }}>
                 Actual Spend
               </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#f59e0b' }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: 'warning.main' }}>
                 {currencyFormatter.format(totalActualSpend)}
               </Typography>
             </Box>
@@ -76,7 +76,7 @@ export const BudgetHealthPanel = ({ totalApprovedBudget, totalActualSpend, loadi
                 Remaining: {currencyFormatter.format(Math.max(0, budgetVariance))}
               </Typography>
               {budgetVariance < 0 && (
-                <Typography variant="caption" sx={{ color: '#ef4444', fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 600 }}>
                   Overspent: {currencyFormatter.format(Math.abs(budgetVariance))}
                 </Typography>
               )}

@@ -93,28 +93,28 @@ export default function ProjectsPage() {
       label: 'Active Projects',
       value: projects.length,
       icon: <CheckCircleIcon />,
-      color: '#22c55e',
+      color: 'success.main',
     },
     {
       label: 'On Track',
       value: projects.filter((p) => String(p.pm_ragstatus) === '1').length,
       subtitle: 'Green status',
       icon: <GppGoodIcon />,
-      color: '#22c55e',
+      color: 'success.main',
     },
     {
       label: 'At Risk',
       value: projects.filter((p) => String(p.pm_ragstatus) === '0').length,
       subtitle: 'Amber status',
       icon: <GppMaybeIcon />,
-      color: '#f59e0b',
+      color: 'warning.main',
     },
     {
       label: 'Critical',
       value: projects.filter((p) => String(p.pm_ragstatus) === '2').length,
       icon: <ErrorIcon />,
-      color: '#ef4444',
-      valueColor: '#ef4444',
+      color: 'error.main',
+      valueColor: 'error.main',
     },
     {
       label: 'Total Active Budget',
@@ -127,7 +127,7 @@ export default function ProjectsPage() {
       value: milestonesDue,
       subtitle: 'This month',
       icon: <EventNoteIcon />,
-      color: '#8b5cf6',
+      color: 'secondary.main',
     },
   ]
 

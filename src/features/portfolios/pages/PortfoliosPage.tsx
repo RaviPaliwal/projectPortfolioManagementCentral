@@ -28,6 +28,7 @@ import {
   ExportButton,
   KpiCardRow,
   Breadcrumbs,
+  ActionIcon,
 } from '@/components/common'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/utils/exportUtils'
@@ -172,42 +173,42 @@ export default function PortfoliosPage() {
                 value: portfolioList.length,
                 subtitle: "Active portfolios",
                 icon: <FolderIcon />,
-                color: "#6366f1"
+                color: "'secondary.main'"
               },
               {
                 label: "Green Health",
                 value: kpiHealth.green,
                 subtitle: "On track",
                 icon: <CheckCircleIcon />,
-                color: "#22c55e"
+                color: "'success.main'"
               },
               {
                 label: "Amber Health",
                 value: kpiHealth.amber,
                 subtitle: "At risk",
                 icon: <GppMaybeIcon />,
-                color: "#f59e0b"
+                color: "'warning.main'"
               },
               {
                 label: "Red Health",
                 value: kpiHealth.red,
                 subtitle: "Critical",
                 icon: <ErrorIcon />,
-                color: "#ef4444"
+                color: "'error.main'"
               },
               {
                 label: "Total Portfolio Value",
                 value: currencyFormatter.format(totalBudget),
                 subtitle: `Across ${portfolioList.length} portfolios`,
                 icon: <AccountBalanceWalletIcon />,
-                color: "#0ea5e9"
+                color: "'primary.main'"
               },
               {
                 label: "Total Consumed",
                 value: currencyFormatter.format(totalConsumed),
                 subtitle: totalBudget > 0 ? `${((totalConsumed / totalBudget) * 100).toFixed(1)}% consumed` : 'No budget data',
                 icon: <TrendingDownIcon />,
-                color: "#f59e0b"
+                color: "'warning.main'"
               }
             ]}
             loading={loading}
@@ -248,13 +249,12 @@ export default function PortfoliosPage() {
           </>
         )}
         headerActions={
-          <IconButton
-            size="small"
+          <ActionIcon
+            icon={<EditIcon />}
             onClick={() => setEditInfo('Edit functionality will be available in a future update.')}
-            sx={{ borderRadius: 1.15 }}
-          >
-            <EditIcon />
-          </IconButton>
+            label="Edit Portfolio"
+            color="primary"
+          />
         }
         tabs={[
           { label: 'Summary' },

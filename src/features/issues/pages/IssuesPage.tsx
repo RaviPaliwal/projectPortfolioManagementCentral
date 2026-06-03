@@ -33,8 +33,10 @@ import {
 import type { IssueModel } from '@/types/dataverse'
 
 import type { ExportColumn } from '@/utils/exportUtils'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
+import { fontSizes } from '@/styles'
+import { IssueDialogs } from '../components/IssueDialogs'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -196,42 +198,42 @@ export default function IssuesPage() {
       label: 'Total Issues',
       value: totalIssues,
       icon: <ReportProblemIcon />,
-      color: '#0ea5e9',
+      color: 'info.main',
       subtitle: totalIssues > 0 ? `${openIssues} open` : undefined,
     },
     {
       label: 'Open / In Progress',
       value: openIssues,
       icon: <WarningAmberIcon />,
-      color: '#f59e0b',
+      color: 'warning.main',
       subtitle: totalIssues > 0 ? `${Math.round((openIssues / totalIssues) * 100)}% of total` : undefined,
     },
     {
       label: 'Resolved',
       value: resolvedIssues,
       icon: <CheckCircleIcon />,
-      color: '#22c55e',
+      color: 'success.main',
       subtitle: totalIssues > 0 ? `${Math.round((resolvedIssues / totalIssues) * 100)}% resolution rate` : undefined,
     },
     {
       label: 'Critical',
       value: criticalIssues,
       icon: <NewReleasesIcon />,
-      color: '#ef4444',
+      color: 'error.main',
       subtitle: 'Requiring immediate action',
     },
     {
       label: 'Escalated',
       value: escalatedIssues,
       icon: <ArrowCircleUpIcon />,
-      color: '#ef4444',
+      color: 'error.main',
       subtitle: escalatedIssues > 0 ? 'Requires attention' : 'None escalated',
     },
     {
       label: 'Overdue',
       value: overdueIssues,
       icon: <CalendarTodayIcon />,
-      color: '#dc2626',
+      color: 'error.dark',
       subtitle: overdueIssues > 0 ? 'Past resolution date' : 'On track',
     },
   ]
@@ -418,12 +420,12 @@ export default function IssuesPage() {
 
       {/* Success / Error */}
       {successMsg && (
-        <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ mb: 2, borderRadius: 1.15 }}>
+        <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ mb: 2, borderRadius: 2 }}>
           {successMsg}
         </Alert>
       )}
       {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: 1.15 }}>
+        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: 2 }}>
           {error}
         </Alert>
       )}
@@ -446,7 +448,7 @@ export default function IssuesPage() {
                   value={statusFilter}
                   label="Status"
                   onChange={(e) => { setStatusFilter(e.target.value) }}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 2 }}
                 >
                   <MenuItem value="">All</MenuItem>
                   <MenuItem value="0">In Progress</MenuItem>
@@ -459,7 +461,7 @@ export default function IssuesPage() {
                   value={priorityFilter}
                   label="Priority"
                   onChange={(e) => { setPriorityFilter(e.target.value) }}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 2 }}
                 >
                   <MenuItem value="">All</MenuItem>
                   <MenuItem value="1">Critical</MenuItem>
@@ -473,7 +475,7 @@ export default function IssuesPage() {
                   value={categoryFilter}
                   label="Category"
                   onChange={(e) => { setCategoryFilter(e.target.value) }}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 2 }}
                 >
                   <MenuItem value="">All</MenuItem>
                   <MenuItem value="0">Dependency</MenuItem>
@@ -486,7 +488,7 @@ export default function IssuesPage() {
                   value={ragFilter}
                   label="RAG"
                   onChange={(e) => { setRagFilter(e.target.value) }}
-                  sx={{ borderRadius: 1.15 }}
+                  sx={{ borderRadius: 2 }}
                 >
                   <MenuItem value="">All</MenuItem>
                   <MenuItem value="2">Red</MenuItem>
@@ -533,47 +535,47 @@ export default function IssuesPage() {
           <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sortField === 'pm_issuereference'} direction={sortField === 'pm_issuereference' ? sortDir : 'asc'} onClick={() => handleSort('pm_issuereference')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Ref
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sortField === 'pm_issuetitle'} direction={sortField === 'pm_issuetitle' ? sortDir : 'asc'} onClick={() => handleSort('pm_issuetitle')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Issue Title
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sortField === 'pm_issuecategory'} direction={sortField === 'pm_issuecategory' ? sortDir : 'asc'} onClick={() => handleSort('pm_issuecategory')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Category
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sortField === 'pm_prioritylevel'} direction={sortField === 'pm_prioritylevel' ? sortDir : 'asc'} onClick={() => handleSort('pm_prioritylevel')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Priority
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sortField === 'pm_ragstatus'} direction={sortField === 'pm_ragstatus' ? sortDir : 'asc'} onClick={() => handleSort('pm_ragstatus')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     RAG
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sortField === 'pm_issuestatus'} direction={sortField === 'pm_issuestatus' ? sortDir : 'asc'} onClick={() => handleSort('pm_issuestatus')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Status
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sortField === 'pm_dateraised'} direction={sortField === 'pm_dateraised' ? sortDir : 'asc'} onClick={() => handleSort('pm_dateraised')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Raised
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sortField === 'pm_targetresolutiondate'} direction={sortField === 'pm_targetresolutiondate' ? sortDir : 'asc'} onClick={() => handleSort('pm_targetresolutiondate')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
                     Target
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? '#1e293b' : '#f8fafc', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                   Actions
                 </TableCell>
               </TableRow>
@@ -590,14 +592,14 @@ export default function IssuesPage() {
                     onClick={() => handleRowClick(issue)}
                     sx={{
                       cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : '#f8fafc') : 'transparent',
+                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                       '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
                     }}
                   >
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', fontFamily: 'monospace', fontSize: fontSizes.sm }}>
                         {issue.pm_issuereference || '—'}
                       </Typography>
                     </TableCell>
@@ -607,7 +609,7 @@ export default function IssuesPage() {
                           sx={{
                             width: 28, height: 28,
                             bgcolor: rag === '2' ? '#ef5350' : rag === '0' ? '#ffa726' : rag === '1' ? '#66bb6a' : '#bdbdbd',
-                            fontSize: '0.75rem',
+                            fontSize: fontSizes.sm,
                           }}
                         >
                           <FlagIcon sx={{ fontSize: 14 }} />
@@ -657,14 +659,14 @@ export default function IssuesPage() {
                       />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+                      <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: fontSizes.smMd }}>
                         {issue.pm_dateraised ? new Date(issue.pm_dateraised).toLocaleDateString() : '—'}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography
                         variant="body2"
-                        sx={{ color: isOverdue ? 'error.main' : 'text.secondary', fontSize: '0.8rem', fontWeight: isOverdue ? 600 : 400 }}
+                        sx={{ color: isOverdue ? 'error.main' : 'text.secondary', fontSize: fontSizes.smMd, fontWeight: isOverdue ? 600 : 400 }}
                       >
                         {issue.pm_targetresolutiondate ? new Date(issue.pm_targetresolutiondate).toLocaleDateString() : '—'}
                         {isOverdue && ' ⚠'}
@@ -741,20 +743,17 @@ export default function IssuesPage() {
         headerActions={
           selectedIssue && (
             <>
-              <IconButton
-                size="small"
+              <ActionIcon
+                icon={<EditIcon />}
                 onClick={() => { handleOpenEdit(selectedIssue, new MouseEvent('click') as any); setDrawerOpen(false) }}
-                sx={{ borderRadius: 1.15 }}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
+                label="Edit Issue"
+              />
+              <ActionIcon
+                icon={<DeleteIcon />}
                 onClick={() => { setDeleteTarget(selectedIssue); setDrawerOpen(false) }}
-                sx={{ borderRadius: 1.15, color: 'error.main' }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
+                label="Delete Issue"
+                color="error"
+              />
             </>
           )
         }
@@ -765,7 +764,7 @@ export default function IssuesPage() {
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Box
                 sx={{
-                  flex: 1, p: 2, borderRadius: 1.15,
+                  flex: 1, p: 2, borderRadius: 2,
                   bgcolor: PRIORITY_COLORS[String(selectedIssue.pm_prioritylevel ?? '')] === 'error' ? '#fce4ec' :
                            PRIORITY_COLORS[String(selectedIssue.pm_prioritylevel ?? '')] === 'warning' ? '#fff3e0' : '#e3f2fd',
                 }}
@@ -780,7 +779,7 @@ export default function IssuesPage() {
               </Box>
               <Box
                 sx={{
-                  flex: 1, p: 2, borderRadius: 1.15,
+                  flex: 1, p: 2, borderRadius: 2,
                   bgcolor: selectedIssue.pm_escalationstatus ? '#fce4ec' : '#f5f5f5',
                 }}
               >
@@ -797,7 +796,7 @@ export default function IssuesPage() {
               </Box>
               <Box
                 sx={{
-                  flex: 1, p: 2, borderRadius: 1.15,
+                  flex: 1, p: 2, borderRadius: 2,
                   bgcolor: RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] === 'error' ? '#fce4ec' :
                            RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] === 'warning' ? '#fff3e0' : '#e8f5e9',
                 }}
@@ -830,7 +829,7 @@ export default function IssuesPage() {
                 { icon: <CalendarTodayIcon fontSize="inherit" />, label: 'Actual Resolution', value: selectedIssue.pm_actualresolutiondate ? new Date(selectedIssue.pm_actualresolutiondate).toLocaleDateString() : '—' },
                 { icon: <FlagIcon fontSize="inherit" />, label: 'Reference', value: selectedIssue.pm_issuereference || '—' },
               ].map((info, i) => (
-                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 1.15, bgcolor: 'grey.50' }}>
+                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}>
                   <Box sx={{ color: 'text.secondary', display: 'flex' }}>{info.icon}</Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">{info.label}</Typography>
@@ -854,7 +853,7 @@ export default function IssuesPage() {
 
             {/* Linked Risk */}
             {selectedIssue.pm_linkedrisk && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 1.15, bgcolor: '#f3e5f5' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 2, bgcolor: '#f3e5f5' }}>
                 <ReportProblemIcon color="warning" fontSize="small" />
                 <Typography variant="body2">
                   <strong>Linked Risk:</strong> {selectedIssue.pm_linkedrisk}
@@ -868,7 +867,7 @@ export default function IssuesPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* Resolution Details */}
             {selectedIssue.pm_resolutiondetails ? (
-              <Box sx={{ p: 2, borderRadius: 1.15, bgcolor: '#e8f5e9' }}>
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#e8f5e9' }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                   <CheckCircleIcon sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5, color: 'success.main' }} />
                   Resolution Details
@@ -878,7 +877,7 @@ export default function IssuesPage() {
                 </Typography>
               </Box>
             ) : (
-              <Box sx={{ p: 3, borderRadius: 1.15, bgcolor: '#f5f5f5', textAlign: 'center' }}>
+              <Box sx={{ p: 3, borderRadius: 2, bgcolor: '#f5f5f5', textAlign: 'center' }}>
                 <CheckCircleIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
                 <Typography variant="body2" color="text.secondary">
                   No resolution details recorded yet.
@@ -891,7 +890,7 @@ export default function IssuesPage() {
 
             {/* Status Timeline */}
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-              <Box sx={{ p: 1.5, borderRadius: 1.15, bgcolor: 'grey.50' }}>
+              <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}>
                 <Typography variant="caption" color="text.secondary">Status</Typography>
                 <Box sx={{ mt: 0.5 }}>
                   <StatusTag
@@ -900,7 +899,7 @@ export default function IssuesPage() {
                   />
                 </Box>
               </Box>
-              <Box sx={{ p: 1.5, borderRadius: 1.15, bgcolor: 'grey.50' }}>
+              <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}>
                 <Typography variant="caption" color="text.secondary">Escalation</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
                   <ArrowCircleUpIcon
@@ -916,203 +915,18 @@ export default function IssuesPage() {
         )}
       </DetailDrawer>
 
-      {/* Create / Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {editingIssue ? 'Edit Issue' : 'Create New Issue'}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            {/* Section: Basic Information */}
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', mt: 1 }}>
-              Basic Information
-            </Typography>
-            <TextField
-              label="Issue Title"
-              value={form.pm_issuetitle ?? ''}
-              onChange={(e) => setForm({ ...form, pm_issuetitle: e.target.value })}
-              fullWidth
-              required
-            />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={form.pm_issuecategory ?? '0'}
-                  label="Category"
-                  onChange={(e) => setForm({ ...form, pm_issuecategory: e.target.value })}
-                >
-                  <MenuItem value="0">Dependency</MenuItem>
-                  <MenuItem value="1">Technical</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth>
-                <InputLabel>Priority</InputLabel>
-                <Select
-                  value={form.pm_prioritylevel ?? '2'}
-                  label="Priority"
-                  onChange={(e) => setForm({ ...form, pm_prioritylevel: e.target.value })}
-                >
-                  <MenuItem value="1">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <NewReleasesIcon color="error" fontSize="small" /> Critical
-                    </Box>
-                  </MenuItem>
-                  <MenuItem value="0">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PriorityHighIcon color="warning" fontSize="small" /> High
-                    </Box>
-                  </MenuItem>
-                  <MenuItem value="2">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LowPriorityIcon color="info" fontSize="small" /> Medium
-                    </Box>
-                  </MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth>
-                <InputLabel>Impact</InputLabel>
-                <Select
-                  value={form.pm_impactlevel ?? '2'}
-                  label="Impact"
-                  onChange={(e) => setForm({ ...form, pm_impactlevel: e.target.value })}
-                >
-                  <MenuItem value="1">Major</MenuItem>
-                  <MenuItem value="0">Moderate</MenuItem>
-                  <MenuItem value="2">Minor</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-            <FormControl fullWidth>
-              <InputLabel>RAG Status</InputLabel>
-              <Select
-                value={form.pm_ragstatus ?? '1'}
-                label="RAG Status"
-                onChange={(e) => setForm({ ...form, pm_ragstatus: e.target.value })}
-              >
-                <MenuItem value="2">Red</MenuItem>
-                <MenuItem value="0">Amber</MenuItem>
-                <MenuItem value="1">Green</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={!!form.pm_escalationstatus}
-                  onChange={(e) => setForm({ ...form, pm_escalationstatus: e.target.checked })}
-                  color="error"
-                />
-              }
-              label="Escalated"
-            />
-
-            {/* Section: Assignment & Dates */}
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', mt: 1 }}>
-              Assignment & Dates
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Issue Owner"
-                value={form.pm_issueowner ?? ''}
-                onChange={(e) => setForm({ ...form, pm_issueowner: e.target.value })}
-                fullWidth
-              />
-              <TextField
-                label="Issue Reference"
-                value={form.pm_issuereference ?? ''}
-                onChange={(e) => setForm({ ...form, pm_issuereference: e.target.value })}
-                fullWidth
-              />
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Raised Date"
-                type="date"
-                value={form.pm_dateraised ?? ''}
-                onChange={(e) => setForm({ ...form, pm_dateraised: e.target.value })}
-                
-                fullWidth
-              />
-              <TextField
-                label="Target Resolution Date"
-                type="date"
-                value={form.pm_targetresolutiondate ?? ''}
-                onChange={(e) => setForm({ ...form, pm_targetresolutiondate: e.target.value })}
-                
-                fullWidth
-              />
-              <TextField
-                label="Actual Resolution Date"
-                type="date"
-                value={form.pm_actualresolutiondate ?? ''}
-                onChange={(e) => setForm({ ...form, pm_actualresolutiondate: e.target.value })}
-               
-                fullWidth
-              />
-            </Box>
-
-            {/* Section: Details */}
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', mt: 1 }}>
-              Details
-            </Typography>
-            <TextField
-              label="Description"
-              value={form.pm_issuedescription ?? ''}
-              onChange={(e) => setForm({ ...form, pm_issuedescription: e.target.value })}
-              multiline
-              rows={3}
-              fullWidth
-            />
-            <TextField
-              label="Resolution Details"
-              value={form.pm_resolutiondetails ?? ''}
-              onChange={(e) => setForm({ ...form, pm_resolutiondetails: e.target.value })}
-              multiline
-              rows={2}
-              fullWidth
-            />
-            <TextField
-              label="Linked Risk"
-              value={form.pm_linkedrisk ?? ''}
-              onChange={(e) => setForm({ ...form, pm_linkedrisk: e.target.value })}
-              fullWidth
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} disabled={actionLoading}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={!form.pm_issuetitle || actionLoading}
-            startIcon={actionLoading ? <CircularProgress size={16} /> : undefined}
-          >
-            {editingIssue ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete Confirmation */}
-      <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Delete Issue</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete <strong>{deleteTarget?.pm_issuetitle}</strong>? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteTarget(null)} disabled={actionLoading}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleDelete}
-            disabled={actionLoading}
-            startIcon={actionLoading ? <CircularProgress size={16} /> : undefined}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <IssueDialogs
+        dialogOpen={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        editingIssue={editingIssue}
+        form={form}
+        setForm={setForm}
+        handleSave={handleSave}
+        actionLoading={actionLoading}
+        deleteTarget={deleteTarget}
+        setDeleteTarget={setDeleteTarget}
+        handleDelete={handleDelete}
+      />
     </Box>
   )
 }
