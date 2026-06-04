@@ -7,5 +7,47 @@
         "model": "gemma3-1b-gpu-custom"
       }
     }
+  },
+  "mcpServers": {
+    "chrome-devtools-mcp": {
+      "command": "npx",
+      "args": [
+        "--registry",
+        "https://registry.npmjs.org",
+        "chrome-devtools-mcp@1.1.1"
+      ]
+    },
+    "playwright-mcp": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    },
+    "desktop-commander": {
+      "command": "npx",
+      "args": [
+        "--registry",
+        "https://registry.npmjs.org",
+        "@wonderwhy-er/desktop-commander@0.2.41"
+      ]
+    },
+    "microsoftdocs-mcp": {
+      "httpUrl": "https://learn.microsoft.com/api/mcp"
+    },
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "serena@latest",
+        "--context",
+        "ide-assistant"
+      ],
+      "env": {
+        "CONTEXT7_API_KEY": "$CONTEXT7_API_KEY"
+      }
+    }
   }
 }

@@ -6,13 +6,14 @@ import {
 import type { Pm_portfolios } from '@/generated/models/Pm_portfoliosModel'
 import type { Pm_programmes } from '@/generated/models/Pm_programmesModel'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
-import type { PortfolioModel } from '@/types/dataverse'
 import {
   unwrapList,
   unwrapSingle,
   normalizeLookupId,
+  aggregateFinancials,
 } from '@/services/common'
 import type { ProjectHierarchy } from '@/services/common'
+import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import { mapProgramme } from './programme.service'
 import { mapProject } from './project.service'
 
@@ -37,40 +38,86 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
   const [portfoliosResult, programmesResult, projectsResult] = await Promise.all([
     Pm_portfoliosService.getAll({ select: ['pm_portfolioid', 'pm_portfolioname', 'pm_portfolioowner', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'pm_createdon'], top: 200 }),
     Pm_programmesService.getAll({ select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_programmemanager', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'], top: 500 }),
-    Pm_projectsService.getAll({ select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_portfolio_value', '_pm_programme_value', 'pm_projectmanager', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate'], top: 1000 }),
+    Pm_projectsService.getAll({ select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_portfolio_value', '_pm_programme_value', 'pm_projectmanager', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudgeteur', 'pm_actualcosteur'], top: 1000 }),
   ])
 
-  const portfolios = unwrapList<Pm_portfolios>(portfoliosResult).map(mapPortfolio)
-  const programmes = unwrapList<Pm_programmes>(programmesResult)
-  const projects = unwrapList<Pm_projects>(projectsResult)
+  const rawPortfolios = unwrapList<Pm_portfolios>(portfoliosResult).map(mapPortfolio)
+  const rawProgrammes = unwrapList<Pm_programmes>(programmesResult).map(mapProgramme)
+  const projects = unwrapList<Pm_projects>(projectsResult).map(mapProject)
 
-  const portfolioNameById = new Map<string, string>()
-  for (const p of portfolios) {
-    if (p.pm_portfolioid && p.pm_portfolioname) {
-      const portfolioId = normalizeLookupId(p.pm_portfolioid)
-      if (portfolioId) portfolioNameById.set(portfolioId, p.pm_portfolioname)
+  const portfolioMap = new Map<string, PortfolioModel>()
+  for (const p of rawPortfolios) {
+    if (p.pm_portfolioid) portfolioMap.set(normalizeLookupId(p.pm_portfolioid)!, p)
+  }
+
+  const programmeMap = new Map<string, ProgrammeModel>()
+  for (const pr of rawProgrammes) {
+    if (pr.pm_programmeid) programmeMap.set(normalizeLookupId(pr.pm_programmeid)!, pr)
+  }
+
+  // 1. Roll up Projects -> Programmes & Portfolios
+  for (const proj of projects) {
+    const programmeId = normalizeLookupId(proj._pm_programme_value)
+    const portfolioId = normalizeLookupId(proj._pm_portfolio_value)
+
+    if (programmeId && programmeMap.has(programmeId)) {
+      const prog = programmeMap.get(programmeId)!
+      // In this app, we'll sum up Project "Approved Budget" and "Actual Cost" 
+      // into the Programme's "Budget" and "Actual Spend" if the Programme fields are empty or for virtual rollup
+      // Actually, let's keep the original fields but add "Calculated" fields if needed.
+      // For now, let's ensure the links are correct
+      proj.pm_programmename = prog.pm_programmename
+    }
+
+    if (portfolioId && portfolioMap.has(portfolioId)) {
+      const port = portfolioMap.get(portfolioId)!
+      proj.pm_portfolioname = port.pm_portfolioname
     }
   }
 
-  const mappedProgrammes = programmes.map((programme) => {
-    const mapped = mapProgramme(programme)
-    const portfolioId = normalizeLookupId(programme._pm_portfolio_value)
-    if (!mapped.pm_portfolioname && portfolioId && portfolioNameById.has(portfolioId)) {
-      mapped.pm_portfolioname = portfolioNameById.get(portfolioId)
+  // 2. Perform Virtual Financial Aggregation for the hierarchy view
+  // We will iterate through Portfolios and sum up their child Projects' financials
+  const updatedPortfolios = rawPortfolios.map(port => {
+    const portId = normalizeLookupId(port.pm_portfolioid)
+    const childProjects = projects.filter(p => normalizeLookupId(p._pm_portfolio_value) === portId)
+    
+    if (childProjects.length > 0) {
+      const aggregates = aggregateFinancials(childProjects, 'pm_approvedbudgeteur', 'pm_actualcosteur')
+      // Only override if the original record has 0/null to avoid confusing manual entries, 
+      // OR provide them as the source of truth for the dashboard.
+      // Let's use the aggregated values for the UI consistency.
+      return {
+        ...port,
+        pm_approvedbudgeteur: aggregates.budget > 0 ? aggregates.budget : port.pm_approvedbudgeteur,
+        pm_actualspendeur: aggregates.actual > 0 ? aggregates.actual : port.pm_actualspendeur,
+      }
     }
-    return mapped
+    return port
+  })
+
+  const updatedProgrammes = rawProgrammes.map(prog => {
+    const progId = normalizeLookupId(prog.pm_programmeid)
+    const childProjects = projects.filter(p => normalizeLookupId(p._pm_programme_value) === progId)
+
+    if (childProjects.length > 0) {
+      const aggregates = aggregateFinancials(childProjects, 'pm_approvedbudgeteur', 'pm_actualcosteur')
+      return {
+        ...prog,
+        pm_budgeteur: aggregates.budget > 0 ? aggregates.budget : prog.pm_budgeteur,
+        pm_actualspendeur: aggregates.actual > 0 ? aggregates.actual : prog.pm_actualspendeur,
+      }
+    }
+    return prog
   })
 
   try {
-    console.debug('[dataverseService] fetchPortfolioHierarchy raw results:', { portfoliosResult, programmesResult, projectsResult })
-  } catch (e) {
-    console.debug('[dataverseService] fetchPortfolioHierarchy: unable to log raw results')
-  }
+    console.debug('[dataverseService] fetchPortfolioHierarchy rollup complete:', { portfolios: updatedPortfolios.length, programmes: updatedProgrammes.length, projects: projects.length })
+  } catch (e) {}
 
   return {
-    portfolios,
-    programmes: mappedProgrammes,
-    projects: projects.map(mapProject),
+    portfolios: updatedPortfolios,
+    programmes: updatedProgrammes,
+    projects: projects,
   }
 }
 

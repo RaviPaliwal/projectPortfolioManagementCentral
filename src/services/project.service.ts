@@ -364,6 +364,37 @@ export async function deleteProjectMilestone(id: string): Promise<void> {
   await Pm_projectmilestonesService.delete(id)
 }
 
+/**
+ * Recalculates Project financial totals based on its Budget Lines.
+ * Updates the Project record in Dataverse.
+ */
+export async function recalculateProjectFinancials(projectId: string): Promise<ProjectModel | null> {
+  try {
+    const { Pm_budgetlinesService } = await import('@/generated')
+    const budgetResult = await Pm_budgetlinesService.getAll({
+      filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+      select: ['pm_approvedbudgeteur', 'pm_actualspendeur'],
+      top: 500
+    })
+    
+    const lines = unwrapList<any>(budgetResult)
+    const totals = lines.reduce((acc, line) => ({
+      budget: acc.budget + Number(line.pm_approvedbudgeteur || 0),
+      actual: acc.actual + Number(line.pm_actualspendeur || 0),
+    }), { budget: 0, actual: 0 })
+
+    const updated = await Pm_projectsService.update(projectId, {
+      pm_approvedbudgeteur: totals.budget,
+      pm_actualcosteur: totals.actual,
+    } as any)
+
+    return mapProject(unwrapSingle<Pm_projects>(updated)!)
+  } catch (err) {
+    console.error('[dataverseService] recalculateProjectFinancials failed:', err)
+    return null
+  }
+}
+
 export async function fetchProjectsFull(): Promise<ProjectModel[]> {
   const result = await Pm_projectsService.getAll({
     filter: "statecode eq 0",

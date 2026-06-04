@@ -33,6 +33,7 @@ import {
   TaskDialog,
   GateReviewDialog,
 } from '../components/ProjectSubFormDialogs'
+import { recalculateProjectFinancials } from '@/services'
 
 export default function ProjectsPage() {
   // Navigation state
@@ -337,7 +338,13 @@ export default function ProjectsPage() {
             open={budgetDialogOpen}
             onClose={() => setBudgetDialogOpen(false)}
             projectId={selectedProject.pm_projectid!}
-            onSuccess={(msg) => { setSuccessMsg(msg); refreshDetailData('budget'); setTimeout(() => setSuccessMsg(null), 3000) }}
+            onSuccess={async (msg) => { 
+              setSuccessMsg(msg); 
+              await recalculateProjectFinancials(selectedProject.pm_projectid!);
+              refreshDetailData('budget'); 
+              loadData(); // refresh main list too
+              setTimeout(() => setSuccessMsg(null), 3000) 
+            }}
             onError={(msg) => setError(msg)}
           />
           <BenefitDialog

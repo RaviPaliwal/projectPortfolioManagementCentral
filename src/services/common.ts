@@ -45,6 +45,30 @@ export const normalizeLookupName = (name?: string): string | undefined => {
   return name?.trim().toLowerCase()
 }
 
+/**
+ * Aggregates budget data from a list of objects.
+ * Useful for summing Project Budget Lines, or Project totals into Programmes.
+ */
+export const aggregateFinancials = <T extends Record<string, any>>(
+  items: T[], 
+  budgetKey: keyof T, 
+  actualKey: keyof T
+): { budget: number, actual: number, variance: number } => {
+  const totals = items.reduce((acc, item) => {
+    const b = Number(item[budgetKey] || 0)
+    const a = Number(item[actualKey] || 0)
+    return {
+      budget: acc.budget + b,
+      actual: acc.actual + a,
+    }
+  }, { budget: 0, actual: 0 })
+
+  return {
+    ...totals,
+    variance: totals.budget - totals.actual,
+  }
+}
+
 export interface DashboardMetrics {
   totalActiveProjects: number
   totalActivePortfolios: number
