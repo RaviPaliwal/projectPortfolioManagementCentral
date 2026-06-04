@@ -261,15 +261,14 @@ export default function HolidaysPage() {
           ...formData,
           statecode: 0,
           statuscode: 1,
-          ownerid: '00000000-0000-0000-0000-000000000000',
-          owneridtype: 'systemuser',
         } as any)
         setSuccessMsg('Holiday created successfully.')
       }
       setShowForm(false)
       setTimeout(() => setSuccessMsg(null), 3000)
       await loadData()
-    } catch {
+    } catch (err) {
+      console.error('Holiday save error:', err)
       setError('Unable to save holiday.')
     } finally {
       setActionLoading(false)
@@ -286,7 +285,8 @@ export default function HolidaysPage() {
       if (selectedHoliday?.pm_holidayid === deleteConfirm) setSelectedHoliday(null)
       setTimeout(() => setSuccessMsg(null), 3000)
       await loadData()
-    } catch {
+    } catch (err) {
+      console.error('Holiday delete error:', err)
       setError('Unable to delete holiday.')
     } finally {
       setActionLoading(false)
@@ -319,8 +319,6 @@ export default function HolidaysPage() {
           pm_year: calendarYear,
           statecode: 0,
           statuscode: 1,
-          ownerid: '00000000-0000-0000-0000-000000000000',
-          owneridtype: 'systemuser',
         } as any)
         created++
       }
@@ -328,7 +326,8 @@ export default function HolidaysPage() {
       setShowSeedConfirm(false)
       setTimeout(() => setSuccessMsg(null), 3000)
       await loadData()
-    } catch {
+    } catch (err) {
+      console.error('Holiday seed error:', err)
       setError('Unable to seed Irish holidays.')
     } finally {
       setSeeding(false)
@@ -427,7 +426,16 @@ export default function HolidaysPage() {
         onClose={() => setShowForm(false)}
         editingHoliday={editingHoliday}
         formData={formData}
-        onFormDataChange={(data) => setFormData((f) => ({ ...f, ...data }))}
+        onFormDataChange={(data) => {
+          setFormData((f) => {
+            const next = { ...f, ...data }
+            if (data.pm_holidaydate) {
+              const y = new Date(data.pm_holidaydate).getFullYear()
+              if (!isNaN(y)) next.pm_year = y
+            }
+            return next
+          })
+        }}
         countryOptions={COUNTRY_OPTIONS}
         onSave={handleSave}
         actionLoading={actionLoading}

@@ -10,8 +10,6 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  TableSortLabel,
-  TablePagination,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -39,6 +37,7 @@ import RuleIcon from '@mui/icons-material/Rule'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import Filter1Icon from '@mui/icons-material/Filter1'
+import GavelIcon from '@mui/icons-material/Gavel'
 import {
   fetchGateReviews,
   createGateReview,
@@ -47,7 +46,7 @@ import {
 } from '@/services'
 import type { GateReviewModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, Button } from '@/components/common'
+import { PageHeader, KpiCardRow, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon, Button } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 
@@ -136,12 +135,11 @@ export default function GateReviewsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [stageFilter, setStageFilter] = useState('')
   const [outcomeFilter, setOutcomeFilter] = useState('')
-  const [sort, setSort] = useState<SortState>({ field: 'planned', dir: 'desc' })
+  const [sort] = useState<SortState>({ field: 'planned', dir: 'desc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage] = useState(25)
 
   const [selectedReview, setSelectedReview] = useState<GateReviewModel | null>(null)
-  const [detailTab, setDetailTab] = useState(0)
 
   const [showFormModal, setShowFormModal] = useState(false)
   const [editingReview, setEditingReview] = useState<GateReviewModel | null>(null)
@@ -163,6 +161,14 @@ export default function GateReviewsPage() {
   })
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
+  const [showDecisionModal, setShowDecisionModal] = useState(false)
+  const [decisionData, setDecisionData] = useState({
+    pm_reviewoutcome: 0,
+    pm_actualreviewdate: new Date().toISOString().split('T')[0],
+    pm_reviewnotes: '',
+    pm_reviewconditions: '',
+  })
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -253,6 +259,37 @@ export default function GateReviewsPage() {
     }
   }
 
+  const handleRecordDecision = async () => {
+    if (!selectedReview?.pm_projectgatereviewid) return
+    setActionLoading(true)
+    try {
+      await updateGateReview(selectedReview.pm_projectgatereviewid, {
+        ...decisionData,
+        pm_reviewstatus: 0, // Complete
+      } as any)
+      setSuccessMsg('Decision recorded successfully.')
+      setShowDecisionModal(false)
+      setSelectedReview(null)
+      loadData()
+    } catch (err) {
+      console.error('Decision record error:', err)
+      setError('Unable to record decision.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const openDecisionModal = () => {
+    if (!selectedReview) return
+    setDecisionData({
+      pm_reviewoutcome: Number(selectedReview.pm_reviewoutcome ?? 0),
+      pm_actualreviewdate: selectedReview.pm_actualreviewdate || new Date().toISOString().split('T')[0],
+      pm_reviewnotes: selectedReview.pm_reviewnotes || '',
+      pm_reviewconditions: selectedReview.pm_reviewconditions || '',
+    })
+    setShowDecisionModal(true)
+  }
+
   return (
     <Box>
       <PageHeader
@@ -300,6 +337,7 @@ export default function GateReviewsPage() {
                 <TableCell sx={{ fontWeight: 700 }}>Gate Review</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Stage</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Outcome</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Planned Date</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Reviewer</TableCell>
               </TableRow>
@@ -310,11 +348,15 @@ export default function GateReviewsPage() {
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm }}>G</Avatar>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{review.pm_gatename}</Typography>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{review.pm_gatename}</Typography>
+                        <Typography variant="caption" color="text.secondary">{review.pm_projectcode || 'No Project Code'}</Typography>
+                      </Box>
                     </Box>
                   </TableCell>
                   <TableCell><StatusTag label={GATE_STAGE_LABELS[String(review.pm_gatestage)]} color={GATE_STAGE_VARIANTS[String(review.pm_gatestage)]} /></TableCell>
                   <TableCell><StatusTag label={OUTCOME_LABELS[String(review.pm_reviewoutcome)]} color={OUTCOME_COLORS[String(review.pm_reviewoutcome)]} /></TableCell>
+                  <TableCell><StatusTag label={STATUS_LABELS[String(review.pm_reviewstatus)]} color={STATUS_COLORS[String(review.pm_reviewstatus)]} /></TableCell>
                   <TableCell>{review.pm_plannedreviewdate ? new Date(review.pm_plannedreviewdate).toLocaleDateString() : '—'}</TableCell>
                   <TableCell>{review.pm_leadreviewer || '—'}</TableCell>
                 </TableRow>
@@ -331,6 +373,9 @@ export default function GateReviewsPage() {
         icon={<FactCheckIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
+            {selectedReview?.pm_reviewstatus === 1 && (
+              <ActionIcon icon={<GavelIcon />} onClick={openDecisionModal} label="Record Decision" color="success" />
+            )}
             <ActionIcon icon={<EditIcon />} onClick={() => { setEditingReview(selectedReview); setShowFormModal(true) }} label="Edit" color="primary" />
             <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedReview?.pm_projectgatereviewid!)} label="Delete" color="error" />
           </Box>
@@ -338,15 +383,72 @@ export default function GateReviewsPage() {
       >
         {selectedReview && (
           <Box sx={{ p: 1 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{selectedReview.pm_reviewnotes || 'No notes'}</Typography>
-            <Grid container spacing={2}>
+             <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <StatusTag label={GATE_STAGE_LABELS[String(selectedReview.pm_gatestage)]} color={GATE_STAGE_VARIANTS[String(selectedReview.pm_gatestage)]} />
+              <StatusTag label={OUTCOME_LABELS[String(selectedReview.pm_reviewoutcome)]} color={OUTCOME_COLORS[String(selectedReview.pm_reviewoutcome)]} />
+              <StatusTag label={STATUS_LABELS[String(selectedReview.pm_reviewstatus)]} color={STATUS_COLORS[String(selectedReview.pm_reviewstatus)]} />
+            </Box>
+
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <DescriptionIcon sx={{ fontSize: 18 }} /> Review Notes
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              {selectedReview.pm_reviewnotes || 'No notes recorded.'}
+            </Typography>
+
+            {selectedReview.pm_reviewconditions && (
+              <>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, color: 'warning.main' }}>
+                  <RuleIcon sx={{ fontSize: 18 }} /> Conditions for Progression
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, p: 1.5, bgcolor: isDark ? 'rgba(255,183,77,0.05)' : 'rgba(255,183,77,0.1)', borderRadius: 1, borderLeft: '4px solid', borderColor: 'warning.main' }}>
+                  {selectedReview.pm_reviewconditions}
+                </Typography>
+              </>
+            )}
+
+            <Grid container spacing={3}>
               <Grid size={{ xs: 6 }}>
-                <Typography variant="caption" color="text.secondary">Reviewer</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <PersonIcon sx={{ fontSize: 14 }} /> Lead Reviewer
+                </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedReview.pm_leadreviewer || '—'}</Typography>
               </Grid>
               <Grid size={{ xs: 6 }}>
-                <Typography variant="caption" color="text.secondary">Scheduled Date</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <CalendarMonthIcon sx={{ fontSize: 14 }} /> Scheduled Date
+                </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedReview.pm_plannedreviewdate ? new Date(selectedReview.pm_plannedreviewdate).toLocaleDateString() : '—'}</Typography>
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <CheckCircleIcon sx={{ fontSize: 14 }} /> Actual Review Date
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedReview.pm_actualreviewdate ? new Date(selectedReview.pm_actualreviewdate).toLocaleDateString() : '—'}</Typography>
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <OpenInNewIcon sx={{ fontSize: 14 }} /> Documentation
+                </Typography>
+                <Box>
+                  {selectedReview.pm_documentsurl ? (
+                    <Link href={selectedReview.pm_documentsurl} target="_blank" rel="noopener" sx={{ fontSize: fontSizes.sm, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      View Files <OpenInNewIcon sx={{ fontSize: 12 }} />
+                    </Link>
+                  ) : '—'}
+                </Box>
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ my: 3 }} />
+
+            <Typography variant="caption" color="text.secondary">Hierarchy Context</Typography>
+            <Grid container spacing={1} sx={{ mt: 0.5 }}>
+              <Grid size={{ xs: 12 }}>
+                <Typography variant="body2"><strong>Project:</strong> {selectedReview.pm_projectcode || '—'}</Typography>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Typography variant="body2"><strong>Programme:</strong> {selectedReview.pm_programmename || '—'}</Typography>
               </Grid>
             </Grid>
           </Box>
@@ -380,6 +482,91 @@ export default function GateReviewsPage() {
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setDeleteConfirm(null)}>Cancel</Button>
           <Button variant="contained" color="error" onClick={handleDeleteReview}>Delete</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={showDecisionModal} onClose={() => setShowDecisionModal(false)} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
+        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <GavelIcon color="success" /> Record Gate Decision
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Reviewing <strong>{selectedReview?.pm_gatename}</strong>. Selecting an outcome will mark this review as Complete.
+          </Typography>
+
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 6 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Outcome</InputLabel>
+                <Select
+                  value={decisionData.pm_reviewoutcome}
+                  label="Outcome"
+                  onChange={(e) => setDecisionData(f => ({ ...f, pm_reviewoutcome: e.target.value as number }))}
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  <MenuItem value={0}>Approved</MenuItem>
+                  <MenuItem value={1}>Conditional Approval</MenuItem>
+                  <MenuItem value={2}>Not Yet Reviewed</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                label="Actual Review Date"
+                type="date"
+                fullWidth
+                size="small"
+                value={decisionData.pm_actualreviewdate}
+                onChange={(e) => setDecisionData(f => ({ ...f, pm_actualreviewdate: e.target.value }))}
+                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                label="Decision Notes"
+                multiline
+                rows={3}
+                fullWidth
+                size="small"
+                value={decisionData.pm_reviewnotes}
+                onChange={(e) => setDecisionData(f => ({ ...f, pm_reviewnotes: e.target.value }))}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+                placeholder="Summarize the board's decision..."
+              />
+            </Grid>
+            {decisionData.pm_reviewoutcome === 1 && (
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  label="Mandatory Conditions"
+                  multiline
+                  rows={2}
+                  fullWidth
+                  size="small"
+                  value={decisionData.pm_reviewconditions}
+                  onChange={(e) => setDecisionData(f => ({ ...f, pm_reviewconditions: e.target.value }))}
+                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+                  placeholder="What must be addressed before the next gate?"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'warning.main' },
+                    }
+                  }}
+                />
+              </Grid>
+            )}
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setShowDecisionModal(false)}>Cancel</Button>
+          <Button 
+            variant="contained" 
+            color="success" 
+            onClick={handleRecordDecision} 
+            disabled={actionLoading}
+            sx={{ fontWeight: 600 }}
+          >
+            {actionLoading ? 'Saving...' : 'Submit Decision'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

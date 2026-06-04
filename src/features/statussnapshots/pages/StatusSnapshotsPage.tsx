@@ -408,8 +408,6 @@ export default function StatusSnapshotsPage() {
           ...formData,
           statecode: 0,
           statuscode: 1,
-          ownerid: '00000000-0000-0000-0000-000000000000',
-          owneridtype: 'systemuser',
         } as any)
         setSuccessMsg('Status snapshot created successfully.')
       }

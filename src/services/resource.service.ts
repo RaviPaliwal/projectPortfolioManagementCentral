@@ -117,8 +117,6 @@ export async function assignResource(payload: {
     "pm_resource@odata.bind": `/pm_resources(${payload.pm_resourceid})`,
     statecode: 0,
     statuscode: 1,
-    ownerid: '00000000-0000-0000-0000-000000000000',
-    owneridtype: 'systemuser',
   } as any)
   try { console.debug('[dataverseService] assignResource payload/result:', payload, result) } catch (e) {}
   return unwrapSingle<any>(result)

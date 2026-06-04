@@ -10,11 +10,19 @@ import HowToRegIcon from '@mui/icons-material/HowToReg'
 import { StatusTag } from '@/components/common'
 import type { GateReviewModel } from '@/types/dataverse'
 
-interface ProjectGovernanceTabProps {
-  gateReviews: GateReviewModel[]
+const GATE_STAGE_LABELS: Record<string, string> = {
+  '0': 'Gate 1',
+  '1': 'Gate 2',
+  '2': 'Gate 3',
+  '3': 'Gate 4',
 }
 
-export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gateReviews }) => {
+interface ProjectGovernanceTabProps {
+  gateReviews: GateReviewModel[]
+  onSubmitReview?: () => void
+}
+
+export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gateReviews, onSubmitReview }) => {
   const theme = useTheme()
 
   return (
@@ -28,15 +36,15 @@ export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gate
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{g.pm_gatename}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Stage {g.pm_gatestage} · {g.pm_leadreviewer ? `Reviewer: ${g.pm_leadreviewer}` : ''}
+                    {GATE_STAGE_LABELS[String(g.pm_gatestage)] || `Stage ${g.pm_gatestage}`} · {g.pm_leadreviewer ? `Reviewer: ${g.pm_leadreviewer}` : ''}
                     {g.pm_plannedreviewdate ? ` · Planned: ${new Date(g.pm_plannedreviewdate).toLocaleDateString()}` : ''}
                     {g.pm_actualreviewdate ? ` · Actual: ${new Date(g.pm_actualreviewdate).toLocaleDateString()}` : ''}
                   </Typography>
                 </Box>
                 <StatusTag
-                  label={String(g.pm_reviewstatus) === '2' ? 'Approved' : String(g.pm_reviewstatus) === '1' ? 'Pending' : String(g.pm_reviewstatus) === '3' ? 'Rejected' : '—'}
+                  label={String(g.pm_reviewstatus) === '0' ? (String(g.pm_reviewoutcome) === '0' ? 'Approved' : 'Conditional') : 'Scheduled'}
                   size="small"
-                  color={String(g.pm_reviewstatus) === '2' ? 'success' : String(g.pm_reviewstatus) === '3' ? 'error' : 'default'}
+                  color={String(g.pm_reviewstatus) === '0' ? (String(g.pm_reviewoutcome) === '0' ? 'success' : 'warning') : 'info'}
                 />
               </Paper>
             ))}
@@ -47,21 +55,18 @@ export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gate
       {/* Gate review action section */}
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <HowToRegIcon sx={{ fontSize: 48, color: theme.palette.text.secondary, mb: 2 }} />
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Gate Review</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Governance Gate</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 480, mx: 'auto' }}>
-          Submit this project for a formal gate review by the PMO. This will change the project phase and initiate an approval workflow.
+          Submit this project for a formal gate review. Governance boards will assess project health and decide on progression to the next lifecycle stage.
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-          <Button variant="contained" size="large" startIcon={<HowToRegIcon />}>
+          <Button variant="contained" size="large" startIcon={<HowToRegIcon />} onClick={onSubmitReview}>
             Submit Gate Review
-          </Button>
-          <Button variant="outlined" size="large">
-            Request Phase Change
           </Button>
         </Box>
         <Paper variant="outlined" sx={{ mt: 3, p: 2, borderRadius: 1.5, maxWidth: 480, mx: 'auto', bgcolor: theme.palette.action.hover }}>
           <Typography variant="caption" color="text.secondary">
-            Gate reviews require PMO approval before proceeding. A workflow instance will be created and assigned to the portfolio director.
+            Gate reviews are critical governance checkpoints. Ensure all Risks, Issues, and Financials are up to date before submitting.
           </Typography>
         </Paper>
       </Box>

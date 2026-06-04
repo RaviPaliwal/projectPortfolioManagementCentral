@@ -467,3 +467,66 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
     </Dialog>
   )
 }
+
+export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
+  const [form, setForm] = useState({ pm_gatename: '', pm_gatestage: 0, pm_plannedreviewdate: '', pm_documentsurl: '', pm_leadreviewer: '' })
+
+  const handleAdd = async () => {
+    if (!form.pm_gatename) { onError('Gate name is required.'); return }
+    try {
+      const { createGateReview } = await import('@/services')
+      await createGateReview({
+        ...form,
+        _pm_project_value: projectId,
+        pm_reviewstatus: 1, // Scheduled
+        pm_reviewoutcome: 2, // Not Yet Reviewed
+      } as any)
+      setForm({ pm_gatename: '', pm_gatestage: 0, pm_plannedreviewdate: '', pm_documentsurl: '', pm_leadreviewer: '' })
+      onSuccess('Gate review scheduled successfully.')
+      onClose()
+    } catch {
+      onError('Unable to schedule gate review.')
+    }
+  }
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ fontWeight: 700 }}>Submit for Gate Review</DialogTitle>
+      <DialogContent>
+        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+          <Grid size={{ xs: 12 }}>
+            <TextField fullWidth label="Gate name *" value={form.pm_gatename}
+              onChange={(e) => setForm((f) => ({ ...f, pm_gatename: e.target.value }))} 
+              placeholder="e.g. Gate 1: Concept Approval" />
+          </Grid>
+          <Grid size={{ xs: 6 }}>
+            <TextField select fullWidth label="Gate stage" value={form.pm_gatestage}
+              onChange={(e) => setForm((f) => ({ ...f, pm_gatestage: Number(e.target.value) }))}>
+              <MenuItem value={0}>Gate 1</MenuItem>
+              <MenuItem value={1}>Gate 2</MenuItem>
+              <MenuItem value={2}>Gate 3</MenuItem>
+              <MenuItem value={3}>Gate 4</MenuItem>
+            </TextField>
+          </Grid>
+          <Grid size={{ xs: 6 }}>
+            <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="Planned review date"
+              value={form.pm_plannedreviewdate} onChange={(e) => setForm((f) => ({ ...f, pm_plannedreviewdate: e.target.value }))} />
+          </Grid>
+          <Grid size={{ xs: 12 }}>
+            <TextField fullWidth label="Lead reviewer" value={form.pm_leadreviewer}
+              onChange={(e) => setForm((f) => ({ ...f, pm_leadreviewer: e.target.value }))} />
+          </Grid>
+          <Grid size={{ xs: 12 }}>
+            <TextField fullWidth label="Documentation URL" value={form.pm_documentsurl}
+              onChange={(e) => setForm((f) => ({ ...f, pm_documentsurl: e.target.value }))}
+              placeholder="Link to SharePoint or Teams folder" />
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onClose} variant="outlined">Cancel</Button>
+        <Button onClick={handleAdd} variant="contained" color="success" disabled={!form.pm_gatename}>Submit for Review</Button>
+      </DialogActions>
+    </Dialog>
+  )
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import {
   Box,
   Alert,
@@ -15,7 +15,7 @@ import {
   fetchProjectsFull,
   fetchMilestonesDueThisMonth,
 } from '@/services'
-import { PageHeader, KpiCardRow, Breadcrumbs } from '@/components/common'
+import { PageHeader, KpiCardRow } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 
@@ -31,6 +31,7 @@ import {
   BudgetDialog,
   BenefitDialog,
   TaskDialog,
+  GateReviewDialog,
 } from '../components/ProjectSubFormDialogs'
 
 export default function ProjectsPage() {
@@ -56,6 +57,7 @@ export default function ProjectsPage() {
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false)
   const [benefitDialogOpen, setBenefitDialogOpen] = useState(false)
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
+  const [gateReviewDialogOpen, setGateReviewDialogOpen] = useState(false)
 
   // Detail sub-data
   const [detailMilestones, setDetailMilestones] = useState<ProjectMilestoneModel[]>([])
@@ -88,7 +90,7 @@ export default function ProjectsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   // ── KPIs ────────────────────────────────────────────────────────────────
-  const kpiItems: KpiCardItem[] = [
+  const kpiItems = useMemo((): KpiCardItem[] => [
     {
       label: 'Active Projects',
       value: projects.length,
@@ -129,7 +131,7 @@ export default function ProjectsPage() {
       icon: <EventNoteIcon />,
       color: 'secondary.main',
     },
-  ]
+  ], [projects, milestonesDue])
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleRowClick = useCallback(async (project: ProjectModel) => {
@@ -217,7 +219,7 @@ export default function ProjectsPage() {
       const {
         Pm_projectmilestonesService, Pm_risksService, Pm_issuesService,
         Pm_resourceallocationsService, Pm_budgetlinesService, Pm_benefitsService,
-        Pm_projecttasksService
+        Pm_projecttasksService, Pm_projectgatereviewsService,
       } = await import('@/generated')
 
       if (type === 'milestone') {
@@ -241,6 +243,9 @@ export default function ProjectsPage() {
       } else if (type === 'task') {
         const r = await Pm_projecttasksService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 200, orderBy: ['pm_plannedstartdate asc'] })
         setDetailTasks(unwrap(r))
+      } else if (type === 'gatereview') {
+        const r = await Pm_projectgatereviewsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 50, orderBy: ['pm_plannedreviewdate desc'] })
+        setDetailGateReviews(unwrap(r))
       }
     } catch { /* silent */ }
   }
@@ -267,6 +272,7 @@ export default function ProjectsPage() {
           onAddBudgetLine={() => setBudgetDialogOpen(true)}
           onAddBenefit={() => setBenefitDialogOpen(true)}
           onAddTask={() => setTaskDialogOpen(true)}
+          onSubmitGateReview={() => setGateReviewDialogOpen(true)}
         />
       ) : (
         <>
@@ -346,6 +352,13 @@ export default function ProjectsPage() {
             onClose={() => setTaskDialogOpen(false)}
             projectId={selectedProject.pm_projectid!}
             onSuccess={(msg) => { setSuccessMsg(msg); refreshDetailData('task'); setTimeout(() => setSuccessMsg(null), 3000) }}
+            onError={(msg) => setError(msg)}
+          />
+          <GateReviewDialog
+            open={gateReviewDialogOpen}
+            onClose={() => setGateReviewDialogOpen(false)}
+            projectId={selectedProject.pm_projectid!}
+            onSuccess={(msg) => { setSuccessMsg(msg); refreshDetailData('gatereview'); setTimeout(() => setSuccessMsg(null), 3000) }}
             onError={(msg) => setError(msg)}
           />
         </>

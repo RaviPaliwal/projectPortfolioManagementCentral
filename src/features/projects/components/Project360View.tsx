@@ -61,6 +61,7 @@ interface Project360ViewProps {
   onAddBudgetLine: () => void
   onAddBenefit: () => void
   onAddTask: () => void
+  onSubmitGateReview: () => void
 }
 
 export const Project360View: React.FC<Project360ViewProps> = ({
@@ -81,7 +82,8 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onAssignResource,
   onAddBudgetLine,
   onAddBenefit,
-  onAddTask
+  onAddTask,
+  onSubmitGateReview
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -141,6 +143,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
         <Button size="small" variant="outlined" startIcon={<AttachMoneyIcon />} onClick={onAddBudgetLine}>Budget</Button>
         <Button size="small" variant="outlined" startIcon={<EmojiEventsIcon />} onClick={onAddBenefit}>Benefit</Button>
         <Button size="small" variant="outlined" startIcon={<AssignmentIcon />} onClick={onAddTask}>Task</Button>
+        <Button size="small" variant="contained" color="success" startIcon={<HowToRegIcon />} onClick={onSubmitGateReview}>Gate Review</Button>
       </Paper>
 
       {/* ── Tabbed Content ────────────────────────────────────── */}
@@ -174,7 +177,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
               {activeTab === 3 && <ProjectRisksIssuesTab risks={risks} issues={issues} />}
               {activeTab === 4 && <ProjectTeamTab resources={resources} />}
               {activeTab === 5 && <ProjectBenefitsTab benefits={benefits} />}
-              {activeTab === 6 && <ProjectGovernanceTab gateReviews={gateReviews} />}
+              {activeTab === 6 && <ProjectGovernanceTab gateReviews={gateReviews} onSubmitReview={onSubmitGateReview} />}
             </>
           )}
         </Box>

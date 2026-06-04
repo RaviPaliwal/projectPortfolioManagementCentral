@@ -92,8 +92,6 @@ export async function createRisk(payload: Partial<RiskModel> & { pm_projectid: s
     "pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
     statecode: 0,
     statuscode: 1,
-    ownerid: '00000000-0000-0000-0000-000000000000',
-    owneridtype: 'systemuser',
   } as any)
   try { console.debug('[dataverseService] createRisk payload/result:', payload, result) } catch (e) {}
   const item = unwrapSingle<Pm_risks>(result)
@@ -125,8 +123,6 @@ export async function createIssue(payload: Partial<IssueModel> & { pm_projectid:
     "pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
     statecode: 0,
     statuscode: 1,
-    ownerid: '00000000-0000-0000-0000-000000000000',
-    owneridtype: 'systemuser',
   } as any)
   try { console.debug('[dataverseService] createIssue payload/result:', payload, result) } catch (e) {}
   const item = unwrapSingle<Pm_issues>(result)

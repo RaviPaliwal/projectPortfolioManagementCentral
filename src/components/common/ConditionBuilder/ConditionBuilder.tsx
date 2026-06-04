@@ -52,7 +52,7 @@ export const ConditionBuilder: React.FC<ConditionBuilderProps> = ({ moduleName, 
       setLoading(true)
       try {
         const metaResult = await fetchEntityMetadataForModule(moduleName)
-        
+        console.log('[ConditionBuilder] Fetched metadata', metaResult)
         let parsedMeta = metaResult
         if (metaResult?.data && typeof metaResult.data === 'string') {
           try { parsedMeta = JSON.parse(metaResult.data) } catch (e) { parsedMeta = metaResult.data }
@@ -85,7 +85,7 @@ export const ConditionBuilder: React.FC<ConditionBuilderProps> = ({ moduleName, 
        
 
         const validAttrs = attrs
-          .filter((a: any) => a.AttributeType !== 'Uniqueidentifier' && a.IsCustomAttribute === true)
+          .filter((a: any) => a.AttributeType !== 'Uniqueidentifier' && a.IsCustomAttribute === true &&  a.AttributeType !== "Virtual")
           .sort((a: any, b: any) => {
             const labelA = a.DisplayName?.UserLocalizedLabel?.Label || a.LogicalName || ''
             const labelB = b.DisplayName?.UserLocalizedLabel?.Label || b.LogicalName || ''
