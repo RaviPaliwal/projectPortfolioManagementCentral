@@ -46,9 +46,9 @@ export const mapBenefit = (item: Pm_benefits): BenefitModel => ({
   pm_ragstatus: item.pm_ragstatus,
   pm_realisationstartdate: item.pm_realisationstartdate,
   pm_realisationenddate: item.pm_realisationenddate,
-  pm_programmename: item.pm_programmename,
+  pm_programmename: item.pm_programmelookupname || item.pm_programmename,
   pm_projectcode: item.pm_projectcode,
-  pm_benifitownername: item.pm_benifitownername,
+  pm_benifitownername: item.pm_benifitownername || (item as any)['_pm_benifitowner_value@OData.Community.Display.V1.FormattedValue'],
   pm_programmelookupname: item.pm_programmelookupname,
   pm_projectname: item.pm_projectname,
   _pm_benifitowner_value: item._pm_benifitowner_value,
@@ -134,7 +134,9 @@ export async function fetchBenefits(): Promise<BenefitModel[]> {
     'pm_benefitdescription', 'pm_benefitstatus', 'pm_benefittype',
     'pm_benefitreference', 'pm_baselinevalue', 'pm_targetvalue',
     'pm_unitofmeasure', 'pm_ragstatus', 'pm_realisationstartdate',
-    'pm_realisationenddate',
+    'pm_realisationenddate', 'pm_programmename', 'pm_projectcode',
+    'pm_benifitownername', 'pm_programmelookupname', 'pm_projectname',
+    '_pm_benifitowner_value', '_pm_programmelookup_value', '_pm_project_value',
   ]
   const options = {
     select: selectFields,

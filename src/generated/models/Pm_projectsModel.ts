@@ -10,7 +10,8 @@ export const Pm_projectspm_benefitsragstatus = {
 export type Pm_projectspm_benefitsragstatus = keyof typeof Pm_projectspm_benefitsragstatus;
 export const Pm_projectspm_costragstatus = {
   0: 'Green',
-  1: 'Amber'
+  1: 'Amber',
+  2: 'Red'
 } as const;
 export type Pm_projectspm_costragstatus = keyof typeof Pm_projectspm_costragstatus;
 export const Pm_projectspm_projectphase = {
@@ -64,7 +65,7 @@ export interface Pm_projectsBase {
   pm_programmecode?: string;
   pm_projectcode?: string;
   pm_projectid: string;
-  pm_projectmanager?: string;
+  "pm_ProjectManager@odata.bind"?: string;
   pm_projectname?: string;
   pm_projectphase?: Pm_projectspm_projectphase;
   pm_projectpriority?: number;
@@ -100,6 +101,8 @@ export interface Pm_projects extends Pm_projectsBase {
   pm_isactivename?: string;
   pm_portfolioname?: string;
   pm_programmename?: string;
+  pm_projectmanagername?: string;
+  pm_projectmanageryominame?: string;
   pm_projectphasename?: string;
   pm_ragstatusname?: string;
   pm_scheduleragstatusname?: string;
@@ -125,6 +128,8 @@ export interface Pm_projects extends Pm_projectsBase {
   _pm_portfolio_value?: string;
   pm_programme?: object;
   _pm_programme_value?: string;
+  pm_projectmanager?: object;
+  _pm_projectmanager_value?: string;
   transactioncurrencyid?: object;
   _transactioncurrencyid_value?: string;
 }

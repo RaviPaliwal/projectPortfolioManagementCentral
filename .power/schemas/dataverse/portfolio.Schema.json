@@ -278,6 +278,31 @@
           "x-ms-dataverse-type": "DateTimeType",
           "x-ms-schema-name": "pm_enddate"
         },
+        "pm_ownerlookup": {
+          "type": "string",
+          "title": "Owner Lookup",
+          "x-ms-dataverse-attribute": "pm_ownerlookup",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_OwnerLookup"
+        },
+        "pm_ownerlookupname": {
+          "type": "string",
+          "title": "pm_ownerlookupname",
+          "x-ms-dataverse-attribute": "pm_ownerlookupname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_OwnerLookupName",
+          "x-ms-read-only": true,
+          "maxLength": 200
+        },
+        "pm_ownerlookupyominame": {
+          "type": "string",
+          "title": "pm_ownerlookupyominame",
+          "x-ms-dataverse-attribute": "pm_ownerlookupyominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_OwnerLookupYomiName",
+          "x-ms-read-only": true,
+          "maxLength": 200
+        },
         "pm_portfoliodescription": {
           "type": "string",
           "title": "Description",
@@ -304,14 +329,6 @@
           "x-ms-schema-name": "pm_portfolioname",
           "x-ms-dataverse-primary-name": true,
           "maxLength": 850
-        },
-        "pm_portfolioowner": {
-          "type": "string",
-          "title": "Owner (User)",
-          "x-ms-dataverse-attribute": "pm_portfolioowner",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_portfolioowner",
-          "maxLength": 100
         },
         "pm_portfoliostatus": {
           "type": "string",

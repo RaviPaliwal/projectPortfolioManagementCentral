@@ -28,8 +28,9 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import SettingsIcon from '@mui/icons-material/Settings'
 import PersonIcon from '@mui/icons-material/Person'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
+import EditIcon from '@mui/icons-material/Edit'
 
-import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader } from '@/components/common'
+import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader, ActionIcon } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 import { RAG_COLORS, phaseLabel, currency } from '../constants'
 import { fontSizes } from '@/styles'
@@ -62,6 +63,7 @@ interface Project360ViewProps {
   onAddBenefit: () => void
   onAddTask: () => void
   onSubmitGateReview: () => void
+  onEditProject: (project: ProjectModel) => void
 }
 
 export const Project360View: React.FC<Project360ViewProps> = ({
@@ -83,7 +85,8 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onAddBudgetLine,
   onAddBenefit,
   onAddTask,
-  onSubmitGateReview
+  onSubmitGateReview,
+  onEditProject
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -118,6 +121,12 @@ export const Project360View: React.FC<Project360ViewProps> = ({
         subtitle={project.pm_projectmanager ? `Manager: ${project.pm_projectmanager}` : project.pm_projectcode ? `Code: ${project.pm_projectcode}` : undefined}
         actionElement={
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            <ActionIcon
+              icon={<EditIcon />}
+              onClick={() => onEditProject(project)}
+              label="Edit Project"
+              color="primary"
+            />
             <StatusChip status={project.pm_ragstatus} type="rag" size="small" />
             <StatusTag label={phaseLabel(project.pm_projectphase)} size="small" variant="outlined" />
             {project.pm_projectcode && (

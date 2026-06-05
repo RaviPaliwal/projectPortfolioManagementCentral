@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Box,
   Typography,
@@ -16,127 +16,141 @@ import {
   useTheme,
   Avatar,
   Divider,
+  Slider,
+  Paper,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import InfoIcon from '@mui/icons-material/Info'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import { createPortfolio, updatePortfolio, fetchPortfolioHierarchy } from '@/services'
+import MoneyIcon from '@mui/icons-material/Money'
+import { createProgramme, updateProgramme, fetchPortfolioHierarchy } from '@/services'
 import { fontSizes } from '@/styles'
-import type { PortfolioModel } from '@/types/dataverse'
+import type { ProgrammeModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
 
-interface PortfolioFormDialogProps {
+const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+
+interface ProgrammeFormDialogProps {
   open: boolean
   onClose: () => void
-  onSuccess: (portfolios: PortfolioModel[]) => void
+  onSuccess: (programmes: ProgrammeModel[]) => void
   onError: (message: string) => void
-  initialData?: PortfolioModel | null
+  initialData?: ProgrammeModel | null
+  portfolios: { id: string; name: string; budget: number }[]
 }
 
-export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
+export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
   open,
   onClose,
   onSuccess,
   onError,
   initialData,
+  portfolios,
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
-  const { users, currentUser } = useUser()
+  const { users } = useUser()
   
-  const isEdit = !!initialData?.pm_portfolioid
+  const isEdit = !!initialData?.pm_programmeid
   const [actionLoading, setActionLoading] = useState(false)
   
   const [formData, setFormData] = useState({
-    pm_portfolioname: '',
-    pm_ownerlookup: currentUser?.systemuserid || '',
-    pm_portfoliostatus: 0,
+    pm_programmename: '',
+    pm_programmemanager: '',
+    pm_sponsorname: '',
+    pm_programmephase: 1,
     pm_ragstatus: 1,
-    pm_approvedbudgeteur: 0,
+    pm_budgeteur: 0,
     pm_actualspendeur: 0,
+    pm_businessunit: '',
     pm_startdate: '',
     pm_enddate: '',
-    pm_portfoliodescription: '',
-    pm_strategicobjective: '',
-    pm_businessunit: '',
-    pm_prioritylevel: 2,
+    pm_programmedescription: '',
+    _pm_portfolio_value: '',
   })
 
   useEffect(() => {
     if (open) {
       if (initialData) {
         setFormData({
-          pm_portfolioname: initialData.pm_portfolioname || '',
-          pm_ownerlookup: initialData.pm_ownerlookup || '',
-          pm_portfoliostatus: initialData.pm_portfoliostatus !== undefined ? Number(initialData.pm_portfoliostatus) : 0,
+          pm_programmename: initialData.pm_programmename || '',
+          pm_programmemanager: initialData.pm_programmemanager || '',
+          pm_sponsorname: initialData.pm_sponsorname || '',
+          pm_programmephase: initialData.pm_programmephase !== undefined ? Number(initialData.pm_programmephase) : 1,
           pm_ragstatus: initialData.pm_ragstatus !== undefined ? Number(initialData.pm_ragstatus) : 1,
-          pm_approvedbudgeteur: initialData.pm_approvedbudgeteur || 0,
+          pm_budgeteur: initialData.pm_budgeteur || 0,
           pm_actualspendeur: initialData.pm_actualspendeur || 0,
+          pm_businessunit: initialData.pm_businessunit || '',
           pm_startdate: initialData.pm_startdate?.split('T')[0] || '',
           pm_enddate: initialData.pm_enddate?.split('T')[0] || '',
-          pm_portfoliodescription: initialData.pm_portfoliodescription || '',
-          pm_strategicobjective: initialData.pm_strategicobjective || '',
-          pm_businessunit: initialData.pm_businessunit || '',
-          pm_prioritylevel: initialData.pm_prioritylevel !== undefined ? Number(initialData.pm_prioritylevel) : 2,
+          pm_programmedescription: initialData.pm_programmedescription || '',
+          _pm_portfolio_value: initialData._pm_portfolio_value || '',
         })
       } else {
         setFormData({
-          pm_portfolioname: '',
-          pm_ownerlookup: currentUser?.systemuserid || '',
-          pm_portfoliostatus: 0,
+          pm_programmename: '',
+          pm_programmemanager: '',
+          pm_sponsorname: '',
+          pm_programmephase: 1,
           pm_ragstatus: 1,
-          pm_approvedbudgeteur: 0,
+          pm_budgeteur: 0,
           pm_actualspendeur: 0,
+          pm_businessunit: '',
           pm_startdate: '',
           pm_enddate: '',
-          pm_portfoliodescription: '',
-          pm_strategicobjective: '',
-          pm_businessunit: '',
-          pm_prioritylevel: 2,
+          pm_programmedescription: '',
+          _pm_portfolio_value: '',
         })
       }
     }
-  }, [open, initialData, currentUser])
+  }, [open, initialData])
 
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; name: string }>({ open: false, name: '' })
 
+  const sliderMaxBudget = useMemo(() => {
+    if (!formData._pm_portfolio_value) return 10_000_000
+    const selected = portfolios.find((p) => p.id === formData._pm_portfolio_value)
+    if (selected && selected.budget > 0) return selected.budget
+    return 10_000_000
+  }, [formData._pm_portfolio_value, portfolios])
+
   const handleSave = async () => {
-    if (!formData.pm_portfolioname.trim()) return
+    if (!formData.pm_programmename.trim()) return
     setActionLoading(true)
     try {
-      const payload: Partial<PortfolioModel> = {
-        pm_portfolioname: formData.pm_portfolioname,
-        pm_ownerlookup: formData.pm_ownerlookup || undefined,
-        pm_portfoliostatus: formData.pm_portfoliostatus,
+      const payload: Partial<ProgrammeModel> = {
+        pm_programmename: formData.pm_programmename,
+        pm_programmemanager: formData.pm_programmemanager || undefined,
+        pm_sponsorname: formData.pm_sponsorname || undefined,
+        pm_programmephase: formData.pm_programmephase,
         pm_ragstatus: formData.pm_ragstatus,
-        pm_approvedbudgeteur: formData.pm_approvedbudgeteur || 0,
+        pm_budgeteur: formData.pm_budgeteur || 0,
         pm_actualspendeur: formData.pm_actualspendeur || 0,
+        pm_businessunit: formData.pm_businessunit || undefined,
         pm_startdate: formData.pm_startdate || undefined,
         pm_enddate: formData.pm_enddate || undefined,
-        pm_portfoliodescription: formData.pm_portfoliodescription || undefined,
-        pm_strategicobjective: formData.pm_strategicobjective || undefined,
-        pm_businessunit: formData.pm_businessunit || undefined,
-        pm_prioritylevel: formData.pm_prioritylevel,
+        pm_programmedescription: formData.pm_programmedescription || undefined,
+        _pm_portfolio_value: formData._pm_portfolio_value || undefined,
       }
 
-      let result: PortfolioModel | null = null
-      if (isEdit && initialData?.pm_portfolioid) {
-        result = await updatePortfolio(initialData.pm_portfolioid, payload)
+      let result: ProgrammeModel | null = null
+      if (isEdit && initialData?.pm_programmeid) {
+        result = await updateProgramme(initialData.pm_programmeid, payload)
       } else {
-        result = await createPortfolio(payload)
+        result = await createProgramme(payload)
       }
 
       if (result) {
         const freshData = await fetchPortfolioHierarchy()
-        onSuccess(freshData.portfolios)
+        onSuccess(freshData.programmes)
         onClose()
         if (!isEdit) {
-          setConfirmDialog({ open: true, name: result.pm_portfolioname || formData.pm_portfolioname })
+          setConfirmDialog({ open: true, name: result.pm_programmename || formData.pm_programmename })
         }
       }
     } catch {
-      onError(`Unable to ${isEdit ? 'update' : 'create'} portfolio.`)
+      onError(`Unable to ${isEdit ? 'update' : 'create'} programme.`)
     } finally {
       setActionLoading(false)
     }
@@ -146,13 +160,13 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
     <>
       <Dialog open={open} onClose={() => !actionLoading && onClose()} maxWidth="md" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-          {isEdit ? 'Edit Portfolio' : 'New Portfolio'}
+          {isEdit ? 'Edit Programme' : 'New Programme'}
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             {isEdit 
-              ? 'Update the portfolio details and tracking parameters.'
-              : 'Create a new portfolio record to begin tracking investments, programmes, and projects.'}
+              ? 'Update the programme details and tracking parameters.'
+              : 'Create a new programme record. Programmes act as containers for multiple projects within a portfolio.'}
           </Typography>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -164,24 +178,40 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
           </Box>
 
           <Grid container spacing={2.5} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
-                label="Portfolio Name"
+                label="Programme Name"
                 required
                 fullWidth
                 size="small"
-                value={formData.pm_portfolioname}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_portfolioname: e.target.value }))}
+                value={formData.pm_programmename}
+                onChange={(e) => setFormData((f) => ({ ...f, pm_programmename: e.target.value }))}
                 slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Owner / Sponsor</InputLabel>
+                <InputLabel>Parent Portfolio</InputLabel>
                 <Select
-                  value={formData.pm_ownerlookup}
-                  label="Owner / Sponsor"
-                  onChange={(e) => setFormData((f) => ({ ...f, pm_ownerlookup: e.target.value }))}
+                  value={formData._pm_portfolio_value}
+                  label="Parent Portfolio"
+                  onChange={(e) => setFormData((f) => ({ ...f, _pm_portfolio_value: e.target.value }))}
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  <MenuItem value="">None</MenuItem>
+                  {portfolios.map((p) => (
+                    <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Programme Manager</InputLabel>
+                <Select
+                  value={formData.pm_programmemanager}
+                  label="Programme Manager"
+                  onChange={(e) => setFormData((f) => ({ ...f, pm_programmemanager: e.target.value }))}
                   sx={{ borderRadius: 1.5 }}
                   renderValue={(selected) => {
                     const user = users.find(u => u.systemuserid === selected)
@@ -190,11 +220,12 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                         <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
                           {user?.fullname?.charAt(0) || '?'}
                         </Avatar>
-                        {user?.fullname || 'Select Owner'}
+                        {user?.fullname || 'Select Manager'}
                       </Box>
                     )
                   }}
                 >
+                  <MenuItem value="">— Select —</MenuItem>
                   {users.map((user) => (
                     <MenuItem key={user.systemuserid} value={user.systemuserid}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -210,42 +241,26 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
-                label="Business Unit"
+                label="Sponsor"
                 fullWidth
                 size="small"
-                value={formData.pm_businessunit}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_businessunit: e.target.value }))}
-                placeholder="e.g. Finance, IT, HR"
+                value={formData.pm_sponsorname}
+                onChange={(e) => setFormData((f) => ({ ...f, pm_sponsorname: e.target.value }))}
                 slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Priority</InputLabel>
+                <InputLabel>Phase</InputLabel>
                 <Select
-                  value={formData.pm_prioritylevel}
-                  label="Priority"
-                  onChange={(e) => setFormData((f) => ({ ...f, pm_prioritylevel: e.target.value as number }))}
+                  value={formData.pm_programmephase}
+                  label="Phase"
+                  onChange={(e) => setFormData((f) => ({ ...f, pm_programmephase: e.target.value as number }))}
                   sx={{ borderRadius: 1.5 }}
                 >
-                  <MenuItem value={1}>1 - High</MenuItem>
-                  <MenuItem value={2}>2 - Medium</MenuItem>
-                  <MenuItem value={3}>3 - Low</MenuItem>
-                  <MenuItem value={4}>4 - Very Low</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.pm_portfoliostatus}
-                  label="Status"
-                  onChange={(e) => setFormData((f) => ({ ...f, pm_portfoliostatus: e.target.value as number }))}
-                  sx={{ borderRadius: 1.5 }}
-                >
-                  <MenuItem value={0}>Active</MenuItem>
-                  <MenuItem value={1}>On Hold</MenuItem>
+                  <MenuItem value={0}>Delivery</MenuItem>
+                  <MenuItem value={1}>Planning</MenuItem>
+                  <MenuItem value={2}>Initiation</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -258,11 +273,21 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                   onChange={(e) => setFormData((f) => ({ ...f, pm_ragstatus: e.target.value as number }))}
                   sx={{ borderRadius: 1.5 }}
                 >
-                  <MenuItem value={1}>Green — On Track</MenuItem>
-                  <MenuItem value={0}>Amber — At Risk</MenuItem>
-                  <MenuItem value={2}>Red — Critical</MenuItem>
+                  <MenuItem value={1}>Green</MenuItem>
+                  <MenuItem value={0}>Amber</MenuItem>
+                  <MenuItem value={2}>Red</MenuItem>
                 </Select>
               </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Business Unit"
+                fullWidth
+                size="small"
+                value={formData.pm_businessunit}
+                onChange={(e) => setFormData((f) => ({ ...f, pm_businessunit: e.target.value }))}
+                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+              />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
@@ -298,15 +323,62 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
 
           <Grid container spacing={2.5} sx={{ mb: 4 }}>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Approved Budget (EUR)"
-                type="number"
-                fullWidth
-                size="small"
-                value={formData.pm_approvedbudgeteur}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_approvedbudgeteur: Number(e.target.value) }))}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-              />
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <MoneyIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                Budget
+                <Typography variant="caption" color="text.secondary" component="span" sx={{ fontWeight: 400 }}>
+                  (max {currencyFormatter.format(sliderMaxBudget)})
+                </Typography>
+              </Typography>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 1.5,
+                  borderRadius: 1.5,
+                  bgcolor: isDark ? 'background.paper' : 'background.default',
+                  borderColor: isDark ? '#334155' : '#e2e8f0',
+                }}
+              >
+                <Box sx={{ textAlign: 'center', mb: 1 }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700,
+                      fontFamily: '"JetBrains Mono", monospace',
+                      color: formData.pm_budgeteur > 0 ? 'primary.main' : 'text.secondary',
+                    }}
+                  >
+                    {currencyFormatter.format(formData.pm_budgeteur)}
+                  </Typography>
+                  {formData.pm_budgeteur > 0 && sliderMaxBudget > 0 && (
+                    <Typography variant="caption" color="text.secondary">
+                      {((formData.pm_budgeteur / sliderMaxBudget) * 100).toFixed(1)}% of portfolio budget
+                    </Typography>
+                  )}
+                </Box>
+                <Slider
+                  value={formData.pm_budgeteur}
+                  onChange={(_, value) => setFormData((f) => ({ ...f, pm_budgeteur: value as number }))}
+                  min={0}
+                  max={sliderMaxBudget}
+                  step={sliderMaxBudget > 10_000_000 ? 100_000 : 50_000}
+                  sx={{
+                    color: formData.pm_budgeteur > sliderMaxBudget * 0.9
+                      ? 'error.main'
+                      : formData.pm_budgeteur > sliderMaxBudget * 0.75
+                        ? 'warning.main'
+                        : 'primary.main',
+                    '& .MuiSlider-thumb': {
+                      width: 18,
+                      height: 18,
+                      transition: 'box-shadow 0.15s ease',
+                      '&:hover, &.Mui-focusVisible': {
+                        boxShadow: '0 0 0 8px rgba(14, 165, 233, 0.16)',
+                      },
+                    },
+                  }}
+                />
+              </Paper>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
@@ -317,6 +389,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                 value={formData.pm_actualspendeur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_actualspendeur: Number(e.target.value) }))}
                 slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+                sx={{ mt: 4.5 }}
               />
             </Grid>
           </Grid>
@@ -332,25 +405,13 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
           <Grid container spacing={2.5}>
             <Grid size={{ xs: 12 }}>
               <TextField
-                label="Description"
+                label="Description / Business Objectives"
                 fullWidth
                 size="small"
                 multiline
                 rows={3}
-                value={formData.pm_portfoliodescription}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_portfoliodescription: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                label="Strategic Objective"
-                fullWidth
-                size="small"
-                multiline
-                rows={3}
-                value={formData.pm_strategicobjective}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_strategicobjective: e.target.value }))}
+                value={formData.pm_programmedescription}
+                onChange={(e) => setFormData((f) => ({ ...f, pm_programmedescription: e.target.value }))}
                 slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
@@ -363,10 +424,10 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
           <Button
             onClick={handleSave}
             variant="contained"
-            disabled={!formData.pm_portfolioname.trim() || actionLoading}
+            disabled={!formData.pm_programmename.trim() || actionLoading}
             sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, px: 3 }}
           >
-            {actionLoading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Portfolio'}
+            {actionLoading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Programme'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -399,37 +460,29 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
             boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)',
           }}
         >
-          <CheckCircleIcon sx={{ fontSize: 32, color: '#fff' }} />
+          <CheckCircleIcon sx={{ fontSize: 32, color: '#ffffff' }} />
         </Box>
-        <DialogTitle sx={{ textAlign: 'center', pt: 5, pb: 1, fontWeight: 700, fontSize: fontSizes.xl }}>
-          Portfolio Created
+        <DialogTitle sx={{ textAlign: 'center', pt: 5, fontWeight: 700, fontSize: 20 }}>
+          Programme Created
         </DialogTitle>
         <DialogContent sx={{ textAlign: 'center', pb: 3 }}>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>{confirmDialog.name}</strong> has been successfully created.
+          <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+            {confirmDialog.name}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            You can now link programmes and projects to this portfolio from their respective pages.
+            The programme has been created successfully. You can now add projects, assign resources, and manage financials.
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', pb: 3, gap: 1.5 }}>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
           <Button
             variant="contained"
             onClick={() => setConfirmDialog({ open: false, name: '' })}
-            sx={{
-              bgcolor: 'primary.main',
-              '&:hover': { bgcolor: 'primary.dark' },
-              borderRadius: 1.5,
-              px: 4,
-              fontWeight: 600,
-            }}
+            sx={{ borderRadius: 1.5, px: 4, bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}
           >
-            Done
+            Got it
           </Button>
         </DialogActions>
       </Dialog>
     </>
   )
 }
-
-export default PortfolioFormDialog

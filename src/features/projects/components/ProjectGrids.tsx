@@ -13,12 +13,15 @@ import {
   TablePagination,
   LinearProgress,
   useTheme,
+  IconButton,
+  Tooltip,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import EditIcon from '@mui/icons-material/Edit'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import { SearchFilterBar, TableFooter, TableShell, ExportButton, StatusTag } from '@/components/common'
 import type { ProjectModel } from '@/types/dataverse'
-import { RAG_COLORS, RAG_LABELS, phaseLabel, currency, projectExportColumns } from '../constants'
+import { RAG_COLORS, RAG_LABELS, PHASE_COLORS, phaseLabel, currency, projectExportColumns } from '../constants'
 
 interface SortState {
   field: string
@@ -30,13 +33,15 @@ interface ProjectGridsProps {
   loading: boolean
   onRowClick: (project: ProjectModel) => void
   onAddProject: () => void
+  onEditProject: (project: ProjectModel) => void
 }
 
 export const ProjectGrids: React.FC<ProjectGridsProps> = ({
   projects,
   loading,
   onRowClick,
-  onAddProject
+  onAddProject,
+  onEditProject
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -63,7 +68,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
       const q = searchQuery.toLowerCase()
       list = list.filter((p) =>
         (p.pm_projectname?.toLowerCase() ?? '').includes(q) ||
-        (p.pm_projectmanager?.toLowerCase() ?? '').includes(q) ||
+        (p.pm_projectmanagername?.toLowerCase() ?? '').includes(q) ||
         (p.pm_projectcode?.toLowerCase() ?? '').includes(q) ||
         (p.pm_businessunit?.toLowerCase() ?? '').includes(q)
       )
@@ -85,7 +90,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
       } else if (field === 'pm_projectphase') {
         cmp = (phaseLabel(a.pm_projectphase) ?? '').localeCompare(phaseLabel(b.pm_projectphase) ?? '')
       } else if (field === 'pm_projectmanager') {
-        cmp = (a.pm_projectmanager ?? '').localeCompare(b.pm_projectmanager ?? '')
+        cmp = (a.pm_projectmanagername ?? '').localeCompare(b.pm_projectmanagername ?? '')
       } else if (field === 'pm_ragstatus') {
         cmp = (String(a.pm_ragstatus) ?? '').localeCompare(String(b.pm_ragstatus) ?? '')
       } else if (field === 'pm_percentcomplete') {
@@ -125,9 +130,6 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
 
   return (
     <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', p: 1, gap: 1 }}>
-         <ExportButton filename="projects" columns={projectExportColumns} data={filteredProjects} />
-      </Box>
       <SearchFilterBar
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
@@ -155,7 +157,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
           </Button>
         ) : undefined}
       >
-        <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+        <Table stickyHeader size="small" sx={{ minWidth: 1000 }}>
           <TableHead>
             <TableRow>
               {[
@@ -180,6 +182,9 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                   <SortHeader field={col.field} label={col.label} />
                 </TableCell>
               ))}
+              <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, py: 1.5 }}>
+                Actions
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -203,10 +208,14 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                   )}
                 </TableCell>
                 <TableCell>
-                  <StatusTag label={phaseLabel(project.pm_projectphase)} />
+                  <StatusTag 
+                    label={phaseLabel(project.pm_projectphase)} 
+                    color={PHASE_COLORS[String(project.pm_projectphase)] ?? 'default'}
+                    variant="outlined"
+                  />
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2">{project.pm_projectmanager ?? '—'}</Typography>
+                  <Typography variant="body2">{project.pm_projectmanagername ?? '—'}</Typography>
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -250,6 +259,20 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                       ? new Date(project.pm_plannedenddate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                       : '—'}
                   </Typography>
+                </TableCell>
+                <TableCell align="center">
+                  <Tooltip title="Edit Project">
+                    <IconButton 
+                      size="small" 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEditProject(project)
+                      }}
+                      sx={{ color: 'primary.main' }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}

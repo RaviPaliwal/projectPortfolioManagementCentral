@@ -317,9 +317,26 @@
           "type": "string",
           "title": "Programme Manager",
           "x-ms-dataverse-attribute": "pm_programmemanager",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_ProgrammeManager"
+        },
+        "pm_programmemanagername": {
+          "type": "string",
+          "title": "pm_programmemanagername",
+          "x-ms-dataverse-attribute": "pm_programmemanagername",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_programmemanager",
-          "maxLength": 100
+          "x-ms-schema-name": "pm_ProgrammeManagerName",
+          "x-ms-read-only": true,
+          "maxLength": 200
+        },
+        "pm_programmemanageryominame": {
+          "type": "string",
+          "title": "pm_programmemanageryominame",
+          "x-ms-dataverse-attribute": "pm_programmemanageryominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_ProgrammeManagerYomiName",
+          "x-ms-read-only": true,
+          "maxLength": 200
         },
         "pm_programmename": {
           "type": "string",

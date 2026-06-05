@@ -2,12 +2,13 @@ import React from 'react'
 import {
   Box, Typography, TextField, Select, MenuItem,
   Button, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress,
-  FormControl, InputLabel, FormControlLabel, Switch,
+  FormControl, InputLabel, FormControlLabel, Switch, Avatar,
 } from '@mui/material'
 import NewReleasesIcon from '@mui/icons-material/NewReleases'
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
 import LowPriorityIcon from '@mui/icons-material/LowPriority'
 import type { IssueModel } from '@/types/dataverse'
+import { useUser } from '@/context/UserContext'
 
 interface IssueDialogsProps {
   dialogOpen: boolean
@@ -34,6 +35,8 @@ export const IssueDialogs: React.FC<IssueDialogsProps> = ({
   setDeleteTarget,
   handleDelete,
 }) => {
+  const { users } = useUser()
+
   return (
     <>
       {/* Create / Edit Dialog */}
@@ -131,12 +134,40 @@ export const IssueDialogs: React.FC<IssueDialogsProps> = ({
               Assignment & Dates
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Issue Owner"
-                value={form.pm_issueowner ?? ''}
-                onChange={(e) => setForm({ ...form, pm_issueowner: e.target.value })}
-                fullWidth
-              />
+              <FormControl fullWidth>
+                <InputLabel>Issue Owner</InputLabel>
+                <Select
+                  value={users.find(u => u.fullname === form.pm_issueowner)?.systemuserid || ''}
+                  label="Issue Owner"
+                  onChange={(e) => {
+                    const user = users.find(u => u.systemuserid === e.target.value)
+                    setForm({ ...form, pm_issueowner: user?.fullname || '' })
+                  }}
+                  renderValue={(selected) => {
+                    const user = users.find(u => u.systemuserid === selected)
+                    return (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
+                          {user?.fullname?.charAt(0) || '?'}
+                        </Avatar>
+                        {user?.fullname || 'Select Owner'}
+                      </Box>
+                    )
+                  }}
+                >
+                  <MenuItem value="">— Select —</MenuItem>
+                  {users.map((user) => (
+                    <MenuItem key={user.systemuserid} value={user.systemuserid}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
+                          {user.fullname?.charAt(0) || '?'}
+                        </Avatar>
+                        <Typography variant="body2">{user.fullname}</Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <TextField
                 label="Issue Reference"
                 value={form.pm_issuereference ?? ''}

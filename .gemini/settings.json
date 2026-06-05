@@ -33,21 +33,6 @@
     },
     "microsoftdocs-mcp": {
       "httpUrl": "https://learn.microsoft.com/api/mcp"
-    },
-    "serena": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena",
-        "start-mcp-server",
-        "serena@latest",
-        "--context",
-        "ide-assistant"
-      ],
-      "env": {
-        "CONTEXT7_API_KEY": "$CONTEXT7_API_KEY"
-      }
     }
   }
 }

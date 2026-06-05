@@ -27,8 +27,10 @@ export const mapProgramme = (item: Pm_programmes): ProgrammeModel => ({
   pm_ragstatus: item.pm_ragstatus,
   pm_startdate: item.pm_startdate,
   pm_enddate: item.pm_enddate,
-  pm_portfolioname: item.pm_portfolioname,
-  pm_programmemanager: item.pm_programmemanager,
+  pm_portfolioname: item.pm_portfolioname || (item as any)['_pm_portfolio_value@OData.Community.Display.V1.FormattedValue'],
+  pm_programmemanager: item._pm_programmemanager_value,
+  pm_programmemanagername: item.pm_programmemanagername || (item as any)['_pm_programmemanager_value@OData.Community.Display.V1.FormattedValue'],
+  _pm_programmemanager_value: item._pm_programmemanager_value,
   pm_sponsorname: item.pm_sponsorname,
   pm_programmedescription: item.pm_programmedescription,
   pm_budgeteur: item.pm_budgeteur,
@@ -39,35 +41,56 @@ export const mapProgramme = (item: Pm_programmes): ProgrammeModel => ({
 export async function createProgramme(payload: Partial<ProgrammeModel>): Promise<ProgrammeModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null) {
+    if (value !== undefined && value !== null && value !== '' && 
+        key !== 'pm_programmemanager' && key !== '_pm_portfolio_value') {
       cleanPayload[key] = value
     }
   }
+
+  if (payload.pm_programmemanager) {
+    cleanPayload['pm_ProgrammeManager@odata.bind'] = `/systemusers(${normalizeLookupId(payload.pm_programmemanager)})`
+  }
+  if (payload._pm_portfolio_value) {
+    cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${normalizeLookupId(payload._pm_portfolio_value)})`
+  }
+
   const defaults: Record<string, any> = {
     statecode: 0,
     statuscode: 1,
   }
   try {
     const result = await Pm_programmesService.create({ ...defaults, ...cleanPayload } as any)
-    try { console.debug('[dataverseService] createProgramme payload/result:', cleanPayload, result) } catch (e) {}
     const item = unwrapSingle<Pm_programmes>(result)
-    if (item) {
-      return mapProgramme(item)
-    }
-    try {
-      console.warn('[dataverseService] createProgramme: unwrapSingle returned null. Raw result:', JSON.stringify(result, null, 2))
-    } catch (e) {
-      console.warn('[dataverseService] createProgramme: unwrapSingle returned null. Raw result (non-serializable):', result)
-    }
-    return null
+    return item ? mapProgramme(item) : null
   } catch (err: any) {
-    try {
-      console.error('[dataverseService] createProgramme: API call failed:', err?.message || err, '| payload:', JSON.stringify(cleanPayload))
-    } catch (e) {
-      console.error('[dataverseService] createProgramme: API call failed (unable to serialize):', err)
-    }
+    console.error('[dataverseService] createProgramme failed:', err)
     throw err
   }
+}
+
+export async function updateProgramme(id: string, changes: Partial<ProgrammeModel>): Promise<ProgrammeModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null && key !== 'pm_programmeid' && 
+        key !== 'pm_programmemanager' && key !== '_pm_portfolio_value') {
+      cleanPayload[key] = value
+    }
+  }
+
+  if (changes.pm_programmemanager) {
+    cleanPayload['pm_ProgrammeManager@odata.bind'] = `/systemusers(${normalizeLookupId(changes.pm_programmemanager)})`
+  }
+  if (changes._pm_portfolio_value) {
+    cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${normalizeLookupId(changes._pm_portfolio_value)})`
+  }
+
+  const result = await Pm_programmesService.update(id, cleanPayload as any)
+  const item = unwrapSingle<Pm_programmes>(result)
+  return item ? mapProgramme(item) : null
+}
+
+export async function deleteProgramme(id: string): Promise<void> {
+  await Pm_programmesService.delete(id)
 }
 
 export interface ProgrammeDetail {
@@ -79,8 +102,9 @@ export interface ProgrammeDetail {
 
 export async function fetchProgrammeDetails(programmeId: string): Promise<ProgrammeDetail> {
   const progResult = await Pm_programmesService.get(programmeId, {
-    select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_programmemanager', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'],
+    select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', '_pm_programmemanager_value', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'],
   })
+  console.log('fetchProgrammeDetails - raw programme result:', progResult)
   const programme = mapProgramme(unwrapSingle<Pm_programmes>(progResult) ?? ({} as Pm_programmes))
 
   if (!programme.pm_portfolioname && programme._pm_portfolio_value) {

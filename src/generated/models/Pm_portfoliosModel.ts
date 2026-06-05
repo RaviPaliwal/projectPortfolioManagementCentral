@@ -34,10 +34,10 @@ export interface Pm_portfoliosBase {
   pm_businessunit?: string;
   pm_createdon?: string;
   pm_enddate?: string;
+  "pm_OwnerLookup@odata.bind"?: string;
   pm_portfoliodescription?: string;
   pm_portfolioid: string;
   pm_portfolioname?: string;
-  pm_portfolioowner?: string;
   pm_portfoliostatus?: Pm_portfoliospm_portfoliostatus;
   pm_prioritylevel?: number;
   pm_ragstatus?: Pm_portfoliospm_ragstatus;
@@ -67,6 +67,8 @@ export interface Pm_portfolios extends Pm_portfoliosBase {
   owningbusinessunitname: string;
   pm_actualspendeur_base?: number;
   pm_approvedbudgeteur_base?: number;
+  pm_ownerlookupname?: string;
+  pm_ownerlookupyominame?: string;
   pm_portfoliostatusname?: string;
   pm_ragstatusname?: string;
   statecodename?: string;
@@ -87,6 +89,8 @@ export interface Pm_portfolios extends Pm_portfoliosBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
+  pm_ownerlookup?: object;
+  _pm_ownerlookup_value?: string;
   transactioncurrencyid?: object;
   _transactioncurrencyid_value?: string;
 }

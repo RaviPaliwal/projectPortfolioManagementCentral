@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, Skeleton } from '@mui/material'
+import { Box, Paper, Typography, Skeleton, FormControl, Select, MenuItem, InputLabel } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import GppBadIcon from '@mui/icons-material/GppBad'
 import { VarianceDisplay, StatusProgressBar, StatusTag } from '@/components/common'
@@ -8,13 +8,20 @@ interface BudgetHealthPanelProps {
   totalApprovedBudget: number
   totalActualSpend: number
   loading: boolean
+  selectedYear?: number | 'all'
+  availableYears?: number[]
+  onYearChange?: (year: number | 'all') => void
 }
 
-export const BudgetHealthPanel = ({ totalApprovedBudget, totalActualSpend, loading }: BudgetHealthPanelProps) => {
+export const BudgetHealthPanel = ({ 
+  totalApprovedBudget, 
+  totalActualSpend, 
+  loading, 
+  selectedYear,
+  availableYears = [],
+  onYearChange
+}: BudgetHealthPanelProps) => {
   const budgetVariance = totalApprovedBudget - totalActualSpend
-  const budgetPct = totalApprovedBudget > 0
-    ? Math.round((totalActualSpend / totalApprovedBudget) * 100)
-    : 0
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -22,16 +29,40 @@ export const BudgetHealthPanel = ({ totalApprovedBudget, totalActualSpend, loadi
         <Box>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>Budget Health</Typography>
           <Typography variant="body2" color="text.secondary">
-            Approved budget vs. actual spend across all portfolios.
+            {selectedYear && selectedYear !== 'all' 
+              ? `Budget performance for Fiscal Year ${selectedYear}.`
+              : 'Approved budget vs. actual spend across all portfolios.'
+            }
           </Typography>
         </Box>
-        {!loading && (
-          <StatusTag
-            icon={budgetVariance >= 0 ? <CheckCircleIcon /> : <GppBadIcon />}
-            label={budgetVariance >= 0 ? 'On Track' : 'Over Budget'}
-            color={budgetVariance >= 0 ? 'success' : 'error'}
-          />
-        )}
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {!loading && (
+            <StatusTag
+              icon={budgetVariance >= 0 ? <CheckCircleIcon /> : <GppBadIcon />}
+              label={budgetVariance >= 0 ? 'On Track' : 'Over Budget'}
+              color={budgetVariance >= 0 ? 'success' : 'error'}
+            />
+          )}
+
+          {onYearChange && (
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel id="budget-year-select-label">View Year</InputLabel>
+              <Select
+                labelId="budget-year-select-label"
+                value={selectedYear || 'all'}
+                label="View Year"
+                onChange={(e) => onYearChange(e.target.value as number | 'all')}
+                sx={{ borderRadius: 1.5 }}
+              >
+                <MenuItem value="all">All Years</MenuItem>
+                {availableYears.map((year) => (
+                  <MenuItem key={year} value={year}>FY {year}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </Box>
       </Box>
 
       {loading ? (

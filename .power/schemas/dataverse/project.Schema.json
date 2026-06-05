@@ -320,13 +320,16 @@
           "x-ms-schema-name": "pm_costragstatus",
           "enum": [
             "Green",
-            "Amber"
+            "Amber",
+            "Red"
           ],
           "x-ms-enum-values": [
             0,
-            1
+            1,
+            2
           ],
           "Color": [
+            null,
             null,
             null
           ],
@@ -402,12 +405,46 @@
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_portfolio"
         },
+        "pm_portfoliocode": {
+          "type": "string",
+          "title": "Portfolio",
+          "x-ms-dataverse-attribute": "pm_portfoliocode",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_portfoliocode",
+          "maxLength": 100
+        },
+        "pm_portfolioname": {
+          "type": "string",
+          "title": "pm_portfolioname",
+          "x-ms-dataverse-attribute": "pm_portfolioname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_portfolioName",
+          "x-ms-read-only": true,
+          "maxLength": 850
+        },
         "pm_programme": {
           "type": "string",
           "title": "Programme",
           "x-ms-dataverse-attribute": "pm_programme",
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_programme"
+        },
+        "pm_programmecode": {
+          "type": "string",
+          "title": "Programme",
+          "x-ms-dataverse-attribute": "pm_programmecode",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_programmecode",
+          "maxLength": 100
+        },
+        "pm_programmename": {
+          "type": "string",
+          "title": "pm_programmename",
+          "x-ms-dataverse-attribute": "pm_programmename",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_programmeName",
+          "x-ms-read-only": true,
+          "maxLength": 850
         },
         "pm_projectcode": {
           "type": "string",
@@ -431,9 +468,26 @@
           "type": "string",
           "title": "Project Manager",
           "x-ms-dataverse-attribute": "pm_projectmanager",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_ProjectManager"
+        },
+        "pm_projectmanagername": {
+          "type": "string",
+          "title": "pm_projectmanagername",
+          "x-ms-dataverse-attribute": "pm_projectmanagername",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projectmanager",
-          "maxLength": 100
+          "x-ms-schema-name": "pm_ProjectManagerName",
+          "x-ms-read-only": true,
+          "maxLength": 200
+        },
+        "pm_projectmanageryominame": {
+          "type": "string",
+          "title": "pm_projectmanageryominame",
+          "x-ms-dataverse-attribute": "pm_projectmanageryominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_ProjectManagerYomiName",
+          "x-ms-read-only": true,
+          "maxLength": 200
         },
         "pm_projectname": {
           "type": "string",

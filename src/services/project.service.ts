@@ -23,7 +23,9 @@ export const mapProject = (item: Pm_projects): ProjectModel => ({
   pm_projectcode: item.pm_projectcode,
   _pm_portfolio_value: item._pm_portfolio_value,
   _pm_programme_value: item._pm_programme_value,
-  pm_projectmanager: item.pm_projectmanager,
+  pm_projectmanager: item._pm_projectmanager_value,
+  pm_projectmanagername: item.pm_projectmanagername || (item as any)['_pm_projectmanager_value@OData.Community.Display.V1.FormattedValue'],
+  _pm_projectmanager_value: item._pm_projectmanager_value,
   pm_projectphase: item.pm_projectphase,
   pm_ragstatus: item.pm_ragstatus,
   pm_plannedstartdate: item.pm_plannedstartdate,
@@ -35,8 +37,13 @@ export const mapProject = (item: Pm_projects): ProjectModel => ({
   pm_percentcomplete: item.pm_percentcomplete,
   pm_businessunit: item.pm_businessunit,
   pm_projectsponsor: item.pm_projectsponsor,
-  pm_portfolioname: item.pm_portfolioname,
-  pm_programmename: item.pm_programmename,
+  pm_portfolioname: item.pm_portfolioname || (item as any)['_pm_portfolio_value@OData.Community.Display.V1.FormattedValue'],
+  pm_programmename: item.pm_programmename || (item as any)['_pm_programme_value@OData.Community.Display.V1.FormattedValue'],
+  pm_isactive: item.pm_isactive,
+  pm_projectpriority: item.pm_projectpriority,
+  pm_costragstatus: item.pm_costragstatus,
+  pm_scheduleragstatus: item.pm_scheduleragstatus,
+  pm_benefitsragstatus: item.pm_benefitsragstatus,
 })
 
 export const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => ({
@@ -84,104 +91,156 @@ export async function fetchMyActiveProjects(): Promise<ProjectModel[]> {
     'pm_projectphase',
     '_pm_portfolio_value',
     '_pm_programme_value',
+    '_pm_projectmanager_value',
+    'pm_projectmanagername',
   ]
   const options = {
     select: selectFields,
     orderBy: ['pm_projectname asc'],
     top: 50,
   }
-
-  const activeResult = await Pm_projectsService.getAll({
-    ...options,
-    filter: 'statecode eq 0',
-  })
-
-  try {
-    console.debug('[dataverseService] fetchMyActiveProjects activeResult raw:', activeResult, 'options:', options)
-  } catch (e) {
-    console.debug('[dataverseService] fetchMyActiveProjects: unable to log activeResult')
-  }
-
+  const activeResult = await Pm_projectsService.getAll({ ...options, filter: 'statecode eq 0' })
   let projects = unwrapList<Pm_projects>(activeResult)
   if (projects.length === 0) {
-    try {
-      console.warn('[dataverseService] fetchMyActiveProjects: activeResult had no value, raw response:', activeResult)
-    } catch (e) {
-      console.warn('[dataverseService] fetchMyActiveProjects: unable to stringify activeResult')
-    }
-
     const fallbackResult = await Pm_projectsService.getAll(options)
-    const fallbackProjects = unwrapList<Pm_projects>(fallbackResult)
-    if (fallbackProjects.length > 0) {
-      console.warn('[dataverseService] fetchMyActiveProjects: no active projects returned for statecode eq 0, falling back to all projects')
-      projects = fallbackProjects
-    }
+    projects = unwrapList<Pm_projects>(fallbackResult)
   }
-
-  const mapped = projects.map(mapProject)
-
-  try {
-    const portfolioIds = Array.from(new Set(mapped.map((p) => (p as any)._pm_portfolio_value).filter(Boolean))) as string[]
-    const programmeIds = Array.from(new Set(mapped.map((p) => (p as any)._pm_programme_value).filter(Boolean))) as string[]
-
-    const portfolioMap: Record<string, string> = {}
-    if (portfolioIds.length > 0) {
-      const portfolioFetches = await Promise.all(
-        portfolioIds.map((id) => Pm_portfoliosService.get(id, { select: ['pm_portfolioid', 'pm_portfolioname'] }))
-      )
-      try { console.debug('[dataverseService] fetchMyActiveProjects portfolioFetches raw:', portfolioFetches) } catch (e) {}
-      portfolioFetches.forEach((res) => {
-        const item = unwrapSingle<Pm_portfolios>(res)
-        if (item && item.pm_portfolioid) portfolioMap[item.pm_portfolioid] = item.pm_portfolioname ?? ''
-      })
-    }
-
-    const programmeMap: Record<string, string> = {}
-    if (programmeIds.length > 0) {
-      const programmeFetches = await Promise.all(
-        programmeIds.map((id) => Pm_programmesService.get(id, { select: ['pm_programmeid', 'pm_programmename'] }))
-      )
-      try { console.debug('[dataverseService] fetchMyActiveProjects programmeFetches raw:', programmeFetches) } catch (e) {}
-      programmeFetches.forEach((res) => {
-        const item = unwrapSingle<Pm_programmes>(res)
-        if (item && item.pm_programmeid) programmeMap[item.pm_programmeid] = item.pm_programmename ?? ''
-      })
-    }
-
-    for (const proj of mapped) {
-      const pid = (proj as any)._pm_portfolio_value as string | undefined
-      const prid = (proj as any)._pm_programme_value as string | undefined
-      if (pid && portfolioMap[pid]) proj.pm_portfolioname = portfolioMap[pid]
-      if (prid && programmeMap[prid]) proj.pm_programmename = programmeMap[prid]
-    }
-  } catch (err) {
-    console.warn('[dataverseService] fetchMyActiveProjects: failed to resolve lookup names', err)
-  }
-
-  return mapped
+  return projects.map(mapProject)
 }
 
 export async function fetchProjectDetails(projectId: string): Promise<ProjectModel | null> {
   const result = await Pm_projectsService.get(projectId, {
     select: [
-      'pm_projectid',
-      'pm_projectname',
-      'pm_projectcode',
-      '_pm_portfolio_value',
-      '_pm_programme_value',
-      'pm_projectmanager',
-      'pm_projectphase',
-      'pm_ragstatus',
-      'pm_plannedstartdate',
-      'pm_plannedenddate',
-      'pm_actualstartdate',
-      'pm_actualenddate',
-      'pm_portfolioname',
-      'pm_programmename',
+      'pm_projectid', 'pm_projectname', 'pm_projectcode',
+      '_pm_portfolio_value', '_pm_programme_value',
+      '_pm_projectmanager_value', 'pm_projectmanagername', 'pm_projectphase', 'pm_ragstatus',
+      'pm_plannedstartdate', 'pm_plannedenddate',
+      'pm_actualstartdate', 'pm_actualenddate',
+      'pm_portfolioname', 'pm_programmename',
     ],
   })
-  try { console.debug('[dataverseService] fetchProjectDetails result raw:', result, 'projectId:', projectId) } catch (e) {}
   return mapProject(unwrapSingle<Pm_projects>(result) ?? ({} as Pm_projects))
+}
+
+export async function fetchProjectsFull(): Promise<ProjectModel[]> {
+  const result = await Pm_projectsService.getAll({
+    filter: "statecode eq 0",
+    select: [
+      'pm_projectid', 'pm_projectname', 'pm_projectcode',
+      '_pm_portfolio_value', '_pm_programme_value',
+      '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus',
+      'pm_plannedstartdate', 'pm_plannedenddate',
+      'pm_actualstartdate', 'pm_actualenddate',
+      'pm_approvedbudgeteur', 'pm_actualcosteur',
+      'pm_percentcomplete', 'pm_businessunit', 'pm_projectsponsor',
+    ],
+    orderBy: ['pm_projectname asc'],
+    top: 500,
+  })
+  let projects = unwrapList<Pm_projects>(result).map(mapProject)
+  if (projects.length === 0) {
+    const fallbackResult = await Pm_projectsService.getAll({
+      select: [
+        'pm_projectid', 'pm_projectname', 'pm_projectcode',
+        '_pm_portfolio_value', '_pm_programme_value',
+        '_pm_projectmanager_value', 'pm_projectmanagername', 'pm_projectphase', 'pm_ragstatus',
+        'pm_plannedstartdate', 'pm_plannedenddate',
+        'pm_actualstartdate', 'pm_actualenddate',
+        'pm_approvedbudgeteur', 'pm_actualcosteur',
+        'pm_percentcomplete', 'pm_businessunit', 'pm_projectsponsor',
+      ],
+      orderBy: ['pm_projectname asc'],
+      top: 500,
+    })
+    projects = unwrapList<Pm_projects>(fallbackResult).map(mapProject)
+  }
+
+  // Resolve Names
+  try {
+    const portfolioIds = Array.from(new Set(projects.map((p) => p._pm_portfolio_value).filter(Boolean))) as string[]
+    const programmeIds = Array.from(new Set(projects.map((p) => p._pm_programme_value).filter(Boolean))) as string[]
+
+    const portfolioNameById = new Map<string, string>()
+    if (portfolioIds.length > 0) {
+      const portResults = await Promise.all(
+        portfolioIds.map((id) => Pm_portfoliosService.get(id, { select: ['pm_portfolioid', 'pm_portfolioname'] }))
+      )
+      for (const res of portResults) {
+        const item = unwrapSingle<Pm_portfolios>(res)
+        if (item && item.pm_portfolioid && item.pm_portfolioname) {
+          portfolioNameById.set(item.pm_portfolioid, item.pm_portfolioname)
+        }
+      }
+    }
+
+    const programmeNameById = new Map<string, string>()
+    if (programmeIds.length > 0) {
+      const progResults = await Promise.all(
+        programmeIds.map((id) => Pm_programmesService.get(id, { select: ['pm_programmeid', 'pm_programmename'] }))
+      )
+      for (const res of progResults) {
+        const item = unwrapSingle<Pm_programmes>(res)
+        if (item && item.pm_programmeid && item.pm_programmename) {
+          programmeNameById.set(item.pm_programmeid, item.pm_programmename)
+        }
+      }
+    }
+
+    for (const proj of projects) {
+      if (proj._pm_portfolio_value && portfolioNameById.has(proj._pm_portfolio_value)) {
+        proj.pm_portfolioname = portfolioNameById.get(proj._pm_portfolio_value)
+      }
+      if (proj._pm_programme_value && programmeNameById.has(proj._pm_programme_value)) {
+        proj.pm_programmename = programmeNameById.get(proj._pm_programme_value)
+      }
+    }
+  } catch (err) {
+    try { console.warn('[dataverseService] fetchProjectsFull: failed to resolve lookup names', err) } catch (e) {}
+  }
+
+  return projects
+}
+
+export async function createProject(payload: Partial<ProjectModel>): Promise<ProjectModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  const exclude = ['_pm_portfolio_value', '_pm_programme_value', 'pm_projectmanager', 'pm_projectid']
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' && !exclude.includes(key)) {
+      cleanPayload[key] = value
+    }
+  }
+  if (payload._pm_portfolio_value) cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${normalizeLookupId(payload._pm_portfolio_value)})`
+  if (payload._pm_programme_value) cleanPayload['pm_programme@odata.bind'] = `/pm_programmes(${normalizeLookupId(payload._pm_programme_value)})`
+  if (payload.pm_projectmanager) cleanPayload['pm_ProjectManager@odata.bind'] = `/systemusers(${normalizeLookupId(payload.pm_projectmanager)})`
+
+  const defaults = { statecode: 0, statuscode: 1 }
+  const result = await Pm_projectsService.create({ ...defaults, ...cleanPayload } as any)
+  const item = unwrapSingle<Pm_projects>(result)
+  return item ? mapProject(item) : null
+}
+
+export async function updateProject(id: string, changes: Partial<ProjectModel>): Promise<ProjectModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  const excludeFields = [
+    'pm_projectid', '_pm_portfolio_value', '_pm_programme_value', '_pm_projectmanager_value',
+    'pm_portfolioname', 'pm_programmename', 'pm_projectmanagername', 'pm_projectmanager'
+  ]
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null && !excludeFields.includes(key)) {
+      cleanPayload[key] = value
+    }
+  }
+  if (changes._pm_portfolio_value) cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${normalizeLookupId(changes._pm_portfolio_value)})`
+  if (changes._pm_programme_value) cleanPayload['pm_programme@odata.bind'] = `/pm_programmes(${normalizeLookupId(changes._pm_programme_value)})`
+  if (changes.pm_projectmanager) cleanPayload['pm_ProjectManager@odata.bind'] = `/systemusers(${normalizeLookupId(changes.pm_projectmanager)})`
+
+  const result = await Pm_projectsService.update(id, cleanPayload as any)
+  const item = unwrapSingle<Pm_projects>(result)
+  return item ? mapProject(item) : null
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  await Pm_projectsService.delete(id)
 }
 
 export async function fetchProjectTasks(projectId: string): Promise<ProjectTaskModel[]> {
@@ -200,7 +259,6 @@ export async function fetchProjectTasks(projectId: string): Promise<ProjectTaskM
     orderBy: ['pm_tasklevel asc', 'pm_wbsnumber asc', 'pm_taskname asc'],
     top: 500,
   })
-  try { console.debug('[dataverseService] fetchProjectTasks result raw:', result, 'projectId:', projectId) } catch (e) {}
   return unwrapList<Pm_projecttasks>(result).map(mapProjectTask)
 }
 
@@ -257,29 +315,13 @@ export async function fetchScheduleData(projectId: string): Promise<ScheduleData
 export async function createScheduleTask(payload: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '' &&
-        key !== '_pm_project_value' && key !== '_pm_predecessortask_value') {
+    if (value !== undefined && value !== null && value !== '' && key !== '_pm_project_value' && key !== '_pm_predecessortask_value') {
       cleanPayload[key] = value
     }
   }
-  const defaults: Record<string, any> = {
-    statecode: 0,
-    statuscode: 1,
-  }
-  if (payload._pm_project_value) {
-    const projectId = normalizeLookupId(payload._pm_project_value)
-    if (projectId) {
-      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
-    }
-  }
-  if (payload._pm_predecessortask_value) {
-    const predId = normalizeLookupId(payload._pm_predecessortask_value)
-    if (predId) {
-      cleanPayload['pm_PredecessorTask@odata.bind'] = `/pm_projecttasks(${predId})`
-    }
-  }
-  const result = await Pm_projecttasksService.create({ ...defaults, ...cleanPayload } as any)
-  try { console.debug('[dataverseService] createScheduleTask payload/result:', cleanPayload, result) } catch (e) {}
+  if (payload._pm_project_value) cleanPayload['pm_project@odata.bind'] = `/pm_projects(${normalizeLookupId(payload._pm_project_value)})`
+  if (payload._pm_predecessortask_value) cleanPayload['pm_PredecessorTask@odata.bind'] = `/pm_projecttasks(${normalizeLookupId(payload._pm_predecessortask_value)})`
+  const result = await Pm_projecttasksService.create({ statecode: 0, statuscode: 1, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_projecttasks>(result)
   return item ? mapProjectTask(item) : null
 }
@@ -287,19 +329,16 @@ export async function createScheduleTask(payload: Partial<ProjectTaskModel>): Pr
 export async function updateScheduleTask(id: string, changes: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null &&
-        key !== 'pm_projecttaskid' && key !== '_pm_project_value' && key !== '_pm_predecessortask_value') {
+    if (value !== undefined && value !== null && key !== 'pm_projecttaskid' && key !== '_pm_project_value' && key !== '_pm_predecessortask_value') {
       cleanPayload[key] = value
     }
   }
   const result = await Pm_projecttasksService.update(id, cleanPayload as any)
-  try { console.debug('[dataverseService] updateScheduleTask id/changes/result:', id, cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_projecttasks>(result)
   return item ? mapProjectTask(item) : null
 }
 
 export async function deleteScheduleTask(id: string): Promise<void> {
-  try { console.debug('[dataverseService] deleteScheduleTask id:', id) } catch (e) {}
   await Pm_projecttasksService.delete(id)
 }
 
@@ -310,64 +349,35 @@ export async function fetchProjectMilestones(projectId: string): Promise<Project
     orderBy: ['pm_planneddate asc'],
     top: 200,
   })
-  try { console.debug('[dataverseService] fetchProjectMilestones result raw:', result, 'projectId:', projectId) } catch (e) {}
   return unwrapList<Pm_projectmilestones>(result).map(mapProjectMilestone)
-}
-
-export async function createProject(payload: Partial<ProjectModel>): Promise<ProjectModel | null> {
-  const result = await Pm_projectsService.create(payload as any)
-  try { console.debug('[dataverseService] createProject payload/result:', payload, result) } catch (e) {}
-  const item = unwrapSingle<Pm_projects>(result)
-  return item ? mapProject(item) : null
-}
-
-export async function updateProject(id: string, changes: Partial<ProjectModel>): Promise<ProjectModel | null> {
-  const result = await Pm_projectsService.update(id, changes as any)
-  try { console.debug('[dataverseService] updateProject id/changes/result:', id, changes, result) } catch (e) {}
-  const item = unwrapSingle<Pm_projects>(result)
-  return item ? mapProject(item) : null
-}
-
-export async function deleteProject(id: string): Promise<void> {
-  try { console.debug('[dataverseService] deleteProject id:', id) } catch (e) {}
-  await Pm_projectsService.delete(id)
 }
 
 export async function createProjectTask(payload: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
   const result = await Pm_projecttasksService.create(payload as any)
   const item = unwrapSingle<Pm_projecttasks>(result)
-  try { console.debug('[dataverseService] createProjectTask payload/result:', payload, result) } catch (e) {}
   return item ? mapProjectTask(item) : null
 }
 
 export async function updateProjectTask(id: string, changes: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
   const result = await Pm_projecttasksService.update(id, changes as any)
   const item = unwrapSingle<Pm_projecttasks>(result)
-  try { console.debug('[dataverseService] updateProjectTask id/changes/result:', id, changes, result) } catch (e) {}
   return item ? mapProjectTask(item) : null
 }
 
 export async function deleteProjectTask(id: string): Promise<void> {
-  try { console.debug('[dataverseService] deleteProjectTask id:', id) } catch (e) {}
   await Pm_projecttasksService.delete(id)
 }
 
 export async function createProjectMilestone(payload: Partial<ProjectMilestoneModel>): Promise<ProjectMilestoneModel | null> {
   const result = await Pm_projectmilestonesService.create(payload as any)
   const item = unwrapSingle<Pm_projectmilestones>(result)
-  try { console.debug('[dataverseService] createProjectMilestone payload/result:', payload, result) } catch (e) {}
   return item ? mapProjectMilestone(item) : null
 }
 
 export async function deleteProjectMilestone(id: string): Promise<void> {
-  try { console.debug('[dataverseService] deleteProjectMilestone id:', id) } catch (e) {}
   await Pm_projectmilestonesService.delete(id)
 }
 
-/**
- * Recalculates Project financial totals based on its Budget Lines.
- * Updates the Project record in Dataverse.
- */
 export async function recalculateProjectFinancials(projectId: string): Promise<ProjectModel | null> {
   try {
     const { Pm_budgetlinesService } = await import('@/generated')
@@ -376,105 +386,18 @@ export async function recalculateProjectFinancials(projectId: string): Promise<P
       select: ['pm_approvedbudgeteur', 'pm_actualspendeur'],
       top: 500
     })
-    
     const lines = unwrapList<any>(budgetResult)
     const totals = lines.reduce((acc, line) => ({
       budget: acc.budget + Number(line.pm_approvedbudgeteur || 0),
       actual: acc.actual + Number(line.pm_actualspendeur || 0),
     }), { budget: 0, actual: 0 })
-
     const updated = await Pm_projectsService.update(projectId, {
       pm_approvedbudgeteur: totals.budget,
       pm_actualcosteur: totals.actual,
     } as any)
-
     return mapProject(unwrapSingle<Pm_projects>(updated)!)
   } catch (err) {
     console.error('[dataverseService] recalculateProjectFinancials failed:', err)
     return null
   }
-}
-
-export async function fetchProjectsFull(): Promise<ProjectModel[]> {
-  const result = await Pm_projectsService.getAll({
-    filter: "statecode eq 0",
-    select: [
-      'pm_projectid', 'pm_projectname', 'pm_projectcode',
-      '_pm_portfolio_value', '_pm_programme_value',
-      'pm_projectmanager', 'pm_projectphase', 'pm_ragstatus',
-      'pm_plannedstartdate', 'pm_plannedenddate',
-      'pm_actualstartdate', 'pm_actualenddate',
-      'pm_approvedbudgeteur', 'pm_actualcosteur',
-      'pm_percentcomplete', 'pm_businessunit', 'pm_projectsponsor',
-    ],
-    orderBy: ['pm_projectname asc'],
-    top: 500,
-  })
-  try { console.debug('[dataverseService] fetchProjectsFull result raw:', result) } catch (e) {}
-
-  let projects = unwrapList<Pm_projects>(result).map(mapProject)
-
-  if (projects.length === 0) {
-    try {
-      console.warn('[dataverseService] fetchProjectsFull: empty result, attempting fallback without filter')
-    } catch (e) {}
-    const fallbackResult = await Pm_projectsService.getAll({
-      select: [
-        'pm_projectid', 'pm_projectname', 'pm_projectcode',
-        '_pm_portfolio_value', '_pm_programme_value',
-        'pm_projectmanager', 'pm_projectphase', 'pm_ragstatus',
-        'pm_plannedstartdate', 'pm_plannedenddate',
-        'pm_actualstartdate', 'pm_actualenddate',
-        'pm_approvedbudgeteur', 'pm_actualcosteur',
-        'pm_percentcomplete', 'pm_businessunit', 'pm_projectsponsor',
-      ],
-      orderBy: ['pm_projectname asc'],
-      top: 500,
-    })
-    projects = unwrapList<Pm_projects>(fallbackResult).map(mapProject)
-  }
-
-  try {
-    const portfolioIds = Array.from(new Set(projects.map((p) => p._pm_portfolio_value).filter(Boolean))) as string[]
-    const programmeIds = Array.from(new Set(projects.map((p) => p._pm_programme_value).filter(Boolean))) as string[]
-
-    const portfolioNameById = new Map<string, string>()
-    if (portfolioIds.length > 0) {
-      const portResults = await Promise.all(
-        portfolioIds.map((id) => Pm_portfoliosService.get(id, { select: ['pm_portfolioid', 'pm_portfolioname'] }))
-      )
-      for (const res of portResults) {
-        const item = unwrapSingle<Pm_portfolios>(res)
-        if (item && item.pm_portfolioid && item.pm_portfolioname) {
-          portfolioNameById.set(item.pm_portfolioid, item.pm_portfolioname)
-        }
-      }
-    }
-
-    const programmeNameById = new Map<string, string>()
-    if (programmeIds.length > 0) {
-      const progResults = await Promise.all(
-        programmeIds.map((id) => Pm_programmesService.get(id, { select: ['pm_programmeid', 'pm_programmename'] }))
-      )
-      for (const res of progResults) {
-        const item = unwrapSingle<Pm_programmes>(res)
-        if (item && item.pm_programmeid && item.pm_programmename) {
-          programmeNameById.set(item.pm_programmeid, item.pm_programmename)
-        }
-      }
-    }
-
-    for (const proj of projects) {
-      if (proj._pm_portfolio_value && portfolioNameById.has(proj._pm_portfolio_value)) {
-        proj.pm_portfolioname = portfolioNameById.get(proj._pm_portfolio_value)
-      }
-      if (proj._pm_programme_value && programmeNameById.has(proj._pm_programme_value)) {
-        proj.pm_programmename = programmeNameById.get(proj._pm_programme_value)
-      }
-    }
-  } catch (err) {
-    try { console.warn('[dataverseService] fetchProjectsFull: failed to resolve lookup names', err) } catch (e) {}
-  }
-
-  return projects
 }

@@ -48,6 +48,18 @@ export const Accordion: React.FC<AccordionProps> = ({
           expanded={expanded === item.id}
           onChange={handleChange(item.id)}
           disabled={item.disabled}
+          disableGutters
+          elevation={0}
+          sx={{
+            borderRadius: '14px', // Standard for the project (approx 1.155 * 12)
+            mb: 1.5,
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            '&:before': { display: 'none' },
+            '&.Mui-expanded': { borderRadius: '14px' },
+            overflow: 'hidden',
+            '&:first-of-type': { borderTopLeftRadius: '14px', borderTopRightRadius: '14px' },
+            '&:last-of-type': { borderBottomLeftRadius: '14px', borderBottomRightRadius: '14px' },
+          }}
           {...props}
         >
           <AccordionSummary

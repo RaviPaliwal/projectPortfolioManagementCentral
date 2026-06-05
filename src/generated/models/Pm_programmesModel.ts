@@ -38,7 +38,7 @@ export interface Pm_programmesBase {
   pm_portfoliocode?: string;
   pm_programmedescription?: string;
   pm_programmeid: string;
-  pm_programmemanager?: string;
+  "pm_ProgrammeManager@odata.bind"?: string;
   pm_programmename?: string;
   pm_programmephase?: Pm_programmespm_programmephase;
   pm_ragstatus?: Pm_programmespm_ragstatus;
@@ -69,6 +69,8 @@ export interface Pm_programmes extends Pm_programmesBase {
   pm_actualspendeur_base?: number;
   pm_budgeteur_base?: number;
   pm_portfolioname?: string;
+  pm_programmemanagername?: string;
+  pm_programmemanageryominame?: string;
   pm_programmephasename?: string;
   pm_ragstatusname?: string;
   statecodename?: string;
@@ -91,6 +93,8 @@ export interface Pm_programmes extends Pm_programmesBase {
   _owninguser_value?: string;
   pm_portfolio?: object;
   _pm_portfolio_value?: string;
+  pm_programmemanager?: object;
+  _pm_programmemanager_value?: string;
   transactioncurrencyid?: object;
   _transactioncurrencyid_value?: string;
 }

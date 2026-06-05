@@ -12,6 +12,12 @@ export const RAG_LABELS: Record<string, string> = {
   '0': 'Amber',
 }
 
+export const PHASE_COLORS: Record<string, "primary" | "secondary" | "success" | "warning" | "error" | "info" | "default"> = {
+  '1': 'info',      // Planning
+  '0': 'success',   // Execution
+  '2': 'secondary', // Closure
+}
+
 export const phaseLabel = (code?: string | number): string => {
   if (code === '0' || code === 0) return 'Execution'
   if (code === '1' || code === 1) return 'Planning'

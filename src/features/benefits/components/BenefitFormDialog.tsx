@@ -21,6 +21,7 @@ import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import DescriptionIcon from '@mui/icons-material/Description'
 import type { BenefitModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
+import { useUser } from '@/context/UserContext'
 
 interface BenefitFormDialogProps {
   open: boolean
@@ -41,6 +42,8 @@ export const BenefitFormDialog = ({
   setFormData,
   actionLoading,
 }: BenefitFormDialogProps) => {
+  const { users } = useUser()
+
   return (
     <Dialog
       open={open}
@@ -158,15 +161,44 @@ export const BenefitFormDialog = ({
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Owner Name"
-              fullWidth
-              size="small"
-              value={formData.pm_benifitownername}
-              onChange={(e) => setFormData((f: any) => ({ ...f, pm_benifitownername: e.target.value }))}
-              placeholder="e.g., Sarah Connor"
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-            />
+            <FormControl fullWidth size="small">
+              <InputLabel>Benefit Owner</InputLabel>
+              <Select
+                value={formData._pm_benifitowner_value || ''}
+                label="Benefit Owner"
+                onChange={(e) => {
+                  const user = users.find(u => u.systemuserid === e.target.value)
+                  setFormData((f: any) => ({ 
+                    ...f, 
+                    _pm_benifitowner_value: e.target.value,
+                    pm_benifitownername: user?.fullname || '' 
+                  }))
+                }}
+                sx={{ borderRadius: 1.5 }}
+                renderValue={(selected) => {
+                  const user = users.find(u => u.systemuserid === selected)
+                  return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
+                        {user?.fullname?.charAt(0) || '?'}
+                      </Avatar>
+                      {user?.fullname || 'Select Owner'}
+                    </Box>
+                  )
+                }}
+              >
+                {users.map((user) => (
+                  <MenuItem key={user.systemuserid} value={user.systemuserid}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
+                        {user.fullname?.charAt(0) || '?'}
+                      </Avatar>
+                      <Typography variant="body2">{user.fullname}</Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField

@@ -20,7 +20,8 @@ import { mapProject } from './project.service'
 export const mapPortfolio = (item: Pm_portfolios): PortfolioModel => ({
   pm_portfolioid: item.pm_portfolioid,
   pm_portfolioname: item.pm_portfolioname,
-  pm_portfolioowner: item.pm_portfolioowner,
+  pm_ownerlookup: item._pm_ownerlookup_value,
+  pm_ownerlookupname: item.pm_ownerlookupname || (item as any)['_pm_ownerlookup_value@OData.Community.Display.V1.FormattedValue'],
   pm_portfoliostatus: item.pm_portfoliostatus,
   pm_ragstatus: item.pm_ragstatus,
   pm_startdate: item.pm_startdate,
@@ -34,13 +35,21 @@ export const mapPortfolio = (item: Pm_portfolios): PortfolioModel => ({
   pm_createdon: item.pm_createdon,
 })
 
+export async function fetchPortfolios(): Promise<PortfolioModel[]> {
+  const result = await Pm_portfoliosService.getAll({
+    filter: 'statecode eq 0',
+    select: ['pm_portfolioid', 'pm_portfolioname', 'pm_ragstatus', 'pm_approvedbudgeteur', 'pm_actualspendeur', '_pm_ownerlookup_value', 'pm_ownerlookupname'],
+    top: 500,
+  })
+  return unwrapList<Pm_portfolios>(result).map(mapPortfolio)
+}
+
 export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
   const [portfoliosResult, programmesResult, projectsResult] = await Promise.all([
-    Pm_portfoliosService.getAll({ select: ['pm_portfolioid', 'pm_portfolioname', 'pm_portfolioowner', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'pm_createdon'], top: 200 }),
-    Pm_programmesService.getAll({ select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_programmemanager', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'], top: 500 }),
+    Pm_portfoliosService.getAll({ select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'pm_createdon'], top: 200 }),
+    Pm_programmesService.getAll({ select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', '_pm_programmemanager_value', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'], top: 500 }),
     Pm_projectsService.getAll({ select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_portfolio_value', '_pm_programme_value', 'pm_projectmanager', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudgeteur', 'pm_actualcosteur'], top: 1000 }),
   ])
-
   const rawPortfolios = unwrapList<Pm_portfolios>(portfoliosResult).map(mapPortfolio)
   const rawProgrammes = unwrapList<Pm_programmes>(programmesResult).map(mapProgramme)
   const projects = unwrapList<Pm_projects>(projectsResult).map(mapProject)
@@ -55,17 +64,20 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
     if (pr.pm_programmeid) programmeMap.set(normalizeLookupId(pr.pm_programmeid)!, pr)
   }
 
-  // 1. Roll up Projects -> Programmes & Portfolios
+  // 1. Roll up relationship names (Programmes -> Portfolios, Projects -> Programmes & Portfolios)
+  for (const prog of rawProgrammes) {
+    const portfolioId = normalizeLookupId(prog._pm_portfolio_value)
+    if (portfolioId && portfolioMap.has(portfolioId)) {
+      prog.pm_portfolioname = portfolioMap.get(portfolioId)!.pm_portfolioname
+    }
+  }
+
   for (const proj of projects) {
     const programmeId = normalizeLookupId(proj._pm_programme_value)
     const portfolioId = normalizeLookupId(proj._pm_portfolio_value)
 
     if (programmeId && programmeMap.has(programmeId)) {
       const prog = programmeMap.get(programmeId)!
-      // In this app, we'll sum up Project "Approved Budget" and "Actual Cost" 
-      // into the Programme's "Budget" and "Actual Spend" if the Programme fields are empty or for virtual rollup
-      // Actually, let's keep the original fields but add "Calculated" fields if needed.
-      // For now, let's ensure the links are correct
       proj.pm_programmename = prog.pm_programmename
     }
 
@@ -121,11 +133,30 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
   }
 }
 
+export async function updatePortfolio(id: string, changes: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null && key !== 'pm_portfolioid') {
+      if (key === 'pm_ownerlookup') {
+        cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
+      } else {
+        cleanPayload[key] = value
+      }
+    }
+  }
+  const result = await Pm_portfoliosService.update(id, cleanPayload as any)
+  const item = unwrapSingle<Pm_portfolios>(result)
+  return item ? mapPortfolio(item) : null
+}
 export async function createPortfolio(payload: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null) {
-      cleanPayload[key] = value
+      if (key === 'pm_ownerlookup') {
+        cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
+      } else {
+        cleanPayload[key] = value
+      }
     }
   }
   const defaults: Record<string, any> = {

@@ -41,6 +41,7 @@ import {
   fetchMilestonesDueThisMonth,
   fetchAllRisks,
   fetchAllIssues,
+  fetchFinancialPeriods,
 } from '@/services'
 import {
   StatusChip,
@@ -72,19 +73,24 @@ export default function DashboardPage() {
     projectsInGreen: 0,
     pipelineValue: 0,
   })
+  // Separate state for filtered budget card data
+  const [budgetMetrics, setBudgetMetrics] = useState({ approved: 0, actual: 0 })
   const [projects, setProjects] = useState<ProjectModel[]>([])
   const [approvals, setApprovals] = useState<InitiativeModel[]>([])
   const [portfolioSnapshot, setPortfolioSnapshot] = useState<PortfolioModel[]>([])
   const [programmeSnapshot, setProgrammeSnapshot] = useState<ProgrammeModel[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [budgetLoading, setBudgetLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
+  
   // Chart data
   const [capacityAllocationData, setCapacityAllocationData] = useState<{ resource: string; capacity: number; allocated: number; percentage: number }[]>([])
   const [plannedVsActualData, setPlannedVsActualData] = useState<{ month: string; planned: number; actual: number }[]>([])
   const [utilizationByProjectData, setUtilizationByProjectData] = useState<{ name: string; hours: number }[]>([])
   const [departmentDemandData, setDepartmentDemandData] = useState<{ month: string; role: string; hours: number }[]>([])
+  
   // New data
   const [pipelineKpis, setPipelineKpis] = useState<PipelineKpis>({ totalActiveInitiatives: 0, pendingApprovals: 0, totalEstimatedCost: 0, approvedThisMonth: 0 })
   const [initiatives, setInitiatives] = useState<InitiativeModel[]>([])
@@ -95,6 +101,10 @@ export default function DashboardPage() {
   const [showAllProjects, setShowAllProjects] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
 
+  // Budget Filter State
+  const [availableYears, setAvailableYears] = useState<number[]>([])
+  const [budgetYear, setBudgetYear] = useState<number | 'all'>('all')
+
   const sortByRag = <T extends { pm_ragstatus?: string | number }>(a: T, b: T) => {
     const rank = (status?: string | number) => (status === '2' || status === 2 ? 0 : status === '0' || status === 0 ? 1 : 2)
     return rank(a.pm_ragstatus) - rank(b.pm_ragstatus)
@@ -103,8 +113,9 @@ export default function DashboardPage() {
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true)
     try {
-      const [dashboard, activeProjects, pendingApprovals, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData] = await Promise.all([
-        fetchDashboardMetrics(),
+      // Global metrics for the whole dashboard (non-filtered)
+      const [dashboard, activeProjects, pendingApprovals, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData, periods] = await Promise.all([
+        fetchDashboardMetrics({}), 
         fetchMyActiveProjects(),
         fetchPendingApprovalRequests(),
         fetchPortfolioHierarchy(),
@@ -118,8 +129,23 @@ export default function DashboardPage() {
         fetchMilestonesDueThisMonth(),
         fetchAllRisks(),
         fetchAllIssues(),
+        fetchFinancialPeriods(),
       ])
+
+      // Extract unique years (Current + Last 5)
+      const currentYear = new Date().getFullYear()
+      const yearRange = Array.from({ length: 6 }, (_, i) => currentYear - i)
+      const dataYears = periods.map(p => p.pm_fiscalyear).filter(Boolean) as number[]
+      const combinedYears = Array.from(new Set([...yearRange, ...dataYears])).sort((a, b) => b - a)
+      
+      setAvailableYears(combinedYears)
       setMetrics(dashboard)
+      
+      // Initialize budget metrics with global data if no year selected
+      if (budgetYear === 'all') {
+        setBudgetMetrics({ approved: dashboard.totalApprovedBudget, actual: dashboard.totalActualSpend })
+      }
+      
       setProjects(activeProjects.slice(0, 6))
       setApprovals(pendingApprovals)
       setCapacityAllocationData(capacityAlloc)
@@ -137,17 +163,36 @@ export default function DashboardPage() {
       setLastRefreshed(new Date())
       setError(null)
     } catch (error) {
-      console.error('[DashboardPage] load dashboard data failed', error)
+      console.error('[DashboardPage] load data failed', error)
       setError('Unable to load dashboard data.')
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [])
+  }, [budgetYear])
+
+  // Specialized effect for budget-only filtering
+  const handleBudgetYearChange = async (year: number | 'all') => {
+    setBudgetYear(year)
+    setBudgetLoading(true)
+    try {
+      const budgetData = await fetchDashboardMetrics({ 
+        fiscalYear: year === 'all' ? undefined : year 
+      })
+      setBudgetMetrics({ 
+        approved: budgetData.totalApprovedBudget, 
+        actual: budgetData.totalActualSpend 
+      })
+    } catch (e) {
+      console.error('[DashboardPage] budget update failed', e)
+    } finally {
+      setBudgetLoading(false)
+    }
+  }
 
   useEffect(() => {
     loadData()
-  }, [loadData])
+  }, [])
 
   const handleRequestAction = async (initiativeId: string, status: number) => {
     setActionLoading(true)
@@ -245,12 +290,16 @@ export default function DashboardPage() {
             onViewAll={() => setShowAllProjects(true)}
           />
 
-          {/* Budget Health Panel */}
+          {/* Budget Health Panel — Local Filtering Enabled */}
           <BudgetHealthPanel
-            totalApprovedBudget={metrics.totalApprovedBudget}
-            totalActualSpend={metrics.totalActualSpend}
-            loading={loading}
+            totalApprovedBudget={budgetMetrics.approved}
+            totalActualSpend={budgetMetrics.actual}
+            loading={loading || budgetLoading}
+            selectedYear={budgetYear}
+            availableYears={availableYears}
+            onYearChange={handleBudgetYearChange}
           />
+
         </Grid>
 
         {/* Right column */}

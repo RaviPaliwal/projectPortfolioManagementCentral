@@ -72,7 +72,7 @@ export const PortfolioSummaryTab: React.FC<PortfolioSummaryTabProps> = ({
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
               <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.5 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3, fontSize: fontSizes.xs }}>Owner</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{portfolio.pm_portfolioowner || '—'}</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>{portfolio.pm_ownerlookupname || '—'}</Typography>
               </Paper>
               <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.5 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3, fontSize: fontSizes.xs }}>Business Unit</Typography>

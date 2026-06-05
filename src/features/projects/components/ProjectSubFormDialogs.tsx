@@ -8,6 +8,12 @@ import {
   TextField,
   MenuItem,
   Button,
+  FormControl,
+  InputLabel,
+  Select,
+  Box,
+  Avatar,
+  Typography,
 } from '@mui/material'
 import {
   createProjectMilestone,
@@ -19,6 +25,7 @@ import {
   createProjectTask,
 } from '@/services'
 import type { ProjectMilestoneModel, RiskModel, IssueModel } from '@/types/dataverse'
+import { useUser } from '@/context/UserContext'
 
 interface SubDialogProps {
   open: boolean
@@ -27,6 +34,8 @@ interface SubDialogProps {
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
 }
+
+// ... (MilestoneDialog remains same)
 
 export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
   const [form, setForm] = useState<Partial<ProjectMilestoneModel>>({ pm_milestonename: '', pm_planneddate: '', pm_milestonetype: '' })
@@ -78,7 +87,8 @@ export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, proje
 }
 
 export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
-  const [form, setForm] = useState<Partial<RiskModel>>({ pm_risktitle: '', pm_riskdescription: '', pm_ragstatus: '1', pm_riskcategory: '3' })
+  const { users } = useUser()
+  const [form, setForm] = useState<Partial<RiskModel>>({ pm_risktitle: '', pm_riskdescription: '', pm_ragstatus: '1', pm_riskcategory: '3', pm_riskowner: '' })
 
   const handleAdd = async () => {
     if (!form.pm_risktitle) { onError('Risk title is required.'); return }
@@ -87,7 +97,7 @@ export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
         ...form,
         pm_projectid: projectId,
       })
-      setForm({ pm_risktitle: '', pm_riskdescription: '', pm_ragstatus: '1', pm_riskcategory: '3' })
+      setForm({ pm_risktitle: '', pm_riskdescription: '', pm_ragstatus: '1', pm_riskcategory: '3', pm_riskowner: '' })
       onSuccess('Risk logged successfully.')
       onClose()
     } catch {
@@ -127,8 +137,40 @@ export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
             </TextField>
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField fullWidth label="Risk owner" value={form.pm_riskowner ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, pm_riskowner: e.target.value }))} />
+            <FormControl fullWidth size="small">
+              <InputLabel>Risk owner</InputLabel>
+              <Select
+                value={users.find(u => u.fullname === form.pm_riskowner)?.systemuserid || ''}
+                label="Risk owner"
+                onChange={(e) => {
+                  const user = users.find(u => u.systemuserid === e.target.value)
+                  setForm((f) => ({ ...f, pm_riskowner: user?.fullname || '' }))
+                }}
+                renderValue={(selected) => {
+                  const user = users.find(u => u.systemuserid === selected)
+                  return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
+                        {user?.fullname?.charAt(0) || '?'}
+                      </Avatar>
+                      {user?.fullname || 'Select Owner'}
+                    </Box>
+                  )
+                }}
+              >
+                <MenuItem value="">— Select —</MenuItem>
+                {users.map((user) => (
+                  <MenuItem key={user.systemuserid} value={user.systemuserid}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
+                        {user.fullname?.charAt(0) || '?'}
+                      </Avatar>
+                      <Typography variant="body2">{user.fullname}</Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid size={{ xs: 12 }}>
             <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="Target close date"
@@ -145,7 +187,8 @@ export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
 }
 
 export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
-  const [form, setForm] = useState<Partial<IssueModel>>({ pm_issuetitle: '', pm_issuedescription: '', pm_prioritylevel: '0', pm_issuecategory: '0' })
+  const { users } = useUser()
+  const [form, setForm] = useState<Partial<IssueModel>>({ pm_issuetitle: '', pm_issuedescription: '', pm_prioritylevel: '0', pm_issuecategory: '0', pm_issueowner: '' })
 
   const handleAdd = async () => {
     if (!form.pm_issuetitle) { onError('Issue title is required.'); return }
@@ -154,7 +197,7 @@ export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId
         ...form,
         pm_projectid: projectId,
       })
-      setForm({ pm_issuetitle: '', pm_issuedescription: '', pm_prioritylevel: '0', pm_issuecategory: '0' })
+      setForm({ pm_issuetitle: '', pm_issuedescription: '', pm_prioritylevel: '0', pm_issuecategory: '0', pm_issueowner: '' })
       onSuccess('Issue logged successfully.')
       onClose()
     } catch {
@@ -194,8 +237,40 @@ export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId
             </TextField>
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField fullWidth label="Issue owner" value={form.pm_issueowner ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, pm_issueowner: e.target.value }))} />
+            <FormControl fullWidth size="small">
+              <InputLabel>Issue owner</InputLabel>
+              <Select
+                value={users.find(u => u.fullname === form.pm_issueowner)?.systemuserid || ''}
+                label="Issue owner"
+                onChange={(e) => {
+                  const user = users.find(u => u.systemuserid === e.target.value)
+                  setForm((f) => ({ ...f, pm_issueowner: user?.fullname || '' }))
+                }}
+                renderValue={(selected) => {
+                  const user = users.find(u => u.systemuserid === selected)
+                  return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
+                        {user?.fullname?.charAt(0) || '?'}
+                      </Avatar>
+                      {user?.fullname || 'Select Owner'}
+                    </Box>
+                  )
+                }}
+              >
+                <MenuItem value="">— Select —</MenuItem>
+                {users.map((user) => (
+                  <MenuItem key={user.systemuserid} value={user.systemuserid}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
+                        {user.fullname?.charAt(0) || '?'}
+                      </Avatar>
+                      <Typography variant="body2">{user.fullname}</Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid size={{ xs: 12 }}>
             <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="Target resolution date"

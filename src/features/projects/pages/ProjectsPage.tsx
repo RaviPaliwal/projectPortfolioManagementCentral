@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState, useMemo } from 'react'
 import {
   Box,
   Alert,
+  Button,
 } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import GppGoodIcon from '@mui/icons-material/GppGood'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
@@ -12,14 +14,16 @@ import ErrorIcon from '@mui/icons-material/Error'
 
 import {
   createProject,
+  updateProject,
   fetchProjectsFull,
   fetchMilestonesDueThisMonth,
+  fetchPortfolioHierarchy,
 } from '@/services'
-import { PageHeader, KpiCardRow } from '@/components/common'
+import { PageHeader, KpiCardRow, ExportButton } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 
-import { currency } from '../constants'
+import { currency, projectExportColumns } from '../constants'
 import { ProjectGrids } from '../components/ProjectGrids'
 import { Project360View } from '../components/Project360View'
 import { ProjectFormDialog } from '../components/ProjectFormDialog'
@@ -33,7 +37,7 @@ import {
   TaskDialog,
   GateReviewDialog,
 } from '../components/ProjectSubFormDialogs'
-import { recalculateProjectFinancials } from '@/services'
+import { recalculateProjectFinancials, normalizeLookupId } from '@/services'
 
 export default function ProjectsPage() {
   // Navigation state
@@ -41,6 +45,8 @@ export default function ProjectsPage() {
 
   // Data state
   const [projects, setProjects] = useState<ProjectModel[]>([])
+  const [portfolios, setPortfolios] = useState<{ id: string; name: string }[]>([])
+  const [programmes, setProgrammes] = useState<{ id: string; name: string; portfolioId?: string }[]>([])
   const [milestonesDue, setMilestonesDue] = useState(0)
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -48,7 +54,8 @@ export default function ProjectsPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   // Dialog states
-  const [isAddingProject, setIsAddingProject] = useState(false)
+  const [showFormModal, setShowFormModal] = useState(false)
+  const [editingProject, setEditingProject] = useState<ProjectModel | null>(null)
   const [isSavingProject, setIsSavingProject] = useState(false)
   
   const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false)
@@ -75,12 +82,15 @@ export default function ProjectsPage() {
     setLoading(true)
     setError(null)
     try {
-      const [projList, milestones] = await Promise.all([
+      const [projList, milestones, hierarchy] = await Promise.all([
         fetchProjectsFull(),
         fetchMilestonesDueThisMonth(),
+        fetchPortfolioHierarchy(),
       ])
       setProjects(projList)
       setMilestonesDue(milestones)
+      setPortfolios(hierarchy.portfolios.map(p => ({ id: p.pm_portfolioid!, name: p.pm_portfolioname! })))
+      setProgrammes(hierarchy.programmes.map(p => ({ id: p.pm_programmeid!, name: p.pm_programmename!, portfolioId: p._pm_portfolio_value })))
     } catch (err) {
       setError('Unable to load project data.')
     } finally {
@@ -89,50 +99,6 @@ export default function ProjectsPage() {
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
-
-  // ── KPIs ────────────────────────────────────────────────────────────────
-  const kpiItems = useMemo((): KpiCardItem[] => [
-    {
-      label: 'Active Projects',
-      value: projects.length,
-      icon: <CheckCircleIcon />,
-      color: 'success.main',
-    },
-    {
-      label: 'On Track',
-      value: projects.filter((p) => String(p.pm_ragstatus) === '1').length,
-      subtitle: 'Green status',
-      icon: <GppGoodIcon />,
-      color: 'success.main',
-    },
-    {
-      label: 'At Risk',
-      value: projects.filter((p) => String(p.pm_ragstatus) === '0').length,
-      subtitle: 'Amber status',
-      icon: <GppMaybeIcon />,
-      color: 'warning.main',
-    },
-    {
-      label: 'Critical',
-      value: projects.filter((p) => String(p.pm_ragstatus) === '2').length,
-      icon: <ErrorIcon />,
-      color: 'error.main',
-      valueColor: 'error.main',
-    },
-    {
-      label: 'Total Active Budget',
-      value: currency(projects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur ?? 0), 0)),
-      icon: <AttachMoneyIcon />,
-      color: '#3b82f6',
-    },
-    {
-      label: 'Milestones Due',
-      value: milestonesDue,
-      subtitle: 'This month',
-      icon: <EventNoteIcon />,
-      color: 'secondary.main',
-    },
-  ], [projects, milestonesDue])
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleRowClick = useCallback(async (project: ProjectModel) => {
@@ -190,16 +156,51 @@ export default function ProjectsPage() {
     setError(null)
   }
 
+  const openCreateForm = () => {
+    setEditingProject(null)
+    setShowFormModal(true)
+  }
+
+  const openEditForm = (project: ProjectModel) => {
+    setEditingProject(project)
+    setShowFormModal(true)
+  }
+
   const handleProjectSave = async (form: Partial<ProjectModel>) => {
+    // Determine the ID: either from the updated form data or the state
+    const targetId = form.pm_projectid || editingProject?.pm_projectid
+    
     setIsSavingProject(true)
     try {
-      await createProject(form)
-      setIsAddingProject(false)
-      setSuccessMsg('Project created successfully.')
-      await loadData()
+      if (targetId) {
+        // Perform update
+        const updated = await updateProject(targetId, form)
+        if (updated) {
+          setSuccessMsg('Project updated successfully.')
+          
+          // Refresh the main list
+          await loadData()
+          
+          // If we are currently viewing this specific project in the detail view, update it
+          if (selectedProject && normalizeLookupId(targetId) === normalizeLookupId(selectedProject.pm_projectid)) {
+             setSelectedProject(updated)
+          }
+        }
+      } else {
+        // Perform creation
+        const created = await createProject(form)
+        if (created) {
+          setSuccessMsg('Project created successfully.')
+          await loadData()
+        }
+      }
+      
+      setShowFormModal(false)
+      setEditingProject(null) // Clear edit state
       setTimeout(() => setSuccessMsg(null), 3000)
-    } catch {
-      setError('Unable to create project.')
+    } catch (err) {
+      setError(`Unable to ${targetId ? 'update' : 'create'} project.`)
+      console.error('[ProjectsPage] handleProjectSave error:', err)
     } finally {
       setIsSavingProject(false)
     }
@@ -251,6 +252,50 @@ export default function ProjectsPage() {
     } catch { /* silent */ }
   }
 
+  // ── KPIs ────────────────────────────────────────────────────────────────
+  const kpiItems = useMemo((): KpiCardItem[] => [
+    {
+      label: 'Active Projects',
+      value: projects.length,
+      icon: <CheckCircleIcon />,
+      color: 'success.main',
+    },
+    {
+      label: 'On Track',
+      value: projects.filter((p) => String(p.pm_ragstatus) === '1').length,
+      subtitle: 'Green status',
+      icon: <GppGoodIcon />,
+      color: 'success.main',
+    },
+    {
+      label: 'At Risk',
+      value: projects.filter((p) => String(p.pm_ragstatus) === '0').length,
+      subtitle: 'Amber status',
+      icon: <GppMaybeIcon />,
+      color: 'warning.main',
+    },
+    {
+      label: 'Critical',
+      value: projects.filter((p) => String(p.pm_ragstatus) === '2').length,
+      icon: <ErrorIcon />,
+      color: 'error.main',
+      valueColor: 'error.main',
+    },
+    {
+      label: 'Total Active Budget',
+      value: currency(projects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur ?? 0), 0)),
+      icon: <AttachMoneyIcon />,
+      color: '#3b82f6',
+    },
+    {
+      label: 'Milestones Due',
+      value: milestonesDue,
+      subtitle: 'This month',
+      icon: <EventNoteIcon />,
+      color: 'secondary.main',
+    },
+  ], [projects, milestonesDue])
+
   return (
     <Box>
       {selectedProject ? (
@@ -274,12 +319,25 @@ export default function ProjectsPage() {
           onAddBenefit={() => setBenefitDialogOpen(true)}
           onAddTask={() => setTaskDialogOpen(true)}
           onSubmitGateReview={() => setGateReviewDialogOpen(true)}
+          onEditProject={openEditForm}
         />
       ) : (
         <>
           <PageHeader
             title="Project Portfolio"
             subtitle="Monitor and manage all active projects across the enterprise."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+                  New Project
+                </Button>
+                <ExportButton 
+                  filename="projects" 
+                  columns={projectExportColumns} 
+                  data={projects} 
+                />
+              </Box>
+            }
           />
 
           {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
@@ -291,17 +349,21 @@ export default function ProjectsPage() {
             projects={projects}
             loading={loading}
             onRowClick={handleRowClick}
-            onAddProject={() => setIsAddingProject(true)}
+            onAddProject={openCreateForm}
+            onEditProject={openEditForm}
           />
         </>
       )}
 
       {/* Dialogs */}
       <ProjectFormDialog
-        open={isAddingProject}
-        onClose={() => setIsAddingProject(false)}
+        open={showFormModal}
+        onClose={() => setShowFormModal(false)}
         onSave={handleProjectSave}
         isSaving={isSavingProject}
+        initialData={editingProject}
+        portfolios={portfolios}
+        programmes={programmes}
       />
 
       {selectedProject && (

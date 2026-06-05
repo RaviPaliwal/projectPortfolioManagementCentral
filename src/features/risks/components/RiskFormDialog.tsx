@@ -13,9 +13,14 @@ import {
   DialogActions,
   Divider,
   Box,
+  Avatar,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material'
 import type { RiskModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
+import { useUser } from '@/context/UserContext'
 import {
   RISK_CATEGORY_LABELS,
   RAG_LABELS,
@@ -50,6 +55,7 @@ export const RiskFormDialog = ({
   onSave,
   saving,
 }: RiskFormDialogProps) => {
+  const { users } = useUser()
   const inherentScore = riskScore(form.pm_inherentprobability, form.pm_inherentimpact)
   const residualScore = riskScore(form.pm_residualprobability, form.pm_residualimpact)
 
@@ -116,13 +122,40 @@ export const RiskFormDialog = ({
             </TextField>
           </Grid>
           <Grid size={4}>
-            <TextField
-              label="Risk Owner"
-              value={form.pm_riskowner ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, pm_riskowner: e.target.value }))}
-              fullWidth
-              size="small"
-            />
+            <FormControl fullWidth size="small">
+              <InputLabel>Risk Owner</InputLabel>
+              <Select
+                value={users.find(u => u.fullname === form.pm_riskowner)?.systemuserid || ''}
+                label="Risk Owner"
+                onChange={(e) => {
+                  const user = users.find(u => u.systemuserid === e.target.value)
+                  setForm((f) => ({ ...f, pm_riskowner: user?.fullname || '' }))
+                }}
+                renderValue={(selected) => {
+                  const user = users.find(u => u.systemuserid === selected)
+                  return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
+                        {user?.fullname?.charAt(0) || '?'}
+                      </Avatar>
+                      {user?.fullname || 'Select Owner'}
+                    </Box>
+                  )
+                }}
+              >
+                <MenuItem value="">— Select —</MenuItem>
+                {users.map((user) => (
+                  <MenuItem key={user.systemuserid} value={user.systemuserid}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
+                        {user.fullname?.charAt(0) || '?'}
+                      </Avatar>
+                      <Typography variant="body2">{user.fullname}</Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid size={6}>
             <TextField

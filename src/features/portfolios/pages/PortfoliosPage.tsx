@@ -45,7 +45,7 @@ import { PortfolioFinancialsTab } from '../components/tabs/PortfolioFinancialsTa
 // ── Export columns ────────────────────────────────────────────────────────────
 const portfolioExportColumns: ExportColumn[] = [
   { key: 'pm_portfolioname', label: 'Portfolio Name' },
-  { key: 'pm_portfolioowner', label: 'Owner' },
+  { key: '_pm_ownerlookup_value', label: 'Owner' },
   { key: 'pm_portfoliostatus', label: 'Status' },
   { key: 'pm_ragstatus', label: 'RAG' },
   { key: 'pm_approvedbudgeteur', label: 'Budget (EUR)' },
@@ -67,8 +67,9 @@ export default function PortfoliosPage() {
   const [detailTab, setDetailTab] = useState(0)
   const [editInfo, setEditInfo] = useState<string | null>(null)
 
-  // Create modal state
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  // Create/Edit modal state
+  const [showFormModal, setShowFormModal] = useState(false)
+  const [editingPortfolio, setEditingPortfolio] = useState<PortfolioModel | null>(null)
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -143,6 +144,21 @@ export default function PortfoliosPage() {
 
   const handleSuccess = (freshPortfolios: PortfolioModel[]) => {
     setHierarchy(prev => ({ ...prev, portfolios: freshPortfolios }))
+    // If we were editing, update selected portfolio too
+    if (editingPortfolio && selectedPortfolio?.pm_portfolioid === editingPortfolio.pm_portfolioid) {
+      const updated = freshPortfolios.find(p => p.pm_portfolioid === editingPortfolio.pm_portfolioid)
+      if (updated) setSelectedPortfolio(updated)
+    }
+  }
+
+  const openCreateForm = () => {
+    setEditingPortfolio(null)
+    setShowFormModal(true)
+  }
+
+  const openEditForm = (portfolio: PortfolioModel) => {
+    setEditingPortfolio(portfolio)
+    setShowFormModal(true)
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -153,7 +169,7 @@ export default function PortfoliosPage() {
         subtitle="Master view of all portfolios — aggregate health, budget tracking, and drill-down details."
         actionElement={
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
               New Portfolio
             </Button>
             <ExportButton filename="portfolios" columns={portfolioExportColumns} data={filteredPortfolios} />
@@ -173,42 +189,42 @@ export default function PortfoliosPage() {
                 value: portfolioList.length,
                 subtitle: "Active portfolios",
                 icon: <FolderIcon />,
-                color: "'secondary.main'"
+                color: "secondary.main"
               },
               {
                 label: "Green Health",
                 value: kpiHealth.green,
                 subtitle: "On track",
                 icon: <CheckCircleIcon />,
-                color: "'success.main'"
+                color: "success.main"
               },
               {
                 label: "Amber Health",
                 value: kpiHealth.amber,
                 subtitle: "At risk",
                 icon: <GppMaybeIcon />,
-                color: "'warning.main'"
+                color: "warning.main"
               },
               {
                 label: "Red Health",
                 value: kpiHealth.red,
                 subtitle: "Critical",
                 icon: <ErrorIcon />,
-                color: "'error.main'"
+                color: "error.main"
               },
               {
                 label: "Total Portfolio Value",
                 value: currencyFormatter.format(totalBudget),
                 subtitle: `Across ${portfolioList.length} portfolios`,
                 icon: <AccountBalanceWalletIcon />,
-                color: "'primary.main'"
+                color: "primary.main"
               },
               {
                 label: "Total Consumed",
                 value: currencyFormatter.format(totalConsumed),
                 subtitle: totalBudget > 0 ? `${((totalConsumed / totalBudget) * 100).toFixed(1)}% consumed` : 'No budget data',
                 icon: <TrendingDownIcon />,
-                color: "'warning.main'"
+                color: "warning.main"
               }
             ]}
             loading={loading}
@@ -222,7 +238,8 @@ export default function PortfoliosPage() {
         portfolios={portfolioList}
         loading={loading}
         onRowClick={handleRowClick}
-        onCreateClick={() => setShowCreateModal(true)}
+        onCreateClick={openCreateForm}
+        onEditClick={openEditForm}
         onFilteredDataChange={setFilteredPortfolios}
       />
 
@@ -233,25 +250,29 @@ export default function PortfoliosPage() {
         icon={<AccountTreeIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
         title={selectedPortfolio?.pm_portfolioname ?? ''}
         subtitle={selectedPortfolio && (
-          <>
-            {selectedPortfolio.pm_portfolioowner && (
-              <Typography variant="body2" color="text.secondary">
-                <PersonIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                {selectedPortfolio.pm_portfolioowner}
-              </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            {selectedPortfolio.pm_ownerlookupname && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary">
+                  {selectedPortfolio.pm_ownerlookupname}
+                </Typography>
+              </Box>
             )}
             {selectedPortfolio.pm_businessunit && (
-              <Typography variant="body2" color="text.secondary">
-                <BusinessIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                {selectedPortfolio.pm_businessunit}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <BusinessIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary">
+                  {selectedPortfolio.pm_businessunit}
+                </Typography>
+              </Box>
             )}
-          </>
+          </Box>
         )}
         headerActions={
           <ActionIcon
             icon={<EditIcon />}
-            onClick={() => setEditInfo('Edit functionality will be available in a future update.')}
+            onClick={() => selectedPortfolio && openEditForm(selectedPortfolio)}
             label="Edit Portfolio"
             color="primary"
           />
@@ -302,12 +323,13 @@ export default function PortfoliosPage() {
         )}
       </DetailDrawer>
 
-      {/* ── 4. Create Portfolio Modal & Confirmation ──────────────────── */}
+      {/* ── 4. Create/Edit Portfolio Modal & Confirmation ──────────────── */}
       <PortfolioFormDialog
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        open={showFormModal}
+        onClose={() => setShowFormModal(false)}
         onSuccess={handleSuccess}
         onError={(msg) => setError(msg)}
+        initialData={editingPortfolio}
       />
     </Box>
   )

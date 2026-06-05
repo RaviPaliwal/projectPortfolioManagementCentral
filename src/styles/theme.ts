@@ -25,7 +25,7 @@ export const getTheme = (mode: PaletteMode) =>
       },
       divider: mode === 'light' ? '#e2e8f0' : '#334155',
     },
-    shape: { borderRadius: 12 },
+    shape: { borderRadius: 5},
     typography: {
       fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       fontSize: 14, // base = 0.875rem

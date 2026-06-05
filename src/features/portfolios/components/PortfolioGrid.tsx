@@ -12,9 +12,12 @@ import {
   Box,
   Button,
   useTheme,
+  IconButton,
+  Tooltip,
 } from '@mui/material'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import AddIcon from '@mui/icons-material/Add'
+import EditIcon from '@mui/icons-material/Edit'
 import {
   StatusChip,
   SearchFilterBar,
@@ -32,6 +35,7 @@ interface PortfolioGridProps {
   loading: boolean
   onRowClick: (portfolio: PortfolioModel) => void
   onCreateClick: () => void
+  onEditClick: (portfolio: PortfolioModel) => void
   onFilteredDataChange?: (data: PortfolioModel[]) => void
 }
 
@@ -45,6 +49,7 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
   loading,
   onRowClick,
   onCreateClick,
+  onEditClick,
   onFilteredDataChange,
 }) => {
   const theme = useTheme()
@@ -65,7 +70,7 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
     totalCount,
   } = useDataGrid<PortfolioModel>(portfolios, {
     initialSort: { field: 'pm_portfolioname', dir: 'asc' },
-    searchFields: ['pm_portfolioname', 'pm_portfolioowner', 'pm_businessunit'],
+    searchFields: ['pm_portfolioname', 'pm_ownerlookupname', 'pm_businessunit'],
   })
 
   useEffect(() => {
@@ -94,14 +99,14 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
           </Button>
         )}
       >
-        <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+        <Table stickyHeader size="small" sx={{ minWidth: 1000 }}>
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_portfolioname'} direction={sort.field === 'pm_portfolioname' ? sort.dir : 'asc'} onClick={() => setSort('pm_portfolioname')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Portfolio Name</TableSortLabel>
               </TableCell>
               <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                <TableSortLabel active={sort.field === 'pm_portfolioowner'} direction={sort.field === 'pm_portfolioowner' ? sort.dir : 'asc'} onClick={() => setSort('pm_portfolioowner')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Owner / Sponsor</TableSortLabel>
+                <TableSortLabel active={sort.field === 'pm_ownerlookupname'} direction={sort.field === 'pm_ownerlookupname' ? sort.dir : 'asc'} onClick={() => setSort('pm_ownerlookupname')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Owner / Sponsor</TableSortLabel>
               </TableCell>
               <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_portfoliostatus'} direction={sort.field === 'pm_portfoliostatus' ? sort.dir : 'asc'} onClick={() => setSort('pm_portfoliostatus')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Status</TableSortLabel>
@@ -115,8 +120,8 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
               <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                 <TableSortLabel active={sort.field === 'pm_actualspendeur'} direction={sort.field === 'pm_actualspendeur' ? sort.dir : 'asc'} onClick={() => setSort('pm_actualspendeur')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Consumed</TableSortLabel>
               </TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Variance</Typography>
+              <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Actions</Typography>
               </TableCell>
             </TableRow>
           </TableHead>
@@ -147,7 +152,7 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
-                      {portfolio.pm_portfolioowner || '—'}
+                      {portfolio.pm_ownerlookupname || '—'}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -171,13 +176,19 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                       {currencyFormatter.format(portfolio.pm_actualspendeur ?? 0)}
                     </Typography>
                   </TableCell>
-                  <TableCell align="right">
-                    <VarianceDisplay budget={portfolio.pm_approvedbudgeteur} consumed={portfolio.pm_actualspendeur} />
-                    {isNegative && (
-                      <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 500, display: 'block' }}>
-                        Over budget
-                      </Typography>
-                    )}
+                  <TableCell align="center">
+                    <Tooltip title="Edit Portfolio">
+                      <IconButton 
+                        size="small" 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEditClick(portfolio)
+                        }}
+                        sx={{ color: 'primary.main' }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               )

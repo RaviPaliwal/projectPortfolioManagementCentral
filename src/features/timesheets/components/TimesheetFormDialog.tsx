@@ -13,9 +13,11 @@ import {
   Select,
   MenuItem,
   Avatar,
+  Box,
 } from '@mui/material'
 import EventNoteIcon from '@mui/icons-material/EventNote'
 import type { ResourceModel } from '@/types/dataverse'
+import { useUser } from '@/context/UserContext'
 
 interface TimesheetFormDialogProps {
   open: boolean
@@ -32,6 +34,7 @@ export function TimesheetFormDialog({
   resources,
   loading,
 }: TimesheetFormDialogProps) {
+  const { users } = useUser()
   const [form, setForm] = useState({
     pm_ownername: '',
     pm_periodstartdate: '',
@@ -94,15 +97,40 @@ export function TimesheetFormDialog({
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Owner / Name"
-              fullWidth
-              size="small"
-              value={form.pm_ownername}
-              onChange={(e) => setForm((f) => ({ ...f, pm_ownername: e.target.value }))}
-              placeholder="Leave blank to use resource name"
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-            />
+            <FormControl fullWidth size="small">
+              <InputLabel>Owner / Name</InputLabel>
+              <Select
+                value={users.find(u => u.fullname === form.pm_ownername)?.systemuserid || ''}
+                label="Owner / Name"
+                onChange={(e) => {
+                  const user = users.find(u => u.systemuserid === e.target.value)
+                  setForm((f) => ({ ...f, pm_ownername: user?.fullname || '' }))
+                }}
+                renderValue={(selected) => {
+                  const user = users.find(u => u.systemuserid === selected)
+                  return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
+                        {user?.fullname?.charAt(0) || '?'}
+                      </Avatar>
+                      {user?.fullname || 'Select Owner'}
+                    </Box>
+                  )
+                }}
+              >
+                <MenuItem value="">— Select Owner —</MenuItem>
+                {users.map((user) => (
+                  <MenuItem key={user.systemuserid} value={user.systemuserid}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
+                        {user.fullname?.charAt(0) || '?'}
+                      </Avatar>
+                      <Typography variant="body2">{user.fullname}</Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
