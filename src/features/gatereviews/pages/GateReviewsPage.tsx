@@ -37,7 +37,9 @@ import RuleIcon from '@mui/icons-material/Rule'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import Filter1Icon from '@mui/icons-material/Filter1'
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
 import GavelIcon from '@mui/icons-material/Gavel'
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import {
   fetchGateReviews,
   createGateReview,
@@ -49,6 +51,7 @@ import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon, Button } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
+import { PmoReadinessTaskModal, FinancialReviewTaskModal, BoardDecisionTaskModal } from '../components'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -162,13 +165,9 @@ export default function GateReviewsPage() {
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
-  const [showDecisionModal, setShowDecisionModal] = useState(false)
-  const [decisionData, setDecisionData] = useState({
-    pm_reviewoutcome: 0,
-    pm_actualreviewdate: new Date().toISOString().split('T')[0],
-    pm_reviewnotes: '',
-    pm_reviewconditions: '',
-  })
+  const [showPmoModal, setShowPmoModal] = useState(false)
+  const [showFinanceModal, setShowFinanceModal] = useState(false)
+  const [showBoardModal, setShowBoardModal] = useState(false)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -259,37 +258,6 @@ export default function GateReviewsPage() {
     }
   }
 
-  const handleRecordDecision = async () => {
-    if (!selectedReview?.pm_projectgatereviewid) return
-    setActionLoading(true)
-    try {
-      await updateGateReview(selectedReview.pm_projectgatereviewid, {
-        ...decisionData,
-        pm_reviewstatus: 0, // Complete
-      } as any)
-      setSuccessMsg('Decision recorded successfully.')
-      setShowDecisionModal(false)
-      setSelectedReview(null)
-      loadData()
-    } catch (err) {
-      console.error('Decision record error:', err)
-      setError('Unable to record decision.')
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const openDecisionModal = () => {
-    if (!selectedReview) return
-    setDecisionData({
-      pm_reviewoutcome: Number(selectedReview.pm_reviewoutcome ?? 0),
-      pm_actualreviewdate: selectedReview.pm_actualreviewdate || new Date().toISOString().split('T')[0],
-      pm_reviewnotes: selectedReview.pm_reviewnotes || '',
-      pm_reviewconditions: selectedReview.pm_reviewconditions || '',
-    })
-    setShowDecisionModal(true)
-  }
-
   return (
     <Box>
       <PageHeader
@@ -374,7 +342,11 @@ export default function GateReviewsPage() {
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             {selectedReview?.pm_reviewstatus === 1 && (
-              <ActionIcon icon={<GavelIcon />} onClick={openDecisionModal} label="Record Decision" color="success" />
+              <>
+                <ActionIcon icon={<AssignmentTurnedInIcon />} onClick={() => setShowPmoModal(true)} label="PMO Readiness Check" color="info" />
+                <ActionIcon icon={<AttachMoneyIcon />} onClick={() => setShowFinanceModal(true)} label="Financial Review" color="info" />
+                <ActionIcon icon={<GavelIcon />} onClick={() => setShowBoardModal(true)} label="Record Final Decision" color="success" />
+              </>
             )}
             <ActionIcon icon={<EditIcon />} onClick={() => { setEditingReview(selectedReview); setShowFormModal(true) }} label="Edit" color="primary" />
             <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedReview?.pm_projectgatereviewid!)} label="Delete" color="error" />
@@ -485,90 +457,35 @@ export default function GateReviewsPage() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={showDecisionModal} onClose={() => setShowDecisionModal(false)} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
-        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <GavelIcon color="success" /> Record Gate Decision
-        </DialogTitle>
-        <DialogContent dividers>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Reviewing <strong>{selectedReview?.pm_gatename}</strong>. Selecting an outcome will mark this review as Complete.
-          </Typography>
+      {selectedReview && (
+        <PmoReadinessTaskModal
+          open={showPmoModal}
+          onClose={() => setShowPmoModal(false)}
+          gateReviewId={selectedReview.pm_projectgatereviewid!}
+          onSuccess={(msg) => { setSuccessMsg(msg); setShowPmoModal(false); loadData() }}
+          onError={(msg) => setError(msg)}
+        />
+      )}
 
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 6 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Outcome</InputLabel>
-                <Select
-                  value={decisionData.pm_reviewoutcome}
-                  label="Outcome"
-                  onChange={(e) => setDecisionData(f => ({ ...f, pm_reviewoutcome: e.target.value as number }))}
-                  sx={{ borderRadius: 1.5 }}
-                >
-                  <MenuItem value={0}>Approved</MenuItem>
-                  <MenuItem value={1}>Conditional Approval</MenuItem>
-                  <MenuItem value={2}>Not Yet Reviewed</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 6 }}>
-              <TextField
-                label="Actual Review Date"
-                type="date"
-                fullWidth
-                size="small"
-                value={decisionData.pm_actualreviewdate}
-                onChange={(e) => setDecisionData(f => ({ ...f, pm_actualreviewdate: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                label="Decision Notes"
-                multiline
-                rows={3}
-                fullWidth
-                size="small"
-                value={decisionData.pm_reviewnotes}
-                onChange={(e) => setDecisionData(f => ({ ...f, pm_reviewnotes: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                placeholder="Summarize the board's decision..."
-              />
-            </Grid>
-            {decisionData.pm_reviewoutcome === 1 && (
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  label="Mandatory Conditions"
-                  multiline
-                  rows={2}
-                  fullWidth
-                  size="small"
-                  value={decisionData.pm_reviewconditions}
-                  onChange={(e) => setDecisionData(f => ({ ...f, pm_reviewconditions: e.target.value }))}
-                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  placeholder="What must be addressed before the next gate?"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': { borderColor: 'warning.main' },
-                    }
-                  }}
-                />
-              </Grid>
-            )}
-          </Grid>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setShowDecisionModal(false)}>Cancel</Button>
-          <Button 
-            variant="contained" 
-            color="success" 
-            onClick={handleRecordDecision} 
-            disabled={actionLoading}
-            sx={{ fontWeight: 600 }}
-          >
-            {actionLoading ? 'Saving...' : 'Submit Decision'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {selectedReview && (
+        <FinancialReviewTaskModal
+          open={showFinanceModal}
+          onClose={() => setShowFinanceModal(false)}
+          gateReviewId={selectedReview.pm_projectgatereviewid!}
+          onSuccess={(msg) => { setSuccessMsg(msg); setShowFinanceModal(false); loadData() }}
+          onError={(msg) => setError(msg)}
+        />
+      )}
+
+      {selectedReview && (
+        <BoardDecisionTaskModal
+          open={showBoardModal}
+          onClose={() => setShowBoardModal(false)}
+          gateReviewId={selectedReview.pm_projectgatereviewid!}
+          onSuccess={(msg) => { setSuccessMsg(msg); setShowBoardModal(false); setSelectedReview(null); loadData() }}
+          onError={(msg) => setError(msg)}
+        />
+      )}
     </Box>
   )
 }

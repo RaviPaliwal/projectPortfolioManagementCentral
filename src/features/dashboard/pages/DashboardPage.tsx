@@ -26,7 +26,7 @@ import ScheduleIcon from '@mui/icons-material/Schedule'
 
 import {
   fetchDashboardMetrics,
-  fetchMyActiveProjects,
+  fetchProjectsFull,
   fetchPortfolioHierarchy,
   fetchPendingApprovalRequests,
   fetchApprovalRequests,
@@ -116,7 +116,7 @@ export default function DashboardPage() {
       // Global metrics for the whole dashboard (non-filtered)
       const [dashboard, activeProjects, pendingApprovals, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData, periods] = await Promise.all([
         fetchDashboardMetrics({}), 
-        fetchMyActiveProjects(),
+        fetchProjectsFull(),
         fetchPendingApprovalRequests(),
         fetchPortfolioHierarchy(),
         fetchCapacityAllocationData(),
@@ -288,6 +288,11 @@ export default function DashboardPage() {
             projects={projects}
             loading={loading}
             onViewAll={() => setShowAllProjects(true)}
+            onProjectClick={(project) => {
+              // Store the selected project ID so ProjectsPage can navigate to its detail view
+              sessionStorage.setItem('preselectProjectId', project.pm_projectid ?? '')
+              window.dispatchEvent(new CustomEvent('navigate', { detail: { tab: 'projects' } }))
+            }}
           />
 
           {/* Budget Health Panel — Local Filtering Enabled */}

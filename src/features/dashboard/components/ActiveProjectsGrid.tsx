@@ -6,9 +6,10 @@ interface ActiveProjectsGridProps {
   projects: ProjectModel[]
   loading: boolean
   onViewAll: () => void
+  onProjectClick?: (project: ProjectModel) => void
 }
 
-export const ActiveProjectsGrid = ({ projects, loading, onViewAll }: ActiveProjectsGridProps) => {
+export const ActiveProjectsGrid = ({ projects, loading, onViewAll, onProjectClick }: ActiveProjectsGridProps) => {
   return (
     <Paper sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -37,10 +38,12 @@ export const ActiveProjectsGrid = ({ projects, loading, onViewAll }: ActiveProje
             <Grid size={{ xs: 12, sm: 6 }} key={project.pm_projectid}>
               <Paper
                 variant="outlined"
+                onClick={() => onProjectClick?.(project)}
                 sx={{
                   p: 2,
                   borderRadius: 1.5,
                   transition: 'all 0.2s',
+                  cursor: onProjectClick ? 'pointer' : 'default',
                   '&:hover': { borderColor: 'primary.main', boxShadow: 1 },
                 }}
               >

@@ -7,11 +7,6 @@ export const Pm_workflowsteptemplatespm_assignetype = {
   1: 'Team'
 } as const;
 export type Pm_workflowsteptemplatespm_assignetype = keyof typeof Pm_workflowsteptemplatespm_assignetype;
-export const Pm_workflowsteptemplatespm_status = {
-  1: 'Active',
-  0: 'Inactive'
-} as const;
-export type Pm_workflowsteptemplatespm_status = keyof typeof Pm_workflowsteptemplatespm_status;
 export const Pm_workflowsteptemplatesstatecode = {
   0: 'Active',
   1: 'Inactive'
@@ -25,20 +20,14 @@ export type Pm_workflowsteptemplatesstatuscode = keyof typeof Pm_workflowsteptem
 
 export interface Pm_workflowsteptemplatesBase {
   importsequencenumber?: number;
+  new_formkey?: string;
   overriddencreatedon?: string;
   ownerid: string;
   owneridtype: string;
-  pm_allowdelegation?: boolean;
-  pm_approvalrequired?: boolean;
   pm_assigneeid?: string;
   pm_assignetype?: Pm_workflowsteptemplatespm_assignetype;
-  pm_conditionsjson?: string;
   pm_description?: string;
-  pm_displayname?: string;
-  pm_isparallel?: boolean;
   pm_sladays?: number;
-  pm_status?: Pm_workflowsteptemplatespm_status;
-  pm_statusreason?: string;
   pm_steporder?: number;
   "pm_workflowLookup@odata.bind"?: string;
   pm_workflowname: string;
@@ -63,11 +52,7 @@ export interface Pm_workflowsteptemplates extends Pm_workflowsteptemplatesBase {
   owneridname: string;
   owneridyominame: string;
   owningbusinessunitname: string;
-  pm_allowdelegationname?: string;
-  pm_approvalrequiredname?: string;
   pm_assignetypename?: string;
-  pm_isparallelname?: string;
-  pm_statusname?: string;
   pm_workflowlookupname?: string;
   statecodename?: string;
   statuscodename?: string;

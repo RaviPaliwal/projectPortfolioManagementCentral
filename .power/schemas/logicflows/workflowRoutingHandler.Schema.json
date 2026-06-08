@@ -1,0 +1,116 @@
+{
+  "name": "workflowRoutingHandler",
+  "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+  "type": "Microsoft.PowerApps/apis",
+  "properties": {
+    "displayName": "workflowRoutingHandler",
+    "isCustom": false,
+    "swagger": {
+      "swagger": "2.0",
+      "info": {
+        "title": "workflowRoutingHandler",
+        "version": "2015-02-01-preview"
+      },
+      "host": "asia-001.azure-apim.net",
+      "schemes": [
+        "https"
+      ],
+      "consumes": [
+        "application/json"
+      ],
+      "produces": [
+        "application/json"
+      ],
+      "paths": {
+        "/{connectionId}/triggers/manual/run": {
+          "post": {
+            "operationId": "Run",
+            "description": "Runs a logic flow trigger.",
+            "parameters": [
+              {
+                "name": "connectionId",
+                "in": "path",
+                "required": true,
+                "type": "string",
+                "x-ms-visibility": "internal"
+              },
+              {
+                "name": "input",
+                "description": "The trigger's input",
+                "in": "body",
+                "required": true,
+                "schema": {
+                  "$ref": "#/definitions/ManualTriggerInput"
+                }
+              },
+              {
+                "name": "api-version",
+                "description": "The api version",
+                "in": "query",
+                "required": true,
+                "default": "2015-02-01-preview",
+                "x-ms-visibility": "internal",
+                "type": "string"
+              }
+            ],
+            "responses": {
+              "202": {
+                "description": "Accepted"
+              }
+            }
+          }
+        }
+      },
+      "definitions": {
+        "ManualTriggerInput": {
+          "type": "object",
+          "properties": {
+            "text_2": {
+              "title": "approvalStepIdCurrent",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Current Approval Step Id That Just Completed",
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_3": {
+              "title": "emailJson",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "(Email To Send After Task) keys of Json Needed \"to\",\"subject\" ,\"body\"",
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_4": {
+              "title": "teamsMessageJson",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "(Teams Message To Send After Task) keys of Json Needed \"to\" ,\"message\"",
+              "x-ms-content-hint": "TEXT"
+            },
+            "number": {
+              "title": "decisionInteger",
+              "type": "number",
+              "x-ms-dynamically-added": true,
+              "description": "Decision Value",
+              "x-ms-content-hint": "NUMBER"
+            },
+            "text": {
+              "title": "decisionNotes",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Decision Notes",
+              "x-ms-content-hint": "TEXT"
+            }
+          },
+          "required": [
+            "text_2",
+            "text_3",
+            "text_4",
+            "number",
+            "text"
+          ]
+        }
+      },
+      "basePath": "/apim/logicflows"
+    }
+  }
+}

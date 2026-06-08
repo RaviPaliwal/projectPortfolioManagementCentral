@@ -8,11 +8,13 @@ import {
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import ErrorIcon from '@mui/icons-material/Error'
 import BugReportIcon from '@mui/icons-material/BugReport'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 
 import { StatusTag } from '@/components/common'
 import type { RiskModel, IssueModel } from '@/types/dataverse'
 import { RAG_COLORS } from '../../constants'
 import { fontSizes } from '@/styles'
+import { navigateToRisk, navigateToIssue } from '@/utils/navigation'
 
 interface ProjectRisksIssuesTabProps {
   risks: RiskModel[]
@@ -54,10 +56,22 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
           {risks.length > 0 ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
               {risks.map((r) => (
-                <Paper key={r.pm_riskid} variant="outlined" sx={{ p: 1.75, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, transition: 'all 0.15s ease', '&:hover': { bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'background.default' } }}>
+                <Paper
+                  key={r.pm_riskid}
+                  variant="outlined"
+                  sx={{
+                    p: 1.75, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5,
+                    cursor: 'pointer', transition: 'all 0.15s ease',
+                    '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+                  }}
+                  onClick={() => r.pm_riskid && navigateToRisk(r.pm_riskid)}
+                >
                   <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: RAG_COLORS[String(r.pm_ragstatus)] ?? '#6b7280', flexShrink: 0, boxShadow: `0 0 0 2px ${RAG_COLORS[String(r.pm_ragstatus)]}33` }} />
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{r.pm_risktitle}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {r.pm_risktitle}
+                      <OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} />
+                    </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>{r.pm_riskowner ?? 'Unassigned'} {r.pm_targetclosedate ? `· Target: ${new Date(r.pm_targetclosedate).toLocaleDateString()}` : ''}</Typography>
                   </Box>
                   <StatusTag label={['Resource','Financial','Legal','Technical','External'][Number(r.pm_riskcategory)] ?? '—'} size="small" variant="outlined" />
@@ -78,10 +92,22 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
           {issues.length > 0 ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
               {issues.map((i: any) => (
-                <Paper key={i.pm_issueid} variant="outlined" sx={{ p: 1.75, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, transition: 'all 0.15s ease', '&:hover': { bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'background.default' } }}>
+                <Paper
+                  key={i.pm_issueid}
+                  variant="outlined"
+                  sx={{
+                    p: 1.75, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5,
+                    cursor: 'pointer', transition: 'all 0.15s ease',
+                    '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+                  }}
+                  onClick={() => i.pm_issueid && navigateToIssue(i.pm_issueid)}
+                >
                   <ErrorIcon sx={{ fontSize: 16, color: i.pm_prioritylevel === '1' || i.pm_prioritylevel === 1 ? 'error.main' : 'warning.main' }} />
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{i.pm_issuetitle}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {i.pm_issuetitle}
+                      <OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} />
+                    </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>{i.pm_issueowner ?? 'Unassigned'} {i.pm_targetresolutiondate ? `· Due: ${new Date(i.pm_targetresolutiondate).toLocaleDateString()}` : ''}</Typography>
                   </Box>
                   <StatusTag label={String(i.pm_issuestatus) === '1' ? 'Resolved' : 'Open'} size="small" color={String(i.pm_issuestatus) === '1' ? 'success' : 'warning'} variant="outlined" />

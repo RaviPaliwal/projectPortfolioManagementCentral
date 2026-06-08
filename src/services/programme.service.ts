@@ -69,6 +69,9 @@ export async function createProgramme(payload: Partial<ProgrammeModel>): Promise
 }
 
 export async function updateProgramme(id: string, changes: Partial<ProgrammeModel>): Promise<ProgrammeModel | null> {
+  const normalizedId = normalizeLookupId(id)
+  if (!normalizedId) return null
+
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null && key !== 'pm_programmeid' && 
@@ -84,9 +87,20 @@ export async function updateProgramme(id: string, changes: Partial<ProgrammeMode
     cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${normalizeLookupId(changes._pm_portfolio_value)})`
   }
 
-  const result = await Pm_programmesService.update(id, cleanPayload as any)
-  const item = unwrapSingle<Pm_programmes>(result)
-  return item ? mapProgramme(item) : null
+  try {
+    const result = await Pm_programmesService.update(normalizedId, cleanPayload as any)
+    try { console.debug('[dataverseService] updateProgramme result:', result) } catch (e) {}
+
+    // ALWAYS fetch fresh full details after update
+    const fresh = await Pm_programmesService.get(normalizedId, {
+      select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', '_pm_programmemanager_value', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'],
+    })
+    const item = unwrapSingle<Pm_programmes>(fresh)
+    return item ? mapProgramme(item) : null
+  } catch (err) {
+    try { console.error('[dataverseService] updateProgramme failed:', err) } catch (e) {}
+    throw err
+  }
 }
 
 export async function deleteProgramme(id: string): Promise<void> {

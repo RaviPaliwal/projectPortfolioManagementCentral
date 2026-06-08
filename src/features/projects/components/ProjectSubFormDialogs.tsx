@@ -545,19 +545,52 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
 
 export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
   const [form, setForm] = useState({ pm_gatename: '', pm_gatestage: 0, pm_plannedreviewdate: '', pm_documentsurl: '', pm_leadreviewer: '' })
+  const [readiness, setReadiness] = useState<any>(null)
+  const [checking, setChecking] = useState(false)
+
+  const checkReadiness = React.useCallback(async (stage: number) => {
+    setChecking(true)
+    try {
+      const { GovernanceReadinessService } = await import('@/services')
+      const report = await GovernanceReadinessService.checkProjectReadiness(projectId, stage)
+      setReadiness(report)
+    } catch {
+      setReadiness(null)
+    } finally {
+      setChecking(false)
+    }
+  }, [projectId])
+
+  React.useEffect(() => {
+    if (open) checkReadiness(form.pm_gatestage)
+  }, [open, form.pm_gatestage, checkReadiness])
 
   const handleAdd = async () => {
     if (!form.pm_gatename) { onError('Gate name is required.'); return }
+    if (readiness && !readiness.isReady) { onError('Project is not ready for submission. Please address the failed checks.'); return }
+    
     try {
-      const { createGateReview } = await import('@/services')
-      await createGateReview({
+      const { createGateReview, startWorkflowForEntity } = await import('@/services')
+      const createdReview = await createGateReview({
         ...form,
         _pm_project_value: projectId,
         pm_reviewstatus: 1, // Scheduled
         pm_reviewoutcome: 2, // Not Yet Reviewed
       } as any)
+
+      if (createdReview?.pm_projectgatereviewid) {
+        try {
+          // Gate reviews typically map directly to the 'GateReview' module in the workflow engine
+          await startWorkflowForEntity('default-template', createdReview.pm_projectgatereviewid, 'GateReview', 'System')
+          console.log(`[GateReviewDialog] Successfully initiated workflow for gate review ${createdReview.pm_projectgatereviewid}`)
+        } catch (wfErr) {
+          console.error('[GateReviewDialog] Failed to initiate workflow:', wfErr)
+          // We still want to show success for the review creation, maybe add a warning about workflow.
+        }
+      }
+
       setForm({ pm_gatename: '', pm_gatestage: 0, pm_plannedreviewdate: '', pm_documentsurl: '', pm_leadreviewer: '' })
-      onSuccess('Gate review scheduled successfully.')
+      onSuccess('Gate review scheduled successfully and workflow initiated.')
       onClose()
     } catch {
       onError('Unable to schedule gate review.')
@@ -577,10 +610,10 @@ export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, proj
           <Grid size={{ xs: 6 }}>
             <TextField select fullWidth label="Gate stage" value={form.pm_gatestage}
               onChange={(e) => setForm((f) => ({ ...f, pm_gatestage: Number(e.target.value) }))}>
-              <MenuItem value={0}>Gate 1</MenuItem>
-              <MenuItem value={1}>Gate 2</MenuItem>
-              <MenuItem value={2}>Gate 3</MenuItem>
-              <MenuItem value={3}>Gate 4</MenuItem>
+              <MenuItem value={0}>Gate 1 (Initiation)</MenuItem>
+              <MenuItem value={1}>Gate 2 (Planning)</MenuItem>
+              <MenuItem value={2}>Gate 3 (Execution)</MenuItem>
+              <MenuItem value={3}>Gate 4 (Closure)</MenuItem>
             </TextField>
           </Grid>
           <Grid size={{ xs: 6 }}>
@@ -596,11 +629,50 @@ export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, proj
               onChange={(e) => setForm((f) => ({ ...f, pm_documentsurl: e.target.value }))}
               placeholder="Link to SharePoint or Teams folder" />
           </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Governance Readiness Check</Typography>
+                {checking && <Typography variant="caption" color="text.secondary">Checking...</Typography>}
+              </Box>
+              
+              {readiness && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
+                  {readiness.items.map((item: any) => (
+                    <Box key={item.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                      <Typography variant="body2" sx={{ 
+                        color: item.status === 'passed' ? 'success.main' : item.status === 'failed' ? 'error.main' : 'warning.main',
+                        fontWeight: 700, mt: 0.25
+                      }}>
+                        {item.status === 'passed' ? '✓' : item.status === 'failed' ? '✗' : '⚠'}
+                      </Typography>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.label}</Typography>
+                        {item.message && <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{item.message}</Typography>}
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+
+              {!readiness && !checking && (
+                <Typography variant="caption" color="text.secondary">Select a gate stage to run readiness check.</Typography>
+              )}
+            </Box>
+          </Grid>
         </Grid>
       </DialogContent>
       <DialogActions sx={{ p: 2 }}>
         <Button onClick={onClose} variant="outlined">Cancel</Button>
-        <Button onClick={handleAdd} variant="contained" color="success" disabled={!form.pm_gatename}>Submit for Review</Button>
+        <Button 
+          onClick={handleAdd} 
+          variant="contained" 
+          color={readiness?.overallStatus === 'failed' ? 'inherit' : 'success'} 
+          disabled={!form.pm_gatename || checking || readiness?.isReady === false}
+        >
+          {readiness?.isReady === false ? 'Not Ready for Submission' : 'Submit for Review'}
+        </Button>
       </DialogActions>
     </Dialog>
   )

@@ -21,6 +21,37 @@
         "workflowDisplayName": "manageTeams",
         "workflowName": "c2e0b2d4-4236-d895-9872-30e06ce49724"
       }
+    },
+    "e641dce6-f6cf-4438-aa09-07b1b1d8923e": {
+      "id": "/providers/microsoft.powerapps/apis/shared_office365users",
+      "displayName": "Office 365 Users"
+    },
+    "76c361f8-ad5a-4907-b098-111dbf1aaa98": {
+      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+      "displayName": "Logic flows",
+      "dataSources": [
+        "initiateworkflow"
+      ],
+      "workflowDetails": {
+        "workflowEntityId": "51dced12-cc60-f111-a826-6045bd56f0ba",
+        "workflowDisplayName": "Initiate Workflow",
+        "workflowName": "c70b0760-fce2-dd77-dd64-c14ad2dda383",
+        "dependencies": {
+          "shared_office365users": "e641dce6-f6cf-4438-aa09-07b1b1d8923e"
+        }
+      }
+    },
+    "5645122f-b497-4ebf-a31b-4993a057a353": {
+      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+      "displayName": "Logic flows",
+      "dataSources": [
+        "workflowroutinghandler"
+      ],
+      "workflowDetails": {
+        "workflowEntityId": "43b7ed55-b260-f111-a826-6045bd56f0ba",
+        "workflowDisplayName": "workflowRoutingHandler",
+        "workflowName": "777210e4-e557-9ec7-a462-1077b6c2650f"
+      }
     }
   },
   "databaseReferences": {

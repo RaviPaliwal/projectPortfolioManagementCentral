@@ -34,16 +34,17 @@ import { createWorkflow, createWorkflowStepTemplate, fetchOwnerTeams } from '@/s
 import type { TeamOption } from '@/services'
 import { useUser, type SystemUser } from '@/context/UserContext'
 import type { WorkflowStepTemplateModel } from '@/types/dataverse'
-import { StatusTag, PageHeader, ConditionBuilder, PostApprovalActionBuilder } from '@/components/common'
+import { StatusTag, PageHeader } from '@/components/common'
 
 const STEPS = ['Basic Information', 'Approval Steps', 'Workflow Settings', 'Review & Create']
 
 const MODULES = [
   { value: '', label: 'Select Module...' },
   { value: 'Pipeline', label: 'Pipeline' },
-  { value: 'Projects', label: 'Projects' },
+  { value: 'Project', label: 'Projects' },
   { value: 'Portfolios', label: 'Portfolios' },
   { value: 'Programmes', label: 'Programmes' },
+  {value: 'GateReview', label: 'Gate Reviews' },
   { value: 'Risks', label: 'Risks & Issues' },
   { value: 'Budgets', label: 'Budgets & Finance' },
   { value: 'Resources', label: 'Resources' },
@@ -74,7 +75,6 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
     pm_workflowdescription: '',
     pm_module: '',
     pm_isactive: true,
-    pm_triggercondition: '', // JSON string for onComplete/onReject actions
   })
 
   // Steps State
@@ -83,8 +83,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
   const [editingStepIdx, setEditingStepIdx] = useState<number | null>(null)
   const [stepFormData, setStepFormData] = useState({
     pm_workflowname: '', pm_steporder: 1, pm_assignetype: 0, pm_assigneeid: '',
-    pm_displayname: '', pm_description: '', pm_sladays: 5, pm_allowdelegation: false,
-    pm_approvalrequired: true, pm_isparallel: false, pm_conditionsjson: '',
+    pm_description: '', pm_sladays: 5,
   })
 
   const u = useCallback((k: string, v: unknown) => setF((p) => ({ ...p, [k]: v })), [])
@@ -101,7 +100,6 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
       pm_module: f.pm_module,
       pm_isactive: f.pm_isactive,
       pm_workflowstatus: f.pm_isactive ? 0 : 1,
-      pm_triggercondition: f.pm_triggercondition,
       pm_version: 1,
     }
     try {
@@ -136,9 +134,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
     setEditingStepIdx(null)
     setStepFormData({
       pm_workflowname: '', pm_steporder: stepTemplates.length + 1, pm_assignetype: 0,
-      pm_assigneeid: '', pm_displayname: '', pm_description: '', pm_sladays: 5,
-      pm_allowdelegation: false, pm_approvalrequired: true, pm_isparallel: false,
-      pm_conditionsjson: '',
+      pm_assigneeid: '', pm_description: '', pm_sladays: 5,
     })
     setShowStepForm(true)
   }
@@ -151,13 +147,8 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
       pm_steporder: s.pm_steporder || (idx + 1),
       pm_assignetype: Number(s.pm_assignetype) || 0,
       pm_assigneeid: s.pm_assigneeid || '',
-      pm_displayname: s.pm_displayname || '',
       pm_description: s.pm_description || '',
       pm_sladays: s.pm_sladays || 5,
-      pm_allowdelegation: !!s.pm_allowdelegation,
-      pm_approvalrequired: s.pm_approvalrequired !== false,
-      pm_isparallel: !!s.pm_isparallel,
-      pm_conditionsjson: s.pm_conditionsjson || '',
     })
     setShowStepForm(true)
   }
@@ -303,7 +294,6 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
                             <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>{step.pm_sladays}d SLA</Typography>
                           </Box>
                         )}
-                        <StatusTag label={step.pm_approvalrequired ? 'Required' : 'Notification'} color={step.pm_approvalrequired ? 'warning' : 'default'} size="small" sx={{ height: 18, fontSize: 9 }} />
                       </Stack>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
@@ -362,13 +352,8 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
               <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5 }}>
                 <Typography variant="body2" sx={{ fontWeight: 800, mb: 1 }}>Post-Approval Actions</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                  Define automated actions to trigger when the workflow completes or is rejected.
+                  Post-approval actions are now managed by the Power Automate workflow router flow.
                 </Typography>
-                <PostApprovalActionBuilder 
-                  moduleName={f.pm_module}
-                  value={f.pm_triggercondition}
-                  onChange={(val) => u('pm_triggercondition', val)}
-                />
               </Paper>
             </Stack>
           </Box>
@@ -459,7 +444,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
                                 <Typography variant="caption" sx={{ fontWeight: 600 }}>{step.pm_sladays} Day SLA</Typography>
                               </Box>
                             )}
-                            <StatusTag label={step.pm_approvalrequired ? 'APPROVER' : 'VIEWER'} color={step.pm_approvalrequired ? 'warning' : 'default'} size="small" sx={{ height: 16, fontSize: 8, fontWeight: 900 }} />
+                            <StatusTag label={step.pm_assignetype === 1 ? 'TEAM' : 'USER'} color={step.pm_assignetype === 1 ? 'warning' : 'primary'} size="small" sx={{ height: 16, fontSize: 8, fontWeight: 900 }} />
                           </Box>
                         </Box>
                       </Box>
@@ -512,8 +497,7 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
       <Dialog open={showStepForm} onClose={() => setShowStepForm(false)} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}>
         <DialogTitle sx={{ fontWeight: 700 }}>{editingStepIdx !== null ? 'Edit Step' : 'Add Approval Step'}</DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
-          <Stack spacing={2.5} sx={{ mt: 1 }}>
-            <TextField label="Step Name" fullWidth size="small" value={stepFormData.pm_workflowname} onChange={(e) => setStepFormData(p => ({ ...p, pm_workflowname: e.target.value }))} placeholder="e.g. Finance Review" />
+          <Stack spacing={2.5} sx={{ mt: 1 }}>              <TextField label="Step Name" fullWidth size="small" value={stepFormData.pm_workflowname} onChange={(e) => setStepFormData(p => ({ ...p, pm_workflowname: e.target.value }))} placeholder="e.g. Finance Review" />
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
               <FormControl size="small">
                 <InputLabel>Assignee Type</InputLabel>
@@ -544,22 +528,6 @@ export default function WorkflowCreatePage({ onStepChange, onCreated }: Props) {
               )
             })()}
 
-            <FormControlLabel
-              control={<Switch checked={stepFormData.pm_approvalrequired} onChange={(e) => setStepFormData(p => ({ ...p, pm_approvalrequired: e.target.checked }))} />}
-              label={<Typography variant="body2">Approval Required (vs. Notification Only)</Typography>}
-            />
-            
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Routing Conditions (Optional)</Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                If conditions are not met, this step will be automatically skipped.
-              </Typography>
-              <ConditionBuilder
-                moduleName={f.pm_module}
-                value={stepFormData.pm_conditionsjson}
-                onChange={(val) => setStepFormData(p => ({ ...p, pm_conditionsjson: val }))}
-              />
-            </Box>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>

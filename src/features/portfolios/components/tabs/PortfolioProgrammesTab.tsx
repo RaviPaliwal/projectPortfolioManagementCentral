@@ -1,7 +1,9 @@
 import React from 'react'
 import { Box, Paper, Typography } from '@mui/material'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { StatusChip, TabPanel } from '@/components/common'
 import type { ProgrammeModel } from '@/types/dataverse'
+import { navigateToProgramme } from '@/utils/navigation'
 
 interface PortfolioProgrammesTabProps {
   programmes: ProgrammeModel[]
@@ -19,11 +21,21 @@ export const PortfolioProgrammesTab: React.FC<PortfolioProgrammesTabProps> = ({
       {programmes.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {programmes.map((prog) => (
-            <Paper key={prog.pm_programmeid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+            <Paper
+              key={prog.pm_programmeid}
+              variant="outlined"
+              sx={{
+                p: 2, borderRadius: 1.5, cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+              }}
+              onClick={() => prog.pm_programmeid && navigateToProgramme(prog.pm_programmeid)}
+            >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     {prog.pm_programmename ?? 'Untitled Programme'}
+                    <OpenInNewIcon sx={{ fontSize: 14, color: 'primary.main', opacity: 0.6 }} />
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {prog.pm_startdate ? new Date(prog.pm_startdate).toLocaleDateString() : 'No start date'}

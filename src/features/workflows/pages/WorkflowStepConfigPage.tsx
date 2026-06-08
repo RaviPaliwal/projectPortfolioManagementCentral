@@ -14,7 +14,6 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import GroupIcon from '@mui/icons-material/Group'
 import PersonIcon from '@mui/icons-material/Person'
 import TimerIcon from '@mui/icons-material/Timer'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { fontSizes } from '@/styles'
 import {
   fetchWorkflowStepTemplates, createWorkflowStepTemplate,
@@ -24,7 +23,8 @@ import {
 import type { TeamOption as DataverseTeamOption } from '@/services'
 import { useUser } from '@/context/UserContext'
 import type { WorkflowModel, WorkflowStepTemplateModel } from '@/types/dataverse'
-import { StatusTag } from '@/components/common'
+import { FORM_REGISTRY } from '@/constants/formRegistry'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
  
 type TeamOptionUI = {
   value: string
@@ -62,8 +62,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
   const [teams, setTeams] = useState<DataverseTeamOption[]>([])
   const [formData, setFormData] = useState({
     pm_workflowname: '', pm_steporder: 1, pm_assignetype: 0, pm_assigneeid: '',
-    pm_displayname: '', pm_description: '', pm_sladays: 5, pm_allowdelegation: false,
-    pm_approvalrequired: true, pm_isparallel: false, pm_conditionsjson: '',
+    pm_description: '', pm_sladays: 5, new_formkey: '',
   })
  
   // Load steps
@@ -94,9 +93,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
     setEditing(null)
     setFormData({
       pm_workflowname: '', pm_steporder: (steps.length) + 1, pm_assignetype: 0,
-      pm_assigneeid: '', pm_displayname: '', pm_description: '', pm_sladays: 5,
-      pm_allowdelegation: false, pm_approvalrequired: true, pm_isparallel: false,
-      pm_conditionsjson: '',
+      pm_assigneeid: '', pm_description: '', pm_sladays: 5, new_formkey: '',
     })
     setShowForm(true)
   }
@@ -108,13 +105,9 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
       pm_steporder: step.pm_steporder ?? 1,
       pm_assignetype: Number(step.pm_assignetype) || 0,
       pm_assigneeid: step.pm_assigneeid ?? '',
-      pm_displayname: step.pm_displayname ?? '',
       pm_description: step.pm_description ?? '',
       pm_sladays: step.pm_sladays ?? 5,
-      pm_allowdelegation: step.pm_allowdelegation ?? false,
-      pm_approvalrequired: step.pm_approvalrequired ?? true,
-      pm_isparallel: step.pm_isparallel ?? false,
-      pm_conditionsjson: step.pm_conditionsjson ?? '',
+      new_formkey: step.new_formkey ?? '',
     })
     setShowForm(true)
   }
@@ -244,9 +237,6 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <DragIndicatorIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{step.pm_workflowname ?? 'Unnamed'}</Typography>
-                  {step.pm_displayname && <StatusTag size="small" label={step.pm_displayname} />}
-                  {step.pm_approvalrequired ? <StatusTag size="small" label="Approval" color="warning" variant="outlined" /> : null}
-                  {step.pm_isparallel ? <StatusTag size="small" label="Parallel" color="info" variant="outlined" /> : null}
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -266,6 +256,17 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <TimerIcon sx={{ fontSize: 14, color: 'error.main' }} />
                       <Typography variant="caption" color="text.secondary">SLA: {step.pm_sladays}d</Typography>
+                    </Box>
+                  )}
+                  {step.new_formkey && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <OpenInNewIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                      <Typography variant="caption" color="text.secondary">
+                        Form: {(() => {
+                          const formEntry = FORM_REGISTRY.find(f => f.key === step.new_formkey)
+                          return formEntry ? formEntry.displayName : step.new_formkey
+                        })()}
+                      </Typography>
                     </Box>
                   )}
                 </Box>
@@ -320,10 +321,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                 onChange={(e) => setFormData((f) => ({ ...f, pm_workflowname: e.target.value }))}
                 placeholder="e.g. PMO Review"
                 slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
-              <TextField label="Display Name" fullWidth size="small" value={formData.pm_displayname}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_displayname: e.target.value }))}
-                placeholder="Shown in task lists"
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
+
               <TextField label="Description" fullWidth multiline rows={2} size="small" value={formData.pm_description}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_description: e.target.value }))}
                 sx={{ gridColumn: '1 / -1' }}
@@ -414,28 +412,17 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
               )
             })()}
 
-            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-              <Button size="medium" variant={formData.pm_approvalrequired ? 'contained' : 'outlined'}
-                onClick={() => setFormData((f) => ({ ...f, pm_approvalrequired: !f.pm_approvalrequired }))}
-                startIcon={formData.pm_approvalrequired ? <CheckCircleIcon /> : null}
-                sx={{
-                  borderRadius: 1.5, textTransform: 'none', fontWeight: 600, px: 2,
-                  bgcolor: formData.pm_approvalrequired ? 'secondary.main' : undefined,
-                  '&:hover': { bgcolor: formData.pm_approvalrequired ? '#7c3aed' : undefined },
-                }}>
-                {formData.pm_approvalrequired ? 'Approval Required' : 'Approval Optional'}
-              </Button>
-              <Button size="medium" variant={formData.pm_isparallel ? 'contained' : 'outlined'} color="info"
-                onClick={() => setFormData((f) => ({ ...f, pm_isparallel: !f.pm_isparallel }))}
-                sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600, px: 2 }}>
-                {formData.pm_isparallel ? 'Parallel Execution' : 'Sequential Execution'}
-              </Button>
-              <Button size="medium" variant={formData.pm_allowdelegation ? 'contained' : 'outlined'} color="secondary"
-                onClick={() => setFormData((f) => ({ ...f, pm_allowdelegation: !f.pm_allowdelegation }))}
-                sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600, px: 2 }}>
-                {formData.pm_allowdelegation ? 'Delegation Allowed' : 'No Delegation'}
-              </Button>
-            </Box>
+            {/* Custom Form Key Input */}
+            <TextField
+              fullWidth
+              size="small"
+              label="Form Key"
+              placeholder="e.g. gate-review-form"
+              value={formData.new_formkey}
+              onChange={(e) => setFormData((f) => ({ ...f, new_formkey: e.target.value }))}
+              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+            />
+
           </Box>
         </DialogContent>
 

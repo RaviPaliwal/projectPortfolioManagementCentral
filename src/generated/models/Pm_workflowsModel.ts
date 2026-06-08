@@ -21,9 +21,6 @@ export interface Pm_workflowsBase {
   pm_description?: string;
   pm_isactive?: boolean;
   pm_module?: string;
-  pm_triggercondition?: string;
-  pm_triggerentity?: string;
-  pm_triggerevent?: string;
   pm_version?: number;
   pm_workflowid: string;
   pm_workflowname?: string;

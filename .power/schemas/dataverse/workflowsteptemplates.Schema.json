@@ -141,6 +141,14 @@
           "required": true,
           "maxLength": 100
         },
+        "new_formkey": {
+          "type": "string",
+          "title": "formKey",
+          "x-ms-dataverse-attribute": "new_formkey",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "new_formKey",
+          "maxLength": 100
+        },
         "overriddencreatedon": {
           "type": "string",
           "title": "Record Created On",
@@ -218,68 +226,6 @@
           "x-ms-schema-name": "OwningUser",
           "x-ms-read-only": true
         },
-        "pm_allowdelegation": {
-          "type": "string",
-          "title": "Allow Delegation",
-          "x-ms-dataverse-attribute": "pm_allowdelegation",
-          "x-ms-dataverse-type": "BooleanType",
-          "x-ms-schema-name": "pm_AllowDelegation",
-          "enum": [
-            "No",
-            "Yes"
-          ],
-          "x-ms-enum-values": [
-            0,
-            1
-          ],
-          "Color": [
-            null,
-            null
-          ],
-          "x-ms-optionsetmetadataid": "71e0f3ff-a65d-f111-a826-6045bd56f0ba",
-          "x-ms-isGlobal": false,
-          "x-ms-optionsetdisplayname": "Allow Delegation",
-          "x-ms-optionSetType": "Boolean"
-        },
-        "pm_allowdelegationname": {
-          "type": "string",
-          "title": "pm_allowdelegationname",
-          "x-ms-dataverse-attribute": "pm_allowdelegationname",
-          "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_allowdelegationName",
-          "x-ms-read-only": true
-        },
-        "pm_approvalrequired": {
-          "type": "string",
-          "title": "Approval Required",
-          "x-ms-dataverse-attribute": "pm_approvalrequired",
-          "x-ms-dataverse-type": "BooleanType",
-          "x-ms-schema-name": "pm_ApprovalRequired",
-          "enum": [
-            "No",
-            "Yes"
-          ],
-          "x-ms-enum-values": [
-            0,
-            1
-          ],
-          "Color": [
-            null,
-            null
-          ],
-          "x-ms-optionsetmetadataid": "377a0717-a75d-f111-a826-6045bd56f0ba",
-          "x-ms-isGlobal": false,
-          "x-ms-optionsetdisplayname": "Approval Required",
-          "x-ms-optionSetType": "Boolean"
-        },
-        "pm_approvalrequiredname": {
-          "type": "string",
-          "title": "pm_approvalrequiredname",
-          "x-ms-dataverse-attribute": "pm_approvalrequiredname",
-          "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_approvalrequiredName",
-          "x-ms-read-only": true
-        },
         "pm_assigneeid": {
           "type": "string",
           "title": "Assignee Id",
@@ -319,14 +265,6 @@
           "x-ms-schema-name": "pm_assignetypeName",
           "x-ms-read-only": true
         },
-        "pm_conditionsjson": {
-          "type": "string",
-          "title": "Conditions Json",
-          "x-ms-dataverse-attribute": "pm_conditionsjson",
-          "x-ms-dataverse-type": "MemoType",
-          "x-ms-schema-name": "pm_ConditionsJson",
-          "maxLength": 2000
-        },
         "pm_description": {
           "type": "string",
           "title": "Description",
@@ -335,90 +273,12 @@
           "x-ms-schema-name": "pm_Description",
           "maxLength": 2000
         },
-        "pm_displayname": {
-          "type": "string",
-          "title": "Display Name",
-          "x-ms-dataverse-attribute": "pm_displayname",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_DisplayName",
-          "maxLength": 100
-        },
-        "pm_isparallel": {
-          "type": "string",
-          "title": "Is Parallel",
-          "x-ms-dataverse-attribute": "pm_isparallel",
-          "x-ms-dataverse-type": "BooleanType",
-          "x-ms-schema-name": "pm_IsParallel",
-          "enum": [
-            "No",
-            "Yes"
-          ],
-          "x-ms-enum-values": [
-            0,
-            1
-          ],
-          "Color": [
-            null,
-            null
-          ],
-          "x-ms-optionsetmetadataid": "3ef3070e-a75d-f111-a826-6045bd56f0ba",
-          "x-ms-isGlobal": false,
-          "x-ms-optionsetdisplayname": "Is Parallel",
-          "x-ms-optionSetType": "Boolean"
-        },
-        "pm_isparallelname": {
-          "type": "string",
-          "title": "pm_isparallelname",
-          "x-ms-dataverse-attribute": "pm_isparallelname",
-          "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_isparallelName",
-          "x-ms-read-only": true
-        },
         "pm_sladays": {
           "type": "string",
           "title": "Sla Days",
           "x-ms-dataverse-attribute": "pm_sladays",
           "x-ms-dataverse-type": "IntegerType",
           "x-ms-schema-name": "pm_SlaDays"
-        },
-        "pm_status": {
-          "type": "string",
-          "title": "Status",
-          "x-ms-dataverse-attribute": "pm_status",
-          "x-ms-dataverse-type": "PicklistType",
-          "x-ms-schema-name": "pm_Status",
-          "enum": [
-            "Active",
-            "Inactive"
-          ],
-          "x-ms-enum-values": [
-            1,
-            0
-          ],
-          "Color": [
-            null,
-            null
-          ],
-          "x-ms-optionsetmetadataid": "a7522557-a75d-f111-a826-6045bd56f0ba",
-          "x-ms-isGlobal": false,
-          "x-ms-optionsetdisplayname": "Status",
-          "x-ms-optionSetType": "Picklist"
-        },
-        "pm_statusname": {
-          "type": "string",
-          "title": "pm_statusname",
-          "x-ms-dataverse-attribute": "pm_statusname",
-          "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_statusName",
-          "x-ms-read-only": true
-        },
-        "pm_statusreason": {
-          "type": "string",
-          "title": "Status Reason",
-          "x-ms-dataverse-attribute": "pm_statusreason",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_StatusReason",
-          "maxLength": 100
         },
         "pm_steporder": {
           "type": "string",

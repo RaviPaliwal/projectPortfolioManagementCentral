@@ -134,6 +134,9 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
 }
 
 export async function updatePortfolio(id: string, changes: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
+  const normalizedId = normalizeLookupId(id)
+  if (!normalizedId) return null
+
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null && key !== 'pm_portfolioid') {
@@ -144,9 +147,21 @@ export async function updatePortfolio(id: string, changes: Partial<PortfolioMode
       }
     }
   }
-  const result = await Pm_portfoliosService.update(id, cleanPayload as any)
-  const item = unwrapSingle<Pm_portfolios>(result)
-  return item ? mapPortfolio(item) : null
+
+  try {
+    const result = await Pm_portfoliosService.update(normalizedId, cleanPayload as any)
+    try { console.debug('[dataverseService] updatePortfolio result:', result) } catch (e) {}
+
+    // ALWAYS fetch fresh full details after update
+    const fresh = await Pm_portfoliosService.get(normalizedId, {
+      select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'pm_createdon'],
+    })
+    const item = unwrapSingle<Pm_portfolios>(fresh)
+    return item ? mapPortfolio(item) : null
+  } catch (err) {
+    try { console.error('[dataverseService] updatePortfolio failed:', err) } catch (e) {}
+    throw err
+  }
 }
 export async function createPortfolio(payload: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
   const cleanPayload: Record<string, any> = {}

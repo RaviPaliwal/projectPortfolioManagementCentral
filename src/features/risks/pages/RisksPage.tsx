@@ -44,6 +44,7 @@ import {
 } from '../constants'
 import { ExportButton, Button } from '@/components/common'
 import AddIcon from '@mui/icons-material/Add'
+import { normalizeLookupId } from '@/services'
 
 export default function RisksPage() {
   const theme = useTheme()
@@ -95,6 +96,22 @@ export default function RisksPage() {
   useEffect(() => {
     loadRisks()
   }, [loadRisks])
+
+  // Auto-navigate to preselected risk from cross-linking
+  useEffect(() => {
+    if (!loading && risks.length > 0) {
+      const preselectedId = sessionStorage.getItem('preselectRiskId')
+      if (preselectedId) {
+        sessionStorage.removeItem('preselectRiskId')
+        const risk = risks.find(r => normalizeLookupId(r.pm_riskid) === normalizeLookupId(preselectedId))
+        if (risk) {
+          setSelectedRisk(risk)
+          setDrawerOpen(true)
+          setDrawerTab(0)
+        }
+      }
+    }
+  }, [loading, risks])
 
   // ── Fetch mitigation actions when drawer tab changes ────────────────────────
   useEffect(() => {

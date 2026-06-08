@@ -9,7 +9,9 @@ export const Pm_workflowapprovalstepspm_assigneetype = {
 export type Pm_workflowapprovalstepspm_assigneetype = keyof typeof Pm_workflowapprovalstepspm_assigneetype;
 export const Pm_workflowapprovalstepspm_decisionstatus = {
   0: 'Approved',
-  1: 'Pending'
+  1: 'Pending',
+  2: 'Assigned',
+  3: 'Rejected'
 } as const;
 export type Pm_workflowapprovalstepspm_decisionstatus = keyof typeof Pm_workflowapprovalstepspm_decisionstatus;
 export const Pm_workflowapprovalstepsstatecode = {
@@ -25,6 +27,7 @@ export type Pm_workflowapprovalstepsstatuscode = keyof typeof Pm_workflowapprova
 
 export interface Pm_workflowapprovalstepsBase {
   importsequencenumber?: number;
+  new_formkey?: string;
   overriddencreatedon?: string;
   ownerid: string;
   owneridtype: string;
@@ -34,14 +37,12 @@ export interface Pm_workflowapprovalstepsBase {
   pm_decisiondate?: string;
   pm_decisionnotes?: string;
   pm_decisionstatus?: Pm_workflowapprovalstepspm_decisionstatus;
-  pm_delegatename?: string;
   pm_duedate?: string;
   pm_isparallelstep?: boolean;
   pm_notificationtimestamp?: string;
   pm_stepname?: string;
   pm_steporder?: number;
   pm_workflowapprovalstepid: string;
-  pm_workflowinstanceid?: string;
   "pm_WorkflowInstanceLookup@odata.bind"?: string;
   "pm_WorkflowTemplate@odata.bind"?: string;
   statecode: Pm_workflowapprovalstepsstatecode;

@@ -11,6 +11,7 @@ export * from './risk-issue.service'
 export * from './change-request.service'
 export * from './approval.service'
 export * from './workflow.service'
+export * from './governance-readiness.service'
 
 export * from './team.service'
 export * from './dashboard.service'

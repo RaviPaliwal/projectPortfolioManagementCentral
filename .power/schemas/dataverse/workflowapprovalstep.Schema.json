@@ -141,6 +141,14 @@
           "required": true,
           "maxLength": 100
         },
+        "new_formkey": {
+          "type": "string",
+          "title": "formKey",
+          "x-ms-dataverse-attribute": "new_formkey",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "new_formKey",
+          "maxLength": 100
+        },
         "overriddencreatedon": {
           "type": "string",
           "title": "Record Created On",
@@ -288,13 +296,19 @@
           "x-ms-schema-name": "pm_decisionstatus",
           "enum": [
             "Approved",
-            "Pending"
+            "Pending",
+            "Assigned",
+            "Rejected"
           ],
           "x-ms-enum-values": [
             0,
-            1
+            1,
+            2,
+            3
           ],
           "Color": [
+            null,
+            null,
             null,
             null
           ],
@@ -310,14 +324,6 @@
           "x-ms-dataverse-type": "VirtualType",
           "x-ms-schema-name": "pm_decisionstatusName",
           "x-ms-read-only": true
-        },
-        "pm_delegatename": {
-          "type": "string",
-          "title": "Delegate",
-          "x-ms-dataverse-attribute": "pm_delegatename",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_delegatename",
-          "maxLength": 100
         },
         "pm_duedate": {
           "type": "string",
@@ -389,14 +395,6 @@
           "x-ms-dataverse-primary-id": true,
           "required": true,
           "x-ms-keyType": "primary"
-        },
-        "pm_workflowinstanceid": {
-          "type": "string",
-          "title": "Workflow Instance",
-          "x-ms-dataverse-attribute": "pm_workflowinstanceid",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_workflowinstanceid",
-          "maxLength": 100
         },
         "pm_workflowinstancelookup": {
           "type": "string",

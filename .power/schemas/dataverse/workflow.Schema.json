@@ -265,30 +265,6 @@
           "x-ms-schema-name": "pm_module",
           "maxLength": 100
         },
-        "pm_triggercondition": {
-          "type": "string",
-          "title": "Trigger Condition",
-          "x-ms-dataverse-attribute": "pm_triggercondition",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_triggercondition",
-          "maxLength": 100
-        },
-        "pm_triggerentity": {
-          "type": "string",
-          "title": "Trigger Entity",
-          "x-ms-dataverse-attribute": "pm_triggerentity",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_triggerentity",
-          "maxLength": 100
-        },
-        "pm_triggerevent": {
-          "type": "string",
-          "title": "Trigger Event",
-          "x-ms-dataverse-attribute": "pm_triggerevent",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_triggerevent",
-          "maxLength": 100
-        },
         "pm_version": {
           "type": "string",
           "title": "Version",

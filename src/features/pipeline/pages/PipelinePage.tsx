@@ -58,7 +58,6 @@ import {
   fetchInitiatives,
   createInitiative,
   updateInitiative,
-  convertInitiativeToProject,
   updateInitiativeStatus,
   createApprovalRequest,
   fetchPipelineKpis,
@@ -66,13 +65,15 @@ import {
 } from '@/services'
 
 import { useUser } from '@/context/UserContext'
-import type { InitiativeModel, PortfolioModel } from '@/types/dataverse'
+import type { InitiativeModel, PortfolioModel, ProgrammeModel } from '@/types/dataverse'
 import type { PipelineKpis } from '@/services'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TabPanel, TableFooter, TableShell, DetailDrawer, SearchFilterBar } from '@/components/common'
 import type { KpiCardItem, FilterOption} from '@/components/common'
 import { ExportButton,StatusTag } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
+import { ConvertToProjectDialog } from '../components/ConvertToProjectDialog'
+import { createProject } from '@/services'
 
 // ── Export columns ────────────────────────────────────────────────────────────
 const pipelineExportColumns: ExportColumn[] = [
@@ -199,6 +200,8 @@ export default function PipelinePage() {
 
   // ── Portfolio options for create modal ──────────────────────────────────
   const [portfolios, setPortfolios] = useState<PortfolioModel[]>([])
+  const [programmes, setProgrammes] = useState<ProgrammeModel[]>([])
+  const [showConvertDialog, setShowConvertDialog] = useState(false)
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -213,6 +216,7 @@ export default function PipelinePage() {
       setInitiatives(list)
       setKpis(kpiData)
       setPortfolios(hierarchy.portfolios)
+      setProgrammes(hierarchy.programmes)
     } catch {
       setError('Unable to load pipeline data.')
     } finally {
@@ -431,13 +435,27 @@ export default function PipelinePage() {
     }
   }
 
-  const handleConvertToProject = async () => {
+  const handleConvertToProject = () => {
+    setShowConvertDialog(true)
+  }
+
+  const handleCreateProjectFromInitiative = async (projectData: Partial<any>) => {
     if (!selectedInitiative) return
     setActionLoading(true)
+    setError(null)
     try {
-      const projectId = await convertInitiativeToProject(selectedInitiative)
-      if (projectId) {
-        setSuccessMsg('Initiative converted to project successfully.')
+      const created = await createProject(projectData)
+      if (created && created.pm_projectid) {
+        // Update the initiative's conversion reference
+        try {
+          await updateInitiative(selectedInitiative.pm_initiativeid!, {
+            pm_convertedtoreference: created.pm_projectid,
+          } as any)
+        } catch (e) {
+          console.warn('[PipelinePage] Failed to update initiative conversion reference:', e)
+        }
+        setShowConvertDialog(false)
+        setSuccessMsg(`Project "${created.pm_projectname}" created successfully.`)
         await loadData()
         setSelectedInitiative(null)
         setTimeout(() => setSuccessMsg(null), 3000)
@@ -1032,7 +1050,18 @@ export default function PipelinePage() {
         </DialogActions>
       </Dialog>
 
-      {/* ── 5. Reviewer Selection Dialog ───────────────────────────────────── */}
+      {/* ── 5. Convert to Project Dialog ──────────────────────────────────── */}
+      <ConvertToProjectDialog
+        open={showConvertDialog}
+        onClose={() => !actionLoading && setShowConvertDialog(false)}
+        initiative={selectedInitiative}
+        portfolios={portfolios}
+        programmes={programmes}
+        onConvert={handleCreateProjectFromInitiative}
+        converting={actionLoading}
+      />
+
+      {/* ── 6. Reviewer Selection Dialog ───────────────────────────────────── */}
       <Dialog
         open={showReviewerDialog}
         onClose={() => !actionLoading && setShowReviewerDialog(false)}

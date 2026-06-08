@@ -73,6 +73,20 @@ export const mapPerformanceMeasure = (item: Pm_performancemeasures): Performance
   statecode: item.statecode,
 })
 
+export async function fetchGateReviewById(id: string): Promise<GateReviewModel | null> {
+  const result = await Pm_projectgatereviewsService.get(id, {
+    select: [
+      'pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage',
+      'pm_reviewoutcome', 'pm_reviewstatus', 'pm_plannedreviewdate',
+      'pm_actualreviewdate', 'pm_leadreviewer', 'pm_reviewnotes',
+      'pm_reviewconditions', 'pm_documentsurl', 'pm_projectcode',
+      'pm_programmename', '_pm_project_value', '_pm_programmelookup_value',
+    ],
+  })
+  const item = unwrapSingle<Pm_projectgatereviews>(result)
+  return item ? mapGateReview(item) : null
+}
+
 export async function fetchGateReviews(): Promise<GateReviewModel[]> {
   const result = await Pm_projectgatereviewsService.getAll({
     filter: 'statecode eq 0',
@@ -135,7 +149,6 @@ export async function fetchBenefits(): Promise<BenefitModel[]> {
     'pm_benefitreference', 'pm_baselinevalue', 'pm_targetvalue',
     'pm_unitofmeasure', 'pm_ragstatus', 'pm_realisationstartdate',
     'pm_realisationenddate', 'pm_programmename', 'pm_projectcode',
-    'pm_benifitownername', 'pm_programmelookupname', 'pm_projectname',
     '_pm_benifitowner_value', '_pm_programmelookup_value', '_pm_project_value',
   ]
   const options = {

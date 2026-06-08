@@ -34,6 +34,7 @@ import type { IssueModel } from '@/types/dataverse'
 
 import type { ExportColumn } from '@/utils/exportUtils'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon } from '@/components/common'
+import { normalizeLookupId } from '@/services'
 import type { KpiCardItem } from '@/components/common'
 import { fontSizes } from '@/styles'
 import { IssueDialogs } from '../components/IssueDialogs'
@@ -175,6 +176,20 @@ export default function IssuesPage() {
   useEffect(() => {
     loadIssues()
   }, [loadIssues])
+
+  // Auto-navigate to preselected issue from cross-linking
+  useEffect(() => {
+    if (!loading && issues.length > 0) {
+      const preselectedId = sessionStorage.getItem('preselectIssueId')
+      if (preselectedId) {
+        sessionStorage.removeItem('preselectIssueId')
+        const issue = issues.find(i => normalizeLookupId(i.pm_issueid) === normalizeLookupId(preselectedId))
+        if (issue) {
+          handleRowClick(issue)
+        }
+      }
+    }
+  }, [loading, issues])
 
   // ── KPI calculations ────────────────────────────────────────────────────────
 

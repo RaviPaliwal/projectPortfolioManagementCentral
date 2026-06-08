@@ -54,7 +54,6 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
     pm_portfoliostatus: 0,
     pm_ragstatus: 1,
     pm_approvedbudgeteur: 0,
-    pm_actualspendeur: 0,
     pm_startdate: '',
     pm_enddate: '',
     pm_portfoliodescription: '',
@@ -72,7 +71,6 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
           pm_portfoliostatus: initialData.pm_portfoliostatus !== undefined ? Number(initialData.pm_portfoliostatus) : 0,
           pm_ragstatus: initialData.pm_ragstatus !== undefined ? Number(initialData.pm_ragstatus) : 1,
           pm_approvedbudgeteur: initialData.pm_approvedbudgeteur || 0,
-          pm_actualspendeur: initialData.pm_actualspendeur || 0,
           pm_startdate: initialData.pm_startdate?.split('T')[0] || '',
           pm_enddate: initialData.pm_enddate?.split('T')[0] || '',
           pm_portfoliodescription: initialData.pm_portfoliodescription || '',
@@ -87,7 +85,6 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
           pm_portfoliostatus: 0,
           pm_ragstatus: 1,
           pm_approvedbudgeteur: 0,
-          pm_actualspendeur: 0,
           pm_startdate: '',
           pm_enddate: '',
           pm_portfoliodescription: '',
@@ -111,7 +108,6 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
         pm_portfoliostatus: formData.pm_portfoliostatus,
         pm_ragstatus: formData.pm_ragstatus,
         pm_approvedbudgeteur: formData.pm_approvedbudgeteur || 0,
-        pm_actualspendeur: formData.pm_actualspendeur || 0,
         pm_startdate: formData.pm_startdate || undefined,
         pm_enddate: formData.pm_enddate || undefined,
         pm_portfoliodescription: formData.pm_portfoliodescription || undefined,
@@ -305,17 +301,6 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                 size="small"
                 value={formData.pm_approvedbudgeteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_approvedbudgeteur: Number(e.target.value) }))}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Actual Spend (EUR)"
-                type="number"
-                fullWidth
-                size="small"
-                value={formData.pm_actualspendeur}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_actualspendeur: Number(e.target.value) }))}
                 slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>

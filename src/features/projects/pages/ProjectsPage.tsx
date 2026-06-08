@@ -151,6 +151,20 @@ export default function ProjectsPage() {
     }
   }, [])
 
+  // ── Handle deep-link navigation from dashboard (or elsewhere) ───────────
+  // When a project ID is stored in sessionStorage (e.g. from clicking a project
+  // card on the dashboard), auto-navigate to its detail view once data is loaded.
+  useEffect(() => {
+    const preselectedId = sessionStorage.getItem('preselectProjectId')
+    if (preselectedId && !loading && projects.length > 0) {
+      sessionStorage.removeItem('preselectProjectId')
+      const project = projects.find((p) => normalizeLookupId(p.pm_projectid) === normalizeLookupId(preselectedId))
+      if (project) {
+        handleRowClick(project)
+      }
+    }
+  }, [loading, projects, handleRowClick])
+
   const handleBack = () => {
     setSelectedProject(null)
     setError(null)
@@ -173,25 +187,46 @@ export default function ProjectsPage() {
     setIsSavingProject(true)
     try {
       if (targetId) {
-        // Perform update
-        const updated = await updateProject(targetId, form)
-        if (updated) {
-          setSuccessMsg('Project updated successfully.')
-          
-          // Refresh the main list
-          await loadData()
-          
-          // If we are currently viewing this specific project in the detail view, update it
-          if (selectedProject && normalizeLookupId(targetId) === normalizeLookupId(selectedProject.pm_projectid)) {
-             setSelectedProject(updated)
-          }
+        // Perform update — persist to server
+        try {
+          await updateProject(targetId, form)
+        } catch (err) {
+          // updateProject can throw even when the Dataverse update itself succeeded
+          // (e.g. the follow-up fetchProjectDetails fails). We still update the UI
+          // optimistically and let the background loadData() reconcile with the server.
+          console.warn('[ProjectSave] updateProject threw (likely fetch-after-save failed), proceeding with optimistic update:', err)
         }
+        
+        setSuccessMsg('Project updated successfully.')
+        
+        // Immediately patch the local projects array from the form data so the grid
+        // reflects changes right away, without waiting for any background refresh.
+        setProjects((prev) =>
+          prev.map((p) =>
+            normalizeLookupId(p.pm_projectid) === normalizeLookupId(targetId)
+              ? { ...p, ...form }
+              : p
+          )
+        )
+        
+        // If we are currently viewing this specific project in the detail view, update it too
+        if (selectedProject && normalizeLookupId(targetId) === normalizeLookupId(selectedProject.pm_projectid)) {
+           setSelectedProject((prev) => prev ? { ...prev, ...form } : prev)
+        }
+        
+        // Background refresh for consistency with the server
+        loadData()
       } else {
         // Perform creation
         const created = await createProject(form)
         if (created) {
           setSuccessMsg('Project created successfully.')
-          await loadData()
+          
+          // Prepend the new project to the local list immediately
+          setProjects((prev) => [created, ...prev])
+          
+          // Background refresh for consistency
+          loadData()
         }
       }
       

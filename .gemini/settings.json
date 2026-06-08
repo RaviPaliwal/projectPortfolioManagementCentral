@@ -26,6 +26,7 @@
     "desktop-commander": {
       "command": "npx",
       "args": [
+        "--yes",
         "--registry",
         "https://registry.npmjs.org",
         "@wonderwhy-er/desktop-commander@0.2.41"

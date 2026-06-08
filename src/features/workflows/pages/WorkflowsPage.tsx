@@ -57,14 +57,14 @@ const INSTANCE_STATUS_FILTERS: FilterOption[] = [
 
 const workflowExportColumns: ExportColumn[] = [
   { key: 'pm_workflowname', label: 'Workflow Name' },
-  { key: 'pm_entitytypename', label: 'Entity Type' },
+  { key: 'pm_module', label: 'Module' },
   { key: 'pm_workflowstatusname', label: 'Status' },
 ]
 const instanceExportColumns: ExportColumn[] = [
-  { key: 'pm_workflowname', label: 'Workflow' },
-  { key: 'pm_instanceidentifier', label: 'Instance' },
+  { key: 'pm_workflowlookupname', label: 'Workflow' },
+  { key: 'pm_instancename', label: 'Instance' },
   { key: 'pm_entityid', label: 'Entity ID' },
-  { key: 'pm_workflowstatusname', label: 'Status' },
+  { key: 'pm_statusname', label: 'Status' },
 ]
 const stepExportColumns: ExportColumn[] = [
   { key: 'pm_stepname', label: 'Step' },
@@ -158,13 +158,13 @@ export default function WorkflowsPage() {
   const kpiItems = useMemo((): KpiCardItem[] => {
     const totalTemplates = workflows.length
     const activeTemplates = workflows.filter((w) => w.pm_workflowstatus === 0 || w.pm_workflowstatus === '0').length
-    const activeInsts = instances.filter((i) => i.pm_workflowstatus === 1 || i.pm_workflowstatus === '1').length
-    const completedInsts = instances.filter((i) => i.pm_workflowstatus === 0 || i.pm_workflowstatus === '0').length
+    const activeInsts = instances.filter((i) => i.pm_status === 1 || i.pm_status === '1').length
+    const completedInsts = instances.filter((i) => i.pm_status === 0 || i.pm_status === '0').length
     return [
       { label: 'Workflow Templates', value: totalTemplates, subtitle: 'Defined workflows', icon: <AccountTreeIcon />, color: 'secondary.main' },
       { label: 'Active Templates', value: activeTemplates, subtitle: totalTemplates > 0 ? Math.round((activeTemplates / totalTemplates) * 100) + '% of templates' : 'No templates', icon: <PlayArrowIcon />, color: 'success.main' },
       { label: 'Active Instances', value: activeInsts, subtitle: 'Currently running', icon: <ScheduleIcon />, color: 'warning.main' },
-      { label: 'Completed Instances', value: completedInsts, subtitle: 'Successfully finished', icon: <CheckCircleIcon />, color: 'primary.main' },
+      { label: 'Completed Instances', value: completedInsts, subtitle: 'Successfully finished', icon: <CheckCircleIcon />, color: 'success.main' },
       { label: 'Step Templates', value: stepTemplates.length, subtitle: 'Configured steps', icon: <SettingsIcon />, color: 'secondary.main' },
     ]
   }, [workflows, instances, stepTemplates])
@@ -185,7 +185,7 @@ export default function WorkflowsPage() {
       switch (wfSort.field) {
         case 'name': cmp = (a.pm_workflowname ?? '').localeCompare(b.pm_workflowname ?? ''); break
         case 'status': cmp = String(a.pm_workflowstatus ?? '').localeCompare(String(b.pm_workflowstatus ?? '')); break
-        case 'entity': cmp = String((a as any).pm_entitytypename ?? '').localeCompare(String((b as any).pm_entitytypename ?? '')); break
+        case 'entity': cmp = String((a as any).pm_module ?? '').localeCompare(String((b as any).pm_module ?? '')); break
       }
       return wfSort.dir === 'asc' ? cmp : -cmp
     })
@@ -198,18 +198,18 @@ export default function WorkflowsPage() {
     if (instSearch.trim()) {
       const q = instSearch.toLowerCase()
       list = list.filter((i) =>
-        (i.pm_workflowname ?? '').toLowerCase().includes(q) ||
+        (i.pm_workflowlookupname ?? '').toLowerCase().includes(q) ||
         ((i as any).pm_initiatedby ?? '').toLowerCase().includes(q)
       )
     }
-    if (instStatusFilter) list = list.filter((i) => String(i.pm_workflowstatus ?? '') === instStatusFilter)
+    if (instStatusFilter) list = list.filter((i) => String(i.pm_status ?? '') === instStatusFilter)
     return [...list].sort((a, b) => {
       let cmp = 0
       switch (instSort.field) {
-        case 'workflow': cmp = (a.pm_workflowname ?? '').localeCompare(b.pm_workflowname ?? ''); break
+        case 'workflow': cmp = (a.pm_workflowlookupname ?? '').localeCompare(b.pm_workflowlookupname ?? ''); break
         case 'entity': cmp = String((a as any).pm_entityid ?? '').localeCompare(String((b as any).pm_entityid ?? '')); break
-        case 'status': cmp = String(a.pm_workflowstatus ?? '').localeCompare(String(b.pm_workflowstatus ?? '')); break
-        case 'date': cmp = String((a as any).pm_initiationdate ?? '').localeCompare(String((b as any).pm_initiationdate ?? '')); break
+        case 'status': cmp = String(a.pm_status ?? '').localeCompare(String(b.pm_status ?? '')); break
+        case 'date': cmp = String((a as any).pm_startdate ?? '').localeCompare(String((b as any).pm_startdate ?? '')); break
       }
       return instSort.dir === 'asc' ? cmp : -cmp
     })
@@ -432,14 +432,14 @@ export default function WorkflowsPage() {
                     sx={{ cursor: 'pointer', bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent', '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>{(inst.pm_workflowname ?? 'W').charAt(0).toUpperCase()}</Avatar>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{inst.pm_workflowname ?? 'Unnamed'}</Typography>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>{(inst.pm_workflowlookupname ?? 'W').charAt(0).toUpperCase()}</Avatar>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{inst.pm_workflowlookupname ?? inst.pm_instancename ?? 'Unnamed'}</Typography>
                       </Box>
                     </TableCell>
                     <TableCell><Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.xs }}>{(inst as any).pm_entityid ? ((inst as any).pm_entityid).substring(0, 8) + '...' : '\u2014'}</Typography></TableCell>
                     <TableCell><Typography variant="body2">{(inst as any).pm_initiatedby || '\u2014'}</Typography></TableCell>
-                    <TableCell align="center"><StatusTag label={INSTANCE_STATUS_LABELS[String(inst.pm_workflowstatus ?? '')] ?? 'Unknown'} color={INSTANCE_STATUS_COLORS[String(inst.pm_workflowstatus ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600 }} /></TableCell>
-                    <TableCell><Typography variant="body2" color="text.secondary">{formatDate((inst as any).pm_initiationdate)}</Typography></TableCell>
+                    <TableCell align="center"><StatusTag label={INSTANCE_STATUS_LABELS[String(inst.pm_status ?? '')] ?? 'Unknown'} color={INSTANCE_STATUS_COLORS[String(inst.pm_status ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600 }} /></TableCell>
+                    <TableCell><Typography variant="body2" color="text.secondary">{formatDate((inst as any).pm_startdate)}</Typography></TableCell>
                     <TableCell align="right">
                       <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' }) }} sx={{ borderRadius: 1.5 }}><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
                     </TableCell>

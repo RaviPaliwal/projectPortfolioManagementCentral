@@ -2,16 +2,46 @@ import type { PortfolioModel, ProjectModel, ProgrammeModel } from '@/types/datav
 
 export const unwrapList = <T>(result: any): T[] => {
   if (!result) return []
-  if ('value' in result) return result.value as T[]
-  if ('data' in result) return result.data as T[]
+  
+  // Handle SDK wrapper
+  if (typeof result === 'object' && 'success' in result) {
+    if (Array.isArray(result.data)) return result.data as T[]
+    if (Array.isArray(result.value)) return result.value as T[]
+    return []
+  }
+
+  // Handle OData/Standard wrapper
+  if ('value' in result && Array.isArray(result.value)) return result.value as T[]
+  if ('data' in result && Array.isArray(result.data)) return result.data as T[]
+  
   if (Array.isArray(result)) return result
   return []
 }
 
 export const unwrapSingle = <T>(result: any): T | null => {
   if (!result) return null
-  if ('value' in result) return result.value as T
-  if ('data' in result) return result.data as T
+  
+  // 1. Handle SDK wrapper { success: boolean, data?: any, value?: any, error?: any }
+  if (typeof result === 'object' && 'success' in result) {
+    if (result.success) {
+      if (result.data) return unwrapSingle<T>(result.data)
+      if (result.value) return unwrapSingle<T>(result.value)
+      return null // Success but no data (e.g. 204)
+    }
+    return null // failure
+  }
+
+  // 2. Handle OData/Internal wrappers
+  if (result.value && typeof result.value === 'object' && !Array.isArray(result.value)) return result.value as T
+  if (result.data && typeof result.data === 'object' && !Array.isArray(result.data)) return result.data as T
+  
+  // 3. If it's an array, it's not a single item (unless we take the first, but unwrapList should be used)
+  if (Array.isArray(result)) return result.length > 0 ? result[0] as T : null
+
+  // 4. Check for empty object
+  if (typeof result === 'object' && Object.keys(result).length === 0) return null
+
+  // 5. Return directly if it's the object itself
   return result as T
 }
 

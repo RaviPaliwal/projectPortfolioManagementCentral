@@ -1,7 +1,9 @@
 import React from 'react'
 import { Box, Paper, Typography } from '@mui/material'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { StatusChip, TabPanel } from '@/components/common'
 import type { ProjectModel } from '@/types/dataverse'
+import { navigateToProject } from '@/utils/navigation'
 
 interface PortfolioProjectsTabProps {
   projects: ProjectModel[]
@@ -19,11 +21,21 @@ export const PortfolioProjectsTab: React.FC<PortfolioProjectsTabProps> = ({
       {projects.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {projects.map((proj) => (
-            <Paper key={proj.pm_projectid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+            <Paper
+              key={proj.pm_projectid}
+              variant="outlined"
+              sx={{
+                p: 2, borderRadius: 1.5, cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+              }}
+              onClick={() => proj.pm_projectid && navigateToProject(proj.pm_projectid)}
+            >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     {proj.pm_projectname ?? 'Untitled Project'}
+                    <OpenInNewIcon sx={{ fontSize: 14, color: 'primary.main', opacity: 0.6 }} />
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {proj.pm_projectcode ?? '—'}

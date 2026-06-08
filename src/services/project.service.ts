@@ -109,17 +109,57 @@ export async function fetchMyActiveProjects(): Promise<ProjectModel[]> {
 }
 
 export async function fetchProjectDetails(projectId: string): Promise<ProjectModel | null> {
-  const result = await Pm_projectsService.get(projectId, {
-    select: [
-      'pm_projectid', 'pm_projectname', 'pm_projectcode',
-      '_pm_portfolio_value', '_pm_programme_value',
-      '_pm_projectmanager_value', 'pm_projectmanagername', 'pm_projectphase', 'pm_ragstatus',
-      'pm_plannedstartdate', 'pm_plannedenddate',
-      'pm_actualstartdate', 'pm_actualenddate',
-      'pm_portfolioname', 'pm_programmename',
-    ],
-  })
-  return mapProject(unwrapSingle<Pm_projects>(result) ?? ({} as Pm_projects))
+  const normalizedId = normalizeLookupId(projectId)
+  if (!normalizedId) return null
+
+  try {
+    // Incrementally adding fields to find the one breaking the query
+    const result = await Pm_projectsService.get(normalizedId, {
+      select: [
+        'pm_projectid', 'pm_projectname', 'pm_projectcode',
+        '_pm_portfolio_value', '_pm_programme_value',
+        '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus',
+        'pm_plannedstartdate', 'pm_plannedenddate',
+        'pm_approvedbudgeteur', 'pm_actualcosteur',
+        'pm_percentcomplete', 'pm_businessunit'
+      ]
+    })
+    
+    if (result && typeof result === 'object' && 'success' in result && result.success === false) {
+       console.error('[dataverseService] fetchProjectDetails API Error:', result)
+       return null
+    }
+
+    const item = unwrapSingle<Pm_projects>(result)
+    
+    if (!item || !item.pm_projectid) {
+      try { console.warn('[dataverseService] fetchProjectDetails: record not found or invalid response for ID:', normalizedId, result) } catch (e) {}
+      return null
+    }
+    
+    const mapped = mapProject(item)
+    
+    // Resolve lookup names safely
+    try {
+      if (mapped._pm_portfolio_value) {
+        const pRes = await Pm_portfoliosService.get(mapped._pm_portfolio_value, { select: ['pm_portfolioname'] })
+        const pItem = unwrapSingle<any>(pRes)
+        if (pItem?.pm_portfolioname) mapped.pm_portfolioname = pItem.pm_portfolioname
+      }
+      if (mapped._pm_programme_value) {
+        const prRes = await Pm_programmesService.get(mapped._pm_programme_value, { select: ['pm_programmename'] })
+        const prItem = unwrapSingle<any>(prRes)
+        if (prItem?.pm_programmename) mapped.pm_programmename = prItem.pm_programmename
+      }
+    } catch (e) {
+      // Ignore lookup resolution failures
+    }
+    
+    return mapped
+  } catch (err) {
+    try { console.error('[dataverseService] fetchProjectDetails exception for ID:', normalizedId, err) } catch (e) {}
+    return null
+  }
 }
 
 export async function fetchProjectsFull(): Promise<ProjectModel[]> {
@@ -220,23 +260,57 @@ export async function createProject(payload: Partial<ProjectModel>): Promise<Pro
 }
 
 export async function updateProject(id: string, changes: Partial<ProjectModel>): Promise<ProjectModel | null> {
+  const normalizedId = normalizeLookupId(id)
+  if (!normalizedId) return null
+
   const cleanPayload: Record<string, any> = {}
-  const excludeFields = [
-    'pm_projectid', '_pm_portfolio_value', '_pm_programme_value', '_pm_projectmanager_value',
-    'pm_portfolioname', 'pm_programmename', 'pm_projectmanagername', 'pm_projectmanager'
+  // Only include fields that are in Pm_projectsBase (the update schema).
+  // Exclude computed/display-only fields that come from the initialData spread in the form
+  // and would cause API errors if sent back during an update.
+  const exclude = [
+    '_pm_portfolio_value', '_pm_programme_value',
+    'pm_projectmanager', 'pm_projectid',
+    '_pm_projectmanager_value',
+    'pm_projectmanagername',
+    'pm_portfolioname',
+    'pm_programmename',
   ]
+  
   for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null && !excludeFields.includes(key)) {
+    if (value !== undefined && value !== null && value !== '' && !exclude.includes(key)) {
       cleanPayload[key] = value
     }
   }
-  if (changes._pm_portfolio_value) cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${normalizeLookupId(changes._pm_portfolio_value)})`
-  if (changes._pm_programme_value) cleanPayload['pm_programme@odata.bind'] = `/pm_programmes(${normalizeLookupId(changes._pm_programme_value)})`
-  if (changes.pm_projectmanager) cleanPayload['pm_ProjectManager@odata.bind'] = `/systemusers(${normalizeLookupId(changes.pm_projectmanager)})`
 
-  const result = await Pm_projectsService.update(id, cleanPayload as any)
-  const item = unwrapSingle<Pm_projects>(result)
-  return item ? mapProject(item) : null
+  // Handle lookup bindings — always set them so clearing a lookup works too.
+  // If the value is empty/falsy, set the odata.bind to null to clear it.
+  if (changes._pm_portfolio_value !== undefined) {
+    cleanPayload['pm_portfolio@odata.bind'] = changes._pm_portfolio_value
+      ? `/pm_portfolios(${normalizeLookupId(changes._pm_portfolio_value)})`
+      : null
+  }
+  if (changes._pm_programme_value !== undefined) {
+    cleanPayload['pm_programme@odata.bind'] = changes._pm_programme_value
+      ? `/pm_programmes(${normalizeLookupId(changes._pm_programme_value)})`
+      : null
+  }
+  if (changes.pm_projectmanager !== undefined) {
+    cleanPayload['pm_ProjectManager@odata.bind'] = changes.pm_projectmanager
+      ? `/systemusers(${normalizeLookupId(changes.pm_projectmanager)})`
+      : null
+  }
+
+  try {
+    const result = await Pm_projectsService.update(normalizedId, cleanPayload as any)
+    try { console.debug('[dataverseService] updateProject API response:', result) } catch (e) {}
+    
+    // Dataverse update often returns empty. We ALWAYS fetch fresh full details 
+    // to ensure the UI gets the complete record with all computed/lookup fields.
+    return fetchProjectDetails(normalizedId)
+  } catch (err) {
+    try { console.error('[dataverseService] updateProject failed:', err) } catch (e) {}
+    throw err
+  }
 }
 
 export async function deleteProject(id: string): Promise<void> {
@@ -395,7 +469,12 @@ export async function recalculateProjectFinancials(projectId: string): Promise<P
       pm_approvedbudgeteur: totals.budget,
       pm_actualcosteur: totals.actual,
     } as any)
-    return mapProject(unwrapSingle<Pm_projects>(updated)!)
+    
+    const item = unwrapSingle<Pm_projects>(updated)
+    if (!item) {
+      return fetchProjectDetails(projectId)
+    }
+    return mapProject(item)
   } catch (err) {
     console.error('[dataverseService] recalculateProjectFinancials failed:', err)
     return null

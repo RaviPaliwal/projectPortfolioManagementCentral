@@ -22,6 +22,7 @@ import {
 } from '@mui/material'
 import ErrorIcon from '@mui/icons-material/Error'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import AddIcon from '@mui/icons-material/Add'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
@@ -57,6 +58,8 @@ import type { KpiCardItem, FilterOption } from '@/components/common'
 
 // Sub-components
 import { ProgrammeFormDialog } from '../components/ProgrammeFormDialog'
+import { navigateToProject, navigateToRisk, navigateToIssue } from '@/utils/navigation'
+import { normalizeLookupId } from '@/services'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
@@ -166,6 +169,18 @@ export default function ProgrammesPage() {
     setDetailData(null)
     setDetailTab(0)
   }, [])
+
+  // Auto-navigate to preselected programme from cross-linking
+  useEffect(() => {
+    if (!loading && programmes.length > 0) {
+      const preselectedId = sessionStorage.getItem('preselectProgrammeId')
+      if (preselectedId) {
+        sessionStorage.removeItem('preselectProgrammeId')
+        const programme = programmes.find(p => normalizeLookupId(p.pm_programmeid) === normalizeLookupId(preselectedId))
+        if (programme?.pm_programmeid) openDetail(programme.pm_programmeid)
+      }
+    }
+  }, [loading, programmes, openDetail])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSuccess = (freshProgrammes: ProgrammeModel[]) => {
@@ -335,8 +350,13 @@ export default function ProgrammesPage() {
                     </TableHead>
                     <TableBody>
                       {detailProjects.map((proj) => (
-                        <TableRow key={proj.pm_projectid} hover>
-                          <TableCell><Typography variant="body2" sx={{ fontWeight: 600 }}>{proj.pm_projectname}</Typography></TableCell>
+                        <TableRow key={proj.pm_projectid} hover sx={{ cursor: 'pointer' }} onClick={() => proj.pm_projectid && navigateToProject(proj.pm_projectid)}>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              {proj.pm_projectname}
+                              <OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} />
+                            </Typography>
+                          </TableCell>
                           <TableCell><StatusChip status={proj.pm_projectphase} type="phase" size="small" /></TableCell>
                           <TableCell><StatusChip status={proj.pm_ragstatus} type="rag" size="small" /></TableCell>
                           <TableCell align="right">{proj.pm_percentcomplete}%</TableCell>
@@ -375,16 +395,16 @@ export default function ProgrammesPage() {
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>Escalated Risks</Typography>
                   {detailRisks.length > 0 ? detailRisks.map(r => (
-                    <Paper key={r.pm_riskid} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'error.main' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{r.pm_risktitle}</Typography>
+                    <Paper key={r.pm_riskid} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'error.main', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }} onClick={() => r.pm_riskid && navigateToRisk(r.pm_riskid)}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>{r.pm_risktitle}<OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} /></Typography>
                     </Paper>
                   )) : <Typography variant="caption" color="text.secondary">No risks.</Typography>}
                 </Box>
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>Issues</Typography>
                   {detailIssues.length > 0 ? detailIssues.map(i => (
-                    <Paper key={i.pm_issueid} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{i.pm_issuetitle}</Typography>
+                    <Paper key={i.pm_issueid} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'warning.main', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }} onClick={() => i.pm_issueid && navigateToIssue(i.pm_issueid)}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>{i.pm_issuetitle}<OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} /></Typography>
                     </Paper>
                   )) : <Typography variant="caption" color="text.secondary">No issues.</Typography>}
                 </Box>

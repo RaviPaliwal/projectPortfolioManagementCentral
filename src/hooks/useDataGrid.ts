@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
 
 export interface SortState<T> {
   field: keyof T | string
@@ -19,6 +19,18 @@ export function useDataGrid<T>(data: T[], options: UseDataGridOptions<T> = {}) {
     searchFields = [],
     filterFn,
   } = options
+
+  // Stabilize consumer-provided references to prevent infinite re-render loops
+  const stableSearchFieldsRef = useRef(searchFields)
+  const stableFilterFnRef = useRef(filterFn)
+  // Update refs when values actually change (by value, not reference)
+  if (searchFields.length !== stableSearchFieldsRef.current.length ||
+      searchFields.some((f, i) => f !== stableSearchFieldsRef.current[i])) {
+    stableSearchFieldsRef.current = searchFields
+  }
+  if (filterFn !== stableFilterFnRef.current) {
+    stableFilterFnRef.current = filterFn
+  }
 
   const [searchQuery, setSearchQuery] = useState('')
   const [sort, setSort] = useState<SortState<T>>(initialSort)
@@ -46,14 +58,17 @@ export function useDataGrid<T>(data: T[], options: UseDataGridOptions<T> = {}) {
     setPage(0)
   }, [])
 
+  const stableSearchFields = stableSearchFieldsRef.current
+  const stableFilterFn = stableFilterFnRef.current
+
   const filteredData = useMemo(() => {
     let result = [...data]
 
     // Search
-    if (searchQuery.trim() && searchFields.length > 0) {
+    if (searchQuery.trim() && stableSearchFields.length > 0) {
       const q = searchQuery.toLowerCase()
       result = result.filter((item) =>
-        searchFields.some((field) => {
+        stableSearchFields.some((field) => {
           const val = item[field]
           return val != null && String(val).toLowerCase().includes(q)
         })
@@ -61,8 +76,8 @@ export function useDataGrid<T>(data: T[], options: UseDataGridOptions<T> = {}) {
     }
 
     // Custom Filter
-    if (filterFn) {
-      result = result.filter(filterFn)
+    if (stableFilterFn) {
+      result = result.filter(stableFilterFn)
     }
 
     // Sort
@@ -86,7 +101,7 @@ export function useDataGrid<T>(data: T[], options: UseDataGridOptions<T> = {}) {
     }
 
     return result
-  }, [data, searchQuery, searchFields, filterFn, sort])
+  }, [data, searchQuery, stableSearchFields, stableFilterFn, sort])
 
   const paginatedData = useMemo(() => {
     const start = page * rowsPerPage

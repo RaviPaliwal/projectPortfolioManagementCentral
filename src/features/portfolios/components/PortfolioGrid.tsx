@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import {
   Paper,
   Table,
@@ -55,6 +55,11 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
+  const gridOptions = useMemo(() => ({
+    initialSort: { field: 'pm_portfolioname' as const, dir: 'asc' as const },
+    searchFields: ['pm_portfolioname', 'pm_ownerlookupname', 'pm_businessunit'] as Array<keyof PortfolioModel>,
+  }), [])
+
   const {
     searchQuery,
     setSearchQuery,
@@ -68,10 +73,7 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
     paginatedData,
     filteredCount,
     totalCount,
-  } = useDataGrid<PortfolioModel>(portfolios, {
-    initialSort: { field: 'pm_portfolioname', dir: 'asc' },
-    searchFields: ['pm_portfolioname', 'pm_ownerlookupname', 'pm_businessunit'],
-  })
+  } = useDataGrid<PortfolioModel>(portfolios, gridOptions)
 
   useEffect(() => {
     if (onFilteredDataChange) {
