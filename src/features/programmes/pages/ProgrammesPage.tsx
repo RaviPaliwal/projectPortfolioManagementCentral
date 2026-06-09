@@ -332,6 +332,63 @@ export default function ProgrammesPage() {
                     <Typography variant="body2" color="text.secondary">{prog?.pm_programmedescription || 'No description provided.'}</Typography>
                   </Paper>
                 </Grid>
+
+                {/* Linked Projects Summary */}
+                <Grid size={{ xs: 12 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AccountTreeIcon sx={{ fontSize: 18 }} /> Linked Projects ({detailProjects.length})
+                    </Typography>
+                    {detailProjects.length > 0 ? (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {detailProjects.slice(0, 10).map((proj) => (
+                          <Paper
+                            key={proj.pm_projectid}
+                            variant="outlined"
+                            sx={{
+                              p: 1.5, borderRadius: 1.5, cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+                            }}
+                            onClick={() => proj.pm_projectid && navigateToProject(proj.pm_projectid)}
+                          >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  {proj.pm_projectname}
+                                  <OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} />
+                                </Typography>
+                                {proj.pm_projectcode && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                                    {proj.pm_projectcode}
+                                  </Typography>
+                                )}
+                              </Box>
+                              <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center', flexShrink: 0 }}>
+                                <StatusChip status={proj.pm_projectphase} type="phase" size="small" />
+                                <StatusChip status={proj.pm_ragstatus} type="rag" size="small" />
+                                {proj.pm_percentcomplete != null && (
+                                  <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace', color: proj.pm_percentcomplete >= 100 ? 'success.main' : 'text.secondary' }}>
+                                    {proj.pm_percentcomplete}%
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Box>
+                          </Paper>
+                        ))}
+                        {detailProjects.length > 10 && (
+                          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', mt: 0.5 }}>
+                            + {detailProjects.length - 10} more project{detailProjects.length - 10 !== 1 ? 's' : ''} — switch to the Projects tab for the full list
+                          </Typography>
+                        )}
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+                        No projects linked to this programme.
+                      </Typography>
+                    )}
+                  </Paper>
+                </Grid>
               </Grid>
             </TabPanel>
 

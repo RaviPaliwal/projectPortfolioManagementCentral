@@ -40,6 +40,7 @@ import Filter1Icon from '@mui/icons-material/Filter1'
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
 import GavelIcon from '@mui/icons-material/Gavel'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
+import TimelineIcon from '@mui/icons-material/Timeline'
 import {
   fetchGateReviews,
   createGateReview,
@@ -48,7 +49,7 @@ import {
 } from '@/services'
 import type { GateReviewModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon, Button } from '@/components/common'
+import { PageHeader, KpiCardRow, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon, Button, WorkflowMilestone } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { PmoReadinessTaskModal, FinancialReviewTaskModal, BoardDecisionTaskModal } from '../components'
@@ -411,6 +412,17 @@ export default function GateReviewsPage() {
                 </Box>
               </Grid>
             </Grid>
+
+            <Divider sx={{ my: 3 }} />
+
+            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <TimelineIcon sx={{ fontSize: 20 }} /> Approval Workflow Timeline
+            </Typography>
+
+            <WorkflowMilestone
+              moduleName="GateReview"
+              entityId={selectedReview.pm_projectgatereviewid!}
+            />
 
             <Divider sx={{ my: 3 }} />
 

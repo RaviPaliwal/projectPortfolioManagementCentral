@@ -118,7 +118,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
 
       <PageHeader
         title={project.pm_projectname ?? 'Project Detail'}
-        subtitle={project.pm_projectmanager ? `Manager: ${project.pm_projectmanager}` : project.pm_projectcode ? `Code: ${project.pm_projectcode}` : undefined}
+        subtitle={project.pm_projectmanager ? `Manager: ${project.pm_projectmanagername}` : project.pm_projectcode ? `Code: ${project.pm_projectcode}` : undefined}
         actionElement={
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
             <ActionIcon

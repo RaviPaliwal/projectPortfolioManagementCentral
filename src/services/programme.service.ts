@@ -115,7 +115,12 @@ export interface ProgrammeDetail {
 }
 
 export async function fetchProgrammeDetails(programmeId: string): Promise<ProgrammeDetail> {
-  const progResult = await Pm_programmesService.get(programmeId, {
+  const normalizedId = normalizeLookupId(programmeId)
+  if (!normalizedId) {
+    return { programme: null, projects: [], risks: [], issues: [] }
+  }
+
+  const progResult = await Pm_programmesService.get(normalizedId, {
     select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', '_pm_programmemanager_value', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'],
   })
   console.log('fetchProgrammeDetails - raw programme result:', progResult)
@@ -140,22 +145,23 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
 
   const [projectsResult, risksResult, issuesResult] = await Promise.all([
     Pm_projectsService.getAll({
-      filter: `_pm_programme_value eq '${programmeId}'`,
-      select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', 'pm_projectmanager', 'pm_projectphase', 'pm_ragstatus', 'pm_percentcomplete', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudgeteur', 'pm_actualcosteur'],
+      filter: `_pm_programme_value eq '${normalizedId}'`,
+      select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_percentcomplete', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudgeteur', 'pm_actualcosteur'],
       top: 200,
     }),
+  
     Pm_risksService.getAll({
-      filter: `_pm_programmefk_value eq '${programmeId}'`,
+      filter: `_pm_programmefk_value eq '${normalizedId}'`,
       select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskowner', 'pm_riskstatus', 'pm_escalated', 'pm_identifieddate', 'pm_targetclosedate', 'pm_inherentscore', 'pm_residualscore'],
       top: 200,
     }),
     Pm_issuesService.getAll({
-      filter: `_pm_programmefk_value eq '${programmeId}'`,
+      filter: `_pm_programmefk_value eq '${normalizedId}'`,
       select: ['pm_issueid', 'pm_issuetitle', 'pm_issuedescription', 'pm_issuecategory', 'pm_ragstatus', 'pm_issueowner', 'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel', 'pm_dateraised', 'pm_targetresolutiondate'],
       top: 200,
     }),
   ])
-
+  console.log('fetchProgrammeDetails - raw projects result:', projectsResult)
   const mapRisk = (item: Pm_risks): RiskModel => ({
     pm_riskid: item.pm_riskid,
     pm_risktitle: item.pm_risktitle,

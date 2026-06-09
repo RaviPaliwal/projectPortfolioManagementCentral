@@ -36,7 +36,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({ project 
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                 Project Manager
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>{project.pm_projectmanager || 'Unassigned'}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>{project.pm_projectmanagername || 'Unassigned'}</Typography>
             </Paper>
             <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 1.5 }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, fontSize: fontSizes.xs, textTransform: 'uppercase', letterSpacing: 0.3 }}>
