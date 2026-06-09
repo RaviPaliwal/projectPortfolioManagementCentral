@@ -26,6 +26,7 @@ import {
 } from '@/services'
 import type { ProjectMilestoneModel, RiskModel, IssueModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 
 interface SubDialogProps {
   open: boolean
@@ -580,8 +581,8 @@ export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, proj
 
       if (createdReview?.pm_projectgatereviewid) {
         try {
-          // Gate reviews typically map directly to the 'GateReview' module in the workflow engine
-          await startWorkflowForEntity('default-template', createdReview.pm_projectgatereviewid, 'GateReview', 'System')
+          // Gate reviews typically map directly to the GateReview module in the workflow engine
+          await startWorkflowForEntity('default-template', createdReview.pm_projectgatereviewid, MODULE_NAMES.GATE_REVIEWS.value, 'System')
           console.log(`[GateReviewDialog] Successfully initiated workflow for gate review ${createdReview.pm_projectgatereviewid}`)
         } catch (wfErr) {
           console.error('[GateReviewDialog] Failed to initiate workflow:', wfErr)

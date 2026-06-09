@@ -67,15 +67,14 @@ const instanceExportColumns: ExportColumn[] = [
   { key: 'pm_statusname', label: 'Status' },
 ]
 const stepExportColumns: ExportColumn[] = [
-  { key: 'pm_stepname', label: 'Step' },
-  { key: 'pm_steporder', label: 'Order' },
+  { key: 'pm_steporder', label: 'Step #' },
   { key: 'pm_approvername', label: 'Approver' },
-  { key: 'pm_decisionstatusname', label: 'Decision' },
+  { key: 'pm_decisionstatus', label: 'Decision' },
 ]
 
 type WfSortField = 'name' | 'status' | 'entity'
 type InstSortField = 'workflow' | 'entity' | 'status' | 'date'
-type StepSortField = 'name' | 'order' | 'approver' | 'decision'
+type StepSortField = 'order' | 'approver' | 'decision'
 type SortDir = 'asc' | 'desc'
 interface SortState<T> { field: T; dir: SortDir }
 
@@ -222,14 +221,12 @@ export default function WorkflowsPage() {
     if (stepSearch.trim()) {
       const q = stepSearch.toLowerCase()
       list = list.filter((s) =>
-        (s.pm_stepname ?? '').toLowerCase().includes(q) ||
         (s.pm_approvername ?? '').toLowerCase().includes(q)
       )
     }
     return [...list].sort((a, b) => {
       let cmp = 0
       switch (stepSort.field) {
-        case 'name': cmp = (a.pm_stepname ?? '').localeCompare(b.pm_stepname ?? ''); break
         case 'order': cmp = (a.pm_steporder ?? 0) - (b.pm_steporder ?? 0); break
         case 'approver': cmp = (a.pm_approvername ?? '').localeCompare(b.pm_approvername ?? ''); break
         case 'decision': cmp = String(a.pm_decisionstatus ?? '').localeCompare(String(b.pm_decisionstatus ?? '')); break
@@ -469,8 +466,7 @@ export default function WorkflowsPage() {
             emptyTitle={!selectedInstanceId ? 'Select an instance to view its approval steps.' : (stepSearch ? 'No steps match.' : 'No approval steps found.')}>
             <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
               {renderTableHeader([
-                { label: 'Step Name', sortable: true, active: stepSort.field === 'name', dir: stepSort.dir, onClick: () => handleStepSort('name') },
-                { label: 'Order', sortable: true, active: stepSort.field === 'order', dir: stepSort.dir, onClick: () => handleStepSort('order'), align: 'center' },
+                { label: 'Step #', sortable: true, active: stepSort.field === 'order', dir: stepSort.dir, onClick: () => handleStepSort('order'), align: 'center' },
                 { label: 'Approver', sortable: true, active: stepSort.field === 'approver', dir: stepSort.dir, onClick: () => handleStepSort('approver') },
                 { label: 'Decision', sortable: true, active: stepSort.field === 'decision', dir: stepSort.dir, onClick: () => handleStepSort('decision'), align: 'center' },
                 { label: 'Decision Date' },
@@ -479,13 +475,12 @@ export default function WorkflowsPage() {
                 {paginatedSteps.map((step, idx) => (
                   <TableRow key={step.pm_workflowapprovalstepid} hover
                     sx={{ bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent', '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>{(step.pm_stepname ?? 'S').charAt(0).toUpperCase()}</Avatar>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{step.pm_stepname ?? 'Unnamed Step'}</Typography>
+                    <TableCell align="center">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'center' }}>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>{step.pm_steporder ?? '?'}</Avatar>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Step {step.pm_steporder ?? '?'}</Typography>
                       </Box>
                     </TableCell>
-                    <TableCell align="center"><StatusTag label={'#' + (step.pm_steporder ?? '\u2014')} size="small" variant="outlined" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }} /></TableCell>
                     <TableCell><Typography variant="body2">{step.pm_approvername || '\u2014'}</Typography></TableCell>
                     <TableCell align="center"><StatusTag label={APPROVAL_STATUS_LABELS[String(step.pm_decisionstatus ?? '')] ?? 'Unknown'} color={APPROVAL_STATUS_COLORS[String(step.pm_decisionstatus ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600 }} /></TableCell>
                     <TableCell><Typography variant="body2" color="text.secondary">{formatDate(step.pm_decisiondate)}</Typography></TableCell>

@@ -21,7 +21,7 @@ import {
   rejectWorkflowStep,
 } from '@/services'
 import type { WorkflowApprovalStepModel } from '@/types/dataverse'
-import { PageHeader, TableShell, TableFooter, StatusTag } from '@/components/common'
+import { PageHeader, TableShell, TableFooter, StatusTag, TaskLink } from '@/components/common'
 
 const APPROVAL_STATUS_LABELS: Record<string, string> = { '0': 'Approved', '1': 'Pending' }
 const APPROVAL_STATUS_COLORS: Record<string, 'success' | 'warning'> = { '0': 'success', '1': 'warning' }
@@ -29,7 +29,7 @@ const APPROVAL_STATUS_COLORS: Record<string, 'success' | 'warning'> = { '0': 'su
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 const formatDate = (d?: string | null): string => d ? dateFormatter.format(new Date(d)) : '—'
 
-type SortField = 'step' | 'order' | 'workflow' | 'entity' | 'due' | 'assigned'
+type SortField = 'order' | 'workflow' | 'entity' | 'due' | 'assigned'
 type SortDir = 'asc' | 'desc'
 
 interface SortState { field: SortField; dir: SortDir }
@@ -88,7 +88,6 @@ export default function PendingApprovalsPage() {
       const q = searchQuery.toLowerCase()
       list = list.filter(
         (s) =>
-          (s.pm_stepname ?? '').toLowerCase().includes(q) ||
           ((s as any).pm_workflowinstancelookupname ?? '').toLowerCase().includes(q) ||
           (s.pm_approvername ?? '').toLowerCase().includes(q) ||
           ((s as any).pm_assigneedisplayname ?? '').toLowerCase().includes(q)
@@ -97,9 +96,6 @@ export default function PendingApprovalsPage() {
     return [...list].sort((a, b) => {
       let cmp = 0
       switch (sort.field) {
-        case 'step':
-          cmp = (a.pm_stepname ?? '').localeCompare(b.pm_stepname ?? '')
-          break
         case 'order':
           cmp = (a.pm_steporder ?? 0) - (b.pm_steporder ?? 0)
           break
@@ -227,11 +223,11 @@ export default function PendingApprovalsPage() {
             <TableHead>
               <TableRow>
                 {([
-                  { field: 'step' as SortField, label: 'Step Name' },
-                  { field: 'order' as SortField, label: 'Order', align: 'center' as const },
+                  { field: 'order' as SortField, label: 'Step #', align: 'center' as const },
                   { field: 'workflow' as SortField, label: 'Workflow' },
                   { field: 'due' as SortField, label: 'Due Date' },
                   { field: 'assigned' as SortField, label: 'Assigned To' },
+                  { label: 'Form' },
                   { label: '', align: 'right' as const },
                 ]).map((col, idx) => (
                   <TableCell
@@ -296,11 +292,11 @@ export default function PendingApprovalsPage() {
                             fontWeight: 700,
                           }}
                         >
-                          {(step.pm_stepname ?? 'S').charAt(0).toUpperCase()}
+                          {step.pm_steporder ?? '?'}
                         </Avatar>
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {step.pm_stepname ?? 'Unnamed Step'}
+                            Step {step.pm_steporder ?? '?'}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {(step as any).pm_workflowinstancelookupname ?? '—'}
@@ -308,14 +304,7 @@ export default function PendingApprovalsPage() {
                         </Box>
                       </Box>
                     </TableCell>
-                    <TableCell align="center">
-                      <StatusTag
-                        label={'#' + (step.pm_steporder ?? '—')}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}
-                      />
-                    </TableCell>
+
                     <TableCell>
                       <Typography variant="body2">
                         {(step as any).pm_workflowinstancelookupname || '—'}
@@ -353,6 +342,18 @@ export default function PendingApprovalsPage() {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">{step.pm_approvername || step.pm_assigneedisplayname || '—'}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      {step.pm_workflowapprovalstepid ? (
+                        <TaskLink
+                          stepId={step.pm_workflowapprovalstepid}
+                          variant="chip"
+                          label="Open Form"
+                          buttonProps={{ disabled: actionLoading === step.pm_workflowapprovalstepid }}
+                        />
+                      ) : (
+                        <Typography variant="caption" color="text.disabled">—</Typography>
+                      )}
                     </TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
@@ -417,7 +418,7 @@ export default function PendingApprovalsPage() {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Provide a reason for rejecting <strong>{rejectDialog.step?.pm_stepname}</strong>.
+            Provide a reason for rejecting this approval step.
           </Typography>
           <TextField
             label="Rejection Reason"

@@ -17,6 +17,7 @@ import type {
   WorkflowStepTemplateModel,
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from '@/services/common'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 
 // ─── Mappers ────────────────────────────────────────────────────────────
 
@@ -39,43 +40,38 @@ export const mapWorkflowInstance = (item: Pm_workflowinstances): WorkflowInstanc
   return {
     pm_workflowinstanceid: item.pm_workflowinstanceid,
     pm_instancename: item.pm_instancename,
-    pm_workflowlookupname: item.pm_workflowlookupname,
-    pm_workflowtemplate: item.pm_workflowtemplate,
+    pm_workflowlookupname: (item as any)['_pm_workflowlookup_value@OData.Community.Display.V1.FormattedValue'],
     pm_entityid: item.pm_entityid,
     pm_entityname: item.pm_entityname,
     pm_entitytype: item.pm_entitytype,
-    pm_initiatedby: item.pm_initiatedby,
+    pm_initiatedby: (item as any)['_pm_initiatedbylookup_value@OData.Community.Display.V1.FormattedValue'],
     pm_status: item.pm_status,
-    pm_statusname: item.pm_statusname,
     pm_startdate: item.pm_startdate,
     pm_completeddate: item.pm_completeddate,
     pm_currentstep: item.pm_currentstep,
-    pm_sladuedate: item.pm_sladuedate,
     _pm_workflowlookup_value: item._pm_workflowlookup_value,
     statecode: item.statecode,
   }
 }
 
 export const mapWorkflowApprovalStep = (item: Pm_workflowapprovalsteps): WorkflowApprovalStepModel => {
-  const raw = item as any
   return {
     pm_workflowapprovalstepid: item.pm_workflowapprovalstepid,
-    pm_stepname: item.pm_stepname,
     pm_steporder: item.pm_steporder,
     pm_approvername: item.pm_approvername,
     pm_assigneetype: item.pm_assigneetype,
     pm_assigneedisplayname: item.pm_assigneedisplayname,
     pm_decisionstatus: item.pm_decisionstatus,
-    pm_decisionstatusname: item.pm_decisionstatusname ?? raw.pm_decisionstatusname,
     pm_decisiondate: item.pm_decisiondate,
     pm_decisionnotes: item.pm_decisionnotes,
     pm_duedate: item.pm_duedate,
     pm_isparallelstep: item.pm_isparallelstep,
     pm_notificationtimestamp: item.pm_notificationtimestamp,
-    _pm_workflowinstance_value: item._pm_workflowinstancelookup_value ?? raw._pm_workflowinstance_value,
+    _pm_workflowinstance_value: item._pm_workflowinstancelookup_value,
     _pm_workflowinstancelookup_value: item._pm_workflowinstancelookup_value,
     _pm_workflowtemplate_value: item._pm_workflowtemplate_value,
     statecode: item.statecode,
+    pm_stepname: item.pm_stepname,
   }
 }
 
@@ -233,23 +229,90 @@ export async function deleteWorkflowStepTemplate(id: string): Promise<void> {
   await Pm_workflowsteptemplatesService.delete(id)
 }
 
+export async function fetchStepTemplateById(id: string): Promise<WorkflowStepTemplateModel | null> {
+  try {
+    console.debug('[dataverseService] fetchStepTemplateById — template ID:', id)
+    const result = await Pm_workflowsteptemplatesService.get(id, {
+      select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assigneeid', 'pm_description', 'pm_sladays', 'new_formkey', '_pm_workflowlookup_value'],
+    })
+    console.debug('[dataverseService] fetchStepTemplateById — raw result:', JSON.stringify(result))
+    const item = unwrapSingle<Pm_workflowsteptemplates>(result)
+    console.debug('[dataverseService] fetchStepTemplateById — unwrapped:', item ? 'found' : 'null')
+    return item ? mapWorkflowStepTemplate(item) : null
+  } catch (err) {
+    console.error('[dataverseService] fetchStepTemplateById failed:', err)
+    return null
+  }
+}
+
+/**
+ * Custom event dispatched after a successful workflow decision submission.
+ * WorkflowMilestone listens for this to refresh its data automatically.
+ */
+export const WORKFLOW_DECISION_EVENT = 'workflow:decision-submitted'
+
+/**
+ * Submit a decision for a workflow approval step.
+ * Updates the step status in Dataverse and triggers the WorkflowRoutingHandler flow.
+ * On success, dispatches a custom event so milestone components refresh.
+ */
+export async function submitWorkflowDecision(
+  stepId: string,
+  decision: number,
+  decisionNotes?: string,
+): Promise<boolean> {
+  try {
+    const now = new Date().toISOString()
+
+    // Update step decision status in Dataverse
+    await Pm_workflowapprovalstepsService.update(stepId, {
+      pm_decisionstatus: decision,
+      pm_decisiondate: now,
+      pm_decisionnotes: decisionNotes || undefined,
+    } as any)
+
+    // Trigger workflowrouter flow
+    const result = await WorkflowRoutingHandlerService.Run({
+      text_2: stepId,
+      text_3: '{}', // Teams config — empty per user request
+      text_4: '{}', // Email config — empty per user request
+      number: decision,
+      text: decisionNotes || '',
+    })
+
+    const success = result?.success !== false
+
+    if (success) {
+      // Dispatch event so all WorkflowMilestone components on the page refresh
+      window.dispatchEvent(new CustomEvent(WORKFLOW_DECISION_EVENT, {
+        detail: { stepId, decision },
+      }))
+    }
+
+    console.debug('[WorkflowEngine] workflowrouter triggered:', { stepId, decision, result })
+    return success
+  } catch (err) {
+    console.error('[WorkflowEngine] submitWorkflowDecision failed:', err)
+    return false
+  }
+}
+
 // ─── CRUD: Workflow Instances ───────────────────────────────────────────
 
 export async function fetchWorkflowInstances(): Promise<WorkflowInstanceModel[]> {
   const result = await Pm_workflowinstancesService.getAll({
     select: [
       'pm_workflowinstanceid', 'pm_instancename',
-      'pm_workflowlookupname', 'pm_workflowtemplate',
       'pm_entityid', 'pm_entitytype', 'pm_entityname',
-      'pm_initiatedby', 'pm_status', 'pm_statusname',
+      'pm_status', 
       'pm_startdate', 'pm_completeddate',
-      'pm_currentstep', 'pm_sladuedate',
+      'pm_currentstep', 
       '_pm_workflowlookup_value', '_pm_initiatedbylookup_value',
     ],
     orderBy: ['pm_startdate desc'],
     top: 500,
   })
-  try { console.debug('[dataverseService] fetchWorkflowInstances result:', result) } catch (e) { }
+  console.log('fetchWorkflowInstances - raw result:', result)
   return unwrapList<Pm_workflowinstances>(result).map(mapWorkflowInstance)
 }
 
@@ -271,16 +334,16 @@ export async function fetchWorkflowInstancesForEntity(
     filter,
     select: [
       'pm_workflowinstanceid', 'pm_instancename',
-      'pm_workflowlookupname', 'pm_workflowtemplate',
       'pm_entityid', 'pm_entitytype', 'pm_entityname',
-      'pm_initiatedby', 'pm_status', 'pm_statusname',
+      'pm_status',
       'pm_startdate', 'pm_completeddate',
-      'pm_currentstep', 'pm_sladuedate',
+      'pm_currentstep',
       '_pm_workflowlookup_value', '_pm_initiatedbylookup_value',
     ],
     orderBy: ['pm_startdate desc'],
     top: 50,
   })
+  console.log('fetchWorkflowInstancesForEntity - raw result:', result)
   return unwrapList<Pm_workflowinstances>(result).map(mapWorkflowInstance)
 }
 
@@ -290,9 +353,10 @@ export async function fetchWorkflowApprovalSteps(instanceId: string): Promise<Wo
   const result = await Pm_workflowapprovalstepsService.getAll({
     filter: `_pm_workflowinstancelookup_value eq '${instanceId}'`,
     select: [
-      'pm_workflowapprovalstepid', 'pm_stepname', 'pm_steporder',
+      'pm_stepname',
+      'pm_workflowapprovalstepid', 'pm_steporder',
       'pm_approvername', 'pm_assigneedisplayname', 'pm_assigneetype',
-      'pm_decisionstatus', 'pm_decisionstatusname',
+      'pm_decisionstatus',
       'pm_decisionnotes', 'pm_decisiondate',
       'pm_duedate', 'pm_isparallelstep',
       '_pm_workflowinstancelookup_value', '_pm_workflowtemplate_value',
@@ -300,6 +364,7 @@ export async function fetchWorkflowApprovalSteps(instanceId: string): Promise<Wo
     orderBy: ['pm_steporder asc'],
     top: 200,
   })
+    console.log('fetchWorkflowApprovalSteps - raw result:', result)
   const steps = unwrapList<Pm_workflowapprovalsteps>(result)
   return steps.map(mapWorkflowApprovalStep)
 }
@@ -329,6 +394,7 @@ export async function createWorkflowApprovalStep(payload: Partial<WorkflowApprov
 }
 
 // ─── Power Automate Integration ─────────────────────────────────────────
+
 // The initiateworkflow Power Automate flow automatically creates the
 // workflow instance + approval steps. We just need to trigger it.
 
@@ -339,16 +405,12 @@ export async function startWorkflowForEntity(
   initiatedBy: string
 ): Promise<boolean> {
   try {
-    // Map entity type names to the values InitiateWorkflow expects
-    const moduleMap: Record<string, string> = {
-      'project': 'Project',
-      'projects': 'Project',
-      'portfolio': 'Portfolio',
-      'portfolios': 'Portfolio',
-      'programme': 'Programme',
-      'programmes': 'Programme',
-    }
-    const module = moduleMap[entityType.toLowerCase()] || entityType
+    // Map entity type names to the values InitiateWorkflow expects using central registry
+    const lower = entityType.toLowerCase()
+    const matched = Object.values(MODULE_NAMES).find(
+      (m) => m.value.toLowerCase() === lower || m.label.toLowerCase() === lower || m.tabKey.toLowerCase() === lower
+    )
+    const module = matched?.value || entityType
 
     const result = await InitiateWorkflowService.Run({
       text: module as any,
@@ -450,9 +512,9 @@ export async function fetchPendingWorkflowApprovals(
     const allPendingResult = await Pm_workflowapprovalstepsService.getAll({
       filter: "pm_decisionstatus eq 1 or pm_decisionstatus eq 2", // Pending or Assigned
       select: [
-        'pm_workflowapprovalstepid', 'pm_stepname', 'pm_steporder',
+        'pm_workflowapprovalstepid', 'pm_steporder',
         'pm_approvername', 'pm_assigneedisplayname', 'pm_assigneetype',
-        'pm_decisionstatus', 'pm_decisionstatusname',
+        'pm_decisionstatus',
         'pm_decisiondate', 'pm_decisionnotes',
         'pm_duedate', 'pm_isparallelstep',
         '_pm_workflowinstancelookup_value', '_pm_workflowtemplate_value',
@@ -460,7 +522,7 @@ export async function fetchPendingWorkflowApprovals(
       orderBy: ['pm_duedate asc'],
       top: 500,
     })
-
+    console.log('fetchPendingWorkflowApprovals - raw allPendingResult:', allPendingResult)
     const allPending = unwrapList<Pm_workflowapprovalsteps>(allPendingResult)
     const userLower = userId.toLowerCase()
 
@@ -477,15 +539,14 @@ export async function fetchPendingWorkflowApprovals(
       if (instanceLookup) {
         try {
           const instanceResult = await Pm_workflowinstancesService.get(instanceLookup, {
-            select: ['pm_workflowinstanceid', 'pm_instancename', 'pm_entityid', 'pm_entitytype', 'pm_initiatedby', 'pm_workflowtemplate', 'pm_workflowlookupname'],
+            select: ['pm_workflowinstanceid', 'pm_instancename', 'pm_entityid', 'pm_entitytype', '_pm_initiatedbylookup_value', '_pm_workflowlookup_value'],
           })
           const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
           if (instance) {
             ; (step as any).pm_workflowinstancelookupname = instance.pm_workflowlookupname || instance.pm_instancename
               ; (step as any).pm_entityid = instance.pm_entityid
               ; (step as any).pm_entitytype = instance.pm_entitytype
-              ; (step as any).pm_initiatedby = instance.pm_initiatedby
-              ; (step as any).pm_workflowtemplate = instance.pm_workflowtemplate
+              ; (step as any).pm_initiatedby = instance.pm_initiatedbylookupname || instance._pm_initiatedbylookup_value
           }
         } catch { }
       }

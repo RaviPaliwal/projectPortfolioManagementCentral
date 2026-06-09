@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -20,6 +20,7 @@ import { fetchProjectDetails, updateGateReview, fetchGateReviewById } from '@/se
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
+import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 
 interface FinancialReviewTaskModalProps {
   open: boolean
@@ -27,6 +28,8 @@ interface FinancialReviewTaskModalProps {
   gateReviewId: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
+  DecisionBox?: ComponentType<DecisionBoxProps>
+  approvalStepId?: string
 }
 
 export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> = ({
@@ -34,7 +37,9 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
   onClose,
   gateReviewId,
   onSuccess,
-  onError
+  onError,
+  DecisionBox: DecisionBoxProp,
+  approvalStepId,
 }) => {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -82,7 +87,33 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
     }
   }, [open, loadData])
 
-  const handleDecision = async (decision: 'Endorsed' | 'Rejected') => {
+  /**
+   * Save task-specific data to the gate review before the workflow decision is submitted.
+   */
+  const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
+    if (!gateReview?.pm_projectgatereviewid) return false
+    setSaving(true)
+    try {
+      const decisionLabel = workflowDecision === 0 ? 'Endorsed' : 'Rejected'
+      const existingNotes = gateReview.pm_reviewnotes || ''
+      const newEntry = `\n\n--- Financial Review Task ---\nDecision: ${decisionLabel}\nDate: ${new Date().toLocaleDateString()}\nNotes:\n${financeNotes || 'No additional notes provided.'}`
+      
+      await updateGateReview(gateReview.pm_projectgatereviewid, {
+        pm_reviewnotes: existingNotes + newEntry,
+      } as any)
+
+      onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
+      return true
+    } catch (err) {
+      onError('Failed to save Financial decision.')
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }, [gateReview, financeNotes, onSuccess, onError])
+
+  /** Legacy decision handler for direct usage (not via FormDialog/workflow). */
+  const handleLegacyDecision = useCallback(async (decision: 'Endorsed' | 'Rejected') => {
     if (!gateReview?.pm_projectgatereviewid) return
     setSaving(true)
     try {
@@ -100,7 +131,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
     } finally {
       setSaving(false)
     }
-  }
+  }, [gateReview, financeNotes, onSuccess, onClose, onError])
 
   const budget = project?.pm_approvedbudgeteur ?? 0
   const spend = project?.pm_actualcosteur ?? 0
@@ -181,24 +212,39 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
         )}
       </DialogContent>
       
-      <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-        <Button onClick={onClose} disabled={saving} sx={{ mr: 'auto' }}>Cancel</Button>
-        <Button 
-          variant="outlined" 
-          color="error" 
-          disabled={loading || saving}
-          onClick={() => handleDecision('Rejected')}
-        >
-          Reject Financials
-        </Button>
-        <Button 
-          variant="contained" 
-          color="success" 
-          disabled={loading || saving || !financeNotes.trim()}
-          onClick={() => handleDecision('Endorsed')}
-        >
-          {saving ? 'Processing...' : 'Endorse Financials'}
-        </Button>
+      <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', flexDirection: 'column', alignItems: 'stretch', gap: 2 }}>
+        {DecisionBoxProp && approvalStepId ? (
+          <>
+            <Button onClick={onClose} disabled={saving} sx={{ alignSelf: 'flex-start' }}>Cancel</Button>
+            <DecisionBoxProp
+              approvalStepId={approvalStepId}
+              onBeforeDecision={saveTaskData}
+              onDecisionComplete={() => onClose()}
+              onDecisionError={(msg) => onError(msg)}
+              disabled={loading}
+            />
+          </>
+        ) : (
+          <>
+            <Button onClick={onClose} disabled={saving} sx={{ mr: 'auto' }}>Cancel</Button>
+            <Button 
+              variant="outlined" 
+              color="error" 
+              disabled={loading || saving}
+              onClick={() => handleLegacyDecision('Rejected')}
+            >
+              Reject Financials
+            </Button>
+            <Button 
+              variant="contained" 
+              color="success" 
+              disabled={loading || saving || !financeNotes.trim()}
+              onClick={() => handleLegacyDecision('Endorsed')}
+            >
+              {saving ? 'Processing...' : 'Endorse Financials'}
+            </Button>
+          </>
+        )}
       </DialogActions>
     </Dialog>
   )

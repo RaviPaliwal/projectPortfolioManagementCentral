@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -34,6 +34,7 @@ import { GovernanceReadinessService, fetchProjectDetails, updateGateReview, fetc
 import type { ProjectReadinessReport } from '@/services/governance-readiness.service'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
+import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 
 interface PmoReadinessTaskModalProps {
   open: boolean
@@ -41,6 +42,10 @@ interface PmoReadinessTaskModalProps {
   gateReviewId: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
+  /** Generic DecisionBox component passed from FormDialog */
+  DecisionBox?: ComponentType<DecisionBoxProps>
+  /** The workflow approval step ID for submitting the decision */
+  approvalStepId?: string
 }
 
 export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
@@ -48,7 +53,9 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
   onClose,
   gateReviewId,
   onSuccess,
-  onError
+  onError,
+  DecisionBox: DecisionBoxProp,
+  approvalStepId,
 }) => {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -126,11 +133,60 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
     })
   }
 
-  const handleDecision = async (decision: 'Approve' | 'Reject') => {
+  // Calculate dynamic status accounting for overrides (must be before saveTaskData)
+  const getDynamicStatus = (item: any) => {
+    if (overrides[item.id]) return 'waived'
+    return item.status
+  }
+
+  const allClear = readiness?.items.every(i => getDynamicStatus(i) === 'passed' || getDynamicStatus(i) === 'waived' || getDynamicStatus(i) === 'warning')
+
+  /**
+   * Save task-specific data to the gate review before the workflow decision is submitted.
+   * Called by the generic DecisionBox via onBeforeDecision.
+   */
+  const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
+    // If approving, validate all readiness items are passed/waived/warning
+    if (workflowDecision === 0 && !allClear) {
+      onError('All failed readiness checks must be resolved or overridden before approving.')
+      return false
+    }
+
+    if (!gateReview?.pm_projectgatereviewid) return false
+    setSaving(true)
+    try {
+      const decisionLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'
+      
+      // Build a compiled notes string including overrides
+      let taskNotes = `--- PMO Readiness Task ---\nDecision: ${decisionLabel}\n\nNotes:\n${pmoNotes}\n`
+      
+      if (Object.keys(overrides).length > 0) {
+        taskNotes += `\n--- Overrides Applied ---\n`
+        Object.entries(overrides).forEach(([id, rationale]) => {
+          const checkLabel = readiness?.items.find(i => i.id === id)?.label || id
+          taskNotes += `- ${checkLabel}: ${rationale}\n`
+        })
+      }
+
+      await updateGateReview(gateReview.pm_projectgatereviewid!, {
+        pm_reviewnotes: taskNotes,
+      } as any)
+
+      onSuccess(`PMO Task completed. Decision: ${decisionLabel}.`)
+      return true
+    } catch (err) {
+      onError('Failed to save PMO decision.')
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }, [gateReview, pmoNotes, overrides, readiness, allClear, onSuccess, onError])
+
+  /** Legacy decision handler for direct usage (not via FormDialog/workflow). */
+  const handleLegacyDecision = useCallback(async (decision: 'Approve' | 'Reject') => {
     if (!gateReview?.pm_projectgatereviewid) return
     setSaving(true)
     try {
-      // Build a compiled notes string including overrides
       let finalNotes = `--- PMO Readiness Task ---\nDecision: ${decision}\n\nNotes:\n${pmoNotes}\n`
       
       if (Object.keys(overrides).length > 0) {
@@ -152,15 +208,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
     } finally {
       setSaving(false)
     }
-  }
-
-  // Calculate dynamic status accounting for overrides
-  const getDynamicStatus = (item: any) => {
-    if (overrides[item.id]) return 'waived'
-    return item.status
-  }
-
-  const allClear = readiness?.items.every(i => getDynamicStatus(i) === 'passed' || getDynamicStatus(i) === 'waived' || getDynamicStatus(i) === 'warning')
+  }, [gateReview, pmoNotes, overrides, readiness, onSuccess, onClose, onError])
 
   if (!open) return null
 
@@ -296,24 +344,39 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
         )}
       </DialogContent>
       
-      <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-        <Button onClick={onClose} disabled={saving} sx={{ mr: 'auto' }}>Close</Button>
-        <Button 
-          variant="contained" 
-          color="error" 
-          disabled={loading || saving}
-          onClick={() => handleDecision('Reject')}
-        >
-          Reject Submission
-        </Button>
-        <Button 
-          variant="contained" 
-          color="success" 
-          disabled={loading || saving || !allClear}
-          onClick={() => handleDecision('Approve')}
-        >
-          {saving ? 'Processing...' : 'Endorse & Approve'}
-        </Button>
+      <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', flexDirection: 'column', alignItems: 'stretch', gap: 2 }}>
+        {DecisionBoxProp && approvalStepId ? (
+          <>
+            <Button onClick={onClose} disabled={saving} sx={{ alignSelf: 'flex-start' }}>Close</Button>
+            <DecisionBoxProp
+              approvalStepId={approvalStepId}
+              onBeforeDecision={saveTaskData}
+              onDecisionComplete={() => onClose()}
+              onDecisionError={(msg) => onError(msg)}
+              disabled={loading}
+            />
+          </>
+        ) : (
+          <>
+            <Button onClick={onClose} disabled={saving} sx={{ mr: 'auto' }}>Close</Button>
+            <Button 
+              variant="contained" 
+              color="error" 
+              disabled={loading || saving}
+              onClick={() => handleLegacyDecision('Reject')}
+            >
+              Reject Submission
+            </Button>
+            <Button 
+              variant="contained" 
+              color="success" 
+              disabled={loading || saving || !allClear}
+              onClick={() => handleLegacyDecision('Approve')}
+            >
+              {saving ? 'Processing...' : 'Endorse & Approve'}
+            </Button>
+          </>
+        )}
       </DialogActions>
     </Dialog>
   )

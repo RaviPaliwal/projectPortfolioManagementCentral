@@ -256,14 +256,6 @@
           "x-ms-schema-name": "pm_entitytype",
           "maxLength": 100
         },
-        "pm_initiatedby": {
-          "type": "string",
-          "title": "Initiated By",
-          "x-ms-dataverse-attribute": "pm_initiatedby",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_initiatedby",
-          "maxLength": 100
-        },
         "pm_initiatedbylookup": {
           "type": "string",
           "title": "Initiated By Lookup",
@@ -297,13 +289,6 @@
           "x-ms-schema-name": "pm_instancename",
           "x-ms-dataverse-primary-name": true,
           "maxLength": 850
-        },
-        "pm_sladuedate": {
-          "type": "string",
-          "title": "SLA Due Date",
-          "x-ms-dataverse-attribute": "pm_sladuedate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_sladuedate"
         },
         "pm_startdate": {
           "type": "string",
@@ -368,14 +353,6 @@
           "x-ms-schema-name": "pm_workflowLookupName",
           "x-ms-read-only": true,
           "maxLength": 850
-        },
-        "pm_workflowtemplate": {
-          "type": "string",
-          "title": "Workflow Template",
-          "x-ms-dataverse-attribute": "pm_workflowtemplate",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_workflowtemplate",
-          "maxLength": 100
         },
         "statecode": {
           "type": "string",

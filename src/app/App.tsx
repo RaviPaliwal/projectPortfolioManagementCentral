@@ -46,6 +46,7 @@ class PageErrorBoundary extends Component<EBProps, EBState> {
 import './App.css'
 import PrimaryShell, { type TabKey, tabs } from '@/components/layout/PrimaryShell'
 import { getPageMap } from './routes'
+import { FormDialog } from '@/components/common'
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard')
@@ -68,6 +69,7 @@ function App() {
               {pageMap[activeTab]}
             </PageErrorBoundary>
           </PrimaryShell>
+          <FormDialog />
         </div>
       </UserContextProvider>
     </ThemeProvider>

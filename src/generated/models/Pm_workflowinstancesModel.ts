@@ -28,15 +28,12 @@ export interface Pm_workflowinstancesBase {
   pm_entityid?: string;
   pm_entityname?: string;
   pm_entitytype?: string;
-  pm_initiatedby?: string;
   "pm_InitiatedByLookup@odata.bind"?: string;
   pm_instancename?: string;
-  pm_sladuedate?: string;
   pm_startdate?: string;
   pm_status?: Pm_workflowinstancespm_status;
   pm_workflowinstanceid: string;
   "pm_workflowLookup@odata.bind"?: string;
-  pm_workflowtemplate?: string;
   statecode: Pm_workflowinstancesstatecode;
   statuscode?: Pm_workflowinstancesstatuscode;
   timezoneruleversionnumber?: number;

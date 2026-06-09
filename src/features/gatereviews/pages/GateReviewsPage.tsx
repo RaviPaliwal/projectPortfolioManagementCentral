@@ -52,6 +52,7 @@ import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon, Button, WorkflowMilestone } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import { PmoReadinessTaskModal, FinancialReviewTaskModal, BoardDecisionTaskModal } from '../components'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -420,7 +421,7 @@ export default function GateReviewsPage() {
             </Typography>
 
             <WorkflowMilestone
-              moduleName="GateReview"
+              moduleName={MODULE_NAMES.GATE_REVIEWS.value}
               entityId={selectedReview.pm_projectgatereviewid!}
             />
 

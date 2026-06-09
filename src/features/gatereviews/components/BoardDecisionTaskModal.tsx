@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -20,11 +20,10 @@ import {
 } from '@mui/material'
 import GavelIcon from '@mui/icons-material/Gavel'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-
 import { fetchProjectDetails, updateGateReview, fetchGateReviewById } from '@/services'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
+import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 
 interface BoardDecisionTaskModalProps {
   open: boolean
@@ -32,6 +31,8 @@ interface BoardDecisionTaskModalProps {
   gateReviewId: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
+  DecisionBox?: ComponentType<DecisionBoxProps>
+  approvalStepId?: string
 }
 
 export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
@@ -39,7 +40,9 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
   onClose,
   gateReviewId,
   onSuccess,
-  onError
+  onError,
+  DecisionBox: DecisionBoxProp,
+  approvalStepId,
 }) => {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -90,14 +93,69 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
     if (open) loadData()
   }, [open, loadData])
 
-  const handleRecordDecision = async () => {
+  /**
+   * Save board decision data to the gate review before the workflow decision is submitted.
+   * Updates the gate review status and preserves the board's outcome selection.
+   */
+  const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
+    console.log('[BoardTask] 🎯 saveTaskData called with workflowDecision:', workflowDecision, '| gateReview:', gateReview?.pm_projectgatereviewid)
+    if (!gateReview?.pm_projectgatereviewid) {
+      console.warn('[BoardTask] ❌ gateReview or ID is null — cannot save')
+      return false
+    }
+    setSaving(true)
+    try {
+      const existingNotes = gateReview.pm_reviewnotes || ''
+      const isApproved = workflowDecision === 0
+      const finalOutcomeText = isApproved ? 'APPROVED' : 'REJECTED'
+
+      // Determine the gate review status from the workflow decision:
+      // - Workflow Approved (0) → status Complete (0)
+      // - Workflow Rejected (3) → status Scheduled (1) — can be re-assessed later
+      // The outcome comes from the board's dropdown selection (Approved/Conditional/NotApproved).
+      const resolvedStatus = isApproved ? 0 : 1 // 0=Complete, 1=Scheduled
+      
+      const outcomeLabels: Record<number, string> = { 0: 'Approved', 1: 'Conditional Approval', 2: 'Not Approved' }
+      const outcomeLabel = outcomeLabels[decisionData.pm_reviewoutcome] ?? 'Not Approved'
+      
+      const newEntry = `\n\n--- Final Board Decision ---\nWorkflow: ${finalOutcomeText} (${outcomeLabel})\nDate: ${decisionData.pm_actualreviewdate}\nComments:\n${decisionData.pm_reviewnotes || 'None provided.'}`
+
+      console.log('[BoardTask] 🚀 Calling updateGateReview:', {
+        id: gateReview.pm_projectgatereviewid,
+        payload: {
+          pm_reviewoutcome: decisionData.pm_reviewoutcome,
+          pm_reviewstatus: resolvedStatus,
+          pm_actualreviewdate: decisionData.pm_actualreviewdate,
+        }
+      })
+
+      await updateGateReview(gateReview.pm_projectgatereviewid, {
+        ...decisionData, // preserves pm_reviewoutcome from the board's dropdown
+        pm_reviewstatus: resolvedStatus,
+        pm_reviewnotes: existingNotes + newEntry,
+      } as any)
+
+      console.log('[BoardTask] ✅ updateGateReview succeeded')
+      onSuccess(`Final Decision recorded. Outcome: ${outcomeLabel}`)
+      return true
+    } catch (err) {
+      console.error('[BoardTask] ❌ Decision record error:', err)
+      onError('Unable to record board decision.')
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }, [gateReview, decisionData, onSuccess, onError])
+
+  /** Legacy decision handler for direct usage (not via FormDialog/workflow). */
+  const handleLegacyRecordDecision = useCallback(async () => {
     if (!gateReview?.pm_projectgatereviewid) return
     setSaving(true)
     try {
       const existingNotes = gateReview.pm_reviewnotes || ''
-      const finalOutcomeText = decisionData.pm_reviewoutcome === 0 ? 'APPROVED' : decisionData.pm_reviewoutcome === 1 ? 'CONDITIONAL APPROVAL' : 'NOT APPROVED'
+      const outcomeLabel = decisionData.pm_reviewoutcome === 0 ? 'APPROVED' : decisionData.pm_reviewoutcome === 1 ? 'CONDITIONAL APPROVAL' : 'NOT APPROVED'
       
-      const newEntry = `\n\n--- Final Board Decision ---\nOutcome: ${finalOutcomeText}\nDate: ${decisionData.pm_actualreviewdate}\nComments:\n${decisionData.pm_reviewnotes || 'None provided.'}`
+      const newEntry = `\n\n--- Final Board Decision ---\nOutcome: ${outcomeLabel}\nDate: ${decisionData.pm_actualreviewdate}\nComments:\n${decisionData.pm_reviewnotes || 'None provided.'}`
 
       await updateGateReview(gateReview.pm_projectgatereviewid, {
         ...decisionData,
@@ -105,7 +163,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
         pm_reviewnotes: existingNotes + newEntry,
       } as any)
 
-      onSuccess(`Final Decision recorded successfully.`)
+      onSuccess(`Final Decision recorded. Outcome: ${outcomeLabel}`)
       onClose()
     } catch (err) {
       console.error('Decision record error:', err)
@@ -113,7 +171,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
     } finally {
       setSaving(false)
     }
-  }
+  }, [gateReview, decisionData, onSuccess, onClose, onError])
 
   if (!open) return null
 
@@ -232,18 +290,32 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
         )}
       </DialogContent>
       
-      <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-        <Button onClick={onClose} disabled={saving} sx={{ mr: 'auto' }}>Cancel</Button>
-        <Button 
-          variant="contained" 
-          color="success" 
-          disabled={loading || saving}
-          onClick={handleRecordDecision}
-          startIcon={<CheckCircleIcon />}
-          sx={{ fontWeight: 600 }}
-        >
-          {saving ? 'Processing...' : 'Submit Final Decision'}
-        </Button>
+      <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', flexDirection: 'column', alignItems: 'stretch', gap: 2 }}>
+        {DecisionBoxProp && approvalStepId ? (
+          <>
+            <Button onClick={onClose} disabled={saving} sx={{ alignSelf: 'flex-start' }}>Cancel</Button>
+            <DecisionBoxProp
+              approvalStepId={approvalStepId}
+              onBeforeDecision={saveTaskData}
+              onDecisionComplete={() => onClose()}
+              onDecisionError={(msg) => onError(msg)}
+              disabled={loading}
+            />
+          </>
+        ) : (
+          <>
+            <Button onClick={onClose} disabled={saving} sx={{ mr: 'auto' }}>Cancel</Button>
+            <Button 
+              variant="contained" 
+              color="success" 
+              disabled={loading || saving}
+              onClick={handleLegacyRecordDecision}
+              sx={{ fontWeight: 600 }}
+            >
+              {saving ? 'Processing...' : 'Submit Final Decision'}
+            </Button>
+          </>
+        )}
       </DialogActions>
     </Dialog>
   )

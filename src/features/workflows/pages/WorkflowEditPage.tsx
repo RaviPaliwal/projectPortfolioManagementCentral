@@ -42,22 +42,11 @@ import type { TeamOption } from '@/services'
 import { useUser } from '@/context/UserContext'
 import type { WorkflowModel, WorkflowStepTemplateModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
+import { getModuleOptionsForWorkflow } from '@/constants/moduleNames'
  
 const STEPS = ['Basic Information', 'Approval Steps', 'Workflow Settings', 'Review & Save']
  
-const MODULES = [
-  { value: '', label: 'Select Module...' },
-  { value: 'Pipeline', label: 'Pipeline' },
-  { value: 'Projects', label: 'Projects' },
-  { value: 'Portfolios', label: 'Portfolios' },
-  { value: 'Programmes', label: 'Programmes' },
-  { value: 'Risks', label: 'Risks & Issues' },
-  { value: 'Budgets', label: 'Budgets & Finance' },
-  { value: 'Resources', label: 'Resources' },
-  { value: 'ChangeRequests', label: 'Change Requests' },
-  { value: 'Approvals', label: 'Approvals' },
-  { value: 'GateReview', label: 'Gate Review' },
-]
+const MODULES = getModuleOptionsForWorkflow()
 
 type AssigneeOption = { value: string; label: string; type: 'user' | 'team'; jobtitle?: string; email?: string }
  

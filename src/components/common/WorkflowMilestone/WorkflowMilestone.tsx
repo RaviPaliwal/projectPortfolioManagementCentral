@@ -12,8 +12,6 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Avatar,
-  AvatarGroup,
   Tooltip,
   useTheme,
   styled,
@@ -22,12 +20,13 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
 import PersonIcon from '@mui/icons-material/Person'
-import ScheduleIcon from '@mui/icons-material/Schedule'
 import EventIcon from '@mui/icons-material/Event'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import {
   fetchWorkflowInstancesForEntity,
   fetchWorkflowApprovalSteps,
+  openApprovalStepTask,
+  WORKFLOW_DECISION_EVENT,
 } from '@/services'
 import type { WorkflowInstanceModel, WorkflowApprovalStepModel } from '@/types/dataverse'
 
@@ -149,7 +148,6 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
       const workflowInstances = await fetchWorkflowInstancesForEntity(moduleName, entityId)
       setInstances(workflowInstances)
 
-      // Fetch approval steps for each instance in parallel
       const stepsMap: Record<string, WorkflowApprovalStepModel[]> = {}
       if (workflowInstances.length > 0) {
         const stepsResults = await Promise.all(
@@ -171,9 +169,33 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
     }
   }, [moduleName, entityId])
 
+  // Initial load
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // Refresh whenever a workflow decision is submitted (any task modal completes)
+  useEffect(() => {
+    const handler = () => {
+      console.debug('[WorkflowMilestone] 📡 Workflow decision detected — refreshing...')
+      loadData()
+    }
+    window.addEventListener(WORKFLOW_DECISION_EVENT, handler)
+    return () => window.removeEventListener(WORKFLOW_DECISION_EVENT, handler)
+  }, [loadData])
+
+  // ── Open Configured Form Directly ────────────────────────────────────
+
+  const handleStepClick = useCallback(async (step: WorkflowApprovalStepModel) => {
+    // Only assigned steps (decision status = 2) are actionable
+    if (String(step.pm_decisionstatus) !== '2' || !step.pm_workflowapprovalstepid) return
+
+    // Directly navigate to the configured form for this approval step
+    const opened = await openApprovalStepTask(step.pm_workflowapprovalstepid)
+    if (!opened) {
+      console.warn('[WorkflowMilestone] Could not open form for step:', step.pm_workflowapprovalstepid)
+    }
+  }, [])
 
   // ── Empty / Loading States ──────────────────────────────────────────
 
@@ -233,7 +255,7 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                   {instance.pm_instancename || instance.pm_workflowlookupname || 'Workflow Instance'}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {instance.pm_workflowtemplate && `Template: ${instance.pm_workflowtemplate}`}
+                  {instance.pm_workflowlookupname && `Template: ${instance.pm_workflowlookupname}`}
                   {instance.pm_initiatedby && ` · Initiated by: ${instance.pm_initiatedby}`}
                 </Typography>
               </Box>
@@ -245,18 +267,6 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                       label={new Date(instance.pm_startdate).toLocaleDateString()}
                       size="small"
                       variant="outlined"
-                      sx={{ borderRadius: 1 }}
-                    />
-                  </Tooltip>
-                )}
-                {instance.pm_sladuedate && (
-                  <Tooltip title={`SLA Due: ${new Date(instance.pm_sladuedate).toLocaleDateString()}`}>
-                    <Chip
-                      icon={<ScheduleIcon sx={{ fontSize: 14 }} />}
-                      label={new Date(instance.pm_sladuedate).toLocaleDateString()}
-                      size="small"
-                      variant="outlined"
-                      color="warning"
                       sx={{ borderRadius: 1 }}
                     />
                   </Tooltip>
@@ -291,6 +301,7 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                     const decision = getDecisionConfig(step.pm_decisionstatus)
                     const isPast = index < currentStep || isCompleted
                     const isCurrent = index === currentStep && !isCompleted
+                    const isActionable = String(step.pm_decisionstatus) === '2' // Assigned — can take action
 
                     return (
                       <Step
@@ -300,7 +311,17 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                       >
                         <StepLabel slots={{ stepIcon: ColorlibStepIcon }}>
                           {/* Step header */}
-                          <Box sx={{ mt: 1, textAlign: 'center' }}>
+                          <Box
+                            sx={{
+                              mt: 1,
+                              textAlign: 'center',
+                              ...(isActionable && {
+                                cursor: 'pointer',
+                                '&:hover .step-action-hint': { opacity: 1 },
+                              }),
+                            }}
+                            onClick={isActionable ? () => handleStepClick(step) : undefined}
+                          >
                             <Typography
                               variant="body2"
                               sx={{
@@ -313,18 +334,18 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                                     : 'text.primary',
                               }}
                             >
-                              {step.pm_stepname || `Step ${index + 1}`}
+                              {step.pm_stepname || `Step ${step.pm_steporder ?? index + 1}`}
                             </Typography>
 
                             {/* Assignee */}
-                            {(step.pm_approvername || step.pm_assigneedisplayname) && (
+                            {(step.pm_assigneedisplayname || step.pm_assigneetypename) && (
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
                                 sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.3, mt: 0.3 }}
                               >
                                 <PersonIcon sx={{ fontSize: 11 }} />
-                                {step.pm_approvername || step.pm_assigneedisplayname}
+                                {step.pm_assigneedisplayname || step.pm_assigneetypename}
                               </Typography>
                             )}
 
@@ -345,6 +366,27 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                                 }}
                               />
                             </Box>
+
+                            {/* Click hint for actionable steps */}
+                            {isActionable && (
+                              <Typography
+                                className="step-action-hint"
+                                variant="caption"
+                                color="primary"
+                                sx={{
+                                  display: 'block',
+                                  mt: 0.5,
+                                  fontSize: '0.55rem',
+                                  fontWeight: 600,
+                                  opacity: 0,
+                                  transition: 'opacity 0.2s ease',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em',
+                                }}
+                              >
+                                Open form
+                              </Typography>
+                            )}
 
                             {/* Due Date / Decision Date */}
                             {(step.pm_duedate || step.pm_decisiondate) && (

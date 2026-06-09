@@ -576,14 +576,12 @@ export interface WorkflowStepTemplateModel {
 
 export interface WorkflowApprovalStepModel {
   pm_workflowapprovalstepid?: string
-  pm_stepname?: string
   pm_steporder?: number
   pm_approvername?: string
   pm_assigneetype?: number | string
   pm_assigneetypename?: string
   pm_assigneedisplayname?: string
   pm_decisionstatus?: number | string
-  pm_decisionstatusname?: string
   pm_decisiondate?: string
   pm_decisionnotes?: string
   pm_duedate?: string
@@ -593,4 +591,5 @@ export interface WorkflowApprovalStepModel {
   _pm_workflowinstancelookup_value?: string
   _pm_workflowtemplate_value?: string
   statecode?: number
+  pm_stepname?:string
 }
