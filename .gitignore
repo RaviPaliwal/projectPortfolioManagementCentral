@@ -25,3 +25,5 @@ scripts
 *.sln
 *.sw?
 .gemini/settings.json
+.gemini
+opencode.json

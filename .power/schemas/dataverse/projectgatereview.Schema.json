@@ -377,14 +377,20 @@
           "enum": [
             "Approved",
             "Conditional Approval",
-            "Not Yet Reviewed"
+            "Not Yet Reviewed",
+            "Under Review",
+            "Rejected"
           ],
           "x-ms-enum-values": [
             0,
             1,
-            2
+            2,
+            3,
+            4
           ],
           "Color": [
+            null,
+            null,
             null,
             null,
             null

@@ -133,8 +133,14 @@ export async function fetchBudgetLines(): Promise<BudgetLineModel[]> {
 export async function createBudgetLine(payload: Partial<BudgetLineModel>): Promise<BudgetLineModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && value !== '' && key !== '_pm_project_value') {
       cleanPayload[key] = value
+    }
+  }
+  if (payload._pm_project_value) {
+    const projectId = normalizeLookupId(payload._pm_project_value)
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
     }
   }
   const defaults: Record<string, any> = {

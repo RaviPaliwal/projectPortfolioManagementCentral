@@ -3,16 +3,12 @@ import {
   Box,
   Paper,
   Typography,
-  IconButton,
-  LinearProgress,
   Tabs,
   Tab,
   Button,
   Skeleton,
   useTheme,
-  Tooltip,
 } from '@mui/material'
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import FlagIcon from '@mui/icons-material/Flag'
 import BugReportIcon from '@mui/icons-material/BugReport'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
@@ -24,15 +20,20 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import ErrorIcon from '@mui/icons-material/Error'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
-import RefreshIcon from '@mui/icons-material/Refresh'
-import SettingsIcon from '@mui/icons-material/Settings'
-import PersonIcon from '@mui/icons-material/Person'
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import EditIcon from '@mui/icons-material/Edit'
-
-import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader, ActionIcon } from '@/components/common'
-import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
-import { RAG_COLORS, phaseLabel, currency } from '../constants'
+import LightbulbIcon from '@mui/icons-material/Lightbulb'
+import EditNoteIcon from '@mui/icons-material/EditNote'
+import PeopleIcon from '@mui/icons-material/People'
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch'
+import BuildCircleIcon from '@mui/icons-material/BuildCircle'
+import ScheduleIcon from '@mui/icons-material/Schedule'
+import FlagCircleIcon from '@mui/icons-material/FlagCircle'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined'
+import CelebrationIcon from '@mui/icons-material/Celebration'
+import { StatusChip, StatusTag, Breadcrumbs, PageHeader, ActionIcon } from '@/components/common'
+import { ProjectLifecycleStepper } from './ProjectLifecycleStepper'
+import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel, AgentInsightModel } from '@/types/dataverse'
+import { phaseLabel } from '../constants'
 import { fontSizes } from '@/styles'
 
 import { ProjectOverviewTab } from './tabs/ProjectOverviewTab'
@@ -54,6 +55,7 @@ interface Project360ViewProps {
   benefits: BenefitModel[]
   tasks: ProjectTaskModel[]
   gateReviews: GateReviewModel[]
+  insights?: AgentInsightModel[]
   onBack: () => void
   onAddMilestone: () => void
   onLogRisk: () => void
@@ -77,6 +79,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   benefits,
   tasks,
   gateReviews,
+  insights = [],
   onBack,
   onAddMilestone,
   onLogRisk,
@@ -108,11 +111,11 @@ export const Project360View: React.FC<Project360ViewProps> = ({
 
   return (
     <Box>
-      <Breadcrumbs 
+      <Breadcrumbs
         items={[
           { label: 'Project Portfolio', path: 'list' },
           { label: project.pm_projectname ?? 'Detail' }
-        ]} 
+        ]}
         onNavigate={() => onBack()}
       />
 
@@ -142,18 +145,72 @@ export const Project360View: React.FC<Project360ViewProps> = ({
         }
       />
 
-      {/* ── Action Buttons Bar ────────────────────────────────── */}
-      <Paper sx={{ px: 2.5, py: 1.5, mb: 2.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mr: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>Actions:</Typography>
-        <Button size="small" variant="outlined" startIcon={<FlagIcon />} onClick={onAddMilestone}>Milestone</Button>
-        <Button size="small" variant="outlined" color="error" startIcon={<ErrorIcon />} onClick={onLogRisk}>Risk</Button>
-        <Button size="small" variant="outlined" color="warning" startIcon={<WarningAmberIcon />} onClick={onLogIssue}>Issue</Button>
-        <Button size="small" variant="outlined" startIcon={<PersonAddIcon />} onClick={onAssignResource}>Resource</Button>
-        <Button size="small" variant="outlined" startIcon={<AttachMoneyIcon />} onClick={onAddBudgetLine}>Budget</Button>
-        <Button size="small" variant="outlined" startIcon={<EmojiEventsIcon />} onClick={onAddBenefit}>Benefit</Button>
-        <Button size="small" variant="outlined" startIcon={<AssignmentIcon />} onClick={onAddTask}>Task</Button>
-        <Button size="small" variant="contained" color="success" startIcon={<HowToRegIcon />} onClick={onSubmitGateReview}>Gate Review</Button>
-      </Paper>
+
+
+      {/* ── Project Lifecycle Stepper (above tabs) ─────────── */}
+      {(() => {
+        const phases = (() => {
+          const anyGateCompleted = gateReviews.some((g: GateReviewModel) => String(g.pm_reviewstatus) === '0')
+          const completedMilestoneCount = milestones.filter(
+            (m: ProjectMilestoneModel) => m.pm_status === '0' || m.pm_status === 0 || m.pm_ragstatus === '1'
+          ).length
+
+          return [
+            {
+              key: 'initiation', code: '3', label: 'Initiation', icon: <LightbulbIcon />,
+              description: 'Define scope, stakeholders, and business case',
+              substeps: [
+                { label: 'Business case defined', icon: <EditNoteIcon fontSize="small" />, isDone: true, detail: 'Project created in system' },
+                { label: 'Stakeholders identified', icon: <PeopleIcon fontSize="small" />, isDone: Boolean(project.pm_projectsponsor), detail: project.pm_projectsponsor ? `Sponsor: ${project.pm_projectsponsor}` : undefined },
+                { label: 'Project charter created', icon: <EditNoteIcon fontSize="small" />, isDone: Boolean(project.pm_projectcode), detail: project.pm_projectcode ? `Code: ${project.pm_projectcode}` : undefined },
+                { label: 'Kickoff completed', icon: <RocketLaunchIcon fontSize="small" />, isDone: Boolean(project.pm_plannedstartdate), detail: project.pm_plannedstartdate ? `Planned: ${new Date(project.pm_plannedstartdate).toLocaleDateString()}` : undefined },
+              ],
+            },
+            {
+              key: 'planning', code: '1', label: 'Planning', icon: <BuildCircleIcon />,
+              description: 'Detailed planning, budgeting, and risk assessment',
+              substeps: [
+                { label: 'Requirements gathered', icon: <EditNoteIcon fontSize="small" />, isDone: tasks.length > 0, detail: tasks.length > 0 ? `${tasks.length} tasks defined` : undefined },
+                { label: 'Resource planning', icon: <PeopleIcon fontSize="small" />, isDone: false },
+                { label: 'Timeline & schedule', icon: <ScheduleIcon fontSize="small" />, isDone: Boolean(project.pm_plannedstartdate && project.pm_plannedenddate), detail: project.pm_plannedenddate ? `Target: ${new Date(project.pm_plannedenddate).toLocaleDateString()}` : undefined },
+                { label: 'Budget approved', icon: <AccountBalanceWalletIcon fontSize="small" />, isDone: (project.pm_approvedbudgeteur ?? 0) > 0, detail: (project.pm_approvedbudgeteur ?? 0) > 0 ? `Budget: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(project.pm_approvedbudgeteur ?? 0)}` : undefined },
+                { label: 'Risk assessment', icon: <BugReportIcon fontSize="small" />, isDone: false },
+                { label: 'Milestones defined', icon: <FlagIcon fontSize="small" />, isDone: milestones.length > 0, detail: milestones.length > 0 ? `${milestones.length} milestones` : undefined },
+              ],
+            },
+            {
+              key: 'execution', code: '0', label: 'Execution', icon: <FlagCircleIcon />,
+              description: 'Active delivery, monitoring, and governance',
+              substeps: [
+                { label: 'Development / Implementation', icon: <BuildCircleIcon fontSize="small" />, isDone: (project.pm_percentcomplete ?? 0) > 0, detail: project.pm_percentcomplete ? `${project.pm_percentcomplete}% complete` : undefined },
+                { label: 'Testing & QA', icon: <CheckCircleOutlineIcon fontSize="small" />, isDone: false },
+                { label: 'Status reporting', icon: <EditNoteIcon fontSize="small" />, isDone: anyGateCompleted, detail: anyGateCompleted ? 'Gate reviews completed' : undefined },
+                { label: 'Milestones achieved', icon: <FlagIcon fontSize="small" />, isDone: completedMilestoneCount > 0, detail: completedMilestoneCount > 0 ? `${completedMilestoneCount} completed` : undefined },
+                { label: 'Risk mitigation', icon: <BugReportIcon fontSize="small" />, isDone: false },
+              ],
+            },
+            {
+              key: 'closure', code: '2', label: 'Closure', icon: <CelebrationIcon />,
+              description: 'Project handover, lessons learned, and closure',
+              substeps: [
+                { label: 'Final delivery', icon: <RocketLaunchIcon fontSize="small" />, isDone: (project.pm_percentcomplete ?? 0) >= 100, detail: (project.pm_percentcomplete ?? 0) >= 100 ? '100% complete' : undefined },
+                { label: 'Lessons learned', icon: <EditNoteIcon fontSize="small" />, isDone: false },
+                { label: 'Project handover', icon: <PeopleIcon fontSize="small" />, isDone: false },
+                { label: 'Financial closure', icon: <AccountBalanceWalletIcon fontSize="small" />, isDone: false },
+                { label: 'Benefits realization', icon: <EmojiEventsIcon fontSize="small" />, isDone: false },
+              ],
+            },
+          ]
+        })()
+        return (
+          <Box sx={{ mb: 2.5 }}>
+            <ProjectLifecycleStepper
+              phases={phases}
+              currentPhaseCode={String(project.pm_projectphase ?? '')}
+            />
+          </Box>
+        )
+      })()}
 
       {/* ── Tabbed Content ────────────────────────────────────── */}
       <Paper sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
@@ -180,12 +237,12 @@ export const Project360View: React.FC<Project360ViewProps> = ({
             </Box>
           ) : (
             <>
-              {activeTab === 0 && <ProjectOverviewTab project={project} />}
-              {activeTab === 1 && <ProjectScheduleTab milestones={milestones} tasks={tasks} />}
-              {activeTab === 2 && <ProjectFinancialsTab budgetLines={budgetLines} />}
-              {activeTab === 3 && <ProjectRisksIssuesTab risks={risks} issues={issues} />}
-              {activeTab === 4 && <ProjectTeamTab resources={resources} />}
-              {activeTab === 5 && <ProjectBenefitsTab benefits={benefits} />}
+              {activeTab === 0 && <ProjectOverviewTab project={project} milestones={milestones} tasks={tasks} risks={risks} issues={issues} budgetLines={budgetLines} gateReviews={gateReviews} benefits={benefits} resources={resources} insights={insights} />}
+              {activeTab === 1 && <ProjectScheduleTab milestones={milestones} tasks={tasks} onAddMilestone={onAddMilestone} onAddTask={onAddTask} />}
+              {activeTab === 2 && <ProjectFinancialsTab budgetLines={budgetLines} onAddBudgetLine={onAddBudgetLine} />}
+              {activeTab === 3 && <ProjectRisksIssuesTab risks={risks} issues={issues} onLogRisk={onLogRisk} onLogIssue={onLogIssue} />}
+              {activeTab === 4 && <ProjectTeamTab resources={resources} onAssignResource={onAssignResource} />}
+              {activeTab === 5 && <ProjectBenefitsTab benefits={benefits} onAddBenefit={onAddBenefit} />}
               {activeTab === 6 && <ProjectGovernanceTab gateReviews={gateReviews} onSubmitReview={onSubmitGateReview} />}
             </>
           )}

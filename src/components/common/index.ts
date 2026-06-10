@@ -72,5 +72,3 @@ export type { TaskLinkProps } from './TaskLink/TaskLink'
 
 export { FormDialog } from './FormDialog/FormDialog'
 
-export { DecisionBox } from './DecisionBox/DecisionBox'
-export type { DecisionBoxProps } from './DecisionBox/DecisionBox'

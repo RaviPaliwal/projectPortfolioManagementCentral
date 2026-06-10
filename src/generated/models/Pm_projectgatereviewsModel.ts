@@ -12,7 +12,9 @@ export type Pm_projectgatereviewspm_gatestage = keyof typeof Pm_projectgaterevie
 export const Pm_projectgatereviewspm_reviewoutcome = {
   0: 'Approved',
   1: 'ConditionalApproval',
-  2: 'NotYetReviewed'
+  2: 'NotYetReviewed',
+  3: 'UnderReview',
+  4: 'Rejected'
 } as const;
 export type Pm_projectgatereviewspm_reviewoutcome = keyof typeof Pm_projectgatereviewspm_reviewoutcome;
 export const Pm_projectgatereviewspm_reviewstatus = {

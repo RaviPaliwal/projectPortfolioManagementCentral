@@ -133,9 +133,68 @@ export async function createGateReview(payload: Partial<GateReviewModel>): Promi
 }
 
 export async function updateGateReview(id: string, changes: Partial<GateReviewModel>): Promise<GateReviewModel | null> {
-  const result = await Pm_projectgatereviewsService.update(id, changes as any)
-  const item = unwrapSingle<Pm_projectgatereviews>(result)
-  return item ? mapGateReview(item) : null
+  console.log('[updateGateReview] 🔄 Called with:', {
+    id,
+    changes_keys: Object.keys(changes),
+    changes_summary: {
+      pm_reviewoutcome: changes.pm_reviewoutcome,
+      pm_reviewoutcome_type: typeof changes.pm_reviewoutcome,
+      pm_reviewstatus: changes.pm_reviewstatus,
+      pm_reviewstatus_type: typeof changes.pm_reviewstatus,
+      pm_actualreviewdate: changes.pm_actualreviewdate,
+      pm_reviewnotes_length: (changes.pm_reviewnotes as string)?.length ?? 0,
+      pm_reviewconditions_length: (changes.pm_reviewconditions as string)?.length ?? 0,
+    },
+  })
+
+  try {
+    const result = await Pm_projectgatereviewsService.update(id, changes as any)
+
+    const rawResult = result as any
+    const sdkError = rawResult?.error
+
+    console.log('[updateGateReview] 📦 Raw SDK result:', {
+      success: rawResult?.success,
+      hasData: !!rawResult?.data,
+      hasValue: !!rawResult?.value,
+      status: rawResult?.status,
+      error: sdkError ? { status: sdkError.status, message: sdkError.message?.slice(0, 300) } : undefined,
+    })
+
+    // If the SDK result explicitly indicates failure with an error message, throw
+    if (rawResult?.success === false && sdkError) {
+      // Handle both object and string error formats
+      let errMsg = typeof sdkError === 'string'
+        ? sdkError
+        : (sdkError.message || `Update failed with status ${sdkError.status}`)
+      // Try to extract the inner error message from the JSON wrapper
+      try {
+        const parsed = JSON.parse(errMsg)
+        if (parsed?.error?.message) errMsg = parsed.error.message
+      } catch { /* use original message */ }
+      console.error('[updateGateReview] ❌ API returned error:', { status: sdkError.status, message: errMsg })
+      throw new Error(errMsg)
+    }
+
+    const item = unwrapSingle<Pm_projectgatereviews>(result)
+    
+    if (item) {
+      console.log('[updateGateReview] ✅ Update successful — mapped result:', {
+        id: item.pm_projectgatereviewid,
+        outcome: item.pm_reviewoutcome,
+        status: item.pm_reviewstatus,
+        outcome_type: typeof item.pm_reviewoutcome,
+        status_type: typeof item.pm_reviewstatus,
+      })
+      return mapGateReview(item)
+    }
+    
+    console.log('[updateGateReview] 📭 No data returned (204 No Content — expected for updates)')
+    return null
+  } catch (err) {
+    console.error('[updateGateReview] ❌ Exception during update:', err)
+    throw err // Re-throw so calling code can handle
+  }
 }
 
 export async function deleteGateReview(id: string): Promise<void> {
@@ -173,6 +232,18 @@ export async function createBenefit(payload: Partial<BenefitModel>): Promise<Ben
     if (value !== undefined && value !== null && value !== '' &&
         key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
       cleanPayload[key] = value
+    }
+  }
+  if (payload._pm_project_value) {
+    const projectId = normalizeLookupId(payload._pm_project_value)
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+    }
+  }
+  if (payload._pm_programmelookup_value) {
+    const programmeId = normalizeLookupId(payload._pm_programmelookup_value)
+    if (programmeId) {
+      cleanPayload['pm_ProgrammeLookup@odata.bind'] = `/pm_programmes(${programmeId})`
     }
   }
   const defaults: Record<string, any> = {

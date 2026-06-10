@@ -67,7 +67,6 @@ export const mapWorkflowApprovalStep = (item: Pm_workflowapprovalsteps): Workflo
     pm_duedate: item.pm_duedate,
     pm_isparallelstep: item.pm_isparallelstep,
     pm_notificationtimestamp: item.pm_notificationtimestamp,
-    _pm_workflowinstance_value: item._pm_workflowinstancelookup_value,
     _pm_workflowinstancelookup_value: item._pm_workflowinstancelookup_value,
     _pm_workflowtemplate_value: item._pm_workflowtemplate_value,
     statecode: item.statecode,
@@ -123,10 +122,6 @@ export async function createWorkflow(payload: Partial<WorkflowModel>): Promise<W
     cleanPayload.statecode = cleanPayload.pm_workflowstatus
     delete cleanPayload.pm_workflowstatus
   }
-  // Strip removed fields
-  for (const removed of ['pm_triggercondition', 'pm_workflowtype', 'pm_triggerentity', 'pm_triggerevent']) {
-    delete cleanPayload[removed]
-  }
   const result = await Pm_workflowsService.create({ ...defaults, ...cleanPayload } as any)
   try { console.debug('[dataverseService] createWorkflow payload/result:', cleanPayload, result) } catch (e) { }
   const item = unwrapSingle<Pm_workflows>(result)
@@ -142,10 +137,6 @@ export async function updateWorkflow(id: string, changes: Partial<WorkflowModel>
   if ('pm_workflowstatus' in payload) {
     payload.statecode = payload.pm_workflowstatus
     delete payload.pm_workflowstatus
-  }
-  // Strip removed fields
-  for (const removed of ['pm_triggercondition', 'pm_workflowtype', 'pm_triggerentity', 'pm_triggerevent']) {
-    delete payload[removed]
   }
   const result = await Pm_workflowsService.update(id, payload as any)
   try { console.debug('[dataverseService] updateWorkflow id/changes/result:', id, changes, result) } catch (e) { }
@@ -167,7 +158,7 @@ export async function fetchWorkflowStepTemplates(workflowId?: string): Promise<W
     top: 200,
   }
   if (workflowId) {
-    options.filter = "_pm_workflowlookup_value eq '" + workflowId + "'"
+    options.filter = `_pm_workflowlookup_value eq '${workflowId}'`
   }
   const result = await Pm_workflowsteptemplatesService.getAll(options)
   const items = unwrapList<Pm_workflowsteptemplates>(result)
@@ -373,7 +364,7 @@ export async function createWorkflowApprovalStep(payload: Partial<WorkflowApprov
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null && value !== '' &&
-      key !== '_pm_workflowinstance_value') {
+      key !== '_pm_workflowinstancelookup_value') {
       cleanPayload[key] = value
     }
   }
@@ -381,8 +372,8 @@ export async function createWorkflowApprovalStep(payload: Partial<WorkflowApprov
     statecode: 0,
     statuscode: 1,
   }
-  if (payload._pm_workflowinstance_value) {
-    const instanceId = payload._pm_workflowinstance_value.replace(/[{}]/g, '').trim().toLowerCase()
+  if (payload._pm_workflowinstancelookup_value) {
+    const instanceId = payload._pm_workflowinstancelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
     if (instanceId) {
       cleanPayload['pm_WorkflowInstanceLookup@odata.bind'] = '/pm_workflowinstances(' + instanceId + ')'
     }
@@ -462,8 +453,16 @@ export async function approveWorkflowStep(
       text: notes || '',
     })
 
+    const success = result?.success !== false
+
+    if (success) {
+      window.dispatchEvent(new CustomEvent(WORKFLOW_DECISION_EVENT, {
+        detail: { stepId, decision: 0 },
+      }))
+    }
+
     console.debug('[WorkflowEngine] workflowrouter triggered for approve:', { stepId, result })
-    return result?.success !== false
+    return success
   } catch (err) {
     console.error('[WorkflowEngine] approveWorkflowStep failed:', err)
     return false
@@ -495,8 +494,16 @@ export async function rejectWorkflowStep(
       text: reason || '',
     })
 
+    const success = result?.success !== false
+
+    if (success) {
+      window.dispatchEvent(new CustomEvent(WORKFLOW_DECISION_EVENT, {
+        detail: { stepId, decision: 3 },
+      }))
+    }
+
     console.debug('[WorkflowEngine] workflowrouter triggered for reject:', { stepId, result })
-    return result?.success !== false
+    return success
   } catch (err) {
     console.error('[WorkflowEngine] rejectWorkflowStep failed:', err)
     return false
@@ -533,23 +540,32 @@ export async function fetchPendingWorkflowApprovals(
 
     const result = filtered.map(mapWorkflowApprovalStep)
 
-    // Enrich with instance metadata
-    for (const step of result) {
-      const instanceLookup = step._pm_workflowinstancelookup_value
-      if (instanceLookup) {
-        try {
-          const instanceResult = await Pm_workflowinstancesService.get(instanceLookup, {
-            select: ['pm_workflowinstanceid', 'pm_instancename', 'pm_entityid', 'pm_entitytype', '_pm_initiatedbylookup_value', '_pm_workflowlookup_value'],
-          })
-          const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
-          if (instance) {
-            ; (step as any).pm_workflowinstancelookupname = instance.pm_workflowlookupname || instance.pm_instancename
-              ; (step as any).pm_entityid = instance.pm_entityid
-              ; (step as any).pm_entitytype = instance.pm_entitytype
-              ; (step as any).pm_initiatedby = instance.pm_initiatedbylookupname || instance._pm_initiatedbylookup_value
+    // Batch-fetch all referenced instances in a single call (fixes N+1)
+    const instanceIds = [...new Set(result.map(s => s._pm_workflowinstancelookup_value).filter(Boolean) as string[])]
+    if (instanceIds.length > 0) {
+      try {
+        const instanceFilter = instanceIds.map(id => `pm_workflowinstanceid eq '${id}'`).join(' or ')
+        const instancesResult = await Pm_workflowinstancesService.getAll({
+          filter: instanceFilter,
+          select: ['pm_workflowinstanceid', 'pm_instancename', 'pm_entityid', 'pm_entitytype', '_pm_initiatedbylookup_value', '_pm_workflowlookup_value'],
+          top: instanceIds.length,
+        })
+        const instances = unwrapList<Pm_workflowinstances>(instancesResult)
+        const instanceMap = new Map(instances.map(i => [i.pm_workflowinstanceid.toLowerCase(), i]))
+
+        for (const step of result) {
+          const lookupId = step._pm_workflowinstancelookup_value?.toLowerCase()
+          if (lookupId) {
+            const instance = instanceMap.get(lookupId)
+            if (instance) {
+              ; (step as any).pm_workflowinstancelookupname = instance.pm_workflowlookupname || instance.pm_instancename
+                ; (step as any).pm_entityid = instance.pm_entityid
+                ; (step as any).pm_entitytype = instance.pm_entitytype
+                ; (step as any).pm_initiatedby = instance.pm_initiatedbylookupname || instance._pm_initiatedbylookup_value
+            }
           }
-        } catch { }
-      }
+        }
+      } catch { }
     }
 
     return result

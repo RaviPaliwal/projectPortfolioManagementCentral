@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -31,10 +31,10 @@ import SaveIcon from '@mui/icons-material/Save'
 import UndoIcon from '@mui/icons-material/Undo'
 
 import { GovernanceReadinessService, fetchProjectDetails, updateGateReview, fetchGateReviewById } from '@/services'
+import { submitWorkflowDecision } from '@/services/workflow.service'
 import type { ProjectReadinessReport } from '@/services/governance-readiness.service'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
-import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 
 interface PmoReadinessTaskModalProps {
   open: boolean
@@ -42,8 +42,6 @@ interface PmoReadinessTaskModalProps {
   gateReviewId: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
-  /** Generic DecisionBox component passed from FormDialog */
-  DecisionBox?: ComponentType<DecisionBoxProps>
   /** The workflow approval step ID for submitting the decision */
   approvalStepId?: string
 }
@@ -54,7 +52,6 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
   gateReviewId,
   onSuccess,
   onError,
-  DecisionBox: DecisionBoxProp,
   approvalStepId,
 }) => {
   const [loading, setLoading] = useState(false)
@@ -98,8 +95,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
       setProject(proj)
       setReadiness(report)
       
-      // Pre-fill notes if PMO had previously saved some
-      if (gr.pm_reviewnotes) setPmoNotes(gr.pm_reviewnotes)
+          // Notes field always starts fresh — previous notes are shown read-only above
       
     } catch (err) {
       console.error('Failed to load PMO task data', err)
@@ -143,38 +139,63 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
 
   /**
    * Save task-specific data to the gate review before the workflow decision is submitted.
-   * Called by the generic DecisionBox via onBeforeDecision.
+   * Called by the submit handler before submitting the workflow decision.
    */
   const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
+    console.log('[PmoTask] 🎯 saveTaskData called with workflowDecision:', workflowDecision, '| gateReview:', gateReview?.pm_projectgatereviewid)
+    
     // If approving, validate all readiness items are passed/waived/warning
     if (workflowDecision === 0 && !allClear) {
+      console.warn('[PmoTask] ⛔ All failed checks must be resolved before approving')
       onError('All failed readiness checks must be resolved or overridden before approving.')
       return false
     }
 
-    if (!gateReview?.pm_projectgatereviewid) return false
+    if (!gateReview?.pm_projectgatereviewid) {
+      console.warn('[PmoTask] ❌ gateReview or ID is null — cannot save')
+      return false
+    }
     setSaving(true)
     try {
-      const decisionLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'
+      const isApproved = workflowDecision === 0
+      const decisionLabel = isApproved ? 'Approved' : 'Rejected'
       
-      // Build a compiled notes string including overrides
-      let taskNotes = `--- PMO Readiness Task ---\nDecision: ${decisionLabel}\n\nNotes:\n${pmoNotes}\n`
+      // Build a new entry to append to existing gate review notes
+      const existingNotes = gateReview.pm_reviewnotes || ''
+      let newEntry = `--- PMO Readiness Task ---\nDecision: ${decisionLabel}\nDate: ${new Date().toLocaleDateString()}\n\nNotes:\n${pmoNotes || 'No additional notes.'}\n`
       
       if (Object.keys(overrides).length > 0) {
-        taskNotes += `\n--- Overrides Applied ---\n`
+        newEntry += `\n--- Overrides Applied ---\n`
         Object.entries(overrides).forEach(([id, rationale]) => {
           const checkLabel = readiness?.items.find(i => i.id === id)?.label || id
-          taskNotes += `- ${checkLabel}: ${rationale}\n`
+          newEntry += `- ${checkLabel}: ${rationale}\n`
         })
       }
 
-      await updateGateReview(gateReview.pm_projectgatereviewid!, {
-        pm_reviewnotes: taskNotes,
-      } as any)
+      const updatePayload = {
+        pm_reviewoutcome: isApproved ? 3 : 4, // 3=In Progress, 4=Rejected
+        pm_reviewnotes: existingNotes ? existingNotes + `\n\n` + newEntry : newEntry,
+      }
+
+      console.log('[PmoTask] 🚀 Calling updateGateReview:', {
+        id: gateReview.pm_projectgatereviewid,
+        payload: {
+          pm_reviewoutcome: updatePayload.pm_reviewoutcome,
+          pm_reviewnotes_length: updatePayload.pm_reviewnotes?.length,
+        },
+      })
+
+      const updateResult = await updateGateReview(gateReview.pm_projectgatereviewid!, updatePayload as any)
+
+      console.log('[PmoTask] ✅ updateGateReview returned:', updateResult)
+      if (updateResult === null) {
+        console.log('[PmoTask] ℹ️ updateGateReview returned null (204 No Content — expected)')
+      }
 
       onSuccess(`PMO Task completed. Decision: ${decisionLabel}.`)
       return true
     } catch (err) {
+      console.error('[PmoTask] ❌ Decision record error:', err)
       onError('Failed to save PMO decision.')
       return false
     } finally {
@@ -187,18 +208,22 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
     if (!gateReview?.pm_projectgatereviewid) return
     setSaving(true)
     try {
-      let finalNotes = `--- PMO Readiness Task ---\nDecision: ${decision}\n\nNotes:\n${pmoNotes}\n`
+      const existingNotes = gateReview.pm_reviewnotes || ''
+      let newEntry = `--- PMO Readiness Task ---\nDecision: ${decision}\nDate: ${new Date().toLocaleDateString()}\n\nNotes:\n${pmoNotes || 'No additional notes.'}\n`
       
       if (Object.keys(overrides).length > 0) {
-        finalNotes += `\n--- Overrides Applied ---\n`
+        newEntry += `\n--- Overrides Applied ---\n`
         Object.entries(overrides).forEach(([id, rationale]) => {
           const checkLabel = readiness?.items.find(i => i.id === id)?.label || id
-          finalNotes += `- ${checkLabel}: ${rationale}\n`
+          newEntry += `- ${checkLabel}: ${rationale}\n`
         })
       }
 
+      const isApprovedLegacy = decision === 'Approve'
+
       await updateGateReview(gateReview.pm_projectgatereviewid!, {
-        pm_reviewnotes: finalNotes,
+        pm_reviewoutcome: isApprovedLegacy ? 3 : 4, // 3=In Progress, 4=Rejected
+        pm_reviewnotes: existingNotes ? existingNotes + `\n\n` + newEntry : newEntry,
       } as any)
 
       onSuccess(`PMO Task completed. Decision: ${decision}.`)
@@ -209,6 +234,41 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
       setSaving(false)
     }
   }, [gateReview, pmoNotes, overrides, readiness, onSuccess, onClose, onError])
+
+  /**
+   * Handle PMO readiness submission via FormDialog/workflow path.
+   * Uses a single submit button that derives the workflow decision from
+   * the readiness check results: allClear → approve (0), otherwise blocked.
+   */
+  const handleSubmitPmoDecision = useCallback(async () => {
+    if (!gateReview?.pm_projectgatereviewid || !approvalStepId) return
+
+    // If not allClear, saveTaskData will show error and return false
+    const workflowDecision = allClear ? 0 : 3
+
+    setSaving(true)
+    try {
+      const taskSaved = await saveTaskData(workflowDecision)
+      if (!taskSaved) {
+        setSaving(false)
+        return
+      }
+
+      const success = await submitWorkflowDecision(approvalStepId, workflowDecision, pmoNotes)
+
+      if (success) {
+        console.log('[PmoTask] ✅ Workflow decision submitted successfully')
+        onClose()
+      } else {
+        onError('Workflow routing handler did not return success.')
+      }
+    } catch (err) {
+      console.error('[PmoTask] ❌ Error submitting decision:', err)
+      onError('Failed to submit PMO decision.')
+    } finally {
+      setSaving(false)
+    }
+  }, [gateReview, approvalStepId, allClear, saveTaskData, pmoNotes, onClose, onError])
 
   if (!open) return null
 
@@ -233,6 +293,18 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
               <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{project?.pm_projectname || 'Loading...'}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>{project?.pm_projectcode}</Typography>
               
+              {/* Show previous endorsements/notes in read-only panel */}
+              {gateReview?.pm_reviewnotes && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                    <FactCheckIcon fontSize="small" /> Previous Notes
+                  </Typography>
+                  <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50', maxHeight: 150, overflowY: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.75rem', color: 'text.secondary', fontFamily: 'monospace' }}>
+                    {gateReview.pm_reviewnotes}
+                  </Paper>
+                </Box>
+              )}
+
               <Divider sx={{ mb: 2 }} />
               
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -334,9 +406,10 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>PMO Review Notes</Typography>
               <TextField 
                 fullWidth multiline rows={3} 
-                placeholder="Enter any additional notes or conditions for the governance board..."
+                placeholder="Enter new PMO notes or conditions for the governance board..."
                 value={pmoNotes}
                 onChange={(e) => setPmoNotes(e.target.value)}
+                helperText={gateReview?.pm_reviewnotes ? 'Previous notes shown on left — your new notes will be appended.' : ''}
               />
 
             </Grid>
@@ -345,36 +418,42 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
       </DialogContent>
       
       <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', flexDirection: 'column', alignItems: 'stretch', gap: 2 }}>
-        {DecisionBoxProp && approvalStepId ? (
+        {approvalStepId ? (
           <>
-            <Button onClick={onClose} disabled={saving} sx={{ alignSelf: 'flex-start' }}>Close</Button>
-            <DecisionBoxProp
-              approvalStepId={approvalStepId}
-              onBeforeDecision={saveTaskData}
-              onDecisionComplete={() => onClose()}
-              onDecisionError={(msg) => onError(msg)}
-              disabled={loading}
-            />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Button onClick={onClose} disabled={saving}>Close</Button>
+              <Button 
+                variant="contained" 
+                color="success" 
+                disabled={loading || saving || !allClear}
+                onClick={handleSubmitPmoDecision}
+                sx={{ fontWeight: 600 }}
+              >
+                {saving ? 'Processing...' : 'Endorse & Submit'}
+              </Button>
+            </Box>
           </>
         ) : (
           <>
-            <Button onClick={onClose} disabled={saving} sx={{ mr: 'auto' }}>Close</Button>
-            <Button 
-              variant="contained" 
-              color="error" 
-              disabled={loading || saving}
-              onClick={() => handleLegacyDecision('Reject')}
-            >
-              Reject Submission
-            </Button>
-            <Button 
-              variant="contained" 
-              color="success" 
-              disabled={loading || saving || !allClear}
-              onClick={() => handleLegacyDecision('Approve')}
-            >
-              {saving ? 'Processing...' : 'Endorse & Approve'}
-            </Button>
+            <Button onClick={onClose} disabled={saving} sx={{ alignSelf: 'flex-start' }}>Close</Button>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
+              <Button 
+                variant="contained" 
+                color="error" 
+                disabled={loading || saving}
+                onClick={() => handleLegacyDecision('Reject')}
+              >
+                Reject Submission
+              </Button>
+              <Button 
+                variant="contained" 
+                color="success" 
+                disabled={loading || saving || !allClear}
+                onClick={() => handleLegacyDecision('Approve')}
+              >
+                {saving ? 'Processing...' : 'Endorse & Approve'}
+              </Button>
+            </Box>
           </>
         )}
       </DialogActions>

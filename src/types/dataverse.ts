@@ -150,6 +150,7 @@ export interface ProjectTaskModel {
   pm_percentcomplete?: number
   pm_taskstatus?: number | string
   pm_assignedresource?: string
+  _pm_resource_value?: string
   pm_ismilestone?: boolean
   pm_oncriticalpath?: boolean
   pm_predecessortaskid?: string
@@ -574,6 +575,22 @@ export interface WorkflowStepTemplateModel {
   statecode?: number
 }
 
+export interface AgentInsightModel {
+  pm_agentinsightid?: string
+  pm_insighttitle?: string
+  pm_insightdescription?: string
+  pm_insighttype?: number | string
+  pm_priority?: number | string
+  pm_actionstatus?: number | string
+  pm_confidencescore?: number
+  pm_sourceagent?: string
+  pm_projectname?: string
+  pm_insighttypename?: string
+  pm_actionstatusname?: string
+  pm_priorityname?: string
+  createdon?: string
+}
+
 export interface WorkflowApprovalStepModel {
   pm_workflowapprovalstepid?: string
   pm_steporder?: number
@@ -586,7 +603,6 @@ export interface WorkflowApprovalStepModel {
   pm_decisionnotes?: string
   pm_duedate?: string
   pm_isparallelstep?: boolean
-  _pm_workflowinstance_value?: string
   pm_notificationtimestamp?: string
   _pm_workflowinstancelookup_value?: string
   _pm_workflowtemplate_value?: string

@@ -10,10 +10,12 @@ import type { Pm_projecttasks } from '@/generated/models/Pm_projecttasksModel'
 import type { Pm_projectmilestones } from '@/generated/models/Pm_projectmilestonesModel'
 import type { Pm_portfolios } from '@/generated/models/Pm_portfoliosModel'
 import type { Pm_programmes } from '@/generated/models/Pm_programmesModel'
+import type { Pm_agentinsights } from '@/generated/models/Pm_agentinsightsModel'
 import type {
   ProjectModel,
   ProjectTaskModel,
   ProjectMilestoneModel,
+  AgentInsightModel,
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
 
@@ -61,7 +63,8 @@ export const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => ({
   pm_actualenddate: item.pm_actualenddate,
   pm_percentcomplete: item.pm_percentcomplete,
   pm_taskstatus: item.pm_taskstatus,
-  pm_assignedresource: item.pm_assignedresource,
+  pm_assignedresource: item.pm_resourcename ?? item.pm_assignedresource,
+  _pm_resource_value: item._pm_resource_value,
   pm_ismilestone: item.pm_ismilestone,
   pm_oncriticalpath: item.pm_oncriticalpath,
   pm_predecessortaskid: item.pm_predecessortaskid,
@@ -353,7 +356,7 @@ export async function fetchScheduleData(projectId: string): Promise<ScheduleData
         'pm_plannedstartdate', 'pm_plannedenddate',
         'pm_actualstartdate', 'pm_actualenddate',
         'pm_percentcomplete', 'pm_taskstatus',
-        'pm_assignedresource', 'pm_ismilestone', 'pm_oncriticalpath',
+        'pm_resourcename', '_pm_resource_value', 'pm_assignedresource', 'pm_ismilestone', 'pm_oncriticalpath',
         'pm_predecessortaskid', '_pm_predecessortask_value',
       ],
       orderBy: ['pm_tasklevel asc', 'pm_wbsnumber asc', 'pm_taskname asc'],
@@ -427,7 +430,16 @@ export async function fetchProjectMilestones(projectId: string): Promise<Project
 }
 
 export async function createProjectTask(payload: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
-  const result = await Pm_projecttasksService.create(payload as any)
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' && key !== '_pm_project_value' && key !== '_pm_predecessortask_value' && key !== '_pm_resource_value') {
+      cleanPayload[key] = value
+    }
+  }
+  if (payload._pm_project_value) cleanPayload['pm_project@odata.bind'] = `/pm_projects(${normalizeLookupId(payload._pm_project_value)})`
+  if (payload._pm_predecessortask_value) cleanPayload['pm_PredecessorTask@odata.bind'] = `/pm_projecttasks(${normalizeLookupId(payload._pm_predecessortask_value)})`
+  if (payload._pm_resource_value) cleanPayload['pm_resource@odata.bind'] = `/pm_resources(${normalizeLookupId(payload._pm_resource_value)})`
+  const result = await Pm_projecttasksService.create({ statecode: 0, statuscode: 1, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_projecttasks>(result)
   return item ? mapProjectTask(item) : null
 }
@@ -443,9 +455,50 @@ export async function deleteProjectTask(id: string): Promise<void> {
 }
 
 export async function createProjectMilestone(payload: Partial<ProjectMilestoneModel>): Promise<ProjectMilestoneModel | null> {
-  const result = await Pm_projectmilestonesService.create(payload as any)
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' && key !== '_pm_project_value') {
+      cleanPayload[key] = value
+    }
+  }
+  if (payload._pm_project_value) cleanPayload['pm_project@odata.bind'] = `/pm_projects(${normalizeLookupId(payload._pm_project_value)})`
+  const result = await Pm_projectmilestonesService.create({ statecode: 0, statuscode: 1, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_projectmilestones>(result)
   return item ? mapProjectMilestone(item) : null
+}
+
+export const mapAgentInsight = (item: Pm_agentinsights): AgentInsightModel => ({
+  pm_agentinsightid: item.pm_agentinsightid,
+  pm_insighttitle: item.pm_insighttitle,
+  pm_insightdescription: item.pm_insightdescription,
+  pm_insighttype: item.pm_insighttype,
+  pm_priority: item.pm_priority,
+  pm_actionstatus: item.pm_actionstatus,
+  pm_confidencescore: item.pm_confidencescore,
+  pm_sourceagent: item.pm_sourceagent,
+  pm_projectname: item.pm_projectname,
+  pm_insighttypename: item.pm_insighttypename,
+  pm_actionstatusname: item.pm_actionstatusname,
+  pm_priorityname: item.pm_priorityname,
+  createdon: item.createdon,
+})
+
+export async function fetchProjectAgentInsights(projectId: string): Promise<AgentInsightModel[]> {
+  try {
+    const { Pm_agentinsightsService } = await import('@/generated')
+    const result = await Pm_agentinsightsService.getAll({
+      filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+      top: 50,
+      orderBy: ['createdon desc'],
+    })
+    if (!result) return []
+    const data = result.success && Array.isArray(result.data) ? result.data
+      : 'value' in result && Array.isArray((result as any).value) ? (result as any).value
+      : Array.isArray(result) ? result : []
+    return (data as Pm_agentinsights[]).map(mapAgentInsight)
+  } catch {
+    return []
+  }
 }
 
 export async function deleteProjectMilestone(id: string): Promise<void> {

@@ -3,15 +3,23 @@ import {
   Box,
   Typography,
   Paper,
+  Button,
 } from '@mui/material'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
 
 interface ProjectTeamTabProps {
   resources: any[]
+  onAssignResource?: () => void
 }
 
-export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({ resources }) => {
+export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({ resources, onAssignResource }) => {
   return (
     <Box>
+      {onAssignResource && (
+        <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
+          <Button size="small" variant="outlined" startIcon={<PersonAddIcon />} onClick={onAssignResource}>Assign Resource</Button>
+        </Box>
+      )}
       <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Allocated Resources</Typography>
       {resources.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

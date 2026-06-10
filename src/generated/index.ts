@@ -7,6 +7,7 @@
 export * as CommonModels from './models/CommonModels';
 export * as InitiateWorkflowModel from './models/InitiateWorkflowModel';
 export * as ManageTeamsModel from './models/ManageTeamsModel';
+export * as Pm_agentinsightsModel from './models/Pm_agentinsightsModel';
 export * as Pm_benefitsModel from './models/Pm_benefitsModel';
 export * as Pm_budgetlinesModel from './models/Pm_budgetlinesModel';
 export * as Pm_cashflowentriesModel from './models/Pm_cashflowentriesModel';
@@ -48,6 +49,7 @@ export * as WorkflowRoutingHandlerModel from './models/WorkflowRoutingHandlerMod
 // Services
 export * from './services/InitiateWorkflowService';
 export * from './services/ManageTeamsService';
+export * from './services/Pm_agentinsightsService';
 export * from './services/Pm_benefitsService';
 export * from './services/Pm_budgetlinesService';
 export * from './services/Pm_cashflowentriesService';

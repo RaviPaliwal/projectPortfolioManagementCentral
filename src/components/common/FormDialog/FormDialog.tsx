@@ -26,7 +26,6 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import type { FormDialogDetail } from '@/utils/formDialogEvents'
 import { FORM_DIALOG_OPEN_EVENT } from '@/utils/formDialogEvents'
 import { getFormByKey } from '@/constants/formRegistry'
-import { DecisionBox } from '@/components/common/DecisionBox/DecisionBox'
 
 // ─── ErrorBoundary ───────────────────────────────────────────────────
 
@@ -125,7 +124,6 @@ export function FormDialog() {
           <ModalComponent
             approvalStepId={detail.approvalStepId!}
             onClose={handleClose}
-            DecisionBox={DecisionBox}
           />
         </Suspense>
       </ModalErrorBoundary>

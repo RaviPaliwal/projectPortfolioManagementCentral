@@ -36,6 +36,13 @@ export const dataSourcesInfo = {
       }
     }
   },
+  "pm_agentinsights": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_agentinsightid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pm_benefits": {
     "tableId": "",
     "version": "",

@@ -1,7 +1,6 @@
 import { lazy } from 'react'
 import type { ComponentType } from 'react'
 import { MODULE_NAMES } from '@/constants/moduleNames'
-import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 
 // Lazy-load modal components to avoid circular dependencies
 const PmoReadinessTaskModalWrapper = lazy(() =>
@@ -40,21 +39,13 @@ export interface FormRegistryEntry {
    */
   /**
    * Modal component that renders this task/decision form in a dialog.
-   * Receives the approvalStepId, close/success/error callbacks, and the
-   * DecisionBox component to render in the footer.
+   * Receives the approvalStepId, close/success/error callbacks.
    */
   modalComponent: ComponentType<{
     approvalStepId: string
     onClose: () => void
     onSuccess?: (msg: string) => void
-    onError?: (msg: string) => void
-    /**
-     * Generic DecisionBox component pre-configured with approvalStepId.
-     * Each task modal renders this in its footer to capture decision notes
-     * and submit the workflow decision (approve/reject).
-     */
-    DecisionBox: ComponentType<DecisionBoxProps>
-  }>
+    onError?: (msg: string) => void  }>
 }
 
 export const FORM_REGISTRY: FormRegistryEntry[] = [

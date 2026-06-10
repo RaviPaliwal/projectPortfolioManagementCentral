@@ -3,9 +3,11 @@ import {
   Box,
   Typography,
   Paper,
+  Button,
 } from '@mui/material'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import StarIcon from '@mui/icons-material/Star'
+import AddIcon from '@mui/icons-material/Add'
 
 import { StatusChip, StatusTag } from '@/components/common'
 import type { BenefitModel } from '@/types/dataverse'
@@ -13,13 +15,20 @@ import { fontSizes } from '@/styles'
 
 interface ProjectBenefitsTabProps {
   benefits: BenefitModel[]
+  onAddBenefit?: () => void
 }
 
-export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({ benefits }) => {
+export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({ benefits, onAddBenefit }) => {
   const achievedBenefits = benefits.filter(b => String(b.pm_benefitstatus) === '2' || b.pm_benefitstatus === 2).length
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* ── Action Buttons ── */}
+      {onAddBenefit && (
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={onAddBenefit}>Add Benefit</Button>
+        </Box>
+      )}
       {/* Benefit KPI Row */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
         <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'success.main' }}>
