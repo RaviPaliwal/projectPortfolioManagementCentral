@@ -58,8 +58,9 @@ import {
   deleteResourceSkill,
 } from '@/services/skill.service'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, ConfirmDialog } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
+import { SkillDialog, ResourceSkillDialog } from '../components'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -151,30 +152,10 @@ export default function SkillsPage() {
   // Create/Edit Skill modal
   const [showSkillForm, setShowSkillForm] = useState(false)
   const [editingSkill, setEditingSkill] = useState<SkillModel | null>(null)
-  const [skillFormData, setSkillFormData] = useState({
-    pm_skillname: '',
-    pm_skillcategory: 0,
-    pm_skilldescription: '',
-    pm_isactive: true,
-  })
 
   // Create/Edit Resource-Skill modal
   const [showRsForm, setShowRsForm] = useState(false)
   const [editingRs, setEditingRs] = useState<ResourceSkillModel | null>(null)
-  const [rsFormData, setRsFormData] = useState({
-    pm_skillid: '',
-    pm_skillname: '',
-    pm_resourceid: '',
-    pm_resourcename: '',
-    pm_proficiencylevel: 0,
-    pm_yearsofexperience: 0,
-    pm_certificationname: '',
-    pm_certificationexpirydate: '',
-    pm_certified: false,
-    pm_primaryskill: false,
-    _pm_resource_value: '',
-    _pm_skill_value: '',
-  })
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
@@ -332,23 +313,16 @@ export default function SkillsPage() {
   // ── Skill Form ──
   const openCreateSkill = useCallback(() => {
     setEditingSkill(null)
-    setSkillFormData({ pm_skillname: '', pm_skillcategory: 0, pm_skilldescription: '', pm_isactive: true })
     setShowSkillForm(true)
   }, [])
 
   const openEditSkill = useCallback((skill: SkillModel) => {
     setEditingSkill(skill)
-    setSkillFormData({
-      pm_skillname: skill.pm_skillname ?? '',
-      pm_skillcategory: Number(skill.pm_skillcategory) || 0,
-      pm_skilldescription: skill.pm_skilldescription ?? '',
-      pm_isactive: skill.pm_isactive ?? true,
-    })
     setShowSkillForm(true)
   }, [])
 
-  const handleSaveSkill = async () => {
-    if (!skillFormData.pm_skillname.trim()) {
+  const handleSaveSkill = async (data: Record<string, any>) => {
+    if (!data.pm_skillname.trim()) {
       setError('Skill name is required.')
       return
     }
@@ -356,10 +330,10 @@ export default function SkillsPage() {
     setActionLoading(true)
     try {
       if (editingSkill?.pm_skillid) {
-        await updateSkill(editingSkill.pm_skillid, skillFormData as any)
+        await updateSkill(editingSkill.pm_skillid, data as any)
         setSuccessMsg('Skill updated successfully.')
       } else {
-        await createSkill(skillFormData as any)
+        await createSkill(data as any)
         setSuccessMsg('Skill created successfully.')
       }
       setShowSkillForm(false)
@@ -375,48 +349,27 @@ export default function SkillsPage() {
   // ── Resource-Skill Form ──
   const openCreateRs = useCallback(() => {
     setEditingRs(null)
-    setRsFormData({
-      pm_skillid: '', pm_skillname: '', pm_resourceid: '', pm_resourcename: '',
-      pm_proficiencylevel: 0, pm_yearsofexperience: 0,
-      pm_certificationname: '', pm_certificationexpirydate: '',
-      pm_certified: false, pm_primaryskill: false,
-      _pm_resource_value: '', _pm_skill_value: '',
-    })
     setShowRsForm(true)
   }, [])
 
   const openEditRs = useCallback((rs: ResourceSkillModel) => {
     setEditingRs(rs)
-    setRsFormData({
-      pm_skillid: rs.pm_skillid ?? '',
-      pm_skillname: rs.pm_skillname ?? '',
-      pm_resourceid: rs.pm_resourceid ?? '',
-      pm_resourcename: rs.pm_resourcename ?? '',
-      pm_proficiencylevel: Number(rs.pm_proficiencylevel) || 0,
-      pm_yearsofexperience: rs.pm_yearsofexperience ?? 0,
-      pm_certificationname: rs.pm_certificationname ?? '',
-      pm_certificationexpirydate: rs.pm_certificationexpirydate ?? '',
-      pm_certified: rs.pm_certified ?? false,
-      pm_primaryskill: rs.pm_primaryskill ?? false,
-      _pm_resource_value: rs._pm_resource_value ?? '',
-      _pm_skill_value: rs._pm_skill_value ?? '',
-    })
     setShowRsForm(true)
   }, [])
 
-  const handleSaveRs = async () => {
-    if (!rsFormData.pm_skillid && !rsFormData.pm_skillname) {
+  const handleSaveRs = async (data: Record<string, any>) => {
+    if (!data.pm_skillid && !data.pm_skillname) {
       setError('Skill is required.')
       return
     }
-    if (!rsFormData._pm_resource_value && !rsFormData.pm_resourcename) {
+    if (!data._pm_resource_value && !data.pm_resourcename) {
       setError('Resource is required.')
       return
     }
     setError(null)
     setActionLoading(true)
     try {
-      const payload: any = { ...rsFormData }
+      const payload: any = { ...data }
       if (editingRs?.pm_resourceskillid) {
         await updateResourceSkill(editingRs.pm_resourceskillid, payload)
         setSuccessMsg('Resource-Skill mapping updated successfully.')
@@ -735,89 +688,13 @@ export default function SkillsPage() {
           )}
         </DetailDrawer>
 
-        {/* ── Create/Edit Skill Dialog ──────────────── */}
-        <Dialog
-          open={showSkillForm}
-          onClose={() => !actionLoading && setShowSkillForm(false)}
-          maxWidth="sm"
-          fullWidth
-          slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
-        >
-          <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', borderRadius: 1.5 }}>
-              {editingSkill ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <PsychologyIcon sx={{ fontSize: 18, color: '#fff' }} />}
-            </Avatar>
-            {editingSkill ? 'Edit Skill' : 'Add New Skill'}
-          </DialogTitle>
-          <DialogContent sx={{ pt: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              {editingSkill ? `Update details for ${editingSkill.pm_skillname}.` : 'Add a new skill to the catalog for tracking resource capabilities.'}
-            </Typography>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <PsychologyIcon sx={{ fontSize: 18, color: 'secondary.main' }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-                Skill Information
-              </Typography>
-              <Divider sx={{ flex: 1 }} />
-            </Box>
-            <Grid container spacing={2.5} sx={{ mb: 3 }}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  label="Skill Name"
-                  required
-                  fullWidth
-                  size="small"
-                  value={skillFormData.pm_skillname}
-                  onChange={(e) => setSkillFormData((f) => ({ ...f, pm_skillname: e.target.value }))}
-                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    value={skillFormData.pm_skillcategory}
-                    label="Category"
-                    onChange={(e) => setSkillFormData((f) => ({ ...f, pm_skillcategory: e.target.value as number }))}
-                    sx={{ borderRadius: 1.5 }}
-                  >
-                    <MenuItem value={0}>Technical</MenuItem>
-                    <MenuItem value={1}>Functional</MenuItem>
-                    <MenuItem value={2}>Management</MenuItem>
-                    <MenuItem value={3}>Domain</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  label="Description"
-                  fullWidth
-                  multiline
-                  rows={2}
-                  size="small"
-                  value={skillFormData.pm_skilldescription}
-                  onChange={(e) => setSkillFormData((f) => ({ ...f, pm_skilldescription: e.target.value }))}
-                  placeholder="Brief description of the skill and what it encompasses..."
-                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Button onClick={() => setShowSkillForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveSkill}
-              variant="contained"
-              disabled={!skillFormData.pm_skillname.trim() || actionLoading}
-              sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
-            >
-              {actionLoading ? 'Saving...' : editingSkill ? 'Update Skill' : 'Create Skill'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+      {/* ── Create/Edit Skill Dialog ──────────────── */}
+      <SkillDialog
+        open={showSkillForm}
+        onClose={() => !actionLoading && setShowSkillForm(false)}
+        initialData={editingSkill}
+        onSave={handleSaveSkill}
+      />
       </TabPanel>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -986,195 +863,28 @@ export default function SkillsPage() {
         </Paper>
 
         {/* ── Create/Edit Resource-Skill Dialog ────── */}
-        <Dialog
+        <ResourceSkillDialog
           open={showRsForm}
           onClose={() => !actionLoading && setShowRsForm(false)}
-          maxWidth="sm"
-          fullWidth
-          slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
-        >
-          <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: 1.5 }}>
-              {editingRs ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <LinkIcon sx={{ fontSize: 18, color: '#fff' }} />}
-            </Avatar>
-            {editingRs ? 'Edit Mapping' : 'Add Resource-Skill Mapping'}
-          </DialogTitle>
-          <DialogContent sx={{ pt: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              {editingRs ? `Update the mapping for ${editingRs.pm_resourcename} → ${editingRs.pm_skillname}.` : 'Map a skill to a resource, including proficiency level and certification details.'}
-            </Typography>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <LinkIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-                Mapping Information
-              </Typography>
-              <Divider sx={{ flex: 1 }} />
-            </Box>
-            <Grid container spacing={2.5} sx={{ mb: 3 }}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Skill</InputLabel>
-                  <Select
-                    value={rsFormData.pm_skillid}
-                    label="Skill"
-                    onChange={(e) => {
-                      const skillId = e.target.value as string
-                      const skill = skills.find((s) => s.pm_skillid === skillId)
-                      setRsFormData((f) => ({
-                        ...f,
-                        pm_skillid: skillId,
-                        pm_skillname: skill?.pm_skillname ?? '',
-                        _pm_skill_value: skillId,
-                      }))
-                    }}
-                    sx={{ borderRadius: 1.5 }}
-                  >
-                    {skills.map((s) => (
-                      <MenuItem key={s.pm_skillid} value={s.pm_skillid ?? ''}>
-                        {s.pm_skillname}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  label="Resource Name"
-                  fullWidth
-                  size="small"
-                  value={rsFormData.pm_resourcename}
-                  onChange={(e) => setRsFormData((f) => ({ ...f, pm_resourcename: e.target.value, _pm_resource_value: e.target.value }))}
-                  placeholder="e.g., John Doe"
-                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Proficiency Level</InputLabel>
-                  <Select
-                    value={rsFormData.pm_proficiencylevel}
-                    label="Proficiency Level"
-                    onChange={(e) => setRsFormData((f) => ({ ...f, pm_proficiencylevel: e.target.value as number }))}
-                    sx={{ borderRadius: 1.5 }}
-                  >
-                    <MenuItem value={0}>Beginner</MenuItem>
-                    <MenuItem value={1}>Intermediate</MenuItem>
-                    <MenuItem value={2}>Advanced</MenuItem>
-                    <MenuItem value={3}>Expert</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
-                <TextField
-                  label="Years of Experience"
-                  type="number"
-                  fullWidth
-                  size="small"
-                  value={rsFormData.pm_yearsofexperience}
-                  onChange={(e) => setRsFormData((f) => ({ ...f, pm_yearsofexperience: Number(e.target.value) }))}
-                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
-                <TextField
-                  label="Certification Name"
-                  fullWidth
-                  size="small"
-                  value={rsFormData.pm_certificationname}
-                  onChange={(e) => setRsFormData((f) => ({ ...f, pm_certificationname: e.target.value }))}
-                  placeholder="e.g., AWS Certified"
-                  slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  label="Certification Expiry"
-                  type="date"
-                  fullWidth
-                  size="small"
-                  value={rsFormData.pm_certificationexpirydate}
-                  onChange={(e) => setRsFormData((f) => ({ ...f, pm_certificationexpirydate: e.target.value }))}
-                  slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', height: '100%', pt: 1 }}>
-                  <FormControl size="small">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>Certified</Typography>
-                      <Select
-                        value={rsFormData.pm_certified ? 'yes' : 'no'}
-                        onChange={(e) => setRsFormData((f) => ({ ...f, pm_certified: e.target.value === 'yes' }))}
-                        size="small"
-                        sx={{ borderRadius: 1.5, minWidth: 100 }}
-                      >
-                        <MenuItem value="yes">Yes</MenuItem>
-                        <MenuItem value="no">No</MenuItem>
-                      </Select>
-                    </Box>
-                  </FormControl>
-                  <FormControl size="small">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>Primary Skill</Typography>
-                      <Select
-                        value={rsFormData.pm_primaryskill ? 'yes' : 'no'}
-                        onChange={(e) => setRsFormData((f) => ({ ...f, pm_primaryskill: e.target.value === 'yes' }))}
-                        size="small"
-                        sx={{ borderRadius: 1.5, minWidth: 100 }}
-                      >
-                        <MenuItem value="yes">Yes</MenuItem>
-                        <MenuItem value="no">No</MenuItem>
-                      </Select>
-                    </Box>
-                  </FormControl>
-                </Box>
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Button onClick={() => setShowRsForm(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveRs}
-              variant="contained"
-              disabled={actionLoading}
-              sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
-            >
-              {actionLoading ? 'Saving...' : editingRs ? 'Update Mapping' : 'Create Mapping'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          initialData={editingRs}
+          skills={skills}
+          onSave={handleSaveRs}
+        />
       </TabPanel>
 
       {/* ── Delete Confirmation ────────────────────── */}
-      <Dialog
+      <ConfirmDialog
         open={!!deleteConfirm}
         onClose={() => !actionLoading && setDeleteConfirm(null)}
-        maxWidth="xs"
-        fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-          {deleteType === 'skill' ? 'Remove Skill' : 'Remove Mapping'}
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            {deleteType === 'skill'
-              ? 'Are you sure you want to remove this skill from the catalog? This action cannot be undone.'
-              : 'Are you sure you want to remove this resource-skill mapping? This action cannot be undone.'}
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
-            Cancel
-          </Button>
-          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
-            {actionLoading ? 'Removing...' : 'Remove'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title={deleteType === 'skill' ? 'Remove Skill' : 'Remove Mapping'}
+        message={deleteType === 'skill'
+          ? 'Are you sure you want to remove this skill from the catalog? This action cannot be undone.'
+          : 'Are you sure you want to remove this resource-skill mapping? This action cannot be undone.'}
+        confirmLabel="Remove"
+        confirmColor="error"
+        loading={actionLoading}
+        onConfirm={handleDelete}
+      />
     </Box>
   )
 }

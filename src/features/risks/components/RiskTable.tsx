@@ -14,6 +14,8 @@ import {
   Paper,
   useTheme,
   TableSortLabel,
+  MenuItem,
+  Button,
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -346,5 +348,3 @@ export const RiskTable = ({
   )
 }
 
-// Add imports for MenuItem and Button which were missing in my thought process
-import { MenuItem, Button } from '@mui/material'

@@ -1,11 +1,11 @@
-import { Box, Typography, Button, Paper, IconButton, useTheme } from '@mui/material'
+import { Box, Typography, Paper, IconButton, useTheme } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import DeleteIcon from '@mui/icons-material/Delete'
 import type { TimesheetEntryModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 import { formatDateShort } from '@/utils/formatters'
-import { StatusTag } from '@/components/common'
+import { StatusTag, Button } from '@/components/common'
 
 interface TimesheetEntryListProps {
   entries: TimesheetEntryModel[]

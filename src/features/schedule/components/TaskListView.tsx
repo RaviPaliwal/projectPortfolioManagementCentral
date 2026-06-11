@@ -3,7 +3,8 @@ import EditIcon from '@mui/icons-material/Edit'
 import FlagIcon from '@mui/icons-material/Flag'
 import LinkIcon from '@mui/icons-material/Link'
 import type { ProjectTaskModel } from '@/types/dataverse'
-import { ActionIcon, StatusTag } from '@/components/common'
+import { ActionIcon, StatusTag, TableShell, Button } from '@/components/common'
+import AddIcon from '@mui/icons-material/Add'
 import { formatDate } from '@/utils/formatters'
 
 interface TaskListViewProps {
@@ -40,8 +41,13 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
   
   return (
     <Box sx={{ overflowX: 'auto' }}>
-      <Table size="small">
-        <TableHead>
+      <TableShell
+        loading={loading}
+        empty={tasks.length === 0}
+        emptyTitle="No tasks found."
+      >
+        <Table size="small">
+          <TableHead>
           <TableRow sx={{ bgcolor: 'background.default' }}>
             <TableCell sx={{ fontWeight: 700, width: 80 }}>WBS</TableCell>
             <TableCell sx={{ fontWeight: 700 }}>Task Name</TableCell>
@@ -140,6 +146,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
           })}
         </TableBody>
       </Table>
+      </TableShell>
     </Box>
   )
 }

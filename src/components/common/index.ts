@@ -80,3 +80,7 @@ export type { DataverseTableProps, Column } from './DataverseTable/DataverseTabl
 
 export { ConfirmDialog } from './ConfirmDialog/ConfirmDialog'
 export type { ConfirmDialogProps } from './ConfirmDialog/ConfirmDialog'
+
+export { DynamicFormDialog } from './DynamicFormDialog/DynamicFormDialog'
+export type { DynamicFormDialogProps, FormField, FormFieldOption, FormFieldType } from './DynamicFormDialog/DynamicFormDialog'
+

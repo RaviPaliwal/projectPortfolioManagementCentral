@@ -1,72 +1,87 @@
 import type { PortfolioModel, ProjectModel, ProgrammeModel } from '@/types/dataverse'
 import type { IOperationResult } from '@microsoft/power-apps/data'
 
-/**
- * Standardized unwrapper for Dataverse SDK and OData results.
- * Reduces the need for 'any' in feature components.
- */
-export const unwrapList = <T>(result: IOperationResult<T[]> | any): T[] => {
-  if (!result) return []
-  
-  // 1. Handle SDK wrapper
-  if (typeof result === 'object' && 'success' in result) {
-    if (Array.isArray(result.data)) return result.data as T[]
-    if (Array.isArray(result.value)) return result.value as T[]
-    return []
-  }
+// ─── Type Guards ───────────────────────────────────────────────────────────
 
-  // 2. Handle OData/Standard wrapper
-  if ('value' in result && Array.isArray(result.value)) return result.value as T[]
-  if ('data' in result && Array.isArray(result.data)) return result.data as T[]
-  
+/** Check if a value is a non-null object */
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null
+
+/** Check if a value is the Dataverse SDK IOperationResult wrapper (has success property) */
+const isOperationResult = (v: unknown): v is IOperationResult<unknown> =>
+  isObject(v) && 'success' in v
+
+// ─── Unwrappers ────────────────────────────────────────────────────────────
+
+/**
+ * Standardized unwrapper for Dataverse SDK and OData list results.
+ */
+export const unwrapList = <T>(result: IOperationResult<T[]> | unknown): T[] => {
+  if (!result) return []
+
+  // Use unknown cast to access properties that may exist on different response shapes
+  const obj = result as Record<string, unknown>
+
+  // 1. Handle SDK wrapper (IOperationResult with .data array)
+  if (obj.data && Array.isArray(obj.data)) return obj.data as T[]
+
+  // 2. Handle OData wrapper: { value: [...] }
+  if (obj.value && Array.isArray(obj.value)) return obj.value as T[]
+
   // 3. Fallback for raw arrays
-  if (Array.isArray(result)) return result
+  if (Array.isArray(result)) return result as T[]
   return []
 }
 
 /**
  * Standardized unwrapper for single Dataverse SDK or OData items.
  */
-export const unwrapSingle = <T>(result: IOperationResult<T> | any): T | null => {
+export const unwrapSingle = <T>(result: IOperationResult<T> | unknown): T | null => {
   if (!result) return null
-  
-  // 1. Handle SDK wrapper
-  if (typeof result === 'object' && 'success' in result) {
-    if (result.success) {
-      if (result.data) return unwrapSingle<T>(result.data)
-      if (result.value) return unwrapSingle<T>(result.value)
-      return null
-    }
-    return null
+
+  // Use unknown cast to access properties that may exist on different response shapes
+  const obj = result as Record<string, unknown>
+
+  // 1. Handle SDK wrapper — reject failed results early
+  if (isOperationResult(result) && obj.success === false) return null
+
+  // 2. Unwrap nested single items (IOperationResult.data or OData.value)
+  if (obj.data && typeof obj.data === 'object' && !Array.isArray(obj.data)) {
+    return unwrapSingle<T>(obj.data)
+  }
+  if (obj.value && typeof obj.value === 'object' && !Array.isArray(obj.value)) {
+    return unwrapSingle<T>(obj.value)
   }
 
-  // 2. Handle OData/Internal wrappers
-  if (result.value && typeof result.value === 'object' && !Array.isArray(result.value)) return result.value as T
-  if (result.data && typeof result.data === 'object' && !Array.isArray(result.data)) return result.data as T
-  
   // 3. If it's an array, return first item
-  if (Array.isArray(result)) return result.length > 0 ? result[0] as T : null
+  if (Array.isArray(result)) return (result.length > 0 ? result[0] : null) as T | null
 
   // 4. Check for empty object
-  if (typeof result === 'object' && Object.keys(result).length === 0) return null
+  if (typeof obj === 'object' && Object.keys(obj).length === 0) return null
 
-  // 5. Return directly if it's the object itself
-  return result as T
+  // 5. Return directly if it's a non-null object (likely the entity itself)
+  if (isObject(result)) return result as T
+
+  return null
 }
 
 /**
  * Extracts a user-friendly error message from a Dataverse IOperationResult.
  */
-export const parseDataverseError = (result: IOperationResult<any>): string => {
+export const parseDataverseError = (result: IOperationResult<unknown>): string => {
   if (result.success) return ''
-  
+
   const error = result.error
   if (!error) return 'An unknown error occurred.'
 
   // Handle common Dataverse error patterns
-  if (error.message) return error.message
-  if ((error as any).code === '0x80040265') return 'A validation error occurred in Dataverse.'
-  
+  if (typeof error === 'object' && 'message' in error && typeof (error as { message: string }).message === 'string') {
+    return (error as { message: string }).message
+  }
+  if (typeof error === 'object' && 'code' in error && (error as { code: string }).code === '0x80040265') {
+    return 'A validation error occurred in Dataverse.'
+  }
+
   return JSON.stringify(error)
 }
 
@@ -106,19 +121,22 @@ export const normalizeLookupName = (name?: string): string | undefined => {
 /**
  * Aggregates budget data from a list of objects.
  */
-export const aggregateFinancials = <T extends Record<string, any>>(
-  items: T[], 
-  budgetKey: keyof T, 
+export const aggregateFinancials = <T,>(
+  items: T[],
+  budgetKey: keyof T,
   actualKey: keyof T
-): { budget: number, actual: number, variance: number } => {
-  const totals = items.reduce((acc, item) => {
-    const b = Number(item[budgetKey] || 0)
-    const a = Number(item[actualKey] || 0)
-    return {
-      budget: acc.budget + b,
-      actual: acc.actual + a,
-    }
-  }, { budget: 0, actual: 0 })
+): { budget: number; actual: number; variance: number } => {
+  const totals = items.reduce(
+    (acc, item) => {
+      const b = Number(item[budgetKey] ?? 0)
+      const a = Number(item[actualKey] ?? 0)
+      return {
+        budget: acc.budget + b,
+        actual: acc.actual + a,
+      }
+    },
+    { budget: 0, actual: 0 },
+  )
 
   return {
     ...totals,

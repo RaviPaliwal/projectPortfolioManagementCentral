@@ -42,6 +42,7 @@ import VerifiedIcon from '@mui/icons-material/Verified'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import AssessmentIcon from '@mui/icons-material/Assessment'
 import AssignmentIcon from '@mui/icons-material/Assignment'
+import TimelineIcon from '@mui/icons-material/Timeline'
 import {
   fetchBudgetLines,
   createBudgetLine,
@@ -49,12 +50,14 @@ import {
   deleteBudgetLine,
   fetchFundingSources,
   fetchFinancialPeriods,
+  startWorkflowForEntity,
 } from '@/services'
 import type { BudgetLineModel, FundingSourceModel, FinancialPeriodModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, WorkflowMilestone } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -407,7 +410,14 @@ export default function BudgetsPage() {
         await updateBudgetLine(editingBudget.pm_budgetlineid, payload)
         setSuccessMsg('Budget line updated successfully.')
       } else {
-        await createBudgetLine(payload)
+        const created = await createBudgetLine(payload)
+        if (created?.pm_budgetlineid) {
+          try {
+            await startWorkflowForEntity('default-template', created.pm_budgetlineid, MODULE_NAMES.BUDGETS.value, 'System')
+          } catch (wfErr) {
+            console.error('[BudgetsPage] Failed to initiate workflow:', wfErr)
+          }
+        }
         setSuccessMsg('Budget line created successfully.')
       }
       setShowFormModal(false)
@@ -692,6 +702,7 @@ export default function BudgetsPage() {
         tabs={[
           { label: 'Overview' },
           { label: 'Details' },
+          { label: 'Approval' },
         ]}
         tabValue={detailTab}
         onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
@@ -857,9 +868,36 @@ export default function BudgetsPage() {
                 )}
               </Paper>
             </TabPanel>
-          </>
-        )}
-      </DetailDrawer>
+
+                {/* Approval Tab */}
+                <TabPanel value={detailTab} index={2} pt={0}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TimelineIcon sx={{ fontSize: 20 }} /> Approval Workflow Timeline
+                  </Typography>
+                  {selectedBudget?.pm_budgetlineid ? (
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <AccountBalanceWalletIcon sx={{ fontSize: 16 }} />
+                        {selectedBudget.pm_budgetlinename || 'Budget Line'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                        {selectedBudget.pm_approvedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_approvedbudgeteur) : ''}
+                        {selectedBudget.pm_costcategoryname ? ` · ${selectedBudget.pm_costcategoryname}` : ''}
+                      </Typography>
+                      <WorkflowMilestone
+                        moduleName={MODULE_NAMES.BUDGETS.value}
+                        entityId={selectedBudget.pm_budgetlineid}
+                      />
+                    </Paper>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
+                      No workflow tracking available for this budget line.
+                    </Typography>
+                  )}
+                </TabPanel>
+              </>
+            )}
+          </DetailDrawer>
 
       {/* ── Create/Edit Modal ──────────────────────── */}
       <Dialog

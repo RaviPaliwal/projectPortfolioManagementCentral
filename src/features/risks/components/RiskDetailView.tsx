@@ -7,6 +7,7 @@ import {
   CardContent,
   Alert,
   CircularProgress,
+  Button,
 } from '@mui/material'
 import FlagIcon from '@mui/icons-material/Flag'
 import AssignmentIcon from '@mui/icons-material/Assignment'
@@ -32,6 +33,7 @@ interface RiskDetailViewProps {
   drawerTab: number
   mitigationActions: RiskMitigationActionModel[]
   mitigationLoading: boolean
+  onAddActionClick?: () => void
 }
 
 export const RiskDetailView = ({
@@ -39,6 +41,7 @@ export const RiskDetailView = ({
   drawerTab,
   mitigationActions,
   mitigationLoading,
+  onAddActionClick,
 }: RiskDetailViewProps) => {
   const selectedRiskScore = riskScore(selectedRisk.pm_inherentprobability, selectedRisk.pm_inherentimpact)
   const selectedResidualScore = riskScore(selectedRisk.pm_residualprobability, selectedRisk.pm_residualimpact)
@@ -187,13 +190,20 @@ export const RiskDetailView = ({
       )}
 
       {/* Mitigation Actions */}
-      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <AssignmentIcon fontSize="small" />
-        Mitigation Actions
-        {mitigationActions.length > 0 && (
-          <StatusTag label={mitigationActions.length} color="primary" sx={{ fontWeight: 700 }} />
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AssignmentIcon fontSize="small" />
+          Mitigation Actions
+          {mitigationActions.length > 0 && (
+            <StatusTag label={mitigationActions.length} color="primary" sx={{ fontWeight: 700 }} />
+          )}
+        </Typography>
+        {onAddActionClick && (
+          <Button size="small" variant="outlined" onClick={onAddActionClick}>
+            Add Action
+          </Button>
         )}
-      </Typography>
+      </Box>
 
       {mitigationLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>

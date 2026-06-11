@@ -101,6 +101,29 @@ export async function fetchTimesheets(): Promise<TimesheetModel[]> {
   return list
 }
 
+/**
+ * Fetch a single timesheet by ID with full details.
+ */
+export async function fetchTimesheetDetails(timesheetId: string): Promise<TimesheetModel | null> {
+  try {
+    const selectFields = [
+      'pm_timesheetid', 'pm_timesheetname',
+      'pm_ownername', 'pm_resourcename',
+      'pm_periodstartdate', 'pm_periodenddate', 'pm_timesheetstatus',
+      'pm_totalhours', 'pm_totalchargeablehours', 'pm_totalnonchargeablehours',
+      'pm_submissiondate', 'pm_submittedby',
+      'pm_approvaldate', 'pm_approvedby',
+      'pm_rejectionreason', 'pm_reportingperiod', '_pm_resource_value',
+    ]
+    const result = await Pm_timesheetsService.get(timesheetId, { select: selectFields })
+    const item = unwrapSingle<Pm_timesheets>(result)
+    return item ? mapTimesheet(item) : null
+  } catch (err) {
+    console.error('[dataverseService] fetchTimesheetDetails failed:', err)
+    return null
+  }
+}
+
 export async function createTimesheet(payload: Partial<TimesheetModel>): Promise<TimesheetModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {

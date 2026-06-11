@@ -1,5 +1,5 @@
-import { Box, Paper, Typography, Grid, Button, Skeleton } from '@mui/material'
-import { StatusChip } from '@/components/common'
+import { Box, Paper, Typography, Grid, Skeleton } from '@mui/material'
+import { StatusTag as StatusChip, Button } from '@/components/common'
 import type { ProjectModel } from '@/types/dataverse'
 
 interface ActiveProjectsGridProps {
@@ -51,13 +51,13 @@ export const ActiveProjectsGrid = ({ projects, loading, onViewAll, onProjectClic
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                     {project.pm_projectname ?? 'Untitled project'}
                   </Typography>
-                  <StatusChip status={project.pm_ragstatus} type="rag" />
+                  <StatusChip label={['Amber', 'Green', 'Red'][Number(project.pm_ragstatus)] ?? '—'} color={(['warning', 'success', 'error'] as const)[Number(project.pm_ragstatus)] ?? 'default'} />
                 </Box>
                 <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                   {project.pm_projectcode ?? '—'}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  <StatusChip status={project.pm_projectphase} type="phase" />
+                  <StatusChip label={['Execution', 'Planning', 'Closure', 'Initiation'][Number(project.pm_projectphase)] ?? '—'} color="info" />
                   <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center' }}>
                     {project.pm_programmename ?? project.pm_portfolioname ?? 'No parent'}
                   </Typography>

@@ -130,6 +130,24 @@ export async function fetchBudgetLines(): Promise<BudgetLineModel[]> {
   return list
 }
 
+export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetLineModel | null> {
+  const result = await Pm_budgetlinesService.get(budgetLineId, {
+    select: [
+      'pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur',
+      'pm_revisedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur',
+      'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory',
+      'pm_costcategoryname', 'pm_estimateatcompletioneur', 'pm_estimatetocompleteeur',
+      'pm_fundingperiod', 'pm_fundingsourcecode', 'pm_fundingsourcename',
+      'pm_fiscalperiodname', 'pm_portfolio', 'pm_programme', 'pm_projectcode',
+      'pm_projectname', 'pm_portfoliolookupname', 'pm_programmelookupname',
+      'pm_notes',
+    ],
+  })
+  try { console.debug('[dataverseService] fetchBudgetLineById result:', result) } catch (e) {}
+  const item = unwrapSingle<Pm_budgetlines>(result)
+  return item ? mapBudgetLine(item) : null
+}
+
 export async function createBudgetLine(payload: Partial<BudgetLineModel>): Promise<BudgetLineModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
@@ -177,6 +195,21 @@ export async function fetchFundingSources(): Promise<FundingSourceModel[]> {
     list = unwrapList<Pm_fundingsources>(fallbackResult).map(mapFundingSource)
   }
   return list
+}
+
+export async function fetchFundingSourceById(fundingSourceId: string): Promise<FundingSourceModel | null> {
+  const result = await Pm_fundingsourcesService.get(fundingSourceId, {
+    select: [
+      'pm_fundingsourceid', 'pm_fundingsourcename', 'pm_fundingtype',
+      'pm_fundingstatus', 'pm_totalamounteur', 'pm_allocatedamounteur',
+      'pm_availableamounteur', 'pm_fundingbody', 'pm_referencecode',
+      'pm_effectivefromdate', 'pm_effectivetodate',
+      'pm_portfolioname', 'pm_programmename',
+    ],
+  })
+  try { console.debug('[dataverseService] fetchFundingSourceById result:', result) } catch (e) {}
+  const item = unwrapSingle<Pm_fundingsources>(result)
+  return item ? mapFundingSource(item) : null
 }
 
 export async function createFundingSource(payload: Partial<FundingSourceModel>): Promise<FundingSourceModel | null> {

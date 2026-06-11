@@ -67,9 +67,10 @@ import {
 import type { ExportColumn } from '@/utils/exportUtils'
 import type { ResourceModel, ResourceAllocationModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, ActionIcon } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, ActionIcon, WorkflowMilestone } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import  { StatusTag } from '@/components/common'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import {
   BarChart,
   Bar,
@@ -722,6 +723,7 @@ export default function ResourcesPage() {
             tabs={[
               { label: 'Overview' },
               { label: 'Assignments', count: resourceAllocations.length },
+              { label: 'Approval' },
             ]}
             tabValue={detailTab}
             onTabChange={(v) => { setDetailTab(v); setError(null) }}
@@ -848,6 +850,39 @@ export default function ResourcesPage() {
                   ) : (
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
                       No assignments for this resource yet.
+                    </Typography>
+                  )}
+                </TabPanel>
+
+                {/* Approval Tab */}
+                <TabPanel value={detailTab} index={2} pt={0}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TimelineIcon sx={{ fontSize: 20 }} /> Approval Workflow Timeline
+                  </Typography>
+                  {resourceAllocations.length > 0 ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {resourceAllocations.map((alloc) => (
+                        <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <WorkIcon sx={{ fontSize: 16 }} />
+                            {alloc.pm_assignmentrole || 'Unspecified Role'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                            {alloc.pm_allocatedhours ?? 0}h · {alloc.pm_allocationpercentage ?? 0}%
+                            {alloc.pm_startdate ? ` · ${new Date(alloc.pm_startdate).toLocaleDateString()} \u2192 ${alloc.pm_enddate ? new Date(alloc.pm_enddate).toLocaleDateString() : '\u2014'}` : ''}
+                          </Typography>
+                          {alloc.pm_resourceallocationid && (
+                            <WorkflowMilestone
+                              moduleName={MODULE_NAMES.RESOURCES.value}
+                              entityId={alloc.pm_resourceallocationid}
+                            />
+                          )}
+                        </Paper>
+                      ))}
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
+                      No allocations with workflow tracking yet.
                     </Typography>
                   )}
                 </TabPanel>

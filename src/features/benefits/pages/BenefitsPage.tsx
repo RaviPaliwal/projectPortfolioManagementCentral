@@ -41,8 +41,8 @@ import { RAG_LABELS } from '@/constants/mappings'
 import {
   BenefitsGrid,
   PerformanceMeasuresTable,
-  BenefitFormDialog,
-  MeasureFormDialog
+  BenefitDialog,
+  MeasureDialog
 } from '../components'
 import { CATEGORY_LABELS, CATEGORY_COLORS, STATUS_LABELS, STATUS_COLORS } from '../constants'
 import { useDataverseCrud } from '@/hooks/useDataverseCrud'
@@ -82,14 +82,12 @@ export default function BenefitsPage() {
   // Form states
   const [showFormModal, setShowFormModal] = useState(false)
   const [editingBenefit, setEditingBenefit] = useState<BenefitModel | null>(null)
-  const [formData, setFormData] = useState<any>({})
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
   // Measure modal
   const [showMeasureModal, setShowMeasureModal] = useState(false)
-  const [measureFormData, setMeasureFormData] = useState<any>({})
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -139,16 +137,11 @@ export default function BenefitsPage() {
   }, [benefits])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
-  const handleSaveBenefit = async () => {
-    if (!formData.pm_benefitname?.trim()) {
-      setError('Benefit name is required.')
-      return
-    }
-
+  const handleSaveBenefit = async (data: Record<string, any>) => {
     const result = await actionState.execute(
       editingBenefit?.pm_benefitid 
-        ? update(editingBenefit.pm_benefitid, formData)
-        : create(formData)
+        ? update(editingBenefit.pm_benefitid, data)
+        : create(data)
     )
 
     if (result.success) {
@@ -173,15 +166,18 @@ export default function BenefitsPage() {
     }
   }
 
-  const handleSaveMeasure = async () => {
-    if (!measureFormData.pm_measurename?.trim() || !selectedBenefit?.pm_benefitid) return
+  const handleSaveMeasure = async (data: Record<string, any>) => {
+    if (!selectedBenefit?.pm_benefitid) return
     
     const result = await actionState.execute(Pm_performancemeasuresService.create({
-      ...measureFormData,
-      pm_variance: measureFormData.pm_cumulativeplanned > 0
-        ? ((measureFormData.pm_cumulativeactual - measureFormData.pm_cumulativeplanned) / measureFormData.pm_cumulativeplanned) * 100
-        : measureFormData.pm_actualvalue - measureFormData.pm_plannedvalue,
-      _pm_benefit_value: selectedBenefit.pm_benefitid,
+      ...data,
+      pm_variance: data.pm_cumulativeplanned > 0
+        ? ((data.pm_cumulativeactual - data.pm_cumulativeplanned) / data.pm_cumulativeplanned) * 100
+        : data.pm_actualvalue - data.pm_plannedvalue,
+      'pm_benefit@odata.bind': `pm_benefits(${selectedBenefit.pm_benefitid})`,
+      statecode: 0 as any,
+      ownerid: '' as any,
+      owneridtype: '' as any,
     }))
 
     if (result.success) {
@@ -211,7 +207,7 @@ export default function BenefitsPage() {
         title="Benefits Register"
         subtitle="Track and manage benefits realisation with target vs actual value tracking."
         actionElement={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingBenefit(null); setFormData({}); setShowFormModal(true); }}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingBenefit(null); setShowFormModal(true); }}>
             Add Benefit
           </Button>
         }
@@ -231,7 +227,7 @@ export default function BenefitsPage() {
         loading={loading}
         onRowClick={setSelectedBenefit}
         selectedId={selectedBenefit?.pm_benefitid}
-        onCreateClick={() => { setEditingBenefit(null); setFormData({}); setShowFormModal(true); }}
+        onCreateClick={() => { setEditingBenefit(null); setShowFormModal(true); }}
         categoryFilter={categoryFilter}
         onCategoryFilterChange={setCategoryFilter}
         statusFilter={statusFilter}
@@ -251,7 +247,7 @@ export default function BenefitsPage() {
         )}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon icon={<EditIcon />} onClick={() => { setEditingBenefit(selectedBenefit); setFormData({...selectedBenefit}); setShowFormModal(true); }} label="Edit" />
+            <ActionIcon icon={<EditIcon />} onClick={() => { setEditingBenefit(selectedBenefit); setShowFormModal(true); }} label="Edit" />
             <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedBenefit?.pm_benefitid!)} label="Delete" color="error" />
           </Box>
         }
@@ -277,7 +273,7 @@ export default function BenefitsPage() {
               <PerformanceMeasuresTable
                 measures={measuresState.data || []}
                 loading={measuresState.loading}
-                onAddClick={() => { setMeasureFormData({}); setShowMeasureModal(true); }}
+                onAddClick={() => { setShowMeasureModal(true); }}
                 onDeleteClick={handleDeleteMeasure}
                 isDark={isDark}
               />
@@ -286,23 +282,17 @@ export default function BenefitsPage() {
         )}
       </DetailDrawer>
 
-      <BenefitFormDialog
+      <BenefitDialog
         open={showFormModal}
         onClose={() => setShowFormModal(false)}
         onSave={handleSaveBenefit}
-        editingBenefit={editingBenefit}
-        formData={formData}
-        setFormData={setFormData}
-        actionLoading={actionState.loading}
+        initialData={editingBenefit}
       />
 
-      <MeasureFormDialog
+      <MeasureDialog
         open={showMeasureModal}
         onClose={() => setShowMeasureModal(false)}
         onSave={handleSaveMeasure}
-        formData={measureFormData}
-        setFormData={setMeasureFormData}
-        actionLoading={actionState.loading}
       />
 
       <ConfirmDialog

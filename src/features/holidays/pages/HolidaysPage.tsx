@@ -99,7 +99,6 @@ export default function HolidaysPage() {
   const [selectedHoliday, setSelectedHoliday] = useState<HolidayModel | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingHoliday, setEditingHoliday] = useState<HolidayModel | null>(null)
-  const [formData, setFormData] = useState<any>({})
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [showSeedConfirm, setShowSeedConfirm] = useState(false)
   const [seeding, setSeeding] = useState(false)
@@ -134,12 +133,12 @@ export default function HolidaysPage() {
     }))
   }, [holidays, calendarYear])
 
-  const handleSave = async () => {
-    if (!formData.pm_holidayname?.trim() || !formData.pm_holidaydate) return
+  const handleSave = async (data: Record<string, any>) => {
+    if (!data.pm_holidayname?.trim() || !data.pm_holidaydate) return
     const result = await actionState.execute(
       editingHoliday?.pm_holidayid 
-        ? update(editingHoliday.pm_holidayid, { ...formData, statecode: 0 })
-        : create({ ...formData, statecode: 0, statuscode: 1 })
+        ? update(editingHoliday.pm_holidayid, { ...data, statecode: 0 })
+        : create({ ...data, statecode: 0, statuscode: 1 })
     )
 
     if (result.success) {
@@ -202,7 +201,7 @@ export default function HolidaysPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={filteredHolidays} columns={holidayExportColumns} filename={'HolidayCalendar_' + calendarYear} />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingHoliday(null); setFormData({ pm_country: 'Ireland', pm_isfixeddate: true, pm_year: calendarYear }); setShowForm(true); }}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingHoliday(null); setShowForm(true); }}>
               Add Holiday
             </Button>
             <Button variant="outlined" startIcon={<FlagIcon />} size="small" onClick={() => setShowSeedConfirm(true)}>
@@ -242,7 +241,7 @@ export default function HolidaysPage() {
         subtitle={selectedHoliday && <StatusTag icon={<PublicIcon sx={{ fontSize: 14 }} />} label={selectedHoliday.pm_country || '—'} variant="outlined" />}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon icon={<EditIcon />} onClick={() => { setEditingHoliday(selectedHoliday); setFormData({...selectedHoliday}); setShowForm(true); }} label="Edit" color="primary" />
+            <ActionIcon icon={<EditIcon />} onClick={() => { setEditingHoliday(selectedHoliday); setShowForm(true); }} label="Edit" color="primary" />
             <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedHoliday?.pm_holidayid!)} label="Delete" color="error" />
           </Box>
         }
@@ -254,11 +253,8 @@ export default function HolidaysPage() {
         open={showForm}
         onClose={() => setShowForm(false)}
         editingHoliday={editingHoliday}
-        formData={formData}
-        onFormDataChange={(data) => setFormData((f: any) => ({ ...f, ...data }))}
         countryOptions={COUNTRY_OPTIONS}
         onSave={handleSave}
-        actionLoading={actionState.loading}
       />
 
       <ConfirmDialog

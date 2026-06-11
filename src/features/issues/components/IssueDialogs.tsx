@@ -1,269 +1,63 @@
 import React from 'react'
-import {
-  Box, Typography, TextField, Select, MenuItem,
-  Button, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress,
-  FormControl, InputLabel, FormControlLabel, Switch, Avatar,
-} from '@mui/material'
-import NewReleasesIcon from '@mui/icons-material/NewReleases'
-import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
-import LowPriorityIcon from '@mui/icons-material/LowPriority'
+import { DynamicFormDialog } from '@/components/common'
+import type { FormField } from '@/components/common'
 import type { IssueModel } from '@/types/dataverse'
-import { useUser } from '@/context/UserContext'
 
-interface IssueDialogsProps {
-  dialogOpen: boolean
+interface IssueDialogProps {
+  open: boolean
   onClose: () => void
-  editingIssue: IssueModel | null
-  form: Partial<IssueModel>
-  setForm: (form: Partial<IssueModel>) => void
-  handleSave: () => Promise<void>
-  actionLoading: boolean
-  deleteTarget: IssueModel | null
-  setDeleteTarget: (target: IssueModel | null) => void
-  handleDelete: () => Promise<void>
+  onSave: (data: Record<string, any>) => Promise<void>
+  initialData?: IssueModel | null
 }
 
-export const IssueDialogs: React.FC<IssueDialogsProps> = ({
-  dialogOpen,
-  onClose,
-  editingIssue,
-  form,
-  setForm,
-  handleSave,
-  actionLoading,
-  deleteTarget,
-  setDeleteTarget,
-  handleDelete,
-}) => {
-  const { users } = useUser()
+export const IssueDialog: React.FC<IssueDialogProps> = ({ open, onClose, onSave, initialData }) => {
+  const fields: FormField[] = [
+    { name: 'pm_issuetitle', label: 'Issue Title', type: 'text', required: true, gridSize: 12 },
+    { name: 'pm_issuecategory', label: 'Category', type: 'select', defaultValue: '0', gridSize: 4, options: [
+      { value: '0', label: 'Dependency' }, { value: '1', label: 'Technical' }
+    ]},
+    { name: 'pm_prioritylevel', label: 'Priority', type: 'select', defaultValue: '2', gridSize: 4, options: [
+      { value: '1', label: 'Critical' }, { value: '0', label: 'High' }, { value: '2', label: 'Medium' }
+    ]},
+    { name: 'pm_impactlevel', label: 'Impact', type: 'select', defaultValue: '2', gridSize: 4, options: [
+      { value: '1', label: 'Major' }, { value: '0', label: 'Moderate' }, { value: '2', label: 'Minor' }
+    ]},
+    { name: 'pm_ragstatus', label: 'RAG Status', type: 'select', defaultValue: '1', gridSize: 6, options: [
+      { value: '2', label: 'Red' }, { value: '0', label: 'Amber' }, { value: '1', label: 'Green' }
+    ]},
+    { name: 'pm_escalationstatus', label: 'Escalated', type: 'select', defaultValue: 0, gridSize: 6, options: [
+      { value: '0', label: 'No' }, { value: '1', label: 'Yes' }
+    ]},
+    { name: 'pm_issueowner', label: 'Issue Owner', type: 'user-select', gridSize: 6 },
+    { name: 'pm_issuereference', label: 'Issue Reference', type: 'text', gridSize: 6 },
+    { name: 'pm_dateraised', label: 'Raised Date', type: 'date', gridSize: 4 },
+    { name: 'pm_targetresolutiondate', label: 'Target Resolution Date', type: 'date', gridSize: 4 },
+    { name: 'pm_actualresolutiondate', label: 'Actual Resolution Date', type: 'date', gridSize: 4 },
+    { name: 'pm_issuedescription', label: 'Description', type: 'multiline', rows: 3 },
+    { name: 'pm_resolutiondetails', label: 'Resolution Details', type: 'multiline', rows: 2 },
+    { name: 'pm_linkedrisk', label: 'Linked Risk', type: 'text', gridSize: 12 },
+    { name: '_pm_programmefk_value', label: 'Programme FK (GUID)', type: 'text', gridSize: 6 },
+    { name: '_pm_project_value', label: 'Project FK (GUID)', type: 'text', gridSize: 6 },
+  ]
+
+  // Convert pm_escalationstatus from boolean to 0/1 if necessary when displaying
+  const processedData = initialData ? { ...initialData, pm_escalationstatus: initialData.pm_escalationstatus ? 1 : 0 } : {}
+
+  const handleSubmit = async (data: Record<string, any>) => {
+    // Convert pm_escalationstatus back to boolean
+    const payload = { ...data, pm_escalationstatus: data.pm_escalationstatus === 1 || data.pm_escalationstatus === '1' }
+    await onSave(payload)
+  }
 
   return (
-    <>
-      {/* Create / Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={onClose} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {editingIssue ? 'Edit Issue' : 'Create New Issue'}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            {/* Section: Basic Information */}
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', mt: 1 }}>
-              Basic Information
-            </Typography>
-            <TextField
-              label="Issue Title"
-              value={form.pm_issuetitle ?? ''}
-              onChange={(e) => setForm({ ...form, pm_issuetitle: e.target.value })}
-              fullWidth
-              required
-            />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={form.pm_issuecategory ?? '0'}
-                  label="Category"
-                  onChange={(e) => setForm({ ...form, pm_issuecategory: e.target.value })}
-                >
-                  <MenuItem value="0">Dependency</MenuItem>
-                  <MenuItem value="1">Technical</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth>
-                <InputLabel>Priority</InputLabel>
-                <Select
-                  value={form.pm_prioritylevel ?? '2'}
-                  label="Priority"
-                  onChange={(e) => setForm({ ...form, pm_prioritylevel: e.target.value })}
-                >
-                  <MenuItem value="1">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <NewReleasesIcon color="error" fontSize="small" /> Critical
-                    </Box>
-                  </MenuItem>
-                  <MenuItem value="0">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PriorityHighIcon color="warning" fontSize="small" /> High
-                    </Box>
-                  </MenuItem>
-                  <MenuItem value="2">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LowPriorityIcon color="info" fontSize="small" /> Medium
-                    </Box>
-                  </MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth>
-                <InputLabel>Impact</InputLabel>
-                <Select
-                  value={form.pm_impactlevel ?? '2'}
-                  label="Impact"
-                  onChange={(e) => setForm({ ...form, pm_impactlevel: e.target.value })}
-                >
-                  <MenuItem value="1">Major</MenuItem>
-                  <MenuItem value="0">Moderate</MenuItem>
-                  <MenuItem value="2">Minor</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-            <FormControl fullWidth>
-              <InputLabel>RAG Status</InputLabel>
-              <Select
-                value={form.pm_ragstatus ?? '1'}
-                label="RAG Status"
-                onChange={(e) => setForm({ ...form, pm_ragstatus: e.target.value })}
-              >
-                <MenuItem value="2">Red</MenuItem>
-                <MenuItem value="0">Amber</MenuItem>
-                <MenuItem value="1">Green</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={!!form.pm_escalationstatus}
-                  onChange={(e) => setForm({ ...form, pm_escalationstatus: e.target.checked })}
-                  color="error"
-                />
-              }
-              label="Escalated"
-            />
-
-            {/* Section: Assignment & Dates */}
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', mt: 1 }}>
-              Assignment & Dates
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <FormControl fullWidth>
-                <InputLabel>Issue Owner</InputLabel>
-                <Select
-                  value={users.find(u => u.fullname === form.pm_issueowner)?.systemuserid || ''}
-                  label="Issue Owner"
-                  onChange={(e) => {
-                    const user = users.find(u => u.systemuserid === e.target.value)
-                    setForm({ ...form, pm_issueowner: user?.fullname || '' })
-                  }}
-                  renderValue={(selected) => {
-                    const user = users.find(u => u.systemuserid === selected)
-                    return (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
-                          {user?.fullname?.charAt(0) || '?'}
-                        </Avatar>
-                        {user?.fullname || 'Select Owner'}
-                      </Box>
-                    )
-                  }}
-                >
-                  <MenuItem value="">— Select —</MenuItem>
-                  {users.map((user) => (
-                    <MenuItem key={user.systemuserid} value={user.systemuserid}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
-                          {user.fullname?.charAt(0) || '?'}
-                        </Avatar>
-                        <Typography variant="body2">{user.fullname}</Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <TextField
-                label="Issue Reference"
-                value={form.pm_issuereference ?? ''}
-                onChange={(e) => setForm({ ...form, pm_issuereference: e.target.value })}
-                fullWidth
-              />
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Raised Date"
-                type="date"
-                value={form.pm_dateraised ?? ''}
-                onChange={(e) => setForm({ ...form, pm_dateraised: e.target.value })}
-                slotProps={{ inputLabel: { shrink: true } }}
-                fullWidth
-              />
-              <TextField
-                label="Target Resolution Date"
-                type="date"
-                value={form.pm_targetresolutiondate ?? ''}
-                onChange={(e) => setForm({ ...form, pm_targetresolutiondate: e.target.value })}
-                slotProps={{ inputLabel: { shrink: true } }}
-                fullWidth
-              />
-              <TextField
-                label="Actual Resolution Date"
-                type="date"
-                value={form.pm_actualresolutiondate ?? ''}
-                onChange={(e) => setForm({ ...form, pm_actualresolutiondate: e.target.value })}
-                slotProps={{ inputLabel: { shrink: true } }}
-                fullWidth
-              />
-            </Box>
-
-            {/* Section: Details */}
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', mt: 1 }}>
-              Details
-            </Typography>
-            <TextField
-              label="Description"
-              value={form.pm_issuedescription ?? ''}
-              onChange={(e) => setForm({ ...form, pm_issuedescription: e.target.value })}
-              multiline
-              rows={3}
-              fullWidth
-            />
-            <TextField
-              label="Resolution Details"
-              value={form.pm_resolutiondetails ?? ''}
-              onChange={(e) => setForm({ ...form, pm_resolutiondetails: e.target.value })}
-              multiline
-              rows={2}
-              fullWidth
-            />
-            <TextField
-              label="Linked Risk"
-              value={form.pm_linkedrisk ?? ''}
-              onChange={(e) => setForm({ ...form, pm_linkedrisk: e.target.value })}
-              fullWidth
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose} disabled={actionLoading}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={!form.pm_issuetitle || actionLoading}
-            startIcon={actionLoading ? <CircularProgress size={16} /> : undefined}
-          >
-            {editingIssue ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete Confirmation */}
-      <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Delete Issue</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete <strong>{deleteTarget?.pm_issuetitle}</strong>? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteTarget(null)} disabled={actionLoading}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleDelete}
-            disabled={actionLoading}
-            startIcon={actionLoading ? <CircularProgress size={16} /> : undefined}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+    <DynamicFormDialog
+      open={open}
+      title={initialData ? 'Edit Issue' : 'Create New Issue'}
+      fields={fields}
+      initialData={processedData}
+      onClose={onClose}
+      onSubmit={handleSubmit}
+      submitText={initialData ? 'Update' : 'Create'}
+    />
   )
 }

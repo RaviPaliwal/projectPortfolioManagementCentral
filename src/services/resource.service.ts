@@ -98,6 +98,19 @@ export async function fetchResourceAllocations(resourceId: string): Promise<Reso
   return unwrapList<Pm_resourceallocations>(result).map(mapResourceAllocation)
 }
 
+export async function fetchResourceAllocationById(allocationId: string): Promise<ResourceAllocationModel | null> {
+  const result = await Pm_resourceallocationsService.get(allocationId, {
+    select: [
+      'pm_resourceallocationid', 'pm_allocatedhours', 'pm_allocationpercentage',
+      'pm_assignmentrole', 'pm_assignmentstatus', 'pm_startdate', 'pm_enddate',
+      '_pm_resource_value', '_pm_project_value',
+    ],
+  })
+  try { console.debug('[dataverseService] fetchResourceAllocationById result:', result) } catch (e) {}
+  const item = unwrapSingle<Pm_resourceallocations>(result)
+  return item ? mapResourceAllocation(item) : null
+}
+
 export async function assignResource(payload: {
   pm_projectid: string
   pm_resourceid: string

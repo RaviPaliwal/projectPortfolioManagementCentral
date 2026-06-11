@@ -1,6 +1,5 @@
 export * from './RiskHeatmap'
 export * from './RiskDistributionCharts'
 export * from './RiskTable'
-export * from './RiskFormDialog'
 export * from './RiskDetailView'
-export * from './RiskSubFormDialogs'
+export * from './RiskFormDialogs'

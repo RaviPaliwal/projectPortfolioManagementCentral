@@ -34,6 +34,18 @@ const ResourceBudgetPlanningTaskModalWrapper = lazy(() =>
 const RiskIssueSetupTaskModalWrapper = lazy(() =>
   import('@/features/projects/components').then((m) => ({ default: m.RiskIssueSetupTaskModalWrapper }))
 )
+const TimesheetApprovalTaskModalWrapper = lazy(() =>
+  import('@/features/timesheets/components').then((m) => ({ default: m.TimesheetApprovalTaskModalWrapper }))
+)
+const ResourceAllocationApprovalTaskModalWrapper = lazy(() =>
+  import('@/features/resources/components').then((m) => ({ default: m.ResourceAllocationApprovalTaskModalWrapper }))
+)
+const BudgetLineApprovalTaskModalWrapper = lazy(() =>
+  import('@/features/budgets/components').then((m) => ({ default: m.BudgetLineApprovalTaskModalWrapper }))
+)
+const FundingSourceApprovalTaskModalWrapper = lazy(() =>
+  import('@/features/fundingsources/components').then((m) => ({ default: m.FundingSourceApprovalTaskModalWrapper }))
+)
 
 /**
  * Registry of task forms that can be opened from workflow approval steps.
@@ -148,6 +160,34 @@ export const FORM_REGISTRY: FormRegistryEntry[] = [
     displayName: 'Risk & Issue Register Setup',
     description: 'Initialize the risk register and issue tracker for ongoing project monitoring',
     modalComponent: RiskIssueSetupTaskModalWrapper,
+  },
+  {
+    key: 'timesheet_approval',
+    moduleName: MODULE_NAMES.TIMESHEETS.label,
+    displayName: 'Timesheet Approval',
+    description: 'Review submitted timesheet entries — verify hours, chargeability, and project assignments before approving or rejecting',
+    modalComponent: TimesheetApprovalTaskModalWrapper,
+  },
+  {
+    key: 'resource_allocation',
+    moduleName: MODULE_NAMES.RESOURCES.label,
+    displayName: 'Resource Allocation Approval',
+    description: 'Review resource allocation details — verify allocated hours, role, and project alignment before approving or rejecting',
+    modalComponent: ResourceAllocationApprovalTaskModalWrapper,
+  },
+  {
+    key: 'budget_approval',
+    moduleName: MODULE_NAMES.BUDGETS.label,
+    displayName: 'Budget Line Approval',
+    description: 'Review budget line details — verify approved amounts, actual spend, committed spend, and variance before approving or rejecting',
+    modalComponent: BudgetLineApprovalTaskModalWrapper,
+  },
+  {
+    key: 'funding_source_approval',
+    moduleName: MODULE_NAMES.FUNDING_SOURCES.label,
+    displayName: 'Funding Source Approval',
+    description: 'Review funding source details — verify type, allocation amounts, utilization, and effective dates before approving or rejecting',
+    modalComponent: FundingSourceApprovalTaskModalWrapper,
   },
 ]
 

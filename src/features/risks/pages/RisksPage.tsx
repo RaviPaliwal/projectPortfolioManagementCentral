@@ -27,9 +27,9 @@ import {
   RiskHeatmap,
   RiskDistributionCharts,
   RiskTable,
-  RiskFormDialog,
+  RiskDialog,
+  MitigationActionDialog,
   RiskDetailView,
-  RiskDeleteDialog,
 } from '../components'
 import {
   RISK_CATEGORY_LABELS,
@@ -42,7 +42,7 @@ import {
   riskExportColumns,
   emptyForm,
 } from '../constants'
-import { ExportButton, Button } from '@/components/common'
+import { ExportButton, Button, ConfirmDialog } from '@/components/common'
 import AddIcon from '@mui/icons-material/Add'
 import { normalizeLookupId } from '@/services'
 
@@ -68,8 +68,10 @@ export default function RisksPage() {
   // Create/Edit dialog
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingRisk, setEditingRisk] = useState<RiskModel | null>(null)
-  const [form, setForm] = useState<Partial<RiskModel>>({ ...emptyForm })
   const [saving, setSaving] = useState(false)
+
+  // Mitigation Action dialog
+  const [actionDialogOpen, setActionDialogOpen] = useState(false)
 
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState<RiskModel | null>(null)
@@ -129,49 +131,27 @@ export default function RisksPage() {
   // ── Handlers ──────────────────────────────────────────────────────────────
   const openCreate = () => {
     setEditingRisk(null)
-    setForm({ ...emptyForm })
     setDialogOpen(true)
   }
 
   const openEdit = (risk: RiskModel) => {
     setEditingRisk(risk)
-    setForm({
-      pm_risktitle: risk.pm_risktitle ?? '',
-      pm_riskdescription: risk.pm_riskdescription ?? '',
-      pm_riskcategory: risk.pm_riskcategory ?? '',
-      pm_ragstatus: risk.pm_ragstatus ?? '',
-      pm_riskowner: risk.pm_riskowner ?? '',
-      pm_riskstatus: risk.pm_riskstatus ?? 1,
-      pm_escalated: risk.pm_escalated ?? false,
-      pm_identifieddate: risk.pm_identifieddate ?? '',
-      pm_targetclosedate: risk.pm_targetclosedate ?? '',
-      pm_inherentprobability: risk.pm_inherentprobability ?? '',
-      pm_inherentimpact: risk.pm_inherentimpact ?? '',
-      pm_residualprobability: risk.pm_residualprobability ?? '',
-      pm_residualimpact: risk.pm_residualimpact ?? '',
-      pm_responsestrategy: risk.pm_responsestrategy ?? '',
-      pm_riskcause: risk.pm_riskcause ?? '',
-      pm_riskeffect: risk.pm_riskeffect ?? '',
-      pm_riskreference: risk.pm_riskreference ?? '',
-      _pm_project_value: risk._pm_project_value ?? '',
-      _pm_programmefk_value: risk._pm_programmefk_value ?? '',
-    })
     setDialogOpen(true)
   }
 
-  const handleSave = async () => {
-    if (!form.pm_risktitle?.trim()) return
+  const handleSave = async (data: Record<string, any>) => {
+    if (!data.pm_risktitle?.trim()) return
     setSaving(true)
     setError(null)
     try {
       if (editingRisk?.pm_riskid) {
-        const updated = await updateRiskFull(editingRisk.pm_riskid, form)
+        const updated = await updateRiskFull(editingRisk.pm_riskid, data)
         if (updated) {
           setRisks((prev) => prev.map((r) => (r.pm_riskid === updated.pm_riskid ? updated : r)))
           setSuccessMsg('Risk updated.')
         }
       } else {
-        const created = await createRiskFull(form)
+        const created = await createRiskFull(data)
         if (created) {
           setRisks((prev) => [...prev, created])
           setSuccessMsg('Risk created.')
@@ -201,6 +181,30 @@ export default function RisksPage() {
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch {
       setError('Unable to delete risk.')
+    }
+  }
+
+  const handleSaveAction = async (data: Record<string, any>) => {
+    if (!selectedRisk?.pm_riskid) return
+    setError(null)
+    try {
+      const { Pm_riskmitigationactionsService } = await import('@/generated')
+      const payload = {
+        ...data,
+        pm_status: Number(data.pm_actionstatus),
+        _pm_risk_value: selectedRisk.pm_riskid,
+      }
+      await Pm_riskmitigationactionsService.create(payload as any)
+      setSuccessMsg('Action saved.')
+      setActionDialogOpen(false)
+      // Reload actions
+      setMitigationLoading(true)
+      fetchMitigationActions(selectedRisk.pm_riskid)
+        .then((actions) => setMitigationActions(actions))
+        .catch(() => setMitigationActions([]))
+        .finally(() => setMitigationLoading(false))
+    } catch {
+      setError('Unable to save mitigation action.')
     }
   }
 
@@ -327,27 +331,34 @@ export default function RisksPage() {
             drawerTab={drawerTab}
             mitigationActions={mitigationActions}
             mitigationLoading={mitigationLoading}
+            onAddActionClick={() => setActionDialogOpen(true)}
           />
         )}
       </DetailDrawer>
 
       {/* Create / Edit Dialog */}
-      <RiskFormDialog
+      <RiskDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        editingRisk={editingRisk}
-        form={form}
-        setForm={setForm}
+        initialData={editingRisk}
         onSave={handleSave}
-        saving={saving}
+      />
+
+      <MitigationActionDialog
+        open={actionDialogOpen}
+        onClose={() => setActionDialogOpen(false)}
+        onSave={handleSaveAction}
       />
 
       {/* Delete Confirmation */}
-      <RiskDeleteDialog
+      <ConfirmDialog
         open={!!deleteTarget}
+        title="Delete Risk"
+        message={`Are you sure you want to delete ${deleteTarget?.pm_risktitle}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        confirmColor="error"
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        target={deleteTarget}
       />
     </Box>
   )

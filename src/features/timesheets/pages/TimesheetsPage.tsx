@@ -25,6 +25,8 @@ import {
   createTimesheetEntry,
   deleteTimesheetEntry,
   fetchResources,
+  startWorkflowForEntity,
+  fetchWorkflows,
 } from '@/services'
 import type { TimesheetModel, TimesheetEntryModel, ResourceModel } from '@/types/dataverse'
 import {
@@ -34,9 +36,12 @@ import {
   ExportButton,
   KpiCardRow,
   StatusTag,
+  WorkflowMilestone,
 } from '@/components/common'
 import { formatDate } from '@/utils/formatters'
 import { TIMESHEET_STATUS_LABELS, TIMESHEET_STATUS_COLORS } from '@/constants/mappings'
+import { MODULE_NAMES } from '@/constants/moduleNames'
+import { useUser } from '@/context/UserContext'
 import type { ExportColumn } from '@/utils/exportUtils'
 
 // Sub-components
@@ -90,6 +95,7 @@ export default function TimesheetsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showAddEntry, setShowAddEntry] = useState(false)
   const [detailTab, setDetailTab] = useState(0)
+  const { currentUser } = useUser()
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -165,7 +171,34 @@ export default function TimesheetsPage() {
     setActionLoading(true)
     try {
       await updateTimesheetStatus(selectedTimesheet.pm_timesheetid, newStatus, extra)
-      setSuccessMsg(`Timesheet status updated.`)
+      setSuccessMsg('Timesheet status updated.')
+
+      // If submitting, trigger the timesheet approval workflow
+      if (newStatus === 1) {
+        try {
+          const workflows = await fetchWorkflows()
+          const tsWorkflow = workflows.find(
+            (wf) => (wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0') && (
+              wf.pm_module?.toLowerCase() === 'timesheets' ||
+              (wf.pm_workflowname ?? '').toLowerCase().includes('timesheet')
+            )
+          )
+          if (tsWorkflow?.pm_workflowid) {
+            await startWorkflowForEntity(
+              tsWorkflow.pm_workflowid,
+              selectedTimesheet.pm_timesheetid,
+              MODULE_NAMES.TIMESHEETS.value,
+              currentUser?.fullname ?? 'System'
+            )
+            setSuccessMsg('Timesheet submitted for approval!')
+          } else {
+            console.warn('[TimesheetsPage] No active workflow template found for Timesheets')
+          }
+        } catch (wfErr) {
+          console.error('[TimesheetsPage] Failed to start workflow:', wfErr)
+        }
+      }
+
       const updated = await fetchTimesheets()
       setTimesheets(updated)
       const refreshed = updated.find((t) => t.pm_timesheetid === selectedTimesheet.pm_timesheetid)
@@ -352,7 +385,7 @@ export default function TimesheetsPage() {
             />
           )
         }
-        tabs={[{ label: 'Entries', count: entries.length }, { label: 'Details' }]}
+        tabs={[{ label: 'Entries', count: entries.length }, { label: 'Details' }, { label: 'Approval' }]}
         tabValue={detailTab}
         onTabChange={(value) => setDetailTab(value)}
       >
@@ -379,6 +412,21 @@ export default function TimesheetsPage() {
                 <DetailField label="Submitted Date" value={formatDate(selectedTimesheet.pm_submissiondate)} />
                 <DetailField label="Approved By" value={selectedTimesheet.pm_approvedby} />
                 <DetailField label="Approved Date" value={formatDate(selectedTimesheet.pm_approvaldate)} />
+              </Box>
+            </TabPanel>
+
+            <TabPanel value={detailTab} index={2} pt={0}>
+              <Box sx={{ p: 1 }}>
+                {selectedTimesheet.pm_timesheetid ? (
+                  <WorkflowMilestone
+                    moduleName={MODULE_NAMES.TIMESHEETS.value}
+                    entityId={selectedTimesheet.pm_timesheetid}
+                  />
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No timesheet selected.
+                  </Typography>
+                )}
               </Box>
             </TabPanel>
           </>

@@ -11,4 +11,20 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 5000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('plotly.js')) return 'plotly-vendor';
+            if (id.includes('@mui')) return 'mui-vendor';
+            if (id.includes('recharts')) return 'recharts-vendor';
+            if (id.includes('/react/') || id.includes('/react-dom/')) return 'react-vendor';
+            return 'vendor';
+          }
+        }
+      }
+    }
+  }
 });
