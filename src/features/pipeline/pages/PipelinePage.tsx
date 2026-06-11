@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+﻿import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   Box,
   Paper,
@@ -45,23 +45,23 @@ import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown'
 import RateReviewIcon from '@mui/icons-material/RateReview'
 import CancelIcon from '@mui/icons-material/Cancel'
 import TransformIcon from '@mui/icons-material/Transform'
-import ErrorIcon from '@mui/icons-material/Error'
+
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ScienceIcon from '@mui/icons-material/Science'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import InfoIcon from '@mui/icons-material/Info'
-import SearchIcon from '@mui/icons-material/Search'
+
 import PauseCircleFilledIcon from '@mui/icons-material/PauseCircleFilled'
 import {
   fetchInitiatives,
   createInitiative,
   updateInitiative,
   updateInitiativeStatus,
-  createApprovalRequest,
   fetchPipelineKpis,
   fetchPortfolioHierarchy,
+  startWorkflowForEntity,
 } from '@/services'
 
 import { useUser } from '@/context/UserContext'
@@ -72,6 +72,8 @@ import { PageHeader, KpiCardRow, TabPanel, TableFooter, TableShell, DetailDrawer
 import type { KpiCardItem, FilterOption} from '@/components/common'
 import { ExportButton,StatusTag } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
+import { MODULE_NAMES } from '@/constants/moduleNames'
+import { WORKFLOW_DECISION_EVENT } from '@/services/workflow.service'
 import { ConvertToProjectDialog } from '../components/ConvertToProjectDialog'
 import { createProject } from '@/services'
 
@@ -88,11 +90,12 @@ const pipelineExportColumns: ExportColumn[] = [
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
-const STATUS_CONFIG: Record<string, { label: string; color: 'success' | 'info' | 'warning' | 'error' | 'default' }> = {
+const STATUS_CONFIG: Record<string, { label: string; color: 'success' | 'info' | 'warning' | 'error' | 'secondary' | 'default' }> = {
   '0': { label: 'Approved', color: 'success' },
   '1': { label: 'Under Review', color: 'info' },
   '2': { label: 'Deferred', color: 'warning' },
   '3': { label: 'Rejected', color: 'error' },
+  '4': { label: 'Converted', color: 'secondary' },
 }
 
 const STATUS_FILTER_OPTIONS: FilterOption[] = [
@@ -101,6 +104,7 @@ const STATUS_FILTER_OPTIONS: FilterOption[] = [
   { value: '1', label: 'Under Review' },
   { value: '2', label: 'Deferred' },
   { value: '3', label: 'Rejected' },
+  { value: '4', label: 'Converted' },
 ]
 
 type SortField = 'name' | 'sponsor' | 'strategicScore' | 'estimatedCost' | 'status'
@@ -190,13 +194,7 @@ export default function PipelinePage() {
   const [editScoreMode, setEditScoreMode] = useState(false)
   const [editScore, setEditScore] = useState(0)
 
-  // ── Reviewer Dialog State ──────────────────────────────────────────────────
-  const [showReviewerDialog, setShowReviewerDialog] = useState(false)
-  const [selectedReviewerId, setSelectedReviewerId] = useState<string | null>(null)
-  const [selectedReviewerName, setSelectedReviewerName] = useState<string | null>(null)
-  const [reviewDueDate, setReviewDueDate] = useState<string>('')
-  const [reviewerSearch, setReviewerSearch] = useState('')
-  const { users: systemUsers } = useUser()
+  const { currentUser } = useUser()
 
   // ── Portfolio options for create modal ──────────────────────────────────
   const [portfolios, setPortfolios] = useState<PortfolioModel[]>([])
@@ -226,6 +224,13 @@ export default function PipelinePage() {
 
   useEffect(() => {
     loadData()
+  }, [loadData])
+
+  // Reload data when a workflow decision is submitted (e.g., Pipeline Review, Pipeline Decision)
+  useEffect(() => {
+    const handler = () => loadData()
+    window.addEventListener(WORKFLOW_DECISION_EVENT, handler)
+    return () => window.removeEventListener(WORKFLOW_DECISION_EVENT, handler)
   }, [loadData])
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
@@ -272,6 +277,13 @@ export default function PipelinePage() {
       subtitle: 'Not proceeding',
       icon: <CancelIcon />,
       color: 'error.main',
+    },
+    {
+      label: 'Converted',
+      value: initiatives.filter((i) => String(i.pm_pipelinestatus) === '4').length,
+      subtitle: 'Became projects',
+      icon: <TransformIcon />,
+      color: 'secondary.main',
     },
   ]
 
@@ -378,6 +390,9 @@ export default function PipelinePage() {
           _pm_portfolio_value: '',
         })
         await loadData()
+        if (created.pm_initiativeid) {
+          startWorkflowForEntity('default-template', created.pm_initiativeid, MODULE_NAMES.PIPELINE.value, currentUser?.fullname ?? 'System')
+        }
       }
     } catch {
       setError('Unable to create initiative.')
@@ -405,28 +420,15 @@ export default function PipelinePage() {
     }
   }
 
-  const handleSubmitWithReviewer = async () => {
-    if (!selectedInitiative?.pm_initiativeid || !selectedReviewerName) return
+  const handleResubmitForApproval = async () => {
+    if (!selectedInitiative?.pm_initiativeid) return
     setActionLoading(true)
     try {
       await updateInitiativeStatus(selectedInitiative.pm_initiativeid, 1)
-      await createApprovalRequest({
-        pm_requesttitle: `Approval: ${selectedInitiative.pm_name ?? 'Initiative'}`,
-        pm_approvername: selectedReviewerName,
-        pm_entityid: selectedInitiative.pm_initiativeid,
-        pm_entitytype: 0 as any,
-        pm_requestorname: selectedInitiative.pm_requestorname,
-        pm_approvalstage: 4 as any,
-        pm_decisionstatus: 1 as any,
-        pm_duedate: reviewDueDate || undefined,
-      })
+      startWorkflowForEntity('default-template', selectedInitiative.pm_initiativeid, MODULE_NAMES.PIPELINE.value, currentUser?.fullname ?? 'System')
       setSelectedInitiative({ ...selectedInitiative, pm_pipelinestatus: 1 })
-      setShowReviewerDialog(false)
-      setSelectedReviewerId(null)
-      setSelectedReviewerName(null)
-      setReviewDueDate('')
       await loadData()
-      setSuccessMsg(`Initiative submitted to ${selectedReviewerName} for review.`)
+      setSuccessMsg('Initiative re-submitted for approval.')
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch {
       setError('Unable to submit for approval.')
@@ -451,6 +453,7 @@ export default function PipelinePage() {
           await updateInitiative(selectedInitiative.pm_initiativeid!, {
             pm_convertedtoreference: created.pm_projectid,
           } as any)
+          await updateInitiativeStatus(selectedInitiative.pm_initiativeid!, 4)
         } catch (e) {
           console.warn('[PipelinePage] Failed to update initiative conversion reference:', e)
         }
@@ -458,6 +461,9 @@ export default function PipelinePage() {
         setSuccessMsg(`Project "${created.pm_projectname}" created successfully.`)
         await loadData()
         setSelectedInitiative(null)
+        if (created.pm_projectid) {
+          startWorkflowForEntity('default-template', created.pm_projectid, MODULE_NAMES.PROJECTS.value, currentUser?.fullname ?? 'System')
+        }
         setTimeout(() => setSuccessMsg(null), 3000)
       } else {
         setError('Conversion failed. Please try again.')
@@ -834,11 +840,11 @@ export default function PipelinePage() {
           {selectedInitiative && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {[
-                { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Assign a reviewer and submit to the investment board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: () => setShowReviewerDialog(true), btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '0' || String(selectedInitiative.pm_pipelinestatus) === '3' },
+                { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to the investment board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
                 { icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />, title: 'Convert to Project', desc: 'Create a new project from this approved initiative.', color: 'success.main', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
-                { icon: <CancelIcon sx={{ fontSize: 18, color: 'warning.main' }} />, title: 'Defer Initiative', desc: 'Postpone the initiative if it lacks immediate funding or strategic fit.', color: 'warning.main', btnLabel: 'Defer', btnVariant: 'outlined' as const, btnColor: 'warning' as const, onClick: handleDefer, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '2' || String(selectedInitiative.pm_pipelinestatus) === '3' },
-                { icon: <ErrorIcon sx={{ fontSize: 18, color: 'error.main' }} />, title: 'Reject Initiative', desc: 'Close the initiative if it lacks strategic value or funding.', color: 'error.main', btnLabel: 'Reject', btnVariant: 'outlined' as const, btnColor: 'error' as const, onClick: handleReject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) === '3' },
-              ].map((action, idx) => (
+              ]
+                .filter((a) => !a.btnDisabled)
+                .map((action, idx) => (
                 <Paper key={idx} variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, borderLeft: `3px solid ${action.color}`, transition: 'all 0.2s', '&:hover': { bgcolor: isDark ? 'background.paper' : 'background.default' } }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Box>
@@ -848,13 +854,23 @@ export default function PipelinePage() {
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 0, fontSize: fontSizes.smMd }}>{action.desc}</Typography>
                     </Box>
                     <Button variant={action.btnVariant} size="small" color={action.btnColor}
-                      onClick={action.onClick} disabled={actionLoading || action.btnDisabled}
+                      onClick={action.onClick} disabled={actionLoading}
                       sx={{ borderRadius: 1.5, whiteSpace: 'nowrap', ml: 2 }}>
                       {actionLoading ? 'Processing...' : action.btnLabel}
                     </Button>
                   </Box>
                 </Paper>
               ))}
+              {[
+                { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to the investment board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
+                { icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />, title: 'Convert to Project', desc: 'Create a new project from this approved initiative.', color: 'success.main', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
+              ].filter((a) => a.btnDisabled).length === 2 && (
+                <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No actions available for this initiative in its current status.
+                  </Typography>
+                </Paper>
+              )}
             </Box>
           )}
         </TabPanel>
@@ -1060,136 +1076,6 @@ export default function PipelinePage() {
         onConvert={handleCreateProjectFromInitiative}
         converting={actionLoading}
       />
-
-      {/* ── 6. Reviewer Selection Dialog ───────────────────────────────────── */}
-      <Dialog
-        open={showReviewerDialog}
-        onClose={() => !actionLoading && setShowReviewerDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: 1.5 }}>
-            <RateReviewIcon sx={{ fontSize: 18, color: '#fff' }} />
-          </Avatar>
-          Assign Reviewer
-        </DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Select a reviewer to assess <strong>{selectedInitiative?.pm_name ?? 'this initiative'}</strong>.
-            The initiative will be set to <strong>Under Review</strong> and the reviewer will be notified.
-          </Typography>
-
-          {/* Due date */}
-          <TextField
-            label="Review Due Date (optional)"
-            type="date"
-            fullWidth
-            size="small"
-            value={reviewDueDate}
-            onChange={(e) => setReviewDueDate(e.target.value)}
-            slotProps={{
-              input: { startAdornment: <InputAdornment position="start"><CalendarTodayIcon sx={{ fontSize: 16, color: 'action.active' }} /></InputAdornment>, sx: { borderRadius: 1.5 } },
-              inputLabel: { shrink: true },
-            }}
-            sx={{ mb: 2.5 }}
-          />
-
-          {/* Search users */}
-          <TextField
-            label="Search reviewers"
-            fullWidth
-            size="small"
-            value={reviewerSearch}
-            onChange={(e) => setReviewerSearch(e.target.value)}
-            slotProps={{
-              input: { startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: 'action.active' }} /></InputAdornment>, sx: { borderRadius: 1.5 } },
-            }}
-            sx={{ mb: 1.5 }}
-          />
-
-          {/* Reviewers list */}
-          <Paper variant="outlined" sx={{ maxHeight: 280, overflow: 'auto', borderRadius: 1.5 }}>
-            {systemUsers.length === 0 ? (
-              <Box sx={{ p: 3, textAlign: 'center' }}>
-                <Typography variant="body2" color="text.secondary">No users available.</Typography>
-              </Box>
-            ) : (
-              <List dense sx={{ py: 0 }}>
-                {systemUsers
-                  .filter((u) =>
-                    !reviewerSearch ||
-                    u.fullname?.toLowerCase().includes(reviewerSearch.toLowerCase()) ||
-                    u.jobtitle?.toLowerCase().includes(reviewerSearch.toLowerCase())
-                  )
-                  .map((user) => {
-                    const isSelected = user.systemuserid === selectedReviewerId
-                    return (
-                      <ListItemButton
-                        key={user.systemuserid}
-                        selected={isSelected}
-                        onClick={() => {
-                          setSelectedReviewerId(user.systemuserid)
-                          setSelectedReviewerName(user.fullname)
-                        }}
-                        sx={{
-                          borderRadius: 1.5,
-                          mx: 0.5,
-                          my: 0.25,
-                          '&.Mui-selected': {
-                            bgcolor: isDark ? '#1e3a5f' : '#eef2ff',
-                          },
-                        }}
-                      >
-                        <ListItemAvatar>
-                          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 14 }}>
-                            {user.fullname?.charAt(0)?.toUpperCase() ?? '?'}
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={user.fullname}
-                          secondary={user.jobtitle || user.domainname || ''}
-                          slotProps={{
-                            primary: { sx: { fontWeight: isSelected ? 700 : 500, fontSize: '0.875rem' } },
-                            secondary: { sx: { fontSize: '0.75rem' } },
-                          }}
-                        />
-                        {isSelected && (
-                          <StatusTag label="Selected" size="small" color="primary" variant="outlined" sx={{ fontWeight: 600, height: 22, fontSize: 11 }} />
-                        )}
-                      </ListItemButton>
-                    )
-                  })}
-              </List>
-            )}
-          </Paper>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button
-            onClick={() => { setShowReviewerDialog(false); setSelectedReviewerId(null); setSelectedReviewerName(null); setReviewDueDate('') }}
-            variant="outlined"
-            disabled={actionLoading}
-            sx={{ borderRadius: 1.5 }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmitWithReviewer}
-            variant="contained"
-            disabled={!selectedReviewerId || actionLoading}
-            startIcon={actionLoading ? undefined : <RateReviewIcon />}
-            sx={{
-              bgcolor: 'primary.main',
-              '&:hover': { bgcolor: 'primary.dark' },
-              borderRadius: 1.5,
-              fontWeight: 600,
-            }}
-          >
-            {actionLoading ? 'Submitting...' : 'Submit for Review'}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* ── 6. Success Confirmation Dialog ─────────────────────────────────── */}
       <Dialog

@@ -17,7 +17,10 @@ export type Pm_projectspm_costragstatus = keyof typeof Pm_projectspm_costragstat
 export const Pm_projectspm_projectphase = {
   0: 'Execution',
   1: 'Planning',
-  2: 'Closure'
+  2: 'Closure',
+  3: 'Initiation',
+  4: 'Rejected',
+  5: 'Completed'
 } as const;
 export type Pm_projectspm_projectphase = keyof typeof Pm_projectspm_projectphase;
 export const Pm_projectspm_ragstatus = {

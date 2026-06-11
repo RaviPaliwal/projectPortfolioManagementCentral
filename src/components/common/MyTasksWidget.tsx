@@ -6,31 +6,21 @@ import {
   Button,
   Skeleton,
   Alert,
-  Avatar,
   useTheme,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
 } from '@mui/material'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
 import ScheduleIcon from '@mui/icons-material/Schedule'
 import PersonIcon from '@mui/icons-material/Person'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import RateReviewIcon from '@mui/icons-material/RateReview'
 
 import { useUser } from '@/context/UserContext'
 import { StatusTag } from '@/components/common'
 import {
   fetchPendingApprovalRequests,
   fetchApprovalRequests,
-  updateInitiativeStatus,
-  updateApprovalRequest,
 } from '@/services'
 import type { InitiativeModel, ApprovalRequestModel } from '@/types/dataverse'
 
@@ -43,7 +33,7 @@ interface TaskGroup {
 
 export default function MyTasksWidget() {
   const navigateToPending = useCallback(() => {
-    window.dispatchEvent(new CustomEvent('navigate', { detail: { tab: 'pendingapprovals' } }))
+    window.dispatchEvent(new CustomEvent('navigate', { detail: { tab: 'tasks' } }))
   }, [])
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -52,60 +42,6 @@ export default function MyTasksWidget() {
   const [approvalRequests, setApprovalRequests] = useState<ApprovalRequestModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [rejectDialog, setRejectDialog] = useState<{ open: boolean; request: ApprovalRequestModel | null; reason: string }>({
-    open: false,
-    request: null,
-    reason: '',
-  })
-
-  const removeRequest = useCallback((id: string) => {
-    setApprovalRequests((prev) => prev.filter((r) => r.pm_projectapprovalrequestid !== id))
-  }, [])
-
-  const handleApprove = useCallback(async (req: ApprovalRequestModel) => {
-    setActionLoading(req.pm_projectapprovalrequestid ?? 'approve')
-    try {
-      await updateApprovalRequest(req.pm_projectapprovalrequestid!, {
-        pm_decisionstatus: 0 as any,
-        pm_decisiondate: new Date().toISOString().split('T')[0],
-      })
-      // Also update the linked initiative status to Approved
-      if (req.pm_entityid) {
-        await updateInitiativeStatus(req.pm_entityid, 0)
-      }
-      if (req.pm_projectapprovalrequestid) {
-        removeRequest(req.pm_projectapprovalrequestid)
-      }
-    } catch {
-      setError('Unable to approve request.')
-    } finally {
-      setActionLoading(null)
-    }
-  }, [removeRequest])
-
-  const handleReject = useCallback(async () => {
-    const req = rejectDialog.request
-    if (!req?.pm_projectapprovalrequestid) return
-    setActionLoading(req.pm_projectapprovalrequestid)
-    try {
-      await updateApprovalRequest(req.pm_projectapprovalrequestid, {
-        pm_decisionstatus: 2 as any,
-        pm_decisiondate: new Date().toISOString().split('T')[0],
-        pm_decisionnotes: rejectDialog.reason || undefined,
-      })
-      // Also update the linked initiative status to Rejected
-      if (req.pm_entityid) {
-        await updateInitiativeStatus(req.pm_entityid, 3)
-      }
-      removeRequest(req.pm_projectapprovalrequestid)
-      setRejectDialog({ open: false, request: null, reason: '' })
-    } catch {
-      setError('Unable to reject request.')
-    } finally {
-      setActionLoading(null)
-    }
-  }, [rejectDialog, removeRequest])
 
   useEffect(() => {
     if (!currentUser?.fullname) {
@@ -323,31 +259,6 @@ export default function MyTasksWidget() {
                   </Box>
                   <ScheduleIcon sx={{ fontSize: 20, color: '#6366f1', flexShrink: 0 }} />
                 </Box>
-                {/* Action buttons */}
-                <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    color="success"
-                    disabled={actionLoading === req.pm_projectapprovalrequestid}
-                    onClick={() => handleApprove(req)}
-                    startIcon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
-                    sx={{ borderRadius: 1.15, fontWeight: 600, fontSize: 12, py: 0.5 }}
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="error"
-                    disabled={actionLoading === req.pm_projectapprovalrequestid}
-                    onClick={() => setRejectDialog({ open: true, request: req, reason: '' })}
-                    startIcon={<CancelOutlinedIcon sx={{ fontSize: 16 }} />}
-                    sx={{ borderRadius: 1.15, fontWeight: 600, fontSize: 12, py: 0.5 }}
-                  >
-                    Reject
-                  </Button>
-                </Box>
               </Paper>
             ))}
           </Box>
@@ -381,52 +292,6 @@ export default function MyTasksWidget() {
         </>
       )}
 
-      {/* Reject Reason Dialog */}
-      <Dialog
-        open={rejectDialog.open}
-        onClose={() => !actionLoading && setRejectDialog({ open: false, request: null, reason: '' })}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.15 } } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700 }}>Reject Request</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Provide a reason for rejecting <strong>{rejectDialog.request?.pm_requesttitle}</strong>.
-          </Typography>
-          <TextField
-            label="Rejection Reason"
-            fullWidth
-            multiline
-            rows={3}
-            value={rejectDialog.reason}
-            onChange={(e) => setRejectDialog((prev) => ({ ...prev, reason: e.target.value }))}
-            placeholder="Optional: explain why this request is being rejected..."
-            slotProps={{ input: { sx: { borderRadius: 1.15 } } }}
-            autoFocus
-          />
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button
-            onClick={() => setRejectDialog({ open: false, request: null, reason: '' })}
-            variant="outlined"
-            disabled={!!actionLoading}
-            sx={{ borderRadius: 1.15 }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleReject}
-            variant="contained"
-            color="error"
-            disabled={!!actionLoading}
-            startIcon={actionLoading ? undefined : <CancelOutlinedIcon />}
-            sx={{ borderRadius: 1.15, fontWeight: 600 }}
-          >
-            {actionLoading ? 'Rejecting...' : 'Reject'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Paper>
   )
 }

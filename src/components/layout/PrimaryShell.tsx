@@ -32,17 +32,17 @@ import CrisisAlertIcon from '@mui/icons-material/CrisisAlert'
 import ReportProblemIcon from '@mui/icons-material/ReportProblem'
 import ChangeCircleIcon from '@mui/icons-material/ChangeCircle'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
-import ChecklistIcon from '@mui/icons-material/Checklist'
-import RateReviewIcon from '@mui/icons-material/RateReview'
+
 import SavingsIcon from '@mui/icons-material/Savings'
 import PsychologyIcon from '@mui/icons-material/Psychology'
+import AssignmentIcon from '@mui/icons-material/Assignment'
 import AccountTreeWorkflowIcon from '@mui/icons-material/AccountTree'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { UserSelector } from '@/context/UserContext'
 import { useEffect } from 'react'
 import NotificationCenter from './NotificationCenter'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'approvalrequests' | 'fundingsources' | 'skills' | 'workflows' | 'pendingapprovals' | 'holidays' | 'statussnapshots'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?: boolean }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -60,12 +60,11 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?:
   { key: 'issues', label: 'Issues', icon: <ReportProblemIcon /> },
   { key: 'changerequests', label: 'Change Requests', icon: <ChangeCircleIcon /> },
   { key: 'cashflow', label: 'Cashflow', icon: <AccountBalanceIcon /> },
-  { key: 'approvalrequests', label: 'Approvals', icon: <ChecklistIcon /> },
+  { key: 'tasks', label: 'Tasks', icon: <AssignmentIcon /> },
   { key: 'fundingsources', label: 'Funding Sources', icon: <SavingsIcon /> },
-  { key: 'pendingapprovals', label: 'Approvals Queue', icon: <RateReviewIcon /> },
   { key: 'statussnapshots', label: 'Status Snapshots', icon: <AssessmentIcon /> },
   { key: 'configurations', label: 'Configurations', icon: <SettingsIcon /> },
-  
+
   // Hidden sub-navigation items (accessible via Configurations or deep links)
   { key: 'workflows', label: 'Workflows', icon: <AccountTreeWorkflowIcon />, hidden: true },
   { key: 'teamadmin', label: 'Team Admin', icon: <PeopleIcon />, hidden: true },

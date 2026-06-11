@@ -78,7 +78,7 @@ export const StatusTag = ({
           {icon}
         </Box>
       )}
-      {label.toString().toUpperCase()}
+      {(label ?? '—').toString().toUpperCase()}
     </Box>
   )
 }

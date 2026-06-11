@@ -28,14 +28,11 @@ import {
   fetchDashboardMetrics,
   fetchProjectsFull,
   fetchPortfolioHierarchy,
-  fetchPendingApprovalRequests,
   fetchApprovalRequests,
   fetchCapacityAllocationData,
   fetchPlannedVsActualData,
   fetchUtilizationByProjectData,
   fetchDepartmentDemandData,
-  updateInitiativeStatus,
-  updateApprovalRequest,
   fetchInitiatives,
   fetchPipelineKpis,
   fetchMilestonesDueThisMonth,
@@ -76,7 +73,6 @@ export default function DashboardPage() {
   // Separate state for filtered budget card data
   const [budgetMetrics, setBudgetMetrics] = useState({ approved: 0, actual: 0 })
   const [projects, setProjects] = useState<ProjectModel[]>([])
-  const [approvals, setApprovals] = useState<InitiativeModel[]>([])
   const [portfolioSnapshot, setPortfolioSnapshot] = useState<PortfolioModel[]>([])
   const [programmeSnapshot, setProgrammeSnapshot] = useState<ProgrammeModel[]>([])
   const [loading, setLoading] = useState(true)
@@ -99,7 +95,6 @@ export default function DashboardPage() {
   const [risks, setRisks] = useState<RiskModel[]>([])
   const [issues, setIssues] = useState<IssueModel[]>([])
   const [showAllProjects, setShowAllProjects] = useState(false)
-  const [actionLoading, setActionLoading] = useState(false)
 
   // Budget Filter State
   const [availableYears, setAvailableYears] = useState<number[]>([])
@@ -114,10 +109,9 @@ export default function DashboardPage() {
     if (isRefresh) setRefreshing(true)
     try {
       // Global metrics for the whole dashboard (non-filtered)
-      const [dashboard, activeProjects, pendingApprovals, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData, periods] = await Promise.all([
+      const [dashboard, activeProjects, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData, periods] = await Promise.all([
         fetchDashboardMetrics({}), 
         fetchProjectsFull(),
-        fetchPendingApprovalRequests(),
         fetchPortfolioHierarchy(),
         fetchCapacityAllocationData(),
         fetchPlannedVsActualData(),
@@ -147,7 +141,6 @@ export default function DashboardPage() {
       }
       
       setProjects(activeProjects.slice(0, 6))
-      setApprovals(pendingApprovals)
       setCapacityAllocationData(capacityAlloc)
       setPlannedVsActualData(plannedActual)
       setUtilizationByProjectData(utilByProject)
@@ -193,28 +186,6 @@ export default function DashboardPage() {
   useEffect(() => {
     loadData()
   }, [])
-
-  const handleRequestAction = async (initiativeId: string, status: number) => {
-    setActionLoading(true)
-    try {
-      await updateInitiativeStatus(initiativeId, status)
-      // Also update the linked approval request's decision status
-      const linkedRequest = approvalRequests.find(
-        (r) => r.pm_entityid === initiativeId && String(r.pm_decisionstatus) === '1'
-      )
-      if (linkedRequest?.pm_projectapprovalrequestid) {
-        await updateApprovalRequest(linkedRequest.pm_projectapprovalrequestid, {
-          pm_decisionstatus: status === 0 ? 0 : 2,
-          pm_decisiondate: new Date().toISOString().split('T')[0],
-        })
-      }
-      setApprovals((current) => current.filter((item) => item.pm_initiativeid !== initiativeId))
-    } catch {
-      setError('Unable to update request.')
-    } finally {
-      setActionLoading(false)
-    }
-  }
 
   // Build chart data from real metrics
   const projectStatusData = useMemo(() => [
@@ -311,70 +282,6 @@ export default function DashboardPage() {
         <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           {/* My Tasks Widget */}
           <MyTasksWidget />
-
-          {/* Action Center / Pipeline Overview */}
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>My Action Center</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Pending approvals assigned for executive review.
-            </Typography>
-
-            {loading ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                {[...Array(3)].map((_, i) => (
-                  <Box key={i} sx={{ height: 120, bgcolor: 'action.hover', borderRadius: 1.5 }} />
-                ))}
-              </Box>
-            ) : approvals.length > 0 ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                {approvals.slice(0, 3).map((request) => (
-                  <Paper key={request.pm_initiativeid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{request.pm_name ?? 'Approval request'}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                      {request.pm_portfolioname ?? 'Portfolio not set'} · {request.pm_requestorname ?? 'Unknown'}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 0.5, mb: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {request.pm_businesscase ?? 'No business case provided.'}
-                    </Typography>
-                    {request.pm_submissiondate && (
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                        Submitted {new Date(request.pm_submissiondate).toLocaleDateString()}
-                      </Typography>
-                    )}
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        color="success"
-                        disabled={actionLoading}
-                        onClick={() => handleRequestAction(request.pm_initiativeid!, 0)}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="error"
-                        disabled={actionLoading}
-                        onClick={() => handleRequestAction(request.pm_initiativeid!, 3)}
-                      >
-                        Reject
-                      </Button>
-                    </Box>
-                  </Paper>
-                ))}
-                {approvals.length > 3 && (
-                  <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-                    +{approvals.length - 3} more pending {approvals.length === 4 ? 'request' : 'requests'}
-                  </Typography>
-                )}
-              </Box>
-            ) : (
-              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                No pending approvals found.
-              </Typography>
-            )}
-          </Paper>
 
           {/* Pipeline Stage Breakdown */}
           <PipelineStageSummary

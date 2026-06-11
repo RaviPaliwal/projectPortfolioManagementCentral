@@ -4,7 +4,6 @@ import {
   Typography,
   Grid,
   Paper,
-  Button,
 } from '@mui/material'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import ErrorIcon from '@mui/icons-material/Error'
@@ -20,25 +19,14 @@ import { navigateToRisk, navigateToIssue } from '@/utils/navigation'
 interface ProjectRisksIssuesTabProps {
   risks: RiskModel[]
   issues: IssueModel[]
-  onLogRisk?: () => void
-  onLogIssue?: () => void
 }
 
-export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ risks, issues, onLogRisk, onLogIssue }) => {
+export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ risks, issues }) => {
   const escalatedRisks = risks.filter(r => r.pm_ragstatus === '2' || r.pm_ragstatus === 2).length
   const criticalIssues = issues.filter((i: any) => i.pm_prioritylevel === '1' || i.pm_prioritylevel === 1).length
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* ── Action Buttons ── */}
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        {onLogRisk && (
-          <Button size="small" variant="outlined" color="error" startIcon={<BugReportIcon />} onClick={onLogRisk}>Log Risk</Button>
-        )}
-        {onLogIssue && (
-          <Button size="small" variant="outlined" color="warning" startIcon={<WarningAmberIcon />} onClick={onLogIssue}>Log Issue</Button>
-        )}
-      </Box>
       {/* Risk & Issue KPI Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
         <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'secondary.main' }}>

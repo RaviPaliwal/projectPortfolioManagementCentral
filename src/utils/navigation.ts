@@ -38,11 +38,3 @@ export function navigateToProgramme(programmeId: string): void {
   sessionStorage.setItem('preselectProgrammeId', programmeId)
   window.dispatchEvent(new CustomEvent('navigate', { detail: { tab: 'programmes' } }))
 }
-
-/**
- * Navigate to the Gate Reviews tab and pre-select a gate review by ID.
- */
-export function navigateToGateReview(gateReviewId: string): void {
-  sessionStorage.setItem('preselectGateReviewId', gateReviewId)
-  window.dispatchEvent(new CustomEvent('navigate', { detail: { tab: 'gatereviews' } }))
-}

@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   Box,
   Alert,
-  useTheme,
   Tabs,
   Tab,
 } from '@mui/material'
@@ -16,12 +15,20 @@ import ChecklistIcon from '@mui/icons-material/Checklist'
 import PublicIcon from '@mui/icons-material/Public'
 import TodayIcon from '@mui/icons-material/Today'
 import UpcomingIcon from '@mui/icons-material/Upcoming'
-import EventRepeatIcon from '@mui/icons-material/EventRepeat'
 
-import type { Pm_holidaies } from '../../../generated/models/Pm_holidaiesModel'
-import { Pm_holidaiesService } from '../../../generated'
+import { Pm_holidaiesService } from '@/generated'
 import type { HolidayModel } from '@/types/dataverse'
-import { PageHeader, KpiCardRow, DetailDrawer, TabPanel, ExportButton, StatusTag, ActionIcon, Button } from '@/components/common'
+import { 
+  PageHeader, 
+  KpiCardRow, 
+  DetailDrawer, 
+  TabPanel, 
+  ExportButton, 
+  StatusTag, 
+  ActionIcon, 
+  Button, 
+  ConfirmDialog 
+} from '@/components/common'
 import type { KpiCardItem, FilterOption, ExportColumn } from '@/components/common'
 
 // Sub-components
@@ -30,7 +37,8 @@ import { HolidayTable } from '../components/HolidayTable'
 import { HolidayForm } from '../components/HolidayForm'
 import { HolidayDetail } from '../components/HolidayDetail'
 import { SeedHolidaysDialog } from '../components/SeedHolidaysDialog'
-import { DeleteHolidayDialog } from '../components/DeleteHolidayDialog'
+import { useDataverseCrud } from '@/hooks/useDataverseCrud'
+import { useDataverseAsync } from '@/hooks/useDataverseAsync'
 
 const IRISH_PUBLIC_HOLIDAYS: Array<Omit<HolidayModel, 'pm_holidayid' | 'statecode'>> = [
   { pm_holidayname: "New Year's Day", pm_holidaydate: '', pm_country: 'Ireland', pm_isfixeddate: true, pm_year: 0, pm_notes: 'Fixed: 1 January' },
@@ -68,228 +76,91 @@ const holidayExportColumns: ExportColumn[] = [
   { key: 'pm_notes', label: 'Notes' },
 ]
 
-const unwrapHolidayList = (result: any): Pm_holidaies[] => {
-  if (!result) return []
-  if ('value' in result) return result.value as Pm_holidaies[]
-  if ('data' in result) return result.data as Pm_holidaies[]
-  if (Array.isArray(result)) return result
-  return []
-}
-
-const mapHoliday = (item: Pm_holidaies): HolidayModel => ({
-  pm_holidayid: item.pm_holidayid,
-  pm_holidayname: item.pm_holidayname,
-  pm_holidaydate: item.pm_holidaydate,
-  pm_country: item.pm_country,
-  pm_isfixeddate: item.pm_isfixeddate,
-  pm_year: item.pm_year,
-  pm_notes: item.pm_notes,
-  statecode: item.statecode,
-})
-
-const getYear = (dateStr?: string): number | null => {
-  if (!dateStr) return null
-  const d = new Date(dateStr)
-  return isNaN(d.getTime()) ? null : d.getFullYear()
-}
-
-const getMonth = (dateStr?: string): number | null => {
-  if (!dateStr) return null
-  const d = new Date(dateStr)
-  return isNaN(d.getTime()) ? null : d.getMonth()
-}
-
 export default function HolidaysPage() {
-  const [holidays, setHolidays] = useState<HolidayModel[]>([])
-  const [loading, setLoading] = useState(true)
+  const {
+    items: holidays,
+    loading,
+    error: crudError,
+    fetchAll,
+    create,
+    update,
+    remove,
+  } = useDataverseCrud<HolidayModel>(Pm_holidaiesService as any)
+
+  const actionState = useDataverseAsync<any>()
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
-  const [actionLoading, setActionLoading] = useState(false)
+
   const [pageTab, setPageTab] = useState(0)
   const currentYear = new Date().getFullYear()
   const [calendarYear, setCalendarYear] = useState(currentYear)
   const [searchQuery, setSearchQuery] = useState('')
   const [countryFilter, setCountryFilter] = useState('')
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
   const [selectedHoliday, setSelectedHoliday] = useState<HolidayModel | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingHoliday, setEditingHoliday] = useState<HolidayModel | null>(null)
-  const [formData, setFormData] = useState({
-    pm_holidayname: '',
-    pm_holidaydate: '',
-    pm_country: 'Ireland',
-    pm_isfixeddate: true,
-    pm_year: currentYear,
-    pm_notes: '',
-  })
+  const [formData, setFormData] = useState<any>({})
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [showSeedConfirm, setShowSeedConfirm] = useState(false)
   const [seeding, setSeeding] = useState(false)
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await Pm_holidaiesService.getAll({ top: 1000 })
-      const list = unwrapHolidayList(result).map(mapHoliday)
-      setHolidays(list)
-    } catch {
-      setError('Unable to load holidays data.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    loadData()
-  }, [loadData])
+  useEffect(() => { fetchAll() }, [fetchAll])
 
   const kpiItems = useMemo((): KpiCardItem[] => {
     const total = holidays.length
-    const byCurrentYear = holidays.filter((h) => {
-      const y = getYear(h.pm_holidaydate) || h.pm_year
-      return y === calendarYear
-    })
+    const byCurrentYear = holidays.filter((h) => (new Date(h.pm_holidaydate || '').getFullYear() || h.pm_year) === calendarYear)
     const ieHolidays = holidays.filter((h) => (h.pm_country || '').toLowerCase() === 'ireland')
-    const fixedDates = holidays.filter((h) => h.pm_isfixeddate === true)
     const upcoming = holidays.filter((h) => h.pm_holidaydate && new Date(h.pm_holidaydate) >= new Date()).length
 
     return [
-      {
-        label: 'Total Holidays',
-        value: total,
-        subtitle: 'In the calendar',
-        icon: <CelebrationIcon />,
-        color: 'secondary.main',
-      },
-      {
-        label: 'In ' + calendarYear,
-        value: byCurrentYear.length,
-        subtitle: 'Holidays this year',
-        icon: <CalendarMonthIcon />,
-        color: 'primary.main',
-      },
-      {
-        label: 'Irish Holidays',
-        value: ieHolidays.length,
-        subtitle: (ieHolidays.length > 0 ? ((ieHolidays.length / (total || 1)) * 100).toFixed(0) : 0) + '% of total',
-        icon: <FlagIcon />,
-        color: 'success.main',
-      },
-      {
-        label: 'Upcoming',
-        value: upcoming,
-        subtitle: 'Future holidays',
-        icon: <UpcomingIcon />,
-        color: 'info.main',
-      },
-      {
-        label: 'Fixed Date',
-        value: fixedDates.length,
-        subtitle: (fixedDates.length > 0 ? ((fixedDates.length / (total || 1)) * 100).toFixed(0) : 0) + '% are fixed',
-        icon: <TodayIcon />,
-        color: 'warning.main',
-      },
+      { label: 'Total Holidays', value: total, icon: <CelebrationIcon />, color: 'secondary.main' },
+      { label: `In ${calendarYear}`, value: byCurrentYear.length, icon: <CalendarMonthIcon />, color: 'primary.main' },
+      { label: 'Irish Holidays', value: ieHolidays.length, icon: <FlagIcon />, color: 'success.main' },
+      { label: 'Upcoming', value: upcoming, icon: <UpcomingIcon />, color: 'info.main' },
+      { label: 'Fixed Date', value: holidays.filter(h => h.pm_isfixeddate).length, icon: <TodayIcon />, color: 'warning.main' },
     ]
   }, [holidays, calendarYear])
 
   const filteredHolidays = useMemo(() => {
-    let list = [...holidays]
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
-      list = list.filter(
-        (h) =>
-          h.pm_holidayname?.toLowerCase().includes(q) ||
-          h.pm_country?.toLowerCase().includes(q) ||
-          h.pm_notes?.toLowerCase().includes(q)
-      )
-    }
-    if (countryFilter) {
-      list = list.filter((h) => (h.pm_country || '').toLowerCase() === countryFilter.toLowerCase())
-    }
-    return list.sort((a, b) => (a.pm_holidaydate ?? '').localeCompare(b.pm_holidaydate ?? ''))
-  }, [holidays, searchQuery, countryFilter])
+    return holidays.filter(h => !countryFilter || (h.pm_country || '').toLowerCase() === countryFilter.toLowerCase())
+  }, [holidays, countryFilter])
 
   const calendarMonthData = useMemo(() => {
-    const yearHolidays = holidays.filter((h) => {
-      const y = getYear(h.pm_holidaydate) || h.pm_year
-      return y === calendarYear
-    })
+    const yearHolidays = holidays.filter((h) => (new Date(h.pm_holidaydate || '').getFullYear() || h.pm_year) === calendarYear)
     return MONTHS.map((name, idx) => ({
       name,
       index: idx,
-      holidays: yearHolidays.filter((h) => getMonth(h.pm_holidaydate) === idx),
+      holidays: yearHolidays.filter((h) => new Date(h.pm_holidaydate || '').getMonth() === idx),
     }))
   }, [holidays, calendarYear])
 
-  const openCreate = useCallback(() => {
-    setEditingHoliday(null)
-    setFormData({
-      pm_holidayname: '',
-      pm_holidaydate: '',
-      pm_country: 'Ireland',
-      pm_isfixeddate: true,
-      pm_year: calendarYear,
-      pm_notes: '',
-    })
-    setShowForm(true)
-  }, [calendarYear])
-
-  const openEdit = useCallback((holiday: HolidayModel) => {
-    setEditingHoliday(holiday)
-    setFormData({
-      pm_holidayname: holiday.pm_holidayname ?? '',
-      pm_holidaydate: holiday.pm_holidaydate ?? '',
-      pm_country: holiday.pm_country || 'Ireland',
-      pm_isfixeddate: holiday.pm_isfixeddate ?? true,
-      pm_year: holiday.pm_year ?? calendarYear,
-      pm_notes: holiday.pm_notes ?? '',
-    })
-    setShowForm(true)
-  }, [calendarYear])
-
   const handleSave = async () => {
-    if (!formData.pm_holidayname.trim() || !formData.pm_holidaydate) return
-    setActionLoading(true)
-    try {
-      if (editingHoliday?.pm_holidayid) {
-        await Pm_holidaiesService.update(editingHoliday.pm_holidayid, { ...formData, statecode: 0 } as any)
-        setSuccessMsg('Holiday updated successfully.')
-      } else {
-        await Pm_holidaiesService.create({
-          ...formData,
-          statecode: 0,
-          statuscode: 1,
-        } as any)
-        setSuccessMsg('Holiday created successfully.')
-      }
+    if (!formData.pm_holidayname?.trim() || !formData.pm_holidaydate) return
+    const result = await actionState.execute(
+      editingHoliday?.pm_holidayid 
+        ? update(editingHoliday.pm_holidayid, { ...formData, statecode: 0 })
+        : create({ ...formData, statecode: 0, statuscode: 1 })
+    )
+
+    if (result.success) {
+      setSuccessMsg(`Holiday ${editingHoliday ? 'updated' : 'created'} successfully.`)
       setShowForm(false)
       setTimeout(() => setSuccessMsg(null), 3000)
-      await loadData()
-    } catch (err) {
-      console.error('Holiday save error:', err)
-      setError('Unable to save holiday.')
-    } finally {
-      setActionLoading(false)
+    } else {
+      setError(result.error)
     }
   }
 
   const handleDelete = async () => {
     if (!deleteConfirm) return
-    setActionLoading(true)
-    try {
-      await Pm_holidaiesService.delete(deleteConfirm)
+    const result = await remove(deleteConfirm)
+    if (result.success) {
       setSuccessMsg('Holiday removed successfully.')
       setDeleteConfirm(null)
       if (selectedHoliday?.pm_holidayid === deleteConfirm) setSelectedHoliday(null)
       setTimeout(() => setSuccessMsg(null), 3000)
-      await loadData()
-    } catch (err) {
-      console.error('Holiday delete error:', err)
-      setError('Unable to delete holiday.')
-    } finally {
-      setActionLoading(false)
+    } else {
+      setError(result.error || 'Unable to delete holiday.')
     }
   }
 
@@ -306,29 +177,18 @@ export default function HolidaysPage() {
           else if (name === 'Christmas Day') dateStr = calendarYear + '-12-25'
           else if (name === "St. Stephen's Day") dateStr = calendarYear + '-12-26'
         } else {
-          if (name === 'Easter Monday') dateStr = calendarYear + '-04-01'
-          else if (name === 'May Bank Holiday') dateStr = calendarYear + '-05-05'
-          else if (name === 'June Bank Holiday') dateStr = calendarYear + '-06-02'
-          else if (name === 'August Bank Holiday') dateStr = calendarYear + '-08-04'
-          else if (name === 'October Bank Holiday') dateStr = calendarYear + '-10-27'
+          const variableDates: any = { 'Easter Monday': '-04-21', 'May Bank Holiday': '-05-05', 'June Bank Holiday': '-06-02', 'August Bank Holiday': '-08-04', 'October Bank Holiday': '-10-27' }
+          dateStr = calendarYear + (variableDates[name] || '')
         }
         if (!dateStr) continue
-        await Pm_holidaiesService.create({
-          ...template,
-          pm_holidaydate: dateStr,
-          pm_year: calendarYear,
-          statecode: 0,
-          statuscode: 1,
-        } as any)
+        await create({ ...template, pm_holidaydate: dateStr, pm_year: calendarYear, statecode: 0, statuscode: 1 })
         created++
       }
-      setSuccessMsg(created + ' Irish public holidays added for ' + calendarYear + '.')
+      setSuccessMsg(`${created} Irish public holidays added for ${calendarYear}.`)
       setShowSeedConfirm(false)
       setTimeout(() => setSuccessMsg(null), 3000)
-      await loadData()
-    } catch (err) {
-      console.error('Holiday seed error:', err)
-      setError('Unable to seed Irish holidays.')
+    } catch (err: any) {
+      setError(err.message || 'Unable to seed Irish holidays.')
     } finally {
       setSeeding(false)
     }
@@ -338,11 +198,11 @@ export default function HolidaysPage() {
     <Box>
       <PageHeader
         title="Holiday Calendar"
-        subtitle="Manage public holidays and configure Irish public holiday dates across calendar years."
+        subtitle="Manage public holidays and configure Irish public holiday dates."
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={filteredHolidays} columns={holidayExportColumns} filename={'HolidayCalendar_' + calendarYear} />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingHoliday(null); setFormData({ pm_country: 'Ireland', pm_isfixeddate: true, pm_year: calendarYear }); setShowForm(true); }}>
               Add Holiday
             </Button>
             <Button variant="outlined" startIcon={<FlagIcon />} size="small" onClick={() => setShowSeedConfirm(true)}>
@@ -352,45 +212,26 @@ export default function HolidaysPage() {
         }
       />
 
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+      {(error || crudError || actionState.error) && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error || crudError || actionState.error}
+        </Alert>
+      )}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-      {!loading && <KpiCardRow items={kpiItems} />}
+      <KpiCardRow items={kpiItems} loading={loading} />
 
-      <Tabs
-        value={pageTab}
-        onChange={(_, v) => { setPageTab(v); setError(null) }}
-        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
-      >
+      <Tabs value={pageTab} onChange={(_, v) => setPageTab(v)} sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
         <Tab icon={<CalendarMonthIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Calendar View" />
         <Tab icon={<ChecklistIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="List View" />
       </Tabs>
 
       <TabPanel value={pageTab} index={0} pt={0}>
-        <HolidayCalendar
-          calendarYear={calendarYear}
-          onNavigateYear={(delta) => setCalendarYear((prev) => prev + delta)}
-          loading={loading}
-          calendarMonthData={calendarMonthData}
-          onSelectHoliday={setSelectedHoliday}
-        />
+        <HolidayCalendar calendarYear={calendarYear} onNavigateYear={(delta) => setCalendarYear(prev => prev + delta)} loading={loading} calendarMonthData={calendarMonthData} onSelectHoliday={setSelectedHoliday} />
       </TabPanel>
 
       <TabPanel value={pageTab} index={1} pt={0}>
-        <HolidayTable
-          loading={loading}
-          filteredHolidays={filteredHolidays}
-          searchQuery={searchQuery}
-          onSearchChange={(v) => { setSearchQuery(v); setPage(0) }}
-          countryFilter={countryFilter}
-          onFilterChange={(v) => { setCountryFilter(v); setPage(0) }}
-          countryOptions={COUNTRY_OPTIONS}
-          page={page}
-          onPageChange={setPage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(v) => { setRowsPerPage(v); setPage(0) }}
-          onSelectHoliday={setSelectedHoliday}
-        />
+        <HolidayTable loading={loading} filteredHolidays={filteredHolidays} searchQuery={searchQuery} onSearchChange={setSearchQuery} countryFilter={countryFilter} onFilterChange={setCountryFilter} countryOptions={COUNTRY_OPTIONS} onSelectHoliday={setSelectedHoliday} />
       </TabPanel>
 
       <DetailDrawer
@@ -398,23 +239,11 @@ export default function HolidaysPage() {
         onClose={() => setSelectedHoliday(null)}
         icon={<CelebrationIcon sx={{ color: 'warning.main', fontSize: 22 }} />}
         title={selectedHoliday?.pm_holidayname ?? ''}
-        subtitle={selectedHoliday && (
-          <StatusTag icon={<PublicIcon sx={{ fontSize: 14 }} />} label={selectedHoliday.pm_country || '—'} size="small" variant="outlined" />
-        )}
+        subtitle={selectedHoliday && <StatusTag icon={<PublicIcon sx={{ fontSize: 14 }} />} label={selectedHoliday.pm_country || '—'} variant="outlined" />}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon 
-              icon={<EditIcon />} 
-              onClick={() => selectedHoliday && openEdit(selectedHoliday)} 
-              label="Edit Holiday" 
-              color="primary"
-            />
-            <ActionIcon 
-              icon={<DeleteIcon />} 
-              onClick={() => selectedHoliday?.pm_holidayid && setDeleteConfirm(selectedHoliday.pm_holidayid)} 
-              label="Delete Holiday" 
-              color="error"
-            />
+            <ActionIcon icon={<EditIcon />} onClick={() => { setEditingHoliday(selectedHoliday); setFormData({...selectedHoliday}); setShowForm(true); }} label="Edit" color="primary" />
+            <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedHoliday?.pm_holidayid!)} label="Delete" color="error" />
           </Box>
         }
       >
@@ -426,36 +255,24 @@ export default function HolidaysPage() {
         onClose={() => setShowForm(false)}
         editingHoliday={editingHoliday}
         formData={formData}
-        onFormDataChange={(data) => {
-          setFormData((f) => {
-            const next = { ...f, ...data }
-            if (data.pm_holidaydate) {
-              const y = new Date(data.pm_holidaydate).getFullYear()
-              if (!isNaN(y)) next.pm_year = y
-            }
-            return next
-          })
-        }}
+        onFormDataChange={(data) => setFormData((f: any) => ({ ...f, ...data }))}
         countryOptions={COUNTRY_OPTIONS}
         onSave={handleSave}
-        actionLoading={actionLoading}
+        actionLoading={actionState.loading}
       />
 
-      <DeleteHolidayDialog
+      <ConfirmDialog
         open={!!deleteConfirm}
-        onClose={() => setDeleteConfirm(null)}
+        title="Remove Holiday"
+        message="Are you sure you want to remove this holiday? This action cannot be undone."
+        confirmLabel="Remove"
+        confirmColor="error"
+        loading={actionState.loading}
         onConfirm={handleDelete}
-        loading={actionLoading}
+        onClose={() => setDeleteConfirm(null)}
       />
 
-      <SeedHolidaysDialog
-        open={showSeedConfirm}
-        onClose={() => setShowSeedConfirm(false)}
-        onConfirm={handleSeedIrishHolidays}
-        loading={seeding}
-        calendarYear={calendarYear}
-        holidays={IRISH_PUBLIC_HOLIDAYS}
-      />
+      <SeedHolidaysDialog open={showSeedConfirm} onClose={() => setShowSeedConfirm(false)} onConfirm={handleSeedIrishHolidays} loading={seeding} calendarYear={calendarYear} holidays={IRISH_PUBLIC_HOLIDAYS} />
     </Box>
   )
 }

@@ -310,7 +310,7 @@ export const BenefitFormDialog = ({
         <Button
           onClick={onSave}
           variant="contained"
-          disabled={!formData.pm_benefitname.trim() || actionLoading}
+          disabled={!formData.pm_benefitname?.trim() || actionLoading}
           sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
         >
           {actionLoading ? 'Saving...' : editingBenefit ? 'Update Benefit' : 'Register Benefit'}

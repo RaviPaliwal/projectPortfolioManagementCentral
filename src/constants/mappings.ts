@@ -19,11 +19,12 @@ export const STATUS_COLORS_SEMANTIC = {
 } as const
 
 export const PROJECT_PHASE_LABELS: Record<string, string> = {
-  '0': 'Initiation',
+  '0': 'Execution',
   '1': 'Planning',
-  '2': 'Execution',
-  '3': 'Monitoring',
-  '4': 'Closing',
+  '2': 'Closure',
+  '3': 'Initiation',
+  '4': 'Rejected',
+  '5': 'Completed',
 }
 
 export const PROGRAMME_PHASE_LABELS: Record<string, string> = {

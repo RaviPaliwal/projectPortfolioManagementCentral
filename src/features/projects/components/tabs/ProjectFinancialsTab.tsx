@@ -9,11 +9,9 @@ import {
   TableBody,
   Paper,
   TableContainer,
-  Button,
 } from '@mui/material'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import PieChartIcon from '@mui/icons-material/PieChart'
-import AddIcon from '@mui/icons-material/Add'
 
 import { StatusTag, VarianceDisplay } from '@/components/common'
 import type { BudgetLineModel } from '@/types/dataverse'
@@ -22,22 +20,15 @@ import { fontSizes } from '@/styles'
 
 interface ProjectFinancialsTabProps {
   budgetLines: BudgetLineModel[]
-  onAddBudgetLine?: () => void
 }
 
-export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ budgetLines, onAddBudgetLine }) => {
+export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ budgetLines }) => {
   const totalBudget = budgetLines.reduce((s, b) => s + (b.pm_approvedbudgeteur ?? 0), 0)
   const totalSpent = budgetLines.reduce((s, b) => s + (b.pm_actualspendeur ?? 0), 0)
   const variance = totalBudget - totalSpent
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* ── Action Buttons ── */}
-      {onAddBudgetLine && (
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={onAddBudgetLine}>Add Budget Line</Button>
-        </Box>
-      )}
       {/* Financial Summary Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
         <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid #3b82f6' }}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -11,18 +11,16 @@ import {
   CircularProgress,
   TextField,
   Divider,
-  Chip,
-  Paper
+  Chip
 } from '@mui/material'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import FactCheckIcon from '@mui/icons-material/FactCheck'
 
 import { fetchProjectDetails, updateGateReview, fetchGateReviewById } from '@/services'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
-import { submitWorkflowDecision } from '@/services/workflow.service'
+import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 
 interface FinancialReviewTaskModalProps {
   open: boolean
@@ -30,6 +28,7 @@ interface FinancialReviewTaskModalProps {
   gateReviewId: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
+  DecisionBox?: ComponentType<DecisionBoxProps>
   approvalStepId?: string
 }
 
@@ -39,6 +38,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
   gateReviewId,
   onSuccess,
   onError,
+  DecisionBox: DecisionBoxProp,
   approvalStepId,
 }) => {
   const [loading, setLoading] = useState(false)
@@ -89,45 +89,22 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
 
   /**
    * Save task-specific data to the gate review before the workflow decision is submitted.
-   * Called by the submit handler before submitting the workflow decision.
    */
   const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
-    console.log('[FinancialTask] 🎯 saveTaskData called with workflowDecision:', workflowDecision, '| gateReview:', gateReview?.pm_projectgatereviewid)
-    if (!gateReview?.pm_projectgatereviewid) {
-      console.warn('[FinancialTask] ❌ gateReview or ID is null — cannot save')
-      return false
-    }
+    if (!gateReview?.pm_projectgatereviewid) return false
     setSaving(true)
     try {
-      const isApproved = workflowDecision === 0
-      const decisionLabel = isApproved ? 'Endorsed' : 'Rejected'
+      const decisionLabel = workflowDecision === 0 ? 'Endorsed' : 'Rejected'
       const existingNotes = gateReview.pm_reviewnotes || ''
       const newEntry = `\n\n--- Financial Review Task ---\nDecision: ${decisionLabel}\nDate: ${new Date().toLocaleDateString()}\nNotes:\n${financeNotes || 'No additional notes provided.'}`
       
-      const updatePayload = {
-        pm_reviewoutcome: isApproved ? 3 : 4, // 3=In Progress, 4=Rejected
+      await updateGateReview(gateReview.pm_projectgatereviewid, {
         pm_reviewnotes: existingNotes + newEntry,
-      }
-
-      console.log('[FinancialTask] 🚀 Calling updateGateReview:', {
-        id: gateReview.pm_projectgatereviewid,
-        payload: {
-          pm_reviewoutcome: updatePayload.pm_reviewoutcome,
-          pm_reviewnotes_length: updatePayload.pm_reviewnotes?.length,
-        },
-      })
-
-      const updateResult = await updateGateReview(gateReview.pm_projectgatereviewid, updatePayload as any)
-      
-      console.log('[FinancialTask] ✅ updateGateReview returned:', updateResult)
-      if (updateResult === null) {
-        console.log('[FinancialTask] ℹ️ updateGateReview returned null (204 No Content — expected)')
-      }
+      } as any)
 
       onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
       return true
     } catch (err) {
-      console.error('[FinancialTask] ❌ Decision record error:', err)
       onError('Failed to save Financial decision.')
       return false
     } finally {
@@ -144,7 +121,6 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
       const newEntry = `\n\n--- Financial Review Task ---\nDecision: ${decision}\nDate: ${new Date().toLocaleDateString()}\nNotes:\n${financeNotes || 'No additional notes provided.'}`
       
       await updateGateReview(gateReview.pm_projectgatereviewid, {
-        pm_reviewoutcome: decision === 'Endorsed' ? 3 : 4, // 3=In Progress, 4=Rejected
         pm_reviewnotes: existingNotes + newEntry,
       } as any)
 
@@ -156,41 +132,6 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
       setSaving(false)
     }
   }, [gateReview, financeNotes, onSuccess, onClose, onError])
-
-  /**
-   * Handle Financial review submission via FormDialog/workflow path.
-   * Uses a single submit button that derives the workflow decision from
-   * the financial assessment: has notes → endorse (0), no notes → reject (3).
-   */
-  const handleSubmitFinancialDecision = useCallback(async () => {
-    if (!gateReview?.pm_projectgatereviewid || !approvalStepId) return
-
-    // Button is disabled without notes, so always endorse
-    const workflowDecision = 0
-
-    setSaving(true)
-    try {
-      const taskSaved = await saveTaskData(workflowDecision)
-      if (!taskSaved) {
-        setSaving(false)
-        return
-      }
-
-      const success = await submitWorkflowDecision(approvalStepId, workflowDecision, financeNotes)
-
-      if (success) {
-        console.log('[FinancialTask] ✅ Workflow decision submitted successfully')
-        onClose()
-      } else {
-        onError('Workflow routing handler did not return success.')
-      }
-    } catch (err) {
-      console.error('[FinancialTask] ❌ Error submitting decision:', err)
-      onError('Failed to submit Financial decision.')
-    } finally {
-      setSaving(false)
-    }
-  }, [gateReview, approvalStepId, financeNotes, saveTaskData, onClose, onError])
 
   const budget = project?.pm_approvedbudgeteur ?? 0
   const spend = project?.pm_actualcosteur ?? 0
@@ -242,19 +183,6 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                   </Box>
                 </Box>
               </Box>
-
-              {/* Show previous endorsements/notes in read-only panel */}
-              {gateReview?.pm_reviewnotes && (
-                <Box sx={{ mt: 3 }}>
-                  <Divider sx={{ mb: 2 }} />
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                    <FactCheckIcon fontSize="small" /> Previous Endorsements & Notes
-                  </Typography>
-                  <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50', maxHeight: 150, overflowY: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.75rem', color: 'text.secondary', fontFamily: 'monospace' }}>
-                    {gateReview.pm_reviewnotes}
-                  </Paper>
-                </Box>
-              )}
             </Grid>
 
             {/* Right Panel: Assessment */}
@@ -268,8 +196,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
               <TextField 
                 fullWidth multiline rows={6} 
                 label="Financial Assessment Notes"
-                placeholder="Enter new financial clearance notes, concerns, or budget conditions..."
-                helperText={gateReview?.pm_reviewnotes ? 'Previous endorsement notes shown on left — your new notes will be appended.' : ''}
+                placeholder="Enter financial clearance notes, concerns, or budget conditions..."
                 value={financeNotes}
                 onChange={(e) => setFinanceNotes(e.target.value)}
                 slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
@@ -286,42 +213,36 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
       </DialogContent>
       
       <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', flexDirection: 'column', alignItems: 'stretch', gap: 2 }}>
-        {approvalStepId ? (
+        {DecisionBoxProp && approvalStepId ? (
           <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Button onClick={onClose} disabled={saving}>Cancel</Button>
-              <Button 
-                variant="contained" 
-                color="success" 
-                disabled={loading || saving || !financeNotes.trim()}
-                onClick={handleSubmitFinancialDecision}
-                sx={{ fontWeight: 600 }}
-              >
-                {saving ? 'Processing...' : 'Endorse & Submit'}
-              </Button>
-            </Box>
+            <Button onClick={onClose} disabled={saving} sx={{ alignSelf: 'flex-start' }}>Cancel</Button>
+            <DecisionBoxProp
+              approvalStepId={approvalStepId}
+              onBeforeDecision={saveTaskData}
+              onDecisionComplete={() => onClose()}
+              onDecisionError={(msg) => onError(msg)}
+              disabled={loading}
+            />
           </>
         ) : (
           <>
-            <Button onClick={onClose} disabled={saving} sx={{ alignSelf: 'flex-start' }}>Cancel</Button>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
-              <Button 
-                variant="outlined" 
-                color="error" 
-                disabled={loading || saving}
-                onClick={() => handleLegacyDecision('Rejected')}
-              >
-                Reject Financials
-              </Button>
-              <Button 
-                variant="contained" 
-                color="success" 
-                disabled={loading || saving || !financeNotes.trim()}
-                onClick={() => handleLegacyDecision('Endorsed')}
-              >
-                {saving ? 'Processing...' : 'Endorse Financials'}
-              </Button>
-            </Box>
+            <Button onClick={onClose} disabled={saving} sx={{ mr: 'auto' }}>Cancel</Button>
+            <Button 
+              variant="outlined" 
+              color="error" 
+              disabled={loading || saving}
+              onClick={() => handleLegacyDecision('Rejected')}
+            >
+              Reject Financials
+            </Button>
+            <Button 
+              variant="contained" 
+              color="success" 
+              disabled={loading || saving || !financeNotes.trim()}
+              onClick={() => handleLegacyDecision('Endorsed')}
+            >
+              {saving ? 'Processing...' : 'Endorse Financials'}
+            </Button>
           </>
         )}
       </DialogActions>

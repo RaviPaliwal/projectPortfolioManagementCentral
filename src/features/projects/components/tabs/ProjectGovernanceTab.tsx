@@ -7,9 +7,7 @@ import {
   useTheme,
 } from '@mui/material'
 import HowToRegIcon from '@mui/icons-material/HowToReg'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { StatusTag } from '@/components/common'
-import { navigateToGateReview } from '@/utils/navigation'
 import type { GateReviewModel } from '@/types/dataverse'
 
 const GATE_STAGE_LABELS: Record<string, string> = {
@@ -34,17 +32,9 @@ export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gate
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Gate Reviews ({gateReviews.length})</Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {gateReviews.map((g) => (
-              <Paper
-                key={g.pm_projectgatereviewid}
-                variant="outlined"
-                onClick={() => g.pm_projectgatereviewid && navigateToGateReview(g.pm_projectgatereviewid)}
-                sx={{ p: 2, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
-              >
+              <Paper key={g.pm_projectgatereviewid} variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{g.pm_gatename}</Typography>
-                    <OpenInNewIcon sx={{ fontSize: 14, opacity: 0.4 }} />
-                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{g.pm_gatename}</Typography>
                   <Typography variant="caption" color="text.secondary">
                     {GATE_STAGE_LABELS[String(g.pm_gatestage)] || `Stage ${g.pm_gatestage}`} · {g.pm_leadreviewer ? `Reviewer: ${g.pm_leadreviewer}` : ''}
                     {g.pm_plannedreviewdate ? ` · Planned: ${new Date(g.pm_plannedreviewdate).toLocaleDateString()}` : ''}

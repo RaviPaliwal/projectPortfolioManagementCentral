@@ -300,14 +300,6 @@
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_project"
         },
-        "pm_projectid": {
-          "type": "string",
-          "title": "Project",
-          "x-ms-dataverse-attribute": "pm_projectid",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projectid",
-          "maxLength": 100
-        },
         "pm_projectname": {
           "type": "string",
           "title": "pm_projectname",

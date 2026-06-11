@@ -59,7 +59,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
     _pm_programme_value: '',
     pm_projectmanager: '',
     pm_projectsponsor: '',
-    pm_projectphase: '1',
+    pm_projectphase: '3',
     pm_ragstatus: '1',
     pm_approvedbudgeteur: 0,
     pm_actualcosteur: 0,
@@ -85,7 +85,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
         _pm_programme_value: '',
         pm_projectmanager: '',
         pm_projectsponsor: initiative.pm_requestorname ?? '',
-        pm_projectphase: '1',
+        pm_projectphase: '3',
         pm_ragstatus: '1',
         pm_approvedbudgeteur: initiative.pm_estimatedcost ?? 0,
         pm_actualcosteur: 0,
@@ -350,9 +350,12 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               onChange={handleChange('pm_projectphase')}
               slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             >
-              <MenuItem value="1">Planning</MenuItem>
+              <MenuItem value="3">Initiation</MenuItem>
               <MenuItem value="0">Execution</MenuItem>
+              <MenuItem value="1">Planning</MenuItem>
               <MenuItem value="2">Closure</MenuItem>
+              <MenuItem value="4">Rejected</MenuItem>
+              <MenuItem value="5">Completed</MenuItem>
             </TextField>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>

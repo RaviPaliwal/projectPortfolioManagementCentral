@@ -1,26 +1,20 @@
+import { useMemo } from 'react'
 import {
   Box,
   Typography,
-  useTheme,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Button,
   IconButton,
   Tooltip,
-  Paper,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import type { PerformanceMeasureModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { StatusTag } from '@/components/common'
+import { DataverseTable, StatusTag, Button, type Column } from '@/components/common'
 
 interface PerformanceMeasuresTableProps {
   measures: PerformanceMeasureModel[]
+  loading?: boolean
   onAddClick: () => void
   onDeleteClick: (id: string) => void
   isDark?: boolean
@@ -28,13 +22,94 @@ interface PerformanceMeasuresTableProps {
 
 export const PerformanceMeasuresTable = ({
   measures,
+  loading,
   onAddClick,
   onDeleteClick,
   isDark,
 }: PerformanceMeasuresTableProps) => {
+
+  const columns: Column<PerformanceMeasureModel>[] = [
+    {
+      key: 'pm_measurename',
+      label: 'Measure',
+      format: (val, item) => (
+        <Box>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>{val}</Typography>
+          {item.pm_notes && <Typography variant="caption" color="text.secondary">{item.pm_notes}</Typography>}
+        </Box>
+      )
+    },
+    {
+      key: 'pm_reportingperiod',
+      label: 'Period',
+      format: (val) => (
+        <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>
+          {val || '—'}
+        </Typography>
+      )
+    },
+    { key: 'pm_plannedvalue', label: 'Planned', align: 'right' },
+    { key: 'pm_actualvalue', label: 'Actual', align: 'right', format: (val) => <Typography variant="body2" sx={{ fontWeight: 600 }}>{val ?? '—'}</Typography> },
+    { key: 'pm_cumulativeplanned', label: 'Cumul. Planned', align: 'right' },
+    { key: 'pm_cumulativeactual', label: 'Cumul. Actual', align: 'right', format: (val) => <Typography variant="body2" sx={{ fontWeight: 600 }}>{val ?? '—'}</Typography> },
+    {
+      key: 'pm_variance',
+      label: 'Variance',
+      format: (val) => {
+        const variance = Number(val) || 0
+        const isPositive = variance >= 0
+        return (
+          <StatusTag
+            label={isPositive ? `+${variance.toFixed(1)}%` : `${variance.toFixed(1)}%`}
+            color={isPositive ? 'success' : 'error'}
+            variant="outlined"
+            sx={{ fontSize: fontSizes.xs }}
+          />
+        )
+      }
+    },
+    {
+      key: 'pm_evidenced',
+      label: 'Evidenced',
+      format: (val) => (
+        <StatusTag
+          label={String(val) === '1' ? 'Yes' : 'No'}
+          color={String(val) === '1' ? 'success' : 'default'}
+          variant="outlined"
+        />
+      )
+    }
+  ]
+
+  const cumulativeFooter = useMemo(() => {
+    if (measures.length === 0) return null
+    const totalPlanned = measures.reduce((s, m) => s + (m.pm_cumulativeplanned ?? 0), 0)
+    const totalActual = measures.reduce((s, m) => s + (m.pm_cumulativeactual ?? 0), 0)
+    const overallVariance = totalPlanned > 0 ? ((totalActual - totalPlanned) / totalPlanned) * 100 : 0
+    
+    return (
+      <Box sx={{ p: 2, display: 'flex', gap: 4, bgcolor: isDark ? '#1a2332' : 'background.default' }}>
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Total Cumul. Planned</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 700 }}>{totalPlanned.toLocaleString()}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Total Cumul. Actual</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 700 }}>{totalActual.toLocaleString()}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Overall Variance</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 700, color: overallVariance >= 0 ? 'success.main' : 'error.main' }}>
+            {overallVariance >= 0 ? '+' : ''}{overallVariance.toFixed(1)}%
+          </Typography>
+        </Box>
+      </Box>
+    )
+  }, [measures, isDark])
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <TrackChangesIcon sx={{ fontSize: 16 }} /> Measures by Period
         </Typography>
@@ -43,134 +118,31 @@ export const PerformanceMeasuresTable = ({
           size="small"
           startIcon={<AddIcon />}
           onClick={onAddClick}
-          sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5 }}
+          sx={{ borderRadius: 1.5 }}
         >
           Add Measure
         </Button>
       </Box>
 
-      {measures.length === 0 ? (
-        <Paper variant="outlined" sx={{ textAlign: 'center', py: 6, borderRadius: 1.5 }}>
-          <TrackChangesIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1.5 }} />
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            No performance measures recorded.
-          </Typography>
-          <Typography variant="caption" color="text.disabled">
-            Add measures to track progress against this benefit's target values per reporting period.
-          </Typography>
-          <Box sx={{ mt: 2 }}>
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={onAddClick} sx={{ borderRadius: 1.5 }}>
-              Add first measure
-            </Button>
-          </Box>
-        </Paper>
-      ) : (
-        <Paper variant="outlined" sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Measure</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Period</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Planned</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Actual</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Cumul. Planned</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Cumul. Actual</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Variance</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Evidenced</TableCell>
-                <TableCell sx={{ width: 50 }}></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {measures.map((m) => {
-                const variance = m.pm_variance ?? 0
-                const isPositive = variance >= 0
-                return (
-                  <TableRow key={m.pm_performancemeasureid} hover>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.pm_measurename}</Typography>
-                      {m.pm_notes && <Typography variant="caption" color="text.secondary">{m.pm_notes}</Typography>}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>
-                        {m.pm_reportingperiod || '—'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{m.pm_plannedvalue ?? '—'}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.pm_actualvalue ?? '—'}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{m.pm_cumulativeplanned ?? '—'}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.pm_cumulativeactual ?? '—'}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <StatusTag
-                        label={isPositive ? `+${variance.toFixed(1)}%` : `${variance.toFixed(1)}%`}
-                        color={isPositive ? 'success' : 'error'}
-                        variant="outlined"
-                        sx={{ fontSize: fontSizes.xs }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <StatusTag
-                        label={String(m.pm_evidenced) === '1' ? 'Yes' : 'No'}
-                        color={String(m.pm_evidenced) === '1' ? 'success' : 'default'}
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Tooltip title="Delete measure">
-                        <IconButton
-                          size="small"
-                          onClick={() => m.pm_performancemeasureid && onDeleteClick(m.pm_performancemeasureid)}
-                          color="error"
-                        >
-                          <DeleteIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-          {/* Cumulative summary */}
-          <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider', bgcolor: isDark ? '#1a2332' : 'background.default' }}>
-            <Typography variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary', mb: 1, display: 'block' }}>
-              Cumulative Performance
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 4 }}>
-              {(() => {
-                const totalPlanned = measures.reduce((s, m) => s + (m.pm_cumulativeplanned ?? 0), 0)
-                const totalActual = measures.reduce((s, m) => s + (m.pm_cumulativeactual ?? 0), 0)
-                const overallVariance = totalPlanned > 0 ? ((totalActual - totalPlanned) / totalPlanned) * 100 : 0
-                return (
-                  <>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Total Cumulative Planned</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>{totalPlanned.toLocaleString()}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Total Cumulative Actual</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>{totalActual.toLocaleString()}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Overall Variance</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700, color: overallVariance >= 0 ? 'success.main' : 'error.main' }}>
-                        {overallVariance >= 0 ? '+' : ''}{overallVariance.toFixed(1)}%
-                      </Typography>
-                    </Box>
-                  </>
-                )
-              })()}
-            </Box>
-          </Box>
-        </Paper>
-      )}
+      <DataverseTable
+        data={measures}
+        columns={columns}
+        loading={loading}
+        emptyIcon={<TrackChangesIcon />}
+        emptyTitle="No performance measures recorded."
+        actions={(item) => (
+          <Tooltip title="Delete measure">
+            <IconButton
+              size="small"
+              onClick={() => item.pm_performancemeasureid && onDeleteClick(item.pm_performancemeasureid)}
+              color="error"
+            >
+              <DeleteIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+        )}
+        extraHeaderActions={cumulativeFooter}
+      />
     </Box>
   )
 }

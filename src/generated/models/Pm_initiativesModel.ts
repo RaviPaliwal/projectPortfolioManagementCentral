@@ -12,7 +12,8 @@ export const Pm_initiativespm_pipelinestatus = {
   0: 'Approved',
   1: 'UnderReview',
   2: 'Deferred',
-  3: 'Rejected'
+  3: 'Rejected',
+  4: 'Converted'
 } as const;
 export type Pm_initiativespm_pipelinestatus = keyof typeof Pm_initiativespm_pipelinestatus;
 export const Pm_initiativesstatecode = {

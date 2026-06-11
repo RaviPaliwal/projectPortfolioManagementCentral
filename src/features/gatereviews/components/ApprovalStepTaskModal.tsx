@@ -13,9 +13,10 @@
  *   modalComponent: PmoReadinessTaskModalWrapper
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import { Box, CircularProgress, Typography, Alert } from '@mui/material'
 import { resolveEntityIdFromApprovalStep } from '@/services/task-resolver.service'
+import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 import { PmoReadinessTaskModal } from './PmoReadinessTaskModal'
 import { FinancialReviewTaskModal } from './FinancialReviewTaskModal'
 import { BoardDecisionTaskModal } from './BoardDecisionTaskModal'
@@ -90,6 +91,7 @@ export interface PmoReadinessTaskModalWrapperProps {
   onClose: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
+  DecisionBox: ComponentType<DecisionBoxProps>
 }
 
 export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapperProps> = ({
@@ -97,6 +99,7 @@ export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapper
   onClose,
   onSuccess,
   onError,
+  DecisionBox,
 }) => {
   const [open, setOpen] = useState(true)
 
@@ -119,6 +122,7 @@ export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapper
           gateReviewId={gateReviewId}
           onSuccess={onSuccess || (() => {})}
           onError={onError || (() => {})}
+          DecisionBox={DecisionBox}
           approvalStepId={approvalStepId}
         />
       )}
@@ -133,6 +137,7 @@ export interface FinancialReviewTaskModalWrapperProps {
   onClose: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
+  DecisionBox: ComponentType<DecisionBoxProps>
 }
 
 export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalWrapperProps> = ({
@@ -140,6 +145,7 @@ export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalW
   onClose,
   onSuccess,
   onError,
+  DecisionBox,
 }) => {
   const [open, setOpen] = useState(true)
 
@@ -162,6 +168,7 @@ export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalW
           gateReviewId={gateReviewId}
           onSuccess={onSuccess || (() => {})}
           onError={onError || (() => {})}
+          DecisionBox={DecisionBox}
           approvalStepId={approvalStepId}
         />
       )}
@@ -176,6 +183,7 @@ export interface BoardDecisionTaskModalWrapperProps {
   onClose: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
+  DecisionBox: ComponentType<DecisionBoxProps>
 }
 
 export const BoardDecisionTaskModalWrapper: React.FC<BoardDecisionTaskModalWrapperProps> = ({
@@ -183,6 +191,7 @@ export const BoardDecisionTaskModalWrapper: React.FC<BoardDecisionTaskModalWrapp
   onClose,
   onSuccess,
   onError,
+  DecisionBox,
 }) => {
   const [open, setOpen] = useState(true)
 
@@ -205,6 +214,7 @@ export const BoardDecisionTaskModalWrapper: React.FC<BoardDecisionTaskModalWrapp
           gateReviewId={gateReviewId}
           onSuccess={onSuccess || (() => {})}
           onError={onError || (() => {})}
+          DecisionBox={DecisionBox}
           approvalStepId={approvalStepId}
         />
       )}

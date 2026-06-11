@@ -15,11 +15,11 @@ import RisksPage from '@/features/risks/pages/RisksPage'
 import IssuesPage from '@/features/issues/pages/IssuesPage'
 import ChangeRequestsPage from '@/features/changerequests/pages/ChangeRequestsPage'
 import CashflowPage from '@/features/cashflow/pages/CashflowPage'
-import ApprovalRequestsPage from '@/features/approvalrequests/pages/ApprovalRequestsPage'
+import TasksPage from '@/features/tasks/pages/TasksPage'
 import FundingSourcesPage from '@/features/fundingsources/pages/FundingSourcesPage'
 import SkillsPage from '@/features/skills/pages/SkillsPage'
 import WorkflowsPage from '@/features/workflows/pages/WorkflowsPage'
-import PendingApprovalsPage from '@/features/workflows/pages/PendingApprovalsPage'
+
 import HolidaysPage from '@/features/holidays/pages/HolidaysPage'
 import StatusSnapshotsPage from '@/features/statussnapshots/pages/StatusSnapshotsPage'
 import TeamUserManagementPage from '@/features/teamadmin/pages/TeamUserManagementPage'
@@ -41,10 +41,9 @@ export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, Re
   risks: <RisksPage />,
   issues: <IssuesPage />,
   changerequests: <ChangeRequestsPage />,
-  approvalrequests: <ApprovalRequestsPage />,
+  tasks: <TasksPage />,
   fundingsources: <FundingSourcesPage />,
   workflows: <WorkflowsPage />,
-  pendingapprovals: <PendingApprovalsPage />,
   skills: <SkillsPage />,
   teamadmin: <TeamUserManagementPage />,
   holidays: <HolidaysPage />,

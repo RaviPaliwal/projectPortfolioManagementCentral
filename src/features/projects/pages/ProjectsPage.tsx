@@ -21,7 +21,7 @@ import {
 } from '@/services'
 import { PageHeader, KpiCardRow, ExportButton } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
-import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel, AgentInsightModel } from '@/types/dataverse'
+import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 
 import { currency, projectExportColumns } from '../constants'
 import { ProjectGrids } from '../components/ProjectGrids'
@@ -38,7 +38,6 @@ import {
   GateReviewDialog,
 } from '../components/ProjectSubFormDialogs'
 import { recalculateProjectFinancials, normalizeLookupId } from '@/services'
-import { Pm_agentinsightsService } from '@/generated/services/Pm_agentinsightsService'
 
 export default function ProjectsPage() {
   // Navigation state
@@ -77,7 +76,6 @@ export default function ProjectsPage() {
   const [detailBenefits, setDetailBenefits] = useState<BenefitModel[]>([])
   const [detailTasks, setDetailTasks] = useState<ProjectTaskModel[]>([])
   const [detailGateReviews, setDetailGateReviews] = useState<GateReviewModel[]>([])
-  const [detailAgentInsights, setDetailAgentInsights] = useState<AgentInsightModel[]>([])
 
   // ── Load main data ──────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -112,7 +110,7 @@ export default function ProjectsPage() {
       const {
         Pm_projectmilestonesService, Pm_risksService, Pm_issuesService,
         Pm_resourceallocationsService, Pm_budgetlinesService, Pm_benefitsService,
-        Pm_projecttasksService, Pm_projectgatereviewsService, Pm_agentinsightsService,
+        Pm_projecttasksService, Pm_projectgatereviewsService,
       } = await import('@/generated')
 
       const unwrap = (result: any): any[] => {
@@ -126,7 +124,7 @@ export default function ProjectsPage() {
       const projectId = project.pm_projectid!
       const [
         msResult, riskResult, issueResult, allocResult,
-        budgetResult, benefitResult, taskResult, gateResult, insightResult,
+        budgetResult, benefitResult, taskResult, gateResult,
       ] = await Promise.all([
         Pm_projectmilestonesService.getAll({ filter: `_pm_project_value eq '${projectId}'`, top: 100, orderBy: ['pm_planneddate asc'] }),
         Pm_risksService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 }),
@@ -136,7 +134,6 @@ export default function ProjectsPage() {
         Pm_benefitsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 }),
         Pm_projecttasksService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 200, orderBy: ['pm_plannedstartdate asc'] }),
         Pm_projectgatereviewsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 50, orderBy: ['pm_plannedreviewdate desc'] }),
-        Pm_agentinsightsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 50, orderBy: ['createdon desc'] }),
       ])
 
       setDetailMilestones(unwrap(msResult))
@@ -147,7 +144,6 @@ export default function ProjectsPage() {
       setDetailBenefits(unwrap(benefitResult))
       setDetailTasks(unwrap(taskResult))
       setDetailGateReviews(unwrap(gateResult))
-      setDetailAgentInsights(unwrap(insightResult))
     } catch (err) {
       setError('Failed to load project detail data.')
     } finally {
@@ -260,7 +256,7 @@ export default function ProjectsPage() {
       const {
         Pm_projectmilestonesService, Pm_risksService, Pm_issuesService,
         Pm_resourceallocationsService, Pm_budgetlinesService, Pm_benefitsService,
-        Pm_projecttasksService, Pm_projectgatereviewsService, Pm_agentinsightsService,
+        Pm_projecttasksService, Pm_projectgatereviewsService,
       } = await import('@/generated')
 
       if (type === 'milestone') {
@@ -287,9 +283,6 @@ export default function ProjectsPage() {
       } else if (type === 'gatereview') {
         const r = await Pm_projectgatereviewsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 50, orderBy: ['pm_plannedreviewdate desc'] })
         setDetailGateReviews(unwrap(r))
-      } else if (type === 'insight') {
-        const r = await Pm_agentinsightsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 50, orderBy: ['createdon desc'] })
-        setDetailAgentInsights(unwrap(r))
       }
     } catch { /* silent */ }
   }
@@ -352,7 +345,6 @@ export default function ProjectsPage() {
           benefits={detailBenefits}
           tasks={detailTasks}
           gateReviews={detailGateReviews}
-          insights={detailAgentInsights}
           onBack={handleBack}
           onAddMilestone={() => setMilestoneDialogOpen(true)}
           onLogRisk={() => setRiskDialogOpen(true)}

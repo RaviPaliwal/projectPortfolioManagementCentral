@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -23,9 +23,8 @@ import {
   createBudgetLine,
   createBenefit,
   createProjectTask,
-  fetchResources,
 } from '@/services'
-import type { ProjectMilestoneModel, RiskModel, IssueModel, ResourceModel } from '@/types/dataverse'
+import type { ProjectMilestoneModel, RiskModel, IssueModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 
@@ -289,27 +288,20 @@ export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId
 }
 
 export const ResourceDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
-  const [resources, setResources] = useState<ResourceModel[]>([])
-  const [form, setForm] = useState({ _pm_resource_value: '', pm_allocatedhours: 40, pm_assignmentrole: '', pm_startdate: '', pm_enddate: '' })
-
-  useEffect(() => {
-    if (open) {
-      fetchResources().then(setResources).catch(() => {})
-    }
-  }, [open])
+  const [form, setForm] = useState({ pm_resourceName: '', pm_resourceId: '', pm_allocatedhours: 40, pm_assignmentrole: '', pm_startdate: '', pm_enddate: '' })
 
   const handleAdd = async () => {
-    if (!form._pm_resource_value) { onError('Resource is required.'); return }
+    if (!form.pm_resourceId) { onError('Resource is required.'); return }
     try {
       await assignResource({
         pm_projectid: projectId,
-        pm_resourceid: form._pm_resource_value,
+        pm_resourceid: form.pm_resourceId,
         pm_allocatedhours: form.pm_allocatedhours,
         pm_assignmentrole: form.pm_assignmentrole,
         pm_startdate: form.pm_startdate,
         pm_enddate: form.pm_enddate,
       })
-      setForm({ _pm_resource_value: '', pm_allocatedhours: 40, pm_assignmentrole: '', pm_startdate: '', pm_enddate: '' })
+      setForm({ pm_resourceName: '', pm_resourceId: '', pm_allocatedhours: 40, pm_assignmentrole: '', pm_startdate: '', pm_enddate: '' })
       onSuccess('Resource assigned successfully.')
       onClose()
     } catch {
@@ -323,26 +315,12 @@ export const ResourceDialog: React.FC<SubDialogProps> = ({ open, onClose, projec
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 0.5 }}>
           <Grid size={{ xs: 12 }}>
-            <FormControl fullWidth>
-              <InputLabel>Resource *</InputLabel>
-              <Select
-                value={form._pm_resource_value ?? ''}
-                label="Resource *"
-                onChange={(e) => setForm((f) => ({ ...f, _pm_resource_value: e.target.value }))}
-              >
-                <MenuItem value="">— Select —</MenuItem>
-                {resources.map((r) => (
-                  <MenuItem key={r.pm_resourceid} value={r.pm_resourceid}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar sx={{ width: 24, height: 24, fontSize: 11, bgcolor: 'primary.main' }}>
-                        {(r.pm_fullname ?? '?').charAt(0).toUpperCase()}
-                      </Avatar>
-                      {r.pm_fullname}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <TextField fullWidth label="Resource name *" value={form.pm_resourceName ?? ''}
+              onChange={(e) => setForm((f) => ({ ...f, pm_resourceName: e.target.value }))} />
+          </Grid>
+          <Grid size={{ xs: 12 }}>
+            <TextField fullWidth label="Resource ID *" value={form.pm_resourceId ?? ''}
+              onChange={(e) => setForm((f) => ({ ...f, pm_resourceId: e.target.value }))} />
           </Grid>
           <Grid size={{ xs: 6 }}>
             <TextField fullWidth type="number" label="Allocated hours" value={form.pm_allocatedhours ?? 40}
@@ -364,7 +342,7 @@ export const ResourceDialog: React.FC<SubDialogProps> = ({ open, onClose, projec
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} variant="outlined">Cancel</Button>
-        <Button onClick={handleAdd} variant="contained" disabled={!form._pm_resource_value}>Assign</Button>
+        <Button onClick={handleAdd} variant="contained" disabled={!form.pm_resourceId}>Assign</Button>
       </DialogActions>
     </Dialog>
   )
@@ -499,14 +477,7 @@ export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, project
 }
 
 export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
-  const [resources, setResources] = useState<ResourceModel[]>([])
-  const [form, setForm] = useState({ pm_taskname: '', pm_taskdescription: '', _pm_resource_value: '', pm_plannedstartdate: '', pm_plannedenddate: '', pm_percentcomplete: 0, pm_durationdays: 0 })
-
-  useEffect(() => {
-    if (open) {
-      fetchResources().then(setResources).catch(() => {})
-    }
-  }, [open])
+  const [form, setForm] = useState({ pm_taskname: '', pm_taskdescription: '', pm_assignedresource: '', pm_plannedstartdate: '', pm_plannedenddate: '', pm_percentcomplete: 0, pm_durationdays: 0 })
 
   const handleAdd = async () => {
     if (!form.pm_taskname) { onError('Task name is required.'); return }
@@ -514,14 +485,14 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
       await createProjectTask({
         pm_taskname: form.pm_taskname,
         pm_taskdescription: form.pm_taskdescription,
-        _pm_resource_value: form._pm_resource_value || undefined,
+        pm_assignedresource: form.pm_assignedresource,
         pm_plannedstartdate: form.pm_plannedstartdate,
         pm_plannedenddate: form.pm_plannedenddate,
         pm_percentcomplete: form.pm_percentcomplete,
         pm_durationdays: form.pm_durationdays || undefined,
         _pm_project_value: projectId,
       })
-      setForm({ pm_taskname: '', pm_taskdescription: '', _pm_resource_value: '', pm_plannedstartdate: '', pm_plannedenddate: '', pm_percentcomplete: 0, pm_durationdays: 0 })
+      setForm({ pm_taskname: '', pm_taskdescription: '', pm_assignedresource: '', pm_plannedstartdate: '', pm_plannedenddate: '', pm_percentcomplete: 0, pm_durationdays: 0 })
       onSuccess('Task added successfully.')
       onClose()
     } catch {
@@ -543,26 +514,8 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
               onChange={(e) => setForm((f) => ({ ...f, pm_taskdescription: e.target.value }))} />
           </Grid>
           <Grid size={{ xs: 6 }}>
-            <FormControl fullWidth>
-              <InputLabel>Assigned resource</InputLabel>
-              <Select
-                value={form._pm_resource_value ?? ''}
-                label="Assigned resource"
-                onChange={(e) => setForm((f) => ({ ...f, _pm_resource_value: e.target.value }))}
-              >
-                <MenuItem value="">None</MenuItem>
-                {resources.map((r) => (
-                  <MenuItem key={r.pm_resourceid} value={r.pm_resourceid}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar sx={{ width: 24, height: 24, fontSize: 11, bgcolor: 'primary.main' }}>
-                        {(r.pm_fullname ?? '?').charAt(0).toUpperCase()}
-                      </Avatar>
-                      {r.pm_fullname}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <TextField fullWidth label="Assigned resource" value={form.pm_assignedresource ?? ''}
+              onChange={(e) => setForm((f) => ({ ...f, pm_assignedresource: e.target.value }))} />
           </Grid>
           <Grid size={{ xs: 6 }}>
             <TextField fullWidth type="number" label="Duration (days)" value={form.pm_durationdays ?? 0}

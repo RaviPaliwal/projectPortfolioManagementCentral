@@ -62,6 +62,20 @@ export async function fetchInitiatives(status?: number): Promise<InitiativeModel
   return list
 }
 
+export async function fetchInitiativeById(id: string): Promise<InitiativeModel | null> {
+  try {
+    const result = await Pm_initiativesService.get(id, {
+      select: ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', 'pm_requestorname', 'pm_submissiondate', 'pm_portfolioname', '_pm_portfolio_value'],
+    })
+    const item = unwrapSingle<Pm_initiatives>(result)
+    return item ? mapInitiative(item) : null
+  } catch (err) {
+    console.warn('[dataverseService] fetchInitiativeById failed', err)
+    return null
+  }
+}
+
+
 export async function fetchPendingApprovalRequests(): Promise<InitiativeModel[]> {
   const result = await Pm_initiativesService.getAll({
     filter: "pm_pipelinestatus eq 1",
@@ -144,7 +158,7 @@ export interface PipelineKpis {
 export async function fetchPipelineKpis(): Promise<PipelineKpis> {
   const [allResult, pendingResult, approvedThisMonthResult] = await Promise.all([
     Pm_initiativesService.getAll({
-      filter: "pm_pipelinestatus ne 3",
+      filter: "pm_pipelinestatus ne 3 and pm_pipelinestatus ne 4",
       select: ['pm_initiativeid', 'pm_estimatedcosteur', 'pm_pipelinestatus', 'pm_submissiondate', 'pm_decisiondate'],
       top: 500,
     }),

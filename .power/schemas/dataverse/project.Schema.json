@@ -507,14 +507,23 @@
           "enum": [
             "Execution",
             "Planning",
-            "Closure"
+            "Closure",
+            "Initiation",
+            "Rejected",
+            "Completed"
           ],
           "x-ms-enum-values": [
             0,
             1,
-            2
+            2,
+            3,
+            4,
+            5
           ],
           "Color": [
+            null,
+            null,
+            null,
             null,
             null,
             null

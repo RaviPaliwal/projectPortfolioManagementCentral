@@ -154,7 +154,7 @@ export const MeasureFormDialog = ({
         <Button
           onClick={onSave}
           variant="contained"
-          disabled={!formData.pm_measurename.trim() || actionLoading}
+          disabled={!formData.pm_measurename?.trim() || actionLoading}
           sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
         >
           {actionLoading ? 'Adding...' : 'Add Measure'}

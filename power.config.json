@@ -10,18 +10,6 @@
   "localAppUrl": "http://localhost:3000",
   "logoPath": "Default",
   "connectionReferences": {
-    "8f36d1ea-1b81-4b16-b8c0-871f0359548b": {
-      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
-      "displayName": "Logic flows",
-      "dataSources": [
-        "manageteams"
-      ],
-      "workflowDetails": {
-        "workflowEntityId": "2b8560e4-505e-f111-a826-6045bd56f0ba",
-        "workflowDisplayName": "manageTeams",
-        "workflowName": "c2e0b2d4-4236-d895-9872-30e06ce49724"
-      }
-    },
     "e641dce6-f6cf-4438-aa09-07b1b1d8923e": {
       "id": "/providers/microsoft.powerapps/apis/shared_office365users",
       "displayName": "Office 365 Users"
@@ -41,7 +29,19 @@
         }
       }
     },
-    "5645122f-b497-4ebf-a31b-4993a057a353": {
+    "716400e8-58e2-4ab6-9ec4-fadfabebff99": {
+      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+      "displayName": "Logic flows",
+      "dataSources": [
+        "manageteams"
+      ],
+      "workflowDetails": {
+        "workflowEntityId": "2b8560e4-505e-f111-a826-6045bd56f0ba",
+        "workflowDisplayName": "manageTeams",
+        "workflowName": "c2e0b2d4-4236-d895-9872-30e06ce49724"
+      }
+    },
+    "adb3c21b-110a-4b87-b694-89f42e6c7460": {
       "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
       "displayName": "Logic flows",
       "dataSources": [
@@ -230,11 +230,6 @@
         "teammembership": {
           "entitySetName": "teammemberships",
           "logicalName": "teammembership",
-          "isHidden": false
-        },
-        "environment_39a902ba": {
-          "entitySetName": "Environment",
-          "logicalName": "environment_39a902ba",
           "isHidden": false
         },
         "agentinsights": {

@@ -4,9 +4,10 @@ import type { InitiativeModel } from '@/types/dataverse'
 
 const PIPELINE_STAGES: Record<number, { label: string; color: string }> = {
   1: { label: 'Under Review', color: 'warning.main' },
-  2: { label: 'Screening', color: 'primary.main' },
+  2: { label: 'Deferred', color: 'primary.main' },
   0: { label: 'Approved', color: 'success.main' },
   3: { label: 'Rejected', color: 'error.main' },
+  4: { label: 'Converted', color: 'secondary.main' },
 }
 
 interface PipelineStageSummaryProps {

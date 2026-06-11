@@ -31,7 +31,6 @@ export interface Pm_resourceallocationsBase {
   pm_enddate?: string;
   pm_notes?: string;
   "pm_project@odata.bind"?: string;
-  pm_projectid?: string;
   "pm_projecttask@odata.bind"?: string;
   "pm_resource@odata.bind"?: string;
   pm_resourceallocationid: string;

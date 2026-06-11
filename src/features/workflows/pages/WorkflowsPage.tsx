@@ -36,8 +36,7 @@ import { PageHeader, KpiCardRow, TableFooter, TableShell, TabPanel, ExportButton
 import type { KpiCardItem, FilterOption } from '@/components/common'
 
 // Sub-page imports
-import WorkflowCreatePage from './WorkflowCreatePage'
-import WorkflowEditPage from './WorkflowEditPage'
+import WorkflowFormPage from './WorkflowFormPage'
 
 const STATUS_LABELS: Record<string, string> = { '0': 'Active', '1': 'Inactive' }
 const INSTANCE_STATUS_LABELS: Record<string, string> = { '0': 'Completed', '1': 'Active' }
@@ -153,7 +152,7 @@ export default function WorkflowsPage() {
       .finally(() => setStepsLoading(false))
   }, [selectedInstanceId])
 
-  // ─── KPI Cards ───
+  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ KPI Cards ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
   const kpiItems = useMemo((): KpiCardItem[] => {
     const totalTemplates = workflows.length
     const activeTemplates = workflows.filter((w) => w.pm_workflowstatus === 0 || w.pm_workflowstatus === '0').length
@@ -168,7 +167,7 @@ export default function WorkflowsPage() {
     ]
   }, [workflows, instances, stepTemplates])
 
-  // ─── Filtering & Sorting ───
+  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Filtering & Sorting ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
   const filteredWorkflows = useMemo(() => {
     let list = [...workflows]
     if (wfSearch.trim()) {
@@ -237,7 +236,7 @@ export default function WorkflowsPage() {
 
   const paginatedSteps = useMemo(() => filteredSteps.slice(stepPage * stepRowsPerPage, stepPage * stepRowsPerPage + stepRowsPerPage), [filteredSteps, stepPage, stepRowsPerPage])
 
-  // ─── Handlers ───
+  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Handlers ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
   const handleWfSort = useCallback((field: WfSortField) => setWfSort((p) => ({ field, dir: p.field === field && p.dir === 'asc' ? 'desc' : 'asc' })), [])
   const handleInstSort = useCallback((field: InstSortField) => setInstSort((p) => ({ field, dir: p.field === field && p.dir === 'asc' ? 'desc' : 'asc' })), [])
   const handleStepSort = useCallback((field: StepSortField) => setStepSort((p) => ({ field, dir: p.field === field && p.dir === 'asc' ? 'desc' : 'asc' })), [])
@@ -279,7 +278,7 @@ export default function WorkflowsPage() {
     </TableHead>
   )
 
-  // ─── Sub-page Dialogs ───
+  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Sub-page Dialogs ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
   const handleDialogClose = () => { if (!actionLoading) navigateTo('list') }
   
   const dialogSx = { '& .MuiDialog-paper': { borderRadius: 1.5, maxWidth: 900, width: '100%', minHeight: '80vh' } }
@@ -293,7 +292,7 @@ export default function WorkflowsPage() {
           <IconButton size="small" onClick={handleDialogClose} sx={{ borderRadius: 1.5 }}><CloseIcon fontSize="small" /></IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 4 }}>
-          <WorkflowCreatePage onStepChange={setDialogStep} onCreated={() => { loadData(); navigateTo('list') }} />
+          <WorkflowFormPage onStepChange={setDialogStep} onCreated={() => { loadData(); navigateTo('list') }} />
         </DialogContent>
       </Dialog>
 
@@ -305,13 +304,13 @@ export default function WorkflowsPage() {
         </DialogTitle>
         <DialogContent sx={{ p: 4 }}>
           {viewWorkflow && (
-            <WorkflowEditPage workflow={viewWorkflow} onStepChange={setDialogStep} onSaved={() => { loadData(); navigateTo('list') }} />
+            <WorkflowFormPage workflow={viewWorkflow} onStepChange={setDialogStep} onSaved={() => { loadData(); navigateTo('list') }} />
           )}
         </DialogContent>
       </Dialog>
 
 
-      {/* ─── Main List View ─── */}
+      {/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Main List View ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */}
       <Box>
       <PageHeader
         title="Workflow Automation"
@@ -336,7 +335,7 @@ export default function WorkflowsPage() {
         <Tab icon={<HistoryIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Approval Steps" />
       </Tabs>
 
-      {/* ═══ TAB 0: Workflow Templates ═══ */}
+      {/* ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â TAB 0: Workflow Templates ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â */}
       <TabPanel value={pageTab} index={0} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -400,7 +399,7 @@ export default function WorkflowsPage() {
         </Paper>
       </TabPanel>
 
-      {/* ═══ TAB 1: Active Instances ═══ */}
+      {/* ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â TAB 1: Active Instances ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â */}
       <TabPanel value={pageTab} index={1} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -454,7 +453,7 @@ export default function WorkflowsPage() {
         </Paper>
       </TabPanel>
 
-      {/* ═══ TAB 2: Approval Steps ═══ */}
+      {/* ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â TAB 2: Approval Steps ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â */}
       <TabPanel value={pageTab} index={2} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>

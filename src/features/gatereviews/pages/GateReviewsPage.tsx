@@ -37,6 +37,9 @@ import RuleIcon from '@mui/icons-material/Rule'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import Filter1Icon from '@mui/icons-material/Filter1'
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
+import GavelIcon from '@mui/icons-material/Gavel'
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import {
   fetchGateReviews,
@@ -50,6 +53,7 @@ import { PageHeader, KpiCardRow, TableShell, DetailDrawer, SearchFilterBar, Expo
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { MODULE_NAMES } from '@/constants/moduleNames'
+import { PmoReadinessTaskModal, FinancialReviewTaskModal, BoardDecisionTaskModal } from '../components'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -82,16 +86,12 @@ const OUTCOME_LABELS: Record<string, string> = {
   '0': 'Approved',
   '1': 'Conditional',
   '2': 'Not Yet Reviewed',
-  '3': 'In Progress',
-  '4': 'Rejected',
 }
 
-const OUTCOME_COLORS: Record<string, 'success' | 'warning' | 'default' | 'info' | 'error'> = {
+const OUTCOME_COLORS: Record<string, 'success' | 'warning' | 'default'> = {
   '0': 'success',
   '1': 'warning',
   '2': 'default',
-  '3': 'info',
-  '4': 'error',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -117,8 +117,6 @@ const OUTCOME_FILTER_OPTIONS: FilterOption[] = [
   { value: '0', label: 'Approved' },
   { value: '1', label: 'Conditional' },
   { value: '2', label: 'Not Yet Reviewed' },
-  { value: '3', label: 'In Progress' },
-  { value: '4', label: 'Rejected' },
 ]
 
 type SortField = 'name' | 'stage' | 'outcome' | 'status' | 'planned' | 'actual' | 'reviewer'
@@ -169,6 +167,10 @@ export default function GateReviewsPage() {
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
+  const [showPmoModal, setShowPmoModal] = useState(false)
+  const [showFinanceModal, setShowFinanceModal] = useState(false)
+  const [showBoardModal, setShowBoardModal] = useState(false)
+
   const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -183,20 +185,6 @@ export default function GateReviewsPage() {
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
-
-  // Auto-navigate to preselected gate review from cross-linking
-  useEffect(() => {
-    if (!loading && gateReviews.length > 0) {
-      const preselectedId = sessionStorage.getItem('preselectGateReviewId')
-      if (preselectedId) {
-        sessionStorage.removeItem('preselectGateReviewId')
-        const review = gateReviews.find(r => r.pm_projectgatereviewid?.toLowerCase() === preselectedId.toLowerCase())
-        if (review) {
-          setSelectedReview(review)
-        }
-      }
-    }
-  }, [loading, gateReviews])
 
   const kpiItems = useMemo((): KpiCardItem[] => {
     const total = gateReviews.length
@@ -355,6 +343,13 @@ export default function GateReviewsPage() {
         icon={<FactCheckIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
+            {selectedReview?.pm_reviewstatus === 1 && (
+              <>
+                <ActionIcon icon={<AssignmentTurnedInIcon />} onClick={() => setShowPmoModal(true)} label="PMO Readiness Check" color="info" />
+                <ActionIcon icon={<AttachMoneyIcon />} onClick={() => setShowFinanceModal(true)} label="Financial Review" color="info" />
+                <ActionIcon icon={<GavelIcon />} onClick={() => setShowBoardModal(true)} label="Record Final Decision" color="success" />
+              </>
+            )}
             <ActionIcon icon={<EditIcon />} onClick={() => { setEditingReview(selectedReview); setShowFormModal(true) }} label="Edit" color="primary" />
             <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedReview?.pm_projectgatereviewid!)} label="Delete" color="error" />
           </Box>
@@ -475,7 +470,35 @@ export default function GateReviewsPage() {
         </DialogActions>
       </Dialog>
 
+      {selectedReview && (
+        <PmoReadinessTaskModal
+          open={showPmoModal}
+          onClose={() => setShowPmoModal(false)}
+          gateReviewId={selectedReview.pm_projectgatereviewid!}
+          onSuccess={(msg) => { setSuccessMsg(msg); setShowPmoModal(false); loadData() }}
+          onError={(msg) => setError(msg)}
+        />
+      )}
 
+      {selectedReview && (
+        <FinancialReviewTaskModal
+          open={showFinanceModal}
+          onClose={() => setShowFinanceModal(false)}
+          gateReviewId={selectedReview.pm_projectgatereviewid!}
+          onSuccess={(msg) => { setSuccessMsg(msg); setShowFinanceModal(false); loadData() }}
+          onError={(msg) => setError(msg)}
+        />
+      )}
+
+      {selectedReview && (
+        <BoardDecisionTaskModal
+          open={showBoardModal}
+          onClose={() => setShowBoardModal(false)}
+          gateReviewId={selectedReview.pm_projectgatereviewid!}
+          onSuccess={(msg) => { setSuccessMsg(msg); setShowBoardModal(false); setSelectedReview(null); loadData() }}
+          onError={(msg) => setError(msg)}
+        />
+      )}
     </Box>
   )
 }

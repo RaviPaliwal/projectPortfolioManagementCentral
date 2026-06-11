@@ -9,7 +9,6 @@ import {
   TableCell,
   TableBody,
   LinearProgress,
-  Button,
   useTheme,
   Stack,
   Divider,
@@ -23,11 +22,9 @@ import { fontSizes } from '@/styles'
 interface ProjectScheduleTabProps {
   milestones: ProjectMilestoneModel[]
   tasks: ProjectTaskModel[]
-  onAddMilestone?: () => void
-  onAddTask?: () => void
 }
 
-export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ milestones, tasks, onAddMilestone, onAddTask }) => {
+export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ milestones, tasks }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
@@ -62,15 +59,6 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ mileston
 
   return (
     <Box sx={{ pt: 1 }}>
-      {/* ── Action Buttons ── */}
-      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-        {onAddMilestone && (
-          <Button size="small" variant="outlined" startIcon={<FlagIcon />} onClick={onAddMilestone}>Add Milestone</Button>
-        )}
-        {onAddTask && (
-          <Button size="small" variant="outlined" startIcon={<AssignmentIcon />} onClick={onAddTask}>Add Task</Button>
-        )}
-      </Box>
       {/* ── Integrated Project Timeline ── */}
       <Box>
         <Stack component="div" direction="row" spacing={2} sx={{ alignItems: 'center', mb: 3 }}>

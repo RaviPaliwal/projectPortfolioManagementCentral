@@ -4,6 +4,7 @@
  */
 
 // Models
+export * as AddMembersTeamModel from './models/AddMembersTeamModel';
 export * as CommonModels from './models/CommonModels';
 export * as InitiateWorkflowModel from './models/InitiateWorkflowModel';
 export * as ManageTeamsModel from './models/ManageTeamsModel';
@@ -47,6 +48,7 @@ export * as TeamsModel from './models/TeamsModel';
 export * as WorkflowRoutingHandlerModel from './models/WorkflowRoutingHandlerModel';
 
 // Services
+export * from './services/AddMembersTeamService';
 export * from './services/InitiateWorkflowService';
 export * from './services/ManageTeamsService';
 export * from './services/Pm_agentinsightsService';

@@ -24,6 +24,9 @@ const PHASE_LABELS: Record<string, { label: string; color: string }> = {
   '0': { label: 'Execution', color: 'primary' },
   '1': { label: 'Planning', color: 'info' },
   '2': { label: 'Closure', color: 'secondary' },
+  '3': { label: 'Initiation', color: 'warning' },
+  '4': { label: 'Rejected', color: 'error' },
+  '5': { label: 'Completed', color: 'success' },
 }
 
 const PROG_PHASE_LABELS: Record<string, { label: string; color: string }> = {

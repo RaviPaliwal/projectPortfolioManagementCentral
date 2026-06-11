@@ -72,3 +72,11 @@ export type { TaskLinkProps } from './TaskLink/TaskLink'
 
 export { FormDialog } from './FormDialog/FormDialog'
 
+export { DecisionBox } from './DecisionBox/DecisionBox'
+export type { DecisionBoxProps } from './DecisionBox/DecisionBox'
+
+export { DataverseTable } from './DataverseTable/DataverseTable'
+export type { DataverseTableProps, Column } from './DataverseTable/DataverseTable'
+
+export { ConfirmDialog } from './ConfirmDialog/ConfirmDialog'
+export type { ConfirmDialogProps } from './ConfirmDialog/ConfirmDialog'
