@@ -41,6 +41,7 @@ import { PortfolioSummaryTab } from '../components/tabs/PortfolioSummaryTab'
 import { PortfolioProgrammesTab } from '../components/tabs/PortfolioProgrammesTab'
 import { PortfolioProjectsTab } from '../components/tabs/PortfolioProjectsTab'
 import { PortfolioFinancialsTab } from '../components/tabs/PortfolioFinancialsTab'
+import { PortfolioApprovalTasksTab } from '../components/tabs/PortfolioApprovalTasksTab'
 
 // ── Export columns ────────────────────────────────────────────────────────────
 const portfolioExportColumns: ExportColumn[] = [
@@ -282,6 +283,7 @@ export default function PortfoliosPage() {
           { label: 'Programmes', count: detailProgrammes.length },
           { label: 'Projects', count: detailProjects.length },
           { label: 'Financials' },
+          { label: 'Tasks' },
         ]}
         tabValue={detailTab}
         onTabChange={setDetailTab}
@@ -318,6 +320,12 @@ export default function PortfoliosPage() {
               portfolio={selectedPortfolio}
               tabValue={detailTab}
               index={3}
+            />
+
+            <PortfolioApprovalTasksTab
+              portfolioId={selectedPortfolio.pm_portfolioid ?? ''}
+              tabValue={detailTab}
+              index={4}
             />
           </>
         )}

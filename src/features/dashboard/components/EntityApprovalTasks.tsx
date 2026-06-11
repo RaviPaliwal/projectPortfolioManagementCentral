@@ -1,0 +1,225 @@
+import { useState, useEffect, useCallback } from 'react'
+import {
+  Box,
+  Paper,
+  Typography,
+  Skeleton,
+  Alert,
+  Chip,
+  Button,
+} from '@mui/material'
+import AssignmentIcon from '@mui/icons-material/Assignment'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import PersonIcon from '@mui/icons-material/Person'
+
+import { TabPanel } from '@/components/common'
+import {
+  fetchWorkflowInstancesForEntity,
+  fetchWorkflowApprovalSteps,
+  openApprovalStepTask,
+} from '@/services'
+import type { WorkflowInstanceModel, WorkflowApprovalStepModel } from '@/types/dataverse'
+
+interface EntityApprovalTasksProps {
+  entityId: string | null
+  moduleName: string
+  entityLabel: string
+  tabValue: number
+  index: number
+}
+
+const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+const formatDate = (d?: string | null): string => d ? dateFormatter.format(new Date(d)) : '—'
+
+export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValue, index }: EntityApprovalTasksProps) {
+  const [instances, setInstances] = useState<WorkflowInstanceModel[]>([])
+  const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [openingStep, setOpeningStep] = useState<string | null>(null)
+
+  const loadData = useCallback(async () => {
+    if (!entityId) return
+    setLoading(true)
+    setError(null)
+    try {
+      const workflowInstances = await fetchWorkflowInstancesForEntity(moduleName, entityId as string)
+      setInstances(workflowInstances)
+
+      const allSteps: WorkflowApprovalStepModel[] = []
+      for (const instance of workflowInstances) {
+        const instanceId = instance.pm_workflowinstanceid
+        if (!instanceId) continue
+        const instanceSteps = await fetchWorkflowApprovalSteps(instanceId)
+        const pendingSteps = instanceSteps.filter(
+          (s) => s.pm_decisionstatus === 1 || s.pm_decisionstatus === 2
+        )
+        allSteps.push(...pendingSteps)
+      }
+      setSteps(allSteps)
+    } catch (err) {
+      console.error('[EntityApprovalTasks] load error:', err)
+      setError('Unable to load approval tasks.')
+    } finally {
+      setLoading(false)
+    }
+  }, [entityId, moduleName])
+
+  useEffect(() => {
+    if (entityId) loadData()
+  }, [loadData, entityId])
+
+  return (
+    <TabPanel value={tabValue} index={index} pt={0}>
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {loading ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} variant="rounded" height={72} sx={{ borderRadius: 1.5 }} />
+          ))}
+        </Box>
+      ) : steps.length === 0 ? (
+        <Box sx={{ textAlign: 'center', py: 6 }}>
+          <CheckCircleIcon sx={{ fontSize: 48, color: '#22c55e', mb: 1.5 }} />
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5, fontWeight: 600 }}>
+            No pending approvals
+          </Typography>
+          <Typography variant="body2" color="text.disabled">
+            {entityLabel} has no workflow approval steps requiring action.
+          </Typography>
+          {instances.length > 0 && (
+            <Box sx={{ mt: 3, textAlign: 'left' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                Completed Workflow Instances
+              </Typography>
+              {instances.map((inst) => {
+                const statusLabel = inst.pm_status === 0 ? 'Completed' : inst.pm_status === 1 ? 'In Progress' : 'Cancelled'
+                const statusColor = inst.pm_status === 0 ? 'success' : inst.pm_status === 1 ? 'info' : 'default'
+                return (
+                  <Paper key={inst.pm_workflowinstanceid} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {inst.pm_instancename || 'Workflow Instance'}
+                      </Typography>
+                      <Chip label={statusLabel} size="small" color={statusColor as any} variant="outlined" sx={{ fontWeight: 600 }} />
+                    </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, display: 'block' }}>
+                      Started: {formatDate(inst.pm_startdate)}
+                      {inst.pm_completeddate ? ` • Completed: ${formatDate(inst.pm_completeddate)}` : ''}
+                    </Typography>
+                  </Paper>
+                )
+              })}
+            </Box>
+          )}
+        </Box>
+      ) : (
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              Pending Approval Tasks
+            </Typography>
+            <Chip label={`${steps.length} pending`} color="warning" size="small" sx={{ fontWeight: 700, borderRadius: 1 }} />
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {steps.map((step) => {
+              const isOverdue = step.pm_duedate && new Date(step.pm_duedate) < new Date()
+              return (
+                <Paper
+                  key={step.pm_workflowapprovalstepid}
+                  variant="outlined"
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 1.5,
+                    borderLeft: '3px solid',
+                    borderLeftColor: isOverdue ? 'error.main' : 'warning.main',
+                    transition: 'all 0.15s ease',
+                    '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                      <AssignmentIcon sx={{ fontSize: 16, color: isOverdue ? 'error.main' : 'warning.main' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {step.pm_stepname || 'Approval Step'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="caption" color={isOverdue ? 'error' : 'text.secondary'} sx={{ fontWeight: 600 }}>
+                        {step.pm_duedate ? (isOverdue ? 'Overdue' : `Due ${formatDate(step.pm_duedate)}`) : 'No due date'}
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                        disabled={openingStep === step.pm_workflowapprovalstepid}
+                        onClick={async () => {
+                          const sid = step.pm_workflowapprovalstepid!
+                          setOpeningStep(sid)
+                          try {
+                            await openApprovalStepTask(sid)
+                          } finally {
+                            setOpeningStep(null)
+                          }
+                        }}
+                        sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 90 }}
+                      >
+                        {openingStep === step.pm_workflowapprovalstepid ? 'Opening...' : 'Review'}
+                      </Button>
+                    </Box>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    {step.pm_approvername && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <PersonIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
+                        <Typography variant="caption" color="text.secondary">
+                          Assignee: {step.pm_approvername}
+                        </Typography>
+                      </Box>
+                    )}
+                    {step.pm_steporder && (
+                      <Typography variant="caption" color="text.disabled">
+                        Step {step.pm_steporder}
+                      </Typography>
+                    )}
+                  </Box>
+                </Paper>
+              )
+            })}
+          </Box>
+          {instances.length > 0 && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                Workflow Instances ({instances.length})
+              </Typography>
+              {instances.map((inst) => (
+                <Paper key={inst.pm_workflowinstanceid} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {inst.pm_instancename || 'Workflow Instance'}
+                    </Typography>
+                    <Chip
+                      label={inst.pm_status === 0 ? 'Completed' : inst.pm_status === 1 ? 'In Progress' : 'Cancelled'}
+                      size="small"
+                      color={inst.pm_status === 0 ? 'success' : inst.pm_status === 1 ? 'info' : 'default'}
+                      variant="outlined"
+                      sx={{ fontWeight: 600 }}
+                    />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatDate(inst.pm_startdate)}
+                    {inst.pm_completeddate ? ` — ${formatDate(inst.pm_completeddate)}` : ' — In progress'}
+                  </Typography>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
+    </TabPanel>
+  )
+}
+
+EntityApprovalTasks.displayName = 'EntityApprovalTasks'
+export default EntityApprovalTasks

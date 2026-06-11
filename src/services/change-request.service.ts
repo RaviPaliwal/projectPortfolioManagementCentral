@@ -181,3 +181,61 @@ export async function updateChangeRequest(id: string, changes: Partial<ChangeReq
 export async function deleteChangeRequest(id: string): Promise<void> {
   await Pm_changerequestsService.delete(id)
 }
+
+export async function fetchChangeRequestById(id: string): Promise<ChangeRequestModel | null> {
+  const normalizedId = id.replace(/[{}]/g, '').trim().toLowerCase()
+  if (!normalizedId) return null
+
+  try {
+    const result = await Pm_changerequestsService.get(normalizedId, {
+      select: [
+        'pm_changerequestid', 'pm_changerequesttitle', 'pm_changerequestreference',
+        'pm_changetype',
+        'pm_prioritylevel',
+        'pm_status',
+        'pm_changedescription', 'pm_justification',
+        'pm_costimpacteur', 'pm_scheduleimpactdays',
+        'pm_baselineupdated', 'pm_benefitsimpact',
+        'pm_requestorname', 'pm_submissiondate',
+        'pm_decisiondate', 'pm_decisionmaker',
+        'pm_projectcode', 'pm_versionnumber',
+        '_pm_project_value', '_pm_programmelookup_value',
+      ],
+    })
+    const item = unwrapSingle<Pm_changerequests>(result)
+    if (!item || !item.pm_changerequestid) return null
+    const mapped = mapChangeRequest(item)
+
+    // Resolve option-set display names
+    if (mapped.pm_changetype != null) mapped.pm_changetypename = Pm_changerequestspm_changetype[mapped.pm_changetype as keyof typeof Pm_changerequestspm_changetype]
+    if (mapped.pm_prioritylevel != null) mapped.pm_prioritylevelname = Pm_changerequestspm_prioritylevel[mapped.pm_prioritylevel as keyof typeof Pm_changerequestspm_prioritylevel]
+    if (mapped.pm_status != null) mapped.pm_statusname = Pm_changerequestspm_status[mapped.pm_status as keyof typeof Pm_changerequestspm_status]
+
+    // Resolve lookup names
+    try {
+      if (mapped._pm_programmelookup_value) {
+        const progResult = await Pm_programmesService.get(mapped._pm_programmelookup_value, { select: ['pm_programmeid', 'pm_programmename'] })
+        const prog = unwrapSingle<Pm_programmes>(progResult)
+        if (prog?.pm_programmename) {
+          mapped.pm_programmename = prog.pm_programmename
+          mapped.pm_programmelookupname = prog.pm_programmename
+        }
+      }
+      if (mapped._pm_project_value) {
+        const projResult = await Pm_projectsService.get(mapped._pm_project_value, { select: ['pm_projectid', 'pm_projectname', 'pm_projectcode'] })
+        const proj = unwrapSingle<Pm_projects>(projResult)
+        if (proj?.pm_projectname) {
+          mapped.pm_projectname = proj.pm_projectname
+          mapped.pm_projectcode = proj.pm_projectcode || mapped.pm_projectcode
+        }
+      }
+    } catch (e) {
+      try { console.warn('[dataverseService] fetchChangeRequestById: lookup resolution failed', e) } catch (ex) {}
+    }
+
+    return mapped
+  } catch (err) {
+    try { console.error('[dataverseService] fetchChangeRequestById failed:', err) } catch (e) {}
+    return null
+  }
+}

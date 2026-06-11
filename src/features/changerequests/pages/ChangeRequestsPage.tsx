@@ -41,7 +41,7 @@ import { useUser } from '@/context/UserContext'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
 import type { ExportColumn } from '@/utils/exportUtils'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, WorkflowMilestone } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 
 const CHANGE_TYPE_LABELS: Record<string, string> = {
@@ -132,6 +132,7 @@ export default function ChangeRequestsPage() {
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const { currentUser } = useUser()
 
   // Lookup data state
   const [programmes, setProgrammes] = useState<ProgrammeLookupItem[]>([])
@@ -170,7 +171,6 @@ export default function ChangeRequestsPage() {
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [approvalLoading, setApprovalLoading] = useState(false)
-  const { currentUser } = useUser()
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -422,8 +422,32 @@ export default function ChangeRequestsPage() {
       } else {
         // Auto-generate reference for new change requests
         payload.pm_changerequestreference = autoGenerateReference()
-        await createChangeRequest(payload)
+        const created = await createChangeRequest(payload)
         setSuccessMsg('Change request created successfully.')
+
+        // Auto-trigger workflow after creation
+        if (created?.pm_changerequestid) {
+          try {
+            const workflows = await fetchWorkflows()
+            const crWorkflow = workflows.find(
+              (wf) => (wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0') && (
+                wf.pm_module?.toLowerCase() === 'changerequest' ||
+                wf.pm_module?.toLowerCase() === 'changerequests' ||
+                (wf.pm_workflowname ?? '').toLowerCase().includes('change request')
+              )
+            )
+            if (crWorkflow?.pm_workflowid) {
+              await startWorkflowForEntity(
+                crWorkflow.pm_workflowid,
+                created.pm_changerequestid,
+                'ChangeRequest',
+                currentUser?.fullname ?? 'System'
+              )
+            }
+          } catch (wfErr) {
+            console.warn('[ChangeRequestsPage] Auto-trigger workflow failed:', wfErr)
+          }
+        }
       }
       setShowFormModal(false)
       setTimeout(() => setSuccessMsg(null), 3000)
@@ -723,7 +747,7 @@ export default function ChangeRequestsPage() {
             />
           </Box>
         }
-        tabs={[{ label: 'Overview' }, { label: 'Details' }]}
+        tabs={[{ label: 'Overview' }, { label: 'Details' }, { label: 'Approval' }]}
         tabValue={detailTab}
         onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
       >
@@ -840,6 +864,15 @@ export default function ChangeRequestsPage() {
                   )}
                 </Box>
               </Paper>
+            </TabPanel>
+
+            <TabPanel value={detailTab} index={2} pt={0}>
+              {selectedCR.pm_changerequestid && (
+                <WorkflowMilestone
+                  moduleName="ChangeRequest"
+                  entityId={selectedCR.pm_changerequestid}
+                />
+              )}
             </TabPanel>
           </>
         )}

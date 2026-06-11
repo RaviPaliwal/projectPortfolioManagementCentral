@@ -59,6 +59,8 @@ import type { KpiCardItem, FilterOption } from '@/components/common'
 // Sub-components
 import { ProgrammeFormDialog } from '../components/ProgrammeFormDialog'
 import { navigateToProject, navigateToRisk, navigateToIssue } from '@/utils/navigation'
+import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import { normalizeLookupId } from '@/services'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
@@ -295,6 +297,7 @@ export default function ProgrammesPage() {
             <Tab label={`Projects (${detailProjects.length})`} />
             <Tab label="Financials" />
             <Tab label={`Risks & Issues (${detailRisks.length + detailIssues.length})`} />
+            <Tab label="Tasks" />
           </Tabs>
           <Box sx={{ p: 3 }}>
             <TabPanel value={detailTab} index={0}>
@@ -466,6 +469,16 @@ export default function ProgrammesPage() {
                   )) : <Typography variant="caption" color="text.secondary">No issues.</Typography>}
                 </Box>
               </Box>
+            </TabPanel>
+
+            <TabPanel value={detailTab} index={4}>
+              <EntityApprovalTasks
+                entityId={selectedProgrammeId}
+                moduleName={MODULE_NAMES.PROGRAMMES.value}
+                entityLabel="Programme"
+                tabValue={detailTab}
+                index={4}
+              />
             </TabPanel>
           </Box>
         </Paper>

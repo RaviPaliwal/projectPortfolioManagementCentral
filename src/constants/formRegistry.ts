@@ -46,6 +46,9 @@ const BudgetLineApprovalTaskModalWrapper = lazy(() =>
 const FundingSourceApprovalTaskModalWrapper = lazy(() =>
   import('@/features/fundingsources/components').then((m) => ({ default: m.FundingSourceApprovalTaskModalWrapper }))
 )
+const ChangeRequestApprovalTaskModalWrapper = lazy(() =>
+  import('@/features/changerequests/components').then((m) => ({ default: m.ChangeRequestApprovalTaskModalWrapper }))
+)
 
 /**
  * Registry of task forms that can be opened from workflow approval steps.
@@ -188,6 +191,13 @@ export const FORM_REGISTRY: FormRegistryEntry[] = [
     displayName: 'Funding Source Approval',
     description: 'Review funding source details — verify type, allocation amounts, utilization, and effective dates before approving or rejecting',
     modalComponent: FundingSourceApprovalTaskModalWrapper,
+  },
+  {
+    key: 'change_request_approval',
+    moduleName: MODULE_NAMES.CHANGE_REQUESTS.label,
+    displayName: 'Change Request Approval',
+    description: 'Review change request details — verify cost/schedule impacts, justification, and linked project data before approving or rejecting. On approval, dynamically updates project budget and schedule.',
+    modalComponent: ChangeRequestApprovalTaskModalWrapper,
   },
 ]
 

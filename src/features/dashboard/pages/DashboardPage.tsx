@@ -49,14 +49,8 @@ import {
 import { fontSizes } from '@/styles'
 import type { InitiativeModel, ApprovalRequestModel, PortfolioModel, ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
 import type { PipelineKpis } from '@/services'
-import MyTasksWidget from '@/components/common/MyTasksWidget'
+import { DashboardTasksWidget, BudgetHealthPanel, PipelineStageSummary, PortfolioHealthSnapshot } from '../components'
 import { currencyFormatter, formatDateTime } from '@/utils/formatters'
-import {
-  BudgetHealthPanel,
-  PipelineStageSummary,
-  PortfolioHealthSnapshot,
-  ActiveProjectsGrid,
-} from '../components'
 
 export default function DashboardPage() {
   const theme = useTheme()
@@ -255,17 +249,6 @@ export default function DashboardPage() {
         {/* Left column — Active Projects + Budget Health */}
         <Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           {/* Active Projects */}
-          <ActiveProjectsGrid
-            projects={projects}
-            loading={loading}
-            onViewAll={() => setShowAllProjects(true)}
-            onProjectClick={(project) => {
-              // Store the selected project ID so ProjectsPage can navigate to its detail view
-              sessionStorage.setItem('preselectProjectId', project.pm_projectid ?? '')
-              window.dispatchEvent(new CustomEvent('navigate', { detail: { tab: 'projects' } }))
-            }}
-          />
-
           {/* Budget Health Panel — Local Filtering Enabled */}
           <BudgetHealthPanel
             totalApprovedBudget={budgetMetrics.approved}
@@ -280,8 +263,8 @@ export default function DashboardPage() {
 
         {/* Right column */}
         <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {/* My Tasks Widget */}
-          <MyTasksWidget />
+          {/* Consolidated Tasks + AI Insights Widget */}
+          <DashboardTasksWidget />
 
           {/* Pipeline Stage Breakdown */}
           <PipelineStageSummary

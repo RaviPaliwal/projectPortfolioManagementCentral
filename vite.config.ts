@@ -20,7 +20,6 @@ export default defineConfig({
             if (id.includes('plotly.js')) return 'plotly-vendor';
             if (id.includes('@mui')) return 'mui-vendor';
             if (id.includes('recharts')) return 'recharts-vendor';
-            if (id.includes('/react/') || id.includes('/react-dom/')) return 'react-vendor';
             return 'vendor';
           }
         }
