@@ -1,0 +1,7 @@
+uid=8_0 RootWebArea "Power Apps" url="https://apps.powerapps.com/play/e/b13877a6-5201-e4ef-8d74-878957333982/a/local?_localAppUrl=http://localhost:5173/&_localConnectionUrl=http://localhost:5173/__vite_powerapps_plugin__/power.config.json"
+  uid=8_1 button "App launcher inactive"
+  uid=8_2 StaticText "Power Apps"
+  uid=8_3 generic "Splashscreen" live="polite" relevant="additions text"
+    uid=8_4 image "App Icon"
+    uid=8_5 StaticText "Fetching your app ..."
+    uid=8_6 progressbar "Progress bar" valuemax="100" valuemin="0" valuetext="Loading"

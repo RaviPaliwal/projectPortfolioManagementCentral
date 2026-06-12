@@ -1,0 +1,282 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - button "Skip to main content." [ref=e4] [cursor=pointer]:
+      - generic [ref=e7]: Skip to main content.
+    - banner [ref=e10]:
+      - button "App launcher" [ref=e13] [cursor=pointer]: 
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e23]: Power Apps | Project Portfolio Management Central
+          - button "Description of current running app." [ref=e30] [cursor=pointer]:
+            - generic [ref=e32]: 
+        - generic [ref=e34]:
+          - button "Share" [ref=e42] [cursor=pointer]:
+            - generic [ref=e43]:
+              - generic [ref=e44]: 
+              - generic [ref=e46]: Share
+              - generic [ref=e47]: 
+          - button "Fit to screen" [ref=e50] [cursor=pointer]:
+            - generic [ref=e51]: 
+          - button "Download" [ref=e85] [cursor=pointer]:
+            - generic [ref=e86]: 
+          - button "Settings" [ref=e89] [cursor=pointer]:
+            - generic [ref=e90]: 
+          - button "Help" [ref=e93] [cursor=pointer]:
+            - generic [ref=e94]: 
+      - generic [ref=e56]:
+        - button "Account manager for Ravi Paliwal" [ref=e58] [cursor=pointer]:
+          - generic [ref=e59]:
+            - generic [ref=e60]: Ravi Paliwal
+            - generic [ref=e66]:
+              - generic [ref=e67]: RP
+              - img "RP" [ref=e69]
+        - generic: 
+  - main [ref=e81]:
+    - iframe [active] [ref=e82]:
+      - generic [ref=f2e1]:
+        - generic [ref=f2e3916]:
+          - list [ref=f2e3919]:
+            - button "Dashboard" [ref=f2e4631] [cursor=pointer]:
+              - img [ref=f2e3922]
+              - generic [ref=f2e3925]: Dashboard
+            - button "Portfolios" [ref=f2e4632] [cursor=pointer]:
+              - img [ref=f2e3928]
+              - generic [ref=f2e3931]: Portfolios
+            - button "Programmes" [ref=f2e4633] [cursor=pointer]:
+              - img [ref=f2e3934]
+              - generic [ref=f2e3937]: Programmes
+            - button "Projects" [ref=f2e4634] [cursor=pointer]:
+              - img [ref=f2e3940]
+              - generic [ref=f2e3943]: Projects
+            - button "Pipeline" [ref=f2e4635] [cursor=pointer]:
+              - img [ref=f2e3946]
+              - generic [ref=f2e3949]: Pipeline
+            - button "Resources" [ref=f2e4636] [cursor=pointer]:
+              - img [ref=f2e3952]
+              - generic [ref=f2e3955]: Resources
+            - button "Timesheets" [ref=f2e4637] [cursor=pointer]:
+              - img [ref=f2e3958]
+              - generic [ref=f2e3962]: Timesheets
+            - button "Budgets" [ref=f2e4638] [cursor=pointer]:
+              - img [ref=f2e3965]
+              - generic [ref=f2e3968]: Budgets
+            - button "Gate Reviews" [ref=f2e4639] [cursor=pointer]:
+              - img [ref=f2e3971]
+              - generic [ref=f2e3974]: Gate Reviews
+            - button "Benefits" [ref=f2e4640] [cursor=pointer]:
+              - img [ref=f2e3977]
+              - generic [ref=f2e3980]: Benefits
+            - button "Schedule" [ref=f2e4641] [cursor=pointer]:
+              - img [ref=f2e3983]
+              - generic [ref=f2e3986]: Schedule
+            - button "Risks" [ref=f2e4642] [cursor=pointer]:
+              - img [ref=f2e3989]
+              - generic [ref=f2e3992]: Risks
+            - button "Issues" [ref=f2e4643] [cursor=pointer]:
+              - img [ref=f2e3995]
+              - generic [ref=f2e3998]: Issues
+            - button "Change Requests" [ref=f2e4644] [cursor=pointer]:
+              - img [ref=f2e4001]
+              - generic [ref=f2e4004]: Change Requests
+            - button "Cashflow" [ref=f2e4645] [cursor=pointer]:
+              - img [ref=f2e4007]
+              - generic [ref=f2e4010]: Cashflow
+            - button "Tasks" [active] [ref=f2e4646] [cursor=pointer]:
+              - img [ref=f2e4013]
+              - generic [ref=f2e4016]: Tasks
+            - button "Funding Sources" [ref=f2e4647] [cursor=pointer]:
+              - img [ref=f2e4019]
+              - generic [ref=f2e4022]: Funding Sources
+            - button "Status Snapshots" [ref=f2e4648] [cursor=pointer]:
+              - img [ref=f2e4025]
+              - generic [ref=f2e4028]: Status Snapshots
+            - button "Configurations" [ref=f2e4649] [cursor=pointer]:
+              - img [ref=f2e4031]
+              - generic [ref=f2e4034]: Configurations
+          - generic [ref=f2e4035]:
+            - banner [ref=f2e4036]:
+              - generic [ref=f2e4037]:
+                - generic [ref=f2e4038]:
+                  - generic [ref=f2e4039] [cursor=pointer]: PPM Central
+                  - generic [ref=f2e4040]: /
+                  - paragraph [ref=f2e4041] [cursor=pointer]: Tasks
+                - generic "Signed in as Aaditya Saxena" [ref=f2e4650] [cursor=pointer]:
+                  - generic [ref=f2e4044]: A
+                  - text: AADITYA
+                - button "Notification Center" [ref=f2e4651] [cursor=pointer]:
+                  - generic [ref=f2e4046]:
+                    - img [ref=f2e4047]
+                    - generic [ref=f2e4049]: "5"
+                - button [ref=f2e4050] [cursor=pointer]:
+                  - img [ref=f2e4051]
+                - button [ref=f2e4053] [cursor=pointer]:
+                  - img [ref=f2e4054]
+            - generic [ref=f2e4814]:
+              - generic [ref=f2e4816]:
+                - heading "Tasks" [level=5] [ref=f2e4817]
+                - paragraph [ref=f2e4818]: 6 items requiring attention
+              - tablist [ref=f2e4821]:
+                - tab "My Tasks (6)" [selected] [ref=f2e4822] [cursor=pointer]:
+                  - img [ref=f2e4823]
+                  - text: My Tasks (6)
+                - tab "Team Tasks" [ref=f2e4825] [cursor=pointer]:
+                  - img [ref=f2e4826]
+                  - text: Team Tasks
+              - generic [ref=f2e4829]:
+                - generic [ref=f2e4832]:
+                  - textbox "Search by workflow, step, or assignee..." [ref=f2e4833]
+                  - group
+                - table [ref=f2e4835]:
+                  - rowgroup [ref=f2e4836]:
+                    - 'row "Step # Workflow Due Date Assigned To Form" [ref=f2e4837]':
+                      - 'columnheader "Step #" [ref=f2e4838] [cursor=pointer]':
+                        - 'button "Step #" [ref=f2e4839]':
+                          - text: "Step #"
+                          - img [ref=f2e4840]
+                      - columnheader "Workflow" [ref=f2e4842] [cursor=pointer]:
+                        - button "Workflow" [ref=f2e4843]:
+                          - text: Workflow
+                          - img [ref=f2e4844]
+                      - columnheader "Due Date" [ref=f2e4846] [cursor=pointer]:
+                        - button "Due Date" [ref=f2e4847]:
+                          - text: Due Date
+                          - img [ref=f2e4848]
+                      - columnheader "Assigned To" [ref=f2e4850] [cursor=pointer]:
+                        - button "Assigned To" [ref=f2e4851]:
+                          - text: Assigned To
+                          - img [ref=f2e4852]
+                      - columnheader "Form" [ref=f2e4854]
+                  - rowgroup [ref=f2e4855]:
+                    - 'row "3 Step 3 Project Stage Gate Approval-da4479e4-0663-f111-a826-6045bd56f0ba Project Stage Gate Approval-da4479e4-0663-f111-a826-6045bd56f0ba ID: da4479e4... 13 Jun 2026 URGENT c9dea035-b90c-f111-8407-6045bd56f0ba Unable to resolve task for approval step e24479e4..." [ref=f2e4856]':
+                      - cell "3 Step 3 Project Stage Gate Approval-da4479e4-0663-f111-a826-6045bd56f0ba" [ref=f2e4857]:
+                        - generic [ref=f2e4858]:
+                          - generic [ref=f2e4859]: "3"
+                          - generic [ref=f2e4860]:
+                            - paragraph [ref=f2e4861]: Step 3
+                            - text: Project Stage Gate Approval-da4479e4-0663-f111-a826-6045bd56f0ba
+                      - 'cell "Project Stage Gate Approval-da4479e4-0663-f111-a826-6045bd56f0ba ID: da4479e4..." [ref=f2e4862]':
+                        - paragraph [ref=f2e4863]: Project Stage Gate Approval-da4479e4-0663-f111-a826-6045bd56f0ba
+                        - generic [ref=f2e4864]: "ID: da4479e4..."
+                      - cell "13 Jun 2026 URGENT" [ref=f2e4865]:
+                        - generic [ref=f2e4866]:
+                          - img [ref=f2e4867]
+                          - paragraph [ref=f2e4870]: 13 Jun 2026
+                          - generic [ref=f2e4871]: URGENT
+                      - cell "c9dea035-b90c-f111-8407-6045bd56f0ba" [ref=f2e4872]:
+                        - paragraph [ref=f2e4873]: c9dea035-b90c-f111-8407-6045bd56f0ba
+                      - cell "Unable to resolve task for approval step e24479e4..." [ref=f2e4874]:
+                        - generic "Unable to resolve task for approval step e24479e4..." [ref=f2e4875]:
+                          - generic [ref=f2e4876]: Unavailable
+                    - 'row "3 Step 3 Project Stage Gate Approval-fbbf2b60-d863-f111-ab0d-6045bd56f0ba Project Stage Gate Approval-fbbf2b60-d863-f111-ab0d-6045bd56f0ba ID: fbbf2b60... 14 Jun 2026 c9dea035-b90c-f111-8407-6045bd56f0ba Unable to resolve task for approval step ecafee66..." [ref=f2e4877]':
+                      - cell "3 Step 3 Project Stage Gate Approval-fbbf2b60-d863-f111-ab0d-6045bd56f0ba" [ref=f2e4878]:
+                        - generic [ref=f2e4879]:
+                          - generic [ref=f2e4880]: "3"
+                          - generic [ref=f2e4881]:
+                            - paragraph [ref=f2e4882]: Step 3
+                            - text: Project Stage Gate Approval-fbbf2b60-d863-f111-ab0d-6045bd56f0ba
+                      - 'cell "Project Stage Gate Approval-fbbf2b60-d863-f111-ab0d-6045bd56f0ba ID: fbbf2b60..." [ref=f2e4883]':
+                        - paragraph [ref=f2e4884]: Project Stage Gate Approval-fbbf2b60-d863-f111-ab0d-6045bd56f0ba
+                        - generic [ref=f2e4885]: "ID: fbbf2b60..."
+                      - cell "14 Jun 2026" [ref=f2e4886]:
+                        - generic [ref=f2e4887]:
+                          - img [ref=f2e4888]
+                          - paragraph [ref=f2e4891]: 14 Jun 2026
+                      - cell "c9dea035-b90c-f111-8407-6045bd56f0ba" [ref=f2e4892]:
+                        - paragraph [ref=f2e4893]: c9dea035-b90c-f111-8407-6045bd56f0ba
+                      - cell "Unable to resolve task for approval step ecafee66..." [ref=f2e4894]:
+                        - generic "Unable to resolve task for approval step ecafee66..." [ref=f2e4895]:
+                          - generic [ref=f2e4896]: Unavailable
+                    - 'row "3 Step 3 Project Stage Gate Approval-3f1012f9-a064-f111-ab0d-6045bd56f0ba Project Stage Gate Approval-3f1012f9-a064-f111-ab0d-6045bd56f0ba ID: 3f1012f9... 15 Jun 2026 c9dea035-b90c-f111-8407-6045bd56f0ba Final board decision recording with outcome, conditions, and endorsement history" [ref=f2e4897]':
+                      - cell "3 Step 3 Project Stage Gate Approval-3f1012f9-a064-f111-ab0d-6045bd56f0ba" [ref=f2e4898]:
+                        - generic [ref=f2e4899]:
+                          - generic [ref=f2e4900]: "3"
+                          - generic [ref=f2e4901]:
+                            - paragraph [ref=f2e4902]: Step 3
+                            - text: Project Stage Gate Approval-3f1012f9-a064-f111-ab0d-6045bd56f0ba
+                      - 'cell "Project Stage Gate Approval-3f1012f9-a064-f111-ab0d-6045bd56f0ba ID: 3f1012f9..." [ref=f2e4903]':
+                        - paragraph [ref=f2e4904]: Project Stage Gate Approval-3f1012f9-a064-f111-ab0d-6045bd56f0ba
+                        - generic [ref=f2e4905]: "ID: 3f1012f9..."
+                      - cell "15 Jun 2026" [ref=f2e4906]:
+                        - generic [ref=f2e4907]:
+                          - img [ref=f2e4908]
+                          - paragraph [ref=f2e4911]: 15 Jun 2026
+                      - cell "c9dea035-b90c-f111-8407-6045bd56f0ba" [ref=f2e4912]:
+                        - paragraph [ref=f2e4913]: c9dea035-b90c-f111-8407-6045bd56f0ba
+                      - cell "Final board decision recording with outcome, conditions, and endorsement history" [ref=f2e4914]:
+                        - button "Final board decision recording with outcome, conditions, and endorsement history" [ref=f2e4915] [cursor=pointer]:
+                          - img [ref=f2e4916]
+                          - generic [ref=f2e4918]: Open Form
+                    - 'row "3 Step 3 Project Stage Gate Approval-a7c168d3-c964-f111-ab0d-6045bd56f0ba Project Stage Gate Approval-a7c168d3-c964-f111-ab0d-6045bd56f0ba ID: a7c168d3... 15 Jun 2026 c9dea035-b90c-f111-8407-6045bd56f0ba Final board decision recording with outcome, conditions, and endorsement history" [ref=f2e4919]':
+                      - cell "3 Step 3 Project Stage Gate Approval-a7c168d3-c964-f111-ab0d-6045bd56f0ba" [ref=f2e4920]:
+                        - generic [ref=f2e4921]:
+                          - generic [ref=f2e4922]: "3"
+                          - generic [ref=f2e4923]:
+                            - paragraph [ref=f2e4924]: Step 3
+                            - text: Project Stage Gate Approval-a7c168d3-c964-f111-ab0d-6045bd56f0ba
+                      - 'cell "Project Stage Gate Approval-a7c168d3-c964-f111-ab0d-6045bd56f0ba ID: a7c168d3..." [ref=f2e4925]':
+                        - paragraph [ref=f2e4926]: Project Stage Gate Approval-a7c168d3-c964-f111-ab0d-6045bd56f0ba
+                        - generic [ref=f2e4927]: "ID: a7c168d3..."
+                      - cell "15 Jun 2026" [ref=f2e4928]:
+                        - generic [ref=f2e4929]:
+                          - img [ref=f2e4930]
+                          - paragraph [ref=f2e4933]: 15 Jun 2026
+                      - cell "c9dea035-b90c-f111-8407-6045bd56f0ba" [ref=f2e4934]:
+                        - paragraph [ref=f2e4935]: c9dea035-b90c-f111-8407-6045bd56f0ba
+                      - cell "Final board decision recording with outcome, conditions, and endorsement history" [ref=f2e4936]:
+                        - button "Final board decision recording with outcome, conditions, and endorsement history" [ref=f2e4937] [cursor=pointer]:
+                          - img [ref=f2e4938]
+                          - generic [ref=f2e4940]: Open Form
+                    - 'row "1 Step 1 Initiative Approval-d89f7bfd-7a65-f111-ab0d-6045bd56f0ba Initiative Approval-d89f7bfd-7a65-f111-ab0d-6045bd56f0ba ID: d89f7bfd... 16 Jun 2026 c9dea035-b90c-f111-8407-6045bd56f0ba Review initiative alignment, feasibility, and readiness for pipeline progression" [ref=f2e4941]':
+                      - cell "1 Step 1 Initiative Approval-d89f7bfd-7a65-f111-ab0d-6045bd56f0ba" [ref=f2e4942]:
+                        - generic [ref=f2e4943]:
+                          - generic [ref=f2e4944]: "1"
+                          - generic [ref=f2e4945]:
+                            - paragraph [ref=f2e4946]: Step 1
+                            - text: Initiative Approval-d89f7bfd-7a65-f111-ab0d-6045bd56f0ba
+                      - 'cell "Initiative Approval-d89f7bfd-7a65-f111-ab0d-6045bd56f0ba ID: d89f7bfd..." [ref=f2e4947]':
+                        - paragraph [ref=f2e4948]: Initiative Approval-d89f7bfd-7a65-f111-ab0d-6045bd56f0ba
+                        - generic [ref=f2e4949]: "ID: d89f7bfd..."
+                      - cell "16 Jun 2026" [ref=f2e4950]:
+                        - generic [ref=f2e4951]:
+                          - img [ref=f2e4952]
+                          - paragraph [ref=f2e4955]: 16 Jun 2026
+                      - cell "c9dea035-b90c-f111-8407-6045bd56f0ba" [ref=f2e4956]:
+                        - paragraph [ref=f2e4957]: c9dea035-b90c-f111-8407-6045bd56f0ba
+                      - cell "Review initiative alignment, feasibility, and readiness for pipeline progression" [ref=f2e4958]:
+                        - button "Review initiative alignment, feasibility, and readiness for pipeline progression" [ref=f2e4959] [cursor=pointer]:
+                          - img [ref=f2e4960]
+                          - generic [ref=f2e4962]: Open Form
+                    - 'row "1 Step 1 Initiative Approval-d31d89d0-5ee3-437e-88ba-527647f0f3ce Initiative Approval-d31d89d0-5ee3-437e-88ba-527647f0f3ce ID: d31d89d0... 16 Jun 2026 c9dea035-b90c-f111-8407-6045bd56f0ba Review initiative alignment, feasibility, and readiness for pipeline progression" [ref=f2e4963]':
+                      - cell "1 Step 1 Initiative Approval-d31d89d0-5ee3-437e-88ba-527647f0f3ce" [ref=f2e4964]:
+                        - generic [ref=f2e4965]:
+                          - generic [ref=f2e4966]: "1"
+                          - generic [ref=f2e4967]:
+                            - paragraph [ref=f2e4968]: Step 1
+                            - text: Initiative Approval-d31d89d0-5ee3-437e-88ba-527647f0f3ce
+                      - 'cell "Initiative Approval-d31d89d0-5ee3-437e-88ba-527647f0f3ce ID: d31d89d0..." [ref=f2e4969]':
+                        - paragraph [ref=f2e4970]: Initiative Approval-d31d89d0-5ee3-437e-88ba-527647f0f3ce
+                        - generic [ref=f2e4971]: "ID: d31d89d0..."
+                      - cell "16 Jun 2026" [ref=f2e4972]:
+                        - generic [ref=f2e4973]:
+                          - img [ref=f2e4974]
+                          - paragraph [ref=f2e4977]: 16 Jun 2026
+                      - cell "c9dea035-b90c-f111-8407-6045bd56f0ba" [ref=f2e4978]:
+                        - paragraph [ref=f2e4979]: c9dea035-b90c-f111-8407-6045bd56f0ba
+                      - cell "Review initiative alignment, feasibility, and readiness for pipeline progression" [ref=f2e4980]:
+                        - button "Review initiative alignment, feasibility, and readiness for pipeline progression" [ref=f2e4981] [cursor=pointer]:
+                          - img [ref=f2e4982]
+                          - generic [ref=f2e4984]: Open Form
+                - generic [ref=f2e4986]: Showing 6 of 6 pending steps
+                - generic [ref=f2e4988]:
+                  - paragraph [ref=f2e4989]: "Rows per page:"
+                  - generic [ref=f2e4990]:
+                    - combobox "Rows per page:" [ref=f2e4991] [cursor=pointer]: "25"
+                    - textbox: "25"
+                    - img
+                  - paragraph [ref=f2e4992]: 1–6 of 6
+                  - generic [ref=f2e4993]:
+                    - button "Go to previous page" [disabled]:
+                      - img
+                    - button "Go to next page" [disabled]:
+                      - img
+        - generic [ref=f2e810]: Kumawat

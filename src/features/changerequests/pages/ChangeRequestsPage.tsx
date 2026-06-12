@@ -442,7 +442,7 @@ export default function ChangeRequestsPage() {
               await startWorkflowForEntity(
                 crWorkflow.pm_workflowid,
                 created.pm_changerequestid,
-                'ChangeRequest',
+                MODULE_NAMES.CHANGE_REQUESTS.value,
                 currentUser?.fullname ?? 'System'
               )
             }
@@ -713,7 +713,7 @@ export default function ChangeRequestsPage() {
                     const result = await startWorkflowForEntity(
                       crWorkflow.pm_workflowid,
                       selectedCR.pm_changerequestid,
-                      'ChangeRequest',
+                      MODULE_NAMES.CHANGE_REQUESTS.value,
                       currentUser?.fullname ?? 'Unknown'
                     )
                     if (result) {
