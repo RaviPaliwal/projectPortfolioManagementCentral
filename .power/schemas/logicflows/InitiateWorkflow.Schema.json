@@ -75,7 +75,13 @@
                 "Project",
                 "Portfolio",
                 "Programme",
-                "GateReview"
+                "GateReview",
+                "Pipeline",
+                "FundingSources",
+                "Timesheets",
+                "Budgets",
+                "Resources",
+                "ChangeRequests"
               ]
             },
             "text_1": {
