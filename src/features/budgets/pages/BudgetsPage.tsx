@@ -55,6 +55,7 @@ import {
 import type { BudgetLineModel, FundingSourceModel, FinancialPeriodModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, WorkflowMilestone } from '@/components/common'
+import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { MODULE_NAMES } from '@/constants/moduleNames'
@@ -703,6 +704,7 @@ export default function BudgetsPage() {
           { label: 'Overview' },
           { label: 'Details' },
           { label: 'Approval' },
+          { label: 'Tasks' },
         ]}
         tabValue={detailTab}
         onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
@@ -882,7 +884,7 @@ export default function BudgetsPage() {
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
                         {selectedBudget.pm_approvedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_approvedbudgeteur) : ''}
-                        {selectedBudget.pm_costcategoryname ? ` · ${selectedBudget.pm_costcategoryname}` : ''}
+                        {selectedBudget.pm_costcategoryname ? ` A� ${selectedBudget.pm_costcategoryname}` : ''}
                       </Typography>
                       <WorkflowMilestone
                         moduleName={MODULE_NAMES.BUDGETS.value}
@@ -893,6 +895,18 @@ export default function BudgetsPage() {
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
                       No workflow tracking available for this budget line.
                     </Typography>
+                  )}
+                </TabPanel>
+
+                <TabPanel value={detailTab} index={3} pt={0}>
+                  {selectedBudget?.pm_budgetlineid && (
+                    <EntityApprovalTasks
+                      entityId={selectedBudget.pm_budgetlineid}
+                      moduleName={MODULE_NAMES.BUDGETS.value}
+                      entityLabel="Budget Line"
+                      tabValue={detailTab}
+                      index={3}
+                    />
                   )}
                 </TabPanel>
               </>

@@ -38,9 +38,10 @@ import {
   StatusTag,
   WorkflowMilestone,
 } from '@/components/common'
+import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import { formatDate } from '@/utils/formatters'
 import { TIMESHEET_STATUS_LABELS, TIMESHEET_STATUS_COLORS } from '@/constants/mappings'
-import { MODULE_NAMES } from '@/constants/moduleNames'
 import { useUser } from '@/context/UserContext'
 import type { ExportColumn } from '@/utils/exportUtils'
 
@@ -385,7 +386,7 @@ export default function TimesheetsPage() {
             />
           )
         }
-        tabs={[{ label: 'Entries', count: entries.length }, { label: 'Details' }, { label: 'Approval' }]}
+        tabs={[{ label: 'Entries', count: entries.length }, { label: 'Details' }, { label: 'Approval' }, { label: 'Tasks' }]}
         tabValue={detailTab}
         onTabChange={(value) => setDetailTab(value)}
       >
@@ -428,6 +429,18 @@ export default function TimesheetsPage() {
                   </Typography>
                 )}
               </Box>
+            </TabPanel>
+
+            <TabPanel value={detailTab} index={3} pt={0}>
+              {selectedTimesheet.pm_timesheetid && (
+                <EntityApprovalTasks
+                  entityId={selectedTimesheet.pm_timesheetid}
+                  moduleName={MODULE_NAMES.TIMESHEETS.value}
+                  entityLabel="Timesheet"
+                  tabValue={detailTab}
+                  index={3}
+                />
+              )}
             </TabPanel>
           </>
         )}

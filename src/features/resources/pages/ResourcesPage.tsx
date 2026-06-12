@@ -68,6 +68,7 @@ import type { ExportColumn } from '@/utils/exportUtils'
 import type { ResourceModel, ResourceAllocationModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, ActionIcon, WorkflowMilestone } from '@/components/common'
+import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import  { StatusTag } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
@@ -724,6 +725,7 @@ export default function ResourcesPage() {
               { label: 'Overview' },
               { label: 'Assignments', count: resourceAllocations.length },
               { label: 'Approval' },
+              { label: 'Tasks' },
             ]}
             tabValue={detailTab}
             onTabChange={(v) => { setDetailTab(v); setError(null) }}
@@ -868,8 +870,8 @@ export default function ResourcesPage() {
                             {alloc.pm_assignmentrole || 'Unspecified Role'}
                           </Typography>
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                            {alloc.pm_allocatedhours ?? 0}h · {alloc.pm_allocationpercentage ?? 0}%
-                            {alloc.pm_startdate ? ` · ${new Date(alloc.pm_startdate).toLocaleDateString()} \u2192 ${alloc.pm_enddate ? new Date(alloc.pm_enddate).toLocaleDateString() : '\u2014'}` : ''}
+                            {alloc.pm_allocatedhours ?? 0}h A� {alloc.pm_allocationpercentage ?? 0}%
+                            {alloc.pm_startdate ? ` A� ${new Date(alloc.pm_startdate).toLocaleDateString()} \u2192 ${alloc.pm_enddate ? new Date(alloc.pm_enddate).toLocaleDateString() : '\u2014'}` : ''}
                           </Typography>
                           {alloc.pm_resourceallocationid && (
                             <WorkflowMilestone
@@ -884,6 +886,18 @@ export default function ResourcesPage() {
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
                       No allocations with workflow tracking yet.
                     </Typography>
+                  )}
+                </TabPanel>
+
+                <TabPanel value={detailTab} index={3} pt={0}>
+                  {selectedResource?.pm_resourceid && (
+                    <EntityApprovalTasks
+                      entityId={selectedResource.pm_resourceid}
+                      moduleName={MODULE_NAMES.RESOURCES.value}
+                      entityLabel="Resource"
+                      tabValue={detailTab}
+                      index={3}
+                    />
                   )}
                 </TabPanel>
               </>

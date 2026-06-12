@@ -49,6 +49,10 @@ import TransformIcon from '@mui/icons-material/Transform'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import AssignmentIcon from '@mui/icons-material/Assignment'
+
+import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import ScienceIcon from '@mui/icons-material/Science'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import InfoIcon from '@mui/icons-material/Info'
@@ -72,7 +76,6 @@ import { PageHeader, KpiCardRow, TabPanel, TableFooter, TableShell, DetailDrawer
 import type { KpiCardItem, FilterOption} from '@/components/common'
 import { ExportButton,StatusTag } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
-import { MODULE_NAMES } from '@/constants/moduleNames'
 import { WORKFLOW_DECISION_EVENT } from '@/services/workflow.service'
 import { ConvertToProjectDialog } from '../components/ConvertToProjectDialog'
 import { createProject } from '@/services'
@@ -715,6 +718,7 @@ export default function PipelinePage() {
           { label: 'Overview' },
           { label: 'Score & Triage' },
           { label: 'Actions' },
+          { label: 'Tasks' },
         ]}
         tabValue={detailTab}
         onTabChange={(v) => { setDetailTab(v); setEditScoreMode(false) }}
@@ -872,6 +876,19 @@ export default function PipelinePage() {
                 </Paper>
               )}
             </Box>
+          )}
+        </TabPanel>
+
+        {/* ═══ Tab 3: Tasks ═══ */}
+        <TabPanel value={detailTab} index={3} pt={0}>
+          {selectedInitiative?.pm_initiativeid && (
+            <EntityApprovalTasks
+              entityId={selectedInitiative.pm_initiativeid}
+              moduleName={MODULE_NAMES.PIPELINE.value}
+              entityLabel="Initiative"
+              tabValue={detailTab}
+              index={3}
+            />
           )}
         </TabPanel>
       </DetailDrawer>

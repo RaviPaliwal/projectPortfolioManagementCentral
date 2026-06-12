@@ -34,6 +34,8 @@ import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader, ActionIcon } 
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 import { RAG_COLORS, phaseLabel, currency } from '../constants'
 import { fontSizes } from '@/styles'
+import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 
 import { ProjectOverviewTab } from './tabs/ProjectOverviewTab'
 import { ProjectFinancialsTab } from './tabs/ProjectFinancialsTab'
@@ -100,6 +102,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
     { label: 'Team', icon: <PersonAddIcon fontSize="small" /> },
     { label: 'Benefits', icon: <EmojiEventsIcon fontSize="small" /> },
     { label: 'Governance', icon: <HowToRegIcon fontSize="small" /> },
+    { label: 'Tasks', icon: <AssignmentIcon fontSize="small" /> },
   ]
 
   // RAG color for accent bar
@@ -187,6 +190,15 @@ export const Project360View: React.FC<Project360ViewProps> = ({
               {activeTab === 4 && <ProjectTeamTab resources={resources} />}
               {activeTab === 5 && <ProjectBenefitsTab benefits={benefits} />}
               {activeTab === 6 && <ProjectGovernanceTab gateReviews={gateReviews} onSubmitReview={onSubmitGateReview} />}
+              {activeTab === 7 && (
+                <EntityApprovalTasks
+                  entityId={project.pm_projectid ?? ''}
+                  moduleName={MODULE_NAMES.PROJECTS.value}
+                  entityLabel="Project"
+                  tabValue={activeTab}
+                  index={7}
+                />
+              )}
             </>
           )}
         </Box>

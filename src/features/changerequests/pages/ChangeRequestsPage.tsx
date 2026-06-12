@@ -42,6 +42,8 @@ import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, WorkflowMilestone } from '@/components/common'
+import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 
 const CHANGE_TYPE_LABELS: Record<string, string> = {
@@ -747,7 +749,7 @@ export default function ChangeRequestsPage() {
             />
           </Box>
         }
-        tabs={[{ label: 'Overview' }, { label: 'Details' }, { label: 'Approval' }]}
+        tabs={[{ label: 'Overview' }, { label: 'Details' }, { label: 'Approval' }, { label: 'Tasks' }]}
         tabValue={detailTab}
         onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
       >
@@ -871,6 +873,18 @@ export default function ChangeRequestsPage() {
                 <WorkflowMilestone
                   moduleName="ChangeRequest"
                   entityId={selectedCR.pm_changerequestid}
+                />
+              )}
+            </TabPanel>
+
+            <TabPanel value={detailTab} index={3} pt={0}>
+              {selectedCR.pm_changerequestid && (
+                <EntityApprovalTasks
+                  entityId={selectedCR.pm_changerequestid}
+                  moduleName={MODULE_NAMES.CHANGE_REQUESTS.value}
+                  entityLabel="Change Request"
+                  tabValue={detailTab}
+                  index={3}
                 />
               )}
             </TabPanel>

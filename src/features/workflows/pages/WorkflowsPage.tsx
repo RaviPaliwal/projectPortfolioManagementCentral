@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
-  Box, Paper, Typography, Alert, Chip, useTheme,
+  Box, Paper, Typography, Alert, useTheme,
   Table, TableBody, TableCell, TableHead, TableRow,
   TableSortLabel, TablePagination, Button, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions,
   Avatar, Tabs, Tab, TextField, FormControl, InputLabel, Select, MenuItem,
+  LinearProgress, Tooltip, Chip,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -12,28 +13,24 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import ScheduleIcon from '@mui/icons-material/Schedule'
-import HistoryIcon from '@mui/icons-material/History'
 import SettingsIcon from '@mui/icons-material/Settings'
 import PowerIcon from '@mui/icons-material/Power'
 import PowerOffIcon from '@mui/icons-material/PowerOff'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import CloseIcon from '@mui/icons-material/Close'
-import DynamicFeedIcon from '@mui/icons-material/DynamicFeed'
-import type { WorkflowModel, WorkflowInstanceModel, WorkflowApprovalStepModel, WorkflowStepTemplateModel } from '@/types/dataverse'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import type { WorkflowModel, WorkflowInstanceModel, WorkflowStepTemplateModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
 import { useUser } from '@/context/UserContext'
 import {
   fetchWorkflows, deleteWorkflow,
-  fetchWorkflowInstances, fetchWorkflowApprovalSteps, deleteWorkflowInstance,
+  fetchWorkflowInstances, deleteWorkflowInstance,
   fetchWorkflowStepTemplates,
-  approveWorkflowStep,
-  rejectWorkflowStep,
 } from '@/services'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, TabPanel, ExportButton, StatusTag } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
+import { navigateToModule } from '@/utils/navigation'
 
 // Sub-page imports
 import WorkflowFormPage from './WorkflowFormPage'
@@ -41,8 +38,6 @@ import WorkflowFormPage from './WorkflowFormPage'
 const STATUS_LABELS: Record<string, string> = { '0': 'Active', '1': 'Inactive' }
 const INSTANCE_STATUS_LABELS: Record<string, string> = { '0': 'Completed', '1': 'Active' }
 const INSTANCE_STATUS_COLORS: Record<string, 'success' | 'warning'> = { '0': 'success', '1': 'warning' }
-const APPROVAL_STATUS_LABELS: Record<string, string> = { '0': 'Approved', '1': 'Pending' }
-const APPROVAL_STATUS_COLORS: Record<string, 'success' | 'warning'> = { '0': 'success', '1': 'warning' }
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 const formatDate = (d?: string | null): string => d ? dateFormatter.format(new Date(d)) : '\u2014'
@@ -65,15 +60,9 @@ const instanceExportColumns: ExportColumn[] = [
   { key: 'pm_entityid', label: 'Entity ID' },
   { key: 'pm_statusname', label: 'Status' },
 ]
-const stepExportColumns: ExportColumn[] = [
-  { key: 'pm_steporder', label: 'Step #' },
-  { key: 'pm_approvername', label: 'Approver' },
-  { key: 'pm_decisionstatus', label: 'Decision' },
-]
 
 type WfSortField = 'name' | 'status' | 'entity'
-type InstSortField = 'workflow' | 'entity' | 'status' | 'date'
-type StepSortField = 'order' | 'approver' | 'decision'
+type InstSortField = 'workflow' | 'entity' | 'status' | 'date' | 'completion'
 type SortDir = 'asc' | 'desc'
 interface SortState<T> { field: T; dir: SortDir }
 
@@ -90,7 +79,6 @@ export default function WorkflowsPage() {
   // Data
   const [workflows, setWorkflows] = useState<WorkflowModel[]>([])
   const [instances, setInstances] = useState<WorkflowInstanceModel[]>([])
-  const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
   const [stepTemplates, setStepTemplates] = useState<WorkflowStepTemplateModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -108,51 +96,33 @@ export default function WorkflowsPage() {
   const [instSort, setInstSort] = useState<SortState<InstSortField>>({ field: 'date', dir: 'desc' })
   const [instPage, setInstPage] = useState(0)
   const [instRowsPerPage, setInstRowsPerPage] = useState(25)
-  const [stepSearch, setStepSearch] = useState('')
-  const [stepSort, setStepSort] = useState<SortState<StepSortField>>({ field: 'order', dir: 'asc' })
-  const [stepPage, setStepPage] = useState(0)
-  const [stepRowsPerPage, setStepRowsPerPage] = useState(25)
-  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null)
-  const [stepsLoading, setStepsLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; type: 'workflow' | 'instance' } | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
-  const [wfActionLoading, setWfActionLoading] = useState<string | null>(null)
   const { currentUser } = useUser()
   const [dialogStep, setDialogStep] = useState(0)
-  const WF_STEPS = ['Basic Information', 'Approval Steps', 'Workflow Settings', 'Review & Save']
 
   const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const [wfList, instList] = await Promise.all([fetchWorkflows(), fetchWorkflowInstances()])
+      const [wfList, instList, stList] = await Promise.all([
+        fetchWorkflows(),
+        fetchWorkflowInstances(),
+        fetchWorkflowStepTemplates()
+      ])
       setWorkflows(wfList)
       setInstances(instList)
+      setStepTemplates(stList)
     } catch (err) {
       setError('Unable to load workflow data. ' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setLoading(false)
     }
-    try {
-      const stList = await fetchWorkflowStepTemplates()
-      setStepTemplates(stList)
-    } catch {
-      // Non-critical
-    }
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
 
-  useEffect(() => {
-    if (!selectedInstanceId) { setSteps([]); return }
-    setStepsLoading(true)
-    fetchWorkflowApprovalSteps(selectedInstanceId)
-      .then((data) => setSteps(data))
-      .catch(() => setError('Unable to load approval steps.'))
-      .finally(() => setStepsLoading(false))
-  }, [selectedInstanceId])
-
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ KPI Cards ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+  // KPI Cards
   const kpiItems = useMemo((): KpiCardItem[] => {
     const totalTemplates = workflows.length
     const activeTemplates = workflows.filter((w) => w.pm_workflowstatus === 0 || w.pm_workflowstatus === '0').length
@@ -167,14 +137,14 @@ export default function WorkflowsPage() {
     ]
   }, [workflows, instances, stepTemplates])
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Filtering & Sorting ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+  // Filtering & Sorting
   const filteredWorkflows = useMemo(() => {
     let list = [...workflows]
     if (wfSearch.trim()) {
       const q = wfSearch.toLowerCase()
       list = list.filter((w) =>
         (w.pm_workflowname ?? '').toLowerCase().includes(q) ||
-        ((w as any).pm_workflowdescription ?? '').toLowerCase().includes(q)
+        (w.pm_workflowdescription ?? '').toLowerCase().includes(q)
       )
     }
     if (wfStatusFilter) list = list.filter((w) => String(w.pm_workflowstatus ?? (w as any).statecode) === wfStatusFilter)
@@ -183,7 +153,7 @@ export default function WorkflowsPage() {
       switch (wfSort.field) {
         case 'name': cmp = (a.pm_workflowname ?? '').localeCompare(b.pm_workflowname ?? ''); break
         case 'status': cmp = String(a.pm_workflowstatus ?? '').localeCompare(String(b.pm_workflowstatus ?? '')); break
-        case 'entity': cmp = String((a as any).pm_module ?? '').localeCompare(String((b as any).pm_module ?? '')); break
+        case 'entity': cmp = String(a.pm_module ?? '').localeCompare(String(b.pm_module ?? '')); break
       }
       return wfSort.dir === 'asc' ? cmp : -cmp
     })
@@ -191,13 +161,28 @@ export default function WorkflowsPage() {
 
   const paginatedWorkflows = useMemo(() => filteredWorkflows.slice(wfPage * wfRowsPerPage, wfPage * wfRowsPerPage + wfRowsPerPage), [filteredWorkflows, wfPage, wfRowsPerPage])
 
+  const getInstanceCompletion = useCallback((inst: WorkflowInstanceModel) => {
+    if (inst.pm_status === 0 || inst.pm_status === '0') return 100
+    const workflowId = inst._pm_workflowlookup_value
+    if (!workflowId) return 0
+    const totalSteps = stepTemplates.filter(s => s._pm_workflowlookup_value === workflowId).length
+    if (totalSteps === 0) return 0
+    const currentStep = inst.pm_currentstep ?? 1
+    return Math.round(((currentStep - 1) / totalSteps) * 100)
+  }, [stepTemplates])
+
+  const getInstanceModule = useCallback((inst: WorkflowInstanceModel) => {
+    const wf = workflows.find(w => w.pm_workflowid === inst._pm_workflowlookup_value)
+    return wf?.pm_module || inst.pm_entitytype || '\u2014'
+  }, [workflows])
+
   const filteredInstances = useMemo(() => {
     let list = [...instances]
     if (instSearch.trim()) {
       const q = instSearch.toLowerCase()
       list = list.filter((i) =>
         (i.pm_workflowlookupname ?? '').toLowerCase().includes(q) ||
-        ((i as any).pm_initiatedby ?? '').toLowerCase().includes(q)
+        (i.pm_initiatedby ?? '').toLowerCase().includes(q)
       )
     }
     if (instStatusFilter) list = list.filter((i) => String(i.pm_status ?? '') === instStatusFilter)
@@ -205,41 +190,20 @@ export default function WorkflowsPage() {
       let cmp = 0
       switch (instSort.field) {
         case 'workflow': cmp = (a.pm_workflowlookupname ?? '').localeCompare(b.pm_workflowlookupname ?? ''); break
-        case 'entity': cmp = String((a as any).pm_entityid ?? '').localeCompare(String((b as any).pm_entityid ?? '')); break
+        case 'entity': cmp = String(a.pm_entityid ?? '').localeCompare(String(b.pm_entityid ?? '')); break
         case 'status': cmp = String(a.pm_status ?? '').localeCompare(String(b.pm_status ?? '')); break
-        case 'date': cmp = String((a as any).pm_startdate ?? '').localeCompare(String((b as any).pm_startdate ?? '')); break
+        case 'date': cmp = String(a.pm_startdate ?? '').localeCompare(String(b.pm_startdate ?? '')); break
+        case 'completion': cmp = getInstanceCompletion(a) - getInstanceCompletion(b); break
       }
       return instSort.dir === 'asc' ? cmp : -cmp
     })
-  }, [instances, instSearch, instStatusFilter, instSort])
+  }, [instances, instSearch, instStatusFilter, instSort, getInstanceCompletion])
 
   const paginatedInstances = useMemo(() => filteredInstances.slice(instPage * instRowsPerPage, instPage * instRowsPerPage + instRowsPerPage), [filteredInstances, instPage, instRowsPerPage])
 
-  const filteredSteps = useMemo(() => {
-    let list = [...steps]
-    if (stepSearch.trim()) {
-      const q = stepSearch.toLowerCase()
-      list = list.filter((s) =>
-        (s.pm_approvername ?? '').toLowerCase().includes(q)
-      )
-    }
-    return [...list].sort((a, b) => {
-      let cmp = 0
-      switch (stepSort.field) {
-        case 'order': cmp = (a.pm_steporder ?? 0) - (b.pm_steporder ?? 0); break
-        case 'approver': cmp = (a.pm_approvername ?? '').localeCompare(b.pm_approvername ?? ''); break
-        case 'decision': cmp = String(a.pm_decisionstatus ?? '').localeCompare(String(b.pm_decisionstatus ?? '')); break
-      }
-      return stepSort.dir === 'asc' ? cmp : -cmp
-    })
-  }, [steps, stepSearch, stepSort])
-
-  const paginatedSteps = useMemo(() => filteredSteps.slice(stepPage * stepRowsPerPage, stepPage * stepRowsPerPage + stepRowsPerPage), [filteredSteps, stepPage, stepRowsPerPage])
-
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Handlers ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+  // Handlers
   const handleWfSort = useCallback((field: WfSortField) => setWfSort((p) => ({ field, dir: p.field === field && p.dir === 'asc' ? 'desc' : 'asc' })), [])
   const handleInstSort = useCallback((field: InstSortField) => setInstSort((p) => ({ field, dir: p.field === field && p.dir === 'asc' ? 'desc' : 'asc' })), [])
-  const handleStepSort = useCallback((field: StepSortField) => setStepSort((p) => ({ field, dir: p.field === field && p.dir === 'asc' ? 'desc' : 'asc' })), [])
 
   const handleDelete = async () => {
     if (!deleteConfirm) return
@@ -262,6 +226,12 @@ export default function WorkflowsPage() {
     setSuccessMsg(null)
   }
 
+  const handleRowClick = (inst: WorkflowInstanceModel) => {
+    if (inst.pm_entitytype && inst.pm_entityid) {
+      navigateToModule(inst.pm_entitytype, inst.pm_entityid)
+    }
+  }
+
   const renderTableHeader = (cells: Array<{
     label: string; sortable?: boolean; active?: boolean; dir?: SortDir; onClick?: () => void; align?: 'left' | 'center' | 'right'
   }>) => (
@@ -269,7 +239,7 @@ export default function WorkflowsPage() {
       <TableRow>
         {cells.map((cell, idx) => (
           <TableCell key={idx} align={cell.align || 'left'}
-            sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'text.secondary', py: 1.5, borderBottom: '2px solid', borderColor: 'divider', cursor: cell.sortable ? 'pointer' : 'default', '&:hover': cell.sortable ? { color: 'primary.main' } : {} }}
+            sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'text.secondary', py: 1.5, borderBottom: '2px solid', borderColor: 'divider', cursor: cell.sortable ? 'pointer' : 'default', '&:hover': { color: cell.sortable ? 'primary.main' : 'inherit' } }}
             onClick={cell.onClick}>
             {cell.sortable ? <TableSortLabel active={cell.active} direction={cell.active ? cell.dir : 'asc'}>{cell.label}</TableSortLabel> : cell.label}
           </TableCell>
@@ -278,9 +248,7 @@ export default function WorkflowsPage() {
     </TableHead>
   )
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Sub-page Dialogs ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
   const handleDialogClose = () => { if (!actionLoading) navigateTo('list') }
-  
   const dialogSx = { '& .MuiDialog-paper': { borderRadius: 1.5, maxWidth: 900, width: '100%', minHeight: '80vh' } }
 
   return (
@@ -310,16 +278,15 @@ export default function WorkflowsPage() {
       </Dialog>
 
 
-      {/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Main List View ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */}
+      {/* Main List View */}
       <Box>
       <PageHeader
         title="Workflow Automation"
-        subtitle="Manage workflow templates, track active instances, and review approval steps."
+        subtitle="Manage workflow templates and track active instances across modules."
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             {pageTab === 0 && <ExportButton data={filteredWorkflows} columns={workflowExportColumns} filename="WorkflowTemplates" />}
             {pageTab === 1 && <ExportButton data={filteredInstances} columns={instanceExportColumns} filename="WorkflowInstances" />}
-            {pageTab === 2 && filteredSteps.length > 0 && <ExportButton data={filteredSteps} columns={stepExportColumns} filename="WorkflowApprovalSteps" />}
             {pageTab === 0 && <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigateTo('create')}>New Workflow</Button>}
           </Box>
         }
@@ -328,14 +295,13 @@ export default function WorkflowsPage() {
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
       {!loading && <KpiCardRow items={kpiItems} />}
 
-      <Tabs value={pageTab} onChange={(_, v) => { setPageTab(v); setSelectedInstanceId(null); setSteps([]); setError(null) }}
+      <Tabs value={pageTab} onChange={(_, v) => { setPageTab(v); setError(null) }}
         sx={{ mb: 3, borderBottom: 1, borderColor: 'divider', '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40, px: 3 }, '& .Mui-selected': { color: 'primary.main' } }}>
         <Tab icon={<AccountTreeIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Templates" />
         <Tab icon={<PlayArrowIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Active Instances" />
-        <Tab icon={<HistoryIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Approval Steps" />
       </Tabs>
 
-      {/* ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â TAB 0: Workflow Templates ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â */}
+      {/* TAB 0: Workflow Templates */}
       <TabPanel value={pageTab} index={0} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -370,11 +336,11 @@ export default function WorkflowsPage() {
                         </Avatar>
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>{wf.pm_workflowname ?? 'Unnamed'}</Typography>
-                          {(wf as any).pm_workflowdescription && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(wf as any).pm_workflowdescription}</Typography>}
+                          {wf.pm_workflowdescription && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wf.pm_workflowdescription}</Typography>}
                         </Box>
                       </Box>
                     </TableCell>
-                    <TableCell><Typography variant="body2">{(wf as any).pm_module || '\u2014'}</Typography></TableCell>
+                    <TableCell><Typography variant="body2">{wf.pm_module || '\u2014'}</Typography></TableCell>
                     <TableCell align="center">
                       <StatusTag label={STATUS_LABELS[String(wf.pm_workflowstatus ?? '')] || (wf.pm_workflowstatus === 0 ? 'Active' : 'Inactive')} color={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? 'success' : 'default'} size="small" icon={wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0' ? <PowerIcon sx={{ fontSize: 14 }} /> : <PowerOffIcon sx={{ fontSize: 14 }} />} sx={{ fontWeight: 600 }} />
                     </TableCell>
@@ -399,7 +365,7 @@ export default function WorkflowsPage() {
         </Paper>
       </TabPanel>
 
-      {/* ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â TAB 1: Active Instances ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â */}
+      {/* TAB 1: Active Instances */}
       <TabPanel value={pageTab} index={1} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -416,31 +382,56 @@ export default function WorkflowsPage() {
             <Table stickyHeader size="small" sx={{ minWidth: 800 }}>
               {renderTableHeader([
                 { label: 'Workflow', sortable: true, active: instSort.field === 'workflow', dir: instSort.dir, onClick: () => handleInstSort('workflow') },
-                { label: 'Entity ID', sortable: true, active: instSort.field === 'entity', dir: instSort.dir, onClick: () => handleInstSort('entity') },
-                { label: 'Initiated By' },
+                { label: 'Module', sortable: false },
+                { label: 'Progress', sortable: true, active: instSort.field === 'completion', dir: instSort.dir, onClick: () => handleInstSort('completion') },
                 { label: 'Status', sortable: true, active: instSort.field === 'status', dir: instSort.dir, onClick: () => handleInstSort('status'), align: 'center' },
                 { label: 'Date', sortable: true, active: instSort.field === 'date', dir: instSort.dir, onClick: () => handleInstSort('date') },
                 { label: '', align: 'right' },
               ])}
               <TableBody>
-                {paginatedInstances.map((inst, idx) => (
-                  <TableRow key={inst.pm_workflowinstanceid} hover onClick={() => { setSelectedInstanceId(inst.pm_workflowinstanceid!); setPageTab(2) }}
-                    sx={{ cursor: 'pointer', bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent', '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>{(inst.pm_workflowlookupname ?? 'W').charAt(0).toUpperCase()}</Avatar>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{inst.pm_workflowlookupname ?? inst.pm_instancename ?? 'Unnamed'}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell><Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.xs }}>{(inst as any).pm_entityid ? ((inst as any).pm_entityid).substring(0, 8) + '...' : '\u2014'}</Typography></TableCell>
-                    <TableCell><Typography variant="body2">{(inst as any).pm_initiatedby || '\u2014'}</Typography></TableCell>
-                    <TableCell align="center"><StatusTag label={INSTANCE_STATUS_LABELS[String(inst.pm_status ?? '')] ?? 'Unknown'} color={INSTANCE_STATUS_COLORS[String(inst.pm_status ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600 }} /></TableCell>
-                    <TableCell><Typography variant="body2" color="text.secondary">{formatDate((inst as any).pm_startdate)}</Typography></TableCell>
-                    <TableCell align="right">
-                      <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' }) }} sx={{ borderRadius: 1.5 }}><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {paginatedInstances.map((inst, idx) => {
+                  const completion = getInstanceCompletion(inst)
+                  const moduleName = getInstanceModule(inst)
+                  return (
+                    <TableRow key={inst.pm_workflowinstanceid} hover
+                      sx={{ bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent', '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>{(inst.pm_workflowlookupname ?? 'W').charAt(0).toUpperCase()}</Avatar>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{inst.pm_workflowlookupname ?? inst.pm_instancename ?? 'Unnamed'}</Typography>
+                            <Typography variant="caption" color="text.secondary">By {inst.pm_initiatedby || 'System'}</Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip label={moduleName} size="small" variant="outlined" sx={{ borderRadius: 1.5, fontWeight: 600 }} />
+                      </TableCell>
+                      <TableCell sx={{ minWidth: 160 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Box sx={{ flex: 1 }}>
+                            <LinearProgress variant="determinate" value={completion} 
+                              sx={{ height: 6, borderRadius: 3, bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: completion === 100 ? 'success.main' : 'primary.main' } }} 
+                            />
+                          </Box>
+                          <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 35 }}>{completion}%</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center"><StatusTag label={INSTANCE_STATUS_LABELS[String(inst.pm_status ?? '')] ?? 'Unknown'} color={INSTANCE_STATUS_COLORS[String(inst.pm_status ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600 }} /></TableCell>
+                      <TableCell><Typography variant="body2" color="text.secondary">{formatDate(inst.pm_startdate)}</Typography></TableCell>
+                      <TableCell align="right">
+                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                          <Tooltip title="View Target Record">
+                            <IconButton size="small" onClick={() => handleRowClick(inst)} sx={{ borderRadius: 1.5 }} color="primary">
+                              <OpenInNewIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Tooltip>
+                          <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' })} sx={{ borderRadius: 1.5 }} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </TableShell>
@@ -448,50 +439,6 @@ export default function WorkflowsPage() {
             <>
               <TableFooter filteredCount={filteredInstances.length} totalCount={instances.length} itemLabel="instance" />
               <TablePagination component="div" count={filteredInstances.length} page={instPage} onPageChange={(_, p) => setInstPage(p)} rowsPerPage={instRowsPerPage} onRowsPerPageChange={(e) => { setInstRowsPerPage(parseInt(e.target.value, 10)); setInstPage(0) }} rowsPerPageOptions={[25, 50, 100]} />
-            </>
-          )}
-        </Paper>
-      </TabPanel>
-
-      {/* ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â TAB 2: Approval Steps ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â */}
-      <TabPanel value={pageTab} index={2} pt={0}>
-        <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-          <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField size="small" placeholder="Search steps..." value={stepSearch} onChange={(e) => { setStepSearch(e.target.value); setStepPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
-            {selectedInstanceId && <Chip icon={<ScheduleIcon />} label={'Instance: ' + selectedInstanceId.substring(0, 8) + '...'} onDelete={() => setSelectedInstanceId(null)} size="small" color="primary" variant="outlined" sx={{ borderRadius: 1.5 }} />}
-            {stepSearch && <Button size="small" onClick={() => { setStepSearch(''); setStepPage(0) }} sx={{ borderRadius: 1.5 }}>Clear</Button>}
-          </Box>
-          <TableShell loading={stepsLoading} empty={filteredSteps.length === 0} emptyIcon={<HistoryIcon />}
-            emptyTitle={!selectedInstanceId ? 'Select an instance to view its approval steps.' : (stepSearch ? 'No steps match.' : 'No approval steps found.')}>
-            <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
-              {renderTableHeader([
-                { label: 'Step #', sortable: true, active: stepSort.field === 'order', dir: stepSort.dir, onClick: () => handleStepSort('order'), align: 'center' },
-                { label: 'Approver', sortable: true, active: stepSort.field === 'approver', dir: stepSort.dir, onClick: () => handleStepSort('approver') },
-                { label: 'Decision', sortable: true, active: stepSort.field === 'decision', dir: stepSort.dir, onClick: () => handleStepSort('decision'), align: 'center' },
-                { label: 'Decision Date' },
-              ])}
-              <TableBody>
-                {paginatedSteps.map((step, idx) => (
-                  <TableRow key={step.pm_workflowapprovalstepid} hover
-                    sx={{ bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent', '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
-                    <TableCell align="center">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'center' }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>{step.pm_steporder ?? '?'}</Avatar>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Step {step.pm_steporder ?? '?'}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell><Typography variant="body2">{step.pm_approvername || '\u2014'}</Typography></TableCell>
-                    <TableCell align="center"><StatusTag label={APPROVAL_STATUS_LABELS[String(step.pm_decisionstatus ?? '')] ?? 'Unknown'} color={APPROVAL_STATUS_COLORS[String(step.pm_decisionstatus ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600 }} /></TableCell>
-                    <TableCell><Typography variant="body2" color="text.secondary">{formatDate(step.pm_decisiondate)}</Typography></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableShell>
-          {!stepsLoading && filteredSteps.length > 0 && (
-            <>
-              <TableFooter filteredCount={filteredSteps.length} totalCount={steps.length} itemLabel="step" />
-              <TablePagination component="div" count={filteredSteps.length} page={stepPage} onPageChange={(_, p) => setStepPage(p)} rowsPerPage={stepRowsPerPage} onRowsPerPageChange={(e) => { setStepRowsPerPage(parseInt(e.target.value, 10)); setStepPage(0) }} rowsPerPageOptions={[25, 50, 100]} />
             </>
           )}
         </Paper>

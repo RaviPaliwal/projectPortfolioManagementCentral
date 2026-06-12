@@ -1,0 +1,11 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - button "App launcher inactive" [ref=e4] [cursor=pointer]:
+      - img [ref=e5]
+    - generic [ref=e8]: Power Apps
+  - generic "Splashscreen" [ref=e10]:
+    - img "App Icon"
+    - paragraph
+    - generic:
+      - progressbar "Progress Bar"
+  - main [ref=e12]
