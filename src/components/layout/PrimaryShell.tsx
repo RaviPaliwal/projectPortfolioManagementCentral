@@ -42,7 +42,7 @@ import { UserSelector } from '@/context/UserContext'
 import { useEffect } from 'react'
 import NotificationCenter from './NotificationCenter'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?: boolean }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -55,7 +55,6 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?:
   { key: 'budgets', label: 'Budgets', icon: <AccountBalanceWalletIcon /> },
   { key: 'gatereviews', label: 'Gate Reviews', icon: <FactCheckIcon /> },
   { key: 'benefits', label: 'Benefits', icon: <EmojiEventsIcon /> },
-  { key: 'schedule', label: 'Schedule', icon: <CalendarMonthIcon /> },
   { key: 'risks', label: 'Risks', icon: <CrisisAlertIcon /> },
   { key: 'issues', label: 'Issues', icon: <ReportProblemIcon /> },
   { key: 'changerequests', label: 'Change Requests', icon: <ChangeCircleIcon /> },

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Box,
   Paper,
@@ -20,23 +20,50 @@ import {
 } from '@/services'
 import type { WorkflowInstanceModel, WorkflowApprovalStepModel } from '@/types/dataverse'
 
+export interface StepCompletionInfo {
+  outcome: 'approved' | 'rejected'
+  approverName?: string
+  decisionDate?: string
+}
+
 interface EntityApprovalTasksProps {
   entityId: string | null
   moduleName: string
   entityLabel: string
   tabValue: number
   index: number
+  refreshTrigger?: number
+  onAllStepsCompleted?: (info: StepCompletionInfo) => void
 }
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 const formatDate = (d?: string | null): string => d ? dateFormatter.format(new Date(d)) : '—'
 
-export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValue, index }: EntityApprovalTasksProps) {
+export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValue, index, refreshTrigger, onAllStepsCompleted }: EntityApprovalTasksProps) {
   const [instances, setInstances] = useState<WorkflowInstanceModel[]>([])
+  const [updatedInstances, setUpdatedInstances] = useState<WorkflowInstanceModel[]>([])
   const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
+  const [allCompletedSteps, setAllCompletedSteps] = useState<WorkflowApprovalStepModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [openingStep, setOpeningStep] = useState<string | null>(null)
+  const prevPendingCount = useRef<number | null>(null)
+  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const detectCompletion = useCallback((pendingSteps: WorkflowApprovalStepModel[], completedSteps: WorkflowApprovalStepModel[]) => {
+    const prev = prevPendingCount.current
+    const curr = pendingSteps.length
+    if (prev !== null && prev > 0 && curr === 0 && completedSteps.length > 0) {
+      const rejected = completedSteps.find((s) => s.pm_decisionstatus === 3)
+      const lastCompleted = completedSteps[completedSteps.length - 1]
+      onAllStepsCompleted?.({
+        outcome: rejected ? 'rejected' : 'approved',
+        approverName: lastCompleted?.pm_approvername,
+        decisionDate: lastCompleted?.pm_decisiondate,
+      })
+    }
+    prevPendingCount.current = curr
+  }, [onAllStepsCompleted])
 
   const loadData = useCallback(async () => {
     if (!entityId) return
@@ -44,30 +71,61 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
     setError(null)
     try {
       const workflowInstances = await fetchWorkflowInstancesForEntity(moduleName, entityId as string)
-      setInstances(workflowInstances)
+      setUpdatedInstances(workflowInstances)
 
-      const allSteps: WorkflowApprovalStepModel[] = []
+      const pendingSteps: WorkflowApprovalStepModel[] = []
+      const completedSteps: WorkflowApprovalStepModel[] = []
       for (const instance of workflowInstances) {
         const instanceId = instance.pm_workflowinstanceid
         if (!instanceId) continue
         const instanceSteps = await fetchWorkflowApprovalSteps(instanceId)
-        const pendingSteps = instanceSteps.filter(
-          (s) => s.pm_decisionstatus === 1 || s.pm_decisionstatus === 2
-        )
-        allSteps.push(...pendingSteps)
+        for (const s of instanceSteps) {
+          if (s.pm_decisionstatus === 1 || s.pm_decisionstatus === 2) {
+            pendingSteps.push(s)
+          } else {
+            completedSteps.push(s)
+          }
+        }
       }
-      setSteps(allSteps)
+      setSteps(pendingSteps)
+      setAllCompletedSteps(completedSteps)
+      detectCompletion(pendingSteps, completedSteps)
     } catch (err) {
       console.error('[EntityApprovalTasks] load error:', err)
       setError('Unable to load approval tasks.')
     } finally {
       setLoading(false)
     }
-  }, [entityId, moduleName])
+  }, [entityId, moduleName, detectCompletion])
 
   useEffect(() => {
-    if (entityId) loadData()
-  }, [loadData, entityId])
+    if (entityId) {
+      prevPendingCount.current = null
+      loadData()
+    }
+    return () => {
+      if (pollTimer.current) {
+        clearInterval(pollTimer.current)
+        pollTimer.current = null
+      }
+    }
+  }, [loadData, entityId, refreshTrigger])
+
+  useEffect(() => {
+    if (pollTimer.current) {
+      clearInterval(pollTimer.current)
+      pollTimer.current = null
+    }
+    if (entityId && steps.length > 0) {
+      pollTimer.current = setInterval(loadData, 8000)
+    }
+    return () => {
+      if (pollTimer.current) {
+        clearInterval(pollTimer.current)
+        pollTimer.current = null
+      }
+    }
+  }, [entityId, steps.length, loadData])
 
   return (
     <TabPanel value={tabValue} index={index} pt={0}>
@@ -88,12 +146,12 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
           <Typography variant="body2" color="text.disabled">
             {entityLabel} has no workflow approval steps requiring action.
           </Typography>
-          {instances.length > 0 && (
+          {updatedInstances.length > 0 && (
             <Box sx={{ mt: 3, textAlign: 'left' }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                Completed Workflow Instances
+                Workflow Instances
               </Typography>
-              {instances.map((inst) => {
+              {updatedInstances.map((inst) => {
                 const statusLabel = inst.pm_status === 0 ? 'Completed' : inst.pm_status === 1 ? 'In Progress' : 'Cancelled'
                 const statusColor = inst.pm_status === 0 ? 'success' : inst.pm_status === 1 ? 'info' : 'default'
                 return (
@@ -159,6 +217,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                           setOpeningStep(sid)
                           try {
                             await openApprovalStepTask(sid)
+                            loadData()
                           } finally {
                             setOpeningStep(null)
                           }
@@ -188,12 +247,12 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
               )
             })}
           </Box>
-          {instances.length > 0 && (
+          {updatedInstances.length > 0 && (
             <Box sx={{ mt: 3 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                Workflow Instances ({instances.length})
+                Workflow Instances ({updatedInstances.length})
               </Typography>
-              {instances.map((inst) => (
+              {updatedInstances.map((inst) => (
                 <Paper key={inst.pm_workflowinstanceid} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>

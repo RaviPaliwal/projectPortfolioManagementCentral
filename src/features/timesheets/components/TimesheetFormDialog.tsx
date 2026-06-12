@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -14,6 +14,7 @@ import {
   MenuItem,
   Avatar,
   Box,
+  Alert,
 } from '@mui/material'
 import EventNoteIcon from '@mui/icons-material/EventNote'
 import type { ResourceModel } from '@/types/dataverse'
@@ -25,6 +26,19 @@ interface TimesheetFormDialogProps {
   onSubmit: (formData: any) => Promise<void>
   resources: ResourceModel[]
   loading?: boolean
+  draftMode?: boolean
+  overlapError?: string | null
+}
+
+function getDefaultDateRange() {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  return {
+    pm_periodstartdate: start.toISOString().split('T')[0],
+    pm_periodenddate: end.toISOString().split('T')[0],
+    pm_reportingperiod: `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`,
+  }
 }
 
 export function TimesheetFormDialog({
@@ -33,15 +47,27 @@ export function TimesheetFormDialog({
   onSubmit,
   resources,
   loading,
+  draftMode = false,
+  overlapError = null,
 }: TimesheetFormDialogProps) {
-  const { users } = useUser()
+  const { currentUser } = useUser()
+  const defaultRange = getDefaultDateRange()
+  const defaultResId = useMemo(() => {
+    if (!draftMode || !currentUser?.fullname) return ''
+    const match = resources.find(
+      (r) => r.pm_fullname?.toLowerCase() === currentUser.fullname?.toLowerCase()
+    )
+    return match?.pm_resourceid ?? ''
+  }, [draftMode, currentUser, resources])
   const [form, setForm] = useState({
-    pm_ownername: '',
-    pm_periodstartdate: '',
-    pm_periodenddate: '',
-    pm_reportingperiod: '',
-    _pm_resource_value: '',
+    ownerid: currentUser?.systemuserid ?? '',
+    owneridtype: 'systemuser' as string,
+    pm_periodstartdate: draftMode ? defaultRange.pm_periodstartdate : '',
+    pm_periodenddate: draftMode ? defaultRange.pm_periodenddate : '',
+    pm_reportingperiod: draftMode ? defaultRange.pm_reportingperiod : '',
+    _pm_resource_value: defaultResId,
   })
+  const [periodError, setPeriodError] = useState<string | null>(null)
 
   const resourceOptions = useMemo(() => {
     return resources
@@ -50,12 +76,19 @@ export function TimesheetFormDialog({
   }, [resources])
 
   const handleSubmit = async () => {
+    if (form.pm_periodenddate < form.pm_periodstartdate) {
+      setPeriodError('Period End must be on or after Period Start.')
+      return
+    }
+    setPeriodError(null)
     await onSubmit(form)
+    const range = getDefaultDateRange()
     setForm({
-      pm_ownername: '',
-      pm_periodstartdate: '',
-      pm_periodenddate: '',
-      pm_reportingperiod: '',
+      ownerid: currentUser?.systemuserid ?? '',
+      owneridtype: 'systemuser',
+      pm_periodstartdate: draftMode ? range.pm_periodstartdate : '',
+      pm_periodenddate: draftMode ? range.pm_periodenddate : '',
+      pm_reportingperiod: draftMode ? range.pm_reportingperiod : '',
       _pm_resource_value: '',
     })
   }
@@ -72,11 +105,13 @@ export function TimesheetFormDialog({
         <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', borderRadius: 1.5 }}>
           <EventNoteIcon sx={{ fontSize: 18, color: '#fff' }} />
         </Avatar>
-        New Timesheet
+        {draftMode ? 'New Timesheet Entry' : 'New Timesheet'}
       </DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Create a new timesheet for a resource and time period. Entries can be added after creation.
+          {draftMode
+            ? 'Create a new timesheet for yourself. Date range defaults to the current month.'
+            : 'Create a new timesheet for a resource and time period. Entries can be added after creation.'}
         </Typography>
 
         <Grid container spacing={2.5}>
@@ -96,42 +131,7 @@ export function TimesheetFormDialog({
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Owner / Name</InputLabel>
-              <Select
-                value={users.find(u => u.fullname === form.pm_ownername)?.systemuserid || ''}
-                label="Owner / Name"
-                onChange={(e) => {
-                  const user = users.find(u => u.systemuserid === e.target.value)
-                  setForm((f) => ({ ...f, pm_ownername: user?.fullname || '' }))
-                }}
-                renderValue={(selected) => {
-                  const user = users.find(u => u.systemuserid === selected)
-                  return (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
-                        {user?.fullname?.charAt(0) || '?'}
-                      </Avatar>
-                      {user?.fullname || 'Select Owner'}
-                    </Box>
-                  )
-                }}
-              >
-                <MenuItem value="">— Select Owner —</MenuItem>
-                {users.map((user) => (
-                  <MenuItem key={user.systemuserid} value={user.systemuserid}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
-                        {user.fullname?.charAt(0) || '?'}
-                      </Avatar>
-                      <Typography variant="body2">{user.fullname}</Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
+
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               label="Period Start"
@@ -156,6 +156,20 @@ export function TimesheetFormDialog({
               slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
             />
           </Grid>
+          {periodError && (
+            <Grid size={{ xs: 12 }}>
+              <Alert severity="error" onClose={() => setPeriodError(null)} sx={{ borderRadius: 1.5 }}>
+                {periodError}
+              </Alert>
+            </Grid>
+          )}
+          {overlapError && (
+            <Grid size={{ xs: 12 }}>
+              <Alert severity="warning" sx={{ borderRadius: 1.5 }}>
+                {overlapError}
+              </Alert>
+            </Grid>
+          )}
         </Grid>
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
@@ -165,10 +179,10 @@ export function TimesheetFormDialog({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={!form.pm_periodstartdate || !form.pm_periodenddate || loading}
+          disabled={!form.pm_periodstartdate || !form.pm_periodenddate || (!form._pm_resource_value && !form.ownerid) || loading}
           sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
         >
-          {loading ? 'Creating...' : 'Create Timesheet'}
+          {loading ? 'Creating...' : draftMode ? 'Create Entry' : 'Create Timesheet'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -93,12 +93,6 @@ export const MODULE_NAMES = {
     tabKey: 'benefits' as const,
     entityName: 'pm_benefit',
   },
-  SCHEDULE: {
-    value: 'Schedule',
-    label: 'Schedule',
-    tabKey: 'schedule' as const,
-    entityName: 'pm_projecttask',
-  },
   RISKS: {
     value: 'Risks',
     label: 'Risks & Issues',

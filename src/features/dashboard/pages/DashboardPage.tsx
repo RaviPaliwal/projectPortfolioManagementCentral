@@ -246,10 +246,8 @@ export default function DashboardPage() {
 
       {/* Main grid */}
       <Grid container spacing={2.5}>
-        {/* Left column — Active Projects + Budget Health */}
-        <Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {/* Active Projects */}
-          {/* Budget Health Panel — Local Filtering Enabled */}
+        {/* Left column — Budget Health + Tasks */}
+        <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <BudgetHealthPanel
             totalApprovedBudget={budgetMetrics.approved}
             totalActualSpend={budgetMetrics.actual}
@@ -258,21 +256,16 @@ export default function DashboardPage() {
             availableYears={availableYears}
             onYearChange={handleBudgetYearChange}
           />
-
+          <DashboardTasksWidget variant="tasks" />
         </Grid>
 
-        {/* Right column */}
-        <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {/* Consolidated Tasks + AI Insights Widget */}
-          <DashboardTasksWidget />
-
-          {/* Pipeline Stage Breakdown */}
+        {/* Right column — AI Insights + Pipeline + Health */}
+        <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <DashboardTasksWidget variant="insights" />
           <PipelineStageSummary
             initiatives={initiatives}
             loading={loading}
           />
-
-          {/* Health Snapshot */}
           <PortfolioHealthSnapshot
             metrics={metrics}
             portfolioSnapshot={portfolioSnapshot}

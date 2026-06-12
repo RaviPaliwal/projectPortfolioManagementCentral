@@ -19,7 +19,7 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
-import { SearchFilterBar, TableFooter, TableShell, ExportButton, StatusTag } from '@/components/common'
+import { SearchFilterBar, TableFooter, TableShell, ExportButton, StatusTag, StatusChip } from '@/components/common'
 import type { ProjectModel } from '@/types/dataverse'
 import { RAG_COLORS, RAG_LABELS, PHASE_COLORS, phaseLabel, currency, projectExportColumns } from '../constants'
 
@@ -182,8 +182,8 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                   <SortHeader field={col.field} label={col.label} />
                 </TableCell>
               ))}
-              <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, py: 1.5 }}>
-                Actions
+              <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Actions</Typography>
               </TableCell>
             </TableRow>
           </TableHead>
@@ -196,42 +196,25 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                 sx={{
                   cursor: 'pointer',
                   bgcolor: idx % 2 === 1 ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)') : 'transparent',
-                  '& td': { borderBottom: '1px solid #efefef', py: 1.5, px: 2.5 },
-                  '&:hover': { bgcolor: isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.04)' },
-                  transition: 'background-color 0.15s',
+                  '& td': { py: 1.25, px: 2.5 },
+                  '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                  transition: 'background-color 0.15s ease',
                 }}
               >
                 <TableCell>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{project.pm_projectname}</Typography>
                   {project.pm_projectcode && (
-                    <Typography variant="caption" color="text.secondary">{project.pm_projectcode}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{project.pm_projectcode}</Typography>
                   )}
                 </TableCell>
                 <TableCell>
-                  <StatusTag 
-                    label={phaseLabel(project.pm_projectphase)} 
-                    color={PHASE_COLORS[String(project.pm_projectphase)] ?? 'default'}
-                    variant="outlined"
-                  />
+                  <StatusChip status={project.pm_projectphase} type="phase" size="small" />
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2">{project.pm_projectmanagername ?? '—'}</Typography>
+                  <Typography variant="body2" color="text.secondary">{project.pm_projectmanagername || '—'}</Typography>
                 </TableCell>
                 <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        bgcolor: RAG_COLORS[String(project.pm_ragstatus)] ?? '#6b7280',
-                        flexShrink: 0,
-                      }}
-                    />
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {RAG_LABELS[String(project.pm_ragstatus)] ?? '—'}
-                    </Typography>
-                  </Box>
+                  <StatusChip status={project.pm_ragstatus} type="rag" size="small" />
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -242,19 +225,19 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                         width: 64,
                         height: 6,
                         borderRadius: 1.5,
-                        bgcolor: theme.palette.action.hover,
+                        bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
                         '& .MuiLinearProgress-bar': {
-                          bgcolor: (project.pm_percentcomplete ?? 0) >= 100 ? 'success.main' : '#3b82f6',
+                          bgcolor: (project.pm_percentcomplete ?? 0) >= 100 ? 'success.main' : 'primary.main',
                         },
                       }}
                     />
-                    <Typography variant="caption" sx={{ fontWeight: 600, minWidth: 32 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, minWidth: 32, fontFamily: 'monospace' }}>
                       {project.pm_percentcomplete ?? 0}%
                     </Typography>
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                     {project.pm_plannedenddate
                       ? new Date(project.pm_plannedenddate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                       : '—'}

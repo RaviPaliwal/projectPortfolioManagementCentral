@@ -72,6 +72,7 @@ import { EntityApprovalTasks } from '@/features/dashboard/components/EntityAppro
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import  { StatusTag } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
+import { useUser } from '@/context/UserContext'
 import {
   BarChart,
   Bar,
@@ -144,7 +145,6 @@ const resourceExportColumns: ExportColumn[] = [
   { key: 'pm_positiontitle', label: 'Position' },
   { key: 'pm_dailyworkcapacity', label: 'Daily Capacity (h)' },
   { key: 'pm_dailycostrate', label: 'Daily Rate (EUR)' },
-  { key: 'pm_contactemail', label: 'Email' },
 ]
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -152,6 +152,7 @@ const resourceExportColumns: ExportColumn[] = [
 export default function ResourcesPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+  const { users } = useUser()
 
   // Data state
   const [resources, setResources] = useState<ResourceModel[]>([])
@@ -192,7 +193,7 @@ export default function ResourcesPage() {
     pm_primaryrole: '',
     pm_resourcecategory: 0,
     pm_positiontitle: '',
-    pm_contactemail: '',
+    _pm_systemuser_value: '',
     pm_dailyworkcapacity: 8,
     pm_dailycostrate: 0,
     pm_suppliercompany: '',
@@ -305,8 +306,7 @@ export default function ResourcesPage() {
           r.pm_fullname?.toLowerCase().includes(q) ||
           r.pm_departmentname?.toLowerCase().includes(q) ||
           r.pm_primaryrole?.toLowerCase().includes(q) ||
-          r.pm_positiontitle?.toLowerCase().includes(q) ||
-          r.pm_contactemail?.toLowerCase().includes(q)
+          r.pm_positiontitle?.toLowerCase().includes(q)
       )
     }
 
@@ -398,7 +398,7 @@ export default function ResourcesPage() {
       pm_primaryrole: '',
       pm_resourcecategory: 0,
       pm_positiontitle: '',
-      pm_contactemail: '',
+      _pm_systemuser_value: '',
       pm_dailyworkcapacity: 8,
       pm_dailycostrate: 0,
       pm_suppliercompany: '',
@@ -416,7 +416,7 @@ export default function ResourcesPage() {
       pm_primaryrole: resource.pm_primaryrole ?? '',
       pm_resourcecategory: Number(resource.pm_resourcecategory) || 0,
       pm_positiontitle: resource.pm_positiontitle ?? '',
-      pm_contactemail: resource.pm_contactemail ?? '',
+      _pm_systemuser_value: resource._pm_systemuser_value ?? '',
       pm_dailyworkcapacity: resource.pm_dailyworkcapacity ?? 8,
       pm_dailycostrate: resource.pm_dailycostrate ?? 0,
       pm_suppliercompany: resource.pm_suppliercompany ?? '',
@@ -583,6 +583,9 @@ export default function ResourcesPage() {
                         Daily Rate
                       </TableSortLabel>
                     </TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Actions</Typography>
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -691,10 +694,10 @@ export default function ResourcesPage() {
                     {selectedResource.pm_departmentname}
                   </Typography>
                 )}
-                {selectedResource.pm_contactemail && (
+                {selectedResource._pm_systemuser_value && (
                   <Typography variant="body2" color="text.secondary">
                     <EmailIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                    {selectedResource.pm_contactemail}
+                    System User: {selectedResource._pm_systemuser_value}
                   </Typography>
                 )}
                 <StatusTag
@@ -770,8 +773,8 @@ export default function ResourcesPage() {
                           <Typography variant="body2">{selectedResource.pm_departmentname || '—'}</Typography>
                         </Box>
                         <Box>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Contact Email</Typography>
-                          <Typography variant="body2">{selectedResource.pm_contactemail || '—'}</Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>System User ID</Typography>
+                          <Typography variant="body2">{selectedResource._pm_systemuser_value || '—'}</Typography>
                         </Box>
                         <Box>
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Supplier</Typography>
@@ -991,14 +994,41 @@ export default function ResourcesPage() {
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    label="Contact Email"
-                    fullWidth
-                    size="small"
-                    value={formData.pm_contactemail}
-                    onChange={(e) => setFormData((f) => ({ ...f, pm_contactemail: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
+                  <FormControl fullWidth size="small">
+                    <InputLabel>System User</InputLabel>
+                    <Select
+                      value={users.find((u) => u.systemuserid === formData._pm_systemuser_value)?.systemuserid || ''}
+                      label="System User"
+                      onChange={(e) => setFormData(f => ({ ...f, _pm_systemuser_value: e.target.value }))}
+                      sx={{ borderRadius: 1.5 }}
+                      renderValue={(selected) => {
+                        const user = users.find((u) => u.systemuserid === selected)
+                        return (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
+                              {user?.fullname?.charAt(0) || '?'}
+                            </Avatar>
+                            {user?.fullname || 'Select User'}
+                          </Box>
+                        )
+                      }}
+                    >
+                      <MenuItem value="">— None —</MenuItem>
+                      {users.map((user) => (
+                        <MenuItem key={user.systemuserid} value={user.systemuserid}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
+                              {user.fullname?.charAt(0) || '?'}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{user.fullname}</Typography>
+                              {user.jobtitle && <Typography variant="caption" color="text.secondary">{user.jobtitle}</Typography>}
+                            </Box>
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
                 {formData.pm_resourcecategory === 1 && (
                   <Grid size={{ xs: 12 }}>

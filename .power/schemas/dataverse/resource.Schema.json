@@ -226,14 +226,6 @@
           "x-ms-schema-name": "OwningUser",
           "x-ms-read-only": true
         },
-        "pm_contactemail": {
-          "type": "string",
-          "title": "Email",
-          "x-ms-dataverse-attribute": "pm_contactemail",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_contactemail",
-          "maxLength": 100
-        },
         "pm_contractenddate": {
           "type": "string",
           "title": "Contract End",
@@ -383,13 +375,30 @@
           "x-ms-schema-name": "pm_suppliercompany",
           "maxLength": 100
         },
-        "pm_useremail": {
+        "pm_systemuser": {
           "type": "string",
           "title": "System User",
-          "x-ms-dataverse-attribute": "pm_useremail",
+          "x-ms-dataverse-attribute": "pm_systemuser",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_SystemUser"
+        },
+        "pm_systemusername": {
+          "type": "string",
+          "title": "pm_systemusername",
+          "x-ms-dataverse-attribute": "pm_systemusername",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_useremail",
-          "maxLength": 100
+          "x-ms-schema-name": "pm_SystemUserName",
+          "x-ms-read-only": true,
+          "maxLength": 200
+        },
+        "pm_systemuseryominame": {
+          "type": "string",
+          "title": "pm_systemuseryominame",
+          "x-ms-dataverse-attribute": "pm_systemuseryominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_SystemUserYomiName",
+          "x-ms-read-only": true,
+          "maxLength": 200
         },
         "statecode": {
           "type": "string",

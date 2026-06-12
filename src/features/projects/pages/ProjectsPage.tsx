@@ -62,6 +62,7 @@ export default function ProjectsPage() {
   const [riskDialogOpen, setRiskDialogOpen] = useState(false)
   const [issueDialogOpen, setIssueDialogOpen] = useState(false)
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false)
+  const [editingResource, setEditingResource] = useState<any>(null)
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false)
   const [benefitDialogOpen, setBenefitDialogOpen] = useState(false)
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
@@ -241,6 +242,23 @@ export default function ProjectsPage() {
     }
   }
 
+  const handleEditResource = (resource: any) => {
+    setEditingResource(resource)
+    setResourceDialogOpen(true)
+  }
+
+  const handleCompleteResource = async (resource: any) => {
+    try {
+      const { updateResourceAllocation } = await import('@/services')
+      await updateResourceAllocation(resource.pm_resourceallocationid, { pm_assignmentstatus: 1 })
+      setSuccessMsg('Resource marked as completed.')
+      refreshDetailData('resource')
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err) {
+      setError('Unable to mark resource as completed.')
+    }
+  }
+
   const refreshDetailData = async (type: string) => {
     if (!selectedProject?.pm_projectid) return
     const projectId = selectedProject.pm_projectid
@@ -349,7 +367,12 @@ export default function ProjectsPage() {
           onAddMilestone={() => setMilestoneDialogOpen(true)}
           onLogRisk={() => setRiskDialogOpen(true)}
           onLogIssue={() => setIssueDialogOpen(true)}
-          onAssignResource={() => setResourceDialogOpen(true)}
+          onAssignResource={() => {
+            setEditingResource(null)
+            setResourceDialogOpen(true)
+          }}
+          onEditResource={handleEditResource}
+          onCompleteResource={handleCompleteResource}
           onAddBudgetLine={() => setBudgetDialogOpen(true)}
           onAddBenefit={() => setBenefitDialogOpen(true)}
           onAddTask={() => setTaskDialogOpen(true)}
@@ -430,6 +453,7 @@ export default function ProjectsPage() {
             projectId={selectedProject.pm_projectid!}
             onSuccess={(msg) => { setSuccessMsg(msg); refreshDetailData('resource'); setTimeout(() => setSuccessMsg(null), 3000) }}
             onError={(msg) => setError(msg)}
+            initialData={editingResource}
           />
           <BudgetDialog
             open={budgetDialogOpen}

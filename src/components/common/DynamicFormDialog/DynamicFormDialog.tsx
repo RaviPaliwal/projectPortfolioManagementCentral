@@ -13,7 +13,7 @@ import {
 import { Dialog } from '../Dialog/Dialog'
 import { useUser } from '@/context/UserContext'
 
-export type FormFieldType = 'text' | 'number' | 'date' | 'select' | 'user-select' | 'multiline'
+export type FormFieldType = 'text' | 'number' | 'date' | 'select' | 'user-select' | 'user-select-id' | 'multiline'
 
 export interface FormFieldOption {
   value: string | number
@@ -32,6 +32,7 @@ export interface FormField {
   max?: number
   placeholder?: string
   rows?: number // For 'multiline'
+  disabled?: boolean
 }
 
 export interface DynamicFormDialogProps {
@@ -111,6 +112,7 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
             value={value}
             onChange={(e) => handleChange(field.name, e.target.value)}
             placeholder={field.placeholder}
+            disabled={field.disabled}
           />
         )
       case 'multiline':
@@ -123,6 +125,7 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
             value={value}
             onChange={(e) => handleChange(field.name, e.target.value)}
             placeholder={field.placeholder}
+            disabled={field.disabled}
           />
         )
       case 'number':
@@ -135,6 +138,7 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
             slotProps={{ htmlInput: { min: field.min, max: field.max } }}
             onChange={(e) => handleChange(field.name, Number(e.target.value))}
             placeholder={field.placeholder}
+            disabled={field.disabled}
           />
         )
       case 'date':
@@ -146,6 +150,7 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
             label={label}
             value={value}
             onChange={(e) => handleChange(field.name, e.target.value)}
+            disabled={field.disabled}
           />
         )
       case 'select':
@@ -156,6 +161,7 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
             label={label}
             value={value}
             onChange={(e) => handleChange(field.name, e.target.value)}
+            disabled={field.disabled}
           >
             {!field.required && <MenuItem value="">— None —</MenuItem>}
             {field.options?.map((opt) => (
@@ -167,7 +173,7 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
         )
       case 'user-select':
         return (
-          <FormControl fullWidth size="medium">
+          <FormControl fullWidth size="medium" disabled={field.disabled}>
             <InputLabel>{label}</InputLabel>
             <Select
               value={users.find((u) => u.fullname === value || u.systemuserid === value)?.systemuserid || ''}
@@ -198,6 +204,45 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
                       {user.fullname?.charAt(0) || '?'}
                     </Avatar>
                     <Typography variant="body2">{user.fullname}</Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )
+      case 'user-select-id':
+        return (
+          <FormControl fullWidth size="medium" disabled={field.disabled}>
+            <InputLabel>{label}</InputLabel>
+            <Select
+              value={users.find((u) => u.systemuserid === value)?.systemuserid || ''}
+              label={label}
+              onChange={(e) => {
+                handleChange(field.name, e.target.value)
+              }}
+              renderValue={(selected) => {
+                const user = users.find((u) => u.systemuserid === selected)
+                return (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
+                      {user?.fullname?.charAt(0) || '?'}
+                    </Avatar>
+                    {user?.fullname || 'Select User'}
+                  </Box>
+                )
+              }}
+            >
+              {!field.required && <MenuItem value="">— Select —</MenuItem>}
+              {users.map((user) => (
+                <MenuItem key={user.systemuserid} value={user.systemuserid}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
+                      {user.fullname?.charAt(0) || '?'}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{user.fullname}</Typography>
+                      {user.jobtitle && <Typography variant="caption" color="text.secondary">{user.jobtitle}</Typography>}
+                    </Box>
                   </Box>
                 </MenuItem>
               ))}

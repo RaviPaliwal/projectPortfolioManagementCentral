@@ -28,7 +28,6 @@ export interface Pm_resourcesBase {
   overriddencreatedon?: string;
   ownerid: string;
   owneridtype: string;
-  pm_contactemail?: string;
   pm_contractenddate?: string;
   pm_contractstartdate?: string;
   pm_dailycostrate?: number;
@@ -41,7 +40,7 @@ export interface Pm_resourcesBase {
   pm_resourcecategory?: Pm_resourcespm_resourcecategory;
   pm_resourceid: string;
   pm_suppliercompany?: string;
-  pm_useremail?: string;
+  "pm_SystemUser@odata.bind"?: string;
   statecode: Pm_resourcesstatecode;
   statuscode?: Pm_resourcesstatuscode;
   timezoneruleversionnumber?: number;
@@ -67,6 +66,8 @@ export interface Pm_resources extends Pm_resourcesBase {
   pm_dailycostrate_base?: number;
   pm_employmentstatusname?: string;
   pm_resourcecategoryname?: string;
+  pm_systemusername?: string;
+  pm_systemuseryominame?: string;
   statecodename?: string;
   statuscodename?: string;
   transactioncurrencyidname?: string;
@@ -85,6 +86,8 @@ export interface Pm_resources extends Pm_resourcesBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
+  pm_systemuser?: object;
+  _pm_systemuser_value?: string;
   transactioncurrencyid?: object;
   _transactioncurrencyid_value?: string;
 }

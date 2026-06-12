@@ -11,8 +11,14 @@ import {
   FormControlLabel,
   Checkbox,
   Avatar,
+  Autocomplete,
 } from '@mui/material'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
+
+interface ProjectOption {
+  id: string
+  name: string
+}
 
 interface TimesheetEntryFormDialogProps {
   open: boolean
@@ -20,6 +26,8 @@ interface TimesheetEntryFormDialogProps {
   onSubmit: (formData: any) => Promise<void>
   timesheetName?: string
   loading?: boolean
+  allocatedProjects?: ProjectOption[]
+  projectsLoading?: boolean
 }
 
 export function TimesheetEntryFormDialog({
@@ -28,6 +36,8 @@ export function TimesheetEntryFormDialog({
   onSubmit,
   timesheetName,
   loading,
+  allocatedProjects = [],
+  projectsLoading = false,
 }: TimesheetEntryFormDialogProps) {
   const [form, setForm] = useState({
     pm_workdate: new Date().toISOString().split('T')[0],
@@ -93,14 +103,25 @@ export function TimesheetEntryFormDialog({
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Project ID / Name (Optional)"
+            <Autocomplete
               fullWidth
               size="small"
-              value={form._pm_project_value}
-              onChange={(e) => setForm((f) => ({ ...f, _pm_project_value: e.target.value }))}
-              placeholder="Enter project ID or GUID"
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+              options={allocatedProjects}
+              loading={projectsLoading}
+              loadingText="Loading projects..."
+              noOptionsText="No allocated projects found"
+              getOptionLabel={(option) => option.name}
+              value={allocatedProjects.find((p) => p.id === form._pm_project_value) || null}
+              onChange={(_event, newValue) =>
+                setForm((f) => ({ ...f, _pm_project_value: newValue?.id || '' }))
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Project"
+                  placeholder="Select allocated project"
+                />
+              )}
             />
           </Grid>
           <Grid size={{ xs: 12 }}>

@@ -1,6 +1,7 @@
 import { Box, Paper, Typography, Skeleton, FormControl, Select, MenuItem, InputLabel } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import GppBadIcon from '@mui/icons-material/GppBad'
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import { VarianceDisplay, StatusProgressBar, StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
 
@@ -27,7 +28,10 @@ export const BudgetHealthPanel = ({
     <Paper sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>Budget Health</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AccountBalanceWalletIcon sx={{ color: 'success.main' }} />
+              Budget Health
+            </Typography>
           <Typography variant="body2" color="text.secondary">
             {selectedYear && selectedYear !== 'all' 
               ? `Budget performance for Fiscal Year ${selectedYear}.`

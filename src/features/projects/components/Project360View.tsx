@@ -61,6 +61,8 @@ interface Project360ViewProps {
   onLogRisk: () => void
   onLogIssue: () => void
   onAssignResource: () => void
+  onEditResource?: (resource: any) => void
+  onCompleteResource?: (resource: any) => void
   onAddBudgetLine: () => void
   onAddBenefit: () => void
   onAddTask: () => void
@@ -84,6 +86,8 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onLogRisk,
   onLogIssue,
   onAssignResource,
+  onEditResource,
+  onCompleteResource,
   onAddBudgetLine,
   onAddBenefit,
   onAddTask,
@@ -187,7 +191,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
               {activeTab === 1 && <ProjectScheduleTab milestones={milestones} tasks={tasks} />}
               {activeTab === 2 && <ProjectFinancialsTab budgetLines={budgetLines} />}
               {activeTab === 3 && <ProjectRisksIssuesTab risks={risks} issues={issues} />}
-              {activeTab === 4 && <ProjectTeamTab resources={resources} />}
+              {activeTab === 4 && <ProjectTeamTab resources={resources} onEdit={onEditResource} onComplete={onCompleteResource} />}
               {activeTab === 5 && <ProjectBenefitsTab benefits={benefits} />}
               {activeTab === 6 && <ProjectGovernanceTab gateReviews={gateReviews} onSubmitReview={onSubmitGateReview} />}
               {activeTab === 7 && (

@@ -28,7 +28,7 @@ export const PortfolioHealthSnapshot = ({
   return (
     <Paper sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>Health Snapshot</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>Health Snapshot</Typography>
         {!loading && (
           <StatusTag
             icon={<CalendarMonthIcon />}

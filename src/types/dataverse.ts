@@ -180,7 +180,7 @@ export interface ResourceModel {
   pm_dailyworkcapacity?: number
   pm_dailycostrate?: number
   pm_positiontitle?: string
-  pm_contactemail?: string
+  _pm_systemuser_value?: string
   pm_suppliercompany?: string
   pm_contractstartdate?: string
   pm_contractenddate?: string
@@ -203,6 +203,8 @@ export interface TimesheetModel {
   pm_timesheetid?: string
   pm_timesheetname?: string
   pm_ownername?: string
+  ownerid?: string
+  owneridtype?: string
   pm_periodstartdate?: string
   pm_periodenddate?: string
   pm_timesheetstatus?: number | string

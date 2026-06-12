@@ -1,9 +1,11 @@
 import {
   Pm_resourcesService,
   Pm_resourceallocationsService,
+  Pm_projectsService,
 } from '@/generated'
 import type { Pm_resources } from '@/generated/models/Pm_resourcesModel'
 import type { Pm_resourceallocations } from '@/generated/models/Pm_resourceallocationsModel'
+import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
 import type {
   ResourceModel,
   ResourceAllocationModel,
@@ -20,7 +22,7 @@ export const mapResource = (item: Pm_resources): ResourceModel => ({
   pm_dailyworkcapacity: item.pm_dailyworkcapacity,
   pm_dailycostrate: item.pm_dailycostrate,
   pm_positiontitle: item.pm_positiontitle,
-  pm_contactemail: item.pm_contactemail,
+  _pm_systemuser_value: item._pm_systemuser_value,
   pm_suppliercompany: item.pm_suppliercompany,
   pm_contractstartdate: item.pm_contractstartdate,
   pm_contractenddate: item.pm_contractenddate,
@@ -42,7 +44,7 @@ export const mapResourceAllocation = (item: Pm_resourceallocations): ResourceAll
 export async function fetchResources(): Promise<ResourceModel[]> {
   const result = await Pm_resourcesService.getAll({
     filter: "statecode eq 0",
-    select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole', 'pm_resourcecategory', 'pm_employmentstatus', 'pm_dailyworkcapacity', 'pm_dailycostrate', 'pm_positiontitle', 'pm_contactemail', 'pm_suppliercompany', 'pm_contractstartdate', 'pm_contractenddate', 'pm_useremail'],
+    select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole', 'pm_resourcecategory', 'pm_employmentstatus', 'pm_dailyworkcapacity', 'pm_dailycostrate', 'pm_positiontitle', '_pm_systemuser_value', 'pm_suppliercompany', 'pm_contractstartdate', 'pm_contractenddate'],
     orderBy: ['pm_fullname asc'],
     top: 500,
   })
@@ -52,7 +54,7 @@ export async function fetchResources(): Promise<ResourceModel[]> {
 
 export async function fetchResourceById(resourceId: string): Promise<ResourceModel | null> {
   const result = await Pm_resourcesService.get(resourceId, {
-    select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole', 'pm_resourcecategory', 'pm_employmentstatus', 'pm_dailyworkcapacity', 'pm_dailycostrate', 'pm_positiontitle', 'pm_contactemail', 'pm_suppliercompany', 'pm_contractstartdate', 'pm_contractenddate', 'pm_useremail'],
+    select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole', 'pm_resourcecategory', 'pm_employmentstatus', 'pm_dailyworkcapacity', 'pm_dailycostrate', 'pm_positiontitle', '_pm_systemuser_value', 'pm_suppliercompany', 'pm_contractstartdate', 'pm_contractenddate'],
   })
   const item = unwrapSingle<Pm_resources>(result)
   return item ? mapResource(item) : null
@@ -111,6 +113,36 @@ export async function fetchResourceAllocationById(allocationId: string): Promise
   return item ? mapResourceAllocation(item) : null
 }
 
+export async function fetchAllocatedProjectsForResource(resourceId: string): Promise<{ id: string; name: string }[]> {
+  try {
+    const allocResult = await Pm_resourceallocationsService.getAll({
+      filter: `_pm_resource_value eq '${resourceId}' and statecode eq 0`,
+      select: ['_pm_project_value', 'pm_resourceallocationid'],
+      top: 200,
+    })
+    const allocations = unwrapList<Pm_resourceallocations>(allocResult)
+    const projectIds = Array.from(new Set(
+      allocations.map((a) => normalizeLookupId(a._pm_project_value)).filter(Boolean) as string[]
+    ))
+    if (projectIds.length === 0) return []
+    const projectResult = await Pm_projectsService.getAll({
+      filter: projectIds.map((id) => `pm_projectid eq '${id}'`).join(' or '),
+      select: ['pm_projectid', 'pm_projectname', 'pm_projectcode'],
+      top: 200,
+    })
+    const projects = unwrapList<Pm_projects>(projectResult)
+    return projects.map((p) => ({
+      id: p.pm_projectid,
+      name: p.pm_projectcode
+        ? `${p.pm_projectname || 'Unknown'} (${p.pm_projectcode})`
+        : (p.pm_projectname || 'Unknown Project'),
+    }))
+  } catch (err) {
+    console.error('[resourceService] fetchAllocatedProjectsForResource failed:', err)
+    return []
+  }
+}
+
 export async function assignResource(payload: {
   pm_projectid: string
   pm_resourceid: string
@@ -133,4 +165,10 @@ export async function assignResource(payload: {
   } as any)
   try { console.debug('[dataverseService] assignResource payload/result:', payload, result) } catch (e) {}
   return unwrapSingle<any>(result)
+}
+
+export async function updateResourceAllocation(id: string, changes: Partial<ResourceAllocationModel>): Promise<ResourceAllocationModel | null> {
+  const result = await Pm_resourceallocationsService.update(id, changes as any)
+  const item = unwrapSingle<Pm_resourceallocations>(result)
+  return item ? mapResourceAllocation(item) : null
 }

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Pm_timesheetsService,
   Pm_timesheetentriesService,
   Pm_resourcesService,
@@ -127,7 +127,7 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
 export async function createTimesheet(payload: Partial<TimesheetModel>): Promise<TimesheetModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '' && key !== '_pm_resource_value' && key !== 'pm_timesheetid') {
+    if (value !== undefined && value !== null && value !== '' && key !== '_pm_resource_value' && key !== 'pm_timesheetid' && key !== 'pm_ownername' && key !== 'pm_resourcename' && key !== 'ownerid' && key !== 'owneridtype') {
       cleanPayload[key] = value
     }
   }
@@ -139,6 +139,12 @@ export async function createTimesheet(payload: Partial<TimesheetModel>): Promise
     statecode: 0,
     statuscode: 1,
   }
+  if (payload.ownerid) {
+    const ownerId = normalizeLookupId(payload.ownerid)
+    if (ownerId) {
+      cleanPayload['ownerid@odata.bind'] = `/systemusers(${ownerId})`
+    }
+  }
   if (payload._pm_resource_value) {
     const resourceId = normalizeLookupId(payload._pm_resource_value)
     if (resourceId) {
@@ -146,6 +152,7 @@ export async function createTimesheet(payload: Partial<TimesheetModel>): Promise
     }
   }
   const result = await Pm_timesheetsService.create({ ...defaults, ...cleanPayload } as any)
+  console.log('[dataverseService] createTimesheet raw result:', result)
   try { console.debug('[dataverseService] createTimesheet payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_timesheets>(result)
   return item ? mapTimesheet(item) : null
@@ -154,22 +161,41 @@ export async function createTimesheet(payload: Partial<TimesheetModel>): Promise
 export async function updateTimesheetStatus(
   timesheetId: string,
   status: number,
-  extra?: { pm_rejectionreason?: string }
+  extra?: { pm_rejectionreason?: string },
+  currentUserName?: string
 ): Promise<void> {
+  const userName = currentUserName || 'System'
   const changes: Record<string, any> = { pm_timesheetstatus: status }
   if (status === 1) {
     changes.pm_submissiondate = new Date().toISOString()
-    changes.pm_submittedby = 'Current User'
+    changes.pm_submittedby = userName
   }
   if (status === 0) {
     changes.pm_approvaldate = new Date().toISOString()
-    changes.pm_approvedby = 'Current User'
+    changes.pm_approvedby = userName
   }
   if (status === 2 && extra?.pm_rejectionreason) {
     changes.pm_rejectionreason = extra.pm_rejectionreason
   }
   try { console.debug('[dataverseService] updateTimesheetStatus:', { timesheetId, changes }) } catch (e) {}
   await Pm_timesheetsService.update(timesheetId, changes as any)
+}
+
+export async function recalculateTimesheetHours(timesheetId: string): Promise<void> {
+  try {
+    const entries = await fetchTimesheetEntries(timesheetId)
+    const totalHours = entries.reduce((s, e) => s + (e.pm_hoursworked ?? 0), 0)
+    const chargeable = entries.filter((e) => e.pm_ischargeable).reduce((s, e) => s + (e.pm_hoursworked ?? 0), 0)
+    const nonChargeable = entries.filter((e) => !e.pm_ischargeable).reduce((s, e) => s + (e.pm_hoursworked ?? 0), 0)
+    await Pm_timesheetsService.update(timesheetId, {
+      pm_totalhours: totalHours,
+      pm_totalchargeablehours: chargeable,
+      pm_totalnonchargeablehours: nonChargeable,
+    } as any)
+    console.debug('[dataverseService] recalculateTimesheetHours:', { timesheetId, totalHours, chargeable, nonChargeable })
+  } catch (err) {
+    console.error('[dataverseService] recalculateTimesheetHours failed:', err)
+  }
 }
 
 export async function fetchTimesheetEntries(timesheetId: string): Promise<TimesheetEntryModel[]> {
@@ -227,6 +253,44 @@ export async function createTimesheetEntry(payload: Partial<TimesheetEntryModel>
   try { console.debug('[dataverseService] createTimesheetEntry payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_timesheetentries>(result)
   return item ? mapTimesheetEntry(item) : null
+}
+
+export async function checkTimesheetOverlap(
+  resourceId: string,
+  startDate: string,
+  endDate: string,
+  excludeTimesheetId?: string
+): Promise<{ overlaps: boolean; timesheetName?: string; pm_periodstartdate?: string; pm_periodenddate?: string }> {
+  try {
+    const id = normalizeLookupId(resourceId)
+    if (!id) return { overlaps: false }
+    let filter = `_pm_resource_value eq '${id}' and statecode eq 0 and pm_periodstartdate le '${endDate}' and pm_periodenddate ge '${startDate}'`
+    if (excludeTimesheetId) {
+      filter += ` and pm_timesheetid ne '${excludeTimesheetId}'`
+    }
+    const result = await Pm_timesheetsService.getAll({
+      filter,
+      select: ['pm_timesheetid', 'pm_timesheetname', 'pm_periodstartdate', 'pm_periodenddate'],
+      top: 1,
+    })
+    const list = unwrapList<Pm_timesheets>(result)
+    if (list.length === 0) return { overlaps: false }
+    const ts = list[0]
+    return {
+      overlaps: true,
+      timesheetName: ts.pm_timesheetname,
+      pm_periodstartdate: ts.pm_periodstartdate,
+      pm_periodenddate: ts.pm_periodenddate,
+    }
+  } catch (err) {
+    console.error('[dataverseService] checkTimesheetOverlap failed:', err)
+    return { overlaps: false }
+  }
+}
+
+export async function deleteTimesheet(timesheetId: string): Promise<void> {
+  try { console.debug('[dataverseService] deleteTimesheet id:', timesheetId) } catch (e) {}
+  await Pm_timesheetsService.delete(timesheetId)
 }
 
 export async function deleteTimesheetEntry(entryId: string): Promise<void> {

@@ -517,19 +517,95 @@ export default function ProgrammesPage() {
             <Table stickyHeader size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Phase</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>RAG</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Manager</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Portfolio</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700 }}>Budget</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700 }}>Actual</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700 }}>Actions</TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableSortLabel
+                      active={sort.field === 'name'}
+                      direction={sort.field === 'name' ? sort.dir : 'asc'}
+                      onClick={() => handleSort('name')}
+                      sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}
+                    >
+                      Name
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableSortLabel
+                      active={sort.field === 'phase'}
+                      direction={sort.field === 'phase' ? sort.dir : 'asc'}
+                      onClick={() => handleSort('phase')}
+                      sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}
+                    >
+                      Phase
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableSortLabel
+                      active={sort.field === 'rag'}
+                      direction={sort.field === 'rag' ? sort.dir : 'asc'}
+                      onClick={() => handleSort('rag')}
+                      sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}
+                    >
+                      RAG
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableSortLabel
+                      active={sort.field === 'manager'}
+                      direction={sort.field === 'manager' ? sort.dir : 'asc'}
+                      onClick={() => handleSort('manager')}
+                      sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}
+                    >
+                      Manager
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableSortLabel
+                      active={sort.field === 'portfolio'}
+                      direction={sort.field === 'portfolio' ? sort.dir : 'asc'}
+                      onClick={() => handleSort('portfolio')}
+                      sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}
+                    >
+                      Portfolio
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableSortLabel
+                      active={sort.field === 'budget'}
+                      direction={sort.field === 'budget' ? sort.dir : 'asc'}
+                      onClick={() => handleSort('budget')}
+                      sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}
+                    >
+                      Budget
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <TableSortLabel
+                      active={sort.field === 'actual'}
+                      direction={sort.field === 'actual' ? sort.dir : 'asc'}
+                      onClick={() => handleSort('actual')}
+                      sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}
+                    >
+                      Actual
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Actions</Typography>
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {paginatedProgrammes.map((p) => (
-                  <TableRow key={p.pm_programmeid} hover onClick={() => p.pm_programmeid && openDetail(p.pm_programmeid)} sx={{ cursor: 'pointer' }}>
+                {paginatedProgrammes.map((p, idx) => (
+                  <TableRow 
+                    key={p.pm_programmeid} 
+                    hover 
+                    onClick={() => p.pm_programmeid && openDetail(p.pm_programmeid)} 
+                    sx={{ 
+                      cursor: 'pointer',
+                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
+                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                      transition: 'background-color 0.15s ease',
+                      '& td': { px: 2.5, py: 1.25 },
+                    }}
+                  >
                     <TableCell><Typography variant="body2" sx={{ fontWeight: 600 }}>{p.pm_programmename}</Typography></TableCell>
                     <TableCell><StatusChip status={p.pm_programmephase} type="prog_phase" size="small" /></TableCell>
                     <TableCell><StatusChip status={p.pm_ragstatus} type="rag" size="small" /></TableCell>
@@ -537,9 +613,9 @@ export default function ProgrammesPage() {
                     <TableCell><StatusTag label={p.pm_portfolioname || '—'} size="small" variant="outlined" color="primary" /></TableCell>
                     <TableCell align="right"><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{currencyFormatter.format(p.pm_budgeteur ?? 0)}</Typography></TableCell>
                     <TableCell align="right"><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{currencyFormatter.format(p.pm_actualspendeur ?? 0)}</Typography></TableCell>
-                    <TableCell align="center">
+                    <TableCell align="center" onClick={(e) => e.stopPropagation()}>
                       <Tooltip title="Edit">
-                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); openEditForm(p) }} sx={{ color: 'primary.main' }}>
+                        <IconButton size="small" onClick={() => openEditForm(p)} sx={{ color: 'primary.main' }}>
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -550,6 +626,17 @@ export default function ProgrammesPage() {
             </Table>
           </TableContainer>
         </TableShell>
+        {!loading && filteredProgrammes.length > 0 && (
+          <TableFooter
+            filteredCount={filteredProgrammes.length}
+            totalCount={programmes.length}
+            itemLabel="programme"
+            totals={[
+              { label: 'Total budget', value: currencyFormatter.format(filteredProgrammes.reduce((s, p) => s + (p.pm_budgeteur ?? 0), 0)) },
+              { label: 'Total actual', value: currencyFormatter.format(filteredProgrammes.reduce((s, p) => s + (p.pm_actualspendeur ?? 0), 0)) },
+            ]}
+          />
+        )}
         <TablePagination component="div" count={filteredProgrammes.length} page={page} onPageChange={(_, v) => setPage(v)} rowsPerPage={rowsPerPage} onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))} />
       </Paper>
 

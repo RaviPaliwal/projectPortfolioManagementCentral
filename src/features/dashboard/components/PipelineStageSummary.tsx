@@ -32,7 +32,9 @@ export const PipelineStageSummary = ({ initiatives, loading }: PipelineStageSumm
 
   return (
     <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>Pipeline Overview</Typography>
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+        Pipeline Overview
+      </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Initiative pipeline stage distribution.
       </Typography>

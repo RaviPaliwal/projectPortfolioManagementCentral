@@ -20,7 +20,8 @@ import {
   createBenefit,
   createProjectTask,
   startWorkflowForEntity,
-  GovernanceReadinessService
+  GovernanceReadinessService,
+  updateResourceAllocation
 } from '@/services'
 import { DynamicFormDialog } from '@/components/common'
 import type { FormField } from '@/components/common'
@@ -32,6 +33,7 @@ interface SubDialogProps {
   projectId: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
+  initialData?: Record<string, any>
 }
 
 export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
@@ -110,10 +112,26 @@ export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId
   return <DynamicFormDialog open={open} title="Log Issue" fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText="Log Issue" />
 }
 
-export const ResourceDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
+export const ResourceDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
+  const [resources, setResources] = useState<any[]>([])
+
+  useEffect(() => {
+    if (open && !initialData) {
+      import('@/services').then(({ fetchResources }) => {
+        fetchResources().then(setResources).catch(() => {})
+      })
+    }
+  }, [open, initialData])
+
   const fields: FormField[] = [
-    { name: 'pm_resourceName', label: 'Resource name', type: 'text', required: true },
-    { name: 'pm_resourceId', label: 'Resource ID', type: 'text', required: true },
+    { 
+      name: 'pm_resourceId', 
+      label: 'Resource', 
+      type: 'select', 
+      required: true, 
+      disabled: !!initialData,
+      options: resources.map(r => ({ value: r.pm_resourceid, label: r.pm_fullname }))
+    },
     { name: 'pm_allocatedhours', label: 'Allocated hours', type: 'number', defaultValue: 40, gridSize: 6 },
     { name: 'pm_assignmentrole', label: 'Role', type: 'text', gridSize: 6 },
     { name: 'pm_startdate', label: 'Start date', type: 'date', gridSize: 6 },
@@ -122,22 +140,32 @@ export const ResourceDialog: React.FC<SubDialogProps> = ({ open, onClose, projec
 
   const handleSubmit = async (data: Record<string, any>) => {
     try {
-      const created = await assignResource({ pm_projectid: projectId, pm_resourceid: data.pm_resourceId, pm_allocatedhours: Number(data.pm_allocatedhours) || 0, pm_assignmentrole: data.pm_assignmentrole || '', pm_startdate: data.pm_startdate || '', pm_enddate: data.pm_enddate || '' })
-      if (created?.pm_resourceallocationid) {
-        try {
-          await startWorkflowForEntity('default-template', created.pm_resourceallocationid, MODULE_NAMES.RESOURCES.value, 'System')
-        } catch (wfErr) {
-          console.error('[ResourceDialog] Failed to initiate workflow:', wfErr)
+      if (initialData?.pm_resourceallocationid) {
+        await updateResourceAllocation(initialData.pm_resourceallocationid, {
+          pm_allocatedhours: Number(data.pm_allocatedhours) || 0,
+          pm_assignmentrole: data.pm_assignmentrole || '',
+          pm_startdate: data.pm_startdate || '',
+          pm_enddate: data.pm_enddate || ''
+        })
+        onSuccess('Resource allocation updated successfully.')
+      } else {
+        const created = await assignResource({ pm_projectid: projectId, pm_resourceid: data.pm_resourceId, pm_allocatedhours: Number(data.pm_allocatedhours) || 0, pm_assignmentrole: data.pm_assignmentrole || '', pm_startdate: data.pm_startdate || '', pm_enddate: data.pm_enddate || '' })
+        if (created?.pm_resourceallocationid) {
+          try {
+            await startWorkflowForEntity('default-template', created.pm_resourceallocationid, MODULE_NAMES.RESOURCES.value, 'System')
+          } catch (wfErr) {
+            console.error('[ResourceDialog] Failed to initiate workflow:', wfErr)
+          }
         }
+        onSuccess('Resource assigned successfully and workflow initiated.')
       }
-      onSuccess('Resource assigned successfully and workflow initiated.')
       onClose()
     } catch {
-      onError('Unable to assign resource.')
+      onError(initialData ? 'Unable to update resource allocation.' : 'Unable to assign resource.')
     }
   }
 
-  return <DynamicFormDialog open={open} title="Assign Resource" fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText="Assign" />
+  return <DynamicFormDialog open={open} title={initialData ? "Edit Resource Allocation" : "Assign Resource"} fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText={initialData ? "Save Changes" : "Assign"} initialData={initialData} />
 }
 
 export const BudgetDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {

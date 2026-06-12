@@ -10,7 +10,6 @@ import TimesheetsPage from '@/features/timesheets/pages/TimesheetsPage'
 import BudgetsPage from '@/features/budgets/pages/BudgetsPage'
 import GateReviewsPage from '@/features/gatereviews/pages/GateReviewsPage'
 import BenefitsPage from '@/features/benefits/pages/BenefitsPage'
-import SchedulePage from '@/features/schedule/pages/SchedulePage'
 import RisksPage from '@/features/risks/pages/RisksPage'
 import IssuesPage from '@/features/issues/pages/IssuesPage'
 import ChangeRequestsPage from '@/features/changerequests/pages/ChangeRequestsPage'
@@ -37,7 +36,6 @@ export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, Re
   budgets: <BudgetsPage />,
   gatereviews: <GateReviewsPage />,
   benefits: <BenefitsPage />,
-  schedule: <SchedulePage />,
   risks: <RisksPage />,
   issues: <IssuesPage />,
   changerequests: <ChangeRequestsPage />,

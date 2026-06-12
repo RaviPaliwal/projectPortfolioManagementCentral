@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, type ReactElement } from 'react'
+﻿import { useEffect, useState, useMemo, useCallback, type ReactElement } from 'react'
 import {
   Box,
   Alert,
@@ -6,6 +6,11 @@ import {
   useTheme,
   Button,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import ScheduleIcon from '@mui/icons-material/Schedule'
@@ -24,9 +29,12 @@ import {
   fetchTimesheetEntries,
   createTimesheetEntry,
   deleteTimesheetEntry,
+  deleteTimesheet,
   fetchResources,
+  fetchAllocatedProjectsForResource,
   startWorkflowForEntity,
-  fetchWorkflows,
+  recalculateTimesheetHours,
+  checkTimesheetOverlap,
 } from '@/services'
 import type { TimesheetModel, TimesheetEntryModel, ResourceModel } from '@/types/dataverse'
 import {
@@ -54,7 +62,7 @@ import {
   TimesheetStatusControls,
 } from '../components'
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const timesheetExportColumns: ExportColumn[] = [
   { key: 'pm_name', label: 'Period' },
@@ -73,7 +81,7 @@ const STATUS_ICONS: Record<string, ReactElement> = {
   '3': <EditNoteIcon sx={{ fontSize: 16 }} />,
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function TimesheetsPage() {
   const theme = useTheme()
@@ -96,9 +104,16 @@ export default function TimesheetsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showAddEntry, setShowAddEntry] = useState(false)
   const [detailTab, setDetailTab] = useState(0)
+  const [allocatedProjects, setAllocatedProjects] = useState<{ id: string; name: string }[]>([])
+  const [projectsLoading, setProjectsLoading] = useState(false)
+  const [draftMode, setDraftMode] = useState(false)
+  const [overlapError, setOverlapError] = useState<string | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [approvalRefreshTrigger, setApprovalRefreshTrigger] = useState(0)
   const { currentUser } = useUser()
 
-  // ── Data Loading ──────────────────────────────────────────────────────────
+  // â”€â”€ Data Loading â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -118,7 +133,20 @@ export default function TimesheetsPage() {
     loadData()
   }, [loadData])
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!showAddEntry || !selectedTimesheet?._pm_resource_value) {
+      setAllocatedProjects([])
+      return
+    }
+    const resourceId = selectedTimesheet._pm_resource_value
+    setProjectsLoading(true)
+    fetchAllocatedProjectsForResource(resourceId)
+      .then(setAllocatedProjects)
+      .catch(() => setAllocatedProjects([]))
+      .finally(() => setProjectsLoading(false))
+  }, [showAddEntry, selectedTimesheet?._pm_resource_value])
+
+  // â”€â”€ Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleRowClick = useCallback(async (timesheet: TimesheetModel) => {
     setSelectedTimesheet(timesheet)
     setEntriesLoading(true)
@@ -134,30 +162,91 @@ export default function TimesheetsPage() {
     setEntriesLoading(false)
   }, [])
 
+  const handleDeleteTimesheet = async () => {
+    if (!selectedTimesheet?.pm_timesheetid) return
+    setDeleteLoading(true)
+    setError(null)
+    try {
+      await deleteTimesheet(selectedTimesheet.pm_timesheetid)
+      setSuccessMsg('Timesheet deleted.')
+      setDeleteConfirmOpen(false)
+      handleCloseDetail()
+      setTimeout(() => setSuccessMsg(null), 3000)
+      await loadData()
+    } catch {
+      setError('Unable to delete timesheet.')
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
   const handleCloseDetail = useCallback(() => {
     setSelectedTimesheet(null)
     setEntries([])
     setDetailTab(0)
   }, [])
 
+  const handleAllStepsCompleted = useCallback(async (info: { outcome: string; approverName?: string; decisionDate?: string }) => {
+    if (!selectedTimesheet?.pm_timesheetid) return
+    setApprovalRefreshTrigger((t) => t + 1)
+    const timesheetId = selectedTimesheet.pm_timesheetid
+    const approver = info.approverName || currentUser?.fullname || 'System'
+    try {
+      if (info.outcome === 'approved') {
+        await updateTimesheetStatus(timesheetId, 0, undefined, approver)
+      } else if (info.outcome === 'rejected') {
+        await updateTimesheetStatus(timesheetId, 2, { pm_rejectionreason: 'Rejected via approval workflow' }, approver)
+      }
+    } catch (err) {
+      console.error('[TimesheetsPage] Failed to update status after task completion:', err)
+    }
+    const updated = await fetchTimesheets()
+    setTimesheets(updated)
+    if (selectedTimesheet?.pm_timesheetid) {
+      const refreshed = updated.find((t) => t.pm_timesheetid === selectedTimesheet.pm_timesheetid)
+      if (refreshed) setSelectedTimesheet(refreshed)
+    }
+  }, [selectedTimesheet?.pm_timesheetid, currentUser?.fullname])
+
   const handleCreateTimesheet = async (formData: any) => {
     setError(null)
+    setOverlapError(null)
     setActionLoading(true)
     try {
+      const resourceId = formData._pm_resource_value
+      if (resourceId) {
+        const overlap = await checkTimesheetOverlap(
+          resourceId,
+          formData.pm_periodstartdate,
+          formData.pm_periodenddate
+        )
+        if (overlap.overlaps) {
+          const periodStr = overlap.pm_periodstartdate && overlap.pm_periodenddate
+            ? ` (${overlap.pm_periodstartdate} to ${overlap.pm_periodenddate})`
+            : ''
+          setOverlapError(
+            `Date range overlaps with "${overlap.timesheetName || 'existing timesheet'}"${periodStr}. Please adjust the dates.`
+          )
+          setActionLoading(false)
+          return
+        }
+      }
       const periodKey = formData.pm_periodstartdate.substring(0, 7)
       const resource = resources.find((r) => r.pm_resourceid === formData._pm_resource_value)
-      const ownerName = formData.pm_ownername || resource?.pm_fullname || 'Unnamed'
+      const ownerName = resource?.pm_fullname || currentUser?.fullname || 'Unnamed'
       const payload: any = {
         pm_timesheetname: `${ownerName} - ${periodKey}`,
-        pm_ownername: ownerName,
+        ownerid: currentUser?.systemuserid,
+        owneridtype: 'systemuser',
         pm_periodstartdate: formData.pm_periodstartdate,
         pm_periodenddate: formData.pm_periodenddate,
         pm_reportingperiod: periodKey,
         _pm_resource_value: formData._pm_resource_value || undefined,
       }
       await createTimesheet(payload)
-      setSuccessMsg('Timesheet created successfully.')
+      setSuccessMsg(draftMode ? 'Draft timesheet created.' : 'Timesheet created successfully.')
       setShowCreateModal(false)
+      setDraftMode(false)
       setTimeout(() => setSuccessMsg(null), 3000)
       await loadData()
     } catch {
@@ -171,30 +260,19 @@ export default function TimesheetsPage() {
     if (!selectedTimesheet?.pm_timesheetid) return
     setActionLoading(true)
     try {
-      await updateTimesheetStatus(selectedTimesheet.pm_timesheetid, newStatus, extra)
+      await updateTimesheetStatus(selectedTimesheet.pm_timesheetid, newStatus, extra, currentUser?.fullname)
       setSuccessMsg('Timesheet status updated.')
 
-      // If submitting, trigger the timesheet approval workflow
+      // If submitting, trigger the initiateworkflow Power Automate flow
       if (newStatus === 1) {
         try {
-          const workflows = await fetchWorkflows()
-          const tsWorkflow = workflows.find(
-            (wf) => (wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0') && (
-              wf.pm_module?.toLowerCase() === 'timesheets' ||
-              (wf.pm_workflowname ?? '').toLowerCase().includes('timesheet')
-            )
+          await startWorkflowForEntity(
+            'default-template',
+            selectedTimesheet.pm_timesheetid,
+            MODULE_NAMES.TIMESHEETS.value,
+            currentUser?.fullname ?? 'System'
           )
-          if (tsWorkflow?.pm_workflowid) {
-            await startWorkflowForEntity(
-              tsWorkflow.pm_workflowid,
-              selectedTimesheet.pm_timesheetid,
-              MODULE_NAMES.TIMESHEETS.value,
-              currentUser?.fullname ?? 'System'
-            )
-            setSuccessMsg('Timesheet submitted for approval!')
-          } else {
-            console.warn('[TimesheetsPage] No active workflow template found for Timesheets')
-          }
+          setSuccessMsg('Timesheet submitted for approval!')
         } catch (wfErr) {
           console.error('[TimesheetsPage] Failed to start workflow:', wfErr)
         }
@@ -227,6 +305,7 @@ export default function TimesheetsPage() {
       })
       setSuccessMsg('Entry added.')
       setShowAddEntry(false)
+      await recalculateTimesheetHours(selectedTimesheet.pm_timesheetid)
       const entryList = await fetchTimesheetEntries(selectedTimesheet.pm_timesheetid)
       setEntries(entryList)
       const updated = await fetchTimesheets()
@@ -248,6 +327,7 @@ export default function TimesheetsPage() {
       setSuccessMsg('Entry removed.')
       setEntries((prev) => prev.filter((e) => e.pm_timesheetentryid !== entryId))
       if (selectedTimesheet?.pm_timesheetid) {
+        await recalculateTimesheetHours(selectedTimesheet.pm_timesheetid)
         const updated = await fetchTimesheets()
         setTimesheets(updated)
         const refreshed = updated.find((t) => t.pm_timesheetid === selectedTimesheet.pm_timesheetid)
@@ -261,7 +341,7 @@ export default function TimesheetsPage() {
     }
   }
 
-  // ── KPI Ribbon ─────────────────────────────────────────────────────────────
+  // â”€â”€ KPI Ribbon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const kpiData = useMemo(() => {
     const total = timesheets.length
     const pending = timesheets.filter((t) => String(t.pm_timesheetstatus) === '1').length
@@ -323,12 +403,17 @@ export default function TimesheetsPage() {
     <Box>
       <PageHeader
         title="Timesheets"
-        subtitle="Track and manage time entries — create timesheets, log hours, and manage the approval workflow."
+        subtitle="Track and manage time entries â€” create timesheets, log hours, and manage the approval workflow."
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton filename="timesheets.csv" columns={timesheetExportColumns} data={timesheets} />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
-              New Timesheet
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => { setDraftMode(true); setShowCreateModal(true); setOverlapError(null) }}
+              disabled={actionLoading || loading}
+            >
+              New Entry
             </Button>
           </Box>
         }
@@ -337,7 +422,7 @@ export default function TimesheetsPage() {
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-      {/* KPI Ribbon — Standardized Row */}
+      {/* KPI Ribbon â€” Standardized Row */}
       {!loading && (
         <KpiCardRow items={kpiData} loading={loading} />
       )}
@@ -370,20 +455,32 @@ export default function TimesheetsPage() {
               />
               <Typography variant="body2" color="text.secondary">
                 <PersonIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                {selectedTimesheet.pm_ownername || '—'}
+                {selectedTimesheet.pm_ownername || 'â€”'}
               </Typography>
             </Box>
           )
         }
         headerActions={
           selectedTimesheet && (
-            <TimesheetStatusControls
-              status={currentStatus}
-              onStatusUpdate={handleStatusUpdate}
-              approvalDate={selectedTimesheet.pm_approvaldate}
-              rejectionReason={selectedTimesheet.pm_rejectionreason}
-              loading={actionLoading}
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <TimesheetStatusControls
+                status={currentStatus}
+                onStatusUpdate={handleStatusUpdate}
+                approvalDate={selectedTimesheet.pm_approvaldate}
+                rejectionReason={selectedTimesheet.pm_rejectionreason}
+                loading={actionLoading}
+              />
+              <Button
+                size="small"
+                color="error"
+                variant="outlined"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={actionLoading || deleteLoading}
+                sx={{ borderRadius: 1.5, minWidth: 0, px: 1.5 }}
+              >
+                Delete
+              </Button>
+            </Box>
           )
         }
         tabs={[{ label: 'Entries', count: entries.length }, { label: 'Details' }, { label: 'Approval' }, { label: 'Tasks' }]}
@@ -439,6 +536,8 @@ export default function TimesheetsPage() {
                   entityLabel="Timesheet"
                   tabValue={detailTab}
                   index={3}
+                  refreshTrigger={approvalRefreshTrigger}
+                  onAllStepsCompleted={handleAllStepsCompleted}
                 />
               )}
             </TabPanel>
@@ -449,10 +548,12 @@ export default function TimesheetsPage() {
       {/* Modals */}
       <TimesheetFormDialog
         open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={() => { setShowCreateModal(false); setDraftMode(false); setOverlapError(null) }}
         onSubmit={handleCreateTimesheet}
         resources={resources}
         loading={actionLoading}
+        draftMode={draftMode}
+        overlapError={overlapError}
       />
 
       <TimesheetEntryFormDialog
@@ -461,7 +562,28 @@ export default function TimesheetsPage() {
         onSubmit={handleAddEntry}
         timesheetName={selectedTimesheet?.pm_timesheetname}
         loading={actionLoading}
+        allocatedProjects={allocatedProjects}
+        projectsLoading={projectsLoading}
       />
+
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => !deleteLoading && setDeleteConfirmOpen(false)}
+      >
+        <DialogTitle>Delete Timesheet?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete "{selectedTimesheet?.pm_timesheetname}"?
+            All time entries in this timesheet will also be deleted. This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleteLoading}>Cancel</Button>
+          <Button onClick={handleDeleteTimesheet} color="error" disabled={deleteLoading}>
+            {deleteLoading ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
@@ -472,7 +594,8 @@ function DetailField({ label, value }: { label: string; value: string | undefine
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>
         {label}
       </Typography>
-      <Typography variant="body2">{value || '—'}</Typography>
+      <Typography variant="body2">{value || 'â€”'}</Typography>
     </Box>
   )
 }
+
