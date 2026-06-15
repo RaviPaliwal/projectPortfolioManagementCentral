@@ -38,9 +38,10 @@ import PsychologyIcon from '@mui/icons-material/Psychology'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import AccountTreeWorkflowIcon from '@mui/icons-material/AccountTree'
 import SettingsIcon from '@mui/icons-material/Settings'
-import { UserSelector } from '@/context/UserContext'
+import { UserSelector, useUser } from '@/context/UserContext'
 import { useEffect } from 'react'
 import NotificationCenter from './NotificationCenter'
+import { PERSONA_PERMISSIONS } from '@/constants/permissions'
 
 export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'schedule' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots'
 
@@ -84,6 +85,7 @@ const DRAWER_WIDTH = 260
 
 export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, themeMode, children }: PrimaryShellProps) {
   const theme = useTheme()
+  const { currentUserPersona } = useUser()
 
   // Listen for custom navigation events (e.g. from MyTasksWidget)
   useEffect(() => {
@@ -97,7 +99,17 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
     return () => window.removeEventListener('navigate', handler)
   }, [activeTab, onChangeTab])
 
-  const sidebarTabs = tabs.filter(t => !t.hidden)
+  // Redirect if current active tab is not allowed for the active persona
+  useEffect(() => {
+    const allowedTabs = PERSONA_PERMISSIONS[currentUserPersona] || []
+    if (allowedTabs.length > 0 && !allowedTabs.includes(activeTab)) {
+      const defaultTab = allowedTabs.includes('dashboard') ? 'dashboard' : allowedTabs[0]
+      onChangeTab(defaultTab)
+    }
+  }, [currentUserPersona, activeTab, onChangeTab])
+
+  const allowedTabs = PERSONA_PERMISSIONS[currentUserPersona] || []
+  const sidebarTabs = tabs.filter(t => !t.hidden && allowedTabs.includes(t.key))
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>

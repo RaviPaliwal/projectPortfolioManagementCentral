@@ -1,11 +1,13 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react'
 import {
   Box, Typography, Avatar, Select, MenuItem, FormControl,
   Tooltip, Popover, List, ListItemButton, ListItemAvatar,
   ListItemText, Badge,
 } from '@mui/material'
-import { SystemusersService } from '@/generated'
+import { SystemusersService, TeamsService, TeammembershipsService } from '@/generated'
 import { StatusTag } from '@/components/common'
+import { getPersonaFromUser } from '@/constants/permissions'
+import type { Persona } from '@/constants/permissions'
 
 
 export interface SystemUser {
@@ -21,55 +23,311 @@ export interface SystemUser {
 interface UserContextValue {
   currentUser: SystemUser | null
   setCurrentUser: (user: SystemUser) => void
+  currentUserPersona: Persona
+  userPersonas: Record<string, Persona>
   users: SystemUser[]
   loading: boolean
   refreshUsers: () => Promise<void>
+  userRolesMap: Record<string, string[]>
+  userTeams: Map<string, string[]>
 }
 
 const UserContext = createContext<UserContextValue>({
   currentUser: null,
   setCurrentUser: () => {},
+  currentUserPersona: 'TeamMember',
+  userPersonas: {},
   users: [],
   loading: true,
   refreshUsers: async () => {},
+  userRolesMap: {},
+  userTeams: new Map(),
 })
 
 export function useUser() {
   return useContext(UserContext)
 }
 
+function getLoggedInUserId(): string | null {
+  try {
+    const xrmContext = (window as any).Xrm?.Utility?.getGlobalContext() || (window.parent as any).Xrm?.Utility?.getGlobalContext()
+    if (xrmContext?.userSettings?.userId) {
+      return xrmContext.userSettings.userId.replace(/[{}]/g, '').toLowerCase()
+    }
+  } catch (e) {
+    console.debug('[UserContext] Could not access Xrm context:', e)
+  }
+  return null
+}
+
+async function fetchUserRolesFromDataverse(): Promise<Record<string, string[]>> {
+  const query = "?$select=systemuserid&$expand=systemuserroles_association($select=name,roleid)"
+  const userRolesMap: Record<string, string[]> = {}
+
+  // 1. Try Xrm.webApi (for production Power Apps context)
+  try {
+    const xrmContext = (window as any).Xrm || (window.parent as any).Xrm
+    if (xrmContext?.webApi?.retrieveMultipleRecords) {
+      console.info('[UserContext] Fetching user roles via Xrm.webApi...')
+      const result = await xrmContext.webApi.retrieveMultipleRecords("systemuser", query)
+      const entities = result?.entities || []
+      for (const u of entities) {
+        if (u.systemuserid && u.systemuserroles_association) {
+          userRolesMap[u.systemuserid] = u.systemuserroles_association.map((r: any) => (r && r.name) || '')
+        }
+      }
+      console.info('[UserContext] Successfully fetched user roles via Xrm.webApi:', Object.keys(userRolesMap).length)
+      return userRolesMap
+    }
+  } catch (e) {
+    console.warn('[UserContext] Xrm.webApi failed to fetch user roles:', e)
+  }
+
+  // 2. Fall back to fetch (for local development proxy)
+  try {
+    console.info('[UserContext] Fetching user roles via relative Web API fetch...')
+    const response = await fetch('/api/data/v9.2/systemusers' + query)
+    if (response.ok) {
+      const data = await response.json()
+      const usersWithRoles = data.value || []
+      for (const u of usersWithRoles) {
+        if (u.systemuserid && u.systemuserroles_association) {
+          userRolesMap[u.systemuserid] = u.systemuserroles_association.map((r: any) => (r && r.name) || '')
+        }
+      }
+      console.info('[UserContext] Successfully fetched user roles via fetch:', Object.keys(userRolesMap).length)
+      return userRolesMap
+    } else {
+      console.warn('[UserContext] Failed to fetch user roles from Web API fetch, status:', response.status)
+    }
+  } catch (err) {
+    console.warn('[UserContext] Error fetching user roles from Web API fetch:', err)
+  }
+
+  return userRolesMap
+}
+
+async function fetchTeamRolesFromDataverse(): Promise<Record<string, string[]>> {
+  const query = "?$select=teamid,name&$expand=teamroles_association($select=name,roleid)"
+  const teamRolesMap: Record<string, string[]> = {}
+
+  // 1. Try Xrm.webApi (for production Power Apps context)
+  try {
+    const xrmContext = (window as any).Xrm || (window.parent as any).Xrm
+    if (xrmContext?.webApi?.retrieveMultipleRecords) {
+      console.info('[UserContext] Fetching team roles via Xrm.webApi...')
+      const result = await xrmContext.webApi.retrieveMultipleRecords("team", query)
+      const entities = result?.entities || []
+      for (const t of entities) {
+        if (t.teamid && t.teamroles_association) {
+          teamRolesMap[t.teamid] = t.teamroles_association.map((r: any) => (r && r.name) || '')
+        }
+      }
+      console.info('[UserContext] Successfully fetched team roles via Xrm.webApi:', Object.keys(teamRolesMap).length)
+      return teamRolesMap
+    }
+  } catch (e) {
+    console.warn('[UserContext] Xrm.webApi failed to fetch team roles:', e)
+  }
+
+  // 2. Fall back to fetch (for local development proxy)
+  try {
+    console.info('[UserContext] Fetching team roles via relative Web API fetch...')
+    const response = await fetch('/api/data/v9.2/teams' + query)
+    if (response.ok) {
+      const data = await response.json()
+      const teamsWithRoles = data.value || []
+      for (const t of teamsWithRoles) {
+        if (t.teamid && t.teamroles_association) {
+          teamRolesMap[t.teamid] = t.teamroles_association.map((r: any) => (r && r.name) || '')
+        }
+      }
+      console.info('[UserContext] Successfully fetched team roles via fetch:', Object.keys(teamRolesMap).length)
+      return teamRolesMap
+    } else {
+      console.warn('[UserContext] Failed to fetch team roles from Web API fetch, status:', response.status)
+    }
+  } catch (err) {
+    console.warn('[UserContext] Error fetching team roles from Web API fetch:', err)
+  }
+
+  return teamRolesMap
+}
+
 export function UserContextProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<SystemUser | null>(null)
   const [users, setUsers] = useState<SystemUser[]>([])
+  const [userPersonas, setUserPersonas] = useState<Record<string, Persona>>({})
   const [loading, setLoading] = useState(true)
+  const [userRolesMap, setUserRolesMap] = useState<Record<string, string[]>>({})
+  const [userTeamsState, setUserTeamsState] = useState<Map<string, string[]>>(new Map())
+
+  const handleSetCurrentUser = useCallback((user: SystemUser) => {
+    setCurrentUser(user)
+    if (user.systemuserid) {
+      try {
+        localStorage.setItem('ppm_selected_user_id', user.systemuserid)
+      } catch (e) {
+        console.debug('[UserContext] Failed to write to localStorage:', e)
+      }
+    }
+  }, [])
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await SystemusersService.getAll({
-        select: ['systemuserid', 'fullname', 'domainname', 'internalemailaddress', 'jobtitle', 'firstname', 'lastname'],
-        filter: "isdisabled eq false",
-        orderBy: ['fullname asc'],
-        top: 200,
-      })
-      const list = unwrapUserList(result).filter(u => !u.fullname?.startsWith('#'))
-      setUsers(list)
-      if (!currentUser && list.length > 0) {
-        setCurrentUser(list[0])
+      const [usersResult, teamsResult, membershipsResult] = await Promise.all([
+        SystemusersService.getAll({
+          select: ['systemuserid', 'fullname', 'domainname', 'internalemailaddress', 'jobtitle', 'firstname', 'lastname'],
+          filter: "isdisabled eq false",
+          orderBy: ['fullname asc'],
+          top: 200,
+        }),
+        TeamsService.getAll({
+          select: ['teamid', 'name'],
+          top: 500,
+        }),
+        TeammembershipsService.getAll({
+          select: ['systemuserid', 'teamid'],
+          top: 5000,
+        })
+      ])
+
+      const list = unwrapUserList(usersResult).filter(u => !u.fullname?.startsWith('#'))
+      const teams = unwrapList<any>(teamsResult)
+      const memberships = unwrapList<any>(membershipsResult)
+
+      // Build team lookup
+      const teamIdToName = new Map<string, string>()
+      for (const t of teams) {
+        if (t.teamid && t.name) teamIdToName.set(t.teamid, t.name.toLowerCase())
       }
-    } catch {
-      console.warn('[UserContext] Failed to fetch system users')
+
+      // Build user to teams mapping (names and IDs)
+      const userTeams = new Map<string, string[]>()
+      const userTeamIds = new Map<string, string[]>()
+      for (const m of memberships) {
+        if (m.systemuserid && m.teamid) {
+          const teamName = teamIdToName.get(m.teamid)
+          if (teamName) {
+            if (!userTeams.has(m.systemuserid)) {
+              userTeams.set(m.systemuserid, [])
+            }
+            userTeams.get(m.systemuserid)!.push(teamName)
+          }
+          if (!userTeamIds.has(m.systemuserid)) {
+            userTeamIds.set(m.systemuserid, [])
+          }
+          userTeamIds.get(m.systemuserid)!.push(m.teamid)
+        }
+      }
+
+      // Fetch user roles and team roles from Dataverse Web API
+      const [userRolesMap, teamRolesMap] = await Promise.all([
+        fetchUserRolesFromDataverse(),
+        fetchTeamRolesFromDataverse()
+      ])
+
+      // Seed the logged-in user's roles from the Xrm context if available (instant and includes team-inherited roles)
+      const loggedInId = getLoggedInUserId()
+      if (loggedInId) {
+        try {
+          const xrmContext = (window as any).Xrm?.Utility?.getGlobalContext() || (window.parent as any).Xrm?.Utility?.getGlobalContext()
+          const roleNames = xrmContext?.userSettings?.securityRoleNames
+          if (roleNames && roleNames.length > 0) {
+            userRolesMap[loggedInId] = roleNames
+            console.info('[UserContext] Seeded logged-in user roles from Xrm userSettings:', roleNames)
+          }
+        } catch (e) {
+          console.debug('[UserContext] Failed to get securityRoleNames from Xrm context:', e)
+        }
+      }
+
+      // Resolve personas for all users
+      const personas: Record<string, Persona> = {}
+      console.info('[UserContext] --- Resolving Personas Diagnostic ---')
+      for (const u of list) {
+        const uId = u.systemuserid
+        if (!uId) continue
+
+        const userTeamNames = userTeams.get(uId) || []
+        const uTeamIds = userTeamIds.get(uId) || []
+        
+        // Aggregate directly assigned roles and team-inherited roles
+        const userRoleNames = [...(userRolesMap[uId] || [])]
+        for (const teamId of uTeamIds) {
+          const teamRoles = teamRolesMap[teamId] || []
+          userRoleNames.push(...teamRoles)
+        }
+        
+        const resolvedPersona = getPersonaFromUser(u, userTeamNames, userRoleNames)
+        personas[uId] = resolvedPersona
+        console.info(`User: "${u.fullname}", ID: "${uId}", JobTitle: "${u.jobtitle || ''}", Teams: [${userTeamNames.join(', ')}], Roles: [${userRoleNames.join(', ')}], Persona: "${resolvedPersona}"`)
+      }
+      console.info('[UserContext] -------------------------------------')
+
+      setUserPersonas(personas)
+      setUsers(list)
+      setUserRolesMap(userRolesMap)
+      setUserTeamsState(userTeams)
+      
+      if (!currentUser && list.length > 0) {
+        let storedUserId: string | null = null
+        try {
+          storedUserId = localStorage.getItem('ppm_selected_user_id')
+        } catch (e) {
+          console.debug('[UserContext] Stored user ID not available from localStorage:', e)
+        }
+        
+        let startingUser: SystemUser | null = null
+
+        // Priority 1: Prioritize the detected logged-in user from Xrm context (production behavior)
+        if (loggedInId) {
+          startingUser = list.find(u => u.systemuserid?.toLowerCase() === loggedInId) || null
+        }
+        
+        // Priority 2: Use stored selection from localStorage (local development fallback)
+        if (!startingUser && storedUserId) {
+          startingUser = list.find(u => u.systemuserid?.toLowerCase() === storedUserId.toLowerCase()) || null
+        }
+        
+        // Priority 3: Fallback to the first user in the list
+        if (!startingUser && list.length > 0) {
+          startingUser = list[0]
+        }
+        
+        if (startingUser) {
+          setCurrentUser(startingUser)
+        }
+      }
+    } catch (err) {
+      console.warn('[UserContext] Failed to fetch system users and roles:', err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentUser])
 
   useEffect(() => {
     fetchUsers()
   }, [])
 
+  const currentUserPersona = useMemo(() => {
+    if (!currentUser || !currentUser.systemuserid) return 'TeamMember'
+    return userPersonas[currentUser.systemuserid] || 'TeamMember'
+  }, [currentUser, userPersonas])
+
   return (
-    <UserContext.Provider value={{ currentUser, setCurrentUser, users, loading, refreshUsers: fetchUsers }}>
+    <UserContext.Provider value={{
+      currentUser,
+      setCurrentUser: handleSetCurrentUser,
+      currentUserPersona,
+      userPersonas,
+      users,
+      loading,
+      refreshUsers: fetchUsers,
+      userRolesMap,
+      userTeams: userTeamsState
+    }}>
       {children}
     </UserContext.Provider>
   )
@@ -83,6 +341,14 @@ function unwrapUserList(result: any): SystemUser[] {
   return []
 }
 
+function unwrapList<T>(result: any): T[] {
+  if (!result) return []
+  if ('value' in result) return result.value as T[]
+  if ('data' in result) return result.data as T[]
+  if (Array.isArray(result)) return result
+  return []
+}
+
 // ── User Selector Widget ─────────────────────────────────────────────────────
 
 interface UserSelectorProps {
@@ -90,7 +356,7 @@ interface UserSelectorProps {
 }
 
 export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
-  const { currentUser, setCurrentUser, users } = useUser()
+  const { currentUser, setCurrentUser, users, userPersonas, userRolesMap, userTeams, currentUserPersona } = useUser()
 
   if (variant === 'full') {
     return (
@@ -116,21 +382,24 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
           }}
           sx={{ borderRadius: 1.15 }}
         >
-          {users.map((user) => (
-            <MenuItem key={user.systemuserid} value={user.systemuserid}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: '#0ea5e9' }}>
-                  {user.fullname?.charAt(0)?.toUpperCase() ?? '?'}
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{user.fullname}</Typography>
-                  {user.jobtitle && (
-                    <Typography variant="caption" color="text.secondary">{user.jobtitle}</Typography>
-                  )}
+          {users.map((user) => {
+            const persona = userPersonas[user.systemuserid || ''] || 'TeamMember'
+            return (
+              <MenuItem key={user.systemuserid} value={user.systemuserid}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: '#0ea5e9' }}>
+                    {user.fullname?.charAt(0)?.toUpperCase() ?? '?'}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{user.fullname}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {user.jobtitle ? `${user.jobtitle} (${persona})` : persona}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
-            </MenuItem>
-          ))}
+              </MenuItem>
+            )
+          })}
         </Select>
       </FormControl>
     )
@@ -172,6 +441,7 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
         <List dense sx={{ py: 0.5 }}>
           {users.map((user) => {
             const isActive = user.systemuserid === currentUser?.systemuserid
+            const persona = userPersonas[user.systemuserid || ''] || 'TeamMember'
             return (
               <ListItemButton
                 key={user.systemuserid}
@@ -193,7 +463,7 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
                 </ListItemAvatar>
                 <ListItemText
                   primary={user.fullname}
-                  secondary={user.jobtitle || user.domainname || ''}
+                  secondary={user.jobtitle ? `${user.jobtitle} • (${persona})` : `${user.domainname || ''} • (${persona})`}
                   slotProps={{
                     primary: { sx: { fontWeight: isActive ? 700 : 500, fontSize: '0.875rem' } },
                     secondary: { sx: { fontSize: '0.75rem' } },
@@ -206,6 +476,22 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
             )
           })}
         </List>
+        {currentUser && (
+          <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderTop: 1, borderColor: 'divider' }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, display: 'block', mb: 0.5, color: 'text.secondary' }}>
+              Security Diagnostics:
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block', fontSize: '0.75rem', color: 'text.secondary' }}>
+              <strong>Persona:</strong> {currentUserPersona}
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block', fontSize: '0.75rem', color: 'text.secondary', whiteSpace: 'normal', wordBreak: 'break-all' }}>
+              <strong>Roles:</strong> {(userRolesMap[currentUser.systemuserid] || []).join(', ') || 'None'}
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block', fontSize: '0.75rem', color: 'text.secondary', whiteSpace: 'normal', wordBreak: 'break-all' }}>
+              <strong>Teams:</strong> {(userTeams.get(currentUser.systemuserid) || []).join(', ') || 'None'}
+            </Typography>
+          </Box>
+        )}
       </Popover>
     </>
   )
