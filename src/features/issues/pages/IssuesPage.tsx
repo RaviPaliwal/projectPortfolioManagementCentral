@@ -49,6 +49,7 @@ import type { KpiCardItem } from '@/components/common'
 
 import {
   fetchAllIssues,
+  fetchIssuesForSystemUser,
   createIssueFull,
   updateIssueFull,
   deleteIssue,
@@ -123,7 +124,7 @@ interface SortState {
 }
 
 export default function IssuesPage() {
-  const { currentUser } = useUser()
+  const { currentUser, currentUserPersona } = useUser()
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [issues, setIssues] = useState<IssueModel[]>([])
@@ -182,7 +183,11 @@ export default function IssuesPage() {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchAllIssues()
+      // TeamMember → only their assigned issues; PMO/Admin/etc → all issues
+      const isTeamMember = currentUserPersona === 'TeamMember'
+      const data = isTeamMember && currentUser?.systemuserid
+        ? await fetchIssuesForSystemUser(currentUser.systemuserid)
+        : await fetchAllIssues()
       setIssues(data || [])
     } catch (err) {
       console.error('[IssuesPage] loadIssues error:', err)
@@ -190,7 +195,7 @@ export default function IssuesPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentUserPersona, currentUser?.systemuserid])
 
   // ── Load projects, programmes, risks for the dialog ───────────────────────
   const loadUserProjects = useCallback(async () => {

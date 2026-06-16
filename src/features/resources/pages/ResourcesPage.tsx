@@ -444,7 +444,8 @@ export default function ResourcesPage() {
       setShowFormModal(false)
       setTimeout(() => setSuccessMsg(null), 3000)
       await loadData()
-    } catch {
+    } catch (err) {
+      console.error('[ResourcesPage] handleSaveResource error:', err)
       setError(editingResource ? 'Unable to update resource.' : 'Unable to create resource.')
     } finally {
       setActionLoading(false)

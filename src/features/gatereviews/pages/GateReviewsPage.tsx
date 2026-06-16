@@ -32,8 +32,6 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import PersonIcon from '@mui/icons-material/Person'
-import DescriptionIcon from '@mui/icons-material/Description'
-import RuleIcon from '@mui/icons-material/Rule'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import Filter1Icon from '@mui/icons-material/Filter1'
@@ -46,6 +44,7 @@ import {
   createGateReview,
   updateGateReview,
   deleteGateReview,
+  WORKFLOW_DECISION_EVENT,
 } from '@/services'
 import type { GateReviewModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
@@ -86,12 +85,14 @@ const OUTCOME_LABELS: Record<string, string> = {
   '0': 'Approved',
   '1': 'Conditional',
   '2': 'Not Yet Reviewed',
+  '4': 'Rejected',
 }
 
-const OUTCOME_COLORS: Record<string, 'success' | 'warning' | 'default'> = {
+const OUTCOME_COLORS: Record<string, 'success' | 'warning' | 'default' | 'error'> = {
   '0': 'success',
   '1': 'warning',
   '2': 'default',
+  '4': 'error',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -117,6 +118,7 @@ const OUTCOME_FILTER_OPTIONS: FilterOption[] = [
   { value: '0', label: 'Approved' },
   { value: '1', label: 'Conditional' },
   { value: '2', label: 'Not Yet Reviewed' },
+  { value: '4', label: 'Rejected' },
 ]
 
 type SortField = 'name' | 'stage' | 'outcome' | 'status' | 'planned' | 'actual' | 'reviewer'
@@ -185,6 +187,12 @@ export default function GateReviewsPage() {
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
+
+  useEffect(() => {
+    const handler = () => loadData()
+    window.addEventListener(WORKFLOW_DECISION_EVENT, handler)
+    return () => window.removeEventListener(WORKFLOW_DECISION_EVENT, handler)
+  }, [loadData])
 
   const kpiItems = useMemo((): KpiCardItem[] => {
     const total = gateReviews.length
@@ -362,24 +370,6 @@ export default function GateReviewsPage() {
               <StatusTag label={OUTCOME_LABELS[String(selectedReview.pm_reviewoutcome)]} color={OUTCOME_COLORS[String(selectedReview.pm_reviewoutcome)]} />
               <StatusTag label={STATUS_LABELS[String(selectedReview.pm_reviewstatus)]} color={STATUS_COLORS[String(selectedReview.pm_reviewstatus)]} />
             </Box>
-
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <DescriptionIcon sx={{ fontSize: 18 }} /> Review Notes
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              {selectedReview.pm_reviewnotes || 'No notes recorded.'}
-            </Typography>
-
-            {selectedReview.pm_reviewconditions && (
-              <>
-                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, color: 'warning.main' }}>
-                  <RuleIcon sx={{ fontSize: 18 }} /> Conditions for Progression
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, p: 1.5, bgcolor: isDark ? 'rgba(255,183,77,0.05)' : 'rgba(255,183,77,0.1)', borderRadius: 1, borderLeft: '4px solid', borderColor: 'warning.main' }}>
-                  {selectedReview.pm_reviewconditions}
-                </Typography>
-              </>
-            )}
 
             <Grid container spacing={3}>
               <Grid size={{ xs: 6 }}>

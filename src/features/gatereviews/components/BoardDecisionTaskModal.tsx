@@ -1,29 +1,30 @@
-import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Grid,
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-  TextField,
-  Divider,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Paper
+  Dialog, DialogContent, Box, Typography,
+  Button, CircularProgress, TextField, Paper, Divider, Chip,
+  IconButton, useTheme,
 } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
 import GavelIcon from '@mui/icons-material/Gavel'
-import FactCheckIcon from '@mui/icons-material/FactCheck'
+import FlagIcon from '@mui/icons-material/Flag'
+import BusinessIcon from '@mui/icons-material/Business'
+import PersonIcon from '@mui/icons-material/Person'
+import HistoryIcon from '@mui/icons-material/History'
+
 import { fetchProjectDetails, updateGateReview, fetchGateReviewById } from '@/services'
+import { submitWorkflowDecision } from '@/services/workflow.service'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
-import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
+
+// ── Constants ──────────────────────────────────────────────────────────
+
+const OUTCOME_OPTIONS = [
+  { value: 0, label: 'Approved',          color: '#10B981', desc: 'Project proceeds to the next gate stage.' },
+  { value: 1, label: 'Conditional Approval', color: '#F59E0B', desc: 'Approve subject to mandatory conditions.' },
+  { value: 4, label: 'Not Approved',       color: '#EF4444', desc: 'Project does not proceed; returns to planning.' },
+]
+
+// ── Props ──────────────────────────────────────────────────────────────
 
 interface BoardDecisionTaskModalProps {
   open: boolean
@@ -31,292 +32,557 @@ interface BoardDecisionTaskModalProps {
   gateReviewId: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
-  DecisionBox?: ComponentType<DecisionBoxProps>
   approvalStepId?: string
 }
 
+// ══════════════════════════════════════════════════════════════════════
+//  SUCCESS SCREEN
+// ══════════════════════════════════════════════════════════════════════
+
+interface SuccessScreenProps {
+  outcome: number
+  projectName?: string
+  gateName?: string
+  onBack: () => void
+}
+
+const SuccessScreen: React.FC<SuccessScreenProps> = ({ outcome, projectName, gateName, onBack }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  const map: Record<number, { color: string; label: string; emoji: string }> = {
+    0: { color: '#10B981', label: 'Gate Approved',       emoji: '🎉' },
+    1: { color: '#F59E0B', label: 'Conditional Approval', emoji: '📋' },
+    2: { color: '#EF4444', label: 'Not Approved',          emoji: '🚫' },
+  }
+  const d = map[outcome] || map[0]
+
+  return (
+    <Box
+      sx={{
+        minHeight: 500,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: isDark
+          ? 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.08) 100%)'
+          : 'linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%)',
+        p: 4,
+      }}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          p: 5,
+          borderRadius: 3,
+          maxWidth: 460,
+          width: '100%',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 1.5,
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Box sx={{ fontSize: 56, lineHeight: 1 }}>{d.emoji}</Box>
+        <Typography variant="h4" sx={{ fontWeight: 800, color: d.color }}>
+          {d.label}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360, lineHeight: 1.7 }}>
+          Your decision has been recorded. The governance board and project team have been notified.
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', mt: 0.5 }}>
+          {projectName && <Chip label={projectName} size="small" variant="outlined" sx={{ fontWeight: 600 }} />}
+          {gateName && <Chip label={gateName} size="small" variant="outlined" sx={{ fontWeight: 600 }} />}
+        </Box>
+        <Button
+          variant="outlined"
+          onClick={onBack}
+          sx={{ mt: 1, borderRadius: 1.5, fontWeight: 600 }}
+        >
+          ← Back to Review
+        </Button>
+      </Paper>
+    </Box>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  MAIN COMPONENT
+// ══════════════════════════════════════════════════════════════════════
+
 export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
-  open,
-  onClose,
-  gateReviewId,
-  onSuccess,
-  onError,
-  DecisionBox: DecisionBoxProp,
+  open, onClose, gateReviewId, onSuccess, onError,
   approvalStepId,
 }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  // ── Data State ─────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [gateReview, setGateReview] = useState<GateReviewModel | null>(null)
   const [project, setProject] = useState<ProjectModel | null>(null)
-  
-  const [decisionData, setDecisionData] = useState({
-    pm_reviewoutcome: 0,
-    pm_actualreviewdate: new Date().toISOString().split('T')[0],
-    pm_reviewnotes: '',
-    pm_reviewconditions: '',
-  })
+  const [submitted, setSubmitted] = useState(false)
 
+  // ── Form State ─────────────────────────────────────────────────────
+  const [outcome, setOutcome] = useState(2)
+  const [reviewDate, setReviewDate] = useState(new Date().toISOString().split('T')[0])
+  const [boardComments, setBoardComments] = useState('')
+  const [conditions, setConditions] = useState('')
+
+  // ── Load Data ──────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
       const gr = await fetchGateReviewById(gateReviewId)
-      if (!gr) {
-        onError('Gate review not found.')
-        setLoading(false)
-        return
-      }
+      if (!gr) { onError('Gate review not found.'); setLoading(false); return }
       setGateReview(gr)
-      
-      if (!gr._pm_project_value) {
-        setLoading(false)
-        return
+
+      const projectId = gr._pm_project_value ||
+                        (gr as any)._pm_projectlookup_value ||
+                        (gr as any).pm_project ||
+                        gr.pm_projectcode
+
+      if (projectId) {
+        const proj = await fetchProjectDetails(projectId)
+        setProject(proj)
       }
-      
-      const proj = await fetchProjectDetails(gr._pm_project_value)
-      setProject(proj)
-      
-      setDecisionData({
-        pm_reviewoutcome: Number(gr.pm_reviewoutcome ?? 0),
-        pm_actualreviewdate: gr.pm_actualreviewdate || new Date().toISOString().split('T')[0],
-        pm_reviewnotes: '', // Fresh notes for final decision
-        pm_reviewconditions: gr.pm_reviewconditions || '',
-      })
+
+      setOutcome(Number(gr.pm_reviewoutcome ?? 2))
+      setReviewDate(gr.pm_actualreviewdate || new Date().toISOString().split('T')[0])
+      setConditions(gr.pm_reviewconditions || '')
     } catch (err) {
       console.error('Failed to load Board task data', err)
       onError('Failed to load project details for board decision.')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }, [gateReviewId, onError])
 
   useEffect(() => {
-    if (open) loadData()
+    if (open) {
+      loadData()
+      setSubmitted(false)
+      setBoardComments('')
+    }
   }, [open, loadData])
 
-  /**
-   * Save board decision data to the gate review before the workflow decision is submitted.
-   * Updates the gate review status and preserves the board's outcome selection.
-   */
-  const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
-    console.log('[BoardTask] 🎯 saveTaskData called with workflowDecision:', workflowDecision, '| gateReview:', gateReview?.pm_projectgatereviewid)
-    if (!gateReview?.pm_projectgatereviewid) {
-      console.warn('[BoardTask] ❌ gateReview or ID is null — cannot save')
-      return false
+  // ── Build Notes ────────────────────────────────────────────────────
+  const buildDecisionEntry = useCallback(() => {
+    const outcomeLabel = outcome === 0 ? 'APPROVED' : outcome === 1 ? 'CONDITIONAL APPROVAL' : 'NOT APPROVED'
+    let entry = `\n\n--- Final Board Decision ---\nOutcome: ${outcomeLabel}\nDate: ${reviewDate}\nComments:\n${boardComments || 'None provided.'}`
+    if (outcome === 1 && conditions.trim()) {
+      entry += `\nConditions:\n${conditions}`
     }
-    setSaving(true)
-    try {
-      const existingNotes = gateReview.pm_reviewnotes || ''
-      const isApproved = workflowDecision === 0
-      const finalOutcomeText = isApproved ? 'APPROVED' : 'REJECTED'
+    return entry
+  }, [outcome, reviewDate, boardComments, conditions])
 
-      // Determine the gate review status from the workflow decision:
-      // - Workflow Approved (0) → status Complete (0)
-      // - Workflow Rejected (3) → status Scheduled (1) — can be re-assessed later
-      // The outcome comes from the board's dropdown selection (Approved/Conditional/NotApproved).
-      const resolvedStatus = isApproved ? 0 : 1 // 0=Complete, 1=Scheduled
-      
-      const outcomeLabels: Record<number, string> = { 0: 'Approved', 1: 'Conditional Approval', 2: 'Not Approved' }
-      const outcomeLabel = outcomeLabels[decisionData.pm_reviewoutcome] ?? 'Not Approved'
-      
-      const newEntry = `\n\n--- Final Board Decision ---\nWorkflow: ${finalOutcomeText} (${outcomeLabel})\nDate: ${decisionData.pm_actualreviewdate}\nComments:\n${decisionData.pm_reviewnotes || 'None provided.'}`
-
-      console.log('[BoardTask] 🚀 Calling updateGateReview:', {
-        id: gateReview.pm_projectgatereviewid,
-        payload: {
-          pm_reviewoutcome: decisionData.pm_reviewoutcome,
-          pm_reviewstatus: resolvedStatus,
-          pm_actualreviewdate: decisionData.pm_actualreviewdate,
-        }
-      })
-
-      await updateGateReview(gateReview.pm_projectgatereviewid, {
-        ...decisionData, // preserves pm_reviewoutcome from the board's dropdown
-        pm_reviewstatus: resolvedStatus,
-        pm_reviewnotes: existingNotes + newEntry,
-      } as any)
-
-      console.log('[BoardTask] ✅ updateGateReview succeeded')
-      onSuccess(`Final Decision recorded. Outcome: ${outcomeLabel}`)
-      return true
-    } catch (err) {
-      console.error('[BoardTask] ❌ Decision record error:', err)
-      onError('Unable to record board decision.')
-      return false
-    } finally {
-      setSaving(false)
-    }
-  }, [gateReview, decisionData, onSuccess, onError])
-
-  /** Legacy decision handler for direct usage (not via FormDialog/workflow). */
-  const handleLegacyRecordDecision = useCallback(async () => {
+  // ── Handle Submit ──────────────────────────────────────────────────
+  const handleSubmit = useCallback(async () => {
     if (!gateReview?.pm_projectgatereviewid) return
+
     setSaving(true)
     try {
       const existingNotes = gateReview.pm_reviewnotes || ''
-      const outcomeLabel = decisionData.pm_reviewoutcome === 0 ? 'APPROVED' : decisionData.pm_reviewoutcome === 1 ? 'CONDITIONAL APPROVAL' : 'NOT APPROVED'
-      
-      const newEntry = `\n\n--- Final Board Decision ---\nOutcome: ${outcomeLabel}\nDate: ${decisionData.pm_actualreviewdate}\nComments:\n${decisionData.pm_reviewnotes || 'None provided.'}`
+      const newEntry = buildDecisionEntry()
 
       await updateGateReview(gateReview.pm_projectgatereviewid, {
-        ...decisionData,
-        pm_reviewstatus: 0, // Mark Complete
+        pm_reviewoutcome: outcome,
+        pm_reviewstatus: outcome === 4 ? 1 : 0,
+        pm_actualreviewdate: reviewDate,
         pm_reviewnotes: existingNotes + newEntry,
+        pm_reviewconditions: outcome === 1 ? conditions : '',
       } as any)
 
-      onSuccess(`Final Decision recorded. Outcome: ${outcomeLabel}`)
-      onClose()
+      // If this is a workflow step, also submit the workflow decision
+      if (approvalStepId) {
+        const workflowDecision = outcome === 0 || outcome === 1 ? 0 : 3
+        const notes = buildDecisionEntry()
+        const workflowSuccess = await submitWorkflowDecision(approvalStepId, workflowDecision, notes)
+        if (!workflowSuccess) {
+          onError('Decision saved to gate review but workflow submission failed.')
+          setSaving(false)
+          return
+        }
+
+        const outcomeLabel = outcome === 0 ? 'Approved' : outcome === 1 ? 'Conditional Approval' : 'Not Approved'
+        onSuccess(`Final Decision recorded. Outcome: ${outcomeLabel}`)
+        onClose()
+      } else {
+        // Standalone mode: notify parent to refresh data
+        const outcomeLabel = outcome === 0 ? 'Approved' : outcome === 1 ? 'Conditional Approval' : 'Not Approved'
+        onSuccess(`Final Decision recorded. Outcome: ${outcomeLabel}`)
+        onClose()
+      }
     } catch (err) {
       console.error('Decision record error:', err)
       onError('Unable to record board decision.')
-    } finally {
-      setSaving(false)
-    }
-  }, [gateReview, decisionData, onSuccess, onClose, onError])
+    } finally { setSaving(false) }
+  }, [gateReview, outcome, reviewDate, boardComments, conditions, buildDecisionEntry, approvalStepId, onSuccess, onError, onClose])
 
   if (!open) return null
 
+  const ragColor = String(project?.pm_ragstatus) === '1' ? 'success'
+    : String(project?.pm_ragstatus) === '0' ? 'warning' : 'error'
+  const ragLabel = String(project?.pm_ragstatus) === '1' ? 'On Track'
+    : String(project?.pm_ragstatus) === '0' ? 'At Risk' : 'Critical'
+
+  const previousNotes = gateReview?.pm_reviewnotes || ''
+
   return (
-    <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'success.dark', color: 'success.contrastText', py: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <GavelIcon />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>Governance Board Decision</Typography>
-        </Box>
-        <Chip label="Pending Final Decision" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-      </DialogTitle>
-      
-      <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
-        {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
-        ) : (
-          <Grid container sx={{ height: '100%' }}>
-            {/* Left Panel: Project Context & Previous Notes */}
-            <Grid size={{ xs: 12, md: 5 }} sx={{ borderRight: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', p: 3 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1 }}>Project Context</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{project?.pm_projectname || 'Loading...'}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Target: <strong>{gateReview?.pm_gatename}</strong></Typography>
-              
-              <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Overall Health</Typography>
-                  <StatusTag label={String(project?.pm_ragstatus) === '1' ? 'On Track' : String(project?.pm_ragstatus) === '0' ? 'At Risk' : 'Critical'} color={String(project?.pm_ragstatus) === '1' ? 'success' : String(project?.pm_ragstatus) === '0' ? 'warning' : 'error'} />
+    <Dialog
+      open={open}
+      onClose={() => !saving && onClose()}
+      maxWidth="lg"
+      fullWidth
+      slotProps={{
+        paper: { sx: { borderRadius: 2, overflow: 'hidden', maxHeight: '90vh', minHeight: 500 } },
+      }}
+    >
+      {submitted ? (
+        <>
+          {/* Submitted state header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+               <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: outcome === 4 ? '#EF4444' : outcome === 1 ? '#F59E0B' : '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                <GavelIcon sx={{ fontSize: 18 }} />
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Governance Board Decision</Typography>
+            </Box>
+            <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+          </Box>
+          <SuccessScreen
+            outcome={outcome}
+            projectName={project?.pm_projectname}
+            gateName={gateReview?.pm_gatename}
+            onBack={() => { setSubmitted(false); setBoardComments('') }}
+          />
+        </>
+      ) : (
+        <>
+          {/* ── Header ────────────────────────────────────────────── */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: 'success.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'success.contrastText' }}>
+                <GavelIcon sx={{ fontSize: 18 }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Governance Board Decision</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                  {gateReview?.pm_gatename || project?.pm_projectcode ? `${project?.pm_projectcode} · ${gateReview?.pm_gatename || ''}` : 'Gate Review'}
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip label="Pending Final Decision" color="warning" size="small" sx={{ fontWeight: 700, borderRadius: 1 }} />
+              <IconButton size="small" onClick={onClose} disabled={saving}><CloseIcon fontSize="small" /></IconButton>
+            </Box>
+          </Box>
+
+          <DialogContent sx={{ p: 0, bgcolor: 'background.default', display: 'flex' }}>
+            {loading ? (
+              <Box sx={{ flex: 1, p: 6, textAlign: 'center' }}>
+                <CircularProgress size={36} sx={{ mb: 2 }} />
+                <Typography variant="body2" color="text.secondary">Loading board decision data...</Typography>
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, width: '100%' }}>
+                {/* ─── Left Sidebar ─────────────────────────────────── */}
+                <Box
+                  sx={{
+                    width: { xs: '100%', md: 220 },
+                    flexShrink: 0,
+                    borderRight: { md: '1px solid' },
+                    borderBottom: { xs: '1px solid', md: 'none' },
+                    borderColor: 'divider',
+                    bgcolor: isDark ? 'rgba(21,128,61,0.15)' : '#F0FDF4',
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                  }}
+                >
+                  {/* Brand row */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'success.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                      <GavelIcon sx={{ fontSize: 16 }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: isDark ? '#86EFAC' : '#166534', display: 'block', lineHeight: 1.2 }}>
+                        Governance Board
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem', color: isDark ? '#4ADE80' : '#22C55E' }}>
+                        Final Decision
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Steps navigation (single step since board decision is one action) */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
+                    {[
+                      { id: 'context', label: 'Project Context', icon: '📋', done: true },
+                      { id: 'approvals', label: 'Prior Endorsements', icon: '✅', done: true },
+                      { id: 'decision', label: 'Board Decision', icon: '⚖️', active: true },
+                    ].map((st) => (
+                      <Box
+                        key={st.id}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1.5,
+                          p: 1.25,
+                          borderRadius: 1,
+                          bgcolor: st.active ? (isDark ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.08)') : 'transparent',
+                          borderLeft: '2px solid',
+                          borderLeftColor: st.active ? 'success.main' : 'transparent',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 22, height: 22, borderRadius: '50%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 11, fontWeight: 700, flexShrink: 0,
+                            bgcolor: st.done ? '#22C55E' : (isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB'),
+                            color: st.done ? '#fff' : (isDark ? '#9CA3AF' : '#6B7280'),
+                          }}
+                        >
+                          {st.done ? '✓' : '3'}
+                        </Box>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: st.active ? 700 : 500, fontSize: '0.82rem',
+                            color: st.active ? (isDark ? '#86EFAC' : '#166534') : (isDark ? '#9CA3AF' : '#6B7280'),
+                          }}
+                        >
+                          {st.label}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+
+                  {/* Project mini card at bottom */}
+                  <Box sx={{ mt: 'auto', pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                      Pending Board Decision
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
+                      {project?.pm_projectmanagername || project?.pm_projectname || ''}
+                    </Typography>
+                  </Box>
                 </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Progress</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_percentcomplete || 0}%</Typography>
+
+                {/* ─── Content Area ──────────────────────────────────── */}
+                <Box sx={{ flex: 1, p: 2.5, overflow: 'auto', maxHeight: { md: 'calc(90vh - 140px)' } }}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      ⚖️ Board Decision
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25 }}>
+                      Record Final Decision
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    {/* Project Summary Card */}
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(16,185,129,0.05)' : '#F0FDF4' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+                        <Box>
+                          <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                            {project?.pm_projectname || 'Loading...'}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {project?.pm_projectcode} · {gateReview?.pm_gatename}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Box sx={{ textAlign: 'center' }}>
+                            <StatusTag label={ragLabel} color={ragColor} />
+                          </Box>
+                          <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.6rem' }}>Progress</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700 }}>{project?.pm_percentcomplete || 0}%</Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                          <Typography variant="caption" color="text.secondary">{project?.pm_projectmanagername || '—'}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <BusinessIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                          <Typography variant="caption" color="text.secondary">{project?.pm_portfolioname || '—'}</Typography>
+                        </Box>
+                      </Box>
+                    </Paper>
+
+                    {/* Previous Endorsements */}
+                    <Paper variant="outlined" sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.5, bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(99,102,241,0.08)' : '#EEF2FF', borderBottom: '1px solid', borderColor: 'divider' }}>
+                        <HistoryIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                          Previous Endorsements & Notes
+                        </Typography>
+                      </Box>
+                      <Box sx={{
+                        p: 2, maxHeight: 160, overflowY: 'auto',
+                        whiteSpace: 'pre-wrap', fontSize: '0.8rem',
+                        color: 'text.secondary', fontFamily: 'monospace',
+                        bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.15)' : '#FAFAFA',
+                      }}>
+                        {previousNotes || 'No previous endorsements or notes recorded.'}
+                      </Box>
+                    </Paper>
+
+                    <Divider />
+
+                    {/* Decision Form */}
+                    <Box>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1.5 }}>
+                        Decision Details
+                      </Typography>
+
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {/* Outcome Picker */}
+                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          Board Outcome
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          {OUTCOME_OPTIONS.map((opt) => {
+                            const isSelected = outcome === opt.value
+                            return (
+                              <Box
+                                key={opt.value}
+                                onClick={() => setOutcome(opt.value)}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1.5,
+                                  border: '1.5px solid',
+                                  borderColor: isSelected ? (isDark ? `${opt.color}80` : opt.color) : 'divider',
+                                  borderRadius: 1.5,
+                                  p: 1.5,
+                                  cursor: 'pointer',
+                                  bgcolor: isSelected ? (isDark ? `${opt.color}15` : `${opt.color}10`) : 'transparent',
+                                  transition: 'all 0.15s ease',
+                                  '&:hover': { borderColor: opt.color, bgcolor: (t) => t.palette.mode === 'dark' ? `${opt.color}10` : `${opt.color}08` },
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name="board-outcome"
+                                  checked={isSelected}
+                                  onChange={() => setOutcome(opt.value)}
+                                  style={{ accentColor: opt.color, margin: 0, flexShrink: 0 }}
+                                />
+                                <Box>
+                                  <Typography variant="body2" sx={{ fontWeight: 700, color: opt.color }}>
+                                    {opt.label}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {opt.desc}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            )
+                          })}
+                        </Box>
+
+                        {/* Review Date */}
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                            Actual Review Date
+                          </Typography>
+                          <TextField
+                            type="date"
+                            fullWidth
+                            size="small"
+                            value={reviewDate}
+                            onChange={(e) => setReviewDate(e.target.value)}
+                            slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
+                          />
+                        </Box>
+
+                        {/* Board Comments */}
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                            Final Board Comments <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            multiline
+                            rows={4}
+                            value={boardComments}
+                            onChange={(e) => setBoardComments(e.target.value)}
+                            slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+                            placeholder="Summarize the board's rationale for this decision..."
+                          />
+                        </Box>
+
+                        {/* Conditions (conditional only) */}
+                        {outcome === 1 && (
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: 'warning.main' }}>
+                              <FlagIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-top' }} />
+                              Mandatory Conditions for Progression
+                            </Typography>
+                            <TextField
+                              fullWidth
+                              multiline
+                              rows={3}
+                              value={conditions}
+                              onChange={(e) => setConditions(e.target.value)}
+                              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+                              placeholder="What specific conditions must the PM meet before the next phase?"
+                              sx={{ '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: 'warning.main' } } }}
+                            />
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
                 </Box>
               </Box>
+            )}
+          </DialogContent>
 
-              <Divider sx={{ mb: 2 }} />
-              
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                <FactCheckIcon fontSize="small"/> Previous Endorsements & Notes
-              </Typography>
-              
-              <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50', maxHeight: 250, overflowY: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.8rem', color: 'text.secondary', fontFamily: 'monospace' }}>
-                {gateReview?.pm_reviewnotes || 'No previous endorsements or notes recorded.'}
-              </Paper>
-            </Grid>
-
-            {/* Right Panel: Final Decision Form */}
-            <Grid size={{ xs: 12, md: 7 }} sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Record Final Decision</Typography>
-              
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                As the governance authority, your decision will dictate whether this project progresses to the next lifecycle stage.
-              </Typography>
-
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 6 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Outcome</InputLabel>
-                    <Select
-                      value={decisionData.pm_reviewoutcome}
-                      label="Outcome"
-                      onChange={(e) => setDecisionData(f => ({ ...f, pm_reviewoutcome: Number(e.target.value) }))}
-                      sx={{ borderRadius: 1.5 }}
-                    >
-                      <MenuItem value={0}>Approved</MenuItem>
-                      <MenuItem value={1}>Conditional Approval</MenuItem>
-                      <MenuItem value={2}>Not Approved / Return</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid size={{ xs: 6 }}>
-                  <TextField
-                    label="Actual Review Date"
-                    type="date"
-                    fullWidth
-                    size="small"
-                    value={decisionData.pm_actualreviewdate}
-                    onChange={(e) => setDecisionData(f => ({ ...f, pm_actualreviewdate: e.target.value }))}
-                    slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
-                  />
-                </Grid>
-                
-                <Grid size={{ xs: 12 }}>
-                  <TextField
-                    label="Final Board Comments"
-                    multiline
-                    rows={4}
-                    fullWidth
-                    size="small"
-                    value={decisionData.pm_reviewnotes}
-                    onChange={(e) => setDecisionData(f => ({ ...f, pm_reviewnotes: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                    placeholder="Summarize the board's rationale..."
-                  />
-                </Grid>
-
-                {decisionData.pm_reviewoutcome === 1 && (
-                  <Grid size={{ xs: 12 }}>
-                    <TextField
-                      label="Mandatory Conditions for Progression"
-                      multiline
-                      rows={3}
-                      fullWidth
-                      size="small"
-                      value={decisionData.pm_reviewconditions}
-                      onChange={(e) => setDecisionData(f => ({ ...f, pm_reviewconditions: e.target.value }))}
-                      slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                      placeholder="What specific conditions must the PM meet before the next phase?"
-                      sx={{ '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: 'warning.main' } } }}
-                    />
-                  </Grid>
-                )}
-              </Grid>
-            </Grid>
-          </Grid>
-        )}
-      </DialogContent>
-      
-      <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', flexDirection: 'column', alignItems: 'stretch', gap: 2 }}>
-        {DecisionBoxProp && approvalStepId ? (
-          <>
-            <Button onClick={onClose} disabled={saving} sx={{ alignSelf: 'flex-start' }}>Cancel</Button>
-            <DecisionBoxProp
-              approvalStepId={approvalStepId}
-              onBeforeDecision={saveTaskData}
-              onDecisionComplete={() => onClose()}
-              onDecisionError={(msg) => onError(msg)}
-              disabled={loading}
-            />
-          </>
-        ) : (
-          <>
-            <Button onClick={onClose} disabled={saving} sx={{ mr: 'auto' }}>Cancel</Button>
-            <Button 
-              variant="contained" 
-              color="success" 
-              disabled={loading || saving}
-              onClick={handleLegacyRecordDecision}
-              sx={{ fontWeight: 600 }}
+          {/* ─── Bottom Bar ──────────────────────────────────────────── */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2.5, py: 1.5, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={onClose}
+              disabled={saving}
+              sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 13 }}
             >
-              {saving ? 'Processing...' : 'Submit Final Decision'}
+              Cancel
             </Button>
-          </>
-        )}
-      </DialogActions>
+
+            <Button
+              variant="contained"
+              size="medium"
+              disabled={!boardComments.trim() || saving}
+              onClick={handleSubmit}
+              sx={{
+                borderRadius: 1.5,
+                fontWeight: 700,
+                px: 3,
+                py: 1,
+                bgcolor: outcome === 4 ? '#EF4444' : outcome === 1 ? '#F59E0B' : '#10B981',
+                '&:hover': {
+                  bgcolor: outcome === 4 ? '#DC2626' : outcome === 1 ? '#D97706' : '#059669',
+                },
+              }}
+            >
+              {saving ? 'Submitting...' : `Submit Board Decision →`}
+            </Button>
+          </Box>
+        </>
+      )}
     </Dialog>
   )
 }
+
+export default BoardDecisionTaskModal

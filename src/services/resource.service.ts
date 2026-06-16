@@ -63,7 +63,8 @@ export async function fetchResourceById(resourceId: string): Promise<ResourceMod
 export async function createResource(payload: Partial<ResourceModel>): Promise<ResourceModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_systemuser_value') {
       cleanPayload[key] = value
     }
   }
@@ -71,16 +72,41 @@ export async function createResource(payload: Partial<ResourceModel>): Promise<R
     statecode: 0,
     statuscode: 1,
   }
+  if (payload._pm_systemuser_value) {
+    const systemUserId = normalizeLookupId(payload._pm_systemuser_value)
+    if (systemUserId) {
+      cleanPayload['pm_SystemUser@odata.bind'] = `/systemusers(${systemUserId})`
+    }
+  }
   const result = await Pm_resourcesService.create({ ...defaults, ...cleanPayload } as any)
   try { console.debug('[dataverseService] createResource payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_resources>(result)
+  if (!item) {
+    console.error('[dataverseService] createResource: unwrapSingle returned null, raw result:', JSON.stringify(result).slice(0, 1000))
+  }
   return item ? mapResource(item) : null
 }
 
 export async function updateResource(id: string, changes: Partial<ResourceModel>): Promise<ResourceModel | null> {
-  const result = await Pm_resourcesService.update(id, changes as any)
-  try { console.debug('[dataverseService] updateResource id/changes/result:', id, changes, result) } catch (e) {}
+  const cleanChanges: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null &&
+        key !== '_pm_systemuser_value') {
+      cleanChanges[key] = value
+    }
+  }
+  if (changes._pm_systemuser_value) {
+    const systemUserId = normalizeLookupId(changes._pm_systemuser_value)
+    if (systemUserId) {
+      cleanChanges['pm_SystemUser@odata.bind'] = `/systemusers(${systemUserId})`
+    }
+  }
+  const result = await Pm_resourcesService.update(id, cleanChanges as any)
+  try { console.debug('[dataverseService] updateResource id/changes/result:', id, cleanChanges, result) } catch (e) {}
   const item = unwrapSingle<Pm_resources>(result)
+  if (!item) {
+    console.error('[dataverseService] updateResource: unwrapSingle returned null, raw result:', JSON.stringify(result).slice(0, 1000))
+  }
   return item ? mapResource(item) : null
 }
 
