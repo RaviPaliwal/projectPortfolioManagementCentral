@@ -6,7 +6,7 @@ import ProgrammesPage from '@/features/programmes/pages/ProgrammesPage'
 import ProjectsPage from '@/features/projects/pages/ProjectsPage'
 import PipelinePage from '@/features/pipeline/pages/PipelinePage'
 import ResourcesPage from '@/features/resources/pages/ResourcesPage'
-import TimesheetsPage from '@/features/timesheets/pages/TimesheetsPage'
+import TeamMemberTimesheetPage from '@/features/timesheets/pages/TeamMemberTimesheetPage'
 import BudgetsPage from '@/features/budgets/pages/BudgetsPage'
 import GateReviewsPage from '@/features/gatereviews/pages/GateReviewsPage'
 import BenefitsPage from '@/features/benefits/pages/BenefitsPage'
@@ -23,7 +23,6 @@ import HolidaysPage from '@/features/holidays/pages/HolidaysPage'
 import StatusSnapshotsPage from '@/features/statussnapshots/pages/StatusSnapshotsPage'
 import TeamUserManagementPage from '@/features/teamadmin/pages/TeamUserManagementPage'
 import ConfigurationsPage from '@/features/configurations/pages/ConfigurationsPage'
-
 export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, ReactNode> => ({
   dashboard: <DashboardPage />,
   cashflow: <CashflowPage />,
@@ -32,7 +31,7 @@ export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, Re
   projects: <ProjectsPage />,
   pipeline: <PipelinePage />,
   resources: <ResourcesPage />,
-  timesheets: <TimesheetsPage />,
+  timesheets: <TeamMemberTimesheetPage />,
   budgets: <BudgetsPage />,
   gatereviews: <GateReviewsPage />,
   benefits: <BenefitsPage />,

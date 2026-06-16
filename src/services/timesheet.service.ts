@@ -26,7 +26,6 @@ export const mapTimesheet = (item: Pm_timesheets): TimesheetModel => ({
   pm_approvaldate: item.pm_approvaldate,
   pm_approvedby: item.pm_approvedby,
   pm_rejectionreason: item.pm_rejectionreason,
-  pm_reportingperiod: item.pm_reportingperiod,
   pm_resourcename: item.pm_resourcename,
   _pm_resource_value: item._pm_resource_value,
 })
@@ -47,27 +46,26 @@ export const mapTimesheetEntry = (item: Pm_timesheetentries): TimesheetEntryMode
   _pm_projecttask_value: item._pm_projecttask_value,
 })
 
-export async function fetchTimesheets(): Promise<TimesheetModel[]> {
+export async function fetchTimesheets(resourceId?: string): Promise<TimesheetModel[]> {
   const selectFields = [
     'pm_timesheetid', 'pm_timesheetname',
     'pm_periodstartdate', 'pm_periodenddate', 'pm_timesheetstatus',
     'pm_totalhours', 'pm_totalchargeablehours', 'pm_totalnonchargeablehours',
     'pm_submissiondate', 'pm_approvaldate',
-    'pm_rejectionreason', 'pm_reportingperiod', '_pm_resource_value',
+    'pm_rejectionreason', '_pm_resource_value',
   ]
   const options = {
     select: selectFields,
     orderBy: ['pm_periodenddate desc', 'pm_timesheetname asc'],
     top: 500      
   }
-  const result = await Pm_timesheetsService.getAll({ ...options, filter: "statecode eq 0" })
+  const filters = ["statecode eq 0"]
+  if (resourceId) {
+    filters.push(`_pm_resource_value eq '${normalizeLookupId(resourceId)}'`)
+  }
+  const result = await Pm_timesheetsService.getAll({ ...options, filter: filters.join(" and ") })
   try { console.debug('[dataverseService] fetchTimesheets result:', result) } catch (e) {}
   let list = unwrapList<Pm_timesheets>(result).map(mapTimesheet)
-  if (list.length === 0) {
-    try { console.warn('[dataverseService] fetchTimesheets: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
-    const fallbackResult = await Pm_timesheetsService.getAll(options)
-    list = unwrapList<Pm_timesheets>(fallbackResult).map(mapTimesheet)
-  }
  
   try {
     const resourceIds = Array.from(new Set(list.map((ts) => normalizeLookupId(ts._pm_resource_value)).filter(Boolean))) as string[]
@@ -113,7 +111,7 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
       'pm_totalhours', 'pm_totalchargeablehours', 'pm_totalnonchargeablehours',
       'pm_submissiondate', 'pm_submittedby',
       'pm_approvaldate', 'pm_approvedby',
-      'pm_rejectionreason', 'pm_reportingperiod', '_pm_resource_value',
+      'pm_rejectionreason', '_pm_resource_value',
     ]
     const result = await Pm_timesheetsService.get(timesheetId, { select: selectFields })
     const item = unwrapSingle<Pm_timesheets>(result)
@@ -253,6 +251,15 @@ export async function createTimesheetEntry(payload: Partial<TimesheetEntryModel>
   try { console.debug('[dataverseService] createTimesheetEntry payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_timesheetentries>(result)
   return item ? mapTimesheetEntry(item) : null
+}
+
+export async function fetchResourceTimesheets(resourceId: string): Promise<TimesheetModel[]> {
+  return fetchTimesheets(resourceId)
+}
+
+export async function updateTimesheetEntry(entryId: string, payload: Partial<TimesheetEntryModel>): Promise<TimesheetEntryModel | null> {
+  const result = await Pm_timesheetentriesService.update(entryId, payload)
+  return unwrapSingle<Pm_timesheetentries>(result) ? mapTimesheetEntry(unwrapSingle<Pm_timesheetentries>(result)!) : null
 }
 
 export async function checkTimesheetOverlap(
