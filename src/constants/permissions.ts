@@ -1,6 +1,6 @@
 import type { TabKey } from '@/components/layout/PrimaryShell'
 
-export type Persona = 
+export type Persona =
   | 'SystemAdministrator'
   | 'PortfolioExecutive'
   | 'PMO'
@@ -11,32 +11,32 @@ export type Persona =
 
 export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
   SystemAdministrator: [
-    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 'resources', 
-    'timesheets', 'budgets', 'gatereviews', 'benefits', 'schedule', 'risks', 
-    'issues', 'changerequests', 'cashflow', 'tasks', 'fundingsources', 
-    'statussnapshots', 'configurations', 'workflows', 'teamadmin', 'skills', 'holidays'
+    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 'resources',
+    'timesheets', 'budgets', 'gatereviews', 'benefits', 'risks',
+    'issues', 'changerequests', 'cashflow', 'tasks', 'fundingsources',
+    'statussnapshots', 'configurations', 'workflows', 'teamadmin', 'skills', 'holidays', 'calendar'
   ],
   PortfolioExecutive: [
-    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 
-    'gatereviews', 'benefits', 'changerequests', 'statussnapshots'
+    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline',
+    'gatereviews', 'benefits', 'changerequests', 'statussnapshots', 'calendar'
   ],
   PMO: [
-    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 
-    'gatereviews', 'changerequests', 'tasks', 'statussnapshots', 
-    'workflows', 'teamadmin'
+    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline',
+    'gatereviews', 'changerequests', 'tasks', 'statussnapshots',
+    'workflows', 'teamadmin', 'calendar'
   ],
   ProjectManager: [
-    'dashboard', 'projects', 'resources', 'timesheets', 'gatereviews', 
-    'schedule', 'risks', 'issues', 'changerequests', 'tasks', 'statussnapshots'
+    'dashboard', 'projects', 'resources', 'timesheets', 'gatereviews',
+    'risks', 'issues', 'changerequests', 'tasks', 'statussnapshots', 'calendar'
   ],
   FinancialController: [
-    'dashboard', 'projects', 'budgets', 'cashflow', 'fundingsources'
+    'dashboard', 'projects', 'budgets', 'cashflow', 'fundingsources', 'calendar'
   ],
   Planner: [
-    'dashboard', 'projects', 'schedule', 'tasks'
+    'dashboard', 'projects', 'tasks', 'calendar'
   ],
   TeamMember: [
-    'dashboard', 'timesheets', 'tasks', 'risks', 'issues'
+    'timesheets', 'tasks', 'risks', 'issues', 'calendar'
   ]
 }
 
@@ -53,19 +53,23 @@ export function getPersonaFromUser(
   const roles = userRoleNames.filter(Boolean).map(r => String(r).toLowerCase())
 
   const matches = (keywords: string[]) => {
-    return keywords.some(keyword => 
-      title.includes(keyword) || 
-      name.includes(keyword) || 
-      teams.some(t => t.includes(keyword)) || 
-      roles.some(r => r.includes(keyword))
-    )
+    return keywords.some(keyword => {
+      const escaped = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+      const regex = new RegExp(`\\b${escaped}\\b`, 'i')
+      return (
+        regex.test(title) ||
+        regex.test(name) ||
+        teams.some(t => regex.test(t)) ||
+        roles.some(r => regex.test(r))
+      )
+    })
   }
 
   // 1. System Administrator
   if (matches(['admin', 'platform owner', 'sysadmin', 'administrator'])) {
     return 'SystemAdministrator'
   }
-  
+
   // 2. PMO / Governance Lead
   if (matches(['pmo', 'governance', 'compliance', 'audit'])) {
     return 'PMO'
@@ -76,14 +80,14 @@ export function getPersonaFromUser(
     return 'PortfolioExecutive'
   }
 
-  // 4. Project / Programme Manager
-  if (matches(['project manager', 'programme manager', 'delivery', 'pm', 'lead'])) {
-    return 'ProjectManager'
-  }
-
-  // 5. Financial / Commercial Controller
+  // 4. Financial / Commercial Controller
   if (matches(['financial', 'commercial', 'controller', 'finance', 'accountant', 'budget'])) {
     return 'FinancialController'
+  }
+
+  // 5. Project / Programme Manager
+  if (matches(['project manager', 'programme manager', 'delivery', 'pm', 'lead'])) {
+    return 'ProjectManager'
   }
 
   // 6. Planner / Scheduler

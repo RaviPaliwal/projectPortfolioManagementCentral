@@ -52,6 +52,25 @@
         "workflowDisplayName": "workflowRoutingHandler",
         "workflowName": "777210e4-e557-9ec7-a462-1077b6c2650f"
       }
+    },
+    "979042e1-9a63-4d18-acc4-e61cc3535a6b": {
+      "id": "/providers/microsoft.powerapps/apis/shared_office365",
+      "displayName": "Office 365 Outlook"
+    },
+    "4a285e93-548e-43aa-9305-b9ae26429493": {
+      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+      "displayName": "Logic flows",
+      "dataSources": [
+        "getoutlookevents"
+      ],
+      "workflowDetails": {
+        "workflowEntityId": "05074f5e-6969-f111-ab0d-6045bd56f0ba",
+        "workflowDisplayName": "Get Outlook Events",
+        "workflowName": "fb305957-ea11-5a81-87a7-8b1d750bb147",
+        "dependencies": {
+          "shared_office365": "979042e1-9a63-4d18-acc4-e61cc3535a6b"
+        }
+      }
     }
   },
   "databaseReferences": {
@@ -79,8 +98,7 @@
         },
         "projecttask": {
           "entitySetName": "pm_projecttasks",
-          "logicalName": "pm_projecttask",
-          "isHidden": false
+          "logicalName": "pm_projecttask"
         },
         "projectmilestone": {
           "entitySetName": "pm_projectmilestones",

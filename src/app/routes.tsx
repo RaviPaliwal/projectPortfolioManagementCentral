@@ -23,6 +23,7 @@ import HolidaysPage from '@/features/holidays/pages/HolidaysPage'
 import StatusSnapshotsPage from '@/features/statussnapshots/pages/StatusSnapshotsPage'
 import TeamUserManagementPage from '@/features/teamadmin/pages/TeamUserManagementPage'
 import ConfigurationsPage from '@/features/configurations/pages/ConfigurationsPage'
+import CalendarPage from '@/features/calendar/pages/CalendarPage'
 
 export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, ReactNode> => ({
   dashboard: <DashboardPage />,
@@ -47,4 +48,5 @@ export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, Re
   holidays: <HolidaysPage />,
   statussnapshots: <StatusSnapshotsPage />,
   configurations: <ConfigurationsPage onNavigate={onNavigate} />,
+  calendar: <CalendarPage />,
 })
