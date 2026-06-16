@@ -43,7 +43,7 @@ import { useEffect } from 'react'
 import NotificationCenter from './NotificationCenter'
 import { PERSONA_PERMISSIONS } from '@/constants/permissions'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'calendar'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?: boolean }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -52,6 +52,7 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?:
   { key: 'projects', label: 'Projects', icon: <TaskIcon /> },
   { key: 'pipeline', label: 'Pipeline', icon: <TimelineIcon /> },
   { key: 'resources', label: 'Resources', icon: <PeopleIcon /> },
+  { key: 'calendar', label: 'Calendar', icon: <CalendarMonthIcon /> },
   { key: 'timesheets', label: 'Timesheets', icon: <AccessTimeIcon /> },
   { key: 'budgets', label: 'Budgets', icon: <AccountBalanceWalletIcon /> },
   { key: 'gatereviews', label: 'Gate Reviews', icon: <FactCheckIcon /> },
