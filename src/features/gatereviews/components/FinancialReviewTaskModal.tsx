@@ -428,11 +428,11 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                   </Box>
                 </Box>
 
-                {/* ΓöÇΓöÇΓöÇ Content Area ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+                {/* Content Area */}
                 <Box sx={{ flex: 1, p: 2.5, overflow: 'auto', maxHeight: { md: 'calc(90vh - 140px)' } }}>
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      ≡ƒÆ░ Financial Review
+                      Financial Review
                     </Typography>
                     <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25 }}>
                       Financial Assessment

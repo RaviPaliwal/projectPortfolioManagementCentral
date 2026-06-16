@@ -136,6 +136,7 @@ export interface InitiativeModel {
   pm_portfolioname?: string
   pm_initiativetype?: number | string
   _pm_portfolio_value?: string
+  pm_decisiondate?: string
 }
 
 export interface ProjectTaskModel {
