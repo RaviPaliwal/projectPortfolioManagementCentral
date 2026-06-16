@@ -87,6 +87,8 @@ export interface IssueModel {
   pm_linkedrisk?: string
   _pm_project_value?: string
   _pm_programmefk_value?: string
+  _pm_risk_value?: string
+  _pm_issueowner_value?: string
   statecode?: number
 }
 

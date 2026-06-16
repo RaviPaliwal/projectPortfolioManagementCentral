@@ -157,7 +157,7 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
     }),
     Pm_issuesService.getAll({
       filter: `_pm_programmefk_value eq '${normalizedId}'`,
-      select: ['pm_issueid', 'pm_issuetitle', 'pm_issuedescription', 'pm_issuecategory', 'pm_ragstatus', 'pm_issueowner', 'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel', 'pm_dateraised', 'pm_targetresolutiondate'],
+      select: ['pm_issueid', 'pm_issuetitle', 'pm_issuedescription', 'pm_issuecategory', 'pm_ragstatus', 'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel', 'pm_dateraised', 'pm_targetresolutiondate'],
       top: 200,
     }),
   ])
@@ -184,7 +184,7 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
     pm_issuedescription: item.pm_issuedescription,
     pm_issuecategory: item.pm_issuecategory,
     pm_ragstatus: item.pm_ragstatus,
-    pm_issueowner: item.pm_issueowner,
+    pm_issueowner: item.pm_issueownername ?? (typeof item.pm_issueowner === 'string' ? item.pm_issueowner : undefined),
     pm_issuestatus: item.pm_issuestatus,
     pm_escalationstatus: item.pm_escalationstatus,
     pm_prioritylevel: item.pm_prioritylevel,

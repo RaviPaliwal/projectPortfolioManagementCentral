@@ -53,7 +53,7 @@ export interface Pm_issuesBase {
   pm_issuecategory?: Pm_issuespm_issuecategory;
   pm_issuedescription?: string;
   pm_issueid: string;
-  pm_issueowner?: string;
+  "pm_issueOwner@odata.bind"?: string;
   pm_issuereference?: string;
   pm_issuestatus?: Pm_issuespm_issuestatus;
   pm_issuetitle?: string;
@@ -90,6 +90,7 @@ export interface Pm_issues extends Pm_issuesBase {
   pm_escalationstatusname?: string;
   pm_impactlevelname?: string;
   pm_issuecategoryname?: string;
+  pm_issueownername?: string;
   pm_issuestatusname?: string;
   pm_prioritylevelname?: string;
   pm_programmefkname?: string;
@@ -113,6 +114,8 @@ export interface Pm_issues extends Pm_issuesBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
+  pm_issueowner?: object;
+  _pm_issueowner_value?: string;
   pm_programmefk?: object;
   _pm_programmefk_value?: string;
   pm_project?: object;

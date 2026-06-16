@@ -9,6 +9,13 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
+  TablePagination,
+  TextField,
+  MenuItem,
+  useTheme,
+  IconButton,
+  Tooltip,
 } from '@mui/material'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import BugReportIcon from '@mui/icons-material/BugReport'
@@ -32,9 +39,12 @@ import {
   ExportButton,
   Button,
   TableShell,
+  TableFooter,
+  SearchFilterBar,
   ConfirmDialog,
   TabPanel,
 } from '@/components/common'
+import type { FilterOption } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 
 import {
@@ -43,10 +53,17 @@ import {
   updateIssueFull,
   deleteIssue,
   normalizeLookupId,
+  fetchProjectsForSystemUser,
+  fetchAllRisks,
+  fetchResources,
 } from '@/services'
+import { Pm_programmesService } from '@/generated'
 import type { IssueModel } from '@/types/dataverse'
+import { unwrapList } from '@/services/common'
 import { formatDate } from '@/utils/formatters'
+import { useUser } from '@/context/UserContext'
 import { IssueDialog } from '../components'
+import type { ProjectOption, ProgrammeOption, RiskOption, ResourceOption } from '../components/IssueDialogs'
 
 // Constants
 const ISSUE_CATEGORY_LABELS: Record<string, string> = {
@@ -86,13 +103,41 @@ const RAG_COLORS: Record<string, 'error' | 'warning' | 'success' | 'default'> = 
   '1': 'success',
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  '0': 'Open',
+  '1': 'In Progress',
+  '2': 'Resolved',
+  '3': 'Closed',
+}
+
+const PRIORITY_ORDER: Record<string, number> = {
+  '1': 0, // Critical
+  '0': 1, // High
+  '2': 2, // Medium
+  '3': 3, // Low
+}
+
+interface SortState {
+  field: string
+  direction: 'asc' | 'desc'
+}
+
 export default function IssuesPage() {
+  const { currentUser } = useUser()
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [issues, setIssues] = useState<IssueModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  // Project / programme / risk state for the dialog
+  const [myProjects, setMyProjects] = useState<ProjectOption[]>([])
+  const [programmes, setProgrammes] = useState<ProgrammeOption[]>([])
+  const [projectsLoading, setProjectsLoading] = useState(false)
+  const [allRisks, setAllRisks] = useState<RiskOption[]>([])
+  const [resources, setResources] = useState<ResourceOption[]>([])
+  const [resourcesLoading, setResourcesLoading] = useState(false)
 
   // Drawer
   const [selectedIssue, setSelectedIssue] = useState<IssueModel | null>(null)
@@ -104,10 +149,35 @@ export default function IssuesPage() {
   const [editingIssue, setEditingIssue] = useState<IssueModel | null>(null)
   const [saving, setSaving] = useState(false)
 
+  const currentUserName = currentUser?.fullname || ''
+
+  // Resolve display names from lookup fields
+  const projectNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    myProjects.forEach(p => { map[p.id.toLowerCase()] = p.name })
+    return map
+  }, [myProjects])
+
+  const resourceNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    resources.forEach(r => { map[r.id.toLowerCase()] = r.name })
+    return map
+  }, [resources])
+
+  // Grid state: search, filters, sort, pagination
+  const [searchQuery, setSearchQuery] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [ragFilter, setRagFilter] = useState('')
+  const [priorityFilter, setPriorityFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [sort, setSort] = useState<SortState>({ field: 'pm_dateraised', direction: 'desc' })
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(25)
+
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState<IssueModel | null>(null)
 
-  // Load issues
+  // ── Load issues ───────────────────────────────────────────────────────────
   const loadIssues = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -122,9 +192,83 @@ export default function IssuesPage() {
     }
   }, [])
 
+  // ── Load projects, programmes, risks for the dialog ───────────────────────
+  const loadUserProjects = useCallback(async () => {
+    if (!currentUser?.systemuserid) return
+    setProjectsLoading(true)
+    try {
+      const rawProjects = await fetchProjectsForSystemUser(currentUser.systemuserid)
+
+      const progResult = await Pm_programmesService.getAll({
+        select: ['pm_programmeid', 'pm_programmename'],
+        filter: 'statecode eq 0',
+        top: 500,
+      })
+      const progList = unwrapList<any>(progResult)
+      const programmeMap = new Map<string, string>()
+      const programmeOptions: ProgrammeOption[] = []
+      for (const p of progList) {
+        if (p.pm_programmeid && p.pm_programmename) {
+          programmeMap.set(p.pm_programmeid, p.pm_programmename)
+          programmeOptions.push({ id: p.pm_programmeid, name: p.pm_programmename })
+        }
+      }
+      setProgrammes(programmeOptions)
+
+      const options: ProjectOption[] = rawProjects.map(p => ({
+        id: p.pm_projectid,
+        name: p.pm_projectname || 'Untitled Project',
+        code: p.pm_projectcode || undefined,
+        programmeId: p._pm_programme_value ? p._pm_programme_value : undefined,
+        programmeName: p._pm_programme_value ? programmeMap.get(p._pm_programme_value) : undefined,
+      }))
+      setMyProjects(options)
+    } catch (err) {
+      console.error('[IssuesPage] loadUserProjects error:', err)
+    } finally {
+      setProjectsLoading(false)
+    }
+  }, [currentUser?.systemuserid])
+
+  // ── Load risks for the linked risk picker ──────────────────────────────────
+  const loadRisks = useCallback(async () => {
+    try {
+      const fetched = await fetchAllRisks()
+      const riskOpts: RiskOption[] = (fetched || [])
+        .filter(r => r.pm_riskid && r.pm_risktitle)
+        .map(r => ({
+          id: r.pm_riskid!,
+          title: r.pm_risktitle!,
+          projectId: r._pm_project_value,
+        }))
+      setAllRisks(riskOpts)
+    } catch (err) {
+      console.error('[IssuesPage] loadRisks error:', err)
+    }
+  }, [])
+
+  // ── Load resources for the owner lookup ─────────────────────────────────
+  const loadResources = useCallback(async () => {
+    setResourcesLoading(true)
+    try {
+      const fetched = await fetchResources()
+      const options: ResourceOption[] = (fetched || [])
+        .filter(r => r.pm_resourceid && r.pm_fullname)
+        .map(r => ({ id: r.pm_resourceid!, name: r.pm_fullname! }))
+      setResources(options)
+    } catch (err) {
+      console.error('[IssuesPage] loadResources error:', err)
+    } finally {
+      setResourcesLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     loadIssues()
-  }, [loadIssues])
+    loadUserProjects()
+    loadRisks()
+    loadResources()
+  }, [loadIssues, loadUserProjects, loadRisks, loadResources])
 
   // Cross-linking
   useEffect(() => {
@@ -141,7 +285,7 @@ export default function IssuesPage() {
     }
   }, [loading, issues])
 
-  // Handlers
+  // ── Handlers ───────────────────────────────────────────────────────────────
   const openCreate = () => {
     setEditingIssue(null)
     setDialogOpen(true)
@@ -154,25 +298,35 @@ export default function IssuesPage() {
 
   const handleSave = async (data: Record<string, any>) => {
     if (!data.pm_issuetitle?.trim()) return
+    console.log('[IssuesPage] handleSave called | mode:', editingIssue?.pm_issueid ? 'UPDATE' : 'CREATE', 'issueId:', editingIssue?.pm_issueid)
+    console.log('[IssuesPage] handleSave raw data:', JSON.stringify(data, null, 2))
     setSaving(true)
     setError(null)
     try {
       if (editingIssue?.pm_issueid) {
+        console.log('[IssuesPage] calling updateIssueFull with id:', editingIssue.pm_issueid)
         const updated = await updateIssueFull(editingIssue.pm_issueid, data)
+        console.log('[IssuesPage] updateIssueFull result:', updated)
         if (updated) {
           setIssues(prev => prev.map(i => i.pm_issueid === updated.pm_issueid ? updated : i))
           setSuccessMsg('Issue updated.')
+        } else {
+          console.warn('[IssuesPage] updateIssueFull returned null - no update applied')
         }
       } else {
+        console.log('[IssuesPage] calling createIssueFull')
         const created = await createIssueFull(data)
+        console.log('[IssuesPage] createIssueFull result:', created)
         if (created) {
           setIssues(prev => [...prev, created])
           setSuccessMsg('Issue created.')
+        } else {
+          console.warn('[IssuesPage] createIssueFull returned null - no record created')
         }
       }
-      setDialogOpen(false)
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch (err) {
+      console.error('[IssuesPage] handleSave error:', err)
       setError('Unable to save issue.')
     } finally {
       setSaving(false)
@@ -199,6 +353,136 @@ export default function IssuesPage() {
       setSaving(false)
     }
   }
+
+  // ── Filtered / Sorted / Paginated Issues ────────────────────────────────
+  const filteredIssues = useMemo(() => {
+    let list = [...issues]
+
+    // Search filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      list = list.filter(i =>
+        (i.pm_issuetitle ?? '').toLowerCase().includes(q) ||
+        (i.pm_issuedescription ?? '').toLowerCase().includes(q) ||
+        (i.pm_issuereference ?? '').toLowerCase().includes(q) ||
+        (i.pm_issueowner ?? '').toLowerCase().includes(q)
+      )
+    }
+
+    // Category filter
+    if (categoryFilter) {
+      list = list.filter(i => String(i.pm_issuecategory ?? '') === categoryFilter)
+    }
+
+    // RAG filter
+    if (ragFilter) {
+      list = list.filter(i => String(i.pm_ragstatus ?? '') === ragFilter)
+    }
+
+    // Priority filter
+    if (priorityFilter) {
+      list = list.filter(i => String(i.pm_prioritylevel ?? '') === priorityFilter)
+    }
+
+    // Status filter
+    if (statusFilter) {
+      list = list.filter(i => String(i.pm_issuestatus ?? '') === statusFilter)
+    }
+
+    // Sort
+    list.sort((a, b) => {
+      const dir = sort.direction === 'asc' ? 1 : -1
+      let cmp = 0
+      const field = sort.field
+
+      if (field === 'pm_issuetitle') {
+        cmp = (a.pm_issuetitle ?? '').localeCompare(b.pm_issuetitle ?? '')
+      } else if (field === 'pm_issuecategory') {
+        cmp = (ISSUE_CATEGORY_LABELS[String(a.pm_issuecategory ?? '')] ?? '').localeCompare(
+          ISSUE_CATEGORY_LABELS[String(b.pm_issuecategory ?? '')] ?? ''
+        )
+      } else if (field === 'pm_ragstatus') {
+        cmp = String(a.pm_ragstatus ?? '').localeCompare(String(b.pm_ragstatus ?? ''))
+      } else if (field === 'pm_prioritylevel') {
+        cmp = (PRIORITY_ORDER[String(a.pm_prioritylevel ?? '')] ?? 99) -
+              (PRIORITY_ORDER[String(b.pm_prioritylevel ?? '')] ?? 99)
+      } else if (field === 'pm_dateraised') {
+        cmp = (a.pm_dateraised ?? '').localeCompare(b.pm_dateraised ?? '')
+      } else if (field === 'pm_targetresolutiondate') {
+        cmp = (a.pm_targetresolutiondate ?? '').localeCompare(b.pm_targetresolutiondate ?? '')
+      } else if (field === 'pm_issuereference') {
+        cmp = (a.pm_issuereference ?? '').localeCompare(b.pm_issuereference ?? '')
+      }
+      return cmp * dir
+    })
+
+    return list
+  }, [issues, searchQuery, categoryFilter, ragFilter, priorityFilter, statusFilter, sort])
+
+  const paginatedIssues = useMemo(
+    () => filteredIssues.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [filteredIssues, page, rowsPerPage]
+  )
+
+  const hasActiveFilters = searchQuery || categoryFilter || ragFilter || priorityFilter || statusFilter
+
+  const handleSearchChange = useCallback((value: string) => { setSearchQuery(value); setPage(0) }, [])
+  const handleCategoryFilterChange = useCallback((value: string) => { setCategoryFilter(value); setPage(0) }, [])
+  const handleRagFilterChange = useCallback((value: string) => { setRagFilter(value); setPage(0) }, [])
+  const handlePriorityFilterChange = useCallback((value: string) => { setPriorityFilter(value); setPage(0) }, [])
+  const handleStatusFilterChange = useCallback((value: string) => { setStatusFilter(value); setPage(0) }, [])
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery('')
+    setCategoryFilter('')
+    setRagFilter('')
+    setPriorityFilter('')
+    setStatusFilter('')
+    setPage(0)
+  }, [])
+  const handleSort = useCallback((field: string) => {
+    setSort(prev => prev.field === field
+      ? { field, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+      : { field, direction: 'asc' }
+    )
+  }, [])
+  const handleChangePage = useCallback((_e: unknown, newPage: number) => setPage(newPage), [])
+  const handleChangeRowsPerPage = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(e.target.value, 10))
+    setPage(0)
+  }, [])
+
+  const SortHeader = ({ field, label }: { field: string; label: string }) => (
+    <TableSortLabel
+      active={sort.field === field}
+      direction={sort.field === field ? sort.direction : 'asc'}
+      onClick={() => handleSort(field)}
+      sx={{ fontWeight: 700, color: 'inherit', '&.Mui-active': { color: 'inherit' } }}
+    >
+      {label}
+    </TableSortLabel>
+  )
+
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  const filterOptions = useMemo((): { categoryOptions: FilterOption[]; ragOptions: FilterOption[]; priorityOptions: FilterOption[]; statusOptions: FilterOption[] } => ({
+    categoryOptions: [
+      { value: '', label: 'All Categories' },
+      ...Object.entries(ISSUE_CATEGORY_LABELS).map(([k, v]) => ({ value: k, label: v })),
+    ],
+    ragOptions: [
+      { value: '', label: 'All RAG' },
+      ...Object.entries(RAG_LABELS).map(([k, v]) => ({ value: k, label: v })),
+    ],
+    priorityOptions: [
+      { value: '', label: 'All Priorities' },
+      ...Object.entries(PRIORITY_LABELS).map(([k, v]) => ({ value: k, label: v })),
+    ],
+    statusOptions: [
+      { value: '', label: 'All Statuses' },
+      ...Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v })),
+    ],
+  }), [])
 
   // KPIs
   const kpiItems = useMemo(() => {
@@ -243,35 +527,110 @@ export default function IssuesPage() {
 
       <KpiCardRow items={kpiItems} loading={loading} />
 
-      <Box sx={{ height: 600, width: '100%', mt: 3 }}>
+      <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+        <SearchFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          searchPlaceholder="Search by title, description, reference..."
+          filterValue={categoryFilter}
+          onFilterChange={handleCategoryFilterChange}
+          filterLabel="Category"
+          filterOptions={filterOptions.categoryOptions}
+          secondaryFilterValue={ragFilter}
+          onSecondaryFilterChange={handleRagFilterChange}
+          secondaryFilterLabel="RAG"
+          secondaryFilterOptions={filterOptions.ragOptions}
+          extraFilters={
+            <>
+              <TextField
+                select
+                size="small"
+                label="Priority"
+                value={priorityFilter}
+                onChange={e => handlePriorityFilterChange(e.target.value)}
+                sx={{ minWidth: 150 }}
+                slotProps={{ select: { displayEmpty: true } }}
+              >
+                {filterOptions.priorityOptions.map(opt => (
+                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                size="small"
+                label="Status"
+                value={statusFilter}
+                onChange={e => handleStatusFilterChange(e.target.value)}
+                sx={{ minWidth: 150 }}
+                slotProps={{ select: { displayEmpty: true } }}
+              >
+                {filterOptions.statusOptions.map(opt => (
+                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                ))}
+              </TextField>
+            </>
+          }
+          onClear={hasActiveFilters ? handleClearFilters : undefined}
+        />
+
         <TableShell
           loading={loading}
-          empty={issues.length === 0}
+          empty={filteredIssues.length === 0}
           emptyIcon={<BugReportIcon />}
-          emptyTitle="No issues found."
-          emptyMessage="Create your first issue to start tracking project issues."
+          emptyTitle={hasActiveFilters ? 'No issues match your filters.' : 'No issues found.'}
+          emptyMessage={hasActiveFilters ? 'Try adjusting your search or filter criteria.' : 'Create your first issue to start tracking project issues.'}
         >
-          <Table stickyHeader size="small" sx={{ minWidth: 1100 }}>
+          <Table stickyHeader size="small" sx={{ minWidth: 1200 }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, px: 2.5, py: 1.5 }}>ID</TableCell>
-                <TableCell sx={{ fontWeight: 700, px: 2.5, py: 1.5 }}>Issue Title</TableCell>
-                <TableCell sx={{ fontWeight: 700, px: 2.5, py: 1.5 }}>Project</TableCell>
-                <TableCell sx={{ fontWeight: 700, px: 2.5, py: 1.5 }}>Category</TableCell>
-                <TableCell sx={{ fontWeight: 700, px: 2.5, py: 1.5 }}>RAG</TableCell>
-                <TableCell sx={{ fontWeight: 700, px: 2.5, py: 1.5 }}>Priority</TableCell>
-                <TableCell sx={{ fontWeight: 700, px: 2.5, py: 1.5 }}>Owner</TableCell>
-                <TableCell sx={{ fontWeight: 700, px: 2.5, py: 1.5 }}>Target Date</TableCell>
-                <TableCell sx={{ fontWeight: 700, px: 2.5, py: 1.5 }} align="right">Actions</TableCell>
+                {[
+                  { field: 'pm_issuereference', label: 'ID' },
+                  { field: 'pm_issuetitle', label: 'Issue Title' },
+                  { field: '', label: 'Project' },
+                  { field: 'pm_issuecategory', label: 'Category' },
+                  { field: 'pm_ragstatus', label: 'RAG' },
+                  { field: 'pm_prioritylevel', label: 'Priority' },
+                  { field: '', label: 'Owner' },
+                  { field: 'pm_targetresolutiondate', label: 'Target Date' },
+                ].map(col => (
+                  <TableCell
+                    key={col.field || col.label}
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: isDark ? 'background.paper' : 'background.default',
+                      borderBottom: `2px solid ${theme.palette.divider}`,
+                      px: 2.5,
+                      py: 1.5,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {col.field ? (
+                      <SortHeader field={col.field} label={col.label} />
+                    ) : (
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        {col.label}
+                      </Typography>
+                    )}
+                  </TableCell>
+                ))}
+                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Actions</Typography>
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {issues.map((issue) => (
+              {paginatedIssues.map((issue, idx) => (
                 <TableRow
                   key={issue.pm_issueid}
                   hover
                   onClick={() => { setSelectedIssue(issue); setDrawerOpen(true); setDrawerTab(0) }}
-                  sx={{ cursor: 'pointer', '& td': { px: 2.5, py: 1.25 } }}
+                  sx={{
+                    cursor: 'pointer',
+                    bgcolor: idx % 2 === 1 ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)') : 'transparent',
+                    '& td': { py: 1.25, px: 2.5 },
+                    '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                    transition: 'background-color 0.15s ease',
+                  }}
                 >
                   <TableCell>
                     <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.8rem' }} color="text.secondary">
@@ -285,7 +644,7 @@ export default function IssuesPage() {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
-                      {issue._pm_project_value ? 'Project Link' : '—'}
+                      {projectNameMap[(issue._pm_project_value || '').toLowerCase()] || '—'}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -310,7 +669,7 @@ export default function IssuesPage() {
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">{issue.pm_issueowner || '—'}</Typography>
+                    <Typography variant="body2">{resourceNameMap[(issue._pm_issueowner_value || '').toLowerCase()] || issue.pm_issueowner || '—'}</Typography>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.8rem' }} color="text.secondary">
@@ -319,8 +678,24 @@ export default function IssuesPage() {
                   </TableCell>
                   <TableCell align="right">
                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                      <ActionIcon icon={<EditIcon />} onClick={() => openEdit(issue)} label="Edit" />
-                      <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(issue)} label="Delete" color="error" />
+                      <Tooltip title="Edit Issue">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => { e.stopPropagation(); openEdit(issue) }}
+                          sx={{ color: 'primary.main' }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete Issue">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget(issue) }}
+                          sx={{ color: 'error.main' }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -328,7 +703,26 @@ export default function IssuesPage() {
             </TableBody>
           </Table>
         </TableShell>
-      </Box>
+
+        {!loading && filteredIssues.length > 0 && (
+          <TableFooter
+            filteredCount={filteredIssues.length}
+            totalCount={issues.length}
+            itemLabel="issue"
+          />
+        )}
+        {!loading && filteredIssues.length > 0 && (
+          <TablePagination
+            component="div"
+            count={filteredIssues.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[25, 50, 100]}
+          />
+        )}
+      </Paper>
 
       {/* Drawer */}
       <DetailDrawer
@@ -388,6 +782,13 @@ export default function IssuesPage() {
         onClose={() => setDialogOpen(false)}
         initialData={editingIssue}
         onSave={handleSave}
+        projects={myProjects}
+        programmes={programmes}
+        projectsLoading={projectsLoading}
+        risks={allRisks}
+        resources={resources}
+        resourcesLoading={resourcesLoading}
+        currentUserName={currentUserName}
       />
 
       {/* Delete Confirmation */}

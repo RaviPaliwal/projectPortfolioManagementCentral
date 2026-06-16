@@ -143,6 +143,53 @@ export async function fetchAllocatedProjectsForResource(resourceId: string): Pro
   }
 }
 
+/**
+ * Fetch all active projects that a system user is allocated to.
+ * 1. Finds the resource record linked to the system user
+ * 2. Gets all allocations for that resource
+ * 3. Returns the full project records (including programme FK for auto-population)
+ */
+export async function fetchProjectsForSystemUser(systemUserId: string): Promise<Pm_projects[]> {
+  try {
+    // Step 1: Find the resource linked to this system user
+    const resourcesResult = await Pm_resourcesService.getAll({
+      filter: `_pm_systemuser_value eq '${systemUserId}' and statecode eq 0`,
+      select: ['pm_resourceid', 'pm_fullname'],
+      top: 1,
+    })
+    const resources = unwrapList<Pm_resources>(resourcesResult)
+    if (resources.length === 0) return []
+    const resourceId = resources[0].pm_resourceid
+
+    // Step 2: Get allocations for this resource
+    const allocResult = await Pm_resourceallocationsService.getAll({
+      filter: `_pm_resource_value eq '${resourceId}' and statecode eq 0`,
+      select: ['_pm_project_value', 'pm_resourceallocationid'],
+      top: 200,
+    })
+    const allocations = unwrapList<Pm_resourceallocations>(allocResult)
+    const projectIds = Array.from(new Set(
+      allocations.map((a) => normalizeLookupId(a._pm_project_value)).filter(Boolean) as string[]
+    ))
+    if (projectIds.length === 0) return []
+
+    // Step 3: Fetch the actual project records
+    const projectResult = await Pm_projectsService.getAll({
+      filter: projectIds.map((id) => `pm_projectid eq '${id}'`).join(' or '),
+      select: [
+        'pm_projectid', 'pm_projectname', 'pm_projectcode',
+        '_pm_programme_value', '_pm_portfolio_value',
+        'pm_ragstatus', 'pm_projectphase',
+      ],
+      top: 200,
+    })
+    return unwrapList<Pm_projects>(projectResult)
+  } catch (err) {
+    console.error('[resourceService] fetchProjectsForSystemUser failed:', err)
+    return []
+  }
+}
+
 export async function assignResource(payload: {
   pm_projectid: string
   pm_resourceid: string

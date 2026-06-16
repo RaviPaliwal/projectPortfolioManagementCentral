@@ -23,7 +23,6 @@ import CloseIcon from '@mui/icons-material/Close'
 import AttachFileIcon from '@mui/icons-material/AttachFile'
 import BugReportIcon from '@mui/icons-material/BugReport'
 import { fontSizes } from '@/styles'
-import type { IssueModel } from '@/types/dataverse'
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -59,11 +58,6 @@ const RAG_OPTIONS = [
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-export interface ResourceOption {
-  id: string
-  name: string
-}
-
 export interface ProjectOption {
   id: string
   name: string
@@ -78,6 +72,26 @@ export interface ProgrammeOption {
   name: string
 }
 
+export interface IssueFormData {
+  pm_issuetitle: string
+  pm_issuecategory: string
+  pm_issuedescription: string
+  pm_prioritylevel: string
+  pm_impactlevel: string
+  pm_ragstatus: string
+  pm_issueowner: string
+  pm_dateraised: string
+  pm_targetresolutiondate: string
+  pm_issuereference: string
+  pm_linkedrisk: string
+  pm_escalationstatus: boolean
+  pm_resolutiondetails: string
+  _pm_project_value: string
+  _pm_programmefk_value: string
+  _pm_risk_value: string
+  _pm_issueowner_value: string
+}
+
 export interface RiskOption {
   id: string
   title: string
@@ -86,11 +100,15 @@ export interface RiskOption {
 
 // ─── Props ─────────────────────────────────────────────────────────────────
 
-interface IssueDialogProps {
+export interface ResourceOption {
+  id: string
+  name: string
+}
+
+interface LogIssueDialogProps {
   open: boolean
   onClose: () => void
-  onSave: (data: Record<string, any>) => Promise<void>
-  initialData?: IssueModel | null
+  onSubmit: (data: IssueFormData) => Promise<void>
   projects: ProjectOption[]
   programmes: ProgrammeOption[]
   projectsLoading: boolean
@@ -102,11 +120,10 @@ interface IssueDialogProps {
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
-export const IssueDialog: React.FC<IssueDialogProps> = ({
+export const LogIssueDialog = ({
   open,
   onClose,
-  onSave,
-  initialData,
+  onSubmit,
   projects,
   programmes,
   projectsLoading,
@@ -114,9 +131,7 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
   resources,
   resourcesLoading,
   currentUserName,
-}) => {
-  const isEdit = !!initialData
-
+}: LogIssueDialogProps) => {
   // ── Form State ──────────────────────────────────────────────────────────
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('')
@@ -127,12 +142,10 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
   const [owner, setOwner] = useState('')
   const [raisedDate, setRaisedDate] = useState('')
   const [targetDate, setTargetDate] = useState('')
-  const [actualDate, setActualDate] = useState('')
   const [reference, setReference] = useState('')
   const [linkedRisk, setLinkedRisk] = useState('')
   const [escalated, setEscalated] = useState(false)
   const [resolution, setResolution] = useState('')
-  const [status, setStatus] = useState('0')
 
   // Pickers
   const [selectedProject, setSelectedProject] = useState<ProjectOption | null>(null)
@@ -148,49 +161,9 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // ── Init / Reset ────────────────────────────────────────────────────────
+  // ── Initialize form ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!open) return
-
-    if (isEdit && initialData) {
-      // Pre-populate from existing issue
-      setTitle(initialData.pm_issuetitle || '')
-      setCategory(String(initialData.pm_issuecategory ?? ''))
-      setDescription(initialData.pm_issuedescription || '')
-      setPriority(String(initialData.pm_prioritylevel ?? '2'))
-      setImpact(String(initialData.pm_impactlevel ?? '2'))
-      setRag(String(initialData.pm_ragstatus ?? '1'))
-      setOwner(initialData.pm_issueowner || '')
-      setRaisedDate(initialData.pm_dateraised?.split('T')[0] || '')
-      setTargetDate(initialData.pm_targetresolutiondate?.split('T')[0] || '')
-      setActualDate(initialData.pm_actualresolutiondate?.split('T')[0] || '')
-      setReference(initialData.pm_issuereference || '')
-      setLinkedRisk(initialData.pm_linkedrisk || '')
-      setEscalated(!!initialData.pm_escalationstatus)
-      setResolution(initialData.pm_resolutiondetails || '')
-      setStatus(String(initialData.pm_issuestatus ?? '0'))
-
-      // Pre-select project, risk, and owner from lookups
-      if (initialData._pm_project_value) {
-        const proj = projects.find(p => p.id === initialData._pm_project_value) || null
-        setSelectedProject(proj)
-      } else {
-        setSelectedProject(null)
-      }
-      if (initialData._pm_risk_value) {
-        const risk = risks.find(r => r.id === initialData._pm_risk_value) || null
-        setSelectedRisk(risk)
-      } else {
-        setSelectedRisk(null)
-      }
-      if (initialData._pm_issueowner_value) {
-        const res = resources.find(r => r.id === initialData._pm_issueowner_value) || null
-        setSelectedOwner(res)
-      } else {
-        setSelectedOwner(null)
-      }
-    } else {
-      // Fresh create form
+    if (open) {
       const today = new Date().toISOString().split('T')[0]
       setTitle('')
       setCategory('')
@@ -200,23 +173,33 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
       setRag('1')
       setOwner('')
       setRaisedDate(today)
+      setSelectedOwner(null)
       setTargetDate('')
-      setActualDate('')
       setReference('')
       setLinkedRisk('')
       setEscalated(false)
       setResolution('')
-      setStatus('0')
       setSelectedProject(null)
+      setSelectedProgramme(null)
       setSelectedRisk(null)
-      setSelectedOwner(null)
+      setAttachments([])
+      setError(null)
+      setErrors({})
+      setIsSubmitting(false)
     }
-    setSelectedProgramme(null)
-    setAttachments([])
-    setError(null)
-    setErrors({})
-    setIsSubmitting(false)
-  }, [open, isEdit, initialData, projects, risks, resources, currentUserName])
+  }, [open, currentUserName])
+
+  // ── Filter risks linked to selected project ────────────────────────────
+  const filteredRisks = useMemo(() => {
+    if (!selectedProject) return []
+    return risks.filter(r => r.projectId === selectedProject.id)
+  }, [risks, selectedProject])
+
+  // ── Reset selected risk when project changes ────────────────────────────
+  useEffect(() => {
+    setSelectedRisk(null)
+    setLinkedRisk('')
+  }, [selectedProject])
 
   // ── Auto-populate programme when project changes ────────────────────────
   useEffect(() => {
@@ -228,21 +211,36 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
     }
   }, [selectedProject, programmes])
 
-  // ── Filter risks linked to selected project ─────────────────────────────
-  const filteredRisks = useMemo(() => {
-    if (!selectedProject) return []
-    return risks.filter(r => r.projectId === selectedProject.id)
-  }, [risks, selectedProject])
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  const resetForm = () => {
+    setTitle('')
+    setCategory('')
+    setDescription('')
+    setPriority('2')
+    setImpact('2')
+    setRag('1')
+    setSelectedOwner(null)
+    setOwner('')
+    setRaisedDate('')
+    setTargetDate('')
+    setReference('')
+    setLinkedRisk('')
+    setEscalated(false)
+    setResolution('')
+    setSelectedProject(null)
+    setSelectedProgramme(null)
+    setSelectedRisk(null)
+    setAttachments([])
+    setError(null)
+    setErrors({})
+    setIsSubmitting(false)
+  }
 
-  // ── Reset selected risk when project changes ────────────────────────────
-  useEffect(() => {
-    if (!isEdit) {
-      setSelectedRisk(null)
-      setLinkedRisk('')
-    }
-  }, [selectedProject, isEdit])
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
 
-  // ── Validation ─────────────────────────────────────────────────────────
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {}
     if (!title.trim()) newErrors.title = 'Issue title is required'
@@ -253,7 +251,6 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
     return Object.keys(newErrors).length === 0
   }
 
-  // ── Submit ─────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!validate()) return
     setIsSubmitting(true)
@@ -262,7 +259,7 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
       // Normalize dates to yyyy-MM-dd (strip ISO timestamps)
       const fmt = (d: string) => d ? d.split('T')[0] : ''
 
-      const payload: Record<string, any> = {
+      await onSubmit({
         pm_issuetitle: title.trim(),
         pm_issuecategory: category,
         pm_issuedescription: description.trim(),
@@ -276,25 +273,17 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
         pm_linkedrisk: linkedRisk,
         pm_escalationstatus: escalated,
         pm_resolutiondetails: resolution,
-        pm_issuestatus: status,
         _pm_project_value: selectedProject?.id || '',
         _pm_programmefk_value: selectedProgramme?.id || '',
         _pm_risk_value: selectedRisk?.id || '',
         _pm_issueowner_value: selectedOwner?.id || '',
-      }
-      if (actualDate) payload.pm_actualresolutiondate = fmt(actualDate)
-      console.log('[IssueDialog] handleSubmit payload:', JSON.stringify(payload, null, 2))
-      await onSave(payload)
-      onClose()
+      })
+      handleClose()
     } catch (err) {
-      setError('Failed to save issue. Please try again.')
+      setError('Failed to submit issue. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const clearError = (field: string) => {
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -307,10 +296,14 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
     setAttachments(prev => prev.filter((_, i) => i !== index))
   }
 
+  const clearError = (field: string) => {
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
+  }
+
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       maxWidth="md"
       fullWidth
       slotProps={{
@@ -324,14 +317,14 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
           <BugReportIcon sx={{ color: '#0ea5e9', fontSize: 22 }} />
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-              {isEdit ? 'Edit Issue' : 'Log New Issue'}
+              Log New Issue
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {isEdit ? 'Update issue details below' : 'Report a problem or issue — all fields marked * are required'}
+              Report a problem or issue — all fields marked * are required
             </Typography>
           </Box>
         </Box>
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={handleClose} size="small">
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -357,8 +350,8 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
             />
           </Grid>
 
-          {/* Category & Status (edit only) */}
-          <Grid size={{ xs: 12, sm: isEdit ? 4 : 6 }}>
+          {/* Category & Priority */}
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               select
               fullWidth
@@ -374,23 +367,7 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
               ))}
             </TextField>
           </Grid>
-          {isEdit && (
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                select
-                fullWidth
-                label="Status"
-                value={status}
-                onChange={e => setStatus(e.target.value)}
-              >
-                <MenuItem value="0">Open</MenuItem>
-                <MenuItem value="1">In Progress</MenuItem>
-                <MenuItem value="2">Resolved</MenuItem>
-                <MenuItem value="3">Closed</MenuItem>
-              </TextField>
-            </Grid>
-          )}
-          <Grid size={{ xs: 12, sm: isEdit ? 4 : 6 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               select
               fullWidth
@@ -530,7 +507,7 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
           </Grid>
 
           {/* Dates */}
-          <Grid size={{ xs: 12, sm: 4 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               type="date"
@@ -540,7 +517,7 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
               slotProps={{ inputLabel: { shrink: true } }}
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               type="date"
@@ -548,17 +525,6 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
               value={targetDate}
               onChange={e => setTargetDate(e.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField
-              fullWidth
-              type="date"
-              label="Actual Resolution Date"
-              value={actualDate}
-              onChange={e => setActualDate(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
-              helperText="Set when issue is resolved"
             />
           </Grid>
 
@@ -679,7 +645,7 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
 
       <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
         <Button
-          onClick={onClose}
+          onClick={handleClose}
           variant="outlined"
           disabled={isSubmitting}
           sx={{ borderRadius: 1.5 }}
@@ -693,11 +659,11 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
           startIcon={isSubmitting ? undefined : <BugReportIcon />}
           sx={{ borderRadius: 1.5, fontWeight: 700 }}
         >
-          {isSubmitting ? 'Saving...' : isEdit ? 'Update Issue' : 'Submit Issue'}
+          {isSubmitting ? 'Submitting...' : 'Submit Issue'}
         </Button>
       </DialogActions>
     </Dialog>
   )
 }
 
-export default IssueDialog
+export default LogIssueDialog

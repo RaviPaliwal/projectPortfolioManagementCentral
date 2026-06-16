@@ -348,11 +348,19 @@
         },
         "pm_issueowner": {
           "type": "string",
-          "title": "Issue Owner",
+          "title": "issueOwner",
           "x-ms-dataverse-attribute": "pm_issueowner",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_issueOwner"
+        },
+        "pm_issueownername": {
+          "type": "string",
+          "title": "pm_issueownername",
+          "x-ms-dataverse-attribute": "pm_issueownername",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_issueowner",
-          "maxLength": 100
+          "x-ms-schema-name": "pm_issueOwnerName",
+          "x-ms-read-only": true,
+          "maxLength": 850
         },
         "pm_issuereference": {
           "type": "string",

@@ -165,6 +165,11 @@ export const MODULE_NAMES = {
     tabKey: 'holidays' as const,
     entityName: 'pm_holiday',
   },
+  WORKSPACE: {
+    value: 'Workspace',
+    label: 'My Workspace',
+    tabKey: 'workspace' as const,
+  },
   CONFIGURATIONS: {
     value: 'Configurations',
     label: 'Configurations',

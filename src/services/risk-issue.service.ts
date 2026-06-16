@@ -48,7 +48,7 @@ export const mapIssue = (item: Pm_issues): IssueModel => ({
   pm_issuedescription: item.pm_issuedescription,
   pm_issuecategory: item.pm_issuecategory,
   pm_ragstatus: item.pm_ragstatus,
-  pm_issueowner: item.pm_issueowner,
+  pm_issueowner: item.pm_issueownername ?? (typeof item.pm_issueowner === 'string' ? item.pm_issueowner : undefined),
   pm_issuestatus: item.pm_issuestatus,
   pm_escalationstatus: item.pm_escalationstatus,
   pm_prioritylevel: item.pm_prioritylevel,
@@ -61,6 +61,8 @@ export const mapIssue = (item: Pm_issues): IssueModel => ({
   pm_linkedrisk: item.pm_linkedrisk,
   _pm_project_value: item._pm_project_value,
   _pm_programmefk_value: item._pm_programmefk_value,
+  _pm_risk_value: item._pm_risk_value,
+  _pm_issueowner_value: item._pm_issueowner_value,
   statecode: item.statecode,
 })
 
@@ -133,7 +135,7 @@ export async function createIssue(payload: Partial<IssueModel> & { pm_projectid:
     pm_issuecategory: item.pm_issuecategory,
     pm_prioritylevel: item.pm_prioritylevel,
     pm_ragstatus: item.pm_ragstatus,
-    pm_issueowner: item.pm_issueowner,
+    pm_issueowner: item.pm_issueownername ?? (typeof item.pm_issueowner === 'string' ? item.pm_issueowner : undefined),
     pm_issuestatus: item.pm_issuestatus,
     pm_dateraised: item.pm_dateraised,
     pm_targetresolutiondate: item.pm_targetresolutiondate,
@@ -242,16 +244,63 @@ export async function deleteRisk(id: string): Promise<void> {
   await Pm_risksService.delete(id)
 }
 
+/**
+ * Fetch issues where the issue owner (resource lookup) matches the resource
+ * linked to the given system user ID.
+ * Chain: systemuser → pm_resources._pm_systemuser_value → pm_issues._pm_issueowner_value
+ */
+export async function fetchIssuesForSystemUser(systemUserId: string): Promise<IssueModel[]> {
+  try {
+    // Step 1: Find the resource linked to this system user
+    const { Pm_resourcesService } = await import('@/generated')
+    const resourcesResult = await Pm_resourcesService.getAll({
+      filter: `_pm_systemuser_value eq '${systemUserId}' and statecode eq 0`,
+      select: ['pm_resourceid', 'pm_fullname'],
+      top: 1,
+    })
+    const resources = unwrapList<any>(resourcesResult)
+    if (resources.length === 0) {
+      console.warn('[risk-issue.service] fetchIssuesForSystemUser: no resource found for system user', systemUserId)
+      return []
+    }
+    const resourceId = resources[0].pm_resourceid
+    if (!resourceId) return []
+
+    // Step 2: Fetch issues where _pm_issueowner_value matches this resource
+    const selectFields = [
+      'pm_issueid', 'pm_issuetitle', 'pm_issuedescription',
+      'pm_issuecategory', 'pm_ragstatus',
+      'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel',
+      'pm_impactlevel', 'pm_issuereference',
+      'pm_dateraised', 'pm_targetresolutiondate',
+      'pm_actualresolutiondate', 'pm_resolutiondetails',
+      'pm_linkedrisk', '_pm_project_value', '_pm_programmefk_value',
+      '_pm_issueowner_value',
+    ]
+    const result = await Pm_issuesService.getAll({
+      filter: `_pm_issueowner_value eq '${resourceId}' and statecode eq 0`,
+      select: selectFields,
+      orderBy: ['pm_dateraised desc'],
+      top: 500,
+    })
+    try { console.debug('[dataverseService] fetchIssuesForSystemUser result:', result, 'resourceId:', resourceId) } catch (e) {}
+    return unwrapList<Pm_issues>(result).map(mapIssue)
+  } catch (err) {
+    console.error('[risk-issue.service] fetchIssuesForSystemUser failed:', err)
+    return []
+  }
+}
+
 export async function fetchAllIssues(): Promise<IssueModel[]> {
   const selectFields = [
     'pm_issueid', 'pm_issuetitle', 'pm_issuedescription',
-    'pm_issuecategory', 'pm_ragstatus', 'pm_issueowner',
+    'pm_issuecategory', 'pm_ragstatus',
     'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel',
     'pm_impactlevel', 'pm_issuereference',
     'pm_dateraised', 'pm_targetresolutiondate',
-    'pm_actualresolutiondate', 'pm_resolutiondetails',
-    'pm_linkedrisk', '_pm_project_value', '_pm_programmefk_value',
-  ]
+    'pm_actualresolutiondate', 'pm_resolutiondetails',      'pm_linkedrisk', '_pm_project_value', '_pm_programmefk_value',
+      '_pm_issueowner_value',
+    ]
   const options = {
     select: selectFields,
     orderBy: ['pm_dateraised desc'],
@@ -272,7 +321,7 @@ export async function createIssueFull(payload: Partial<IssueModel>): Promise<Iss
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null && value !== '' &&
-        key !== '_pm_project_value' && key !== '_pm_programmefk_value') {
+        key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner') {
       cleanPayload[key] = value
     }
   }
@@ -292,6 +341,18 @@ export async function createIssueFull(payload: Partial<IssueModel>): Promise<Iss
       cleanPayload['pm_ProgrammeFK@odata.bind'] = `/pm_programmes(${programmeId})`
     }
   }
+  if (payload._pm_issueowner_value) {
+    const resourceId = normalizeLookupId(payload._pm_issueowner_value)
+    if (resourceId) {
+      cleanPayload['pm_issueOwner@odata.bind'] = `/pm_resources(${resourceId})`
+    }
+  }
+  if (payload._pm_risk_value) {
+    const riskId = normalizeLookupId(payload._pm_risk_value)
+    if (riskId) {
+      cleanPayload['pm_risk@odata.bind'] = `/pm_risks(${riskId})`
+    }
+  }
   const result = await Pm_issuesService.create({ ...defaults, ...cleanPayload } as any)
   try { console.debug('[dataverseService] createIssueFull payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_issues>(result)
@@ -302,8 +363,32 @@ export async function updateIssueFull(id: string, changes: Partial<IssueModel>):
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null &&
-        key !== 'pm_issueid' && key !== '_pm_project_value' && key !== '_pm_programmefk_value') {
+        key !== 'pm_issueid' && key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner') {
       cleanPayload[key] = value
+    }
+  }
+  if (changes._pm_project_value) {
+    const projectId = normalizeLookupId(changes._pm_project_value)
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+    }
+  }
+  if (changes._pm_programmefk_value) {
+    const programmeId = normalizeLookupId(changes._pm_programmefk_value)
+    if (programmeId) {
+      cleanPayload['pm_ProgrammeFK@odata.bind'] = `/pm_programmes(${programmeId})`
+    }
+  }
+  if (changes._pm_issueowner_value) {
+    const resourceId = normalizeLookupId(changes._pm_issueowner_value)
+    if (resourceId) {
+      cleanPayload['pm_issueOwner@odata.bind'] = `/pm_resources(${resourceId})`
+    }
+  }
+  if (changes._pm_risk_value) {
+    const riskId = normalizeLookupId(changes._pm_risk_value)
+    if (riskId) {
+      cleanPayload['pm_risk@odata.bind'] = `/pm_risks(${riskId})`
     }
   }
   const result = await Pm_issuesService.update(id, cleanPayload as any)

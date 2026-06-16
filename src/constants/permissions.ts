@@ -11,32 +11,32 @@ export type Persona =
 
 export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
   SystemAdministrator: [
-    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 'resources', 
-    'timesheets', 'budgets', 'gatereviews', 'benefits', 'schedule', 'risks', 
+    'workspace', 'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 'resources', 
+    'timesheets', 'budgets', 'gatereviews', 'benefits', 'risks', 
     'issues', 'changerequests', 'cashflow', 'tasks', 'fundingsources', 
     'statussnapshots', 'configurations', 'workflows', 'teamadmin', 'skills', 'holidays'
   ],
   PortfolioExecutive: [
-    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 
+    'workspace', 'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 
     'gatereviews', 'benefits', 'changerequests', 'statussnapshots'
   ],
   PMO: [
-    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 
+    'workspace', 'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 
     'gatereviews', 'changerequests', 'tasks', 'statussnapshots', 
     'workflows', 'teamadmin'
   ],
   ProjectManager: [
-    'dashboard', 'projects', 'resources', 'timesheets', 'gatereviews', 
-    'schedule', 'risks', 'issues', 'changerequests', 'tasks', 'statussnapshots'
+    'workspace', 'dashboard', 'projects', 'resources', 'timesheets', 'gatereviews', 
+    'risks', 'issues', 'changerequests', 'tasks', 'statussnapshots'
   ],
   FinancialController: [
-    'dashboard', 'projects', 'budgets', 'cashflow', 'fundingsources'
+    'workspace', 'dashboard', 'projects', 'budgets', 'cashflow', 'fundingsources'
   ],
   Planner: [
-    'dashboard', 'projects', 'schedule', 'tasks'
+    'workspace', 'dashboard', 'projects', 'tasks'
   ],
   TeamMember: [
-    'dashboard', 'timesheets', 'tasks', 'risks', 'issues'
+    'dashboard', 'timesheets', 'tasks', 'risks', 'issues', 'workspace'
   ]
 }
 
@@ -77,7 +77,7 @@ export function getPersonaFromUser(
   }
 
   // 4. Project / Programme Manager
-  if (matches(['project manager', 'programme manager', 'delivery', 'pm', 'lead'])) {
+  if (matches(['project manager', 'programme manager', 'delivery manager', 'scrum master'])) {
     return 'ProjectManager'
   }
 
