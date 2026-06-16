@@ -1,40 +1,39 @@
-import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Grid,
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  IconButton,
-  Tooltip,
-  TextField,
-  Paper,
-  Divider,
-  Chip
+  Dialog, DialogContent, Box, Typography,
+  Button, CircularProgress, TextField, Paper, Divider, Chip,
+  IconButton, useTheme,
 } from '@mui/material'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import ErrorIcon from '@mui/icons-material/Error'
-import WarningIcon from '@mui/icons-material/Warning'
+import CloseIcon from '@mui/icons-material/Close'
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
-import EditIcon from '@mui/icons-material/Edit'
-import CloseIcon from '@mui/icons-material/Close'
-import SaveIcon from '@mui/icons-material/Save'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import ErrorIcon from '@mui/icons-material/Error'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import FlagIcon from '@mui/icons-material/Flag'
 import UndoIcon from '@mui/icons-material/Undo'
 
 import { GovernanceReadinessService, fetchProjectDetails, updateGateReview, fetchGateReviewById } from '@/services'
+import { submitWorkflowDecision } from '@/services/workflow.service'
 import type { ProjectReadinessReport } from '@/services/governance-readiness.service'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
-import { StatusTag } from '@/components/common'
-import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
+
+// ── Constants ──────────────────────────────────────────────────────────
+
+const STEPS = [
+  { id: 'context',   label: 'Project Context',    icon: '📋' },
+  { id: 'readiness', label: 'Readiness Checks',   icon: '✅' },
+  { id: 'decision',  label: 'PMO Decision',       icon: '⚖️' },
+]
+
+const CHECK_STATUS_COLORS: Record<string, string> = {
+  passed: '#10B981',
+  failed: '#EF4444',
+  warning: '#F59E0B',
+  waived: '#6366F1',
+}
+
+// ── Props ──────────────────────────────────────────────────────────────
 
 interface PmoReadinessTaskModalProps {
   open: boolean
@@ -42,342 +41,961 @@ interface PmoReadinessTaskModalProps {
   gateReviewId: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
-  /** Generic DecisionBox component passed from FormDialog */
-  DecisionBox?: ComponentType<DecisionBoxProps>
-  /** The workflow approval step ID for submitting the decision */
   approvalStepId?: string
 }
 
+// ══════════════════════════════════════════════════════════════════════
+//  SUCCESS SCREEN
+// ══════════════════════════════════════════════════════════════════════
+
+interface SuccessScreenProps {
+  decision: string
+  projectName?: string
+  gateName?: string
+  onBack: () => void
+}
+
+const SuccessScreen: React.FC<SuccessScreenProps> = ({ decision, projectName, gateName, onBack }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  const map: Record<string, { color: string; label: string; emoji: string }> = {
+    approve:     { color: '#10B981', label: 'Gate Approved',          emoji: '🎉' },
+    conditional: { color: '#6366F1', label: 'Approved with Conditions', emoji: '📋' },
+    defer:       { color: '#F59E0B', label: 'Decision Deferred',       emoji: '⏸️' },
+    reject:      { color: '#EF4444', label: 'Gate Rejected',           emoji: '🚫' },
+  }
+  const d = map[decision] || map.approve
+
+  return (
+    <Box
+      sx={{
+        minHeight: 500,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: isDark
+          ? 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.08) 100%)'
+          : 'linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%)',
+        p: 4,
+      }}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          p: 5,
+          borderRadius: 3,
+          maxWidth: 460,
+          width: '100%',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 1.5,
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Box sx={{ fontSize: 56, lineHeight: 1 }}>{d.emoji}</Box>
+        <Typography variant="h4" sx={{ fontWeight: 800, color: d.color }}>
+          {d.label}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360, lineHeight: 1.7 }}>
+          Your decision has been recorded. The governance board and project team have been notified.
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', mt: 0.5 }}>
+          {projectName && <Chip label={projectName} size="small" variant="outlined" sx={{ fontWeight: 600 }} />}
+          {gateName && <Chip label={gateName} size="small" variant="outlined" sx={{ fontWeight: 600 }} />}
+        </Box>
+        <Button
+          variant="outlined"
+          onClick={onBack}
+          sx={{ mt: 1, borderRadius: 1.5, fontWeight: 600 }}
+        >
+          ← Back to Review
+        </Button>
+      </Paper>
+    </Box>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  STEP 1: PROJECT CONTEXT
+// ══════════════════════════════════════════════════════════════════════
+
+interface StepContextProps {
+  project: ProjectModel | null
+  gateReview: GateReviewModel | null
+}
+
+const StepContext: React.FC<StepContextProps> = ({ project, gateReview }) => {
+  const fields = [
+    ['Project Name',    project?.pm_projectname || '—'],
+    ['Project ID',      project?.pm_projectcode || '—'],
+    ['Gate',            gateReview?.pm_gatename || '—'],
+    ['Project Manager', project?.pm_projectmanagername || 'Unassigned'],
+    ['Sponsor',         project?.pm_projectsponsor || '—'],
+    ['Portfolio',       project?.pm_portfolioname || '—'],
+    ['Budget',          project?.pm_approvedbudgeteur != null ? `€${(project.pm_approvedbudgeteur / 1000000).toFixed(1)}M` : '—'],
+    ['Progress',        `${project?.pm_percentcomplete || 0}%`],
+  ]
+
+  const tags = [
+    project?.pm_projectcode,
+    gateReview?.pm_gatename,
+    project?.pm_portfolioname,
+    project?.pm_businessunit,
+  ].filter(Boolean)
+
+  const progress = project?.pm_percentcomplete ?? 0
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+        Review the project context before proceeding with the readiness assessment.
+      </Typography>
+
+      {/* Progress bar */}
+      <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.08)' : '#EEF2FF' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+            Overall Progress
+          </Typography>
+          <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+            {progress}%
+          </Typography>
+        </Box>
+        <Box sx={{ height: 6, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.2)' : '#C7D2FE', borderRadius: 3, overflow: 'hidden' }}>
+          <Box sx={{ height: '100%', width: `${progress}%`, bgcolor: 'primary.main', borderRadius: 3, transition: 'width 0.6s ease' }} />
+        </Box>
+        <Typography variant="caption" color="primary.main" sx={{ mt: 1, display: 'block', opacity: 0.8 }}>
+          {progress >= 80 ? 'Project is on track.' : progress >= 50 ? 'Project is progressing.' : 'Project is in early stages.'}
+        </Typography>
+      </Paper>
+
+      {/* Metadata grid */}
+      <Paper variant="outlined" sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+          {fields.map(([label, val]) => (
+            <Box key={label} sx={{ p: 1.5, borderBottom: '1px solid', borderColor: 'divider', '&:nth-of-type(odd)': { borderRight: '1px solid', borderColor: 'divider' } }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem', mb: 0.25 }}>
+                {label}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {val}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Paper>
+
+      {/* Tags */}
+      {tags.length > 0 && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {tags.map((t) => t && (
+            <Chip key={t} label={t} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: 1 }} />
+          ))}
+        </Box>
+      )}
+    </Box>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  STEP 2: READINESS CHECKS
+// ══════════════════════════════════════════════════════════════════════
+
+interface StepReadinessProps {
+  readiness: ProjectReadinessReport | null
+  overrides: Record<string, string>
+  onSetOverride: (id: string, rationale: string) => void
+  onRemoveOverride: (id: string) => void
+}
+
+const StepReadiness: React.FC<StepReadinessProps> = ({ readiness, overrides, onSetOverride, onRemoveOverride }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [overrideInput, setOverrideInput] = useState('')
+
+  const items = readiness?.items || []
+  const passed = items.filter(i => i.status === 'passed').length
+  const waived = Object.keys(overrides).length
+  const pending = items.filter(i => i.status === 'failed' && !overrides[i.id]).length
+
+  const handleApplyOverride = (id: string) => {
+    if (overrideInput.trim()) {
+      onSetOverride(id, overrideInput.trim())
+      setOverrideInput('')
+      setExpanded(null)
+    }
+  }
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+        All automated checks must pass or be manually overridden with a rationale before gate approval.
+      </Typography>
+
+      {/* Summary bar */}
+      <Paper variant="outlined" sx={{ display: 'flex', borderRadius: 1.5, overflow: 'hidden' }}>
+        {[
+          { count: passed, label: 'Passed', color: '#10B981' },
+          { count: waived, label: 'Overridden', color: '#6366F1' },
+          { count: pending, label: 'Pending', color: pending > 0 ? '#EF4444' : '#10B981' },
+        ].map((stat, i) => (
+          <React.Fragment key={stat.label}>
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', py: 2 }}>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: stat.color, fontFamily: '"JetBrains Mono", monospace' }}>
+                {stat.count}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, mt: 0.25 }}>
+                {stat.label}
+              </Typography>
+            </Box>
+            {i < 2 && <Divider orientation="vertical" flexItem />}
+          </React.Fragment>
+        ))}
+      </Paper>
+
+      {/* Check items */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {items.map((item) => {
+          const isOverridden = !!overrides[item.id]
+          const effectivePass = item.status === 'passed' || item.status === 'warning' || isOverridden
+          const isExpanded = expanded === item.id
+          const borderColor = isOverridden ? '#6366F1' : effectivePass ? '#10B981' : '#F59E0B'
+
+          return (
+            <Paper
+              key={item.id}
+              variant="outlined"
+              sx={{
+                borderRadius: 1.5,
+                borderLeft: '3px solid',
+                borderLeftColor: borderColor,
+                overflow: 'hidden',
+                transition: 'all 0.15s ease',
+                '&:hover': { borderColor: effectivePass ? '#10B981' : '#F59E0B' },
+              }}
+            >
+              {/* Header */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  p: 1.5,
+                  cursor: 'pointer',
+                }}
+                onClick={() => setExpanded(isExpanded ? null : item.id)}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box>
+                    {isOverridden ? (
+                      <AssignmentTurnedInIcon sx={{ fontSize: 20, color: '#6366F1' }} />
+                    ) : item.status === 'passed' ? (
+                      <CheckCircleIcon sx={{ fontSize: 20, color: '#10B981' }} />
+                    ) : item.status === 'failed' ? (
+                      <ErrorIcon sx={{ fontSize: 20, color: '#EF4444' }} />
+                    ) : (
+                      <WarningAmberIcon sx={{ fontSize: 20, color: '#F59E0B' }} />
+                    )}
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {item.label}
+                  </Typography>
+                  {isOverridden && (
+                    <Chip label="Overridden" size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.2)' : '#EEF2FF', color: '#6366F1' }} />
+                  )}
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  {item.status === 'failed' && !isOverridden && (
+                    <Button
+                      size="small"
+                      variant="text"
+                      sx={{ fontSize: 11, fontWeight: 600, minWidth: 0 }}
+                      onClick={(e) => { e.stopPropagation(); setExpanded(isExpanded ? null : item.id) }}
+                    >
+                      Override
+                    </Button>
+                  )}
+                  {isOverridden && (
+                    <IconButton
+                      size="small"
+                      onClick={(e) => { e.stopPropagation(); onRemoveOverride(item.id) }}
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      <UndoIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  )}
+                  <Box
+                    component="span"
+                    sx={{
+                      transform: isExpanded ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s',
+                      color: 'text.disabled',
+                      fontSize: 12,
+                      flexShrink: 0,
+                    }}
+                  >
+                    ▼
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Expanded body */}
+              {isExpanded && (
+                <Box sx={{ px: 1.5, pb: 1.5, pl: 5 }}>
+                  {item.message && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1, lineHeight: 1.6 }}>
+                      {item.message}
+                    </Typography>
+                  )}
+
+                  {isOverridden && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.1)' : '#EEF2FF', borderRadius: 1, p: 1 }}>
+                      <Typography variant="caption" sx={{ color: '#6366F1', fontWeight: 600 }}>
+                        Rationale: {overrides[item.id]}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {item.status === 'failed' && !isOverridden && (
+                    <Box sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.08)' : '#FFFBEB', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.2)' : '#FDE68A', borderRadius: 1, p: 1.5 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: '#92400E', display: 'block', mb: 0.5 }}>
+                        Override this check
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontSize: '0.75rem' }}>
+                        Only allowed if the Portfolio Director has approved the deviation in writing.
+                      </Typography>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        multiline
+                        rows={2}
+                        placeholder="Enter director's approval reference and rationale..."
+                        value={overrideInput}
+                        onChange={(e) => setOverrideInput(e.target.value)}
+                        sx={{ mb: 1 }}
+                      />
+                      <Button
+                        size="small"
+                        variant="contained"
+                        disabled={!overrideInput.trim()}
+                        onClick={() => handleApplyOverride(item.id)}
+                        sx={{ borderRadius: 1, fontWeight: 600, fontSize: 12 }}
+                      >
+                        Apply Override
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+              )}
+            </Paper>
+          )
+        })}
+      </Box>
+
+      {items.length === 0 && (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <FactCheckIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1, opacity: 0.5 }} />
+          <Typography variant="body2" color="text.secondary">No readiness checks available.</Typography>
+        </Box>
+      )}
+    </Box>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  STEP 3: PMO DECISION
+// ══════════════════════════════════════════════════════════════════════
+
+interface StepDecisionProps {
+  readiness: ProjectReadinessReport | null
+  overrides: Record<string, string>
+  gateReview: GateReviewModel | null
+  project: ProjectModel | null
+  pmoNotes: string
+  onPmoNotesChange: (val: string) => void
+  decision: string
+  onDecisionChange: (val: string) => void
+  decisionNotes: string
+  onDecisionNotesChange: (val: string) => void
+  onSubmit: () => void
+  saving: boolean
+}
+
+const StepDecision: React.FC<StepDecisionProps> = ({
+  readiness, overrides, gateReview, project,
+  pmoNotes, onPmoNotesChange,
+  decision, onDecisionChange,
+  decisionNotes, onDecisionNotesChange,
+  onSubmit, saving,
+}) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  const items = readiness?.items || []
+  const pendingIssues = items.filter(i => i.status === 'failed' && !overrides[i.id]).length
+  const canApprove = pendingIssues === 0
+
+  const conditions = [
+    'Schedule detail must be updated within 5 business days of gate approval.',
+    'Stakeholder sign-off to be obtained before any next-phase expenditure.',
+  ]
+  if (project?.pm_projectsponsor && !project.pm_projectsponsor) {
+    conditions.push('Executive sponsor confirmation required before proceeding.')
+  }
+
+  const decisionOptions = [
+    { key: 'approve',     label: 'Approve Gate',     color: '#10B981', bg: isDark ? 'rgba(16,185,129,0.1)' : '#ECFDF5', border: isDark ? 'rgba(16,185,129,0.3)' : '#6EE7B7', desc: 'Project proceeds to the next stage.' },
+    { key: 'conditional', label: 'Approve with Conditions', color: '#6366F1', bg: isDark ? 'rgba(99,102,241,0.1)' : '#EEF2FF', border: isDark ? 'rgba(99,102,241,0.3)' : '#A5B4FC', desc: 'Approve but attach mandatory conditions.' },
+    { key: 'defer',       label: 'Defer Decision',   color: '#F59E0B', bg: isDark ? 'rgba(245,158,11,0.1)' : '#FFFBEB', border: isDark ? 'rgba(245,158,11,0.3)' : '#FDE68A', desc: 'Pause for additional information.' },
+    { key: 'reject',      label: 'Reject Gate',      color: '#EF4444', bg: isDark ? 'rgba(239,68,68,0.1)' : '#FEF2F2', border: isDark ? 'rgba(239,68,68,0.3)' : '#FCA5A5', desc: 'Project does not proceed; returns to planning.' },
+  ]
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+        Make your final PMO decision. All notes and decisions are permanently recorded.
+      </Typography>
+
+      {/* Readiness snapshot */}
+      <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+          Readiness Snapshot
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {items.map((item) => {
+            const isOverridden = !!overrides[item.id]
+            const pass = item.status === 'passed' || item.status === 'warning' || isOverridden
+            return (
+              <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {pass ? (
+                  <CheckCircleIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                ) : (
+                  <ErrorIcon sx={{ fontSize: 16, color: '#EF4444' }} />
+                )}
+                <Typography variant="body2" sx={{ color: pass ? 'text.primary' : '#92400E' }}>
+                  {item.label}
+                </Typography>
+                {isOverridden && (
+                  <Chip label="Overridden" size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 700, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.2)' : '#EEF2FF', color: '#6366F1' }} />
+                )}
+              </Box>
+            )
+          })}
+        </Box>
+      </Paper>
+
+      {/* Blocking banner */}
+      {!canApprove && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.1)' : '#FEF2F2', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.2)' : '#FCA5A5', borderRadius: 1, p: 1.5 }}>
+          <FlagIcon sx={{ fontSize: 16, color: '#EF4444' }} />
+          <Typography variant="body2" sx={{ color: '#991B1B' }}>
+            {pendingIssues} unresolved issue{pendingIssues > 1 ? 's' : ''} — resolve in Readiness Checks tab or apply an override before approving.
+          </Typography>
+        </Box>
+      )}
+
+      {/* Auto-generated conditions */}
+      <Box>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
+          Auto-generated Conditions
+        </Typography>
+        {conditions.map((c, i) => (
+          <Box key={i} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.08)' : '#EEF2FF', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.15)' : '#C7D2FE', borderRadius: 1, p: 1.5, mb: 1 }}>
+            <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#6366F1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0, mt: 0.25 }}>
+              {i + 1}
+            </Box>
+            <Typography variant="body2" sx={{ color: (theme) => theme.palette.mode === 'dark' ? '#A5B4FC' : '#3730A3', lineHeight: 1.6 }}>
+              {c}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
+      {/* PMO Notes */}
+      <Box>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
+          PMO Review Notes
+        </Typography>
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          placeholder="Notes visible to the governance board and project team..."
+          value={pmoNotes}
+          onChange={(e) => onPmoNotesChange(e.target.value)}
+          disabled={saving}
+          slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+        />
+      </Box>
+
+      {/* Decision picker */}
+      <Box>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
+          Your Decision
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {decisionOptions.map((opt) => {
+            const isSelected = decision === opt.key
+            const isBlocked = opt.key === 'approve' && !canApprove
+            return (
+              <Box
+                key={opt.key}
+                onClick={() => !isBlocked && onDecisionChange(opt.key)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  border: '1.5px solid',
+                  borderColor: isSelected ? opt.border : 'divider',
+                  borderRadius: 1.5,
+                  p: 1.5,
+                  cursor: isBlocked ? 'not-allowed' : 'pointer',
+                  bgcolor: isSelected ? opt.bg : 'transparent',
+                  opacity: isBlocked ? 0.4 : 1,
+                  transition: 'all 0.15s ease',
+                  '&:hover': isBlocked ? {} : { borderColor: opt.border, bgcolor: opt.bg },
+                }}
+              >
+                <input
+                  type="radio"
+                  name="pmo-decision"
+                  checked={isSelected}
+                  disabled={isBlocked}
+                  onChange={() => onDecisionChange(opt.key)}
+                  style={{ accentColor: opt.color, margin: 0, flexShrink: 0 }}
+                />
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: opt.color }}>
+                    {opt.label}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {opt.desc}
+                  </Typography>
+                </Box>
+              </Box>
+            )
+          })}
+        </Box>
+      </Box>
+
+      {/* Decision Rationale */}
+      <Box>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
+          Decision Rationale <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+        </Typography>
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          placeholder="Provide your rationale for this decision. This is recorded permanently on the workflow..."
+          value={decisionNotes}
+          onChange={(e) => onDecisionNotesChange(e.target.value)}
+          disabled={saving}
+          slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+        />
+      </Box>
+
+      {/* Submit button */}
+      <Button
+        variant="contained"
+        disabled={!decision || !decisionNotes.trim() || saving}
+        onClick={onSubmit}
+        sx={{
+          alignSelf: 'flex-start',
+          borderRadius: 1.5,
+          fontWeight: 700,
+          px: 4,
+          py: 1.25,
+          bgcolor: decision === 'reject' ? '#EF4444' : decision === 'defer' ? '#F59E0B' : decision === 'conditional' ? '#6366F1' : '#10B981',
+          '&:hover': {
+            bgcolor: decision === 'reject' ? '#DC2626' : decision === 'defer' ? '#D97706' : decision === 'conditional' ? '#4F46E5' : '#059669',
+          },
+        }}
+      >
+        {saving ? 'Submitting...' : `Submit Decision →`}
+      </Button>
+    </Box>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  MAIN COMPONENT
+// ══════════════════════════════════════════════════════════════════════
+
 export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
-  open,
-  onClose,
-  gateReviewId,
-  onSuccess,
-  onError,
-  DecisionBox: DecisionBoxProp,
+  open, onClose, gateReviewId, onSuccess, onError,
   approvalStepId,
 }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  // ── Data State ─────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [gateReview, setGateReview] = useState<GateReviewModel | null>(null)
   const [project, setProject] = useState<ProjectModel | null>(null)
   const [readiness, setReadiness] = useState<ProjectReadinessReport | null>(null)
+  const [submitted, setSubmitted] = useState(false)
 
-  // Override state: Record<checkId, rationale>
+  // ── Form State ─────────────────────────────────────────────────────
+  const [step, setStep] = useState(0)
   const [overrides, setOverrides] = useState<Record<string, string>>({})
-  const [editingOverride, setEditingOverride] = useState<string | null>(null)
-  const [overrideText, setOverrideText] = useState('')
   const [pmoNotes, setPmoNotes] = useState('')
+  const [decision, setDecision] = useState('')
+  const [decisionNotes, setDecisionNotes] = useState('')
 
+  // ── Load Data ──────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
       const gr = await fetchGateReviewById(gateReviewId)
-      if (!gr) {
-        onError('Gate review not found.')
-        setLoading(false)
-        return
-      }
+      if (!gr) { onError('Gate review not found.'); setLoading(false); return }
       setGateReview(gr)
-      
-      // Look across all possible property names that Dataverse might use to return the project lookup
+
       const projectId = gr._pm_project_value ||
                         (gr as any)._pm_projectlookup_value ||
                         (gr as any).pm_project ||
                         gr.pm_projectcode
-      
-      if (!projectId) {
-        console.warn('PmoReadinessTaskModal: No project ID found on gate review:', gr)
-        setLoading(false)
-        return
+
+      if (projectId) {
+        const [proj, report] = await Promise.all([
+          fetchProjectDetails(projectId),
+          GovernanceReadinessService.checkProjectReadiness(projectId, Number(gr.pm_gatestage ?? 0)),
+        ])
+        setProject(proj)
+        setReadiness(report)
       }
-      
-      const proj = await fetchProjectDetails(projectId)
-      const report = await GovernanceReadinessService.checkProjectReadiness(projectId, Number(gr.pm_gatestage ?? 0))
-      
-      setProject(proj)
-      setReadiness(report)
-      
-      // Pre-fill notes if PMO had previously saved some
+
+      // PMO notes are loaded from the gate review record if available
       if (gr.pm_reviewnotes) setPmoNotes(gr.pm_reviewnotes)
-      
     } catch (err) {
       console.error('Failed to load PMO task data', err)
       onError('Failed to load project details for readiness check.')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }, [gateReviewId, onError])
 
   useEffect(() => {
-    if (open) {
-      loadData()
-      setOverrides({})
-      setEditingOverride(null)
-    }
+    if (open) { loadData(); setStep(0); setOverrides({}); setPmoNotes(''); setSubmitted(false); setDecision(''); setDecisionNotes('') }
   }, [open, loadData])
 
-  const handleSaveOverride = () => {
-    if (editingOverride && overrideText.trim()) {
-      setOverrides(prev => ({ ...prev, [editingOverride]: overrideText.trim() }))
+  // ── Handlers ───────────────────────────────────────────────────────
+  const handleSetOverride = useCallback((id: string, rationale: string) => {
+    setOverrides(prev => ({ ...prev, [id]: rationale }))
+  }, [])
+
+  const handleRemoveOverride = useCallback((id: string) => {
+    setOverrides(prev => { const n = { ...prev }; delete n[id]; return n })
+  }, [])
+
+  const checkPassed = (item: any) => item.status === 'passed' || item.status === 'warning' || !!overrides[item.id]
+  const allClear = readiness?.items.every(i => checkPassed(i)) ?? false
+
+  const buildNotes = useCallback((decisionLabel: string) => {
+    let notes = `--- PMO Readiness Task ---\nDecision: ${decisionLabel}\n\nNotes:\n${pmoNotes}\n`
+    if (Object.keys(overrides).length > 0) {
+      notes += `\n--- Overrides Applied ---\n`
+      Object.entries(overrides).forEach(([id, rationale]) => {
+        const checkLabel = readiness?.items.find(i => i.id === id)?.label || id
+        notes += `- ${checkLabel}: ${rationale}\n`
+      })
     }
-    setEditingOverride(null)
-    setOverrideText('')
-  }
+    return notes
+  }, [pmoNotes, overrides, readiness])
 
-  const handleRemoveOverride = (id: string) => {
-    setOverrides(prev => {
-      const next = { ...prev }
-      delete next[id]
-      return next
-    })
-  }
+  const handleSubmit = useCallback(async () => {
+    if (!decision || !decisionNotes.trim()) return
 
-  // Calculate dynamic status accounting for overrides (must be before saveTaskData)
-  const getDynamicStatus = (item: any) => {
-    if (overrides[item.id]) return 'waived'
-    return item.status
-  }
+    const decisionLabel = decision === 'approve' ? 'Approved'
+      : decision === 'conditional' ? 'Approved with Conditions'
+      : decision === 'defer' ? 'Deferred'
+      : 'Rejected'
 
-  const allClear = readiness?.items.every(i => getDynamicStatus(i) === 'passed' || getDynamicStatus(i) === 'waived' || getDynamicStatus(i) === 'warning')
-
-  /**
-   * Save task-specific data to the gate review before the workflow decision is submitted.
-   * Called by the generic DecisionBox via onBeforeDecision.
-   */
-  const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
-    // If approving, validate all readiness items are passed/waived/warning
-    if (workflowDecision === 0 && !allClear) {
+    if (!allClear && (decision === 'approve' || decision === 'conditional')) {
       onError('All failed readiness checks must be resolved or overridden before approving.')
-      return false
+      return
     }
 
-    if (!gateReview?.pm_projectgatereviewid) return false
     setSaving(true)
     try {
-      const decisionLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'
-      
-      // Build a compiled notes string including overrides
-      let taskNotes = `--- PMO Readiness Task ---\nDecision: ${decisionLabel}\n\nNotes:\n${pmoNotes}\n`
-      
-      if (Object.keys(overrides).length > 0) {
-        taskNotes += `\n--- Overrides Applied ---\n`
-        Object.entries(overrides).forEach(([id, rationale]) => {
-          const checkLabel = readiness?.items.find(i => i.id === id)?.label || id
-          taskNotes += `- ${checkLabel}: ${rationale}\n`
-        })
+      // Save to gate review record
+      if (gateReview?.pm_projectgatereviewid) {
+        await updateGateReview(gateReview.pm_projectgatereviewid, {
+          pm_reviewnotes: buildNotes(decisionLabel),
+          pm_reviewconditions: decision === 'conditional' ? decisionNotes : '',
+          pm_actualreviewdate: new Date().toISOString().split('T')[0],
+        } as any)
       }
 
-      await updateGateReview(gateReview.pm_projectgatereviewid!, {
-        pm_reviewnotes: taskNotes,
-      } as any)
+      // If this is a workflow step, also submit the workflow decision
+      if (approvalStepId) {
+        // Map custom decisions to workflow values: approve/conditional → 0, reject → 3, defer → no workflow submit
+        const workflowDecision = decision === 'reject' ? 3 : (decision === 'approve' || decision === 'conditional') ? 0 : -1
 
-      onSuccess(`PMO Task completed. Decision: ${decisionLabel}.`)
-      return true
-    } catch (err) {
-      onError('Failed to save PMO decision.')
-      return false
-    } finally {
-      setSaving(false)
-    }
-  }, [gateReview, pmoNotes, overrides, readiness, allClear, onSuccess, onError])
+        if (workflowDecision >= 0) {
+          const notes = buildNotes(decisionLabel)
+          const workflowSuccess = await submitWorkflowDecision(approvalStepId, workflowDecision, notes)
+          if (!workflowSuccess) {
+            onError('Decision saved to gate review but workflow submission failed.')
+            setSaving(false)
+            return
+          }
+        }
 
-  /** Legacy decision handler for direct usage (not via FormDialog/workflow). */
-  const handleLegacyDecision = useCallback(async (decision: 'Approve' | 'Reject') => {
-    if (!gateReview?.pm_projectgatereviewid) return
-    setSaving(true)
-    try {
-      let finalNotes = `--- PMO Readiness Task ---\nDecision: ${decision}\n\nNotes:\n${pmoNotes}\n`
-      
-      if (Object.keys(overrides).length > 0) {
-        finalNotes += `\n--- Overrides Applied ---\n`
-        Object.entries(overrides).forEach(([id, rationale]) => {
-          const checkLabel = readiness?.items.find(i => i.id === id)?.label || id
-          finalNotes += `- ${checkLabel}: ${rationale}\n`
-        })
+        // In workflow mode, close immediately with success message (no success screen)
+        onSuccess(`PMO Task completed. Decision: ${decisionLabel}.`)
+        onClose()
+      } else {
+        // Standalone mode: show success screen
+        setSubmitted(true)
       }
-
-      await updateGateReview(gateReview.pm_projectgatereviewid!, {
-        pm_reviewnotes: finalNotes,
-      } as any)
-
-      onSuccess(`PMO Task completed. Decision: ${decision}.`)
-      onClose()
     } catch (err) {
-      onError('Failed to save PMO decision.')
-    } finally {
-      setSaving(false)
-    }
-  }, [gateReview, pmoNotes, overrides, readiness, onSuccess, onClose, onError])
+      onError('Failed to submit decision.')
+    } finally { setSaving(false) }
+  }, [decision, decisionNotes, allClear, gateReview, buildNotes, approvalStepId, onError, onSuccess, onClose])
 
   if (!open) return null
 
+  const warnCount = readiness?.items.filter(i => i.status === 'failed' && !overrides[i.id]).length ?? 0
+
   return (
-    <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: 'primary.contrastText', py: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <AssignmentTurnedInIcon />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>PMO Readiness Task</Typography>
-        </Box>
-        <Chip label="Pending PMO Review" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-      </DialogTitle>
-      
-      <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
-        {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
-        ) : (
-          <Grid container sx={{ height: '100%' }}>
-            {/* Left Panel: Project Context */}
-            <Grid size={{ xs: 12, md: 4 }} sx={{ borderRight: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', p: 3 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1 }}>Project Context</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{project?.pm_projectname || 'Loading...'}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>{project?.pm_projectcode}</Typography>
-              
-              <Divider sx={{ mb: 2 }} />
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Target Gate</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{gateReview?.pm_gatename}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Project Manager</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_projectmanagername || 'Unassigned'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Portfolio</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_portfolioname || '—'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Progress</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_percentcomplete || 0}% Complete</Typography>
-                </Box>
+    <Dialog
+      open={open}
+      onClose={() => !saving && onClose()}
+      maxWidth="lg"
+      fullWidth
+      slotProps={{
+        paper: { sx: { borderRadius: 2, overflow: 'hidden', maxHeight: '90vh', minHeight: 500 } },
+      }}
+    >
+      {submitted ? (
+        <>
+          {/* Submitted state header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: decision === 'reject' ? '#EF4444' : decision === 'defer' ? '#F59E0B' : decision === 'conditional' ? '#6366F1' : '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                <AssignmentTurnedInIcon sx={{ fontSize: 18 }} />
               </Box>
-              
-              <Box sx={{ mt: 4, p: 2, bgcolor: 'primary.50', borderRadius: 1.5, border: '1px solid', borderColor: 'primary.100' }}>
-                <Typography variant="caption" color="primary.900" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <FactCheckIcon sx={{ fontSize: 16 }} /> PMO Instructions
-                </Typography>
-                <Typography variant="body2" color="primary.800" sx={{ mt: 1, fontSize: '0.8rem' }}>
-                  Verify the automated readiness checks. If a check has failed but the deviation is approved by the portfolio director, you may manually override it by providing a rationale.
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>PMO Readiness Task</Typography>
+            </Box>
+            <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+          </Box>
+          <SuccessScreen
+            decision={decision}
+            projectName={project?.pm_projectname}
+            gateName={gateReview?.pm_gatename}
+            onBack={() => { setSubmitted(false); setStep(0); setDecision(''); setDecisionNotes('') }}
+          />
+        </>
+      ) : (
+        <>
+          {/* ── Header ────────────────────────────────────────────── */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'primary.contrastText' }}>
+                <AssignmentTurnedInIcon sx={{ fontSize: 18 }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>PMO Readiness Task</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                  {gateReview?.pm_gatename || project?.pm_projectcode ? `${project?.pm_projectcode} · ${gateReview?.pm_gatename || ''}` : 'Gate Review'}
                 </Typography>
               </Box>
-            </Grid>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip label="Pending PMO Review" color="warning" size="small" sx={{ fontWeight: 700, borderRadius: 1 }} />
+              <IconButton size="small" onClick={onClose} disabled={saving}><CloseIcon fontSize="small" /></IconButton>
+            </Box>
+          </Box>
 
-            {/* Right Panel: Checklist & Overrides */}
-            <Grid size={{ xs: 12, md: 8 }} sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Automated Readiness Assessment</Typography>
-              
-              <List sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                {readiness?.items.map((item) => {
-                  const currentStatus = getDynamicStatus(item)
-                  const isOverridden = currentStatus === 'waived'
-                  
-                  return (
-                    <Paper key={item.id} variant="outlined" sx={{ 
-                      p: 2, borderRadius: 1.5, 
-                      borderColor: currentStatus === 'passed' ? 'success.light' : currentStatus === 'failed' ? 'error.light' : 'warning.light',
-                      bgcolor: currentStatus === 'passed' ? 'success.50' : currentStatus === 'failed' ? 'error.50' : 'warning.50'
-                    }}>
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                        <Box sx={{ display: 'flex', gap: 1.5 }}>
-                          {currentStatus === 'passed' && <CheckCircleIcon color="success" sx={{ mt: 0.25 }} />}
-                          {currentStatus === 'failed' && <ErrorIcon color="error" sx={{ mt: 0.25 }} />}
-                          {currentStatus === 'warning' && <WarningIcon color="warning" sx={{ mt: 0.25 }} />}
-                          {currentStatus === 'waived' && <AssignmentTurnedInIcon color="info" sx={{ mt: 0.25 }} />}
-                          
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                              {item.label}
-                              {isOverridden && <Chip label="Overridden" size="small" color="info" sx={{ ml: 1, height: 20, fontSize: '0.65rem' }} />}
-                            </Typography>
-                            {!isOverridden && item.message && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{item.message}</Typography>}
-                            {isOverridden && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}><strong>Rationale:</strong> {overrides[item.id]}</Typography>}
+          <DialogContent sx={{ p: 0, bgcolor: 'background.default', display: 'flex' }}>
+            {loading ? (
+              <Box sx={{ flex: 1, p: 6, textAlign: 'center' }}>
+                <CircularProgress size={36} sx={{ mb: 2 }} />
+                <Typography variant="body2" color="text.secondary">Loading gate review data...</Typography>
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, width: '100%' }}>
+                {/* ─── Left Sidebar ─────────────────────────────────── */}
+                <Box
+                  sx={{
+                    width: { xs: '100%', md: 220 },
+                    flexShrink: 0,
+                    borderRight: { md: '1px solid' },
+                    borderBottom: { xs: '1px solid', md: 'none' },
+                    borderColor: 'divider',
+                    bgcolor: isDark ? 'rgba(30,27,75,0.3)' : '#F8FAFC',
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                  }}
+                >
+                  {/* Steps navigation */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {STEPS.map((st, i) => {
+                      const done = i < step || (submitted && decision)
+                      const active = i === step && !submitted
+                      return (
+                        <Box
+                          key={st.id}
+                          onClick={() => setStep(i)}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                            p: 1.25,
+                            borderRadius: 1,
+                            cursor: 'pointer',
+                            bgcolor: active ? (isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.08)') : 'transparent',
+                            borderLeft: '2px solid',
+                            borderLeftColor: active ? 'primary.main' : 'transparent',
+                            transition: 'all 0.15s ease',
+                            '&:hover': { bgcolor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.04)' },
+                          }}
+                        >
+                          {/* Step indicator */}
+                          <Box
+                            sx={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              bgcolor: done ? '#6366F1' : active ? '#6366F1' : (isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB'),
+                              color: done || active ? '#fff' : (isDark ? '#9CA3AF' : '#6B7280'),
+                            }}
+                          >
+                            {done ? '✓' : i + 1}
                           </Box>
-                        </Box>
-                        
-                        <Box>
-                          {item.status === 'failed' && !isOverridden && editingOverride !== item.id && (
-                            <Button size="small" variant="outlined" color="inherit" onClick={() => setEditingOverride(item.id)} startIcon={<EditIcon />}>
-                              Override
-                            </Button>
-                          )}
-                          {isOverridden && (
-                            <Tooltip title="Remove Override">
-                              <IconButton size="small" onClick={() => handleRemoveOverride(item.id)}><UndoIcon fontSize="small" /></IconButton>
-                            </Tooltip>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: active ? 700 : 500, fontSize: '0.82rem', color: active ? (isDark ? '#E0E7FF' : '#111827') : done ? (isDark ? '#A5B4FC' : '#6366F1') : (isDark ? '#9CA3AF' : '#6B7280') }}>
+                              {st.label}
+                            </Typography>
+                          </Box>
+                          {st.id === 'readiness' && warnCount > 0 && (
+                            <Box sx={{ bgcolor: '#F59E0B', color: '#fff', borderRadius: 1, fontSize: 10, fontWeight: 700, px: 0.75, py: 0.25, lineHeight: 1.2 }}>
+                              {warnCount}
+                            </Box>
                           )}
                         </Box>
-                      </Box>
+                      )
+                    })}
+                  </Box>
 
-                      {/* Override Input Area */}
-                      {editingOverride === item.id && (
-                        <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                          <TextField 
-                            fullWidth size="small" 
-                            placeholder="Enter business rationale for waiving this requirement..." 
-                            value={overrideText}
-                            onChange={(e) => setOverrideText(e.target.value)}
-                            autoFocus
-                          />
-                          <IconButton color="success" onClick={handleSaveOverride} disabled={!overrideText.trim()}><SaveIcon /></IconButton>
-                          <IconButton onClick={() => { setEditingOverride(null); setOverrideText('') }}><CloseIcon /></IconButton>
-                        </Box>
-                      )}
-                    </Paper>
-                  )
-                })}
-              </List>
+                  {/* Project mini card at bottom */}
+                  <Box sx={{ mt: 'auto', pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                      Pending PMO Review
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
+                      {project?.pm_projectmanagername || project?.pm_projectname || ''}
+                    </Typography>
+                  </Box>
+                </Box>
 
-              <Divider sx={{ my: 3 }} />
+                {/* ─── Content Area ──────────────────────────────────── */}
+                <Box sx={{ flex: 1, p: 2.5, overflow: 'auto', maxHeight: { md: 'calc(90vh - 140px)' } }}>
+                  {/* Step indicator */}
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Step {step + 1} of {STEPS.length}
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25 }}>
+                      {STEPS[step].icon} {STEPS[step].label}
+                    </Typography>
+                  </Box>
 
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>PMO Review Notes</Typography>
-              <TextField 
-                fullWidth multiline rows={3} 
-                placeholder="Enter any additional notes or conditions for the governance board..."
-                value={pmoNotes}
-                onChange={(e) => setPmoNotes(e.target.value)}
-              />
+                  {/* Step content */}
+                  {step === 0 && <StepContext project={project} gateReview={gateReview} />}
+                  {step === 1 && (
+                    <StepReadiness
+                      readiness={readiness}
+                      overrides={overrides}
+                      onSetOverride={handleSetOverride}
+                      onRemoveOverride={handleRemoveOverride}
+                    />
+                  )}
+                  {step === 2 && (
+                    <StepDecision
+                      readiness={readiness}
+                      overrides={overrides}
+                      gateReview={gateReview}
+                      project={project}
+                      pmoNotes={pmoNotes}
+                      onPmoNotesChange={setPmoNotes}
+                      decision={decision}
+                      onDecisionChange={setDecision}
+                      decisionNotes={decisionNotes}
+                      onDecisionNotesChange={setDecisionNotes}
+                      onSubmit={handleSubmit}
+                      saving={saving}
+                    />
+                  )}
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
 
-            </Grid>
-          </Grid>
-        )}
-      </DialogContent>
-      
-      <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', flexDirection: 'column', alignItems: 'stretch', gap: 2 }}>
-        {DecisionBoxProp && approvalStepId ? (
-          <>
-            <Button onClick={onClose} disabled={saving} sx={{ alignSelf: 'flex-start' }}>Close</Button>
-            <DecisionBoxProp
-              approvalStepId={approvalStepId}
-              onBeforeDecision={saveTaskData}
-              onDecisionComplete={() => onClose()}
-              onDecisionError={(msg) => onError(msg)}
-              disabled={loading}
-            />
-          </>
-        ) : (
-          <>
-            <Button onClick={onClose} disabled={saving} sx={{ mr: 'auto' }}>Close</Button>
-            <Button 
-              variant="contained" 
-              color="error" 
-              disabled={loading || saving}
-              onClick={() => handleLegacyDecision('Reject')}
+          {/* ─── Bottom Navigation ────────────────────────────────── */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2.5, py: 1.5, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={step === 0}
+              onClick={() => setStep(p => p - 1)}
+              sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 13 }}
             >
-              Reject Submission
+              ← Previous
             </Button>
-            <Button 
-              variant="contained" 
-              color="success" 
-              disabled={loading || saving || !allClear}
-              onClick={() => handleLegacyDecision('Approve')}
-            >
-              {saving ? 'Processing...' : 'Endorse & Approve'}
-            </Button>
-          </>
-        )}
-      </DialogActions>
+
+            {/* Step dots */}
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              {STEPS.map((_, i) => (
+                <Box
+                  key={i}
+                  onClick={() => setStep(i)}
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: i === step ? 'primary.main' : i < step ? '#A5B4FC' : (isDark ? 'rgba(255,255,255,0.15)' : '#E5E7EB'),
+                    cursor: 'pointer',
+                    transition: 'background 0.2s',
+                  }}
+                />
+              ))}
+            </Box>
+
+            {step < STEPS.length - 1 ? (
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => setStep(p => p + 1)}
+                sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 13 }}
+              >
+                Next →
+              </Button>
+            ) : (
+              /* DecisionBox integration in bottom bar OR submit button already in step content */
+              <Box sx={{ width: 100 }} />
+            )}
+          </Box>
+
+
+        </>
+      )}
     </Dialog>
   )
 }
+
+export default PmoReadinessTaskModal

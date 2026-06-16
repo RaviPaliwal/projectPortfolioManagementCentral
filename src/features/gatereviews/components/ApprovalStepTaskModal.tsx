@@ -7,7 +7,7 @@
  * then render the existing modal with the resolved gateReviewId.
  *
  * This allows the FormDialog system to open these modals generically by passing
- * only the approvalStepId — the wrapper handles the rest.
+ * only the approvalStepId ΓÇö the wrapper handles the rest.
  *
  * Usage in formRegistry:
  *   modalComponent: PmoReadinessTaskModalWrapper
@@ -22,7 +22,7 @@ import { PmoReadinessTaskModal } from './PmoReadinessTaskModal'
 import { FinancialReviewTaskModal } from './FinancialReviewTaskModal'
 import { BoardDecisionTaskModal } from './BoardDecisionTaskModal'
 
-// ─── Shared Loading/Error State ──────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Shared Loading/Error State ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 interface ApprovalStepResolverProps {
   approvalStepId: string
@@ -39,23 +39,23 @@ function ApprovalStepResolver({ approvalStepId, onClose, onSuccess, onError, chi
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    console.log('[ApprovalStepResolver] ⏳ Resolving entity for approvalStepId:', approvalStepId)
+    console.log('[ApprovalStepResolver] ΓÅ│ Resolving entity for approvalStepId:', approvalStepId)
     setLoading(true)
     setError(null)
     try {
       const info = await resolveEntityInfoFromApprovalStep(approvalStepId)
-      console.log('[ApprovalStepResolver] 🔍 resolveEntityInfoFromApprovalStep returned:', info)
+      console.log('[ApprovalStepResolver] ≡ƒöì resolveEntityInfoFromApprovalStep returned:', info)
       if (info.entityId) {
-        console.log('[ApprovalStepResolver] ✅ Entity resolved:', info)
+        console.log('[ApprovalStepResolver] Γ£à Entity resolved:', info)
         setEntityId(info.entityId)
         setEntityType(info.entityType)
       } else {
-        console.warn('[ApprovalStepResolver] ❌ No entityId resolved from approval step')
+        console.warn('[ApprovalStepResolver] Γ¥î No entityId resolved from approval step')
         setError('Could not resolve target entity from approval step.')
         onError?.('Could not resolve target entity from approval step.')
       }
     } catch (err) {
-      console.error('[ApprovalStepResolver] ❌ Exception resolving entity:', err)
+      console.error('[ApprovalStepResolver] Γ¥î Exception resolving entity:', err)
       const msg = 'Failed to resolve approval step.'
       setError(msg)
       onError?.(msg)
@@ -92,14 +92,13 @@ function ApprovalStepResolver({ approvalStepId, onClose, onSuccess, onError, chi
   return <>{children(entityId, entityType)}</>
 }
 
-// ─── PMO Readiness ───────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ PMO Readiness ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 export interface PmoReadinessTaskModalWrapperProps {
   approvalStepId: string
   onClose: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
-  DecisionBox: ComponentType<DecisionBoxProps>
 }
 
 export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapperProps> = ({
@@ -107,7 +106,6 @@ export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapper
   onClose,
   onSuccess,
   onError,
-  DecisionBox,
 }) => {
   const [open, setOpen] = useState(true)
 
@@ -130,7 +128,6 @@ export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapper
           gateReviewId={gateReviewId}
           onSuccess={onSuccess || (() => {})}
           onError={onError || (() => {})}
-          DecisionBox={DecisionBox}
           approvalStepId={approvalStepId}
         />
       )}
@@ -138,14 +135,13 @@ export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapper
   )
 }
 
-// ─── Financial Review ────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Financial Review ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 export interface FinancialReviewTaskModalWrapperProps {
   approvalStepId: string
   onClose: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
-  DecisionBox: ComponentType<DecisionBoxProps>
 }
 
 export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalWrapperProps> = ({
@@ -153,7 +149,6 @@ export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalW
   onClose,
   onSuccess,
   onError,
-  DecisionBox,
 }) => {
   const [open, setOpen] = useState(true)
 
@@ -169,33 +164,26 @@ export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalW
       onSuccess={onSuccess}
       onError={onError}
     >
-      {(gateReviewId, entityType) => {
-        console.log('[FinancialReviewTaskModalWrapper] 🟢 Rendering modal with resolved props:', { gateReviewId, entityType, approvalStepId, open })
-        return (
-          <FinancialReviewTaskModal
-            open={open}
-            onClose={handleClose}
-            gateReviewId={gateReviewId}
-            entityType={entityType}
-            onSuccess={onSuccess || (() => {})}
-            onError={onError || (() => {})}
-            DecisionBox={DecisionBox}
-            approvalStepId={approvalStepId}
-          />
-        )
-      }}
+      {(gateReviewId) => (
+        <FinancialReviewTaskModal
+          open={open}
+          onClose={handleClose}
+          gateReviewId={gateReviewId}
+          onSuccess={onSuccess || (() => {})}
+          onError={onError || (() => {})}
+          approvalStepId={approvalStepId}
+        />
+      )}
     </ApprovalStepResolver>
   )
 }
-
-// ─── Board Decision ──────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Board Decision ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 export interface BoardDecisionTaskModalWrapperProps {
   approvalStepId: string
   onClose: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
-  DecisionBox: ComponentType<DecisionBoxProps>
 }
 
 export const BoardDecisionTaskModalWrapper: React.FC<BoardDecisionTaskModalWrapperProps> = ({
@@ -203,7 +191,6 @@ export const BoardDecisionTaskModalWrapper: React.FC<BoardDecisionTaskModalWrapp
   onClose,
   onSuccess,
   onError,
-  DecisionBox,
 }) => {
   const [open, setOpen] = useState(true)
 
@@ -226,7 +213,6 @@ export const BoardDecisionTaskModalWrapper: React.FC<BoardDecisionTaskModalWrapp
           gateReviewId={gateReviewId}
           onSuccess={onSuccess || (() => {})}
           onError={onError || (() => {})}
-          DecisionBox={DecisionBox}
           approvalStepId={approvalStepId}
         />
       )}

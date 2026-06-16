@@ -1,529 +1,597 @@
-import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Grid,
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-  TextField,
-  Divider,
-  Chip,
-  Paper,
-  IconButton,
+  Dialog, DialogContent, Box, Typography,
+  Button, CircularProgress, TextField, Paper, Divider, Chip,
+  IconButton, useTheme,
 } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import CloseIcon from '@mui/icons-material/Close'
-import BusinessIcon from '@mui/icons-material/Business'
-import FlagIcon from '@mui/icons-material/Flag'
-import GroupIcon from '@mui/icons-material/Group'
-import PersonIcon from '@mui/icons-material/Person'
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'
-import WarningIcon from '@mui/icons-material/Warning'
+import TrendingDownIcon from '@mui/icons-material/TrendingDown'
+import PercentIcon from '@mui/icons-material/Percent'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 
-import { fetchProjectDetails, updateGateReview, fetchGateReviewById, fetchInitiativeById } from '@/services'
-import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
-import type { ProjectModel, GateReviewModel, InitiativeModel } from '@/types/dataverse'
-import { StatusTag } from '@/components/common'
+import { fetchProjectDetails, updateGateReview, fetchGateReviewById } from '@/services'
+import { submitWorkflowDecision } from '@/services/workflow.service'
+import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import { currencyFormatter } from '@/utils/formatters'
-import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
+
+// ΓöÇΓöÇ Constants ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+const DECISION_OPTIONS = [
+  {
+    value: 'endorse',
+    label: 'Endorse Financials',
+    color: '#10B981',
+    desc: 'Financials are cleared. The governance board can proceed with their final decision.',
+  },
+  {
+    value: 'reject',
+    label: 'Reject Financials',
+    color: '#EF4444',
+    desc: 'Financial concerns identified. Project must resolve before board decision.',
+  },
+]
+
+// ΓöÇΓöÇ Props ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 interface FinancialReviewTaskModalProps {
   open: boolean
   onClose: () => void
   gateReviewId: string
-  entityType?: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
-  DecisionBox?: ComponentType<DecisionBoxProps>
   approvalStepId?: string
 }
 
-function ragLabel(value: string | number | undefined | null): string {
-  const s = String(value ?? '')
-  if (s === '1') return 'On Track'
-  if (s === '0') return 'At Risk'
-  if (s === '2') return 'Critical'
-  return 'Not Rated'
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+//  SUCCESS SCREEN
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+interface SuccessScreenProps {
+  decision: string
+  projectName?: string
+  gateName?: string
+  onBack: () => void
 }
 
-function ragColor(value: string | number | undefined | null): 'success' | 'warning' | 'error' | 'default' {
-  const s = String(value ?? '')
-  if (s === '1') return 'success'
-  if (s === '0') return 'warning'
-  if (s === '2') return 'error'
-  return 'default'
+const SuccessScreen: React.FC<SuccessScreenProps> = ({ decision, projectName, gateName, onBack }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  const map: Record<string, { color: string; label: string; emoji: string }> = {
+    endorse: { color: '#10B981', label: 'Financials Endorsed', emoji: 'Γ£à' },
+    reject:  { color: '#EF4444', label: 'Financials Rejected',  emoji: '≡ƒÜ½' },
+  }
+  const d = map[decision] || map.endorse
+
+  return (
+    <Box
+      sx={{
+        minHeight: 500,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: isDark
+          ? 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.08) 100%)'
+          : 'linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%)',
+        p: 4,
+      }}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          p: 5,
+          borderRadius: 3,
+          maxWidth: 460,
+          width: '100%',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 1.5,
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Box sx={{ fontSize: 56, lineHeight: 1 }}>{d.emoji}</Box>
+        <Typography variant="h4" sx={{ fontWeight: 800, color: d.color }}>
+          {d.label}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360, lineHeight: 1.7 }}>
+          {decision === 'endorse'
+            ? 'Financials cleared. The governance board has been notified to proceed.'
+            : 'Financials rejected. The project team will be notified to address concerns.'}
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', mt: 0.5 }}>
+          {projectName && <Chip label={projectName} size="small" variant="outlined" sx={{ fontWeight: 600 }} />}
+          {gateName && <Chip label={gateName} size="small" variant="outlined" sx={{ fontWeight: 600 }} />}
+        </Box>
+        <Button
+          variant="outlined"
+          onClick={onBack}
+          sx={{ mt: 1, borderRadius: 1.5, fontWeight: 600 }}
+        >
+          ΓåÉ Back to Review
+        </Button>
+      </Paper>
+    </Box>
+  )
 }
+
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+//  BUDGET BAR COMPONENT
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+interface BudgetBarProps {
+  budget: number
+  spend: number
+}
+
+const BudgetBar: React.FC<BudgetBarProps> = ({ budget, spend }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+  const pct = budget > 0 ? Math.min(100, Math.round((spend / budget) * 100)) : 0
+  const remaining = budget - spend
+  const remainingPct = budget > 0 ? Math.max(0, Math.round((Math.max(0, remaining) / budget) * 100)) : 0
+
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>Budget Utilisation</Typography>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: pct > 90 ? '#EF4444' : pct > 75 ? '#F59E0B' : '#10B981' }}>
+          {pct}% used
+        </Typography>
+      </Box>
+      <Box sx={{ height: 10, bgcolor: isDark ? 'rgba(255,255,255,0.08)' : '#E5E7EB', borderRadius: 5, overflow: 'hidden', display: 'flex' }}>
+        <Box
+          sx={{
+            height: '100%',
+            width: `${pct}%`,
+            bgcolor: pct > 90 ? '#EF4444' : pct > 75 ? '#F59E0B' : '#6366F1',
+            borderRadius: 5,
+            transition: 'width 0.6s ease',
+          }}
+        />
+        {remainingPct > 0 && (
+          <Box
+            sx={{
+              height: '100%',
+              width: `${remainingPct}%`,
+              bgcolor: isDark ? 'rgba(165,180,252,0.3)' : '#A5B4FC',
+              borderRadius: 5,
+            }}
+          />
+        )}
+      </Box>
+      <Box sx={{ display: 'flex', gap: 2, mt: 0.75 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: pct > 90 ? '#EF4444' : pct > 75 ? '#F59E0B' : '#6366F1' }} />
+          <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
+            Spent: {currencyFormatter.format(spend)}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: isDark ? 'rgba(165,180,252,0.3)' : '#A5B4FC' }} />
+          <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
+            Remaining: {currencyFormatter.format(Math.max(0, remaining))}
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+//  MAIN COMPONENT
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> = ({
-  open,
-  onClose,
-  gateReviewId,
-  entityType,
-  onSuccess,
-  onError,
-  DecisionBox: DecisionBoxProp,
+  open, onClose, gateReviewId, onSuccess, onError,
   approvalStepId,
 }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  // ΓöÇΓöÇ Data State ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [gateReview, setGateReview] = useState<GateReviewModel | null>(null)
   const [project, setProject] = useState<ProjectModel | null>(null)
-  const [initiative, setInitiative] = useState<InitiativeModel | null>(null)
+  const [submitted, setSubmitted] = useState(false)
 
+  // ΓöÇΓöÇ Form State ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  const [decision, setDecision] = useState('')
   const [financeNotes, setFinanceNotes] = useState('')
 
-  console.log('[FinancialReviewTaskModal] 🟪 Component mounted/rendered with props:', {
-    open,
-    gateReviewId,
-    entityType,
-    approvalStepId,
-    hasDecisionBox: !!DecisionBoxProp,
-  })
-
-  const isInitiative = entityType === 'Pipeline'
-
-  console.log('[FinancialReviewTaskModal] 🟪 isInitiative resolved to:', isInitiative, '| entityType:', entityType)
-
+  // ΓöÇΓöÇ Load Data ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const loadData = useCallback(async () => {
-    console.log('[FinancialReviewTaskModal] ⏳ loadData started for ID:', gateReviewId, 'entityType:', entityType, 'isInitiative:', isInitiative)
     setLoading(true)
     try {
-      if (isInitiative) {
-        // ── Initiative (Pipeline) mode ──
-        console.log('[FinancialReviewTaskModal] 🔍 Initiative mode: fetching initiative by ID...')
-        const init = await fetchInitiativeById(gateReviewId)
-        console.log('[FinancialReviewTaskModal] ✅ Initiative result:', init ? {
-          pm_initiativeid: init.pm_initiativeid,
-          pm_name: init.pm_name,
-          pm_estimatedcost: init.pm_estimatedcost,
-          pm_estimatedbenefits: init.pm_estimatedbenefits,
-        } : 'null')
+      const gr = await fetchGateReviewById(gateReviewId)
+      if (!gr) { onError('Gate review not found.'); setLoading(false); return }
+      setGateReview(gr)
 
-        if (!init) {
-          console.warn('[FinancialReviewTaskModal] ❌ Initiative not found for ID:', gateReviewId)
-          onError('Initiative not found.')
-          setLoading(false)
-          return
-        }
-        setInitiative(init)
-        console.log('[FinancialReviewTaskModal] ✅ loadData (initiative) completed')
-      } else {
-        // ── Gate Review mode ──
-        console.log('[FinancialReviewTaskModal] 🔍 Gate review mode: fetching gate review by ID...')
-        const gr = await fetchGateReviewById(gateReviewId)
-        console.log('[FinancialReviewTaskModal] ✅ Gate review result:', gr ? { pm_projectgatereviewid: gr.pm_projectgatereviewid, _pm_project_value: gr._pm_project_value, pm_gatename: gr.pm_gatename } : 'null')
+      const projectId = gr._pm_project_value ||
+                        (gr as any)._pm_projectlookup_value ||
+                        (gr as any).pm_project ||
+                        gr.pm_projectcode
 
-        if (!gr) {
-          console.warn('[FinancialReviewTaskModal] ❌ Gate review not found for ID:', gateReviewId)
-          onError('Gate review not found.')
-          setLoading(false)
-          return
-        }
-        setGateReview(gr)
-
-        const projectId = gr._pm_project_value ||
-                          (gr as any)._pm_projectlookup_value ||
-                          (gr as any).pm_project ||
-                          gr.pm_projectcode
-
-        console.log('[FinancialReviewTaskModal] ✅ Resolved projectId:', projectId)
-
-        if (!projectId) {
-          console.warn('[FinancialReviewTaskModal] ❌ No project ID found on gate review.')
-          setLoading(false)
-          return
-        }
-
-        console.log('[FinancialReviewTaskModal] 🔍 Fetching project details for projectId:', projectId)
+      if (projectId) {
         const proj = await fetchProjectDetails(projectId)
-        console.log('[FinancialReviewTaskModal] ✅ Project result:', proj ? {
-          pm_projectid: proj.pm_projectid,
-          pm_projectname: proj.pm_projectname,
-          pm_approvedbudgeteur: proj.pm_approvedbudgeteur,
-          pm_actualcosteur: proj.pm_actualcosteur,
-          pm_costragstatus: proj.pm_costragstatus,
-        } : 'null')
-
-        if (!proj) {
-          console.warn('[FinancialReviewTaskModal] ❌ Project not found for projectId:', projectId)
-        }
         setProject(proj)
-
-        console.log('[FinancialReviewTaskModal] ✅ loadData (gate review) completed')
       }
     } catch (err) {
-      console.error('[FinancialReviewTaskModal] ❌ loadData failed:', err)
-      onError('Failed to load data for financial review.')
-    } finally {
-      setLoading(false)
-    }
-  }, [gateReviewId, entityType, onError, isInitiative])
+      console.error('Failed to load Financial task data', err)
+      onError('Failed to load project details for financial review.')
+    } finally { setLoading(false) }
+  }, [gateReviewId, onError])
 
   useEffect(() => {
     if (open) {
-      console.log('[FinancialReviewTaskModal] 🟢 Dialog opened, triggering loadData')
       loadData()
+      setSubmitted(false)
+      setDecision('')
       setFinanceNotes('')
-    } else {
-      console.log('[FinancialReviewTaskModal] 🔴 Dialog closed')
     }
   }, [open, loadData])
 
-  /**
-   * Save task-specific data before the workflow decision is submitted.
-   * For gate reviews: save notes to the gate review.
-   * For initiatives: save notes is skipped (no notes field on initiative).
-   */
-  const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
-    console.log('[FinancialReviewTaskModal] saveTaskData: workflowDecision=' + workflowDecision + ', notes length=' + financeNotes.length + ', isInitiative=' + isInitiative)
+  // ΓöÇΓöÇ Build Notes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  const buildDecisionEntry = useCallback(() => {
+    const decisionLabel = decision === 'endorse' ? 'Endorsed' : 'Rejected'
+    return `\n\n--- Financial Review Task ---\nDecision: ${decisionLabel}\nDate: ${new Date().toLocaleDateString()}\nNotes:\n${financeNotes || 'No additional notes provided.'}`
+  }, [decision, financeNotes])
+
+  // ΓöÇΓöÇ Handle Submit ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  const handleSubmit = useCallback(async () => {
+    if (!decision) return
+    if (!gateReview?.pm_projectgatereviewid) return
+
     setSaving(true)
     try {
-      if (isInitiative) {
-        // Initiative mode: no entity-level persistence for notes; workflow decision is enough
-        console.log('[FinancialReviewTaskModal] saveTaskData: initiative mode — no notes persistence needed')
-        const decisionLabel = workflowDecision === 0 ? 'Endorsed' : 'Rejected'
-        onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
-        return true
-      }
-
-      if (!gateReview?.pm_projectgatereviewid) {
-        console.warn('[FinancialReviewTaskModal] saveTaskData: no gate review ID')
-        return false
-      }
-      const decisionLabel = workflowDecision === 0 ? 'Endorsed' : 'Rejected'
+      const decisionLabel = decision === 'endorse' ? 'Endorsed' : 'Rejected'
       const existingNotes = gateReview.pm_reviewnotes || ''
-      const newEntry = `\n\n--- Financial Review Task ---\nDecision: ${decisionLabel}\nDate: ${new Date().toLocaleDateString()}\nNotes:\n${financeNotes || 'No additional notes provided.'}`
+      const newEntry = buildDecisionEntry()
 
-      console.log('[FinancialReviewTaskModal] saveTaskData: updating gate review with decision')
       await updateGateReview(gateReview.pm_projectgatereviewid, {
         pm_reviewnotes: existingNotes + newEntry,
       } as any)
 
-      console.log('[FinancialReviewTaskModal] saveTaskData: update succeeded')
-      onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
-      return true
-    } catch (err) {
-      console.error('[FinancialReviewTaskModal] saveTaskData: failed', err)
-      onError('Failed to save Financial decision.')
-      return false
-    } finally {
-      setSaving(false)
-    }
-  }, [gateReview, financeNotes, onSuccess, onError, isInitiative])
+      // If this is a workflow step, also submit the workflow decision
+      if (approvalStepId) {
+        const workflowDecision = decision === 'endorse' ? 0 : 3
+        const notes = buildDecisionEntry()
+        const workflowSuccess = await submitWorkflowDecision(approvalStepId, workflowDecision, notes)
+        if (!workflowSuccess) {
+          onError('Decision saved to gate review but workflow submission failed.')
+          setSaving(false)
+          return
+        }
 
-  /** Legacy decision handler for direct usage (not via FormDialog/workflow). */
-  const handleLegacyDecision = useCallback(async (decision: 'Endorsed' | 'Rejected') => {
-    if (!isInitiative && !gateReview?.pm_projectgatereviewid) return
-    console.log('[FinancialReviewTaskModal] handleLegacyDecision: decision=' + decision)
-    setSaving(true)
-    try {
-      if (!isInitiative && gateReview?.pm_projectgatereviewid) {
-        const existingNotes = gateReview.pm_reviewnotes || ''
-        const newEntry = `\n\n--- Financial Review Task ---\nDecision: ${decision}\nDate: ${new Date().toLocaleDateString()}\nNotes:\n${financeNotes || 'No additional notes provided.'}`
-        await updateGateReview(gateReview.pm_projectgatereviewid, {
-          pm_reviewnotes: existingNotes + newEntry,
-        } as any)
+        onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
+        onClose()
+      } else {
+        // Standalone mode: show success screen
+        setSubmitted(true)
       }
-
-      onSuccess(`Financial Task completed. Decision: ${decision}.`)
-      onClose()
     } catch (err) {
-      console.error('[FinancialReviewTaskModal] handleLegacyDecision: failed', err)
+      console.error('Failed to save Financial decision.', err)
       onError('Failed to save Financial decision.')
-    } finally {
-      setSaving(false)
-    }
-  }, [gateReview, financeNotes, onSuccess, onClose, onError, isInitiative])
-
-  const budget = project?.pm_approvedbudgeteur ?? 0
-  const spend = project?.pm_actualcosteur ?? 0
-  const remaining = budget - spend
-  const spendPct = budget > 0 ? ((spend / budget) * 100) : 0
-
-  const entityTitle = initiative?.pm_name || project?.pm_projectname || gateReview?.pm_gatename || ''
+    } finally { setSaving(false) }
+  }, [decision, gateReview, buildDecisionEntry, approvalStepId, onSuccess, onError, onClose])
 
   if (!open) return null
 
+  const budget = project?.pm_approvedbudgeteur ?? 0
+  const spend = (project as any)?.pm_actualcosteur ?? 0
+  const remaining = budget - spend
   return (
-    <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'secondary.main', color: 'secondary.contrastText', py: 1.5, pr: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <AccountBalanceIcon />
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Financial Review Task</Typography>
-            <Typography variant="caption" sx={{ opacity: 0.85 }}>
-              {entityTitle}
-            </Typography>
+    <Dialog
+      open={open}
+      onClose={() => !saving && onClose()}
+      maxWidth="lg"
+      fullWidth
+      slotProps={{
+        paper: { sx: { borderRadius: 2, overflow: 'hidden', maxHeight: '90vh', minHeight: 500 } },
+      }}
+    >
+      {submitted ? (
+        <>
+          {/* Submitted state header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: decision === 'reject' ? '#EF4444' : '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                <AccountBalanceIcon sx={{ fontSize: 18 }} />
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Financial Review Task</Typography>
+            </Box>
+            <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
           </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip label="Pending Financial Review" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'white' }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      </DialogTitle>
+          <SuccessScreen
+            decision={decision}
+            projectName={project?.pm_projectname}
+            gateName={gateReview?.pm_gatename}
+            onBack={() => { setSubmitted(false); setDecision(''); setFinanceNotes('') }}
+          />
+        </>
+      ) : (
+        <>
+          {/* ΓöÇΓöÇ Header ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: 'secondary.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'secondary.contrastText' }}>
+                <AccountBalanceIcon sx={{ fontSize: 18 }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Financial Review Task</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                  {gateReview?.pm_gatename || project?.pm_projectcode ? `${project?.pm_projectcode} ┬╖ ${gateReview?.pm_gatename || ''}` : 'Gate Review'}
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip label="Pending Financial Review" color="warning" size="small" sx={{ fontWeight: 700, borderRadius: 1 }} />
+              <IconButton size="small" onClick={onClose} disabled={saving}><CloseIcon fontSize="small" /></IconButton>
+            </Box>
+          </Box>
 
-      <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
-        {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
-        ) : (
-          <Grid container>
-            {/* Left Panel: Financial Context */}
-            <Grid size={{ xs: 12, md: 5 }} sx={{ borderRight: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', p: 3 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1, mb: 1.5, display: 'block' }}>
-                <BusinessIcon sx={{ fontSize: 14, verticalAlign: 'text-bottom', mr: 0.5 }} /> {isInitiative ? 'Initiative' : 'Project'} Context
-              </Typography>
-
-              {initiative ? (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: 'secondary.light', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <BusinessIcon sx={{ color: 'secondary.dark' }} />
+          <DialogContent sx={{ p: 0, bgcolor: 'background.default', display: 'flex' }}>
+            {loading ? (
+              <Box sx={{ flex: 1, p: 6, textAlign: 'center' }}>
+                <CircularProgress size={36} sx={{ mb: 2 }} />
+                <Typography variant="body2" color="text.secondary">Loading financial review data...</Typography>
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, width: '100%' }}>
+                {/* ΓöÇΓöÇΓöÇ Left Sidebar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+                <Box
+                  sx={{
+                    width: { xs: '100%', md: 220 },
+                    flexShrink: 0,
+                    borderRight: { md: '1px solid' },
+                    borderBottom: { xs: '1px solid', md: 'none' },
+                    borderColor: 'divider',
+                    bgcolor: isDark ? 'rgba(124,58,237,0.12)' : '#F5F3FF',
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                  }}
+                >
+                  {/* Brand row */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'secondary.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                      <AttachMoneyIcon sx={{ fontSize: 16 }} />
                     </Box>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 700, lineHeight: 1.2 }} noWrap>{initiative.pm_name || '—'}</Typography>
-                      <Typography variant="caption" color="text.secondary">Initiative</Typography>
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">
-                        Req: {initiative.pm_requestorname || '—'}
+                    <Box>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: isDark ? '#C4B5FD' : '#5B21B6', display: 'block', lineHeight: 1.2 }}>
+                        Financial Review
                       </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">
-                        Submitted by: {initiative.pm_createdbyname || '—'}
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem', color: isDark ? '#A78BFA' : '#7C3AED' }}>
+                        Gate Clearance
                       </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <FlagIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">{ragLabel(initiative.pm_pipelinestatus)}</Typography>
-                    </Box>
-                  </Box>
-
-                  <Divider sx={{ mb: 2 }} />
-
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AttachMoneyIcon fontSize="small" /> Estimated Cost
-                      </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>
-                        {initiative.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
-                      </Typography>
-                    </Paper>
-
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <TrendingUpIcon sx={{ fontSize: 14 }} /> Estimated Benefits
-                      </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main', fontFamily: '"JetBrains Mono", monospace' }}>
-                        {initiative.pm_estimatedbenefits != null ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '—'}
-                      </Typography>
-                    </Paper>
-
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary">Priority Score</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {initiative.pm_priorityscore ?? '—'}
-                      </Typography>
-                    </Paper>
-
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary">Strategic Alignment Score</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {initiative.pm_strategicalignmentscore ?? '—'}
-                      </Typography>
-                    </Paper>
-                  </Box>
-                </>
-              ) : project ? (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: 'secondary.light', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <BusinessIcon sx={{ color: 'secondary.dark' }} />
-                    </Box>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 700, lineHeight: 1.2 }} noWrap>{project.pm_projectname || '—'}</Typography>
-                      <Typography variant="caption" color="text.secondary">{project.pm_projectcode || '—'}</Typography>
                     </Box>
                   </Box>
 
-                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">{project.pm_projectmanagername || '—'}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <FlagIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">{ragLabel(project.pm_projectphase)}</Typography>
-                    </Box>
-                  </Box>
-
-                  <Divider sx={{ mb: 2 }} />
-
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AttachMoneyIcon fontSize="small" /> Approved Budget
-                      </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>
-                        {currencyFormatter.format(budget)}
-                      </Typography>
-                    </Paper>
-
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {currencyFormatter.format(spend)}
-                      </Typography>
-                      {budget > 0 && (
-                        <Box sx={{ mt: 0.5, width: '100%', height: 4, bgcolor: 'grey.200', borderRadius: 2, overflow: 'hidden' }}>
-                          <Box sx={{ width: `${Math.min(spendPct, 100)}%`, height: '100%', bgcolor: spendPct > 90 ? 'error.main' : spendPct > 75 ? 'warning.main' : 'success.main', borderRadius: 2, transition: 'width 0.3s ease' }} />
+                  {/* Steps navigation */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
+                    {[
+                      { id: 'context', label: 'Project Context', done: true },
+                      { id: 'finance', label: 'Financial Review', active: true },
+                      { id: 'decision', label: 'Board Decision', done: false },
+                    ].map((st) => (
+                      <Box
+                        key={st.id}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1.5,
+                          p: 1.25,
+                          borderRadius: 1,
+                          bgcolor: st.active ? (isDark ? 'rgba(124,58,237,0.15)' : 'rgba(124,58,237,0.08)') : 'transparent',
+                          borderLeft: '2px solid',
+                          borderLeftColor: st.active ? 'secondary.main' : 'transparent',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 22, height: 22, borderRadius: '50%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 11, fontWeight: 700, flexShrink: 0,
+                            bgcolor: st.done ? '#7C3AED' : st.active ? '#7C3AED' : (isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB'),
+                            color: st.done || st.active ? '#fff' : (isDark ? '#9CA3AF' : '#6B7280'),
+                          }}
+                        >
+                          {st.done ? '✓' : ['1', '2', '3'][['context', 'finance', 'decision'].indexOf(st.id)]}
                         </Box>
-                      )}
-                    </Paper>
-
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary">Remaining Budget</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: remaining < 0 ? 'error.main' : 'success.main', fontFamily: '"JetBrains Mono", monospace' }}>
-                        {currencyFormatter.format(remaining)}
-                      </Typography>
-                      {remaining < 0 && (
-                        <Typography variant="caption" color="error.main" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
-                          <WarningIcon sx={{ fontSize: 12 }} /> Over budget
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: st.active ? 700 : 500, fontSize: '0.82rem',
+                            color: st.active ? (isDark ? '#C4B5FD' : '#5B21B6') : (isDark ? '#9CA3AF' : '#6B7280'),
+                          }}
+                        >
+                          {st.label}
                         </Typography>
-                      )}
+                      </Box>
+                    ))}
+                  </Box>
+
+                  {/* Project mini card at bottom */}
+                  <Box sx={{ mt: 'auto', pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                      Pending Financial Review
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
+                      {project?.pm_projectmanagername || project?.pm_projectname || ''}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* ΓöÇΓöÇΓöÇ Content Area ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+                <Box sx={{ flex: 1, p: 2.5, overflow: 'auto', maxHeight: { md: 'calc(90vh - 140px)' } }}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      ≡ƒÆ░ Financial Review
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25 }}>
+                      Financial Assessment
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    {/* Financial Summary Cards */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5 }}>
+                      {[
+                        { label: 'Approved Budget', value: currencyFormatter.format(budget), icon: <AttachMoneyIcon />, color: 'primary.main', bg: (t: any) => t.palette.mode === 'dark' ? 'rgba(99,102,241,0.1)' : '#EEF2FF' },
+                        { label: 'Actual Spend', value: currencyFormatter.format(spend), icon: <TrendingDownIcon />, color: spend > budget ? '#EF4444' : 'text.primary', bg: (t: any) => t.palette.mode === 'dark' ? 'rgba(239,68,68,0.08)' : '#FEF2F2' },
+                        { label: 'Remaining', value: currencyFormatter.format(remaining), icon: <PercentIcon />, color: remaining < 0 ? '#EF4444' : '#10B981', bg: (t: any) => t.palette.mode === 'dark' ? 'rgba(16,185,129,0.08)' : '#ECFDF5' },
+                      ].map((card) => (
+                        <Paper
+                          key={card.label}
+                          variant="outlined"
+                          sx={{ p: 1.5, borderRadius: 1.5, bgcolor: card.bg as any, borderLeft: '3px solid', borderLeftColor: typeof card.color === 'string' ? card.color : 'primary.main' }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+                            {React.cloneElement(card.icon, { sx: { fontSize: 16, color: typeof card.color === 'string' ? card.color : 'primary.main' } })}
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              {card.label}
+                            </Typography>
+                          </Box>
+                          <Typography variant="h6" sx={{ fontWeight: 800, color: typeof card.color === 'string' ? card.color : 'text.primary', fontSize: '1.15rem' }}>
+                            {card.value}
+                          </Typography>
+                        </Paper>
+                      ))}
+                    </Box>
+
+                    {/* Budget Utilisation Bar */}
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                      <BudgetBar budget={budget} spend={spend} />
                     </Paper>
 
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">Cost RAG</Typography>
-                          <Box sx={{ mt: 0.5 }}>
-                            <StatusTag
-                              label={ragLabel(project.pm_costragstatus)}
-                              color={ragColor(project.pm_costragstatus) as any}
-                            />
-                          </Box>
-                        </Box>
-                        <Box sx={{ textAlign: 'right' }}>
-                          <Typography variant="caption" color="text.secondary">Overall RAG</Typography>
-                          <Box sx={{ mt: 0.5 }}>
-                            <StatusTag
-                              label={ragLabel(project.pm_ragstatus)}
-                              color={ragColor(project.pm_ragstatus) as any}
-                            />
-                          </Box>
-                        </Box>
+                    {/* Decision Picker */}
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                        Financial Decision
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {DECISION_OPTIONS.map((opt) => {
+                          const isSelected = decision === opt.value
+                          return (
+                            <Box
+                              key={opt.value}
+                              onClick={() => setDecision(opt.value)}
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1.5,
+                                border: '1.5px solid',
+                                borderColor: isSelected ? (isDark ? `${opt.color}80` : opt.color) : 'divider',
+                                borderRadius: 1.5,
+                                p: 1.5,
+                                cursor: 'pointer',
+                                bgcolor: isSelected ? (isDark ? `${opt.color}15` : `${opt.color}10`) : 'transparent',
+                                transition: 'all 0.15s ease',
+                                '&:hover': { borderColor: opt.color, bgcolor: (t: any) => t.palette.mode === 'dark' ? `${opt.color}10` : `${opt.color}08` },
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                name="finance-decision"
+                                checked={isSelected}
+                                onChange={() => setDecision(opt.value)}
+                                style={{ accentColor: opt.color, margin: 0, flexShrink: 0 }}
+                              />
+                              <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: opt.color }}>
+                                  {opt.label}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {opt.desc}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )
+                        })}
                       </Box>
                     </Paper>
 
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <TrendingUpIcon sx={{ fontSize: 14 }} /> Spend vs Budget
+                    {/* Assessment Notes */}
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                        Financial Assessment Notes
                       </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', color: spendPct > 90 ? 'error.main' : spendPct > 75 ? 'warning.main' : 'text.primary' }}>
-                        {budget > 0 ? spendPct.toFixed(1) + '%' : 'N/A'}
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={4}
+                        value={financeNotes}
+                        onChange={(e) => setFinanceNotes(e.target.value)}
+                        slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+                        placeholder="Enter financial clearance notes, concerns, or budget conditions..."
+                      />
+                    </Box>
+
+                    {/* Info note */}
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 1.5,
+                        bgcolor: isDark ? 'rgba(245,158,11,0.08)' : '#FFFBEB',
+                        borderColor: isDark ? 'rgba(245,158,11,0.2)' : '#FDE68A',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1,
+                      }}
+                    >
+                      <InfoOutlinedIcon sx={{ fontSize: 16, color: '#F59E0B', mt: 0.25, flexShrink: 0 }} />
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', lineHeight: 1.6 }}>
+                        <strong>Note:</strong> Endorsing the financials does not approve the gate review. It provides clearance for the Governance Board to make the final decision.
                       </Typography>
                     </Paper>
                   </Box>
-                </>
-              ) : (
-                <Box sx={{ p: 2, textAlign: 'center' }}>
-                  <Typography color="error.main" variant="body2">
-                    Data not available. Check debug logs.
-                  </Typography>
                 </Box>
-              )}
-            </Grid>
-
-            {/* Right Panel: Assessment */}
-            <Grid size={{ xs: 12, md: 7 }} sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>Financial Assessment</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {isInitiative ? (
-                  <>Initiative: <strong>{initiative?.pm_name || '—'}</strong></>
-                ) : (
-                  <>Gate: <strong>{gateReview?.pm_gatename || '—'}</strong>
-                  {gateReview?.pm_gatestage ? ` | Stage: ${gateReview.pm_gatestage}` : ''}
-                  {gateReview?.pm_reviewstatus ? ` | Status: ${gateReview.pm_reviewstatus}` : ''}</>
-                )}
-              </Typography>
-
-              <Divider sx={{ mb: 2.5 }} />
-
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-                {isInitiative
-                  ? "Review the initiative's estimated costs and benefits. Assess financial viability before progressing through the pipeline."
-                  : "Review the project's financial health. Ensure that the budget requested for the upcoming phase is realistic and that previous phase spending is accounted for."}
-              </Typography>
-
-              <TextField
-                fullWidth multiline rows={6}
-                label="Financial Assessment Notes"
-                placeholder="Enter financial clearance notes, concerns, or budget conditions..."
-                value={financeNotes}
-                onChange={(e) => setFinanceNotes(e.target.value)}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-              />
-
-              <Box sx={{ mt: 2.5, p: 2, bgcolor: 'warning.50', borderRadius: 1.5, border: '1px solid', borderColor: 'warning.100' }}>
-                 <Typography variant="body2" color="warning.900" sx={{ fontSize: '0.8rem' }}>
-                  <strong>Note:</strong> Endorsing the financials does not approve the gate review. It provides clearance for the Governance Board to make the final decision.
-                </Typography>
               </Box>
-            </Grid>
-          </Grid>
-        )}
-      </DialogContent>
+            )}
+          </DialogContent>
 
-      <DialogActions sx={{ p: 2.5, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', flexDirection: 'column', alignItems: 'stretch', gap: 1.5 }}>
-        {DecisionBoxProp && approvalStepId ? (
-          <DecisionBoxProp
-            approvalStepId={approvalStepId}
-            onBeforeDecision={saveTaskData}
-            onDecisionComplete={(decision) => {
-              dispatchFormDialogDecision({ formKey: 'financial_review', decision })
-              onClose()
-            }}
-            onDecisionError={(msg) => onError(msg)}
-            disabled={loading || saving}
-          />
-        ) : (
-          <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>
-            <Button onClick={onClose} disabled={saving} sx={{ borderRadius: 1.5 }}>Cancel</Button>
+          {/* ΓöÇΓöÇΓöÇ Bottom Bar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2.5, py: 1.5, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
             <Button
               variant="outlined"
-              color="error"
-              disabled={loading || saving}
-              onClick={() => handleLegacyDecision('Rejected')}
-              sx={{ borderRadius: 1.5, fontWeight: 600, minWidth: 140 }}
+              size="small"
+              onClick={onClose}
+              disabled={saving}
+              sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 13 }}
             >
-              Reject Financials
+              Cancel
             </Button>
+
             <Button
               variant="contained"
-              color="success"
-              disabled={loading || saving || !financeNotes.trim()}
-              onClick={() => handleLegacyDecision('Endorsed')}
-              sx={{ borderRadius: 1.5, fontWeight: 600, minWidth: 160 }}
+              size="medium"
+              disabled={!decision || saving}
+              onClick={handleSubmit}
+              sx={{
+                borderRadius: 1.5,
+                fontWeight: 700,
+                px: 3,
+                py: 1,
+                bgcolor: decision === 'reject' ? '#EF4444' : '#6366F1',
+                '&:hover': {
+                  bgcolor: decision === 'reject' ? '#DC2626' : '#4F46E5',
+                },
+              }}
             >
-              {saving ? 'Processing...' : 'Endorse Financials'}
+              {saving ? 'Submitting...' : `Submit Financial Review ΓåÆ`}
             </Button>
           </Box>
-        )}
-      </DialogActions>
+        </>
+      )}
     </Dialog>
   )
 }
+
+export default FinancialReviewTaskModal

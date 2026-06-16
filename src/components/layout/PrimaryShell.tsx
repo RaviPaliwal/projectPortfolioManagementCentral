@@ -13,7 +13,6 @@ import {
   useTheme,
 } from '@mui/material'
 import DashboardIcon from '@mui/icons-material/Dashboard'
-import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import TaskIcon from '@mui/icons-material/Task'
@@ -44,10 +43,9 @@ import { useEffect } from 'react'
 import NotificationCenter from './NotificationCenter'
 import { PERSONA_PERMISSIONS } from '@/constants/permissions'
 
-export type TabKey = 'workspace' | 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'calendar'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'calendar'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?: boolean }> = [
-  { key: 'workspace', label: 'My Workspace', icon: <WorkspacePremiumIcon /> },
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
   { key: 'portfolios', label: 'Portfolios', icon: <AccountTreeIcon /> },
   { key: 'programmes', label: 'Programmes', icon: <FolderOpenIcon /> },
