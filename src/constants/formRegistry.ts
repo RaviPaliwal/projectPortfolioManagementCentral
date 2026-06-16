@@ -84,6 +84,8 @@ export interface FormRegistryEntry {
     onClose: () => void
     onSuccess?: (msg: string) => void
     onError?: (msg: string) => void
+    /** The pre-resolved business entity GUID (e.g. initiative ID, timesheet ID) */
+    entityId?: string | null
     /**
      * Generic DecisionBox component pre-configured with approvalStepId.
      * Each task modal renders this in its footer to capture decision notes

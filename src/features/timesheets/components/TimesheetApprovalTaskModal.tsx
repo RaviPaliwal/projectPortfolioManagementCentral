@@ -1,20 +1,22 @@
-import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
+import React, { useState, useEffect, useRef, type ComponentType } from 'react'
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
-  IconButton, CircularProgress, Divider, Chip, Paper, Table, TableBody,
-  TableCell, TableHead, TableRow,
+  Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography,
+  IconButton, CircularProgress, Divider, Paper,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import EventNoteIcon from '@mui/icons-material/EventNote'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import PersonIcon from '@mui/icons-material/Person'
 import DateRangeIcon from '@mui/icons-material/DateRange'
-import ChecklistRtlIcon from '@mui/icons-material/ChecklistRtl'
-import { fetchTimesheetDetails, fetchTimesheetEntries } from '@/services/timesheet.service'
+import BusinessIcon from '@mui/icons-material/Business'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import CancelIcon from '@mui/icons-material/Cancel'
+import { fetchTimesheetDetails, fetchTimesheetEntries, updateTimesheetStatus } from '@/services/timesheet.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { TimesheetModel, TimesheetEntryModel } from '@/types/dataverse'
-import { StatusTag } from '@/components/common'
+import { LedgerCalendar } from '@/components/common'
+import type { CalendarEntry } from '@/components/common/LedgerCalendar/LedgerCalendar'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
-import { TIMESHEET_STATUS_LABELS, TIMESHEET_STATUS_COLORS } from '@/constants/mappings'
 
 interface TimesheetApprovalTaskModalProps {
   open: boolean
@@ -26,6 +28,21 @@ interface TimesheetApprovalTaskModalProps {
   approvalStepId?: string
 }
 
+const ACTIVITY_COLORS: Record<string, string> = {
+  chargeable: '#22c55e',
+  admin: '#6b7280',
+  leave: '#f59e0b',
+  sick: '#ef4444',
+}
+
+function getActivity(entry: TimesheetEntryModel): string {
+  if (entry.pm_ischargeable) return 'chargeable'
+  const reason = String(entry.pm_nonchargeablereason ?? '')
+  if (reason === '100000001') return 'leave'
+  if (reason === '100000002') return 'sick'
+  return 'admin'
+}
+
 export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProps> = ({
   open, onClose, timesheetId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
@@ -34,26 +51,34 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
   const [saving, setSaving] = useState(false)
   const [timesheet, setTimesheet] = useState<TimesheetModel | null>(null)
   const [entries, setEntries] = useState<TimesheetEntryModel[]>([])
+  const mountedRef = useRef(true)
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const [ts, entryList] = await Promise.all([
-        fetchTimesheetDetails(timesheetId),
-        fetchTimesheetEntries(timesheetId),
-      ])
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
+
+  useEffect(() => {
+    if (!open || !timesheetId) return
+    setLoading(true) // eslint-disable-line react-hooks/set-state-in-effect
+    console.log('[TimesheetApprovalTaskModal] Loading data for timesheetId:', timesheetId)
+    Promise.all([
+      fetchTimesheetDetails(timesheetId),
+      fetchTimesheetEntries(timesheetId),
+    ]).then(([ts, entryList]) => {
+      if (!mountedRef.current) return
+      console.log('[TimesheetApprovalTaskModal] Data loaded:', { details: ts?.pm_timesheetid, entryCount: entryList.length })
       if (!ts) { onError('Timesheet not found.'); setLoading(false); return }
       setTimesheet(ts)
       setEntries(entryList)
-    } catch (err) {
-      console.error('Failed to load timesheet', err)
-      onError('Failed to load timesheet details.')
-    } finally { setLoading(false) }
-  }, [timesheetId, onError])
-
-  useEffect(() => {
-    if (open) loadData()
-  }, [open, loadData])
+      setLoading(false)
+    }).catch((err) => {
+      console.error('[TimesheetApprovalTaskModal] Fetch failed:', err)
+      if (!mountedRef.current) return
+      onError('Failed to load timesheet details: ' + (err?.message || 'unknown error'))
+      setLoading(false)
+    })
+  }, [open, timesheetId, onError])
 
   if (!open) return null
 
@@ -65,197 +90,161 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
   const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
   return (
-    <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="lg" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: 'primary.contrastText', py: 1.5, pr: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <EventNoteIcon />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>Timesheet Review</Typography>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Timesheet Review</Typography>
+            <Typography variant="caption" sx={{ opacity: 0.85 }}>
+              {timesheet?.pm_resourcename || timesheet?.pm_ownername || ''}
+            </Typography>
+          </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip label="Pending Review" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
           <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'white' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
       </DialogTitle>
+
       <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
         {loading ? (
           <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
+        ) : !timesheet ? (
+          <Box sx={{ p: 4, textAlign: 'center' }}><Typography color="text.secondary">No data</Typography></Box>
         ) : (
-          <Grid container sx={{ height: '100%' }}>
-            {/* Left Column - Timesheet Context */}
-            <Grid size={{ xs: 12, md: 4 }} sx={{ borderRight: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', p: 3 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1 }}>Timesheet Context</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{timesheet?.pm_timesheetname || 'Loading...'}</Typography>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Box>
+            {/* Resource & Period Info Bar */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', p: 3, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
+                <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Owner</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <PersonIcon sx={{ fontSize: 14 }} />
-                    {timesheet?.pm_ownername || timesheet?.pm_resourcename || '\u2014'}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Resource</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{timesheet.pm_resourcename || timesheet.pm_ownername || '\u2014'}</Typography>
                 </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
+                <DateRangeIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Reporting Period</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <DateRangeIcon sx={{ fontSize: 14 }} />
-                    {timesheet?.pm_reportingperiod || '\u2014'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Period Start</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Period</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {timesheet?.pm_periodstartdate ? dateFormatter.format(new Date(timesheet.pm_periodstartdate)) : '\u2014'}
+                    {timesheet.pm_periodstartdate ? dateFormatter.format(new Date(timesheet.pm_periodstartdate)) : '\u2014'}
+                    {' \u2013 '}
+                    {timesheet.pm_periodenddate ? dateFormatter.format(new Date(timesheet.pm_periodenddate)) : '\u2014'}
                   </Typography>
                 </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
+                <BusinessIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Period End</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {timesheet?.pm_periodenddate ? dateFormatter.format(new Date(timesheet.pm_periodenddate)) : '\u2014'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Status</Typography>
-                  <Box sx={{ mt: 0.5 }}>
-                    <StatusTag
-                      label={TIMESHEET_STATUS_LABELS[statusKey] ?? 'Unknown'}
-                      color={TIMESHEET_STATUS_COLORS[statusKey] ?? 'default'}
-                      size="small"
-                      sx={{ fontWeight: 600 }}
-                    />
-                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Timesheet</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{timesheet.pm_timesheetname || '\u2014'}</Typography>
                 </Box>
               </Box>
-              <Box sx={{ mt: 4, p: 2, bgcolor: 'primary.50', borderRadius: 1.5, border: '1px solid', borderColor: 'primary.100' }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <ChecklistRtlIcon sx={{ fontSize: 16 }} /> Review Instructions
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.8rem' }}>
-                  Review the submitted timesheet entries to verify hours, chargeability, and project assignments before approving or rejecting.
-                </Typography>
-              </Box>
-            </Grid>
+            </Box>
 
-            {/* Right Column - Entries Details */}
-            <Grid size={{ xs: 12, md: 8 }} sx={{ p: 3 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <AccessTimeIcon sx={{ fontSize: 16 }} /> Hours Summary
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1 }}>
-                  <Typography variant="caption" color="text.secondary">Total Hours</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {totalHours.toFixed(1)}h
-                  </Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1 }}>
-                  <Typography variant="caption" color="text.secondary">Chargeable</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {chargeableHours.toFixed(1)}h
-                  </Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1 }}>
-                  <Typography variant="caption" color="text.secondary">Non-Chargeable</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {(totalHours - chargeableHours).toFixed(1)}h
-                  </Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1 }}>
-                  <Typography variant="caption" color="text.secondary">Approved</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {timesheet?.pm_approvaldate ? 'Yes' : 'No'}
-                  </Typography>
-                </Paper>
-              </Box>
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <EventNoteIcon sx={{ fontSize: 16 }} /> Time Entries ({entries.length})
-              </Typography>
-              <Paper variant="outlined" sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
-                <Table size="small" sx={{ minWidth: 400 }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', bgcolor: 'background.default' }}>Date</TableCell>
-                      <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', bgcolor: 'background.default' }}>Hours</TableCell>
-                      <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', bgcolor: 'background.default' }}>Chargeable</TableCell>
-                      <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', bgcolor: 'background.default' }}>Project</TableCell>
-                      <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', bgcolor: 'background.default' }}>Notes</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {entries.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} align="center">
-                          <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                            No entries found for this timesheet.
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      entries.map((entry, idx) => (
-                        <TableRow key={entry.pm_timesheetentryid || idx} hover>
-                          <TableCell>
-                            {entry.pm_workdate ? dateFormatter.format(new Date(entry.pm_workdate)) : '\u2014'}
-                          </TableCell>
-                          <TableCell sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
-                            {entry.pm_hoursworked != null ? entry.pm_hoursworked + 'h' : '\u2014'}
-                          </TableCell>
-                          <TableCell>
-                            <StatusTag
-                              label={entry.pm_ischargeable ? 'Yes' : 'No'}
-                              color={entry.pm_ischargeable ? 'success' : 'default'}
-                              size="small"
-                              sx={{ fontWeight: 600 }}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2">{entry.pm_projectname || '\u2014'}</Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="caption" color="text.secondary" sx={{
-                              maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', whiteSpace: 'nowrap',
-                            }}>
-                              {entry.pm_worknotes || '\u2014'}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+            {/* Summary Cards */}
+            <Box sx={{ display: 'flex', gap: 1.5, p: 2.5, pb: 0 }}>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, textAlign: 'center' }}>
+                <AccessTimeIcon sx={{ fontSize: 20, color: 'primary.main', mb: 0.5 }} />
+                <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{totalHours.toFixed(1)}</Typography>
+                <Typography variant="caption" color="text.secondary">Total Hours</Typography>
               </Paper>
-              {entries.length > 0 && (
-                <Box sx={{ mt: 1, p: 1.5, bgcolor: 'background.default', borderRadius: 1.5, display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700 }}>Total Hours: {totalHours.toFixed(1)}h</Typography>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, textAlign: 'center' }}>
+                <CheckCircleIcon sx={{ fontSize: 20, color: 'success.main', mb: 0.5 }} />
+                <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'success.main' }}>{chargeableHours.toFixed(1)}</Typography>
+                <Typography variant="caption" color="text.secondary">Chargeable</Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, textAlign: 'center' }}>
+                <CancelIcon sx={{ fontSize: 20, color: 'text.disabled', mb: 0.5 }} />
+                <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'text.secondary' }}>{(totalHours - chargeableHours).toFixed(1)}</Typography>
+                <Typography variant="caption" color="text.secondary">Non-Chargeable</Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, textAlign: 'center' }}>
+                <EventNoteIcon sx={{ fontSize: 20, color: 'info.main', mb: 0.5 }} />
+                <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{entries.length}</Typography>
+                <Typography variant="caption" color="text.secondary">Entries</Typography>
+              </Paper>
+            </Box>
+
+            {/* Ledger Calendar */}
+            {entries.length > 0 && timesheet.pm_periodstartdate && timesheet.pm_periodenddate && (
+              <Box sx={{ p: 2.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <EventNoteIcon sx={{ fontSize: 16 }} /> Time Entries
+                </Typography>
+                {(() => {
+                  const start = new Date(timesheet.pm_periodstartdate!)
+                  const end = new Date(timesheet.pm_periodenddate!)
+                  const calEntries: CalendarEntry[] = entries.map((e) => {
+                    const activity = getActivity(e)
+                    return {
+                      date: e.pm_workdate?.split('T')[0] || '',
+                      hours: e.pm_hoursworked ?? 0,
+                      type: activity,
+                      projectName: e.pm_projectname,
+                      comment: e.pm_worknotes,
+                    }
+                  })
+                  return (
+                    <LedgerCalendar
+                      year={start.getFullYear()}
+                      month={start.getMonth()}
+                      entries={calEntries}
+                      hideLegend
+                    />
+                  )
+                })()}
+                {/* Total Bar */}
+                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: 'background.default', borderRadius: 1.5, display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>Total: {totalHours.toFixed(1)}h</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: timesheet?.pm_totalhours != null && Math.abs(totalHours - timesheet.pm_totalhours) > 0.01 ? 'warning.main' : 'inherit' }}>
                     {timesheet?.pm_totalhours != null ? '(Recorded: ' + timesheet.pm_totalhours + 'h)' : ''}
                   </Typography>
                 </Box>
-              )}
-            </Grid>
-          </Grid>
+              </Box>
+            )}
+            {entries.length === 0 && (
+              <Box sx={{ p: 2.5 }}>
+                <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', borderRadius: 1.5 }}>
+                  <Typography variant="body2" color="text.secondary">No entries found for this timesheet.</Typography>
+                </Paper>
+              </Box>
+            )}
+          </Box>
         )}
       </DialogContent>
-      <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-        {DecisionBoxProp && approvalStepId && (
+
+      <Divider />
+      <DialogActions sx={{ p: 2.5, bgcolor: 'background.paper', flexDirection: 'column', alignItems: 'stretch' }}>
+        {DecisionBoxProp && approvalStepId ? (
           <DecisionBoxProp
             approvalStepId={approvalStepId}
             onBeforeDecision={async (decision) => {
               setSaving(true)
               try {
+                const newStatus = decision === 0 ? 0 : 2
+                await updateTimesheetStatus(timesheetId, newStatus, undefined, undefined)
                 const decisionLabel = decision === 0 ? 'Approved' : 'Rejected'
                 onSuccess('Timesheet review completed. Decision: ' + decisionLabel + '.')
                 return true
               } catch (err) {
-                onError('Failed to save review decision.')
+                onError('Failed to save review decision: ' + ((err as Error)?.message || 'unknown error'))
                 return false
               } finally { setSaving(false) }
             }}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'timesheet_approval', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 1 }}>
+            No decision options available for this step.
+          </Typography>
         )}
       </DialogActions>
     </Dialog>

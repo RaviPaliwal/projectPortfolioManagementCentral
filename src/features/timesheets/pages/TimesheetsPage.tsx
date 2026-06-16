@@ -113,6 +113,11 @@ export default function TimesheetsPage() {
   const [approvalRefreshTrigger, setApprovalRefreshTrigger] = useState(0)
   const { currentUser } = useUser()
 
+  const existingEntryDates = useMemo(
+    () => entries.map((e) => e.pm_workdate?.split('T')[0] ?? '').filter(Boolean),
+    [entries]
+  )
+
   // â”€â”€ Data Loading â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -564,6 +569,7 @@ export default function TimesheetsPage() {
         loading={actionLoading}
         allocatedProjects={allocatedProjects}
         projectsLoading={projectsLoading}
+        existingEntryDates={existingEntryDates}
       />
 
       <Dialog

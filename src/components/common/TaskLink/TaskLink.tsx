@@ -35,8 +35,10 @@ import {
 } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import AssignmentIcon from '@mui/icons-material/Assignment'
+import LockIcon from '@mui/icons-material/Lock'
 import type { ResolvedTaskInfo } from '@/services/task-resolver.service'
 import { resolveApprovalStepTask } from '@/services/task-resolver.service'
+import { useUser } from '@/context/UserContext'
 
 // ─── Props ────────────────────────────────────────────────────────────
 
@@ -98,6 +100,7 @@ export function TaskLink({
   buttonProps,
   linkProps,
 }: TaskLinkProps) {
+  const { currentUser } = useUser()
   const [loading, setLoading] = useState(false)
   const [task, setTask] = useState<ResolvedTaskInfo | null>(() => getCachedTask(stepId) ?? null)
   const [error, setError] = useState<string | null>(null)
@@ -128,13 +131,35 @@ export function TaskLink({
     }
   }, [stepId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Check if the task is assigned to the current user
+  const isAssignedToCurrentUser = useCallback(() => {
+    if (!currentUser || !task?.step) return true // No user context — show by default
+    const assigneeDisplay = task.step.pm_assigneedisplayname || ''
+    const assigneeName = task.step.pm_approvername || ''
+    const userId = (currentUser.systemuserid || '').toLowerCase()
+    const userName = (currentUser.fullname || '').toLowerCase()
+
+    // Team assignment (pm_assigneetype: 1) — always show to anyone
+    if (String(task.step.pm_assigneetype) === '1') return true
+
+    // User assignment — check if assignee matches current user
+    if (assigneeDisplay.toLowerCase() === userId) return true
+    if (assigneeDisplay.toLowerCase() === userName) return true
+    if (assigneeName.toLowerCase() === userId) return true
+    if (assigneeName.toLowerCase() === userName) return true
+
+    return false
+  }, [currentUser, task])
+
+  const isAuthorized = isAssignedToCurrentUser()
+
   // Open handler
   const handleOpen = useCallback(() => {
-    if (task) {
+    if (task && isAuthorized) {
       task.navigate()
       onOpened?.(task)
     }
-  }, [task, onOpened])
+  }, [task, isAuthorized, onOpened])
 
   // Render prop mode
   if (children) {
@@ -197,7 +222,50 @@ export function TaskLink({
     }
   }
 
-  // Resolved — render the appropriate variant
+  // Not authorized — show locked/unavailable state
+  if (!isAuthorized) {
+    switch (variant) {
+      case 'icon':
+        return null
+      case 'chip':
+        return (
+          <Tooltip title="Not assigned to you">
+            <Chip
+              icon={<LockIcon sx={{ fontSize: 14 }} />}
+              label="Not assigned"
+              size="small"
+              variant="outlined"
+              sx={{ borderRadius: 1, color: 'text.disabled', borderColor: 'divider' }}
+            />
+          </Tooltip>
+        )
+      case 'link':
+        return (
+          <Typography variant="caption" color="text.disabled" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+            <LockIcon sx={{ fontSize: 13 }} />
+            Not assigned
+          </Typography>
+        )
+      default:
+        return (
+          <Tooltip title="This task is assigned to another user">
+            <span>
+              <Button
+                size="small"
+                disabled
+                startIcon={<LockIcon sx={{ fontSize: 14 }} />}
+                sx={{ borderRadius: 1.5, fontSize: 11, py: 0.5, minWidth: 90 }}
+                {...buttonProps}
+              >
+                Not assigned
+              </Button>
+            </span>
+          </Tooltip>
+        )
+    }
+  }
+
+  // Resolved & authorized — render the appropriate variant
   const displayLabel = label || task.formDisplayName || 'Open Task'
   const tooltip = task.formEntry?.description || `Open ${task.formDisplayName || 'form'} for this approval step`
 

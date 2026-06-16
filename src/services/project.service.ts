@@ -121,7 +121,9 @@ export async function fetchProjectDetails(projectId: string): Promise<ProjectMod
         '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus',
         'pm_plannedstartdate', 'pm_plannedenddate',
         'pm_approvedbudgeteur', 'pm_actualcosteur',
-        'pm_percentcomplete', 'pm_businessunit'
+        'pm_percentcomplete', 'pm_businessunit',
+        'pm_projectsponsor', 'pm_costragstatus',
+        'pm_scheduleragstatus', 'pm_benefitsragstatus'
       ]
     })
     

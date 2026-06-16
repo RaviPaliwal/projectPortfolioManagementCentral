@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import {
   Box, Paper, Typography, useTheme,
   Table, TableBody, TableCell, TableHead, TableRow,
@@ -22,6 +22,7 @@ import {
 } from '@/services'
 import type { WorkflowApprovalStepModel } from '@/types/dataverse'
 import { PageHeader, TableShell, TableFooter, StatusTag, TaskLink } from '@/components/common'
+import { FORM_DIALOG_DECISION_EVENT } from '@/utils/formDialogEvents'
 
 const APPROVAL_STATUS_LABELS: Record<string, string> = { '0': 'Approved', '1': 'Pending' }
 const APPROVAL_STATUS_COLORS: Record<string, 'success' | 'warning'> = { '0': 'success', '1': 'warning' }
@@ -45,7 +46,6 @@ export default function PendingApprovalsPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-
   const [sort, setSort] = useState<SortState>({ field: 'due', dir: 'asc' })
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(25)
@@ -59,13 +59,13 @@ export default function PendingApprovalsPage() {
   }>({ open: false, step: null, reason: '' })
 
   const loadApprovals = useCallback(async () => {
-    if (!currentUser?.fullname) { setLoading(false); return }
+    if (!currentUser?.fullname) return
     setLoading(true)
     setError(null)
     try {
       const result = await fetchPendingWorkflowApprovals(
-        currentUser.systemuserid ?? '',
-      )
+          currentUser.systemuserid ?? '', currentUser.fullname,
+        )
       setSteps(result)
     } catch (err) {
       console.error('[PendingApprovalsPage] load error:', err)
@@ -79,7 +79,14 @@ export default function PendingApprovalsPage() {
     loadApprovals()
   }, [loadApprovals])
 
-
+  // Refresh list when a decision is made in the modal
+  const loadApprovalsRef = useRef(loadApprovals)
+  loadApprovalsRef.current = loadApprovals
+  useEffect(() => {
+    const handler = () => { loadApprovalsRef.current() }
+    window.addEventListener(FORM_DIALOG_DECISION_EVENT, handler)
+    return () => window.removeEventListener(FORM_DIALOG_DECISION_EVENT, handler)
+  }, [])
 
   // Filter & sort
   const filteredSteps = useMemo(() => {

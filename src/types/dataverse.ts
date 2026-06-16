@@ -131,8 +131,10 @@ export interface InitiativeModel {
   pm_strategicalignmentscore?: number
   pm_pipelinestatus?: string | number
   pm_requestorname?: string
+  pm_createdbyname?: string
   pm_submissiondate?: string
   pm_portfolioname?: string
+  pm_initiativetype?: number | string
   _pm_portfolio_value?: string
 }
 

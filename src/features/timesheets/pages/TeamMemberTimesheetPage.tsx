@@ -6,7 +6,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import LockIcon from "@mui/icons-material/Lock";
 import WarningIcon from "@mui/icons-material/Warning";
 import CommentIcon from "@mui/icons-material/Comment";
-import FlagIcon from "@mui/icons-material/Flag";
 import SendIcon from "@mui/icons-material/Send";
 import { useTheme, Box, Avatar as MuiAvatar, Typography, CircularProgress, Alert, MenuItem, TextField, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
 import {
@@ -28,18 +27,9 @@ import {
 import { useUser } from "@/context/UserContext";
 import type { TimesheetModel, TimesheetEntryModel, ResourceModel } from "@/types/dataverse";
 import { MODULE_NAMES } from "@/constants/moduleNames";
-import { PageHeader, Button, StatusTag } from "@/components/common";
-import { TIMESHEET_STATUS_LABELS, TIMESHEET_STATUS_COLORS } from "@/constants/mappings";
-/* =======================================================================
-   TYPES & INTERFACES
-   ======================================================================= */
-interface CalendarEntry {
-  date: string;
-  hours: number;
-  projectName?: string;
-  comment?: string;
-  type: string;
-}
+import { PageHeader, Button, StatusTag, LedgerCalendar } from "@/components/common";
+import type { CalendarEntry } from "@/components/common/LedgerCalendar/LedgerCalendar";
+import { TIMESHEET_STATUS_LABELS, TIMESHEET_STATUS_COLORS, STATUS_COLORS_SEMANTIC } from "@/constants/mappings";
 /* =======================================================================
    CONSTANTS
    ======================================================================= */
@@ -56,7 +46,7 @@ function cls(...args: (string | boolean | undefined | null)[]) {
   return args.filter(Boolean).join(' ');
 }
 function isEditable(status: number) {
-  return !status || status === 1;
+  return status === 2 || status === 3;
 }
 function mapActivityToEntryFields(activity: string) {
   switch (activity) {
@@ -92,7 +82,8 @@ function getTimesheetPeriodLabel(ts: TimesheetModel) {
    ======================================================================= */
 function StatusFlap({ status }: { status: number }) {
   const label = (TIMESHEET_STATUS_LABELS as any)[status] || 'Draft';
-  const color = (TIMESHEET_STATUS_COLORS as any)[status] || '#888';
+  const colorKey = (TIMESHEET_STATUS_COLORS as any)[status] || 'default';
+  const color = STATUS_COLORS_SEMANTIC[colorKey as keyof typeof STATUS_COLORS_SEMANTIC] || '#64748b';
   return (
     <span className="ts-flap" style={{ background: color }}>
       {label}
@@ -106,112 +97,6 @@ function ActivityChip({ id }: { id: string }) {
       <span className="ts-dot" style={{ background: a.color }} />
       {a.label}
     </span>
-  );
-}
-/* -------------------------------------------------------------------
-   LedgerCalendar
-   ------------------------------------------------------------------- */
-interface LedgerCalendarProps {
-  year: number;
-  month: number;
-  entries: CalendarEntry[];
-  interactive?: boolean;
-  selectedDates?: string[];
-  onSelectDate?: (date: string) => void;
-  holidays?: any[];
-  dailyCapacity?: number;
-}
-function LedgerCalendar({
-  year,
-  month,
-  entries,
-  interactive = false,
-  selectedDates = [],
-  onSelectDate,
-  holidays = [],
-  dailyCapacity = 8,
-}: LedgerCalendarProps) {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const firstDay = new Date(year, month, 1);
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const startDow = firstDay.getDay();
-  const holidayDates = new Set(holidays.map((h: any) => h.pm_holidaydate?.split('T')[0]));
-  const byDate = new Map<string, CalendarEntry[]>();
-  for (const e of entries) {
-    if (!byDate.has(e.date)) byDate.set(e.date, []);
-    byDate.get(e.date)!.push(e);
-  }
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < startDow; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const getColor = (type: string) => {
-    switch (type) {
-      case 'chargeable': return 'var(--charge)';
-      case 'leave': return 'var(--leave)';
-      case 'sick': return 'var(--sick)';
-      default: return 'var(--admin)';
-    }
-  };
-  return (
-    <div className="ts-cal">
-      <div className="ts-cal-head">
-        {DAYS.map(d => <div key={d} className="ts-cal-headcell">{d}</div>)}
-      </div>
-      <div className="ts-cal-grid">
-        {cells.map((day, idx) => {
-          if (!day) return <div key={`blank-${idx}`} className="ts-cal-cell ts-cal-blank" />;
-          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const dow = (startDow + day - 1) % 7;
-          const isWeekend = dow === 0 || dow === 6;
-          const isHoliday = holidayDates.has(dateStr);
-          const isToday = dateStr === todayStr;
-          const isSelected = selectedDates.includes(dateStr);
-          const dayEntries = byDate.get(dateStr) || [];
-          const total = dayEntries.reduce((s, e) => s + e.hours, 0);
-          const cellClass = cls(
-            'ts-cal-cell',
-            isWeekend && 'ts-cal-weekend',
-            isHoliday && 'ts-cal-holiday',
-            isToday && 'ts-cal-today',
-            isSelected && 'ts-cal-selected',
-          );
-          return (
-            <div
-              key={dateStr}
-              className={cellClass}
-              onClick={() => interactive && !isWeekend && onSelectDate?.(dateStr)}
-              style={{ cursor: interactive && !isWeekend ? 'pointer' : 'default' }}
-            >
-              <div className="ts-cal-daynum">{day}</div>
-              {isHoliday && <FlagIcon className="ts-cal-flag" sx={{ fontSize: 11 }} />}
-              {dayEntries.length > 0 && (
-                <>
-                  <div className="ts-cal-bar">
-                    {dayEntries.map((e, i) => (
-                      <div
-                        key={i}
-                        style={{ flex: e.hours, background: getColor(e.type), borderRadius: 2 }}
-                        title={`${e.hours}h ${e.type}`}
-                      />
-                    ))}
-                  </div>
-                  <div className="ts-cal-total ts-mono">{total}h</div>
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div className="ts-cal-legend">
-        {ACTIVITY_TYPES.map(a => (
-          <div key={a.id} className="ts-legend-item">
-            <span className="ts-dot" style={{ background: a.color }} />
-            {a.label}
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 /* -------------------------------------------------------------------
@@ -406,6 +291,10 @@ const TeamMemberTimesheetPage = () => {
     }),
     [entries, projects],
   );
+  const loggedDateSet = useMemo(
+    () => new Set(entries.map(e => e.pm_workdate?.split('T')[0]).filter(Boolean) as string[]),
+    [entries],
+  );
   const totalLogged = useMemo(
     () => uiEntries.reduce((s, e) => s + e.hours, 0),
     [uiEntries],
@@ -521,8 +410,10 @@ const TeamMemberTimesheetPage = () => {
       if (form.id) {
         await updateTimesheetEntry(form.id, { ...payloadBase, pm_workdate: form.dates[0] });
       } else {
+        const newDates = (form.dates as string[]).filter(d => !loggedDateSet.has(d));
+        if (newDates.length === 0) return;
         await Promise.all(
-          form.dates.map((date: string) =>
+          newDates.map((date: string) =>
             createTimesheetEntry({ ...payloadBase, pm_workdate: date, pm_timesheetid: selectedId })
           )
         );
@@ -544,7 +435,9 @@ const TeamMemberTimesheetPage = () => {
     }
   };
   const handleOpenAdd = () => {
-    setEditingEntry({ dates: selectedDates });
+    const filtered = selectedDates.filter(d => !loggedDateSet.has(d));
+    if (filtered.length === 0) return;
+    setEditingEntry({ dates: filtered });
     setDialogOpen(true);
   };
   const handleOpenEdit = (entry: any) => {
@@ -599,8 +492,8 @@ const TeamMemberTimesheetPage = () => {
     if (!selectedId || !resource?.pm_resourceid) return;
     setActionLoading(true);
     try {
-      await updateTimesheetStatus(selectedId, 2);
-      await startWorkflowForEntity('pm_timesheets', selectedId, 'pm_timesheets', currentUser?.systemuserid ?? '');
+      await updateTimesheetStatus(selectedId, 1);
+      await startWorkflowForEntity('default-template', selectedId, MODULE_NAMES.TIMESHEETS.value, currentUser?.fullname ?? 'System');
       const tsList = await fetchResourceTimesheets(resource.pm_resourceid);
       setTimesheets(tsList);
     } catch (err) {
@@ -705,13 +598,15 @@ const TeamMemberTimesheetPage = () => {
               onSelectDate={(dateStr: string) => {
                 const isHoliday = holidays.some((h: any) => h.pm_holidaydate.split('T')[0] === dateStr);
                 if (isHoliday) return;
+                const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                if (dateStr > today.toISOString().split('T')[0]) return;
+                if (loggedDateSet.has(dateStr)) return;
                 setSelectedDates(prev => {
                   if (prev.includes(dateStr)) return prev.filter(d => d !== dateStr);
                   return [...prev, dateStr].sort();
                 });
               }}
               holidays={holidays}
-              dailyCapacity={resource.pm_dailyworkcapacity || 8}
             />
             <div className="ts-entry-list">
               <div className="ts-entry-list-head">
@@ -852,22 +747,6 @@ function generateCSS(theme: any) {
 .ts-gauge-track{height:10px; border-radius:6px; background:${mode === 'light' ? '#eee' : '#333'}; overflow:hidden;}
 .ts-gauge-fill{height:100%; border-radius:6px;}
 .ts-gauge-labels{display:flex; justify-content:space-between; margin-top:6px; font-size:12px;}
-.ts-cal{margin-bottom:16px;}
-.ts-cal-head, .ts-cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px;}
-.ts-cal-headcell{font-size:10.5px; text-align:center; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; padding-bottom:3px;}
-.ts-cal-cell{position:relative; background:${mode === 'light' ? '#f5f5f5' : '#222'}; border-radius:6px; min-height:64px; padding:4px 5px; border:1px solid transparent;}
-.ts-cal-blank{background:transparent;}
-.ts-cal-weekend{background:${mode === 'light' ? '#ebebeb' : '#2a2a2a'};}
-.ts-cal-holiday{border:1px dashed var(--leave);}
-.ts-cal-today{box-shadow:inset 0 0 0 1.5px ${theme.palette.primary.main};}
-.ts-cal-selected{background:${theme.palette.primary.main}; color:#fff;}
-.ts-cal-daynum{font-size:11px; color:var(--ink-soft);}
-.ts-cal-selected .ts-cal-daynum{color:#fff;}
-.ts-cal-flag{position:absolute; top:4px; right:4px; color:var(--leave);}
-.ts-cal-bar{display:flex; height:4px; border-radius:2px; overflow:hidden; margin-top:14px;}
-.ts-cal-total{font-size:10px; margin-top:2px;}
-.ts-cal-legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;}
-.ts-legend-item{display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--ink-soft);}
 .ts-dot{width:7px; height:7px; border-radius:50%; display:inline-block;}
 .ts-entry-list-head{display:flex; justify-content:space-between; align-items:center; margin:16px 0 10px; font-size:13px; font-weight:700;}
 .ts-entry-row{display:grid; grid-template-columns:100px 140px 1fr 50px 24px 60px; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid var(--line); font-size:13px;}

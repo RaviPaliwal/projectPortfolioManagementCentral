@@ -238,9 +238,9 @@ export default function DashboardTasksWidget({ variant = 'full' }: DashboardTask
                                 {getEntityLabel((step as any).pm_entitytype)}
                               </Typography>
                             )}
-                            {(step as any).pm_workflowinstancelookupname && (
+                            {(step as any).pm_workflowname && (
                               <Typography variant="caption" color="text.disabled" sx={{ display: 'block', lineHeight: 1.3, fontSize: 10, mt: 0.25 }}>
-                                {(step as any).pm_workflowinstancelookupname}
+                                {(step as any).pm_workflowname}
                               </Typography>
                             )}
                             {(step as any).pm_initiatedby && (
@@ -264,10 +264,10 @@ export default function DashboardTasksWidget({ variant = 'full' }: DashboardTask
                               color="primary"
                             />
                           )}
-                          {step.pm_approvername && (
+                          {((step as any).pm_assigneename || step.pm_approvername) && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                               <PersonIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
-                              <Typography variant="caption" color="text.secondary">{step.pm_approvername}</Typography>
+                              <Typography variant="caption" color="text.secondary">{(step as any).pm_assigneename || step.pm_approvername}</Typography>
                             </Box>
                           )}
                         </Box>

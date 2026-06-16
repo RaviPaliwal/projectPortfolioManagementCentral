@@ -37,12 +37,28 @@ export interface FormDialogDetail {
 }
 
 export const FORM_DIALOG_OPEN_EVENT = 'form:open-dialog'
+export const FORM_DIALOG_DECISION_EVENT = 'form:decision-complete'
 
 /**
  * Dispatch an event to open a form in a dialog popup.
  */
 export function dispatchOpenFormDialog(detail: FormDialogDetail): void {
   const event = new CustomEvent<FormDialogDetail>(FORM_DIALOG_OPEN_EVENT, {
+    detail,
+    bubbles: false,
+    cancelable: false,
+  })
+  window.dispatchEvent(event)
+}
+
+export interface FormDialogDecisionDetail {
+  formKey: string | null | undefined
+  approvalStepId?: string
+  decision: number
+}
+
+export function dispatchFormDialogDecision(detail: FormDialogDecisionDetail): void {
+  const event = new CustomEvent<FormDialogDecisionDetail>(FORM_DIALOG_DECISION_EVENT, {
     detail,
     bubbles: false,
     cancelable: false,

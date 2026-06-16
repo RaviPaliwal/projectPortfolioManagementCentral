@@ -7,12 +7,15 @@ import {
   Alert,
   Chip,
   Button,
+  Tooltip,
 } from '@mui/material'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import PersonIcon from '@mui/icons-material/Person'
+import LockIcon from '@mui/icons-material/Lock'
 
 import { TabPanel } from '@/components/common'
+import { useUser } from '@/context/UserContext'
 import {
   fetchWorkflowInstancesForEntity,
   fetchWorkflowApprovalSteps,
@@ -36,10 +39,31 @@ interface EntityApprovalTasksProps {
   onAllStepsCompleted?: (info: StepCompletionInfo) => void
 }
 
+/** Check if a step is assigned to the given user */
+function isStepAssignedToUser(
+  step: WorkflowApprovalStepModel,
+  userId: string,
+  userName: string
+): boolean {
+  // Team assignment — always visible (no per-user filter for team-assigned tasks)
+  if (String(step.pm_assigneetype) === '1') return true
+
+  const assigneeDisplay = (step.pm_assigneedisplayname || '').toLowerCase()
+  const approverName = (step.pm_approvername || '').toLowerCase()
+
+  if (assigneeDisplay === userId.toLowerCase()) return true
+  if (assigneeDisplay === userName.toLowerCase()) return true
+  if (approverName === userId.toLowerCase()) return true
+  if (approverName === userName.toLowerCase()) return true
+
+  return false
+}
+
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 const formatDate = (d?: string | null): string => d ? dateFormatter.format(new Date(d)) : '—'
 
 export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValue, index, refreshTrigger, onAllStepsCompleted }: EntityApprovalTasksProps) {
+  const { currentUser } = useUser()
   const [instances, setInstances] = useState<WorkflowInstanceModel[]>([])
   const [updatedInstances, setUpdatedInstances] = useState<WorkflowInstanceModel[]>([])
   const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
@@ -75,16 +99,24 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
 
       const pendingSteps: WorkflowApprovalStepModel[] = []
       const completedSteps: WorkflowApprovalStepModel[] = []
+      const userId = currentUser?.systemuserid || ''
+      const userName = currentUser?.fullname || ''
+
       for (const instance of workflowInstances) {
         const instanceId = instance.pm_workflowinstanceid
         if (!instanceId) continue
         const instanceSteps = await fetchWorkflowApprovalSteps(instanceId)
         for (const s of instanceSteps) {
-          if (s.pm_decisionstatus === 1 || s.pm_decisionstatus === 2) {
-            pendingSteps.push(s)
-          } else {
+          // Only show steps that are actually Assigned (actionable), not Pending
+          if (s.pm_decisionstatus === 2) {
+            // Only add to pending if assigned to the current user
+            if (isStepAssignedToUser(s, userId, userName)) {
+              pendingSteps.push(s)
+            }
+          } else if (s.pm_decisionstatus === 0 || s.pm_decisionstatus === 3) {
             completedSteps.push(s)
           }
+          // Status 1 (Pending) — not yet actionable, skip entirely
         }
       }
       setSteps(pendingSteps)
@@ -96,7 +128,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
     } finally {
       setLoading(false)
     }
-  }, [entityId, moduleName, detectCompletion])
+  }, [entityId, moduleName, detectCompletion, currentUser])
 
   useEffect(() => {
     if (entityId) {
@@ -181,8 +213,17 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
             <Chip label={`${steps.length} pending`} color="warning" size="small" sx={{ fontWeight: 700, borderRadius: 1 }} />
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {steps.map((step) => {
+            {(() => {
+              const workflowMap: Record<string, string> = {}
+              for (const inst of updatedInstances) {
+                const id = inst.pm_workflowinstanceid
+                if (id) workflowMap[id] = inst.pm_workflowlookupname || inst.pm_instancename || ''
+              }
+              return steps.map((step) => {
               const isOverdue = step.pm_duedate && new Date(step.pm_duedate) < new Date()
+              const workflowName = step._pm_workflowinstancelookup_value
+                ? workflowMap[step._pm_workflowinstancelookup_value] || null
+                : null
               return (
                 <Paper
                   key={step.pm_workflowapprovalstepid}
@@ -197,13 +238,22 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                   }}
                 >
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-                      <AssignmentIcon sx={{ fontSize: 16, color: isOverdue ? 'error.main' : 'warning.main' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {step.pm_stepname || 'Approval Step'}
-                      </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, minWidth: 0 }}>
+                      <Box sx={{ mt: 0.25 }}>
+                        <AssignmentIcon sx={{ fontSize: 16, color: isOverdue ? 'error.main' : 'warning.main' }} />
+                      </Box>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {step.pm_stepname || 'Approval Step'}
+                        </Typography>
+                        {workflowName && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.3, fontSize: 11 }}>
+                            {workflowName}
+                          </Typography>
+                        )}
+                      </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
                       <Typography variant="caption" color={isOverdue ? 'error' : 'text.secondary'} sx={{ fontWeight: 600 }}>
                         {step.pm_duedate ? (isOverdue ? 'Overdue' : `Due ${formatDate(step.pm_duedate)}`) : 'No due date'}
                       </Typography>
@@ -229,11 +279,11 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                     </Box>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    {step.pm_approvername && (
+                    {((step as any).pm_assigneename || step.pm_approvername) && (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <PersonIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
                         <Typography variant="caption" color="text.secondary">
-                          Assignee: {step.pm_approvername}
+                          {(step as any).pm_assigneename || step.pm_approvername}
                         </Typography>
                       </Box>
                     )}
@@ -245,7 +295,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                   </Box>
                 </Paper>
               )
-            })}
+            })})()}
           </Box>
           {updatedInstances.length > 0 && (
             <Box sx={{ mt: 3 }}>

@@ -3,6 +3,8 @@ import {
   Pm_workflowinstancesService,
   Pm_workflowapprovalstepsService,
   Pm_workflowsteptemplatesService,
+  SystemusersService,
+  TeamsService,
 } from '@/generated'
 import { InitiateWorkflowService } from '@/generated/services/InitiateWorkflowService'
 import { WorkflowRoutingHandlerService } from '@/generated/services/WorkflowRoutingHandlerService'
@@ -10,6 +12,8 @@ import type { Pm_workflows } from '@/generated/models/Pm_workflowsModel'
 import type { Pm_workflowinstances } from '@/generated/models/Pm_workflowinstancesModel'
 import type { Pm_workflowapprovalsteps } from '@/generated/models/Pm_workflowapprovalstepsModel'
 import type { Pm_workflowsteptemplates } from '@/generated/models/Pm_workflowsteptemplatesModel'
+import type { Systemusers } from '@/generated/models/SystemusersModel'
+import type { Teams } from '@/generated/models/TeamsModel'
 import type {
   WorkflowModel,
   WorkflowInstanceModel,
@@ -364,9 +368,62 @@ export async function fetchWorkflowApprovalSteps(instanceId: string): Promise<Wo
     orderBy: ['pm_steporder asc'],
     top: 200,
   })
-    console.log('fetchWorkflowApprovalSteps - raw result:', result)
+  console.log('fetchWorkflowApprovalSteps - raw result:', result)
   const steps = unwrapList<Pm_workflowapprovalsteps>(result)
-  return steps.map(mapWorkflowApprovalStep)
+  const mapped = steps.map(mapWorkflowApprovalStep)
+
+  // Resolve assignee names and enrich with workflow instance data
+  await enrichApprovalSteps(mapped)
+
+  return mapped
+}
+
+/**
+ * Enrich a list of approval steps with workflow instance metadata and resolved assignee names.
+ */
+async function enrichApprovalSteps(steps: WorkflowApprovalStepModel[]): Promise<void> {
+  for (const step of steps) {
+    const instanceLookup = step._pm_workflowinstancelookup_value
+    if (instanceLookup) {
+      try {
+        const instanceResult = await Pm_workflowinstancesService.get(instanceLookup, {
+          select: ['pm_workflowinstanceid', 'pm_instancename', '_pm_workflowlookup_value'],
+        })
+        const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
+        if (instance) {
+          const workflowTemplateName = (instance as any)['_pm_workflowlookup_value@OData.Community.Display.V1.FormattedValue']
+          ; (step as any).pm_workflowname = workflowTemplateName || instance.pm_instancename
+        }
+      } catch { }
+    }
+
+    // Resolve assignee name based on assignee type
+    const assigneeDisplayName = step.pm_assigneedisplayname
+    const assigneeType = Number(step.pm_assigneetype)
+    if (assigneeDisplayName && isGuid(assigneeDisplayName)) {
+      try {
+        if (assigneeType === 0) {
+          const userResult = await SystemusersService.get(assigneeDisplayName, {
+            select: ['systemuserid', 'fullname'],
+          })
+          const user = unwrapSingle<Systemusers>(userResult)
+          ; (step as any).pm_assigneename = user?.fullname || assigneeDisplayName
+        } else if (assigneeType === 1) {
+          const teamResult = await TeamsService.get(assigneeDisplayName, {
+            select: ['teamid', 'name'],
+          })
+          const team = unwrapSingle<Teams>(teamResult)
+          ; (step as any).pm_assigneename = team?.name || assigneeDisplayName
+        } else {
+          ; (step as any).pm_assigneename = assigneeDisplayName
+        }
+      } catch {
+        ; (step as any).pm_assigneename = assigneeDisplayName
+      }
+    } else {
+      ; (step as any).pm_assigneename = assigneeDisplayName || step.pm_approvername || ''
+    }
+  }
 }
 
 export async function createWorkflowApprovalStep(payload: Partial<WorkflowApprovalStepModel>): Promise<WorkflowApprovalStepModel | null> {
@@ -505,16 +562,22 @@ export async function rejectWorkflowStep(
 
 // ─── Pending Approvals ──────────────────────────────────────────────────
 
+/** Simple check if a string looks like a GUID */
+function isGuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim())
+}
+
 export async function fetchPendingWorkflowApprovals(
   userId: string,
+  userName?: string,
 ): Promise<WorkflowApprovalStepModel[]> {
   try {
     const allPendingResult = await Pm_workflowapprovalstepsService.getAll({
-      filter: "pm_decisionstatus eq 1 or pm_decisionstatus eq 2", // Pending or Assigned
+      filter: "pm_decisionstatus eq 2", // Only Assigned (actionable) steps
       select: [
         'pm_workflowapprovalstepid', 'pm_steporder',
         'pm_approvername', 'pm_assigneedisplayname', 'pm_assigneetype',
-        'pm_decisionstatus',
+        'pm_decisionstatus', 'pm_stepname',
         'pm_decisiondate', 'pm_decisionnotes',
         'pm_duedate', 'pm_isparallelstep',
         '_pm_workflowinstancelookup_value', '_pm_workflowtemplate_value',
@@ -524,16 +587,24 @@ export async function fetchPendingWorkflowApprovals(
     })
     console.log('fetchPendingWorkflowApprovals - raw allPendingResult:', allPendingResult)
     const allPending = unwrapList<Pm_workflowapprovalsteps>(allPendingResult)
-    const userLower = userId.toLowerCase()
 
     const filtered = allPending.filter((step) => {
-      const assigneeName = (step.pm_approvername || step.pm_assigneedisplayname || '').toLowerCase()
-      return assigneeName === userLower
+      const approver = (step.pm_approvername || '').toLowerCase()
+      const assigneeDisplay = (step.pm_assigneedisplayname || '').toLowerCase()
+      const userIdLower = userId.toLowerCase()
+      if (approver === userIdLower) return true
+      if (assigneeDisplay === userIdLower) return true
+      if (userName) {
+        const nameLower = userName.toLowerCase()
+        if (approver === nameLower) return true
+        if (assigneeDisplay === nameLower) return true
+      }
+      return false
     })
 
     const result = filtered.map(mapWorkflowApprovalStep)
 
-    // Enrich with instance metadata
+    // Enrich with instance metadata and resolve names
     for (const step of result) {
       const instanceLookup = step._pm_workflowinstancelookup_value
       if (instanceLookup) {
@@ -543,12 +614,45 @@ export async function fetchPendingWorkflowApprovals(
           })
           const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
           if (instance) {
-            ; (step as any).pm_workflowinstancelookupname = instance.pm_workflowlookupname || instance.pm_instancename
-              ; (step as any).pm_entityid = instance.pm_entityid
-              ; (step as any).pm_entitytype = instance.pm_entitytype
-              ; (step as any).pm_initiatedby = instance.pm_initiatedbylookupname || instance._pm_initiatedbylookup_value
+            // Workflow template name (formatted value of the lookup to pm_workflows)
+            const workflowTemplateName = (instance as any)['_pm_workflowlookup_value@OData.Community.Display.V1.FormattedValue']
+            ; (step as any).pm_workflowinstancelookupname = instance.pm_instancename
+            ; (step as any).pm_workflowname = workflowTemplateName || instance.pm_instancename
+            ; (step as any).pm_entityid = instance.pm_entityid
+            ; (step as any).pm_entitytype = instance.pm_entitytype
+            ; (step as any).pm_initiatedby = instance.pm_initiatedbylookupname || instance._pm_initiatedbylookup_value
           }
         } catch { }
+      }
+
+      // Resolve assignee name based on assignee type
+      const assigneeDisplayName = step.pm_assigneedisplayname
+      const assigneeType = Number(step.pm_assigneetype)
+      if (assigneeDisplayName && isGuid(assigneeDisplayName)) {
+        try {
+          if (assigneeType === 0) {
+            // User type — lookup from SystemUser
+            const userResult = await SystemusersService.get(assigneeDisplayName, {
+              select: ['systemuserid', 'fullname'],
+            })
+            const user = unwrapSingle<Systemusers>(userResult)
+            ; (step as any).pm_assigneename = user?.fullname || assigneeDisplayName
+          } else if (assigneeType === 1) {
+            // Team type — lookup from Team
+            const teamResult = await TeamsService.get(assigneeDisplayName, {
+              select: ['teamid', 'name'],
+            })
+            const team = unwrapSingle<Teams>(teamResult)
+            ; (step as any).pm_assigneename = team?.name || assigneeDisplayName
+          } else {
+            ; (step as any).pm_assigneename = assigneeDisplayName
+          }
+        } catch {
+          ; (step as any).pm_assigneename = assigneeDisplayName
+        }
+      } else {
+        // Already a display name or fallback to approvername
+        ; (step as any).pm_assigneename = assigneeDisplayName || step.pm_approvername || ''
       }
     }
 

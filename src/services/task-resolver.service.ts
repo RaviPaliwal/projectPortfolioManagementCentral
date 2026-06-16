@@ -35,6 +35,8 @@ export interface ResolvedTaskInfo {
     pm_duedate?: string
     pm_decisionstatus?: number | string
     pm_stepname?: string
+    pm_assigneedisplayname?: string
+    pm_assigneetype?: number | string
   }
   /** The workflow instance GUID that this step belongs to */
   workflowInstanceId: string
@@ -67,6 +69,7 @@ export async function fetchApprovalStepById(stepId: string): Promise<Pm_workflow
         'pm_stepname',
         'pm_approvername',
         'pm_assigneedisplayname',
+        'pm_assigneetype',
         'pm_decisionstatus',
         'pm_decisiondate',
         'pm_decisionnotes',
@@ -232,6 +235,8 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
         pm_duedate: step.pm_duedate,
         pm_decisionstatus: step.pm_decisionstatus,
         pm_stepname: step.pm_stepname,
+        pm_assigneedisplayname: step.pm_assigneedisplayname,
+        pm_assigneetype: step.pm_assigneetype,
       },
       workflowInstanceId,
       entityId,
@@ -258,15 +263,62 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
 export async function resolveEntityIdFromApprovalStep(stepId: string): Promise<string | null> {
   try {
     const step = await fetchApprovalStepById(stepId)
-    if (!step?._pm_workflowinstancelookup_value) return null
+    if (!step?._pm_workflowinstancelookup_value) {
+      return null
+    }
 
     const instanceResult = await Pm_workflowinstancesService.get(step._pm_workflowinstancelookup_value, {
-      select: ['pm_workflowinstanceid', 'pm_entityid', 'pm_entitytype'],
+      select: ['pm_workflowinstanceid', 'pm_entityid', 'pm_entitytype', 'pm_entityname', 'pm_instancename'],
     })
     const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
-    return instance?.pm_entityid ?? null
-  } catch {
+    const result = instance?.pm_entityid ?? null
+    return result
+  } catch (err) {
     return null
+  }
+}
+
+export interface EntityInfo {
+  entityId: string | null
+  entityType: string | undefined
+  entityName: string | undefined
+}
+
+export async function resolveEntityInfoFromApprovalStep(stepId: string): Promise<EntityInfo> {
+  try {
+    const step = await fetchApprovalStepById(stepId)
+    console.log('[resolveEntityInfoFromApprovalStep] ⏳ Step fetched:', {
+      stepId: step?.pm_workflowapprovalstepid,
+      instanceLookup: step?._pm_workflowinstancelookup_value,
+      templateLookup: step?._pm_workflowtemplate_value,
+    })
+    if (!step?._pm_workflowinstancelookup_value) {
+      console.warn('[resolveEntityInfoFromApprovalStep] ❌ No workflow instance lookup on step')
+      return { entityId: null, entityType: undefined, entityName: undefined }
+    }
+
+    const instanceResult = await Pm_workflowinstancesService.get(step._pm_workflowinstancelookup_value, {
+      select: ['pm_workflowinstanceid', 'pm_entityid', 'pm_entitytype', 'pm_entityname', 'pm_instancename'],
+    })
+    console.log('[resolveEntityInfoFromApprovalStep] ⏳ Instance raw result:', instanceResult)
+    const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
+    console.log('[resolveEntityInfoFromApprovalStep] ✅ Instance unwrapped:', instance ? {
+      id: instance.pm_workflowinstanceid,
+      entityId: instance.pm_entityid,
+      entityType: instance.pm_entitytype,
+      entityName: instance.pm_entityname,
+    } : 'null')
+
+    const result: EntityInfo = {
+      entityId: instance?.pm_entityid ?? null,
+      entityType: instance?.pm_entitytype,
+      entityName: instance?.pm_entityname,
+    }
+    console.log('[resolveEntityInfoFromApprovalStep] ✅ Returning:', result)
+    return result
+  } catch (err) {
+    console.error('[resolveEntityInfoFromApprovalStep] ❌ Exception:', err)
+    return { entityId: null, entityType: undefined, entityName: undefined }
   }
 }
 

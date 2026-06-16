@@ -15,7 +15,8 @@
 
 import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import { Box, CircularProgress, Typography, Alert } from '@mui/material'
-import { resolveEntityIdFromApprovalStep } from '@/services/task-resolver.service'
+import { resolveEntityIdFromApprovalStep, resolveEntityInfoFromApprovalStep } from '@/services/task-resolver.service'
+import type { EntityInfo } from '@/services/task-resolver.service'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 import { PmoReadinessTaskModal } from './PmoReadinessTaskModal'
 import { FinancialReviewTaskModal } from './FinancialReviewTaskModal'
@@ -28,26 +29,33 @@ interface ApprovalStepResolverProps {
   onClose: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
-  children: (entityId: string) => React.ReactNode
+  children: (entityId: string, entityType?: string) => React.ReactNode
 }
 
 function ApprovalStepResolver({ approvalStepId, onClose, onSuccess, onError, children }: ApprovalStepResolverProps) {
   const [entityId, setEntityId] = useState<string | null>(null)
+  const [entityType, setEntityType] = useState<string | undefined>()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
+    console.log('[ApprovalStepResolver] ⏳ Resolving entity for approvalStepId:', approvalStepId)
     setLoading(true)
     setError(null)
     try {
-      const id = await resolveEntityIdFromApprovalStep(approvalStepId)
-      if (id) {
-        setEntityId(id)
+      const info = await resolveEntityInfoFromApprovalStep(approvalStepId)
+      console.log('[ApprovalStepResolver] 🔍 resolveEntityInfoFromApprovalStep returned:', info)
+      if (info.entityId) {
+        console.log('[ApprovalStepResolver] ✅ Entity resolved:', info)
+        setEntityId(info.entityId)
+        setEntityType(info.entityType)
       } else {
+        console.warn('[ApprovalStepResolver] ❌ No entityId resolved from approval step')
         setError('Could not resolve target entity from approval step.')
         onError?.('Could not resolve target entity from approval step.')
       }
     } catch (err) {
+      console.error('[ApprovalStepResolver] ❌ Exception resolving entity:', err)
       const msg = 'Failed to resolve approval step.'
       setError(msg)
       onError?.(msg)
@@ -81,7 +89,7 @@ function ApprovalStepResolver({ approvalStepId, onClose, onSuccess, onError, chi
     )
   }
 
-  return <>{children(entityId)}</>
+  return <>{children(entityId, entityType)}</>
 }
 
 // ─── PMO Readiness ───────────────────────────────────────────────────────
@@ -161,17 +169,21 @@ export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalW
       onSuccess={onSuccess}
       onError={onError}
     >
-      {(gateReviewId) => (
-        <FinancialReviewTaskModal
-          open={open}
-          onClose={handleClose}
-          gateReviewId={gateReviewId}
-          onSuccess={onSuccess || (() => {})}
-          onError={onError || (() => {})}
-          DecisionBox={DecisionBox}
-          approvalStepId={approvalStepId}
-        />
-      )}
+      {(gateReviewId, entityType) => {
+        console.log('[FinancialReviewTaskModalWrapper] 🟢 Rendering modal with resolved props:', { gateReviewId, entityType, approvalStepId, open })
+        return (
+          <FinancialReviewTaskModal
+            open={open}
+            onClose={handleClose}
+            gateReviewId={gateReviewId}
+            entityType={entityType}
+            onSuccess={onSuccess || (() => {})}
+            onError={onError || (() => {})}
+            DecisionBox={DecisionBox}
+            approvalStepId={approvalStepId}
+          />
+        )
+      }}
     </ApprovalStepResolver>
   )
 }

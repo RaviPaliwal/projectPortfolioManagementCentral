@@ -127,7 +127,7 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
           startIcon={isLoading ? <CircularProgress size={16} /> : <CancelIcon />}
           sx={{ fontWeight: 600, minWidth: 140 }}
         >
-          {isLoading ? 'Processing...' : 'Reject (3)'}
+          {isLoading ? 'Processing...' : 'Reject'}
         </Button>
         <Button
           variant="contained"
@@ -137,7 +137,7 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
           startIcon={isLoading ? <CircularProgress size={16} /> : <CheckCircleIcon />}
           sx={{ fontWeight: 600, minWidth: 140 }}
         >
-          {isLoading ? 'Processing...' : 'Approve (0)'}
+          {isLoading ? 'Processing...' : 'Approve'}
         </Button>
       </Box>
     </Box>

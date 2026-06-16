@@ -86,7 +86,7 @@ export function FormDialog() {
         return
       }
 
-      console.log('[FormDialog] 📩 Received event:', data.formDisplayName, '| formKey:', data.formKey, '| stepId:', data.approvalStepId)
+      console.log('[FormDialog] 📩 Received event:', data.formDisplayName, '| formKey:', data.formKey, '| stepId:', data.approvalStepId, '| entityId:', data.entityId, '| entityType:', data.entityType)
       setDetail(data)
       setOpen(true)
     }
@@ -125,6 +125,7 @@ export function FormDialog() {
           <ModalComponent
             approvalStepId={detail.approvalStepId!}
             onClose={handleClose}
+            entityId={detail.entityId}
             DecisionBox={DecisionBox}
           />
         </Suspense>

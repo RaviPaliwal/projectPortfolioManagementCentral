@@ -2,6 +2,7 @@
   Pm_timesheetsService,
   Pm_timesheetentriesService,
   Pm_resourcesService,
+  Pm_projectsService,
 } from '@/generated'
 import type { Pm_timesheets } from '@/generated/models/Pm_timesheetsModel'
 import type { Pm_timesheetentries } from '@/generated/models/Pm_timesheetentriesModel'
@@ -14,7 +15,7 @@ import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
 export const mapTimesheet = (item: Pm_timesheets): TimesheetModel => ({
   pm_timesheetid: item.pm_timesheetid,
   pm_timesheetname: item.pm_timesheetname,
-  pm_ownername: item.owneridname,
+  pm_ownername: item.pm_resourcename,
   pm_periodstartdate: item.pm_periodstartdate,
   pm_periodenddate: item.pm_periodenddate,
   pm_timesheetstatus: item.pm_timesheetstatus,
@@ -106,7 +107,6 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
   try {
     const selectFields = [
       'pm_timesheetid', 'pm_timesheetname',
-      'pm_ownername', 'pm_resourcename',
       'pm_periodstartdate', 'pm_periodenddate', 'pm_timesheetstatus',
       'pm_totalhours', 'pm_totalchargeablehours', 'pm_totalnonchargeablehours',
       'pm_submissiondate', 'pm_submittedby',
@@ -115,7 +115,22 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
     ]
     const result = await Pm_timesheetsService.get(timesheetId, { select: selectFields })
     const item = unwrapSingle<Pm_timesheets>(result)
-    return item ? mapTimesheet(item) : null
+    if (!item) return null
+    const mapped = mapTimesheet(item)
+    try {
+      const resourceId = normalizeLookupId(item._pm_resource_value)
+      if (resourceId) {
+        const resResult = await Pm_resourcesService.get(resourceId, { select: ['pm_resourceid', 'pm_fullname'] })
+        const res = unwrapSingle<any>(resResult)
+        if (res?.pm_fullname) {
+          mapped.pm_resourcename = res.pm_fullname.trim()
+          mapped.pm_ownername = res.pm_fullname.trim()
+        }
+      }
+    } catch (err) {
+      try { console.warn('[dataverseService] fetchTimesheetDetails: failed to resolve resource name', err) } catch (e) {}
+    }
+    return mapped
   } catch (err) {
     console.error('[dataverseService] fetchTimesheetDetails failed:', err)
     return null
@@ -216,6 +231,34 @@ export async function fetchTimesheetEntries(timesheetId: string): Promise<Timesh
     const fallbackResult = await Pm_timesheetentriesService.getAll({ ...options, filter: `_pm_timesheet_value eq '${timesheetId}'` })
     list = unwrapList<Pm_timesheetentries>(fallbackResult).map(mapTimesheetEntry)
   }
+
+  try {
+    const projectIds = Array.from(new Set(list.map((e) => normalizeLookupId(e._pm_project_value)).filter(Boolean))) as string[]
+    if (projectIds.length > 0) {
+      const projectsResult = await Pm_projectsService.getAll({
+        filter: projectIds.map((id) => `pm_projectid eq '${id}'`).join(' or '),
+        select: ['pm_projectid', 'pm_projectname'],
+        top: 500,
+      })
+      const projects = unwrapList<any>(projectsResult)
+      const projectNameById = new Map<string, string>()
+      for (const p of projects) {
+        const normalizedId = normalizeLookupId(p.pm_projectid)
+        if (normalizedId && p.pm_projectname) {
+          projectNameById.set(normalizedId, p.pm_projectname)
+        }
+      }
+      for (const entry of list) {
+        const normalizedValue = normalizeLookupId(entry._pm_project_value)
+        if (normalizedValue && projectNameById.has(normalizedValue)) {
+          entry.pm_projectname = projectNameById.get(normalizedValue)
+        }
+      }
+    }
+  } catch (err) {
+    try { console.warn('[dataverseService] fetchTimesheetEntries: failed to resolve project names', err) } catch (e) {}
+  }
+
   return list
 }
 

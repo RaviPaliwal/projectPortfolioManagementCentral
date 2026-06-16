@@ -93,14 +93,50 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{initiative?.pm_requestorname || 'Unassigned'}</Typography>
                 </Box>
                 <Box>
+                  <Typography variant="caption" color="text.secondary">Submitted</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {initiative?.pm_submissiondate ? new Date(initiative.pm_submissiondate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Initiative Type</Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    {initiative?.pm_initiativetype != null ? (
+                      <StatusTag
+                        label={initiative.pm_initiativetype === 0 ? 'Project' : initiative.pm_initiativetype === 1 ? 'Programme' : initiative.pm_initiativetype === 2 ? 'Initiative' : 'Unknown'}
+                        color={initiative.pm_initiativetype === 0 ? 'primary' : initiative.pm_initiativetype === 1 ? 'secondary' : 'info'}
+                        size="small"
+                        sx={{ fontWeight: 600 }}
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.disabled">Not specified</Typography>
+                    )}
+                  </Box>
+                </Box>
+                <Box>
                   <Typography variant="caption" color="text.secondary">Portfolio</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{initiative?.pm_portfolioname || '-'}</Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Est. Cost</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {initiative?.pm_estimatedcost ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
+                    {initiative?.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
                   </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Priority Score</Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    {initiative?.pm_priorityscore != null ? (
+                      <StatusTag
+                        label={`${initiative.pm_priorityscore.toFixed(1)} / 10.0`}
+                        color={initiative.pm_priorityscore >= 7 ? 'success' : initiative.pm_priorityscore >= 4 ? 'warning' : 'default'}
+                        size="small"
+                        sx={{ fontWeight: 600 }}
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.disabled">Not scored</Typography>
+                    )}
+                  </Box>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Strategic Alignment</Typography>
@@ -142,19 +178,27 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <MonetizationOnIcon sx={{ fontSize: 16 }} /> Financial Summary
               </Typography>
-              <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1 }}>
+              <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, minWidth: 120 }}>
                   <Typography variant="caption" color="text.secondary">Est. Cost</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {initiative?.pm_estimatedcost ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
+                    {initiative?.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
                   </Typography>
                 </Paper>
-                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1 }}>
+                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, minWidth: 120 }}>
                   <Typography variant="caption" color="text.secondary">Est. Benefits</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {initiative?.pm_estimatedbenefits ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '-'}
+                    {initiative?.pm_estimatedbenefits != null ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '-'}
                   </Typography>
                 </Paper>
+                {initiative?.pm_estimatedbenefits != null && initiative?.pm_estimatedcost != null && (
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, minWidth: 120, bgcolor: 'success.50', border: '1px solid', borderColor: 'success.100' }}>
+                    <Typography variant="caption" color="success.main" sx={{ fontWeight: 700 }}>Net Benefit</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: initiative.pm_estimatedbenefits - initiative.pm_estimatedcost >= 0 ? 'success.main' : 'error.main' }}>
+                      {currencyFormatter.format(initiative.pm_estimatedbenefits - initiative.pm_estimatedcost)}
+                    </Typography>
+                  </Paper>
+                )}
               </Box>
 
               <Divider sx={{ my: 3 }} />

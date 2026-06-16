@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -12,6 +12,7 @@ import {
   Checkbox,
   Avatar,
   Autocomplete,
+  Alert,
 } from '@mui/material'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 
@@ -28,6 +29,11 @@ interface TimesheetEntryFormDialogProps {
   loading?: boolean
   allocatedProjects?: ProjectOption[]
   projectsLoading?: boolean
+  existingEntryDates?: string[]
+}
+
+function todayStr(): string {
+  return new Date().toISOString().split('T')[0]
 }
 
 export function TimesheetEntryFormDialog({
@@ -38,19 +44,30 @@ export function TimesheetEntryFormDialog({
   loading,
   allocatedProjects = [],
   projectsLoading = false,
+  existingEntryDates = [],
 }: TimesheetEntryFormDialogProps) {
   const [form, setForm] = useState({
-    pm_workdate: new Date().toISOString().split('T')[0],
+    pm_workdate: todayStr(),
     pm_hoursworked: 8,
     pm_worknotes: '',
     pm_ischargeable: true,
     _pm_project_value: '',
   })
 
+  const isFuture = form.pm_workdate > todayStr()
+  const isDuplicate = existingEntryDates.includes(form.pm_workdate)
+
+  const validationError = useMemo(() => {
+    if (isFuture) return 'Cannot log time for a future date.'
+    if (isDuplicate) return 'An entry already exists for this date. Edit the existing entry instead.'
+    return ''
+  }, [isFuture, isDuplicate])
+
   const handleSubmit = async () => {
+    if (validationError) return
     await onSubmit(form)
     setForm({
-      pm_workdate: new Date().toISOString().split('T')[0],
+      pm_workdate: todayStr(),
       pm_hoursworked: 8,
       pm_worknotes: '',
       pm_ischargeable: true,
@@ -77,6 +94,12 @@ export function TimesheetEntryFormDialog({
           Add a time entry to {timesheetName || 'this timesheet'}.
         </Typography>
 
+        {validationError && (
+          <Alert severity="warning" sx={{ mb: 2, borderRadius: 1.5 }}>
+            {validationError}
+          </Alert>
+        )}
+
         <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
@@ -87,7 +110,10 @@ export function TimesheetEntryFormDialog({
               size="small"
               value={form.pm_workdate}
               onChange={(e) => setForm((f) => ({ ...f, pm_workdate: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
+              slotProps={{
+                inputLabel: { shrink: true },
+                input: { sx: { borderRadius: 1.5 }, inputProps: { max: todayStr() } },
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -158,7 +184,7 @@ export function TimesheetEntryFormDialog({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={!form.pm_workdate || form.pm_hoursworked <= 0 || loading}
+          disabled={!form.pm_workdate || form.pm_hoursworked <= 0 || loading || !!validationError}
           sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
         >
           {loading ? 'Adding...' : 'Add Entry'}

@@ -86,7 +86,6 @@ const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 
 
 const changeRequestExportColumns: ExportColumn<ChangeRequestModel>[] = [
   { key: 'pm_changerequesttitle', label: 'Title' },
-  { key: 'pm_changerequestreference', label: 'Reference' },
   { key: 'pm_changetype', label: 'Type', format: (v) => CHANGE_TYPE_LABELS[String(v ?? '')] ?? String(v ?? '') },
   { key: 'pm_prioritylevel', label: 'Priority', format: (v) => PRIORITY_LABELS[String(v ?? '')] ?? String(v ?? '') },
   { key: 'pm_status', label: 'Status', format: (v) => STATUS_LABELS[String(v ?? '')] ?? String(v ?? '') },
@@ -545,9 +544,6 @@ export default function ChangeRequestsPage() {
                   <TableSortLabel active={sort.field === 'title'} direction={sort.field === 'title' ? sort.dir : 'asc'} onClick={() => handleSort('title')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Title</TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'reference'} direction={sort.field === 'reference' ? sort.dir : 'asc'} onClick={() => handleSort('reference')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Ref</TableSortLabel>
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
                   <TableSortLabel active={sort.field === 'type'} direction={sort.field === 'type' ? sort.dir : 'asc'} onClick={() => handleSort('type')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Type</TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
@@ -601,18 +597,13 @@ export default function ChangeRequestsPage() {
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontFamily: '\"JetBrains Mono\", monospace' }}>
-                      {cr.pm_changerequestreference || '\u2014'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
                     <StatusTag label={CHANGE_TYPE_LABELS[String(cr.pm_changetype ?? '')] ?? 'Unknown'} color={CHANGE_TYPE_COLORS[String(cr.pm_changetype ?? '')] ?? 'default'} />
                   </TableCell>
                   <TableCell>
                     <StatusTag label={PRIORITY_LABELS[String(cr.pm_prioritylevel ?? '')] ?? 'Unknown'} color={PRIORITY_COLORS[String(cr.pm_prioritylevel ?? '')] ?? 'default'} />
                   </TableCell>
                   <TableCell>
-                    <StatusTag label={STATUS_LABELS[String(cr.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(cr.pm_status ?? '')] ?? 'default'} variant={String(cr.pm_status) === '0' ? 'filled' : 'filled'} />
+                    <StatusTag label={STATUS_LABELS[String(cr.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(cr.pm_status ?? '')] ?? 'default'} variant="outlined" />
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2" sx={{ fontFamily: '\"JetBrains Mono\", monospace', fontWeight: 600 }}>
@@ -675,7 +666,7 @@ export default function ChangeRequestsPage() {
         title={selectedCR?.pm_changerequesttitle ?? ''}
         subtitle={selectedCR && (
           <>
-            <StatusTag label={STATUS_LABELS[String(selectedCR.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(selectedCR.pm_status ?? '')] ?? 'default'} variant={String(selectedCR.pm_status) === '0' ? 'filled' : 'filled'} />
+            <StatusTag label={STATUS_LABELS[String(selectedCR.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(selectedCR.pm_status ?? '')] ?? 'default'} variant="outlined" />
             {selectedCR.pm_changerequestreference && (
               <Typography variant="body2" color="text.secondary" sx={{ ml: 1, display: 'inline', fontFamily: '\"JetBrains Mono\", monospace' }}>
                 {selectedCR.pm_changerequestreference}

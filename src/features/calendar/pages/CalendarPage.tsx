@@ -126,10 +126,6 @@ export default function CalendarPage() {
   const [loadingRemote, setLoadingRemote] = useState(false)
   const [remoteError, setRemoteError] = useState<string | null>(null)
 
-  // Diagnostics state
-  const [isDiagOpen, setIsDiagOpen] = useState(false)
-  const [diagData, setDiagData] = useState<any>(null)
-
   // Sidebar controls
   const [activeCalendars, setActiveCalendars] = useState<Record<string, boolean>>({
     work: true,
@@ -487,20 +483,6 @@ export default function CalendarPage() {
         }
 
         newMappedEvents.push(...outlookEvents)
-
-        const diagInfo = {
-          currentUser: { fullname: currentUser.fullname, systemuserid: currentUser.systemuserid },
-          resourceId,
-          totalAllocations: allocations.length,
-          totalTasks: tasks.length,
-          totalProjects: projects.length,
-          userAllocationsCount: userAllocations.length,
-          assignedProjectIds: Array.from(assignedProjectIds),
-          userTasksCount: userTasks.length,
-          outlookEventsCount: outlookEvents.length
-        }
-        console.log('[Calendar Diagnostics]', diagInfo)
-        setDiagData(diagInfo)
 
         setRemoteEvents(newMappedEvents)
 
@@ -913,16 +895,6 @@ export default function CalendarPage() {
             </Button>
 
             <Button
-              variant="outlined"
-              color="secondary"
-              size="small"
-              onClick={() => setIsDiagOpen(true)}
-              sx={{ textTransform: 'none', borderRadius: 1.5 }}
-            >
-              Debug Data
-            </Button>
-
-            <Button
               variant="contained"
               size="small"
               startIcon={<AddIcon />}
@@ -1291,65 +1263,6 @@ export default function CalendarPage() {
         )}
       </Dialog>
 
-      {/* ─── DIAGNOSTICS DIALOG ─── */}
-      <Dialog open={isDiagOpen} onClose={() => setIsDiagOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>Calendar Data Diagnostics</DialogTitle>
-        <DialogContent dividers>
-          {diagData ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>User Context Info:</Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>Active User Name:</Typography>
-                <Typography variant="body2">{diagData.currentUser?.fullname}</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>Active User ID:</Typography>
-                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{diagData.currentUser?.systemuserid}</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>Resolved Resource ID:</Typography>
-                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{diagData.resourceId || 'None Found'}</Typography>
-              </Box>
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 2 }}>General Totals:</Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2 }}>
-                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
-                  <Typography variant="caption" color="text.secondary">All Projects</Typography>
-                  <Typography variant="h6">{diagData.totalProjects}</Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
-                  <Typography variant="caption" color="text.secondary">All Allocations</Typography>
-                  <Typography variant="h6">{diagData.totalAllocations}</Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
-                  <Typography variant="caption" color="text.secondary">All Tasks</Typography>
-                  <Typography variant="h6">{diagData.totalTasks}</Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
-                  <Typography variant="caption" color="text.secondary">Allocated Projects</Typography>
-                  <Typography variant="h6">{diagData.assignedProjectIds?.length ?? 0}</Typography>
-                </Paper>
-              </Box>
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 2 }}>User Specific Totals:</Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
-                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
-                  <Typography variant="caption" color="text.secondary">Allocations for User</Typography>
-                  <Typography variant="h6">{diagData.userAllocationsCount}</Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
-                  <Typography variant="caption" color="text.secondary">Tasks filtered for User</Typography>
-                  <Typography variant="h6">{diagData.userTasksCount}</Typography>
-                </Paper>
-              </Box>
-
-            </Box>
-          ) : (
-            <Typography>No diagnostics loaded yet.</Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsDiagOpen(false)} variant="contained" sx={{ textTransform: 'none' }}>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   )
 }

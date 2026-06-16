@@ -2,10 +2,12 @@ import {
   Pm_initiativesService,
   Pm_portfoliosService,
   Pm_projectsService,
+  SystemusersService,
 } from '@/generated'
 import type { Pm_initiatives } from '@/generated/models/Pm_initiativesModel'
 import type { Pm_portfolios } from '@/generated/models/Pm_portfoliosModel'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
+import type { Systemusers } from '@/generated/models/SystemusersModel'
 import type { InitiativeModel } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
 
@@ -21,6 +23,9 @@ export const mapInitiative = (item: Pm_initiatives): InitiativeModel => ({
   pm_requestorname: item.pm_requestorname,
   pm_submissiondate: item.pm_submissiondate,
   pm_portfolioname: item.pm_portfolioname,
+  pm_initiativetype: (item as any).pm_initiativetype,
+  pm_decisiondate: item.pm_decisiondate,
+  pm_createdbyname: undefined,
   _pm_portfolio_value: (item as any)._pm_portfolio_value,
 })
 
@@ -63,14 +68,68 @@ export async function fetchInitiatives(status?: number): Promise<InitiativeModel
 }
 
 export async function fetchInitiativeById(id: string): Promise<InitiativeModel | null> {
+  console.log('[fetchInitiativeById] ⏳ Fetching initiative with ID:', id)
   try {
-    const result = await Pm_initiativesService.get(id, {
-      select: ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', 'pm_requestorname', 'pm_submissiondate', 'pm_portfolioname', '_pm_portfolio_value'],
-    })
+    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', 'pm_requestorname', 'pm_submissiondate', 'pm_initiativetype', 'pm_decisiondate', '_pm_portfolio_value', '_createdby_value']
+    console.log('[fetchInitiativeById] ⏳ Select fields:', select)
+    const result = await Pm_initiativesService.get(id, { select })
+    console.log('[fetchInitiativeById] ⏳ Raw API result:', result)
     const item = unwrapSingle<Pm_initiatives>(result)
-    return item ? mapInitiative(item) : null
+    console.log('[fetchInitiativeById] ⏳ Unwrapped item:', item ? {
+      id: item.pm_initiativeid,
+      name: item.pm_initiativename,
+      hasCost: item.pm_estimatedcosteur,
+      hasBenefits: item.pm_estimatedbenefitseur,
+      requester: item.pm_requestorname,
+      createdByValue: (item as any)._createdby_value,
+    } : 'null')
+    if (!item) {
+      console.warn('[fetchInitiativeById] ❌ Initiative not found for ID:', id)
+      return null
+    }
+
+    // Resolve portfolio name from lookup
+    const mapped = mapInitiative(item)
+    const portfolioId = (item as any)._pm_portfolio_value as string | undefined
+    if (portfolioId) {
+      try {
+        const portfolioResult = await Pm_portfoliosService.get(portfolioId, { select: ['pm_portfolioid', 'pm_portfolioname'] })
+        const portfolio = unwrapSingle<Pm_portfolios>(portfolioResult)
+        if (portfolio && portfolio.pm_portfolioname) {
+          mapped.pm_portfolioname = portfolio.pm_portfolioname
+        }
+      } catch (e) {
+        console.warn('[dataverseService] fetchInitiativeById: failed to resolve portfolio name', e)
+      }
+    }
+
+    // Resolve created by user name from lookup
+    const createdByValue = (item as any)._createdby_value as string | undefined
+    if (createdByValue) {
+      try {
+        const userResult = await SystemusersService.get(createdByValue, { select: ['systemuserid', 'fullname'] })
+        const user = unwrapSingle<Systemusers>(userResult)
+        if (user?.fullname) {
+          mapped.pm_createdbyname = user.fullname
+        }
+      } catch (e) {
+        console.warn('[fetchInitiativeById] failed to resolve createdby username', e)
+      }
+    }
+
+    console.log('[fetchInitiativeById] ✅ Successfully mapped initiative:', {
+      id: mapped.pm_initiativeid,
+      name: mapped.pm_name,
+      cost: mapped.pm_estimatedcost,
+      benefits: mapped.pm_estimatedbenefits,
+      priorityScore: mapped.pm_priorityscore,
+      strategicAlignment: mapped.pm_strategicalignmentscore,
+      requester: mapped.pm_requestorname,
+      createdBy: mapped.pm_createdbyname,
+    })
+    return mapped
   } catch (err) {
-    console.warn('[dataverseService] fetchInitiativeById failed', err)
+    console.warn('[fetchInitiativeById] ❌ Exception caught:', err)
     return null
   }
 }

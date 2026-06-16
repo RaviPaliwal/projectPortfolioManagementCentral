@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import {
   Box, Paper, Typography, Tabs, Tab, useTheme,
   Table, TableBody, TableCell, TableHead, TableRow,
@@ -22,6 +22,7 @@ import { Pm_projecttasksService } from '@/generated/services/Pm_projecttasksServ
 import { unwrapList } from '@/services/common'
 import type { WorkflowApprovalStepModel, InitiativeModel } from '@/types/dataverse'
 import { PageHeader, TableShell, TableFooter, StatusTag, TaskLink } from '@/components/common'
+import { FORM_DIALOG_DECISION_EVENT } from '@/utils/formDialogEvents'
 
 const APPROVAL_STATUS_LABELS: Record<string, string> = { '0': 'Approved', '1': 'Pending' }
 const APPROVAL_STATUS_COLORS: Record<string, 'success' | 'warning'> = { '0': 'success', '1': 'warning' }
@@ -29,7 +30,7 @@ const APPROVAL_STATUS_COLORS: Record<string, 'success' | 'warning'> = { '0': 'su
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 const formatDate = (d?: string | null): string => d ? dateFormatter.format(new Date(d)) : '\u2014'
 
-type MySortField = 'order' | 'workflow' | 'due' | 'assigned'
+type MySortField = 'order' | 'due' | 'assigned'
 type TeamSortField = 'name' | 'status' | 'due' | 'assignee'
 type SortDir = 'asc' | 'desc'
 
@@ -54,13 +55,12 @@ export default function TasksPage() {
   const [mySearch, setMySearch] = useState('')
 
   const loadData = useCallback(async () => {
+    if (!currentUser?.fullname) return
     setLoading(true)
     setError(null)
     try {
       const [workflowSteps, initiatives] = await Promise.all([
-        currentUser?.fullname
-          ? fetchPendingWorkflowApprovals(currentUser.systemuserid ?? '')
-          : Promise.resolve<WorkflowApprovalStepModel[]>([]),
+        fetchPendingWorkflowApprovals(currentUser.systemuserid ?? '', currentUser.fullname),
         fetchPendingApprovalRequests(),
       ])
       setSteps(workflowSteps)
@@ -74,6 +74,15 @@ export default function TasksPage() {
   }, [currentUser])
 
   useEffect(() => { loadData() }, [loadData])
+
+  // Refresh list when a decision is made in the modal
+  const loadDataRef = useRef(loadData)
+  loadDataRef.current = loadData
+  useEffect(() => {
+    const handler = () => { loadDataRef.current() }
+    window.addEventListener(FORM_DIALOG_DECISION_EVENT, handler)
+    return () => window.removeEventListener(FORM_DIALOG_DECISION_EVENT, handler)
+  }, [])
 
   const myInitiatives = useMemo(() => {
     if (!currentUser?.fullname) return []
@@ -89,19 +98,19 @@ export default function TasksPage() {
     if (mySearch.trim()) {
       const q = mySearch.toLowerCase()
       list = list.filter(
-        (s) =>
-          ((s as any).pm_workflowinstancelookupname ?? '').toLowerCase().includes(q) ||
-          (s.pm_approvername ?? '').toLowerCase().includes(q) ||
-          ((s as any).pm_assigneedisplayname ?? '').toLowerCase().includes(q)
+        (s) =>              (s.pm_stepname ?? '').toLowerCase().includes(q) ||
+              ((s as any).pm_workflowname ?? '').toLowerCase().includes(q) ||
+              (s.pm_approvername ?? '').toLowerCase().includes(q) ||
+              ((s as any).pm_assigneename ?? (s as any).pm_assigneedisplayname ?? '').toLowerCase().includes(q)
       )
     }
     return [...list].sort((a, b) => {
       let cmp = 0
       switch (mySort.field) {
         case 'order': cmp = (a.pm_steporder ?? 0) - (b.pm_steporder ?? 0); break
-        case 'workflow': cmp = ((a as any).pm_workflowinstancelookupname ?? '').localeCompare((b as any).pm_workflowinstancelookupname ?? ''); break
+
         case 'due': cmp = String(a.pm_duedate ?? '').localeCompare(String(b.pm_duedate ?? '')); break
-        case 'assigned': cmp = ((a as any).pm_assigneedisplayname ?? '').localeCompare((b as any).pm_assigneedisplayname ?? ''); break
+        case 'assigned': cmp = ((a as any).pm_assigneename ?? (a as any).pm_assigneedisplayname ?? a.pm_approvername ?? '').localeCompare((b as any).pm_assigneename ?? (b as any).pm_assigneedisplayname ?? b.pm_approvername ?? ''); break
       }
       return mySort.dir === 'asc' ? cmp : -cmp
     })
@@ -154,7 +163,7 @@ export default function TasksPage() {
       {tabIndex === 0 && (
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField size="small" placeholder="Search by workflow, step, or assignee..." value={mySearch}
+            <TextField size="small" placeholder="Search by task, workflow, or assignee..." value={mySearch}
               onChange={(e) => { setMySearch(e.target.value); setMyPage(0) }} sx={{ minWidth: 280 }}
               slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
             {mySearch && <Button size="small" onClick={() => { setMySearch(''); setMyPage(0) }} sx={{ borderRadius: 1.5 }}>Clear</Button>}
@@ -190,11 +199,10 @@ export default function TasksPage() {
             {filteredSteps.length > 0 && (
               <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
                 {renderTableHeader([
-                  { label: 'Step #', sortable: true, active: mySort.field === 'order', dir: mySort.dir, onClick: () => handleMySort('order'), align: 'center' },
-                  { label: 'Workflow', sortable: true, active: mySort.field === 'workflow', dir: mySort.dir, onClick: () => handleMySort('workflow') },
+                  { label: 'Task', sortable: true, active: mySort.field === 'order', dir: mySort.dir, onClick: () => handleMySort('order') },
                   { label: 'Due Date', sortable: true, active: mySort.field === 'due', dir: mySort.dir, onClick: () => handleMySort('due') },
                   { label: 'Assigned To', sortable: true, active: mySort.field === 'assigned', dir: mySort.dir, onClick: () => handleMySort('assigned') },
-                  { label: 'Form' },
+                  { label: 'Action' },
                 ])}
                 <TableBody>
                   {paginatedSteps.map((step, idx) => {
@@ -208,19 +216,10 @@ export default function TasksPage() {
                             <Avatar sx={{ width: 32, height: 32, bgcolor: isOverdue ? 'error.main' : isUrgent ? 'warning.main' : 'secondary.main', fontSize: 12, fontWeight: 700 }}>
                               {step.pm_steporder ?? '?'}
                             </Avatar>
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>Step {step.pm_steporder ?? '?'}</Typography>
-                              <Typography variant="caption" color="text.secondary">{(step as any).pm_workflowinstancelookupname ?? '\u2014'}</Typography>
+                            <Box>                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{(step as any).pm_workflowname || step.pm_stepname || `Step ${step.pm_steporder ?? '?'}`}</Typography>
+                            <Typography variant="caption" color="text.secondary">{step.pm_stepname ? `Step: ${step.pm_stepname}` : ''}</Typography>
                             </Box>
                           </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">{(step as any).pm_workflowinstancelookupname || '\u2014'}</Typography>
-                          {(step as any).pm_entityid && (
-                            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 11 }}>
-                              ID: {((step as any).pm_entityid as string).substring(0, 8)}...
-                            </Typography>
-                          )}
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -232,10 +231,10 @@ export default function TasksPage() {
                             {isUrgent && !isOverdue && <StatusTag label="Urgent" size="small" color="warning" />}
                           </Box>
                         </TableCell>
-                        <TableCell><Typography variant="body2">{step.pm_approvername || step.pm_assigneedisplayname || '\u2014'}</Typography></TableCell>
+                        <TableCell><Typography variant="body2">{(step as any).pm_assigneename || step.pm_approvername || step.pm_assigneedisplayname || '\u2014'}</Typography></TableCell>
                         <TableCell>
                           {step.pm_workflowapprovalstepid ? (
-                            <TaskLink stepId={step.pm_workflowapprovalstepid} variant="chip" label="Open Form" />
+                            <TaskLink stepId={step.pm_workflowapprovalstepid} variant="chip" label="Open Task" />
                           ) : (
                             <Typography variant="caption" color="text.disabled">{'\u2014'}</Typography>
                           )}

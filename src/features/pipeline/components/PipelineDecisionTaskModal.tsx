@@ -12,6 +12,7 @@ import { fetchInitiativeById, updateInitiativeStatus } from '@/services/initiati
 import type { InitiativeModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
+import DescriptionIcon from '@mui/icons-material/Description'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 
 interface PipelineDecisionTaskModalProps {
@@ -116,20 +117,56 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{initiative?.pm_requestorname || '-'}</Typography>
                 </Box>
                 <Box>
+                  <Typography variant="caption" color="text.secondary">Submitted</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {initiative?.pm_submissiondate ? new Date(initiative.pm_submissiondate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Initiative Type</Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    {initiative?.pm_initiativetype != null ? (
+                      <StatusTag
+                        label={initiative.pm_initiativetype === 0 ? 'Project' : initiative.pm_initiativetype === 1 ? 'Programme' : initiative.pm_initiativetype === 2 ? 'Initiative' : 'Unknown'}
+                        color={initiative.pm_initiativetype === 0 ? 'primary' : initiative.pm_initiativetype === 1 ? 'secondary' : 'info'}
+                        size="small"
+                        sx={{ fontWeight: 600 }}
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.disabled">Not specified</Typography>
+                    )}
+                  </Box>
+                </Box>
+                <Box>
                   <Typography variant="caption" color="text.secondary">Portfolio</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{initiative?.pm_portfolioname || '-'}</Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Est. Cost</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {initiative?.pm_estimatedcost ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
+                    {initiative?.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
                   </Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Est. Benefits</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {initiative?.pm_estimatedbenefits ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '-'}
+                    {initiative?.pm_estimatedbenefits != null ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '-'}
                   </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Priority Score</Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    {initiative?.pm_priorityscore != null ? (
+                      <StatusTag
+                        label={`${initiative.pm_priorityscore.toFixed(1)} / 10.0`}
+                        color={initiative.pm_priorityscore >= 7 ? 'success' : initiative.pm_priorityscore >= 4 ? 'warning' : 'default'}
+                        size="small"
+                        sx={{ fontWeight: 600 }}
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.disabled">Not scored</Typography>
+                    )}
+                  </Box>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Strategic Alignment</Typography>
@@ -158,6 +195,14 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                   </Box>
                 </Box>
               </Box>
+              {initiative?.pm_decisiondate && (
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Previous Decision</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'warning.main' }}>
+                    {new Date(initiative.pm_decisiondate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </Typography>
+                </Box>
+              )}
               <Box sx={{ mt: 4, p: 2, bgcolor: 'success.50', borderRadius: 1.5, border: '1px solid', borderColor: 'success.100' }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <FactCheckIcon sx={{ fontSize: 16 }} /> Authority Required
@@ -168,6 +213,26 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
               </Box>
             </Grid>
             <Grid size={{ xs: 12, md: 8 }} sx={{ p: 3 }}>
+              {initiative?.pm_businesscase && (
+                <>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <DescriptionIcon sx={{ fontSize: 16 }} /> Business Case
+                  </Typography>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, mb: 3, bgcolor: 'background.paper', maxHeight: 120, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
+                    {initiative.pm_businesscase}
+                  </Paper>
+                </>
+              )}
+
+              {initiative?.pm_estimatedbenefits != null && initiative?.pm_estimatedcost != null && (
+                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, mb: 3, bgcolor: 'primary.50', border: '1px solid', borderColor: 'primary.100' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main' }}>Net Business Value</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: initiative.pm_estimatedbenefits - initiative.pm_estimatedcost >= 0 ? 'success.main' : 'error.main' }}>
+                    {currencyFormatter.format(initiative.pm_estimatedbenefits - initiative.pm_estimatedcost)}
+                  </Typography>
+                </Paper>
+              )}
+
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Record Decision</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                 Select the outcome for this pipeline initiative. The status will be updated immediately upon submission.
