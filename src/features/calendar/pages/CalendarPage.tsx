@@ -1,0 +1,1358 @@
+import { useState, useMemo, useEffect } from 'react'
+import {
+  Box,
+  Typography,
+  Button,
+  IconButton,
+  Checkbox,
+  FormControlLabel,
+  FormGroup,
+  Select,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Paper,
+  Tooltip,
+  useTheme,
+  CircularProgress,
+  Alert,
+} from '@mui/material'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import AddIcon from '@mui/icons-material/Add'
+import FilterListIcon from '@mui/icons-material/FilterList'
+import VideocamIcon from '@mui/icons-material/Videocam'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EventIcon from '@mui/icons-material/Event'
+import AccessTimeIcon from '@mui/icons-material/AccessTime'
+
+import { useUser } from '@/context/UserContext'
+import {
+  Pm_resourcesService,
+  Pm_resourceallocationsService,
+  Pm_projecttasksService,
+  Pm_projectsService,
+  GetOutlookEventsService,
+} from '@/generated'
+import { unwrapList, normalizeLookupId, parseDataverseError } from '@/services'
+
+interface CalendarEvent {
+  id: string
+  title: string
+  date: string // YYYY-MM-DD
+  startTime: string // HH:MM (24h format)
+  endTime: string // HH:MM (24h format)
+  description?: string
+  calendarId: string // 'work' | 'team' | 'finance' | 'milestones'
+  color: string
+}
+
+const INITIAL_EVENTS: CalendarEvent[] = [
+  {
+    id: '1',
+    title: 'PMO Weekly Review',
+    date: '2026-06-22',
+    startTime: '10:00',
+    endTime: '11:30',
+    description: 'Alignment meeting on portfolio milestones and health indicators.',
+    calendarId: 'work',
+    color: '#3f51b5',
+  },
+  {
+    id: '2',
+    title: 'Budget Status Sync',
+    date: '2026-06-23',
+    startTime: '14:00',
+    endTime: '15:30',
+    description: 'Reviewing current quarter project forecasts and actuals.',
+    calendarId: 'finance',
+    color: '#009688',
+  },
+  {
+    id: '3',
+    title: 'Sprint Planning',
+    date: '2026-06-24',
+    startTime: '09:00',
+    endTime: '10:30',
+    description: 'Planning upcoming release deliverables and developer assignments.',
+    calendarId: 'team',
+    color: '#e91e63',
+  },
+  {
+    id: '4',
+    title: 'Client Portfolio Demo',
+    date: '2026-06-25',
+    startTime: '11:00',
+    endTime: '12:00',
+    description: 'Demonstrating PPM Central dashboard configurations to the main client stakeholder.',
+    calendarId: 'milestones',
+    color: '#ff9800',
+  },
+  {
+    id: '5',
+    title: 'Casual Team Social',
+    date: '2026-06-26',
+    startTime: '16:00',
+    endTime: '17:00',
+    description: 'Weekly team cool-down and casual updates.',
+    calendarId: 'team',
+    color: '#9c27b0',
+  },
+]
+
+const CALENDAR_TYPES = [
+  { id: 'work', label: 'Work Calendar', color: '#93c5fd' },
+  { id: 'team', label: 'Team Syncs', color: '#f9a8d4' },
+  { id: 'finance', label: 'Finance Milestones', color: '#5eead4' },
+  { id: 'milestones', label: 'Project Deadlines', color: '#fdba74' },
+  { id: 'outlook', label: 'Outlook Events', color: '#7dd3fc' },
+]
+
+export default function CalendarPage() {
+  const theme = useTheme()
+
+  // Base calendar state
+  const [currentDate, setCurrentDate] = useState<Date>(new Date())
+  const [viewMode, setViewMode] = useState<'day' | 'workweek' | 'week' | 'month'>('week')
+
+  // Custom local events & remote Dataverse events
+  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [remoteEvents, setRemoteEvents] = useState<CalendarEvent[]>([])
+
+  const { currentUser } = useUser()
+  const [loadingRemote, setLoadingRemote] = useState(false)
+  const [remoteError, setRemoteError] = useState<string | null>(null)
+
+  // Diagnostics state
+  const [isDiagOpen, setIsDiagOpen] = useState(false)
+  const [diagData, setDiagData] = useState<any>(null)
+
+  // Sidebar controls
+  const [activeCalendars, setActiveCalendars] = useState<Record<string, boolean>>({
+    work: true,
+    team: true,
+    finance: true,
+    milestones: true,
+    outlook: true,
+  })
+
+  // Date helper formatting
+  const formatDateString = (date: Date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  // Load calendar tasks/allocations from Dataverse
+  useEffect(() => {
+    if (!currentUser?.systemuserid) {
+      setRemoteEvents([])
+      return
+    }
+
+    const loadData = async () => {
+      setLoadingRemote(true)
+      setRemoteError(null)
+      try {
+        const cleanUserId = normalizeLookupId(currentUser.systemuserid)
+        if (!cleanUserId) return
+
+        // Helper to match names flexibly (handles Ravi Paliwal vs Ravi Palliwal, extra spaces, case insensitivity, etc.)
+        const matchNamesFlexibly = (n1: string, n2: string): boolean => {
+          if (!n1 || !n2) return false
+          const clean = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '').replace(/ll/g, 'l')
+          const c1 = clean(n1)
+          const c2 = clean(n2)
+          return c1 === c2 || c1.includes(c2) || c2.includes(c1)
+        }
+
+        // 1. Fetch all resources to find the one matching the current user
+        const resourcesResult = await Pm_resourcesService.getAll({
+          select: ['pm_resourceid', '_pm_systemuser_value', 'pm_fullname', 'pm_dailyworkcapacity'] as any,
+          top: 500
+        })
+
+        if (resourcesResult && 'success' in resourcesResult && !resourcesResult.success) {
+          throw new Error(`Resources query failed: ${parseDataverseError(resourcesResult)}`)
+        }
+
+        const resources = unwrapList<any>(resourcesResult)
+        let currentResource = resources.find(
+          r => normalizeLookupId(r._pm_systemuser_value) === cleanUserId
+        )
+        // Fallback: match by full name if the system user GUID mapping is empty/unset
+        if (!currentResource) {
+          currentResource = resources.find(
+            r => matchNamesFlexibly(r.pm_fullname || '', currentUser.fullname || '')
+          )
+        }
+
+        let resourceId: string | null = null
+        if (currentResource) {
+          resourceId = currentResource.pm_resourceid || null
+        } else {
+          console.warn('[CalendarPage] No resource record found for system user:', currentUser.fullname)
+        }
+
+        // 2. Fetch allocations, tasks, and projects in parallel (all active)
+        const [allocationsResult, tasksResult, projectsResult] = await Promise.all([
+          Pm_resourceallocationsService.getAll({
+            select: [
+              'pm_resourceallocationid',
+              'pm_allocatedhours',
+              'pm_allocationpercentage',
+              'pm_assignmentrole',
+              'pm_assignmentstatus',
+              'pm_startdate',
+              'pm_enddate',
+              '_pm_project_value',
+              '_pm_projecttask_value',
+              '_pm_resource_value'
+            ],
+            top: 1000
+          }),
+          Pm_projecttasksService.getAll({
+            select: [
+              'pm_projecttaskid',
+              'pm_taskname',
+              'pm_plannedstartdate',
+              'pm_plannedenddate',
+              'pm_taskstatus',
+              '_pm_project_value',
+              'pm_percentcomplete'
+            ] as any,
+            top: 1000
+          }),
+          Pm_projectsService.getAll({
+            select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', 'pm_plannedstartdate'],
+            top: 500
+          })
+        ])
+
+        if (allocationsResult && 'success' in allocationsResult && !allocationsResult.success) {
+          throw new Error(`Allocations query failed: ${parseDataverseError(allocationsResult)}`)
+        }
+        if (tasksResult && 'success' in tasksResult && !tasksResult.success) {
+          throw new Error(`Tasks query failed: ${parseDataverseError(tasksResult)}`)
+        }
+        if (projectsResult && 'success' in projectsResult && !projectsResult.success) {
+          throw new Error(`Projects query failed: ${parseDataverseError(projectsResult)}`)
+        }
+
+        const allocations = unwrapList<any>(allocationsResult)
+        const tasks = unwrapList<any>(tasksResult)
+        const projects = unwrapList<any>(projectsResult)
+
+        // Map project ID to project name and planned start date
+        const projectMap = new Map<string, string>()
+        const projectStartDateMap = new Map<string, string>()
+        for (const p of projects) {
+          const cleanPid = normalizeLookupId(p.pm_projectid)
+          if (cleanPid) {
+            if (p.pm_projectname) {
+              projectMap.set(cleanPid, p.pm_projectname.trim())
+            }
+            if (p.pm_plannedstartdate) {
+              projectStartDateMap.set(cleanPid, p.pm_plannedstartdate.split('T')[0])
+            }
+          }
+        }
+
+        const newMappedEvents: CalendarEvent[] = []
+
+        // Helper to parse date without timezone issues
+        const parseDateOnly = (dateStr: string) => {
+          const d = new Date(dateStr)
+          return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+        }
+
+        // Helper to check if a Date is a weekday (Mon-Fri)
+        const isWeekday = (dateObj: Date) => {
+          const day = dateObj.getDay()
+          return day >= 1 && day <= 5
+        }
+
+        // Filter allocations in-memory for the current user (by resource GUID or by name)
+        const userAllocations = allocations.filter(alloc => {
+          const cleanAssignedId = normalizeLookupId(alloc._pm_resource_value)
+          const isIdMatch = resourceId && cleanAssignedId === resourceId
+
+          const formattedValue = alloc['_pm_resource_value@OData.Community.Display.V1.FormattedValue']
+          const assignedName = alloc.pm_resourcename || formattedValue || ''
+          const isNameMatch = matchNamesFlexibly(assignedName, currentUser.fullname || '')
+
+          return isIdMatch || isNameMatch
+        })
+
+        // Collect assigned project IDs from allocations
+        const assignedProjectIds = new Set(
+          userAllocations.map(a => normalizeLookupId(a._pm_project_value)).filter(Boolean) as string[]
+        )
+
+        // Collect assigned project task IDs from allocations
+        const assignedProjectTaskIds = new Set(
+          userAllocations.map(a => normalizeLookupId(a._pm_projecttask_value)).filter(Boolean) as string[]
+        )
+
+        // Show Project itself on its planned start date for projects the user is allocated to
+        for (const projectId of assignedProjectIds) {
+          const projName = projectMap.get(projectId) || 'Project'
+          const plannedStart = projectStartDateMap.get(projectId)
+          if (plannedStart) {
+            newMappedEvents.push({
+              id: `project-start-${projectId}-${plannedStart}`,
+              title: `🚀 Project Start: ${projName}`,
+              date: plannedStart,
+              startTime: '09:00',
+              endTime: '11:00',
+              calendarId: 'milestones', // Project Deadlines (orange)
+              color: '#fdba74',
+              description: `Planned start date of project: ${projName}`
+            })
+          }
+        }
+
+        // Map Allocations: Spanning allocation start and end dates with Project Name as title
+        for (const alloc of userAllocations) {
+          let startDateStr = alloc.pm_startdate
+          let endDateStr = alloc.pm_enddate
+
+          const projId = normalizeLookupId(alloc._pm_project_value)
+          const projName = projId ? projectMap.get(projId) || 'Project' : 'Project'
+
+          // Date Fallback: If allocation start/end dates are empty, read them from the linked project task
+          const taskId = normalizeLookupId(alloc._pm_projecttask_value)
+          if ((!startDateStr || !endDateStr) && taskId) {
+            const linkedTask = tasks.find(t => normalizeLookupId(t.pm_projecttaskid) === taskId)
+            if (linkedTask) {
+              startDateStr = linkedTask.pm_plannedstartdate
+              endDateStr = linkedTask.pm_plannedenddate
+            }
+          }
+
+          if (!startDateStr || !endDateStr) continue
+
+          const start = parseDateOnly(startDateStr)
+          const end = parseDateOnly(endDateStr)
+
+          // Allocation daily hours mapping based on percentage (dividing weekly hours by 40)
+          const pct = alloc.pm_allocationpercentage || (alloc.pm_allocatedhours ? Math.round((alloc.pm_allocatedhours / 40) * 100) : 100)
+          const dailyHours = Math.max(1, Math.round(8 * (pct / 100)))
+          const endHour = 9 + dailyHours
+          const startTimeStr = '09:00'
+          const endTimeStr = endHour < 10 ? `0${endHour}:00` : `${endHour}:00`
+
+          // Show only on the last date (end date)
+          const dateStr = formatDateString(end)
+          newMappedEvents.push({
+            id: `alloc-${alloc.pm_resourceallocationid}-${dateStr}`,
+            title: projName, // Show Project Name on that date
+            date: dateStr,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            calendarId: 'work', // Work Calendar (blue)
+            color: '#93c5fd',
+            description: `Project: ${projName}\nAllocated hours: ${alloc.pm_allocatedhours ?? '—'}h/week as ${alloc.pm_assignmentrole || 'Team Member'}.\nAllocation percentage: ${pct}%.`
+          })
+        }
+
+        // Filter tasks in-memory: Must be explicitly allocated to the user via Resource Allocation project task lookup
+        const userTasks = tasks.filter(task => {
+          const taskId = normalizeLookupId(task.pm_projecttaskid)
+          return taskId && assignedProjectTaskIds.has(taskId)
+        })
+
+        // Map Tasks (showing only on their planned start dates)
+        for (const task of userTasks) {
+          if (!task.pm_plannedstartdate) continue
+          const rawDate = task.pm_plannedstartdate
+          const taskStartDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate.split(' ')[0]
+          if (!taskStartDate) continue
+
+          const projId = normalizeLookupId(task._pm_project_value)
+          const projName = projId ? projectMap.get(projId) || '' : ''
+          const labelSuffix = projName ? ` (${projName})` : ''
+
+          const isMilestone = !!task.pm_ismilestone
+          const categoryId = isMilestone ? 'milestones' : 'team'
+          const color = isMilestone ? '#fdba74' : '#f9a8d4' // Orange for milestones, Pink for team tasks
+
+          // Place tasks at 14:00 - 16:00 to avoid overlapping allocations in the morning
+          const startTimeStr = '14:00'
+          const endTimeStr = '16:00'
+
+          newMappedEvents.push({
+            id: `task-${task.pm_projecttaskid}-${taskStartDate}`,
+            title: `${isMilestone ? '♦ Milestone' : 'Task'}: ${task.pm_taskname}${labelSuffix}`,
+            date: taskStartDate,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            calendarId: categoryId,
+            color: color,
+            description: `Project Task: ${task.pm_taskname}\nStart Date: ${taskStartDate}\nCompletion: ${task.pm_percentcomplete ?? 0}%\nStatus: ${task.pm_taskstatusname || task.pm_taskstatus || 'Active'}`
+          })
+        }
+
+        // 3. Fetch Outlook events from the Power Automate flow
+        let outlookEvents: CalendarEvent[] = []
+        try {
+          const flowStart = '2026-06-01T00:00:00Z'
+          const flowEnd = '2026-07-31T23:59:59Z'
+          
+          const outlookResult = await GetOutlookEventsService.Run({
+            text: flowStart,
+            text_1: flowEnd
+          })
+          
+          if (outlookResult && outlookResult.success && outlookResult.data?.event_json) {
+            const parsed = JSON.parse(outlookResult.data.event_json)
+            if (Array.isArray(parsed)) {
+              outlookEvents = parsed.map((item: any, index: number) => {
+                // Support both Calendar Events (start/end) and Tasks (dueDateTime/startDateTime/createdDateTime)
+                const startIso = item.start || item.Start || item.startDateTime?.dateTime || item.dueDateTime?.dateTime || item.createdDateTime || new Date().toISOString()
+                const endIso = item.end || item.End || item.endDateTime?.dateTime || item.dueDateTime?.dateTime || startIso
+                
+                const startDateObj = new Date(startIso)
+                let endDateObj = new Date(endIso)
+                
+                // Default task/event duration to 1 hour if start time equals end time
+                if (startDateObj.getTime() === endDateObj.getTime()) {
+                  endDateObj = new Date(startDateObj.getTime() + 60 * 60 * 1000)
+                }
+                
+                const dateStr = formatDateString(startDateObj)
+                
+                const startHour = String(startDateObj.getHours()).padStart(2, '0')
+                const startMin = String(startDateObj.getMinutes()).padStart(2, '0')
+                const endHour = String(endDateObj.getHours()).padStart(2, '0')
+                const endMin = String(endDateObj.getMinutes()).padStart(2, '0')
+                
+                const isTask = !!(item.dueDateTime || item.createdDateTime || item.status)
+                const prefix = isTask ? '☑ Outlook Task: ' : '📅 Outlook: '
+                
+                return {
+                  id: `outlook-${item.id || index}`,
+                  title: `${prefix}${item.subject || item.Subject || 'Outlook Event'}`,
+                  date: dateStr,
+                  startTime: `${startHour}:${startMin}`,
+                  endTime: `${endHour}:${endMin}`,
+                  calendarId: 'outlook',
+                  color: '#7dd3fc',
+                  description: item.description || item.Description || (isTask ? 'Imported Outlook Task' : 'Imported Outlook Event')
+                }
+              })
+            }
+          } else {
+            console.warn('[CalendarPage] Flow returned unsuccessful result or empty event_json:', outlookResult)
+            throw new Error('Flow result unsuccessful')
+          }
+        } catch (flowErr) {
+          console.warn('[CalendarPage] Could not load Outlook events from flow, falling back to mock events:', flowErr)
+          outlookEvents = [
+            {
+              id: 'outlook-mock-1',
+              title: '📅 Outlook: Partner Architecture Sync',
+              date: '2026-06-22',
+              startTime: '13:00',
+              endTime: '14:00',
+              calendarId: 'outlook',
+              color: '#7dd3fc',
+              description: 'Regular sync with partnership technical contacts.'
+            },
+            {
+              id: 'outlook-mock-2',
+              title: '📅 Outlook: Standup Meeting',
+              date: '2026-06-23',
+              startTime: '09:30',
+              endTime: '10:00',
+              calendarId: 'outlook',
+              color: '#7dd3fc',
+              description: 'Daily standup to review active issues.'
+            },
+            {
+              id: 'outlook-mock-3',
+              title: '📅 Outlook: Product Feedback Session',
+              date: '2026-06-24',
+              startTime: '15:00',
+              endTime: '16:30',
+              calendarId: 'outlook',
+              color: '#7dd3fc',
+              description: 'Reviewing user research and comments on the calendar view.'
+            }
+          ]
+        }
+
+        newMappedEvents.push(...outlookEvents)
+
+        const diagInfo = {
+          currentUser: { fullname: currentUser.fullname, systemuserid: currentUser.systemuserid },
+          resourceId,
+          totalAllocations: allocations.length,
+          totalTasks: tasks.length,
+          totalProjects: projects.length,
+          userAllocationsCount: userAllocations.length,
+          assignedProjectIds: Array.from(assignedProjectIds),
+          userTasksCount: userTasks.length,
+          outlookEventsCount: outlookEvents.length
+        }
+        console.log('[Calendar Diagnostics]', diagInfo)
+        setDiagData(diagInfo)
+
+        setRemoteEvents(newMappedEvents)
+
+        // Focused on actual system date (currentDate is initialized to new Date() and does not auto-shift)
+      } catch (err: any) {
+        console.error('[CalendarPage] load error:', err)
+        setRemoteError(err.message || 'Unable to retrieve allocations and tasks.')
+      } finally {
+        setLoadingRemote(false)
+      }
+    }
+
+    loadData()
+  }, [currentUser])
+
+  // Modal & Popup dialog states
+  const [isNewEventOpen, setIsNewEventOpen] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
+
+  // New Event Form State
+  const [newTitle, setNewTitle] = useState('')
+  const [newDate, setNewDate] = useState('2026-06-22')
+  const [newStartTime, setNewStartTime] = useState('09:00')
+  const [newEndTime, setNewEndTime] = useState('10:00')
+  const [newCalendarId, setNewCalendarId] = useState('work')
+  const [newDescription, setNewDescription] = useState('')
+
+  // Hours to show in hourly grid (8:00 to 20:00)
+  const hours = Array.from({ length: 13 }, (_, i) => i + 8)
+
+  // Mini-Calendar logic for sidebar
+  const miniCalDate = useMemo(() => {
+    return new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+  }, [currentDate])
+
+  const miniCalDays = useMemo(() => {
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+    const firstDayIndex = new Date(year, month, 1).getDay()
+    const lastDate = new Date(year, month + 1, 0).getDate()
+
+    const days: Array<{ dayNum: number | null; dateObj: Date | null }> = []
+    // Pad previous month days
+    for (let i = 0; i < firstDayIndex; i++) {
+      days.push({ dayNum: null, dateObj: null })
+    }
+    // Present month days
+    for (let i = 1; i <= lastDate; i++) {
+      days.push({
+        dayNum: i,
+        dateObj: new Date(year, month, i),
+      })
+    }
+    return days
+  }, [currentDate])
+
+  const handleMiniCalDayClick = (dateObj: Date | null) => {
+    if (dateObj) {
+      setCurrentDate(dateObj)
+    }
+  }
+
+  // Calculate start of current week/period
+  const currentWeekDays = useMemo(() => {
+    const startOfWeek = new Date(currentDate)
+    const dayOfWeek = startOfWeek.getDay()
+    const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1) // Adjust to start on Monday
+    startOfWeek.setDate(diff)
+
+    const days: Date[] = []
+    const count = viewMode === 'workweek' ? 5 : 7
+    for (let i = 0; i < count; i++) {
+      const day = new Date(startOfWeek)
+      day.setDate(startOfWeek.getDate() + i)
+      days.push(day)
+    }
+    return days
+  }, [currentDate, viewMode])
+
+  // Navigation Logic
+  const handleNext = () => {
+    const nextDate = new Date(currentDate)
+    if (viewMode === 'day') {
+      nextDate.setDate(currentDate.getDate() + 1)
+    } else if (viewMode === 'workweek' || viewMode === 'week') {
+      nextDate.setDate(currentDate.getDate() + 7)
+    } else {
+      nextDate.setMonth(currentDate.getMonth() + 1)
+    }
+    setCurrentDate(nextDate)
+  }
+
+  const handlePrev = () => {
+    const prevDate = new Date(currentDate)
+    if (viewMode === 'day') {
+      prevDate.setDate(currentDate.getDate() - 1)
+    } else if (viewMode === 'workweek' || viewMode === 'week') {
+      prevDate.setDate(currentDate.getDate() - 7)
+    } else {
+      prevDate.setMonth(currentDate.getMonth() - 1)
+    }
+    setCurrentDate(prevDate)
+  }
+
+  const handleToday = () => {
+    setCurrentDate(new Date())
+  }
+
+  // Combine local and remote events
+  const combinedEvents = useMemo(() => {
+    return [...remoteEvents, ...events]
+  }, [remoteEvents, events])
+
+  // Filtered Events
+  const filteredEvents = useMemo(() => {
+    return combinedEvents.filter((e) => activeCalendars[e.calendarId])
+  }, [combinedEvents, activeCalendars])
+
+  // Get active range label
+  const rangeLabel = useMemo(() => {
+    if (viewMode === 'day') {
+      return currentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+    }
+    if (viewMode === 'month') {
+      return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    }
+    const firstDay = currentWeekDays[0]
+    const lastDay = currentWeekDays[currentWeekDays.length - 1]
+    if (!firstDay || !lastDay) return ''
+
+    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
+    if (firstDay.getFullYear() !== lastDay.getFullYear()) {
+      return `${firstDay.toLocaleDateString('en-US', { ...options, year: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`
+    }
+    return `${firstDay.toLocaleDateString('en-US', options)} - ${lastDay.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`
+  }, [currentDate, viewMode, currentWeekDays])
+
+  // Open Event Dialog for a specific slot
+  const handleCellClick = (dateStr: string, hourStr: number) => {
+    setNewDate(dateStr)
+    const formattedHour = hourStr < 10 ? `0${hourStr}:00` : `${hourStr}:00`
+    const formattedEndHour = hourStr + 1 < 10 ? `0${hourStr + 1}:00` : `${hourStr + 1}:00`
+    setNewStartTime(formattedHour)
+    setNewEndTime(formattedEndHour)
+    setNewTitle('')
+    setNewDescription('')
+    setIsNewEventOpen(true)
+  }
+
+  // Add Event Form Submission
+  const handleCreateEvent = () => {
+    if (!newTitle.trim()) return
+    const matchedType = CALENDAR_TYPES.find((t) => t.id === newCalendarId)
+    const newEvent: CalendarEvent = {
+      id: Date.now().toString(),
+      title: newTitle,
+      date: newDate,
+      startTime: newStartTime,
+      endTime: newEndTime,
+      calendarId: newCalendarId,
+      description: newDescription,
+      color: matchedType ? matchedType.color : '#3f51b5',
+    }
+    setEvents((prev) => [...prev, newEvent])
+    setIsNewEventOpen(false)
+  }
+
+  // Delete Event
+  const handleDeleteEvent = (id: string) => {
+    setEvents((prev) => prev.filter((e) => e.id !== id))
+    setSelectedEvent(null)
+  }
+
+
+
+  // Position calculation helpers for absolute events positioning
+  const getEventPositionStyles = (e: CalendarEvent) => {
+    const [startH, startM] = e.startTime.split(':').map(Number)
+    const [endH, endM] = e.endTime.split(':').map(Number)
+
+    const startMinutes = (startH - 8) * 60 + startM
+    const endMinutes = (endH - 8) * 60 + endM
+
+    const topPx = startMinutes
+    const heightPx = endMinutes - startMinutes
+
+    return {
+      top: `${Math.max(0, topPx)}px`,
+      height: `${Math.max(8, heightPx)}px`,
+      position: 'absolute' as const,
+      left: '4px',
+      right: '4px',
+      zIndex: 2,
+    }
+  }
+
+  return (
+    <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 120px)', mt: 1 }}>
+      {/* ─── LEFT SIDEBAR PANEL ─── */}
+      <Box sx={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Title */}
+        <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.01em' }}>
+          Calendar
+        </Typography>
+
+        {/* Mini Calendar View */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </Typography>
+            <Box>
+              <IconButton size="small" onClick={() => {
+                const prev = new Date(currentDate)
+                prev.setMonth(currentDate.getMonth() - 1)
+                setCurrentDate(prev)
+              }}>
+                <ChevronLeftIcon fontSize="small" />
+              </IconButton>
+              <IconButton size="small" onClick={() => {
+                const next = new Date(currentDate)
+                next.setMonth(currentDate.getMonth() + 1)
+                setCurrentDate(next)
+              }}>
+                <ChevronRightIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.75, textAlign: 'center', mb: 1 }}>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+              <Typography key={idx} variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.7rem' }}>
+                {day}
+              </Typography>
+            ))}
+            {miniCalDays.map((item, idx) => {
+              const isSelected = item.dateObj && formatDateString(item.dateObj) === formatDateString(currentDate)
+              const isToday = item.dateObj && formatDateString(item.dateObj) === formatDateString(new Date())
+              return (
+                <Box
+                  key={idx}
+                  onClick={() => handleMiniCalDayClick(item.dateObj)}
+                  sx={{
+                    height: 26,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                    cursor: item.dayNum ? 'pointer' : 'default',
+                    fontSize: '0.75rem',
+                    fontWeight: isSelected || isToday ? 700 : 500,
+                    bgcolor: isSelected ? 'primary.main' : 'transparent',
+                    color: isSelected
+                      ? 'primary.contrastText'
+                      : isToday
+                        ? 'primary.main'
+                        : item.dayNum
+                          ? 'text.primary'
+                          : 'text.disabled',
+                    border: isToday && !isSelected ? `1px solid ${theme.palette.primary.main}` : 'none',
+                    '&:hover': {
+                      bgcolor: item.dayNum && !isSelected ? 'action.hover' : undefined,
+                    },
+                  }}
+                >
+                  {item.dayNum}
+                </Box>
+              )
+            })}
+          </Box>
+          <Button
+            fullWidth
+            variant="outlined"
+            size="small"
+            startIcon={<AddIcon />}
+            sx={{ mt: 1.5, textTransform: 'none', borderRadius: 1.5 }}
+          >
+            Add calendar
+          </Button>
+        </Paper>
+
+        {/* Calendar Selection Checkboxes */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper',
+            flexGrow: 1,
+            overflow: 'auto',
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+            My calendars
+          </Typography>
+          <FormGroup>
+            {CALENDAR_TYPES.map((type) => (
+              <FormControlLabel
+                key={type.id}
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={activeCalendars[type.id]}
+                    onChange={(e) =>
+                      setActiveCalendars((prev) => ({ ...prev, [type.id]: e.target.checked }))
+                    }
+                    sx={{
+                      color: type.color,
+                      '&.Mui-checked': {
+                        color: type.color,
+                      },
+                    }}
+                  />
+                }
+                label={
+                  <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.825rem' }}>
+                    {type.label}
+                  </Typography>
+                }
+                sx={{ mb: 0.5 }}
+              />
+            ))}
+          </FormGroup>
+        </Paper>
+      </Box>
+
+      {/* ─── MAIN CALENDAR PANEL ─── */}
+      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', gap: remoteError ? 1.5 : 0 }}>
+        {remoteError && (
+          <Alert severity="error" onClose={() => setRemoteError(null)}>
+            {remoteError}
+          </Alert>
+        )}
+        {/* Header Toolbar */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            borderRadius: '12px 12px 0 0',
+            border: `1px solid ${theme.palette.divider}`,
+            borderBottom: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            bgcolor: 'background.paper',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
+          {/* Navigation Controls */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleToday}
+              sx={{ textTransform: 'none', borderRadius: 1.5 }}
+            >
+              Today
+            </Button>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <IconButton size="small" onClick={handlePrev}>
+                <ChevronLeftIcon />
+              </IconButton>
+              <IconButton size="small" onClick={handleNext}>
+                <ChevronRightIcon />
+              </IconButton>
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, ml: 1, minWidth: 200 }}>
+              {rangeLabel}
+            </Typography>
+          </Box>
+
+          {/* Action and Selector Controls */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Select
+              value={viewMode}
+              onChange={(e) => setViewMode(e.target.value as any)}
+              size="small"
+              sx={{ minWidth: 120, borderRadius: 1.5, fontSize: '0.825rem' }}
+            >
+              <MenuItem value="day">Day</MenuItem>
+              <MenuItem value="workweek">Work week</MenuItem>
+              <MenuItem value="week">Week</MenuItem>
+            </Select>
+
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<FilterListIcon />}
+              sx={{ textTransform: 'none', borderRadius: 1.5 }}
+            >
+              Filter
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<VideocamIcon />}
+              sx={{ textTransform: 'none', borderRadius: 1.5 }}
+            >
+              Meet now
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              onClick={() => setIsDiagOpen(true)}
+              sx={{ textTransform: 'none', borderRadius: 1.5 }}
+            >
+              Debug Data
+            </Button>
+
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setNewTitle('')
+                setNewDescription('')
+                setNewDate(formatDateString(currentDate))
+                setIsNewEventOpen(true)
+              }}
+              sx={{ textTransform: 'none', borderRadius: 1.5, fontWeight: 600 }}
+            >
+              New event
+            </Button>
+          </Box>
+        </Paper>
+
+        {/* Calendar Interactive Grid */}
+        <Paper
+          elevation={0}
+          sx={{
+            flexGrow: 1,
+            borderRadius: '0 0 12px 12px',
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: 'background.paper',
+            overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+          }}
+        >
+          {loadingRemote && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backdropFilter: 'blur(1px)',
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
+          {/* Day Column Headers */}
+          <Box
+            sx={{
+              display: 'flex',
+              borderBottom: `1px solid ${theme.palette.divider}`,
+              position: 'sticky',
+              top: 0,
+              bgcolor: 'background.paper',
+              zIndex: 3,
+            }}
+          >
+            {/* Time Slot Header Spacer */}
+            <Box sx={{ width: 60, flexShrink: 0, borderRight: `1px solid ${theme.palette.divider}` }} />
+
+            {/* Header Columns */}
+            {currentWeekDays.map((day, colIdx) => {
+              const isToday = formatDateString(day) === formatDateString(new Date())
+              return (
+                <Box
+                  key={colIdx}
+                  sx={{
+                    flex: 1,
+                    py: 1.5,
+                    textAlign: 'center',
+                    borderRight: colIdx < currentWeekDays.length - 1 ? `1px solid ${theme.palette.divider}` : 'none',
+                    bgcolor: isToday ? 'action.selected' : 'transparent',
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 600,
+                      color: isToday ? 'primary.main' : 'text.secondary',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      color: isToday ? 'primary.main' : 'text.primary',
+                      mt: -0.5,
+                    }}
+                  >
+                    {day.getDate()}
+                  </Typography>
+                </Box>
+              )
+            })}
+          </Box>
+
+          {/* Grid Rows Container */}
+          <Box sx={{ display: 'flex', flexGrow: 1, position: 'relative', minHeight: 650 }}>
+            {/* Hours Labels Column */}
+            <Box sx={{ width: 60, flexShrink: 0, borderRight: `1px solid ${theme.palette.divider}` }}>
+              {hours.map((hour) => (
+                <Box
+                  key={hour}
+                  sx={{
+                    height: 60,
+                    pr: 1,
+                    pt: 0.5,
+                    textAlign: 'right',
+                    borderBottom: `1px dashed ${theme.palette.divider}`,
+                  }}
+                >
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.75rem' }}>
+                    {hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+
+            {/* Daily Grid Columns */}
+            {currentWeekDays.map((day, colIdx) => {
+              const dateStr = formatDateString(day)
+              // Filter events that fall on this day
+              const dayEvents = filteredEvents.filter((e) => e.date === dateStr)
+
+              return (
+                <Box
+                  key={colIdx}
+                  sx={{
+                    flex: 1,
+                    position: 'relative',
+                    borderRight: colIdx < currentWeekDays.length - 1 ? `1px solid ${theme.palette.divider}` : 'none',
+                  }}
+                >
+                  {/* Grid Rows Background */}
+                  {hours.map((hour) => (
+                    <Box
+                      key={hour}
+                      onClick={() => handleCellClick(dateStr, hour)}
+                      sx={{
+                        height: 60,
+                        borderBottom: `1px dashed ${theme.palette.divider}`,
+                        cursor: 'pointer',
+                        '&:hover': {
+                          bgcolor: 'action.hover',
+                        },
+                      }}
+                    />
+                  ))}
+
+                  {/* Absolute Events */}
+                  {dayEvents.map((event) => {
+                    const position = getEventPositionStyles(event)
+                    return (
+                      <Tooltip key={event.id} title={`${event.startTime} - ${event.endTime}: ${event.title}`} arrow>
+                        <Box
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedEvent(event)
+                          }}
+                          sx={{
+                            ...position,
+                            bgcolor: event.color,
+                            color: theme.palette.getContrastText(event.color || '#3f51b5'),
+                            borderRadius: '4px',
+                            p: '6px 8px',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            borderLeft: `4px solid rgba(0,0,0,0.25)`,
+                            boxShadow: theme.shadows[2],
+                            transition: 'all 0.15s ease',
+                            '&:hover': {
+                              filter: 'brightness(0.95)',
+                              boxShadow: theme.shadows[4],
+                            },
+                          }}
+                        >
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.75rem', lineHeight: 1.2 }}>
+                            {event.title}
+                          </Typography>
+                          <Typography variant="caption" sx={{ opacity: 0.85, fontSize: '0.65rem', display: 'block' }}>
+                            {event.startTime} - {event.endTime}
+                          </Typography>
+                        </Box>
+                      </Tooltip>
+                    )
+                  })}
+                </Box>
+              )
+            })}
+          </Box>
+        </Paper>
+      </Box>
+
+      {/* ─── NEW EVENT DIALOG ─── */}
+      <Dialog open={isNewEventOpen} onClose={() => setIsNewEventOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <EventIcon color="primary" /> New Calendar Event
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="Event Title"
+              fullWidth
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="e.g. Project Delivery Sync"
+            />
+            <TextField
+              label="Date"
+              type="date"
+              fullWidth
+              value={newDate}
+              onChange={(e) => setNewDate(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Start Time"
+                type="time"
+                fullWidth
+                value={newStartTime}
+                onChange={(e) => setNewStartTime(e.target.value)}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+              <TextField
+                label="End Time"
+                type="time"
+                fullWidth
+                value={newEndTime}
+                onChange={(e) => setNewEndTime(e.target.value)}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            </Box>
+            <TextField
+              label="Calendar Group"
+              select
+              fullWidth
+              value={newCalendarId}
+              onChange={(e) => setNewCalendarId(e.target.value)}
+            >
+              {CALENDAR_TYPES.map((t) => (
+                <MenuItem key={t.id} value={t.id}>
+                  {t.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Description / Notes"
+              multiline
+              rows={3}
+              fullWidth
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setIsNewEventOpen(false)} sx={{ textTransform: 'none' }}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleCreateEvent} sx={{ textTransform: 'none' }}>
+            Save Event
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ─── EVENT DETAILS DIALOG ─── */}
+      <Dialog open={!!selectedEvent} onClose={() => setSelectedEvent(null)} maxWidth="xs" fullWidth>
+        {selectedEvent && (
+          <>
+            <DialogTitle
+              sx={{
+                bgcolor: selectedEvent.color,
+                color: 'white',
+                fontWeight: 700,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <EventIcon />
+                <Typography variant="h6" component="span" sx={{ fontWeight: 700 }}>
+                  Event Details
+                </Typography>
+              </Box>
+              <IconButton size="small" onClick={() => setSelectedEvent(null)} sx={{ color: 'white' }}>
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ pt: 3 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    TITLE
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    {selectedEvent.title}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      DATE
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                      <EventIcon fontSize="inherit" color="action" /> {selectedEvent.date}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      TIME
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                      <AccessTimeIcon fontSize="inherit" color="action" /> {selectedEvent.startTime} - {selectedEvent.endTime}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    CALENDAR CATEGORY
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                    <Box sx={{ w: 12, h: 12, borderRadius: '50%', bgcolor: selectedEvent.color, width: 12, height: 12 }} />
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      {CALENDAR_TYPES.find((t) => t.id === selectedEvent.calendarId)?.label || selectedEvent.calendarId}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {selectedEvent.description && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      NOTES / DESCRIPTION
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
+                      {selectedEvent.description}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'space-between' }}>
+              <Button
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={() => handleDeleteEvent(selectedEvent.id)}
+                sx={{ textTransform: 'none' }}
+              >
+                Delete Event
+              </Button>
+              <Button variant="outlined" onClick={() => setSelectedEvent(null)} sx={{ textTransform: 'none' }}>
+                Close
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+
+      {/* ─── DIAGNOSTICS DIALOG ─── */}
+      <Dialog open={isDiagOpen} onClose={() => setIsDiagOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Calendar Data Diagnostics</DialogTitle>
+        <DialogContent dividers>
+          {diagData ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>User Context Info:</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>Active User Name:</Typography>
+                <Typography variant="body2">{diagData.currentUser?.fullname}</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>Active User ID:</Typography>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{diagData.currentUser?.systemuserid}</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>Resolved Resource ID:</Typography>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{diagData.resourceId || 'None Found'}</Typography>
+              </Box>
+
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 2 }}>General Totals:</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2 }}>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">All Projects</Typography>
+                  <Typography variant="h6">{diagData.totalProjects}</Typography>
+                </Paper>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">All Allocations</Typography>
+                  <Typography variant="h6">{diagData.totalAllocations}</Typography>
+                </Paper>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">All Tasks</Typography>
+                  <Typography variant="h6">{diagData.totalTasks}</Typography>
+                </Paper>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">Allocated Projects</Typography>
+                  <Typography variant="h6">{diagData.assignedProjectIds?.length ?? 0}</Typography>
+                </Paper>
+              </Box>
+
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 2 }}>User Specific Totals:</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">Allocations for User</Typography>
+                  <Typography variant="h6">{diagData.userAllocationsCount}</Typography>
+                </Paper>
+                <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">Tasks filtered for User</Typography>
+                  <Typography variant="h6">{diagData.userTasksCount}</Typography>
+                </Paper>
+              </Box>
+
+            </Box>
+          ) : (
+            <Typography>No diagnostics loaded yet.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsDiagOpen(false)} variant="contained" sx={{ textTransform: 'none' }}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  )
+}
+
+// Minimal stub for missing CloseIcon
+import CloseIcon from '@mui/icons-material/Close'

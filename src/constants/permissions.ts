@@ -1,6 +1,6 @@
 import type { TabKey } from '@/components/layout/PrimaryShell'
 
-export type Persona = 
+export type Persona =
   | 'SystemAdministrator'
   | 'PortfolioExecutive'
   | 'PMO'
@@ -11,32 +11,32 @@ export type Persona =
 
 export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
   SystemAdministrator: [
-    'workspace', 'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 'resources', 
-    'timesheets', 'budgets', 'gatereviews', 'benefits', 'risks', 
-    'issues', 'changerequests', 'cashflow', 'tasks', 'fundingsources', 
-    'statussnapshots', 'configurations', 'workflows', 'teamadmin', 'skills', 'holidays'
+    'workspace', 'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 'resources',
+    'timesheets', 'budgets', 'gatereviews', 'benefits', 'risks',
+    'issues', 'changerequests', 'cashflow', 'tasks', 'fundingsources',
+    'statussnapshots', 'configurations', 'workflows', 'teamadmin', 'skills', 'holidays', 'calendar'
   ],
   PortfolioExecutive: [
-    'workspace', 'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 
-    'gatereviews', 'benefits', 'changerequests', 'statussnapshots'
+    'workspace', 'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline',
+    'gatereviews', 'benefits', 'changerequests', 'statussnapshots', 'calendar'
   ],
   PMO: [
-    'workspace', 'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 
-    'gatereviews', 'changerequests', 'tasks', 'statussnapshots', 
-    'workflows', 'teamadmin'
+    'workspace', 'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline',
+    'gatereviews', 'changerequests', 'tasks', 'statussnapshots',
+    'workflows', 'teamadmin', 'calendar'
   ],
   ProjectManager: [
-    'workspace', 'dashboard', 'projects', 'resources', 'timesheets', 'gatereviews', 
-    'risks', 'issues', 'changerequests', 'tasks', 'statussnapshots'
+    'workspace', 'dashboard', 'projects', 'resources', 'timesheets', 'gatereviews',
+    'risks', 'issues', 'changerequests', 'tasks', 'statussnapshots', 'calendar'
   ],
   FinancialController: [
-    'workspace', 'dashboard', 'projects', 'budgets', 'cashflow', 'fundingsources'
+    'workspace', 'dashboard', 'projects', 'budgets', 'cashflow', 'fundingsources', 'calendar'
   ],
   Planner: [
-    'workspace', 'dashboard', 'projects', 'tasks'
+    'workspace', 'dashboard', 'projects', 'tasks', 'calendar'
   ],
   TeamMember: [
-    'dashboard', 'timesheets', 'tasks', 'risks', 'issues', 'workspace'
+    'dashboard', 'timesheets', 'tasks', 'risks', 'issues', 'workspace', 'calendar'
   ]
 }
 
@@ -53,19 +53,23 @@ export function getPersonaFromUser(
   const roles = userRoleNames.filter(Boolean).map(r => String(r).toLowerCase())
 
   const matches = (keywords: string[]) => {
-    return keywords.some(keyword => 
-      title.includes(keyword) || 
-      name.includes(keyword) || 
-      teams.some(t => t.includes(keyword)) || 
-      roles.some(r => r.includes(keyword))
-    )
+    return keywords.some(keyword => {
+      const escaped = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+      const regex = new RegExp(`\\b${escaped}\\b`, 'i')
+      return (
+        regex.test(title) ||
+        regex.test(name) ||
+        teams.some(t => regex.test(t)) ||
+        roles.some(r => regex.test(r))
+      )
+    })
   }
 
   // 1. System Administrator
   if (matches(['admin', 'platform owner', 'sysadmin', 'administrator'])) {
     return 'SystemAdministrator'
   }
-  
+
   // 2. PMO / Governance Lead
   if (matches(['pmo', 'governance', 'compliance', 'audit'])) {
     return 'PMO'
@@ -77,7 +81,7 @@ export function getPersonaFromUser(
   }
 
   // 4. Project / Programme Manager
-  if (matches(['project manager', 'programme manager', 'delivery manager', 'scrum master'])) {
+  if (matches(['project manager', 'programme manager', 'delivery', 'pm', 'lead', 'scrum master'])) {
     return 'ProjectManager'
   }
 

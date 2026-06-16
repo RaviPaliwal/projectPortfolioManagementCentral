@@ -18,6 +18,7 @@ export interface SystemUser {
   jobtitle?: string
   firstname?: string
   lastname?: string
+  _businessunitid_value?: string
 }
 
 interface UserContextValue {
@@ -48,11 +49,16 @@ export function useUser() {
   return useContext(UserContext)
 }
 
+function normalizeGuid(id: string | undefined | null): string {
+  if (!id) return ''
+  return id.replace(/[{}]/g, '').toLowerCase()
+}
+
 function getLoggedInUserId(): string | null {
   try {
     const xrmContext = (window as any).Xrm?.Utility?.getGlobalContext() || (window.parent as any).Xrm?.Utility?.getGlobalContext()
     if (xrmContext?.userSettings?.userId) {
-      return xrmContext.userSettings.userId.replace(/[{}]/g, '').toLowerCase()
+      return normalizeGuid(xrmContext.userSettings.userId)
     }
   } catch (e) {
     console.debug('[UserContext] Could not access Xrm context:', e)
@@ -73,7 +79,7 @@ async function fetchUserRolesFromDataverse(): Promise<Record<string, string[]>> 
       const entities = result?.entities || []
       for (const u of entities) {
         if (u.systemuserid && u.systemuserroles_association) {
-          userRolesMap[u.systemuserid] = u.systemuserroles_association.map((r: any) => (r && r.name) || '')
+          userRolesMap[normalizeGuid(u.systemuserid)] = u.systemuserroles_association.map((r: any) => (r && r.name) || '')
         }
       }
       console.info('[UserContext] Successfully fetched user roles via Xrm.webApi:', Object.keys(userRolesMap).length)
@@ -92,7 +98,7 @@ async function fetchUserRolesFromDataverse(): Promise<Record<string, string[]>> 
       const usersWithRoles = data.value || []
       for (const u of usersWithRoles) {
         if (u.systemuserid && u.systemuserroles_association) {
-          userRolesMap[u.systemuserid] = u.systemuserroles_association.map((r: any) => (r && r.name) || '')
+          userRolesMap[normalizeGuid(u.systemuserid)] = u.systemuserroles_association.map((r: any) => (r && r.name) || '')
         }
       }
       console.info('[UserContext] Successfully fetched user roles via fetch:', Object.keys(userRolesMap).length)
@@ -120,7 +126,7 @@ async function fetchTeamRolesFromDataverse(): Promise<Record<string, string[]>> 
       const entities = result?.entities || []
       for (const t of entities) {
         if (t.teamid && t.teamroles_association) {
-          teamRolesMap[t.teamid] = t.teamroles_association.map((r: any) => (r && r.name) || '')
+          teamRolesMap[normalizeGuid(t.teamid)] = t.teamroles_association.map((r: any) => (r && r.name) || '')
         }
       }
       console.info('[UserContext] Successfully fetched team roles via Xrm.webApi:', Object.keys(teamRolesMap).length)
@@ -139,7 +145,7 @@ async function fetchTeamRolesFromDataverse(): Promise<Record<string, string[]>> 
       const teamsWithRoles = data.value || []
       for (const t of teamsWithRoles) {
         if (t.teamid && t.teamroles_association) {
-          teamRolesMap[t.teamid] = t.teamroles_association.map((r: any) => (r && r.name) || '')
+          teamRolesMap[normalizeGuid(t.teamid)] = t.teamroles_association.map((r: any) => (r && r.name) || '')
         }
       }
       console.info('[UserContext] Successfully fetched team roles via fetch:', Object.keys(teamRolesMap).length)
@@ -178,7 +184,7 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
     try {
       const [usersResult, teamsResult, membershipsResult] = await Promise.all([
         SystemusersService.getAll({
-          select: ['systemuserid', 'fullname', 'domainname', 'internalemailaddress', 'jobtitle', 'firstname', 'lastname'],
+          select: ['systemuserid', 'fullname', 'domainname', 'internalemailaddress', 'jobtitle', 'firstname', 'lastname', '_businessunitid_value'] as any,
           filter: "isdisabled eq false",
           orderBy: ['fullname asc'],
           top: 200,
@@ -200,7 +206,7 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
       // Build team lookup
       const teamIdToName = new Map<string, string>()
       for (const t of teams) {
-        if (t.teamid && t.name) teamIdToName.set(t.teamid, t.name.toLowerCase())
+        if (t.teamid && t.name) teamIdToName.set(normalizeGuid(t.teamid), t.name.toLowerCase())
       }
 
       // Build user to teams mapping (names and IDs)
@@ -208,17 +214,19 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
       const userTeamIds = new Map<string, string[]>()
       for (const m of memberships) {
         if (m.systemuserid && m.teamid) {
-          const teamName = teamIdToName.get(m.teamid)
+          const cleanUserId = normalizeGuid(m.systemuserid)
+          const cleanTeamId = normalizeGuid(m.teamid)
+          const teamName = teamIdToName.get(cleanTeamId)
           if (teamName) {
-            if (!userTeams.has(m.systemuserid)) {
-              userTeams.set(m.systemuserid, [])
+            if (!userTeams.has(cleanUserId)) {
+              userTeams.set(cleanUserId, [])
             }
-            userTeams.get(m.systemuserid)!.push(teamName)
+            userTeams.get(cleanUserId)!.push(teamName)
           }
-          if (!userTeamIds.has(m.systemuserid)) {
-            userTeamIds.set(m.systemuserid, [])
+          if (!userTeamIds.has(cleanUserId)) {
+            userTeamIds.set(cleanUserId, [])
           }
-          userTeamIds.get(m.systemuserid)!.push(m.teamid)
+          userTeamIds.get(cleanUserId)!.push(cleanTeamId)
         }
       }
 
@@ -249,20 +257,33 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
       for (const u of list) {
         const uId = u.systemuserid
         if (!uId) continue
+        const cleanUserId = normalizeGuid(uId)
 
-        const userTeamNames = userTeams.get(uId) || []
-        const uTeamIds = userTeamIds.get(uId) || []
+        const userTeamNames = [...(userTeams.get(cleanUserId) || [])]
+        const uTeamIds = [...(userTeamIds.get(cleanUserId) || [])]
+
+        // Implicitly inherit from the default business unit team (its ID matches the BU ID)
+        if (u._businessunitid_value) {
+          const cleanBuId = normalizeGuid(u._businessunitid_value)
+          if (!uTeamIds.includes(cleanBuId)) {
+            uTeamIds.push(cleanBuId)
+          }
+          const buTeamName = teamIdToName.get(cleanBuId)
+          if (buTeamName && !userTeamNames.includes(buTeamName)) {
+            userTeamNames.push(buTeamName)
+          }
+        }
         
         // Aggregate directly assigned roles and team-inherited roles
-        const userRoleNames = [...(userRolesMap[uId] || [])]
+        const userRoleNames = [...(userRolesMap[cleanUserId] || [])]
         for (const teamId of uTeamIds) {
           const teamRoles = teamRolesMap[teamId] || []
           userRoleNames.push(...teamRoles)
         }
         
         const resolvedPersona = getPersonaFromUser(u, userTeamNames, userRoleNames)
-        personas[uId] = resolvedPersona
-        console.info(`User: "${u.fullname}", ID: "${uId}", JobTitle: "${u.jobtitle || ''}", Teams: [${userTeamNames.join(', ')}], Roles: [${userRoleNames.join(', ')}], Persona: "${resolvedPersona}"`)
+        personas[cleanUserId] = resolvedPersona
+        console.info(`User: "${u.fullname}", ID: "${cleanUserId}", JobTitle: "${u.jobtitle || ''}", Teams: [${userTeamNames.join(', ')}], Roles: [${userRoleNames.join(', ')}], Persona: "${resolvedPersona}"`)
       }
       console.info('[UserContext] -------------------------------------')
 
@@ -313,7 +334,7 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
 
   const currentUserPersona = useMemo(() => {
     if (!currentUser || !currentUser.systemuserid) return 'TeamMember'
-    return userPersonas[currentUser.systemuserid] || 'TeamMember'
+    return userPersonas[normalizeGuid(currentUser.systemuserid)] || 'TeamMember'
   }, [currentUser, userPersonas])
 
   return (
@@ -383,7 +404,8 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
           sx={{ borderRadius: 1.15 }}
         >
           {users.map((user) => {
-            const persona = userPersonas[user.systemuserid || ''] || 'TeamMember'
+            const cleanId = normalizeGuid(user.systemuserid)
+            const persona = userPersonas[cleanId] || 'TeamMember'
             return (
               <MenuItem key={user.systemuserid} value={user.systemuserid}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -440,8 +462,9 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
         </Box>
         <List dense sx={{ py: 0.5 }}>
           {users.map((user) => {
-            const isActive = user.systemuserid === currentUser?.systemuserid
-            const persona = userPersonas[user.systemuserid || ''] || 'TeamMember'
+            const cleanId = normalizeGuid(user.systemuserid)
+            const isActive = cleanId === normalizeGuid(currentUser?.systemuserid)
+            const persona = userPersonas[cleanId] || 'TeamMember'
             return (
               <ListItemButton
                 key={user.systemuserid}
@@ -485,10 +508,10 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
               <strong>Persona:</strong> {currentUserPersona}
             </Typography>
             <Typography variant="caption" sx={{ display: 'block', fontSize: '0.75rem', color: 'text.secondary', whiteSpace: 'normal', wordBreak: 'break-all' }}>
-              <strong>Roles:</strong> {(userRolesMap[currentUser.systemuserid] || []).join(', ') || 'None'}
+              <strong>Roles:</strong> {(userRolesMap[normalizeGuid(currentUser.systemuserid)] || []).join(', ') || 'None'}
             </Typography>
             <Typography variant="caption" sx={{ display: 'block', fontSize: '0.75rem', color: 'text.secondary', whiteSpace: 'normal', wordBreak: 'break-all' }}>
-              <strong>Teams:</strong> {(userTeams.get(currentUser.systemuserid) || []).join(', ') || 'None'}
+              <strong>Teams:</strong> {(userTeams.get(normalizeGuid(currentUser.systemuserid)) || []).join(', ') || 'None'}
             </Typography>
           </Box>
         )}

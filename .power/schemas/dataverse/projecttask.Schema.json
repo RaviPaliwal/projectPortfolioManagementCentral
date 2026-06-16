@@ -370,22 +370,6 @@
           "x-ms-read-only": true,
           "maxLength": 850
         },
-        "pm_resource": {
-          "type": "string",
-          "title": "Resource",
-          "x-ms-dataverse-attribute": "pm_resource",
-          "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_resource"
-        },
-        "pm_resourcename": {
-          "type": "string",
-          "title": "pm_resourcename",
-          "x-ms-dataverse-attribute": "pm_resourcename",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_resourceName",
-          "x-ms-read-only": true,
-          "maxLength": 850
-        },
         "pm_tasklevel": {
           "type": "string",
           "title": "Task Level",

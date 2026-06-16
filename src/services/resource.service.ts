@@ -1,4 +1,4 @@
-import {
+﻿import {
   Pm_resourcesService,
   Pm_resourceallocationsService,
   Pm_projectsService,
@@ -89,6 +89,17 @@ export async function deleteResource(id: string): Promise<void> {
   await Pm_resourcesService.delete(id)
 }
 
+export async function fetchResourceBySystemUserId(systemUserId: string): Promise<ResourceModel | null> {
+  const normalizedId = normalizeLookupId(systemUserId)
+  if (!normalizedId) return null
+  const result = await Pm_resourcesService.getAll({
+    filter: "_pm_systemuser_value eq '" + normalizedId + "' and statecode eq 0",
+    select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole', 'pm_resourcecategory', 'pm_employmentstatus', 'pm_dailyworkcapacity', 'pm_dailycostrate', 'pm_positiontitle', '_pm_systemuser_value', 'pm_suppliercompany', 'pm_contractstartdate', 'pm_contractenddate'],
+    top: 1,
+  })
+  const items = unwrapList<Pm_resources>(result)
+  return items.length > 0 ? mapResource(items[0]) : null
+}
 export async function fetchResourceAllocations(resourceId: string): Promise<ResourceAllocationModel[]> {
   const result = await Pm_resourceallocationsService.getAll({
     filter: `_pm_resource_value eq '${resourceId}' and statecode eq 0`,
@@ -219,3 +230,4 @@ export async function updateResourceAllocation(id: string, changes: Partial<Reso
   const item = unwrapSingle<Pm_resourceallocations>(result)
   return item ? mapResourceAllocation(item) : null
 }
+
