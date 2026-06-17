@@ -37,6 +37,7 @@ import {
   Pm_projecttasksService,
   Pm_projectsService,
   GetOutlookEventsService,
+  CreateOutlookEventService,
 } from '@/generated'
 import { unwrapList, normalizeLookupId, parseDataverseError } from '@/services'
 
@@ -183,12 +184,17 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<'day' | 'workweek' | 'week' | 'month'>('week')
 
   // Custom local events & remote Dataverse events
-  const [events, setEvents] = useState<CalendarEvent[]>(INITIAL_EVENTS)
+  const [events, setEvents] = useState<CalendarEvent[]>([])
   const [remoteEvents, setRemoteEvents] = useState<CalendarEvent[]>([])
 
   const { currentUser } = useUser()
   const [loadingRemote, setLoadingRemote] = useState(false)
   const [remoteError, setRemoteError] = useState<string | null>(null)
+
+  // Loading & sync state for Outlook event creation
+  const [creatingEvent, setCreatingEvent] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [reloadTick, setReloadTick] = useState(0)
 
   // Sidebar controls
   const [activeCalendars, setActiveCalendars] = useState<Record<string, boolean>>({
@@ -455,18 +461,18 @@ export default function CalendarPage() {
         try {
           const flowStart = '2026-06-01T00:00:00Z'
           const flowEnd = '2026-07-31T23:59:59Z'
-          
+
           const outlookResult = await GetOutlookEventsService.Run({
             text: flowStart,
             text_1: flowEnd
           })
-          
+
           if (outlookResult && outlookResult.success && outlookResult.data?.event_json) {
             const parsed = JSON.parse(outlookResult.data.event_json)
             console.log('[CalendarPage] Raw Outlook Events from flow:', parsed)
-            
+
             const eventObjects: any[] = []
-            
+
             // Helper to recursively flatten and parse events
             const extractEvents = (val: any) => {
               if (Array.isArray(val)) {
@@ -508,9 +514,9 @@ export default function CalendarPage() {
                 }
               }
             }
-            
+
             extractEvents(parsed)
-            
+
             // Helper to strip HTML tags for clean description rendering
             const stripHtml = (htmlStr: string): string => {
               if (!htmlStr) return ''
@@ -527,40 +533,69 @@ export default function CalendarPage() {
               // Prioritize fields with timezone offsets first, then fallbacks (supporting startdate/enddate)
               const startIso = item.startWithTimeZone || item.start || item.Start || item.startdate || item.startDate || item.startDateTime?.dateTime || item.dueDateTime?.dateTime || item.createdDateTime || new Date().toISOString()
               const endIso = item.endWithTimeZone || item.end || item.End || item.enddate || item.endDate || item.endDateTime?.dateTime || item.dueDateTime?.dateTime || startIso
-              
+
               // Helper to safely parse dates and handle 7-digit fractional seconds (Safari compatibility)
               const parseOutlookDate = (isoStr: string) => {
-                const sanitized = isoStr.replace(/\.(\d{3})\d+/, '.$1')
+                let sanitized = isoStr.replace(/\.(\d{3})\d+/, '.$1')
+                if (sanitized.includes('T') && !sanitized.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(sanitized)) {
+                  sanitized += 'Z'
+                }
                 return new Date(sanitized)
               }
 
               const startDateObj = parseOutlookDate(startIso)
               let endDateObj = parseOutlookDate(endIso)
-              
+
               // Default task/event duration to 1 hour if start time equals end time
               if (startDateObj.getTime() === endDateObj.getTime()) {
                 endDateObj = new Date(startDateObj.getTime() + 60 * 60 * 1000)
               }
-              
+
               const dateStr = formatDateString(startDateObj)
-              
+
               const startHour = String(startDateObj.getHours()).padStart(2, '0')
               const startMin = String(startDateObj.getMinutes()).padStart(2, '0')
               const endHour = String(endDateObj.getHours()).padStart(2, '0')
               const endMin = String(endDateObj.getMinutes()).padStart(2, '0')
-              
+
               const isTask = !!(item.dueDateTime || item.createdDateTime || item.status)
-              
+
               // Fetch description/body content and clean HTML tags if needed
               const rawDesc = item.description || item.Description || item.body || item.Body || (isTask ? 'Imported Outlook Task' : 'Imported Outlook Event')
-              const cleanDesc = typeof rawDesc === 'string' ? stripHtml(rawDesc).trim() : ''
+              let cleanDesc = typeof rawDesc === 'string' ? stripHtml(rawDesc).trim() : ''
 
               // Extract meeting URL from various possible field names
-              const rawMeetingUrl = item.onlineMeetingUrl || item.OnlineMeetingUrl || 
+              const rawMeetingUrl = item.onlineMeetingUrl || item.OnlineMeetingUrl ||
                 item.onlinemeetingurl || item.onlineMeeting?.joinUrl ||
                 item.joinUrl || item.meetingUrl || item.webLink || ''
-              const meetingUrl = rawMeetingUrl && rawMeetingUrl.startsWith('http') ? rawMeetingUrl : undefined
-              
+              let meetingUrl = rawMeetingUrl && rawMeetingUrl.startsWith('http') ? rawMeetingUrl : undefined
+
+              // Extract meeting URL from description if not already set
+              if (!meetingUrl && cleanDesc) {
+                const teamsMatch = cleanDesc.match(/https:\/\/[^\s"'<>]*(?:teams\.microsoft\.com|teams\.live\.com)[^\s"'<>]+/i)
+                if (teamsMatch) {
+                  meetingUrl = teamsMatch[0]
+                }
+              }
+
+              // Strip the Teams meeting footer details from description (Microsoft Teams meeting, Join, Meeting ID, Passcode)
+              if (cleanDesc) {
+                const markers = [
+                  /________________________________________________________________________________/i,
+                  /Microsoft Teams meeting/i,
+                  /Join on your computer/i,
+                  /Join Microsoft Teams Meeting/i,
+                  /Join:\s*https:\/\/teams\.microsoft\.com/i
+                ]
+                for (const marker of markers) {
+                  const matchIndex = cleanDesc.search(marker)
+                  if (matchIndex !== -1) {
+                    cleanDesc = cleanDesc.substring(0, matchIndex).trim()
+                    break
+                  }
+                }
+              }
+
               return {
                 id: `outlook-${item.id || index}`,
                 title: item.subject || item.Subject || (isTask ? 'Outlook Task' : 'Outlook Event'),
@@ -579,41 +614,8 @@ export default function CalendarPage() {
             throw new Error('Flow result unsuccessful')
           }
         } catch (flowErr) {
-          console.warn('[CalendarPage] Could not load Outlook events from flow, falling back to mock events:', flowErr)
-          outlookEvents = [
-            {
-              id: 'outlook-mock-1',
-              title: 'Partner Architecture Sync',
-              date: '2026-06-22',
-              startTime: '13:00',
-              endTime: '14:00',
-              calendarId: 'outlook',
-              color: '#7dd3fc',
-              description: 'Regular sync with partnership technical contacts.',
-              meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:outlook-mock1'
-            },
-            {
-              id: 'outlook-mock-2',
-              title: 'Standup Meeting',
-              date: '2026-06-23',
-              startTime: '09:30',
-              endTime: '10:00',
-              calendarId: 'outlook',
-              color: '#7dd3fc',
-              description: 'Daily standup to review active issues.',
-            },
-            {
-              id: 'outlook-mock-3',
-              title: 'Product Feedback Session',
-              date: '2026-06-24',
-              startTime: '15:00',
-              endTime: '16:30',
-              calendarId: 'outlook',
-              color: '#7dd3fc',
-              description: 'Reviewing user research and comments on the calendar view.',
-              meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:outlook-mock3'
-            }
-          ]
+          console.warn('[CalendarPage] Could not load Outlook events from flow:', flowErr)
+          outlookEvents = []
         }
 
         newMappedEvents.push(...outlookEvents)
@@ -630,7 +632,7 @@ export default function CalendarPage() {
     }
 
     loadData()
-  }, [currentUser])
+  }, [currentUser, reloadTick])
 
   // Modal & Popup dialog states
   const [isNewEventOpen, setIsNewEventOpen] = useState(false)
@@ -766,20 +768,36 @@ export default function CalendarPage() {
   }
 
   // Add Event Form Submission — always creates an Outlook event
-  const handleCreateEvent = () => {
+  const handleCreateEvent = async () => {
     if (!newTitle.trim()) return
-    const newEvent: CalendarEvent = {
-      id: Date.now().toString(),
-      title: newTitle,
-      date: newDate,
-      startTime: newStartTime,
-      endTime: newEndTime,
-      calendarId: 'outlook',
-      description: newDescription,
-      color: '#7dd3fc',
+    setCreatingEvent(true)
+    setCreateError(null)
+    try {
+      const startDateTime = `${newDate}T${newStartTime}:00`
+      const endDateTime = `${newDate}T${newEndTime}:00`
+
+      const result = await CreateOutlookEventService.Run({
+        text: newTitle,
+        text_1: startDateTime,
+        text_2: endDateTime,
+        text_3: newDescription,
+      })
+
+      if (result && result.success) {
+        setReloadTick((prev) => prev + 1)
+        setIsNewEventOpen(false)
+      } else {
+        const errMsg = result?.error
+          ? (typeof result.error === 'string' ? result.error : (result.error as any).message || JSON.stringify(result.error))
+          : 'Failed to create event in Outlook'
+        throw new Error(errMsg)
+      }
+    } catch (err: any) {
+      console.error('[CalendarPage] Error creating Outlook event:', err)
+      setCreateError(err.message || 'Failed to create event in Outlook.')
+    } finally {
+      setCreatingEvent(false)
     }
-    setEvents((prev) => [...prev, newEvent])
-    setIsNewEventOpen(false)
   }
 
   // Delete Event
@@ -995,6 +1013,13 @@ export default function CalendarPage() {
             variant="outlined"
             size="small"
             startIcon={<AddIcon />}
+            onClick={() => {
+              setNewTitle('')
+              setNewDescription('')
+              setNewDate(formatDateString(currentDate))
+              setCreateError(null)
+              setIsNewEventOpen(true)
+            }}
             sx={{ mt: 1.5, textTransform: 'none', borderRadius: 1.5 }}
           >
             Add calendar
@@ -1278,7 +1303,7 @@ export default function CalendarPage() {
                       if (!layout) return null
                       const isShort = parseInt(layout.height || '60') <= 30
                       const darkerShade = darkenColor(event.color, 50)
-                      
+
                       return (
                         <Tooltip key={event.id} title={`${event.startTime} - ${event.endTime}: ${event.title}`} arrow>
                           <Box
@@ -1367,18 +1392,32 @@ export default function CalendarPage() {
       </Box>
 
       {/* ─── NEW EVENT DIALOG ─── */}
-      <Dialog open={isNewEventOpen} onClose={() => setIsNewEventOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={isNewEventOpen}
+        onClose={(_, reason) => {
+          if (creatingEvent) return
+          setIsNewEventOpen(false)
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
           <EventIcon color="primary" /> New Calendar Event
         </DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            {createError && (
+              <Alert severity="error" sx={{ mb: 1 }}>
+                {createError}
+              </Alert>
+            )}
             <TextField
               label="Event Title"
               fullWidth
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="e.g. Project Delivery Sync"
+              disabled={creatingEvent}
             />
             <TextField
               label="Date"
@@ -1387,6 +1426,7 @@ export default function CalendarPage() {
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
+              disabled={creatingEvent}
             />
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
@@ -1396,6 +1436,7 @@ export default function CalendarPage() {
                 value={newStartTime}
                 onChange={(e) => setNewStartTime(e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
+                disabled={creatingEvent}
               />
               <TextField
                 label="End Time"
@@ -1404,6 +1445,7 @@ export default function CalendarPage() {
                 value={newEndTime}
                 onChange={(e) => setNewEndTime(e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
+                disabled={creatingEvent}
               />
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -1417,15 +1459,21 @@ export default function CalendarPage() {
               fullWidth
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
+              disabled={creatingEvent}
             />
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={() => setIsNewEventOpen(false)} sx={{ textTransform: 'none' }}>
+          <Button onClick={() => setIsNewEventOpen(false)} disabled={creatingEvent} sx={{ textTransform: 'none' }}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleCreateEvent} sx={{ textTransform: 'none' }}>
-            Save Event
+          <Button
+            variant="contained"
+            onClick={handleCreateEvent}
+            disabled={creatingEvent || !newTitle.trim()}
+            sx={{ textTransform: 'none', minWidth: 100 }}
+          >
+            {creatingEvent ? <CircularProgress size={20} color="inherit" /> : 'Save Event'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1535,15 +1583,7 @@ export default function CalendarPage() {
                 )}
               </Box>
             </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'space-between' }}>
-              <Button
-                color="error"
-                startIcon={<DeleteIcon />}
-                onClick={() => handleDeleteEvent(selectedEvent.id)}
-                sx={{ textTransform: 'none' }}
-              >
-                Delete Event
-              </Button>
+            <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'flex-end' }}>
               <Button variant="outlined" onClick={() => setSelectedEvent(null)} sx={{ textTransform: 'none' }}>
                 Close
               </Button>
@@ -1554,4 +1594,4 @@ export default function CalendarPage() {
 
     </Box>
   )
-}
+}

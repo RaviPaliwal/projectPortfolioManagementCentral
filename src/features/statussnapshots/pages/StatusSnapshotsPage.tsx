@@ -50,6 +50,8 @@ import ChecklistIcon from '@mui/icons-material/Checklist'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import HubIcon from '@mui/icons-material/Hub'
 import type { Pm_projectstatussnapshots } from '../../../generated/models/Pm_projectstatussnapshotsModel'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import { Pm_projectstatussnapshotsService } from '../../../generated'
 import type { ProjectStatusSnapshotModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
@@ -197,6 +199,11 @@ interface SortState { field: SortField; dir: SortDir }
 export default function StatusSnapshotsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const { allowed: canCreate } = useAuthorization('STATUS_SNAPSHOTS', 'create')
+  const { allowed: canEdit } = useAuthorization('STATUS_SNAPSHOTS', 'update')
+  const { allowed: canDelete } = useAuthorization('STATUS_SNAPSHOTS', 'delete')
+
   const [snapshots, setSnapshots] = useState<ProjectStatusSnapshotModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -466,9 +473,11 @@ export default function StatusSnapshotsPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={filteredSnapshots} columns={exportColumns} filename={'StatusSnapshots_' + new Date().toISOString().slice(0, 10)} />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-              Add Snapshot
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+                Add Snapshot
+              </Button>
+            )}
           </Box>
         }
       />

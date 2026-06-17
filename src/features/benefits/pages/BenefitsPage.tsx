@@ -21,6 +21,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import HistoryIcon from '@mui/icons-material/History'
 
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   Pm_benefitsService,
   Pm_performancemeasuresService
@@ -52,6 +54,10 @@ import { parseDataverseError } from '@/services/common'
 export default function BenefitsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const { allowed: canCreate } = useAuthorization('BENEFITS', 'create')
+  const { allowed: canEdit } = useAuthorization('BENEFITS', 'update')
+  const { allowed: canDelete } = useAuthorization('BENEFITS', 'delete')
 
   // Standardized CRUD Hook
   const {
@@ -207,9 +213,11 @@ export default function BenefitsPage() {
         title="Benefits Register"
         subtitle="Track and manage benefits realisation with target vs actual value tracking."
         actionElement={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingBenefit(null); setShowFormModal(true); }}>
-            Add Benefit
-          </Button>
+          canCreate && (
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingBenefit(null); setShowFormModal(true); }}>
+              Add Benefit
+            </Button>
+          )
         }
       />
 
@@ -244,13 +252,16 @@ export default function BenefitsPage() {
             <StatusTag label={CATEGORY_LABELS[String(selectedBenefit.pm_benefitcategory)]} color={CATEGORY_COLORS[String(selectedBenefit.pm_benefitcategory)]} />
             <StatusTag label={STATUS_LABELS[String(selectedBenefit.pm_benefitstatus)]} color={STATUS_COLORS[String(selectedBenefit.pm_benefitstatus)]} />
           </Box>
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon icon={<EditIcon />} onClick={() => { setEditingBenefit(selectedBenefit); setShowFormModal(true); }} label="Edit" />
-            <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedBenefit?.pm_benefitid!)} label="Delete" color="error" />
-          </Box>
-        }
+        )}            headerActions={
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {canEdit && (
+                  <ActionIcon icon={<EditIcon />} onClick={() => { setEditingBenefit(selectedBenefit); setShowFormModal(true); }} label="Edit" />
+                )}
+                {canDelete && (
+                  <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedBenefit?.pm_benefitid!)} label="Delete" color="error" />
+                )}
+              </Box>
+            }
         tabs={[{ label: 'Overview' }, { label: 'Performance Measures' }]}
         tabValue={detailTab}
         onTabChange={(_e, v) => setDetailTab(v)}

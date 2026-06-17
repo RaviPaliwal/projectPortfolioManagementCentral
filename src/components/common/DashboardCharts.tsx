@@ -97,15 +97,15 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
   // ── Portfolio Trend Line ─────────────────────────────────────────────────
   const renderPortfolioTrend = () => (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={portfolioTrendData}>
+      <LineChart data={portfolioTrendData} margin={{ top: 10, right: 10, left: 15, bottom: 18 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-        <XAxis stroke={textColor} label={{ value: 'Month', position: 'insideBottomRight', offset: -5, fill: textColor }} />
-        <YAxis stroke={textColor} label={{ value: 'Count', angle: -90, position: 'insideLeft', fill: textColor }} />
+        <XAxis stroke={textColor} dataKey="month" label={{ value: 'Month', position: 'insideBottomRight', offset: -5, fill: textColor }} tick={{ fontSize: 11 }} />
+        <YAxis stroke={textColor} label={{ value: 'Count', angle: -90, position: 'insideLeft', offset: 0, fill: textColor, style: { textAnchor: 'middle', whiteSpace: 'nowrap' } }} tick={{ fontSize: 11 }} />
         <Tooltip contentStyle={tooltipStyle} />
-        <Legend />
-        <Line type="monotone" dataKey="active" stroke="#0ea5e9" strokeWidth={2} dot={{ fill: '#0ea5e9' }} />
-        <Line type="monotone" dataKey="completed" stroke="#22c55e" strokeWidth={2} dot={{ fill: '#22c55e' }} />
-        <Line type="monotone" dataKey="delayed" stroke="#ef4444" strokeWidth={2} dot={{ fill: '#ef4444' }} />
+        <Legend verticalAlign="bottom" height={16} iconSize={10} />
+        <Line type="monotone" dataKey="active" stroke="#0ea5e9" strokeWidth={2} dot={{ fill: '#0ea5e9', r: 3 }} />
+        <Line type="monotone" dataKey="completed" stroke="#22c55e" strokeWidth={2} dot={{ fill: '#22c55e', r: 3 }} />
+        <Line type="monotone" dataKey="delayed" stroke="#ef4444" strokeWidth={2} dot={{ fill: '#ef4444', r: 3 }} />
       </LineChart>
     </ResponsiveContainer>
   )
@@ -135,11 +135,11 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Daily capacity vs. allocated hours per resource. Over 100% indicates over-allocation.
         </Typography>
-        <ResponsiveContainer width="100%" height={340}>
-          <BarChart data={stackedData} layout="vertical" barSize={22}>
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={stackedData} layout="vertical" barSize={16} margin={{ top: 10, right: 10, left: 10, bottom: 18 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-            <XAxis type="number" stroke={textColor} label={{ value: 'Hours / Month', position: 'insideBottom', offset: -5, fill: textColor }} />
-            <YAxis type="category" dataKey="resource" width={140} stroke={textColor} tick={{ fontSize: 12 }} />
+            <XAxis type="number" stroke={textColor} tick={{ fontSize: 11 }} label={{ value: 'Hours / Month', position: 'insideBottom', offset: -2, fill: textColor }} />
+            <YAxis type="category" dataKey="resource" width={120} stroke={textColor} tick={{ fontSize: 11 }} />
             <Tooltip
               contentStyle={tooltipStyle}
               formatter={(value: any, name: any) => {
@@ -150,6 +150,9 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
               }}
             />
             <Legend
+              verticalAlign="bottom"
+              height={16}
+              iconSize={10}
               formatter={(value: string) => {
                 if (value === 'allocated') return 'Allocated Hours'
                 if (value === 'available') return 'Available Capacity'
@@ -170,22 +173,22 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
                 return <rect x={x} y={y} width={width} height={height} fill={fill} />
               }}
             />
-            <Bar dataKey="overage" stackId="a" fill="#dc2626" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="overage" stackId="a" fill="#dc2626" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
         {hasData && (
-          <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center', mt: 1.5 }}>
+          <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center', mt: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '2px', bgcolor: '#22c55e' }} />
-              <Typography variant="caption">≤ 80% (Healthy)</Typography>
+              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#22c55e' }} />
+              <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 500 }}>≤ 80% (Healthy)</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '2px', bgcolor: '#f59e0b' }} />
-              <Typography variant="caption">80–100% (At Risk)</Typography>
+              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+              <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 500 }}>80–100% (At Risk)</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '2px', bgcolor: '#ef4444' }} />
-              <Typography variant="caption">&gt; 100% (Over-allocated)</Typography>
+              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ef4444' }} />
+              <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 500 }}>&gt; 100% (Over-allocated)</Typography>
             </Box>
           </Box>
         )}
@@ -202,11 +205,11 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Forecasted (planned) hours vs. actual logged hours from timesheets by month.
         </Typography>
-        <ResponsiveContainer width="100%" height={340}>
-          <BarChart data={data} barGap={4} barSize={24}>
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={data} barGap={4} barSize={18} margin={{ top: 10, right: 10, left: 15, bottom: 18 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-            <XAxis stroke={textColor} dataKey="month" label={{ value: 'Month', position: 'insideBottomRight', offset: -5, fill: textColor }} />
-            <YAxis stroke={textColor} label={{ value: 'Hours', angle: -90, position: 'insideLeft', fill: textColor }} />
+            <XAxis stroke={textColor} dataKey="month" tick={{ fontSize: 11 }} label={{ value: 'Month', position: 'insideBottomRight', offset: -5, fill: textColor }} />
+            <YAxis stroke={textColor} tick={{ fontSize: 11 }} label={{ value: 'Hours', angle: -90, position: 'insideLeft', offset: 0, fill: textColor, style: { textAnchor: 'middle', whiteSpace: 'nowrap' } }} />
             <Tooltip
               contentStyle={tooltipStyle}
               formatter={(value: any, name: any) => {
@@ -214,7 +217,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
                 return [`${value}h`, 'Actual']
               }}
             />
-            <Legend formatter={(value: string) => (value === 'planned' ? 'Planned Hours' : 'Actual Hours')} />
+            <Legend verticalAlign="bottom" height={16} iconSize={10} formatter={(value: string) => (value === 'planned' ? 'Planned Hours' : 'Actual Hours')} />
             <Bar dataKey="planned" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
             <Bar dataKey="actual" fill="#f59e0b" radius={[4, 4, 0, 0]} />
           </BarChart>
@@ -233,14 +236,14 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Where workforce time is actually being spent, grouped by project.
         </Typography>
-        <ResponsiveContainer width="100%" height={340}>
-          <PieChart>
+        <ResponsiveContainer width="100%" height={320}>
+          <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={100}
+              innerRadius={55}
+              outerRadius={85}
               labelLine={false}
               label={({ name, hours }: any) => {
                 const pct = totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : '0'
@@ -254,6 +257,9 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
             </Pie>
             <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => [`${value}h`, 'Hours']} />
             <Legend
+              verticalAlign="bottom"
+              height={16}
+              iconSize={10}
               formatter={(value: string) => {
                 const item = data.find((d) => d.name === value)
                 if (item) return `${value} (${item.hours}h)`
@@ -299,13 +305,13 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Forward-looking allocation demand trend grouped by department.
         </Typography>
-        <ResponsiveContainer width="100%" height={340}>
-          <AreaChart data={hasData ? areaData : noDataPlaceholder}>
+        <ResponsiveContainer width="100%" height={320}>
+          <AreaChart data={hasData ? areaData : noDataPlaceholder} margin={{ top: 10, right: 10, left: 15, bottom: 18 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-            <XAxis stroke={textColor} dataKey="month" label={{ value: 'Month', position: 'insideBottomRight', offset: -5, fill: textColor }} />
-            <YAxis stroke={textColor} label={{ value: 'Allocated Hours', angle: -90, position: 'insideLeft', fill: textColor }} />
+            <XAxis stroke={textColor} dataKey="month" tick={{ fontSize: 11 }} label={{ value: 'Month', position: 'insideBottomRight', offset: -5, fill: textColor }} />
+            <YAxis stroke={textColor} tick={{ fontSize: 11 }} label={{ value: 'Allocated Hours', angle: -90, position: 'insideLeft', offset: 0, fill: textColor, style: { textAnchor: 'middle', whiteSpace: 'nowrap' } }} />
             <Tooltip contentStyle={tooltipStyle} />
-            <Legend />
+            <Legend verticalAlign="bottom" height={16} iconSize={10} />
             {hasData
               ? roles.map((role, idx) => (
                   <Area
@@ -347,7 +353,19 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
       {/* Project Status Pie Chart */}
-      <Paper elevation={1} sx={{ p: 3 }}>
+      <Paper
+        elevation={1}
+        sx={{
+          p: 3,
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+          '&:hover': {
+            transform: 'translateY(-3px)',
+            boxShadow: (theme) => theme.palette.mode === 'dark'
+              ? '0 12px 20px rgba(0,0,0,0.5)'
+              : '0 8px 16px rgba(99,102,241,0.06)',
+          }
+        }}
+      >
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
           Project Status Distribution
         </Typography>
@@ -355,7 +373,19 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
       </Paper>
 
       {/* Portfolio Trend Line Chart */}
-      <Paper elevation={1} sx={{ p: 3 }}>
+      <Paper
+        elevation={1}
+        sx={{
+          p: 3,
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+          '&:hover': {
+            transform: 'translateY(-3px)',
+            boxShadow: (theme) => theme.palette.mode === 'dark'
+              ? '0 12px 20px rgba(0,0,0,0.5)'
+              : '0 8px 16px rgba(99,102,241,0.06)',
+          }
+        }}
+      >
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
           Portfolio Trend
         </Typography>
@@ -366,7 +396,20 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
       </Paper>
 
       {/* Resource Utilization Charts — Tabbed */}
-      <Paper elevation={1} sx={{ p: 3, gridColumn: { md: '1 / -1' } }}>
+      <Paper
+        elevation={1}
+        sx={{
+          p: 3,
+          gridColumn: { md: '1 / -1' },
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+          '&:hover': {
+            transform: 'translateY(-3px)',
+            boxShadow: (theme) => theme.palette.mode === 'dark'
+              ? '0 12px 20px rgba(0,0,0,0.5)'
+              : '0 8px 16px rgba(99,102,241,0.06)',
+          }
+        }}
+      >
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
           Resource Utilization
         </Typography>

@@ -16,6 +16,8 @@ import PublicIcon from '@mui/icons-material/Public'
 import TodayIcon from '@mui/icons-material/Today'
 import UpcomingIcon from '@mui/icons-material/Upcoming'
 
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import { Pm_holidaiesService } from '@/generated'
 import type { HolidayModel } from '@/types/dataverse'
 import { 
@@ -88,6 +90,9 @@ export default function HolidaysPage() {
   } = useDataverseCrud<HolidayModel>(Pm_holidaiesService as any)
 
   const actionState = useDataverseAsync<any>()
+  const { allowed: canCreate } = useAuthorization('HOLIDAYS', 'create')
+  const { allowed: canEdit } = useAuthorization('HOLIDAYS', 'update')
+  const { allowed: canDelete } = useAuthorization('HOLIDAYS', 'delete')
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
@@ -201,9 +206,11 @@ export default function HolidaysPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={filteredHolidays} columns={holidayExportColumns} filename={'HolidayCalendar_' + calendarYear} />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingHoliday(null); setShowForm(true); }}>
-              Add Holiday
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingHoliday(null); setShowForm(true); }}>
+                Add Holiday
+              </Button>
+            )}
             <Button variant="outlined" startIcon={<FlagIcon />} size="small" onClick={() => setShowSeedConfirm(true)}>
               Seed Irish Holidays
             </Button>
@@ -241,8 +248,12 @@ export default function HolidaysPage() {
         subtitle={selectedHoliday && <StatusTag icon={<PublicIcon sx={{ fontSize: 14 }} />} label={selectedHoliday.pm_country || '—'} variant="outlined" />}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon icon={<EditIcon />} onClick={() => { setEditingHoliday(selectedHoliday); setShowForm(true); }} label="Edit" color="primary" />
-            <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedHoliday?.pm_holidayid!)} label="Delete" color="error" />
+            {canEdit && (
+              <ActionIcon icon={<EditIcon />} onClick={() => { setEditingHoliday(selectedHoliday); setShowForm(true); }} label="Edit" color="primary" />
+            )}
+            {canDelete && (
+              <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedHoliday?.pm_holidayid!)} label="Delete" color="error" />
+            )}
           </Box>
         }
       >

@@ -39,6 +39,8 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
 import GavelIcon from '@mui/icons-material/Gavel'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import TimelineIcon from '@mui/icons-material/Timeline'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchGateReviews,
   createGateReview,
@@ -132,6 +134,10 @@ interface SortState {
 export default function GateReviewsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const { allowed: canCreate } = useAuthorization('GATE_REVIEWS', 'create')
+  const { allowed: canEdit } = useAuthorization('GATE_REVIEWS', 'update')
+  const { allowed: canDelete } = useAuthorization('GATE_REVIEWS', 'delete')
 
   const [gateReviews, setGateReviews] = useState<GateReviewModel[]>([])
   const [loading, setLoading] = useState(true)
@@ -276,9 +282,11 @@ export default function GateReviewsPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton filename="gate-reviews.csv" columns={gateReviewExportColumns} data={filteredReviews} />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingReview(null); setShowFormModal(true) }}>
-              Schedule Review
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingReview(null); setShowFormModal(true) }}>
+                Schedule Review
+              </Button>
+            )}
           </Box>
         }
       />
@@ -358,8 +366,12 @@ export default function GateReviewsPage() {
                 <ActionIcon icon={<GavelIcon />} onClick={() => setShowBoardModal(true)} label="Record Final Decision" color="success" />
               </>
             )}
-            <ActionIcon icon={<EditIcon />} onClick={() => { setEditingReview(selectedReview); setShowFormModal(true) }} label="Edit" color="primary" />
-            <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedReview?.pm_projectgatereviewid!)} label="Delete" color="error" />
+            {canEdit && (
+              <ActionIcon icon={<EditIcon />} onClick={() => { setEditingReview(selectedReview); setShowFormModal(true) }} label="Edit" color="primary" />
+            )}
+            {canDelete && (
+              <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedReview?.pm_projectgatereviewid!)} label="Delete" color="error" />
+            )}
           </Box>
         }
       >

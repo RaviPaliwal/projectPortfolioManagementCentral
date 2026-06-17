@@ -47,6 +47,8 @@ import PersonIcon from '@mui/icons-material/Person'
 import EngineeringIcon from '@mui/icons-material/Engineering'
 import type { SkillModel, ResourceSkillModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchSkills,
   createSkill,
@@ -121,6 +123,10 @@ interface SortState<T> {
 export default function SkillsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const { allowed: canCreate } = useAuthorization('SKILLS', 'create')
+  const { allowed: canEdit } = useAuthorization('SKILLS', 'update')
+  const { allowed: canDelete } = useAuthorization('SKILLS', 'delete')
 
   // Data state
   const [skills, setSkills] = useState<SkillModel[]>([])
@@ -433,9 +439,11 @@ export default function SkillsPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={filteredSkills} columns={skillExportColumns} filename="SkillsCatalog" />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={pageTab === 0 ? openCreateSkill : openCreateRs}>
-              {pageTab === 0 ? 'Add Skill' : 'Add Mapping'}
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={pageTab === 0 ? openCreateSkill : openCreateRs}>
+                {pageTab === 0 ? 'Add Skill' : 'Add Mapping'}
+              </Button>
+            )}
           </Box>
         }
       />

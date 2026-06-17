@@ -16,6 +16,8 @@ import FlagIcon from '@mui/icons-material/Flag'
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import HistoryIcon from '@mui/icons-material/History'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchAllRisks,
   createRiskFull,
@@ -49,6 +51,8 @@ import { normalizeLookupId } from '@/services'
 
 export default function RisksPage() {
   const theme = useTheme()
+
+  const { allowed: canCreate } = useAuthorization('RISKS', 'create')
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [risks, setRisks] = useState<RiskModel[]>([])
@@ -257,9 +261,11 @@ export default function RisksPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={risks} columns={riskExportColumns} filename="risks" />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-              Add Risk
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+                Add Risk
+              </Button>
+            )}
           </Box>
         }
       />

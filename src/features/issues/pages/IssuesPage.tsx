@@ -47,6 +47,8 @@ import {
 import type { FilterOption } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchAllIssues,
   fetchIssuesForSystemUser,
@@ -125,6 +127,10 @@ interface SortState {
 
 export default function IssuesPage() {
   const { currentUser, currentUserPersona } = useUser()
+
+  const { allowed: canCreate } = useAuthorization('ISSUES', 'create')
+  const { allowed: canEdit } = useAuthorization('ISSUES', 'update')
+  const { allowed: canDelete } = useAuthorization('ISSUES', 'delete')
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [issues, setIssues] = useState<IssueModel[]>([])
@@ -532,9 +538,11 @@ export default function IssuesPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={issues} columns={[]} filename="issues" />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-              Add Issue
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+                Add Issue
+              </Button>
+            )}
           </Box>
         }
       />
@@ -750,8 +758,12 @@ export default function IssuesPage() {
         )}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon icon={<EditIcon />} onClick={() => openEdit(selectedIssue!)} label="Edit" />
-            <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedIssue)} label="Delete" color="error" />
+            {canEdit && (
+              <ActionIcon icon={<EditIcon />} onClick={() => openEdit(selectedIssue!)} label="Edit" />
+            )}
+            {canDelete && (
+              <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedIssue)} label="Delete" color="error" />
+            )}
           </Box>
         }
         tabs={[{ label: 'Overview' }, { label: 'Resolution' }]}

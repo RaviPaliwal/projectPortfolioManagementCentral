@@ -34,6 +34,7 @@ interface ProjectGridsProps {
   onRowClick: (project: ProjectModel) => void
   onAddProject: () => void
   onEditProject: (project: ProjectModel) => void
+  canEdit?: boolean
 }
 
 export const ProjectGrids: React.FC<ProjectGridsProps> = ({
@@ -41,7 +42,8 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
   loading,
   onRowClick,
   onAddProject,
-  onEditProject
+  onEditProject,
+  canEdit = false
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -244,18 +246,20 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                   </Typography>
                 </TableCell>
                 <TableCell align="center">
-                  <Tooltip title="Edit Project">
-                    <IconButton 
-                      size="small" 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onEditProject(project)
-                      }}
-                      sx={{ color: 'primary.main' }}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  {canEdit && (
+                    <Tooltip title="Edit Project">
+                      <IconButton 
+                        size="small" 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEditProject(project)
+                        }}
+                        sx={{ color: 'primary.main' }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

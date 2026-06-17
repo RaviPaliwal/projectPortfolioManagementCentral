@@ -25,7 +25,18 @@ export const BudgetHealthPanel = ({
   const budgetVariance = totalApprovedBudget - totalActualSpend
 
   return (
-    <Paper sx={{ p: 3 }}>
+    <Paper
+      sx={{
+        p: 3,
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        '&:hover': {
+          transform: 'translateY(-3px)',
+          boxShadow: (theme) => theme.palette.mode === 'dark'
+            ? '0 12px 20px rgba(0,0,0,0.5)'
+            : '0 8px 16px rgba(99,102,241,0.06)',
+        }
+      }}
+    >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
         <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>

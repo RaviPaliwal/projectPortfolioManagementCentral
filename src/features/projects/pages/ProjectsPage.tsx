@@ -12,6 +12,9 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import EventNoteIcon from '@mui/icons-material/EventNote'
 import ErrorIcon from '@mui/icons-material/Error'
 
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
+
 import {
   createProject,
   updateProject,
@@ -40,6 +43,9 @@ import {
 import { recalculateProjectFinancials, normalizeLookupId } from '@/services'
 
 export default function ProjectsPage() {
+  const { allowed: canCreate } = useAuthorization('PROJECTS', 'create')
+  const { allowed: canEdit } = useAuthorization('PROJECTS', 'update')
+
   // Navigation state
   const [selectedProject, setSelectedProject] = useState<ProjectModel | null>(null)
 
@@ -377,6 +383,7 @@ export default function ProjectsPage() {
           onAddBenefit={() => setBenefitDialogOpen(true)}
           onAddTask={() => setTaskDialogOpen(true)}
           onNavigateToGateReview={() => setGateReviewDialogOpen(true)}
+          canEdit={canEdit}
           onEditProject={openEditForm}
         />
       ) : (
@@ -386,9 +393,11 @@ export default function ProjectsPage() {
             subtitle="Monitor and manage all active projects across the enterprise."
             actionElement={
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-                  New Project
-                </Button>
+                {canCreate && (
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+                    New Project
+                  </Button>
+                )}
                 <ExportButton 
                   filename="projects" 
                   columns={projectExportColumns} 
@@ -409,6 +418,7 @@ export default function ProjectsPage() {
             onRowClick={handleRowClick}
             onAddProject={openCreateForm}
             onEditProject={openEditForm}
+            canEdit={canEdit}
           />
         </>
       )}
