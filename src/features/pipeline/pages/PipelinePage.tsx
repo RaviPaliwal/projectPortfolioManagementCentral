@@ -203,6 +203,7 @@ export default function PipelinePage() {
   const { currentUser } = useUser()
 
   const { allowed: canCreate } = useAuthorization('PIPELINE', 'create')
+  const { allowed: canEdit } = useAuthorization('PIPELINE', 'update')
 
   // ── Portfolio options for create modal ──────────────────────────────────
   const [portfolios, setPortfolios] = useState<PortfolioModel[]>([])
@@ -822,11 +823,13 @@ export default function PipelinePage() {
                         />
                       )}
                     </Box>
-                    <Button variant="outlined" size="small" startIcon={<EditIcon />}
-                      onClick={() => { setEditScore(selectedInitiative.pm_strategicalignmentscore ?? 0); setEditScoreMode(true) }}
-                      sx={{ borderRadius: 1.5 }}>
-                      Edit Score
-                    </Button>
+                    {canEdit && (
+                      <Button variant="outlined" size="small" startIcon={<EditIcon />}
+                        onClick={() => { setEditScore(selectedInitiative.pm_strategicalignmentscore ?? 0); setEditScoreMode(true) }}
+                        sx={{ borderRadius: 1.5 }}>
+                        Edit Score
+                      </Button>
+                    )}
                   </Box>
                 )}
               </Paper>
@@ -848,7 +851,7 @@ export default function PipelinePage() {
 
         {/* ═══ Tab 2: Actions ═══ */}
         <TabPanel value={detailTab} index={2} pt={0}>
-          {selectedInitiative && (
+          {selectedInitiative && canEdit && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {[
                 { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to the investment board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
@@ -872,7 +875,7 @@ export default function PipelinePage() {
                   </Box>
                 </Paper>
               ))}
-              {[
+              {canEdit && [
                 { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to the investment board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
                 { icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />, title: 'Convert to Project', desc: 'Create a new project from this approved initiative.', color: 'success.main', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
               ].filter((a) => a.btnDisabled).length === 2 && (

@@ -52,9 +52,7 @@ export interface Pm_benefitsBase {
   pm_benefittype?: Pm_benefitspm_benefittype;
   "pm_BenifitOwner@odata.bind"?: string;
   "pm_ProgrammeLookup@odata.bind"?: string;
-  pm_programmename?: string;
   "pm_project@odata.bind"?: string;
-  pm_projectcode?: string;
   pm_ragstatus?: Pm_benefitspm_ragstatus;
   pm_realisationenddate?: string;
   pm_realisationstartdate?: string;

@@ -250,6 +250,7 @@ export default function PortfoliosPage() {
         onCreateClick={openCreateForm}
         onEditClick={openEditForm}
         onFilteredDataChange={setFilteredPortfolios}
+        canEdit={canEdit}
       />
 
       {/* ── 3. Slide-Out Detail Panel ──────────────────────────────────── */}

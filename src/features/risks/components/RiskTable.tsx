@@ -53,6 +53,8 @@ interface RiskTableProps {
   statusFilter: string
   setStatusFilter: (val: string) => void
   openCreate: () => void
+  canEdit?: boolean
+  canDelete?: boolean
 }
 
 export const RiskTable = ({
@@ -68,6 +70,8 @@ export const RiskTable = ({
   statusFilter,
   setStatusFilter,
   openCreate,
+  canEdit = true,
+  canDelete = true,
 }: RiskTableProps) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -305,18 +309,22 @@ export const RiskTable = ({
                           <FlagIcon sx={{ fontSize: 18, color: 'error.main' }} />
                         </Tooltip>
                       )}
-                      <IconButton
-                        size="small"
-                        onClick={(e) => { e.stopPropagation(); onEdit(risk) }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => { e.stopPropagation(); onDelete(risk) }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      {canEdit && (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => { e.stopPropagation(); onEdit(risk) }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      {canDelete && (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => { e.stopPropagation(); onDelete(risk) }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>

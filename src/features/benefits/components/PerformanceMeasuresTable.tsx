@@ -18,6 +18,8 @@ interface PerformanceMeasuresTableProps {
   onAddClick: () => void
   onDeleteClick: (id: string) => void
   isDark?: boolean
+  canCreate?: boolean
+  canDelete?: boolean
 }
 
 export const PerformanceMeasuresTable = ({
@@ -26,6 +28,8 @@ export const PerformanceMeasuresTable = ({
   onAddClick,
   onDeleteClick,
   isDark,
+  canCreate = true,
+  canDelete = true,
 }: PerformanceMeasuresTableProps) => {
 
   const columns: Column<PerformanceMeasureModel>[] = [
@@ -113,15 +117,17 @@ export const PerformanceMeasuresTable = ({
         <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <TrackChangesIcon sx={{ fontSize: 16 }} /> Measures by Period
         </Typography>
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<AddIcon />}
-          onClick={onAddClick}
-          sx={{ borderRadius: 1.5 }}
-        >
-          Add Measure
-        </Button>
+        {canCreate && (
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={onAddClick}
+            sx={{ borderRadius: 1.5 }}
+          >
+            Add Measure
+          </Button>
+        )}
       </Box>
 
       <DataverseTable
@@ -131,15 +137,17 @@ export const PerformanceMeasuresTable = ({
         emptyIcon={<TrackChangesIcon />}
         emptyTitle="No performance measures recorded."
         actions={(item) => (
-          <Tooltip title="Delete measure">
-            <IconButton
-              size="small"
-              onClick={() => item.pm_performancemeasureid && onDeleteClick(item.pm_performancemeasureid)}
-              color="error"
-            >
-              <DeleteIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Tooltip>
+          canDelete ? (
+            <Tooltip title="Delete measure">
+              <IconButton
+                size="small"
+                onClick={() => item.pm_performancemeasureid && onDeleteClick(item.pm_performancemeasureid)}
+                color="error"
+              >
+                <DeleteIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
+          ) : null
         )}
         extraHeaderActions={cumulativeFooter}
       />

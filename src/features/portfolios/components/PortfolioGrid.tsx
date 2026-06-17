@@ -37,6 +37,7 @@ interface PortfolioGridProps {
   onCreateClick: () => void
   onEditClick: (portfolio: PortfolioModel) => void
   onFilteredDataChange?: (data: PortfolioModel[]) => void
+  canEdit?: boolean
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -52,6 +53,7 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
   onCreateClick,
   onEditClick,
   onFilteredDataChange,
+  canEdit = true,
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -180,18 +182,20 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
-                    <Tooltip title="Edit Portfolio">
-                      <IconButton 
-                        size="small" 
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onEditClick(portfolio)
-                        }}
-                        sx={{ color: 'primary.main' }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                    {canEdit && (
+                      <Tooltip title="Edit Portfolio">
+                        <IconButton 
+                          size="small" 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onEditClick(portfolio)
+                          }}
+                          sx={{ color: 'primary.main' }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </TableCell>
                 </TableRow>
               )

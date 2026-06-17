@@ -269,6 +269,11 @@
           "entitySetName": "pm_agentinsights",
           "logicalName": "pm_agentinsight",
           "isHidden": false
+        },
+        "documents": {
+          "entitySetName": "pm_documents",
+          "logicalName": "pm_document",
+          "isHidden": false
         }
       },
       "environmentVariableName": ""

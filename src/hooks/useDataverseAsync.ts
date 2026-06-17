@@ -49,11 +49,14 @@ export function useDataverseAsync<T>() {
     setState({ data: null, loading: false, error: null });
   }, []);
 
-  // Memoize the result to prevent infinite loops in dependencies
+  // Memoize the result to prevent infinite loops in dependencies.
+  // IMPORTANT: Do NOT include setState or state directly — only expose stable refs
+  // so consumers can safely use `state.execute` in dependency arrays without cycles.
   return useMemo(() => ({
-    ...state,
+    data: state.data,
+    loading: state.loading,
+    error: state.error,
     execute,
     reset,
-    setState
-  }), [state, execute, reset]);
+  }), [state.data, state.loading, state.error, execute, reset]);
 }

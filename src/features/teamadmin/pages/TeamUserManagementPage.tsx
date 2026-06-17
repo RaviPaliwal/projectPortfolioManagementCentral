@@ -36,12 +36,16 @@ import PeopleIcon from '@mui/icons-material/People'
 import { fetchOwnerTeams, fetchTeamMembers, manageTeamMember } from '@/services'
 import type { TeamOption } from '@/services'
 import { useUser, type SystemUser } from '@/context/UserContext'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import { PageHeader, StatusTag } from '@/components/common'
 import { fontSizes } from '@/styles'
 
 export default function TeamUserManagementPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+  const { allowed: canCreate } = useAuthorization('TEAM_ADMIN' as CrudModule, 'create')
+  const { allowed: canDelete } = useAuthorization('TEAM_ADMIN' as CrudModule, 'delete')
   const { users } = useUser()
   const [teams, setTeams] = useState<TeamOption[]>([])
   const [selectedTeam, setSelectedTeam] = useState<TeamOption | null>(null)
@@ -269,14 +273,16 @@ export default function TeamUserManagementPage() {
                       disabled={saving}
                       slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
                     />
-                    <Button 
-                      variant="contained" 
-                      onClick={handleAddMember} 
-                      disabled={!selectedUser || saving}
-                      sx={{ borderRadius: 1.5, fontWeight: 600, whiteSpace: 'nowrap', px: 3, height: 40 }}
-                    >
-                      {saving ? 'Adding...' : 'Add to Team'}
-                    </Button>
+                    {canCreate && (
+                      <Button 
+                        variant="contained" 
+                        onClick={handleAddMember} 
+                        disabled={!selectedUser || saving}
+                        sx={{ borderRadius: 1.5, fontWeight: 600, whiteSpace: 'nowrap', px: 3, height: 40 }}
+                      >
+                        {saving ? 'Adding...' : 'Add to Team'}
+                      </Button>
+                    )}
                   </Stack>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                     {availableUsers.length} users available who are not currently in <strong>{selectedTeam.name}</strong>.
@@ -320,15 +326,17 @@ export default function TeamUserManagementPage() {
                             slotProps={{ primary: { sx: { fontWeight: 600 } } }}
                           />
                           <ListItemSecondaryAction>
-                            <IconButton 
-                              edge="end" 
-                              color="error" 
-                              onClick={() => handleRemoveMember(member)} 
-                              disabled={saving}
-                              sx={{ '&:hover': { bgcolor: 'error.lighter' } }}
-                            >
-                              <DeleteIcon sx={{ fontSize: 20 }} />
-                            </IconButton>
+                            {canDelete && (
+                              <IconButton 
+                                edge="end" 
+                                color="error" 
+                                onClick={() => handleRemoveMember(member)} 
+                                disabled={saving}
+                                sx={{ '&:hover': { bgcolor: 'error.lighter' } }}
+                              >
+                                <DeleteIcon sx={{ fontSize: 20 }} />
+                              </IconButton>
+                            )}
                           </ListItemSecondaryAction>
                         </ListItem>
                       ))}

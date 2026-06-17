@@ -734,18 +734,22 @@ export default function ChangeRequestsPage() {
                 {approvalLoading ? 'Submitting...' : 'Submit for Approval'}
               </Button>
             )}
-            <ActionIcon
-              label="Delete"
-              color="error"
-              onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)}
-              icon={<DeleteIcon />}
-            />
-            <ActionIcon
-              label="Edit"
-              color="primary"
-              onClick={() => selectedCR && openEditForm(selectedCR)}
-              icon={<EditIcon />}
-            />
+            {canDelete && (
+              <ActionIcon
+                label="Delete"
+                color="error"
+                onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)}
+                icon={<DeleteIcon />}
+              />
+            )}
+            {canEdit && (
+              <ActionIcon
+                label="Edit"
+                color="primary"
+                onClick={() => selectedCR && openEditForm(selectedCR)}
+                icon={<EditIcon />}
+              />
+            )}
           </Box>
         }
         tabs={[{ label: 'Overview' }, { label: 'Details' }, { label: 'Approval' }, { label: 'Tasks' }]}

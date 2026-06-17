@@ -695,17 +695,21 @@ export default function BudgetsPage() {
         )}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon
-              icon={<EditIcon />}
-              onClick={() => selectedBudget && openEditForm(selectedBudget)}
-              label="Edit Budget"
-            />
-            <ActionIcon
-              icon={<DeleteIcon />}
-              onClick={() => selectedBudget?.pm_budgetlineid && setDeleteConfirm(selectedBudget.pm_budgetlineid)}
-              label="Delete Budget"
-              color="error"
-            />
+            {canEdit && (
+              <ActionIcon
+                icon={<EditIcon />}
+                onClick={() => selectedBudget && openEditForm(selectedBudget)}
+                label="Edit Budget"
+              />
+            )}
+            {canDelete && (
+              <ActionIcon
+                icon={<DeleteIcon />}
+                onClick={() => selectedBudget?.pm_budgetlineid && setDeleteConfirm(selectedBudget.pm_budgetlineid)}
+                label="Delete Budget"
+                color="error"
+              />
+            )}
           </Box>
         }
         tabs={[

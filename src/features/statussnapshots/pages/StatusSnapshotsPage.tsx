@@ -754,17 +754,21 @@ export default function StatusSnapshotsPage() {
         )}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon
-              icon={<DeleteIcon />}
-              onClick={() => selectedSnapshot?.pm_projectstatussnapshotid && setDeleteConfirm(selectedSnapshot.pm_projectstatussnapshotid)}
-              label="Delete Snapshot"
-              color="error"
-            />
-            <ActionIcon
-              icon={<EditIcon />}
-              onClick={() => selectedSnapshot && openEdit(selectedSnapshot)}
-              label="Edit Snapshot"
-            />
+            {canDelete && (
+              <ActionIcon
+                icon={<DeleteIcon />}
+                onClick={() => selectedSnapshot?.pm_projectstatussnapshotid && setDeleteConfirm(selectedSnapshot.pm_projectstatussnapshotid)}
+                label="Delete Snapshot"
+                color="error"
+              />
+            )}
+            {canEdit && (
+              <ActionIcon
+                icon={<EditIcon />}
+                onClick={() => selectedSnapshot && openEdit(selectedSnapshot)}
+                label="Edit Snapshot"
+              />
+            )}
           </Box>
         }
       >
