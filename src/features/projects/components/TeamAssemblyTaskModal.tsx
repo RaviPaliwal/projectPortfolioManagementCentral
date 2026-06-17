@@ -8,9 +8,18 @@ import CloseIcon from '@mui/icons-material/Close'
 import GroupIcon from '@mui/icons-material/Group'
 import PersonIcon from '@mui/icons-material/Person'
 import BadgeIcon from '@mui/icons-material/Badge'
-import { fetchProjectDetails } from '@/services/project.service'
-import type { ProjectModel } from '@/types/dataverse'
+import { fetchProjectDetails, fetchResources, assignResource } from '@/services'
+import type { ProjectModel, ResourceModel } from '@/types/dataverse'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
+
+interface TeamMemberEntry {
+  resourceId: string
+  resourceName: string
+  role: string
+  allocatedHours: number
+  startDate: string
+  endDate: string
+}
 
 interface TeamAssemblyTaskModalProps {
   open: boolean
@@ -22,11 +31,6 @@ interface TeamAssemblyTaskModalProps {
   approvalStepId?: string
 }
 
-const ROLES = [
-  'Project Manager', 'Business Analyst', 'Technical Lead', 'Developer',
-  'Tester', 'Solution Architect', 'Project Coordinator', 'Stakeholder',
-]
-
 export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
   open, onClose, projectId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
@@ -34,15 +38,24 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [project, setProject] = useState<ProjectModel | null>(null)
-  const [teamMembers, setTeamMembers] = useState<{ name: string; role: string; email: string }[]>([])
-  const [newMember, setNewMember] = useState({ name: '', role: '', email: '' })
+  const [resources, setResources] = useState<ResourceModel[]>([])
+  const [teamMembers, setTeamMembers] = useState<TeamMemberEntry[]>([])
+  const [selectedResourceId, setSelectedResourceId] = useState('')
+  const [role, setRole] = useState('')
+  const [allocatedHours, setAllocatedHours] = useState(40)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const proj = await fetchProjectDetails(projectId)
+      const [proj, res] = await Promise.all([
+        fetchProjectDetails(projectId),
+        fetchResources(),
+      ])
       if (!proj) { onError('Project not found.'); setLoading(false); return }
       setProject(proj)
+      setResources(res || [])
     } catch (err) {
       console.error('Failed to load project', err)
       onError('Failed to load project details.')
@@ -50,13 +63,34 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
   }, [projectId, onError])
 
   useEffect(() => {
-    if (open) { loadData(); setTeamMembers([]); setNewMember({ name: '', role: '', email: '' }) }
+    if (open) {
+      loadData()
+      setTeamMembers([])
+      setSelectedResourceId('')
+      setRole('')
+      setAllocatedHours(40)
+      setStartDate('')
+      setEndDate('')
+    }
   }, [open, loadData])
 
+  const selectedResource = resources.find(r => r.pm_resourceid === selectedResourceId)
+
   const handleAddMember = () => {
-    if (!newMember.name.trim() || !newMember.role.trim()) return
-    setTeamMembers(prev => [...prev, { ...newMember }])
-    setNewMember({ name: '', role: '', email: '' })
+    if (!selectedResourceId || !role.trim()) return
+    setTeamMembers(prev => [...prev, {
+      resourceId: selectedResourceId,
+      resourceName: selectedResource?.pm_fullname || 'Unknown',
+      role: role.trim(),
+      allocatedHours,
+      startDate: startDate || new Date().toISOString().split('T')[0],
+      endDate: endDate || new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+    }])
+    setSelectedResourceId('')
+    setRole('')
+    setAllocatedHours(40)
+    setStartDate('')
+    setEndDate('')
   }
 
   const handleRemoveMember = (idx: number) => {
@@ -64,16 +98,30 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
   }
 
   const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
+    if (teamMembers.length === 0) {
+      onError('Add at least one team member before approving.')
+      return false
+    }
     setSaving(true)
     try {
+      for (const member of teamMembers) {
+        await assignResource({
+          pm_projectid: projectId,
+          pm_resourceid: member.resourceId,
+          pm_allocatedhours: member.allocatedHours,
+          pm_assignmentrole: member.role,
+          pm_startdate: member.startDate,
+          pm_enddate: member.endDate,
+        })
+      }
       const decisionLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'
       onSuccess(`Team Assembly completed. ${teamMembers.length} team member(s) assigned. Decision: ${decisionLabel}.`)
       return true
     } catch {
-      onError('Failed to save team task.')
+      onError('Failed to assign one or more team members.')
       return false
     } finally { setSaving(false) }
-  }, [teamMembers.length, onSuccess, onError])
+  }, [teamMembers, projectId, onSuccess, onError])
 
   if (!open) return null
 
@@ -125,8 +173,8 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
                     <Paper key={i} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <PersonIcon sx={{ fontSize: 18, color: '#7c3aed' }} />
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">{m.role}{m.email ? ` \u00B7 ${m.email}` : ''}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.resourceName}</Typography>
+                        <Typography variant="caption" color="text.secondary">{m.role} &middot; {m.allocatedHours}h &middot; {m.startDate} to {m.endDate}</Typography>
                       </Box>
                       <IconButton size="small" color="error" onClick={() => handleRemoveMember(i)}><CloseIcon fontSize="small" /></IconButton>
                     </Paper>
@@ -137,26 +185,51 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
               <Divider sx={{ my: 2 }} />
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>Add Team Member</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <TextField size="small" label="Name" fullWidth
-                  value={newMember.name}
-                  onChange={(e) => setNewMember(p => ({ ...p, name: e.target.value }))}
-                  placeholder="e.g. John Smith" />
                 <FormControl fullWidth size="small">
-                  <InputLabel>Role</InputLabel>
+                  <InputLabel>Resource</InputLabel>
                   <Select
-                    label="Role"
-                    value={newMember.role}
-                    onChange={(e) => setNewMember(p => ({ ...p, role: e.target.value }))}>
-                    <MenuItem value="">Select a role...</MenuItem>
-                    {ROLES.map(r => <MenuItem key={r} value={r}>{r}</MenuItem>)}
+                    label="Resource"
+                    value={selectedResourceId}
+                    onChange={(e) => {
+                      const res = resources.find(r => r.pm_resourceid === e.target.value)
+                      setSelectedResourceId(e.target.value)
+                      if (res?.pm_primaryrole) setRole(res.pm_primaryrole)
+                    }}>
+                    <MenuItem value="">Select a resource...</MenuItem>
+                    {resources.map(r => (
+                      <MenuItem key={r.pm_resourceid} value={r.pm_resourceid}>
+                        {r.pm_fullname}{r.pm_departmentname ? ` (${r.pm_departmentname})` : ''}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
-                <TextField size="small" label="Email (optional)" fullWidth
-                  value={newMember.email}
-                  onChange={(e) => setNewMember(p => ({ ...p, email: e.target.value }))}
-                  placeholder="email@example.com" />
+                <Grid container spacing={1.5}>
+                  <Grid size={{ xs: 6 }}>
+                    <TextField fullWidth size="small" label="Role"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      placeholder="e.g. Developer" />
+                  </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <TextField fullWidth size="small" label="Allocated Hours" type="number"
+                      value={allocatedHours}
+                      onChange={(e) => setAllocatedHours(Number(e.target.value))} />
+                  </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <TextField fullWidth size="small" label="Start Date" type="date"
+                      slotProps={{ inputLabel: { shrink: true } }}
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)} />
+                  </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <TextField fullWidth size="small" label="End Date" type="date"
+                      slotProps={{ inputLabel: { shrink: true } }}
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)} />
+                  </Grid>
+                </Grid>
                 <Button variant="outlined" startIcon={<PersonIcon />} onClick={handleAddMember}
-                  disabled={!newMember.name.trim() || !newMember.role.trim()}
+                  disabled={!selectedResourceId || !role.trim()}
                   sx={{ borderRadius: 1.5, alignSelf: 'flex-start' }}>
                   Add Member
                 </Button>
