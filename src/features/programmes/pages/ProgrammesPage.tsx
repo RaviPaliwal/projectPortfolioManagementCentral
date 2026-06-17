@@ -647,6 +647,7 @@ export default function ProgrammesPage() {
         onError={(msg) => setError(msg)}
         initialData={editingProgramme}
         portfolios={portfolios}
+        allProgrammes={programmes}
       />
     </Box>
   )

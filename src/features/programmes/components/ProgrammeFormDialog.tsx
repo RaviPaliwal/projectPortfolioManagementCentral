@@ -360,10 +360,7 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
             <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <MoneyIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                Budget
-                <Typography variant="caption" color="text.secondary" component="span" sx={{ fontWeight: 400 }}>
-                  (max {currencyFormatter.format(sliderMaxBudget)})
-                </Typography>
+                Programme Budget
               </Typography>
               <Paper
                 variant="outlined"
@@ -385,9 +382,9 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
                   >
                     {currencyFormatter.format(formData.pm_budgeteur)}
                   </Typography>
-                  {formData.pm_budgeteur > 0 && sliderMaxBudget > 0 && (
+                  {formData.pm_budgeteur > 0 && portfolioBudgetInfo.availableBudget > 0 && (
                     <Typography variant="caption" color="text.secondary">
-                      {((formData.pm_budgeteur / sliderMaxBudget) * 100).toFixed(1)}% of portfolio budget
+                      {((formData.pm_budgeteur / portfolioBudgetInfo.availableBudget) * 100).toFixed(1)}% of available budget
                     </Typography>
                   )}
                 </Box>
@@ -395,12 +392,12 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
                   value={formData.pm_budgeteur}
                   onChange={(_, value) => setFormData((f) => ({ ...f, pm_budgeteur: value as number }))}
                   min={0}
-                  max={sliderMaxBudget}
-                  step={sliderMaxBudget > 10_000_000 ? 100_000 : 50_000}
+                  max={Math.max(portfolioBudgetInfo.availableBudget, formData.pm_budgeteur)}
+                  step={portfolioBudgetInfo.availableBudget > 10_000_000 ? 100_000 : 50_000}
                   sx={{
-                    color: formData.pm_budgeteur > sliderMaxBudget * 0.9
+                    color: formData.pm_budgeteur > portfolioBudgetInfo.availableBudget
                       ? 'error.main'
-                      : formData.pm_budgeteur > sliderMaxBudget * 0.75
+                      : formData.pm_budgeteur > portfolioBudgetInfo.availableBudget * 0.9
                         ? 'warning.main'
                         : 'primary.main',
                     '& .MuiSlider-thumb': {
@@ -414,6 +411,55 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
                   }}
                 />
               </Paper>
+
+              {formData._pm_portfolio_value && (
+                <Paper variant="outlined" sx={{ mt: 1.5, p: 1.5, borderRadius: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'grey.50' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, display: 'block', mb: 0.75 }}>
+                    Portfolio Budget Allocation
+                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary">Portfolio Budget</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace' }}>
+                      {currencyFormatter.format(portfolioBudgetInfo.portfolioBudget)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Already allocated ({portfolioBudgetInfo.programmeCount} programme{portfolioBudgetInfo.programmeCount !== 1 ? 's' : ''})
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace', color: 'warning.main' }}>
+                      {currencyFormatter.format(portfolioBudgetInfo.usedBudget)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700 }}>Available for this programme</Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 700,
+                        fontFamily: 'monospace',
+                        color: portfolioBudgetInfo.availableBudget <= 0 ? 'error.main' : 'success.main',
+                      }}
+                    >
+                      {currencyFormatter.format(portfolioBudgetInfo.availableBudget)}
+                    </Typography>
+                  </Box>
+                  {portfolioBudgetInfo.availableBudget <= 0 && (
+                    <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.75, fontWeight: 600 }}>
+                      No remaining budget in this portfolio.
+                    </Typography>
+                  )}
+                </Paper>
+              )}
+
+              {formData.pm_budgeteur > portfolioBudgetInfo.availableBudget && (
+                <Box sx={{ mt: 1, p: 1.25, borderRadius: 1.5, bgcolor: 'error.50', border: '1px solid', borderColor: 'error.200', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <WarningAmberIcon sx={{ fontSize: 18, color: 'error.main', flexShrink: 0 }} />
+                  <Typography variant="caption" color="error.dark" sx={{ fontWeight: 600 }}>
+                    Budget exceeds available portfolio allocation by {currencyFormatter.format(formData.pm_budgeteur - portfolioBudgetInfo.availableBudget)}.
+                  </Typography>
+                </Box>
+              )}
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
