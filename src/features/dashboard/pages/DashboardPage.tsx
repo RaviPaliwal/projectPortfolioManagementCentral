@@ -251,7 +251,7 @@ export default function DashboardPage() {
 
       {/* Main grid */}
       <Grid container spacing={2.5}>
-        {/* Left column — Budget Health + Tasks */}
+        {/* Left column — Budget Health + Portfolio Health Snapshot */}
         <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <BudgetHealthPanel
             totalApprovedBudget={budgetMetrics.approved}
@@ -261,21 +261,21 @@ export default function DashboardPage() {
             availableYears={availableYears}
             onYearChange={handleBudgetYearChange}
           />
-          <DashboardTasksWidget variant="tasks" />
-        </Grid>
-
-        {/* Right column — AI Insights + Pipeline + Health */}
-        <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          <DashboardTasksWidget variant="insights" />
-          <PipelineStageSummary
-            initiatives={initiatives}
-            loading={loading}
-          />
           <PortfolioHealthSnapshot
             metrics={metrics}
             portfolioSnapshot={portfolioSnapshot}
             programmeSnapshot={programmeSnapshot}
             milestonesDue={milestonesDue}
+            loading={loading}
+          />
+        </Grid>
+
+        {/* Right column — Tasks + AI Insights + Pipeline Stage Summary */}
+        <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <DashboardTasksWidget variant="tasks" />
+          <DashboardTasksWidget variant="insights" />
+          <PipelineStageSummary
+            initiatives={initiatives}
             loading={loading}
           />
         </Grid>

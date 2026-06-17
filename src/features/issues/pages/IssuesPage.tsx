@@ -60,7 +60,7 @@ import {
   fetchAllRisks,
   fetchResources,
 } from '@/services'
-import { Pm_programmesService } from '@/generated'
+import { Pm_programmesService, Pm_projectsService } from '@/generated'
 import type { IssueModel } from '@/types/dataverse'
 import { unwrapList } from '@/services/common'
 import { formatDate } from '@/utils/formatters'
@@ -208,7 +208,16 @@ export default function IssuesPage() {
     if (!currentUser?.systemuserid) return
     setProjectsLoading(true)
     try {
-      const rawProjects = await fetchProjectsForSystemUser(currentUser.systemuserid)
+      // TeamMember → only their allocated projects; PMO/Admin/etc → all projects
+      const isTeamMember = currentUserPersona === 'TeamMember'
+      const rawProjects = isTeamMember
+        ? await fetchProjectsForSystemUser(currentUser.systemuserid)
+        : await Pm_projectsService.getAll({
+            filter: 'statecode eq 0',
+            select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_programme_value', '_pm_portfolio_value'],
+            orderBy: ['pm_projectname asc'],
+            top: 500,
+          }).then(result => unwrapList<any>(result))
 
       const progResult = await Pm_programmesService.getAll({
         select: ['pm_programmeid', 'pm_programmename'],
@@ -239,7 +248,7 @@ export default function IssuesPage() {
     } finally {
       setProjectsLoading(false)
     }
-  }, [currentUser?.systemuserid])
+  }, [currentUser?.systemuserid, currentUserPersona])
 
   // ── Load risks for the linked risk picker ──────────────────────────────────
   const loadRisks = useCallback(async () => {

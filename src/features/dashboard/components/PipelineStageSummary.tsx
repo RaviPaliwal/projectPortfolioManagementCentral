@@ -31,7 +31,18 @@ export const PipelineStageSummary = ({ initiatives, loading }: PipelineStageSumm
   }, [initiatives])
 
   return (
-    <Paper sx={{ p: 3 }}>
+    <Paper
+      sx={{
+        p: 3,
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        '&:hover': {
+          transform: 'translateY(-3px)',
+          boxShadow: (theme) => theme.palette.mode === 'dark'
+            ? '0 12px 20px rgba(0,0,0,0.5)'
+            : '0 8px 16px rgba(99,102,241,0.06)',
+        }
+      }}
+    >
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
         Pipeline Overview
       </Typography>

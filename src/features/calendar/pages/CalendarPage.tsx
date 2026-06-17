@@ -562,13 +562,39 @@ export default function CalendarPage() {
 
               // Fetch description/body content and clean HTML tags if needed
               const rawDesc = item.description || item.Description || item.body || item.Body || (isTask ? 'Imported Outlook Task' : 'Imported Outlook Event')
-              const cleanDesc = typeof rawDesc === 'string' ? stripHtml(rawDesc).trim() : ''
+              let cleanDesc = typeof rawDesc === 'string' ? stripHtml(rawDesc).trim() : ''
 
               // Extract meeting URL from various possible field names
               const rawMeetingUrl = item.onlineMeetingUrl || item.OnlineMeetingUrl ||
                 item.onlinemeetingurl || item.onlineMeeting?.joinUrl ||
                 item.joinUrl || item.meetingUrl || item.webLink || ''
-              const meetingUrl = rawMeetingUrl && rawMeetingUrl.startsWith('http') ? rawMeetingUrl : undefined
+              let meetingUrl = rawMeetingUrl && rawMeetingUrl.startsWith('http') ? rawMeetingUrl : undefined
+
+              // Extract meeting URL from description if not already set
+              if (!meetingUrl && cleanDesc) {
+                const teamsMatch = cleanDesc.match(/https:\/\/[^\s"'<>]*(?:teams\.microsoft\.com|teams\.live\.com)[^\s"'<>]+/i)
+                if (teamsMatch) {
+                  meetingUrl = teamsMatch[0]
+                }
+              }
+
+              // Strip the Teams meeting footer details from description (Microsoft Teams meeting, Join, Meeting ID, Passcode)
+              if (cleanDesc) {
+                const markers = [
+                  /________________________________________________________________________________/i,
+                  /Microsoft Teams meeting/i,
+                  /Join on your computer/i,
+                  /Join Microsoft Teams Meeting/i,
+                  /Join:\s*https:\/\/teams\.microsoft\.com/i
+                ]
+                for (const marker of markers) {
+                  const matchIndex = cleanDesc.search(marker)
+                  if (matchIndex !== -1) {
+                    cleanDesc = cleanDesc.substring(0, matchIndex).trim()
+                    break
+                  }
+                }
+              }
 
               return {
                 id: `outlook-${item.id || index}`,
@@ -1557,15 +1583,7 @@ export default function CalendarPage() {
                 )}
               </Box>
             </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'space-between' }}>
-              <Button
-                color="error"
-                startIcon={<DeleteIcon />}
-                onClick={() => handleDeleteEvent(selectedEvent.id)}
-                sx={{ textTransform: 'none' }}
-              >
-                Delete Event
-              </Button>
+            <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'flex-end' }}>
               <Button variant="outlined" onClick={() => setSelectedEvent(null)} sx={{ textTransform: 'none' }}>
                 Close
               </Button>

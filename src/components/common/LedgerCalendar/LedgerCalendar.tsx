@@ -20,6 +20,7 @@ export interface LedgerCalendarProps {
   interactive?: boolean
   selectedDates?: string[]
   onSelectDate?: (date: string) => void
+  onDoubleClickDate?: (date: string) => void
   holidays?: Array<{ pm_holidaydate: string }>
   dailyCapacity?: number
   hideLegend?: boolean
@@ -48,6 +49,7 @@ export const LedgerCalendar: React.FC<LedgerCalendarProps> = ({
   interactive = false,
   selectedDates = [],
   onSelectDate,
+  onDoubleClickDate,
   holidays = [],
   hideLegend = false,
   colorMap = DEFAULT_COLORS,
@@ -132,6 +134,7 @@ export const LedgerCalendar: React.FC<LedgerCalendarProps> = ({
             <Box
               key={dateStr}
               onClick={() => interactive && !isWeekend && onSelectDate?.(dateStr)}
+              onDoubleClick={() => interactive && !isWeekend && onDoubleClickDate?.(dateStr)}
               title={tooltipLines.length > 0 ? tooltipLines.join('\n') : undefined}
               sx={{
                 position: 'relative',

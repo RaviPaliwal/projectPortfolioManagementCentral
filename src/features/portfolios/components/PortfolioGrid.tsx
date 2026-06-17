@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import {
   Paper,
   Table,
@@ -14,10 +14,13 @@ import {
   useTheme,
   IconButton,
   Tooltip,
+  TextField,
+  InputAdornment,
 } from '@mui/material'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import {
   StatusChip,
   SearchFilterBar,
@@ -26,8 +29,10 @@ import {
   VarianceDisplay,
   StatusTag,
 } from '@/components/common'
+import type { FilterOption } from '@/components/common'
 import type { PortfolioModel } from '@/types/dataverse'
 import { useDataGrid } from '@/hooks/useDataGrid'
+import { fontSizes } from '@/styles'
 import { currencyFormatter } from '@/utils/formatters'
 
 interface PortfolioGridProps {
@@ -46,6 +51,20 @@ const STATUS_LABELS: Record<string, string> = {
   '2': 'Rejected',
 }
 
+const STATUS_FILTER_OPTIONS: FilterOption[] = [
+  { value: '', label: 'All Statuses' },
+  { value: '0', label: 'Active' },
+  { value: '1', label: 'Under Approval' },
+  { value: '2', label: 'Rejected' },
+]
+
+const RAG_FILTER_OPTIONS: FilterOption[] = [
+  { value: '', label: 'All RAG' },
+  { value: '1', label: 'Green' },
+  { value: '0', label: 'Amber' },
+  { value: '2', label: 'Red' },
+]
+
 export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
   portfolios,
   loading,
@@ -58,10 +77,26 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState('')
+  const [ragFilter, setRagFilter] = useState('')
+  const [minBudget, setMinBudget] = useState('')
+  const [maxBudget, setMaxBudget] = useState('')
+
   const gridOptions = useMemo(() => ({
     initialSort: { field: 'pm_portfolioname' as const, dir: 'asc' as const },
     searchFields: ['pm_portfolioname', 'pm_ownerlookupname', 'pm_businessunit'] as Array<keyof PortfolioModel>,
-  }), [])
+    filterFn: (item: PortfolioModel) => {
+      if (statusFilter && String(item.pm_portfoliostatus ?? '') !== statusFilter) return false
+      if (ragFilter && String(item.pm_ragstatus ?? '') !== ragFilter) return false
+
+      const budget = item.pm_approvedbudgeteur ?? 0
+      if (minBudget && budget < parseFloat(minBudget)) return false
+      if (maxBudget && budget > parseFloat(maxBudget)) return false
+
+      return true
+    },
+  }), [statusFilter, ragFilter, minBudget, maxBudget])
 
   const {
     searchQuery,
@@ -84,13 +119,88 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
     }
   }, [filteredData, onFilteredDataChange])
 
+  const handleStatusFilterChange = useCallback((value: string) => {
+    setStatusFilter(value)
+    setPage(null, 0)
+  }, [setPage])
+
+  const handleRagFilterChange = useCallback((value: string) => {
+    setRagFilter(value)
+    setPage(null, 0)
+  }, [setPage])
+
+  const handleMinBudgetChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+      setMinBudget(val)
+      setPage(null, 0)
+    }
+  }, [setPage])
+
+  const handleMaxBudgetChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+      setMaxBudget(val)
+      setPage(null, 0)
+    }
+  }, [setPage])
+
+  const handleClear = useCallback(() => {
+    setSearchQuery('')
+    setStatusFilter('')
+    setRagFilter('')
+    setMinBudget('')
+    setMaxBudget('')
+  }, [setSearchQuery])
+
+  const hasActiveFilters = searchQuery || statusFilter || ragFilter || minBudget || maxBudget
+
   return (
     <Paper sx={{ overflow: 'hidden', mb: 3 }}>
       <SearchFilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search portfolios by name, owner, or business unit..."
-        onClear={() => setSearchQuery('')}
+        filterValue={statusFilter}
+        onFilterChange={handleStatusFilterChange}
+        filterLabel="Status"
+        filterOptions={STATUS_FILTER_OPTIONS}
+        secondaryFilterValue={ragFilter}
+        onSecondaryFilterChange={handleRagFilterChange}
+        secondaryFilterLabel="RAG"
+        secondaryFilterOptions={RAG_FILTER_OPTIONS}
+        extraFilters={
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <TextField
+              size="small"
+              placeholder="Min budget"
+              value={minBudget}
+              onChange={handleMinBudgetChange}
+              slotProps={{
+                input: {
+                  startAdornment: <InputAdornment position="start"><AttachMoneyIcon sx={{ fontSize: 16, color: 'text.secondary' }} /></InputAdornment>,
+                  sx: { borderRadius: 1.15, fontSize: fontSizes.base, maxWidth: 150 },
+                },
+              }}
+              sx={{ maxWidth: 150 }}
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ userSelect: 'none' }}>—</Typography>
+            <TextField
+              size="small"
+              placeholder="Max budget"
+              value={maxBudget}
+              onChange={handleMaxBudgetChange}
+              slotProps={{
+                input: {
+                  startAdornment: <InputAdornment position="start"><AttachMoneyIcon sx={{ fontSize: 16, color: 'text.secondary' }} /></InputAdornment>,
+                  sx: { borderRadius: 1.15, fontSize: fontSizes.base, maxWidth: 150 },
+                },
+              }}
+              sx={{ maxWidth: 150 }}
+            />
+          </Box>
+        }
+        onClear={hasActiveFilters ? handleClear : undefined}
       />
 
       <TableShell

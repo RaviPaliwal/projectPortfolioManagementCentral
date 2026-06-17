@@ -606,6 +606,17 @@ const TeamMemberTimesheetPage = () => {
                   return [...prev, dateStr].sort();
                 });
               }}
+              onDoubleClickDate={(dateStr: string) => {
+                const isHoliday = holidays.some((h: any) => h.pm_holidaydate.split('T')[0] === dateStr);
+                if (isHoliday) return;
+                const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                if (dateStr > today.toISOString().split('T')[0]) return;
+                if (loggedDateSet.has(dateStr)) return;
+
+                // On double click, we just open for this specific date
+                setEditingEntry({ dates: [dateStr] });
+                setDialogOpen(true);
+              }}
               holidays={holidays}
             />
             <div className="ts-entry-list">
