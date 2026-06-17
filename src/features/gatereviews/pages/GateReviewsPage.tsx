@@ -50,11 +50,11 @@ import {
 } from '@/services'
 import type { GateReviewModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon, Button, WorkflowMilestone } from '@/components/common'
+import { PageHeader, KpiCardRow, TableShell, SearchFilterBar, ExportButton, StatusTag, ActionIcon, Button } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { MODULE_NAMES } from '@/constants/moduleNames'
-import { PmoReadinessTaskModal, FinancialReviewTaskModal, BoardDecisionTaskModal } from '../components'
+import { PmoReadinessTaskModal, FinancialReviewTaskModal, BoardDecisionTaskModal, GateReview360View } from '../components'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -200,6 +200,55 @@ export default function GateReviewsPage() {
     return () => window.removeEventListener(WORKFLOW_DECISION_EVENT, handler)
   }, [loadData])
 
+  // Sync editingReview into formData
+  useEffect(() => {
+    if (editingReview) {
+      setFormData({
+        pm_gatename: editingReview.pm_gatename ?? '',
+        pm_gatestage: Number(editingReview.pm_gatestage ?? 0),
+        pm_reviewoutcome: Number(editingReview.pm_reviewoutcome ?? 2),
+        pm_reviewstatus: Number(editingReview.pm_reviewstatus ?? 1),
+        pm_plannedreviewdate: editingReview.pm_plannedreviewdate ?? '',
+        pm_actualreviewdate: editingReview.pm_actualreviewdate ?? '',
+        pm_leadreviewer: editingReview.pm_leadreviewer ?? '',
+        pm_reviewnotes: editingReview.pm_reviewnotes ?? '',
+        pm_reviewconditions: editingReview.pm_reviewconditions ?? '',
+        pm_documentsurl: editingReview.pm_documentsurl ?? '',
+        pm_projectcode: editingReview.pm_projectcode ?? '',
+        pm_programmename: editingReview.pm_programmename ?? '',
+        _pm_project_value: editingReview._pm_project_value ?? '',
+        _pm_programmelookup_value: editingReview._pm_programmelookup_value ?? '',
+      })
+    } else {
+      setFormData({
+        pm_gatename: '',
+        pm_gatestage: 0,
+        pm_reviewoutcome: 2,
+        pm_reviewstatus: 1,
+        pm_plannedreviewdate: '',
+        pm_actualreviewdate: '',
+        pm_leadreviewer: '',
+        pm_reviewnotes: '',
+        pm_reviewconditions: '',
+        pm_documentsurl: '',
+        pm_projectcode: '',
+        pm_programmename: '',
+        _pm_project_value: '',
+        _pm_programmelookup_value: '',
+      })
+    }
+  }, [editingReview])
+
+  // Sync selectedReview with refetched gateReviews list to show real-time changes
+  useEffect(() => {
+    if (selectedReview) {
+      const updated = gateReviews.find(r => r.pm_projectgatereviewid === selectedReview.pm_projectgatereviewid)
+      if (updated) {
+        setSelectedReview(updated)
+      }
+    }
+  }, [gateReviews, selectedReview?.pm_projectgatereviewid])
+
   const kpiItems = useMemo((): KpiCardItem[] => {
     const total = gateReviews.length
     const scheduled = gateReviews.filter((g) => String(g.pm_reviewstatus) === '1').length
@@ -276,171 +325,97 @@ export default function GateReviewsPage() {
 
   return (
     <Box>
-      <PageHeader
-        title="Gate Reviews"
-        subtitle="Schedule and track project gate reviews, record outcomes, and manage conditions."
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <ExportButton filename="gate-reviews.csv" columns={gateReviewExportColumns} data={filteredReviews} />
-            {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingReview(null); setShowFormModal(true) }}>
-                Schedule Review
-              </Button>
-            )}
-          </Box>
-        }
-      />
-
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-      {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
-
-      {!loading && <KpiCardRow items={kpiItems} />}
-
-      <Paper sx={{ overflow: 'hidden', mb: 3, borderRadius: 2 }}>
-        <SearchFilterBar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          filterValue={stageFilter}
-          onFilterChange={setStageFilter}
-          filterLabel="Stage"
-          filterOptions={STAGE_FILTER_OPTIONS}
-          extraFilters={
-            <SearchFilterBar 
-              filterValue={outcomeFilter} 
-              onFilterChange={setOutcomeFilter} 
-              filterLabel="Outcome" 
-              filterOptions={OUTCOME_FILTER_OPTIONS} 
-              sx={{ border: 'none', p: 0, minWidth: 150 }} 
-            />
-          }
-          onClear={() => { setSearchQuery(''); setStageFilter(''); setOutcomeFilter(''); setPage(0) }}
+      {selectedReview ? (
+        <GateReview360View
+          review={selectedReview}
+          onBack={() => setSelectedReview(null)}
+          onPmoCheck={() => setShowPmoModal(true)}
+          onFinanceReview={() => setShowFinanceModal(true)}
+          onBoardDecision={() => setShowBoardModal(true)}
+          onEdit={(review) => { setEditingReview(review); setShowFormModal(true); }}
+          onDelete={(id) => setDeleteConfirm(id)}
+          canEdit={canEdit}
+          canDelete={canDelete}
         />
+      ) : (
+        <>
+          <PageHeader
+            title="Gate Reviews"
+            subtitle="Schedule and track project gate reviews, record outcomes, and manage conditions."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <ExportButton filename="gate-reviews.csv" columns={gateReviewExportColumns} data={filteredReviews} />
+                {canCreate && (
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingReview(null); setShowFormModal(true) }}>
+                    Schedule Review
+                  </Button>
+                )}
+              </Box>
+            }
+          />
 
-        <TableShell loading={loading} empty={filteredReviews.length === 0}>
-          <Table size="small">
-            <TableHead>
-              <TableRow sx={{ bgcolor: 'background.default' }}>
-                <TableCell sx={{ fontWeight: 700 }}>Gate Review</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Stage</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Outcome</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Planned Date</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Reviewer</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredReviews.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map((review) => (
-                <TableRow key={review.pm_projectgatereviewid} hover onClick={() => setSelectedReview(review)} sx={{ cursor: 'pointer' }}>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm }}>G</Avatar>
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{review.pm_gatename}</Typography>
-                        <Typography variant="caption" color="text.secondary">{review.pm_projectcode || 'No Project Code'}</Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell><StatusTag label={GATE_STAGE_LABELS[String(review.pm_gatestage)]} color={GATE_STAGE_VARIANTS[String(review.pm_gatestage)]} /></TableCell>
-                  <TableCell><StatusTag label={OUTCOME_LABELS[String(review.pm_reviewoutcome)]} color={OUTCOME_COLORS[String(review.pm_reviewoutcome)]} /></TableCell>
-                  <TableCell><StatusTag label={STATUS_LABELS[String(review.pm_reviewstatus)]} color={STATUS_COLORS[String(review.pm_reviewstatus)]} /></TableCell>
-                  <TableCell>{review.pm_plannedreviewdate ? new Date(review.pm_plannedreviewdate).toLocaleDateString() : '—'}</TableCell>
-                  <TableCell>{review.pm_leadreviewer || '—'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableShell>
-      </Paper>
+          {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+          {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-      <DetailDrawer
-        open={!!selectedReview}
-        onClose={() => setSelectedReview(null)}
-        title={selectedReview?.pm_gatename ?? ''}
-        icon={<FactCheckIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {selectedReview?.pm_reviewstatus === 1 && (
-              <>
-                <ActionIcon icon={<AssignmentTurnedInIcon />} onClick={() => setShowPmoModal(true)} label="PMO Readiness Check" color="info" />
-                <ActionIcon icon={<AttachMoneyIcon />} onClick={() => setShowFinanceModal(true)} label="Financial Review" color="info" />
-                <ActionIcon icon={<GavelIcon />} onClick={() => setShowBoardModal(true)} label="Record Final Decision" color="success" />
-              </>
-            )}
-            {canEdit && (
-              <ActionIcon icon={<EditIcon />} onClick={() => { setEditingReview(selectedReview); setShowFormModal(true) }} label="Edit" color="primary" />
-            )}
-            {canDelete && (
-              <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedReview?.pm_projectgatereviewid!)} label="Delete" color="error" />
-            )}
-          </Box>
-        }
-      >
-        {selectedReview && (
-          <Box sx={{ p: 1 }}>
-             <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <StatusTag label={GATE_STAGE_LABELS[String(selectedReview.pm_gatestage)]} color={GATE_STAGE_VARIANTS[String(selectedReview.pm_gatestage)]} />
-              <StatusTag label={OUTCOME_LABELS[String(selectedReview.pm_reviewoutcome)]} color={OUTCOME_COLORS[String(selectedReview.pm_reviewoutcome)]} />
-              <StatusTag label={STATUS_LABELS[String(selectedReview.pm_reviewstatus)]} color={STATUS_COLORS[String(selectedReview.pm_reviewstatus)]} />
-            </Box>
+          {!loading && <KpiCardRow items={kpiItems} />}
 
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <PersonIcon sx={{ fontSize: 14 }} /> Lead Reviewer
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedReview.pm_leadreviewer || '—'}</Typography>
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <CalendarMonthIcon sx={{ fontSize: 14 }} /> Scheduled Date
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedReview.pm_plannedreviewdate ? new Date(selectedReview.pm_plannedreviewdate).toLocaleDateString() : '—'}</Typography>
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <CheckCircleIcon sx={{ fontSize: 14 }} /> Actual Review Date
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedReview.pm_actualreviewdate ? new Date(selectedReview.pm_actualreviewdate).toLocaleDateString() : '—'}</Typography>
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <OpenInNewIcon sx={{ fontSize: 14 }} /> Documentation
-                </Typography>
-                <Box>
-                  {selectedReview.pm_documentsurl ? (
-                    <Link href={selectedReview.pm_documentsurl} target="_blank" rel="noopener" sx={{ fontSize: fontSizes.sm, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      View Files <OpenInNewIcon sx={{ fontSize: 12 }} />
-                    </Link>
-                  ) : '—'}
-                </Box>
-              </Grid>
-            </Grid>
-
-            <Divider sx={{ my: 3 }} />
-
-            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <TimelineIcon sx={{ fontSize: 20 }} /> Approval Workflow Timeline
-            </Typography>
-
-            <WorkflowMilestone
-              moduleName={MODULE_NAMES.GATE_REVIEWS.value}
-              entityId={selectedReview.pm_projectgatereviewid!}
+          <Paper sx={{ overflow: 'hidden', mb: 3, borderRadius: 2 }}>
+            <SearchFilterBar
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              filterValue={stageFilter}
+              onFilterChange={setStageFilter}
+              filterLabel="Stage"
+              filterOptions={STAGE_FILTER_OPTIONS}
+              extraFilters={
+                <SearchFilterBar 
+                  filterValue={outcomeFilter} 
+                  onFilterChange={setOutcomeFilter} 
+                  filterLabel="Outcome" 
+                  filterOptions={OUTCOME_FILTER_OPTIONS} 
+                  sx={{ border: 'none', p: 0, minWidth: 150 }} 
+                />
+              }
+              onClear={() => { setSearchQuery(''); setStageFilter(''); setOutcomeFilter(''); setPage(0) }}
             />
 
-            <Divider sx={{ my: 3 }} />
-
-            <Typography variant="caption" color="text.secondary">Hierarchy Context</Typography>
-            <Grid container spacing={1} sx={{ mt: 0.5 }}>
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="body2"><strong>Project:</strong> {selectedReview.pm_projectcode || '—'}</Typography>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="body2"><strong>Programme:</strong> {selectedReview.pm_programmename || '—'}</Typography>
-              </Grid>
-            </Grid>
-          </Box>
-        )}
-      </DetailDrawer>
+            <TableShell loading={loading} empty={filteredReviews.length === 0}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ bgcolor: 'background.default' }}>
+                    <TableCell sx={{ fontWeight: 700 }}>Gate Review</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Stage</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Outcome</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Planned Date</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Reviewer</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredReviews.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map((review) => (
+                    <TableRow key={review.pm_projectgatereviewid} hover onClick={() => setSelectedReview(review)} sx={{ cursor: 'pointer' }}>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm }}>G</Avatar>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{review.pm_gatename}</Typography>
+                            <Typography variant="caption" color="text.secondary">{review.pm_projectcode || 'No Project Code'}</Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell><StatusTag label={GATE_STAGE_LABELS[String(review.pm_gatestage)]} color={GATE_STAGE_VARIANTS[String(review.pm_gatestage)]} /></TableCell>
+                      <TableCell><StatusTag label={OUTCOME_LABELS[String(review.pm_reviewoutcome)]} color={OUTCOME_COLORS[String(review.pm_reviewoutcome)]} /></TableCell>
+                      <TableCell><StatusTag label={STATUS_LABELS[String(review.pm_reviewstatus)]} color={STATUS_COLORS[String(review.pm_reviewstatus)]} /></TableCell>
+                      <TableCell>{review.pm_plannedreviewdate ? new Date(review.pm_plannedreviewdate).toLocaleDateString() : '—'}</TableCell>
+                      <TableCell>{review.pm_leadreviewer || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableShell>
+          </Paper>
+        </>
+      )}
 
       <Dialog open={showFormModal} onClose={() => setShowFormModal(false)} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
         <DialogTitle sx={{ fontWeight: 700 }}>{editingReview ? 'Edit Review' : 'Schedule Review'}</DialogTitle>

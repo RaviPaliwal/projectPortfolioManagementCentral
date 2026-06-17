@@ -252,10 +252,10 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
             >
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                  {instance.pm_instancename || instance.pm_workflowlookupname || 'Workflow Instance'}
+                  {(instance.pm_instancename || instance.pm_workflowlookupname || 'Workflow Instance').split('#')[0].trim()}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {instance.pm_workflowlookupname && `Template: ${instance.pm_workflowlookupname}`}
+                  {instance.pm_workflowlookupname && `Template: ${instance.pm_workflowlookupname.split('#')[0].trim()}`}
                   {instance.pm_initiatedby && ` · Initiated by: ${instance.pm_initiatedby}`}
                 </Typography>
               </Box>
