@@ -21,6 +21,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import HistoryIcon from '@mui/icons-material/History'
 
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   Pm_benefitsService,
   Pm_performancemeasuresService
@@ -52,6 +54,8 @@ import { parseDataverseError } from '@/services/common'
 export default function BenefitsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const { allowed: canCreate } = useAuthorization('BENEFITS', 'create')
 
   // Standardized CRUD Hook
   const {
@@ -207,9 +211,11 @@ export default function BenefitsPage() {
         title="Benefits Register"
         subtitle="Track and manage benefits realisation with target vs actual value tracking."
         actionElement={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingBenefit(null); setShowFormModal(true); }}>
-            Add Benefit
-          </Button>
+          canCreate && (
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingBenefit(null); setShowFormModal(true); }}>
+              Add Benefit
+            </Button>
+          )
         }
       />
 

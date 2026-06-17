@@ -39,6 +39,8 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
 import GavelIcon from '@mui/icons-material/Gavel'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import TimelineIcon from '@mui/icons-material/Timeline'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchGateReviews,
   createGateReview,
@@ -132,6 +134,8 @@ interface SortState {
 export default function GateReviewsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const { allowed: canCreate } = useAuthorization('GATE_REVIEWS', 'create')
 
   const [gateReviews, setGateReviews] = useState<GateReviewModel[]>([])
   const [loading, setLoading] = useState(true)
@@ -276,9 +280,11 @@ export default function GateReviewsPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton filename="gate-reviews.csv" columns={gateReviewExportColumns} data={filteredReviews} />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingReview(null); setShowFormModal(true) }}>
-              Schedule Review
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingReview(null); setShowFormModal(true) }}>
+                Schedule Review
+              </Button>
+            )}
           </Box>
         }
       />

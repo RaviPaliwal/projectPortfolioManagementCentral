@@ -22,6 +22,8 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import type { WorkflowModel, WorkflowInstanceModel, WorkflowStepTemplateModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
 import { useUser } from '@/context/UserContext'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchWorkflows, deleteWorkflow,
   fetchWorkflowInstances, deleteWorkflowInstance,
@@ -71,6 +73,8 @@ type ViewMode = 'list' | 'create' | 'edit'
 export default function WorkflowsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const { allowed: canCreate } = useAuthorization('WORKFLOWS', 'create')
 
   // View routing
   const [view, setView] = useState<ViewMode>('list')
@@ -287,7 +291,7 @@ export default function WorkflowsPage() {
           <Box sx={{ display: 'flex', gap: 1 }}>
             {pageTab === 0 && <ExportButton data={filteredWorkflows} columns={workflowExportColumns} filename="WorkflowTemplates" />}
             {pageTab === 1 && <ExportButton data={filteredInstances} columns={instanceExportColumns} filename="WorkflowInstances" />}
-            {pageTab === 0 && <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigateTo('create')}>New Workflow</Button>}
+            {canCreate && <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigateTo('create')}>New Workflow</Button>}
           </Box>
         }
       />

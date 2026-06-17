@@ -47,6 +47,8 @@ import {
 import type { FilterOption } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchAllIssues,
   fetchIssuesForSystemUser,
@@ -125,6 +127,8 @@ interface SortState {
 
 export default function IssuesPage() {
   const { currentUser, currentUserPersona } = useUser()
+
+  const { allowed: canCreate } = useAuthorization('ISSUES', 'create')
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [issues, setIssues] = useState<IssueModel[]>([])
@@ -523,9 +527,11 @@ export default function IssuesPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={issues} columns={[]} filename="issues" />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-              Add Issue
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+                Add Issue
+              </Button>
+            )}
           </Box>
         }
       />

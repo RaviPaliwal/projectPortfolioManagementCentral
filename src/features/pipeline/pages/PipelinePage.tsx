@@ -58,6 +58,9 @@ import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import InfoIcon from '@mui/icons-material/Info'
 
 import PauseCircleFilledIcon from '@mui/icons-material/PauseCircleFilled'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
+
 import {
   fetchInitiatives,
   createInitiative,
@@ -198,6 +201,8 @@ export default function PipelinePage() {
   const [editScore, setEditScore] = useState(0)
 
   const { currentUser } = useUser()
+
+  const { allowed: canCreate } = useAuthorization('PIPELINE', 'create')
 
   // ── Portfolio options for create modal ──────────────────────────────────
   const [portfolios, setPortfolios] = useState<PortfolioModel[]>([])
@@ -553,9 +558,11 @@ export default function PipelinePage() {
         subtitle="Pre-project initiative pipeline — triage, score, and convert ideas into authorised projects."
         actionElement={
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
-              New Initiative
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
+                New Initiative
+              </Button>
+            )}
             <ExportButton filename="pipeline" columns={pipelineExportColumns} data={filteredInitiatives} />
           </Box>
         }

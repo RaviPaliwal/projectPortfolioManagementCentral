@@ -26,6 +26,8 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import TimerIcon from '@mui/icons-material/Timer'
 import CategoryIcon from '@mui/icons-material/Category'
 
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchChangeRequests,
   createChangeRequest,
@@ -134,6 +136,8 @@ export default function ChangeRequestsPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const { currentUser } = useUser()
+
+  const { allowed: canCreate } = useAuthorization('CHANGE_REQUESTS', 'create')
 
   // Lookup data state
   const [programmes, setProgrammes] = useState<ProgrammeLookupItem[]>([])
@@ -487,9 +491,11 @@ export default function ChangeRequestsPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={filteredCRs} columns={changeRequestExportColumns} filename="change_requests" />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-              Add Change Request
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+                Add Change Request
+              </Button>
+            )}
           </Box>
         }
       />

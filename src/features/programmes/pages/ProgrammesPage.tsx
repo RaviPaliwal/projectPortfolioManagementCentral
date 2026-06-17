@@ -35,6 +35,9 @@ import EditIcon from '@mui/icons-material/Edit'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate'
 
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
+
 import { fetchProgrammeDetails, fetchPortfolioHierarchy } from '@/services'
 import {
   StatusChip,
@@ -97,6 +100,8 @@ const ISSUE_PRIORITY_LABELS: Record<string, string> = {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function ProgrammesPage() {
+  const { allowed: canCreate } = useAuthorization('PROGRAMMES', 'create')
+  const { allowed: canEdit } = useAuthorization('PROGRAMMES', 'update')
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
@@ -284,7 +289,9 @@ export default function ProgrammesPage() {
           subtitle={prog?.pm_programmemanagername ? `Manager: ${prog.pm_programmemanagername}` : undefined}
           actionElement={
             <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+              {canEdit && (
               <ActionIcon icon={<EditIcon />} onClick={() => prog && openEditForm(prog)} label="Edit Programme" color="primary" />
+            )}
               <StatusChip status={prog?.pm_ragstatus} type="rag" size="small" />
               <StatusChip status={prog?.pm_programmephase} type="prog_phase" size="small" />
               {prog?.pm_portfolioname && <StatusTag label={prog.pm_portfolioname} size="small" color="primary" variant="outlined" />}
@@ -493,7 +500,9 @@ export default function ProgrammesPage() {
         subtitle="Searchable directory of all programmes with aggregated health and financials."
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>New Programme</Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>New Programme</Button>
+            )}
             <ExportButton filename="programmes" columns={programmeExportColumns} data={filteredProgrammes} />
           </Box>
         }

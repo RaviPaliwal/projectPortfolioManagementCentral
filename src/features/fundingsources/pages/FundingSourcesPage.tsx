@@ -39,6 +39,8 @@ import EuroIcon from '@mui/icons-material/Euro'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import StopCircleIcon from '@mui/icons-material/StopCircle'
 import TimelineIcon from '@mui/icons-material/Timeline'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchFundingSources,
   createFundingSource,
@@ -120,6 +122,8 @@ const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', cu
 export default function FundingSourcesPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const { allowed: canCreate } = useAuthorization('FUNDING_SOURCES', 'create')
 
   // Data state
   const [fundingSources, setFundingSources] = useState<FundingSourceModel[]>([])
@@ -420,9 +424,11 @@ export default function FundingSourcesPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={filteredSources} columns={fundingExportColumns} filename="FundingSources" />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-              Add Source
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+                Add Source
+              </Button>
+            )}
           </Box>
         }
       />

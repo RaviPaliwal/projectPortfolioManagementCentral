@@ -8,6 +8,8 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   Pm_cashflowentriesService,
 } from '@/generated'
@@ -37,6 +39,8 @@ import { useDataverseCrud } from '@/hooks/useDataverseCrud'
 import { useDataverseAsync } from '@/hooks/useDataverseAsync'
 
 export default function CashflowPage() {
+  const { allowed: canCreate } = useAuthorization('CASHFLOW', 'create')
+
   // Standardized CRUD Hook
   const {
     items: entries,
@@ -135,9 +139,11 @@ export default function CashflowPage() {
         title="Cashflow Management"
         subtitle="Track financial inflows and outflows across programmes and projects."
         actionElement={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setFormData({}); setDialogMode('create') }}>
-            New Entry
-          </Button>
+          canCreate && (
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setFormData({}); setDialogMode('create') }}>
+              New Entry
+            </Button>
+          )
         }
       />
 
