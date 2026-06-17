@@ -26,9 +26,11 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import MoneyIcon from '@mui/icons-material/Money'
 import { createProgramme, updateProgramme, fetchPortfolioHierarchy, startWorkflowForEntity } from '@/services'
 import { MODULE_NAMES } from '@/constants/moduleNames'
+import { BUSINESS_UNITS } from '@/constants/businessUnits'
 import { fontSizes } from '@/styles'
 import type { ProgrammeModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
@@ -39,6 +41,8 @@ interface ProgrammeFormDialogProps {
   onError: (message: string) => void
   initialData?: ProgrammeModel | null
   portfolios: { id: string; name: string; budget: number }[]
+  /** All programmes (used to compute remaining budget per portfolio) */
+  allProgrammes?: ProgrammeModel[]
 }
 
 export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
@@ -48,6 +52,7 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
   onError,
   initialData,
   portfolios,
+  allProgrammes = [],
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -109,12 +114,23 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
 
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; name: string }>({ open: false, name: '' })
 
-  const sliderMaxBudget = useMemo(() => {
-    if (!formData._pm_portfolio_value) return 10_000_000
+  // Compute available budget for the selected portfolio
+  const portfolioBudgetInfo = useMemo(() => {
+    if (!formData._pm_portfolio_value) {
+      return { portfolioBudget: 10_000_000, usedBudget: 0, availableBudget: 10_000_000, programmeCount: 0 }
+    }
     const selected = portfolios.find((p) => p.id === formData._pm_portfolio_value)
-    if (selected && selected.budget > 0) return selected.budget
-    return 10_000_000
-  }, [formData._pm_portfolio_value, portfolios])
+    const portfolioBudget = selected?.budget ?? 10_000_000
+
+    // Sum budgets of all OTHER programmes linked to this portfolio
+    const otherProgrammes = allProgrammes.filter(
+      (p) => p._pm_portfolio_value === formData._pm_portfolio_value &&
+             p.pm_programmeid !== initialData?.pm_programmeid
+    )
+    const usedBudget = otherProgrammes.reduce((sum, p) => sum + (p.pm_budgeteur ?? 0), 0)
+    const availableBudget = Math.max(0, portfolioBudget - usedBudget)
+    return { portfolioBudget, usedBudget, availableBudget, programmeCount: otherProgrammes.length }
+  }, [formData._pm_portfolio_value, portfolios, allProgrammes, initialData?.pm_programmeid])
 
   const handleSave = async () => {
     if (!formData.pm_programmename.trim()) return
@@ -293,14 +309,20 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
               </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Business Unit"
-                fullWidth
-                size="small"
-                value={formData.pm_businessunit}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_businessunit: e.target.value }))}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-              />
+              <FormControl fullWidth size="small">
+                <InputLabel>Business Unit</InputLabel>
+                <Select
+                  value={formData.pm_businessunit}
+                  label="Business Unit"
+                  onChange={(e) => setFormData((f) => ({ ...f, pm_businessunit: e.target.value }))}
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  <MenuItem value="">— Select —</MenuItem>
+                  {BUSINESS_UNITS.map((bu) => (
+                    <MenuItem key={bu} value={bu}>{bu}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
