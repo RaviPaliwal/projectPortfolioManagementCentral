@@ -47,6 +47,13 @@ import './App.css'
 import PrimaryShell, { type TabKey, tabs } from '@/components/layout/PrimaryShell'
 import { getPageMap } from './routes'
 import { FormDialog } from '@/components/common'
+import RouteGuard from '@/components/common/RouteGuard/RouteGuard'
+
+export function guardActiveTab(tab: TabKey, allowedTabs: TabKey[]): TabKey {
+  if (allowedTabs.length === 0) return tab
+  if (allowedTabs.includes(tab)) return tab
+  return allowedTabs.includes('dashboard' as TabKey) ? 'dashboard' as TabKey : allowedTabs[0]
+}
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard')
@@ -66,7 +73,9 @@ function App() {
         <div className="appShell">
           <PrimaryShell activeTab={activeTab} onChangeTab={setActiveTab} onToggleTheme={toggleTheme} themeMode={themeMode}>
             <PageErrorBoundary pageName={tabs.find((t) => t.key === activeTab)?.label}>
-              {pageMap[activeTab]}
+              <RouteGuard activeTab={activeTab} onChangeTab={setActiveTab}>
+                {pageMap[activeTab]}
+              </RouteGuard>
             </PageErrorBoundary>
           </PrimaryShell>
           <FormDialog />

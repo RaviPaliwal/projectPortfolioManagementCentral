@@ -8,6 +8,8 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   Pm_cashflowentriesService,
 } from '@/generated'
@@ -37,6 +39,10 @@ import { useDataverseCrud } from '@/hooks/useDataverseCrud'
 import { useDataverseAsync } from '@/hooks/useDataverseAsync'
 
 export default function CashflowPage() {
+  const { allowed: canCreate } = useAuthorization('CASHFLOW', 'create')
+  const { allowed: canEdit } = useAuthorization('CASHFLOW', 'update')
+  const { allowed: canDelete } = useAuthorization('CASHFLOW', 'delete')
+
   // Standardized CRUD Hook
   const {
     items: entries,
@@ -135,9 +141,11 @@ export default function CashflowPage() {
         title="Cashflow Management"
         subtitle="Track financial inflows and outflows across programmes and projects."
         actionElement={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setFormData({}); setDialogMode('create') }}>
-            New Entry
-          </Button>
+          canCreate && (
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setFormData({}); setDialogMode('create') }}>
+              New Entry
+            </Button>
+          )
         }
       />
 
@@ -176,13 +184,16 @@ export default function CashflowPage() {
             />
             <StatusTag label={TXN_TYPE_LABELS[String(selectedEntry.pm_transactiontype)] || '—'} variant="outlined" />
           </Box>
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon icon={<EditIcon />} onClick={() => { setFormData(selectedEntry!); setDialogMode('edit') }} label="Edit" color="primary" />
-            <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedEntry)} label="Delete" color="error" />
-          </Box>
-        }
+        )}            headerActions={
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {canEdit && (
+                  <ActionIcon icon={<EditIcon />} onClick={() => { setFormData(selectedEntry!); setDialogMode('edit') }} label="Edit" color="primary" />
+                )}
+                {canDelete && (
+                  <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedEntry)} label="Delete" color="error" />
+                )}
+              </Box>
+            }
       >
         {selectedEntry && <CashflowDetail entry={selectedEntry} />}
       </DetailDrawer>

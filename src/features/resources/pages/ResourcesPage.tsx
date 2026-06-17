@@ -51,6 +51,8 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import InsightsIcon from '@mui/icons-material/Insights'
 import EuroIcon from '@mui/icons-material/Euro'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchResources,
   createResource,
@@ -154,6 +156,10 @@ export default function ResourcesPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const { users } = useUser()
+
+  const { allowed: canCreate } = useAuthorization('RESOURCES', 'create')
+  const { allowed: canEdit } = useAuthorization('RESOURCES', 'update')
+  const { allowed: canDelete } = useAuthorization('RESOURCES', 'delete')
 
   // Data state
   const [resources, setResources] = useState<ResourceModel[]>([])
@@ -521,9 +527,11 @@ export default function ResourcesPage() {
         subtitle="Manage your workforce — staff, contractors, and suppliers across departments and roles."
         actionElement={
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-              Add Resource
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+                Add Resource
+              </Button>
+            )}
             <ExportButton filename="resources" columns={resourceExportColumns} data={filteredResources} />
           </Box>
         }
@@ -693,20 +701,24 @@ export default function ResourcesPage() {
                       </TableCell>
                       <TableCell align="center">
                         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={(e) => { e.stopPropagation(); openEditForm(resource) }}
-                          >
-                            <EditIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={(e) => { e.stopPropagation(); if (resource.pm_resourceid) setDeleteConfirm(resource.pm_resourceid) }}
-                          >
-                            <DeleteIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
+                          {canEdit && (
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={(e) => { e.stopPropagation(); openEditForm(resource) }}
+                            >
+                              <EditIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          )}
+                          {canDelete && (
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={(e) => { e.stopPropagation(); if (resource.pm_resourceid) setDeleteConfirm(resource.pm_resourceid) }}
+                            >
+                              <DeleteIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -771,18 +783,22 @@ export default function ResourcesPage() {
             )}
             headerActions={
               <Box sx={{ display: 'flex', gap: 0.5 }}>
-                <ActionIcon
-                  icon={<EditIcon />}
-                  onClick={() => selectedResource && openEditForm(selectedResource)}
-                  label="Edit Resource"
-                  color="primary"
-                />
-                <ActionIcon
-                  icon={<DeleteIcon />}
-                  onClick={() => selectedResource?.pm_resourceid && setDeleteConfirm(selectedResource.pm_resourceid)}
-                  label="Delete Resource"
-                  color="error"
-                />
+                {canEdit && (
+                  <ActionIcon
+                    icon={<EditIcon />}
+                    onClick={() => selectedResource && openEditForm(selectedResource)}
+                    label="Edit Resource"
+                    color="primary"
+                  />
+                )}
+                {canDelete && (
+                  <ActionIcon
+                    icon={<DeleteIcon />}
+                    onClick={() => selectedResource?.pm_resourceid && setDeleteConfirm(selectedResource.pm_resourceid)}
+                    label="Delete Resource"
+                    color="error"
+                  />
+                )}
               </Box>
             }
             tabs={[

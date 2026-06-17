@@ -68,6 +68,7 @@ interface Project360ViewProps {
   onAddTask: () => void
   onNavigateToGateReview?: (gateReview?: GateReviewModel) => void
   onEditProject: (project: ProjectModel) => void
+  canEdit?: boolean
 }
 
 export const Project360View: React.FC<Project360ViewProps> = ({
@@ -92,7 +93,8 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onAddBenefit,
   onAddTask,
   onNavigateToGateReview,
-  onEditProject
+  onEditProject,
+  canEdit = false
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -128,12 +130,14 @@ export const Project360View: React.FC<Project360ViewProps> = ({
         subtitle={project.pm_projectmanager ? `Manager: ${project.pm_projectmanagername}` : project.pm_projectcode ? `Code: ${project.pm_projectcode}` : undefined}
         actionElement={
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-            <ActionIcon
-              icon={<EditIcon />}
-              onClick={() => onEditProject(project)}
-              label="Edit Project"
-              color="primary"
-            />
+            {canEdit && (
+              <ActionIcon
+                icon={<EditIcon />}
+                onClick={() => onEditProject(project)}
+                label="Edit Project"
+                color="primary"
+              />
+            )}
             <StatusChip status={project.pm_ragstatus} type="rag" size="small" />
             <StatusTag label={phaseLabel(project.pm_projectphase)} size="small" variant="outlined" />
             {project.pm_projectcode && (

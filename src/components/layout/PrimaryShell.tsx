@@ -99,15 +99,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
     return () => window.removeEventListener('navigate', handler)
   }, [activeTab, onChangeTab])
 
-  // Redirect if current active tab is not allowed for the active persona
-  useEffect(() => {
-    const allowedTabs = PERSONA_PERMISSIONS[currentUserPersona] || []
-    if (allowedTabs.length > 0 && !allowedTabs.includes(activeTab)) {
-      const defaultTab = allowedTabs.includes('dashboard') ? 'dashboard' : allowedTabs[0]
-      onChangeTab(defaultTab)
-    }
-  }, [currentUserPersona, activeTab, onChangeTab])
-
+  // RouteGuard in App.tsx handles persona-based redirect on mount/navigation
   const allowedTabs = PERSONA_PERMISSIONS[currentUserPersona] || []
   const sidebarTabs = tabs.filter(t => !t.hidden && allowedTabs.includes(t.key))
 

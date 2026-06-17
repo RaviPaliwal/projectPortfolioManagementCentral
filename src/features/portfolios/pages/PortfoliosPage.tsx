@@ -19,6 +19,9 @@ import FolderIcon from '@mui/icons-material/Folder'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import ErrorIcon from '@mui/icons-material/Error'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
+
 import { fetchPortfolioHierarchy } from '@/services'
 
 import {
@@ -55,6 +58,9 @@ const portfolioExportColumns: ExportColumn[] = [
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function PortfoliosPage() {
+  const { allowed: canCreate } = useAuthorization('PORTFOLIOS', 'create')
+  const { allowed: canEdit } = useAuthorization('PORTFOLIOS', 'update')
+
   // Data state
   const [hierarchy, setHierarchy] = useState<{ portfolios: PortfolioModel[]; programmes: ProgrammeModel[]; projects: ProjectModel[] }>({ portfolios: [], programmes: [], projects: [] })
   const [loading, setLoading] = useState(true)
@@ -170,9 +176,11 @@ export default function PortfoliosPage() {
         subtitle="Master view of all portfolios — aggregate health, budget tracking, and drill-down details."
         actionElement={
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-              New Portfolio
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+                New Portfolio
+              </Button>
+            )}
             <ExportButton filename="portfolios" columns={portfolioExportColumns} data={filteredPortfolios} />
           </Box>
         }
@@ -271,12 +279,14 @@ export default function PortfoliosPage() {
           </Box>
         )}
         headerActions={
-          <ActionIcon
-            icon={<EditIcon />}
-            onClick={() => selectedPortfolio && openEditForm(selectedPortfolio)}
-            label="Edit Portfolio"
-            color="primary"
-          />
+          canEdit && (
+            <ActionIcon
+              icon={<EditIcon />}
+              onClick={() => selectedPortfolio && openEditForm(selectedPortfolio)}
+              label="Edit Portfolio"
+              color="primary"
+            />
+          )
         }
         tabs={[
           { label: 'Summary' },

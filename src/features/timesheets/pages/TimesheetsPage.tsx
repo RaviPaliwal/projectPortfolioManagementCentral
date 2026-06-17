@@ -22,6 +22,8 @@ import EventNoteIcon from '@mui/icons-material/EventNote'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import PersonIcon from '@mui/icons-material/Person'
 
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchTimesheets,
   createTimesheet,
@@ -86,6 +88,8 @@ const STATUS_ICONS: Record<string, ReactElement> = {
 export default function TimesheetsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const { allowed: canCreate } = useAuthorization('TIMESHEETS', 'create')
 
   // Data state
   const [timesheets, setTimesheets] = useState<TimesheetModel[]>([])
@@ -412,14 +416,16 @@ export default function TimesheetsPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton filename="timesheets.csv" columns={timesheetExportColumns} data={timesheets} />
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => { setDraftMode(true); setShowCreateModal(true); setOverlapError(null) }}
-              disabled={actionLoading || loading}
-            >
-              New Entry
-            </Button>
+            {canCreate && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => { setDraftMode(true); setShowCreateModal(true); setOverlapError(null) }}
+                disabled={actionLoading || loading}
+              >
+                New Entry
+              </Button>
+            )}
           </Box>
         }
       />

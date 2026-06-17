@@ -43,6 +43,8 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import AssessmentIcon from '@mui/icons-material/Assessment'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import TimelineIcon from '@mui/icons-material/Timeline'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import {
   fetchBudgetLines,
   createBudgetLine,
@@ -121,6 +123,10 @@ const getVarianceColor = (variance?: number): string => {
 export default function BudgetsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const { allowed: canCreate } = useAuthorization('BUDGETS', 'create')
+  const { allowed: canEdit } = useAuthorization('BUDGETS', 'update')
+  const { allowed: canDelete } = useAuthorization('BUDGETS', 'delete')
 
   // Data state
   const [budgetLines, setBudgetLines] = useState<BudgetLineModel[]>([])
@@ -467,9 +473,11 @@ export default function BudgetsPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton filename="budgets.csv" columns={budgetExportColumns} data={filteredBudgetLines} />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-              Add Budget Line
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+                Add Budget Line
+              </Button>
+            )}
           </Box>
         }
       />
