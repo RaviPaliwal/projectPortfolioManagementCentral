@@ -499,22 +499,7 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
             )
           })}
         </List>
-        {currentUser && (
-          <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderTop: 1, borderColor: 'divider' }}>
-            <Typography variant="caption" sx={{ fontWeight: 700, display: 'block', mb: 0.5, color: 'text.secondary' }}>
-              Security Diagnostics:
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block', fontSize: '0.75rem', color: 'text.secondary' }}>
-              <strong>Persona:</strong> {currentUserPersona}
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block', fontSize: '0.75rem', color: 'text.secondary', whiteSpace: 'normal', wordBreak: 'break-all' }}>
-              <strong>Roles:</strong> {(userRolesMap[normalizeGuid(currentUser.systemuserid)] || []).join(', ') || 'None'}
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block', fontSize: '0.75rem', color: 'text.secondary', whiteSpace: 'normal', wordBreak: 'break-all' }}>
-              <strong>Teams:</strong> {(userTeams.get(normalizeGuid(currentUser.systemuserid)) || []).join(', ') || 'None'}
-            </Typography>
-          </Box>
-        )}
+
       </Popover>
     </>
   )
