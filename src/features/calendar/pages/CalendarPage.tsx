@@ -24,8 +24,10 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
+import VideocamIcon from '@mui/icons-material/Videocam'
 import EventIcon from '@mui/icons-material/Event'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 
 import { useUser } from '@/context/UserContext'
 import {
@@ -44,6 +46,7 @@ interface CalendarEvent {
   startTime: string // HH:MM (24h format)
   endTime: string // HH:MM (24h format)
   description?: string
+  meetingUrl?: string
   calendarId: string // 'work' | 'team' | 'finance' | 'milestones'
   color: string
 }
@@ -56,6 +59,7 @@ const INITIAL_EVENTS: CalendarEvent[] = [
     startTime: '10:00',
     endTime: '11:30',
     description: 'Alignment meeting on portfolio milestones and health indicators.',
+    meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:example1',
     calendarId: 'work',
     color: '#3f51b5',
   },
@@ -76,6 +80,7 @@ const INITIAL_EVENTS: CalendarEvent[] = [
     startTime: '09:00',
     endTime: '10:30',
     description: 'Planning upcoming release deliverables and developer assignments.',
+    meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:example2',
     calendarId: 'milestones',
     color: '#fdba74',
   },
@@ -86,6 +91,7 @@ const INITIAL_EVENTS: CalendarEvent[] = [
     startTime: '11:00',
     endTime: '12:00',
     description: 'Demonstrating PPM Central dashboard configurations to the main client stakeholder.',
+    meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:example3',
     calendarId: 'milestones',
     color: '#fdba74',
   },
@@ -297,7 +303,7 @@ export default function CalendarPage() {
           if (plannedStart) {
             newMappedEvents.push({
               id: `project-start-${projectId}-${plannedStart}`,
-              title: `🚀 Project Start: ${projName}`,
+              title: `\u{1F680} Project Start: ${projName}`,
               date: plannedStart,
               startTime: '09:00',
               endTime: '11:00',
@@ -348,7 +354,7 @@ export default function CalendarPage() {
             endTime: endTimeStr,
             calendarId: 'work', // Work Calendar (blue)
             color: '#93c5fd',
-            description: `Project: ${projName}\nAllocated hours: ${alloc.pm_allocatedhours ?? '—'}h/week as ${alloc.pm_assignmentrole || 'Team Member'}.\nAllocation percentage: ${pct}%.`
+            description: `Project: ${projName}\nAllocated hours: ${alloc.pm_allocatedhours ?? '\u2014'}h/week as ${alloc.pm_assignmentrole || 'Team Member'}.\nAllocation percentage: ${pct}%.`
           })
         }
 
@@ -379,7 +385,7 @@ export default function CalendarPage() {
 
           newMappedEvents.push({
             id: `task-${task.pm_projecttaskid}-${taskStartDate}`,
-            title: `${isMilestone ? '♦ Milestone' : 'Task'}: ${task.pm_taskname}${labelSuffix}`,
+            title: `${isMilestone ? '\u25C6 Milestone' : 'Task'}: ${task.pm_taskname}${labelSuffix}`,
             date: taskStartDate,
             startTime: startTimeStr,
             endTime: endTimeStr,
@@ -424,12 +430,12 @@ export default function CalendarPage() {
                     // Check if it's a key-value format string like "id: '...', subject: '...'"
                     if (val.includes('subject:') || val.includes('startdate:')) {
                       const getField = (fieldName: string) => {
-                        const regex = new RegExp(`(?:^|,|\\s)${fieldName}:\\s*['"]?([^'"]+?)['"]?(?:,\\s*\\w+\\s*:|\\s*$)`, 'i')
+                        const regex = new RegExp(`(?:^|,|\\\\s)${fieldName}:\\\\s*['\"]?([^'\"]+?)['\"]?(?:,\\\\s*\\\\w+\\\\s*:|\\\\s*$)`, 'i')
                         const match = val.match(regex)
                         return match ? match[1].trim() : ''
                       }
                       const getBodyField = () => {
-                        const regex = /(?:^|,|\s)body:\s*['"]?([\s\S]+?)(?:['"]?$)/i
+                        const regex = /(?:^|,|\\s)body:\\s*['\"]?([\\s\\S]+?)(?:['\"]?$)/i
                         const match = val.match(regex)
                         return match ? match[1].trim() : ''
                       }
@@ -438,7 +444,9 @@ export default function CalendarPage() {
                         subject: getField('subject'),
                         startdate: getField('startdate') || getField('start'),
                         enddate: getField('enddate') || getField('end'),
-                        body: getBodyField() || getField('body')
+                        body: getBodyField() || getField('body'),
+                        location: getField('location'),
+                        onlinemeetingurl: getField('onlinemeetingurl')
                       })
                     }
                   }
@@ -491,6 +499,12 @@ export default function CalendarPage() {
               // Fetch description/body content and clean HTML tags if needed
               const rawDesc = item.description || item.Description || item.body || item.Body || (isTask ? 'Imported Outlook Task' : 'Imported Outlook Event')
               const cleanDesc = typeof rawDesc === 'string' ? stripHtml(rawDesc).trim() : ''
+
+              // Extract meeting URL from various possible field names
+              const rawMeetingUrl = item.onlineMeetingUrl || item.OnlineMeetingUrl || 
+                item.onlinemeetingurl || item.onlineMeeting?.joinUrl ||
+                item.joinUrl || item.meetingUrl || item.webLink || ''
+              const meetingUrl = rawMeetingUrl && rawMeetingUrl.startsWith('http') ? rawMeetingUrl : undefined
               
               return {
                 id: `outlook-${item.id || index}`,
@@ -500,7 +514,8 @@ export default function CalendarPage() {
                 endTime: `${endHour}:${endMin}`,
                 calendarId: 'outlook',
                 color: '#7dd3fc',
-                description: cleanDesc
+                description: cleanDesc,
+                ...(meetingUrl ? { meetingUrl } : {}),
               }
             })
             console.log('[CalendarPage] Mapped Outlook Events:', outlookEvents)
@@ -519,7 +534,8 @@ export default function CalendarPage() {
               endTime: '14:00',
               calendarId: 'outlook',
               color: '#7dd3fc',
-              description: 'Regular sync with partnership technical contacts.'
+              description: 'Regular sync with partnership technical contacts.',
+              meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:outlook-mock1'
             },
             {
               id: 'outlook-mock-2',
@@ -529,7 +545,7 @@ export default function CalendarPage() {
               endTime: '10:00',
               calendarId: 'outlook',
               color: '#7dd3fc',
-              description: 'Daily standup to review active issues.'
+              description: 'Daily standup to review active issues.',
             },
             {
               id: 'outlook-mock-3',
@@ -539,7 +555,8 @@ export default function CalendarPage() {
               endTime: '16:30',
               calendarId: 'outlook',
               color: '#7dd3fc',
-              description: 'Reviewing user research and comments on the calendar view.'
+              description: 'Reviewing user research and comments on the calendar view.',
+              meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:outlook-mock3'
             }
           ]
         }
@@ -718,7 +735,44 @@ export default function CalendarPage() {
     setSelectedEvent(null)
   }
 
+  // Open meeting URL in a new tab
+  const handleJoinMeeting = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
 
+  // Utility to darken a hex color by a given amount (0-255)
+  const darkenColor = (hex: string, amount: number): string => {
+    const num = parseInt(hex.replace('#', ''), 16)
+    const r = Math.max(0, (num >> 16) - amount)
+    const g = Math.max(0, ((num >> 8) & 0x00FF) - amount)
+    const b = Math.max(0, (num & 0x0000FF) - amount)
+    return `rgb(${r}, ${g}, ${b})`
+  }
+
+  // Detect which events in a list overlap or touch each other
+  const getOverlapMap = (eventList: CalendarEvent[]): Set<string> => {
+    const overlapping = new Set<string>()
+    if (eventList.length <= 1) return overlapping
+    const sorted = [...eventList].sort((a, b) => {
+      const [aH, aM] = a.startTime.split(':').map(Number)
+      const [bH, bM] = b.startTime.split(':').map(Number)
+      return (aH * 60 + aM) - (bH * 60 + bM)
+    })
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = sorted[i - 1]
+      const curr = sorted[i]
+      const [prevEH, prevEM] = prev.endTime.split(':').map(Number)
+      const [currSH, currSM] = curr.startTime.split(':').map(Number)
+      const prevEndMin = prevEH * 60 + prevEM
+      const currStartMin = currSH * 60 + currSM
+      // Overlaps or touches if current starts at or before previous ends
+      if (currStartMin <= prevEndMin) {
+        overlapping.add(prev.id)
+        overlapping.add(curr.id)
+      }
+    }
+    return overlapping
+  }
 
   // Position calculation helpers for absolute events positioning
   const getEventPositionStyles = (e: CalendarEvent) => {
@@ -1068,9 +1122,6 @@ export default function CalendarPage() {
               const dateStr = formatDateString(day)
               // Filter events that fall on this day
               const dayEvents = filteredEvents.filter((e) => e.date === dateStr)
-              if (dayEvents.length > 0) {
-                console.log('[CalendarPage] rendering date:', dateStr, 'with events:', dayEvents)
-              }
 
               return (
                 <Box
@@ -1081,77 +1132,114 @@ export default function CalendarPage() {
                     borderRight: colIdx < currentWeekDays.length - 1 ? `1px solid ${theme.palette.divider}` : 'none',
                   }}
                 >
-                  {/* Grid Rows Background */}
-                  {hours.map((hour) => (
-                    <Box
-                      key={hour}
-                      onClick={() => handleCellClick(dateStr, hour)}
-                      sx={{
-                        height: 60,
-                        borderBottom: `1px dashed ${theme.palette.divider}`,
-                        cursor: 'pointer',
-                        '&:hover': {
-                          bgcolor: 'action.hover',
-                        },
-                      }}
-                    />
-                  ))}
-
-                  {/* Absolute Events */}
-                  {dayEvents.map((event) => {
-                    const position = getEventPositionStyles(event)
-                    const isShort = parseInt(position.height || '60') <= 30
-                    
+                  {/* Grid Rows Background with alternating colors for visual distinction */}
+                  {hours.map((hour) => {
+                    const isEvenHour = hour % 2 === 0
                     return (
-                      <Tooltip key={event.id} title={`${event.startTime} - ${event.endTime}: ${event.title}`} arrow>
-                        <Box
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedEvent(event)
-                          }}
-                          sx={{
-                            ...position,
-                            bgcolor: event.color,
-                            color: '#0f172a', // Softer modern slate text color on pastel backgrounds
-                            borderRadius: '6px',
-                            p: isShort ? '2px 6px' : '5px 8px',
-                            cursor: 'pointer',
-                            overflow: 'hidden',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: isShort ? 'center' : 'flex-start',
-                            borderLeft: `4px solid rgba(15, 23, 42, 0.2)`, // matching semi-translucent left border
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-                            transition: 'all 0.15s ease',
-                            '&:hover': {
-                              filter: 'brightness(0.96) contrast(1.05)',
-                              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                            },
-                          }}
-                        >
-                          {isShort ? (
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 0.5 }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.7rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'inherit' }}>
-                                {event.title}
-                              </Typography>
-                              <Typography variant="caption" sx={{ opacity: 0.75, fontSize: '0.625rem', whiteSpace: 'nowrap', flexShrink: 0, color: 'inherit' }}>
-                                {event.startTime}
-                              </Typography>
-                            </Box>
-                          ) : (
-                            <>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.725rem', lineHeight: 1.15, mb: 0.25, overflow: 'hidden', textOverflow: 'ellipsis', color: 'inherit' }}>
-                                {event.title}
-                              </Typography>
-                              <Typography variant="caption" sx={{ opacity: 0.75, fontSize: '0.625rem', display: 'block', color: 'inherit' }}>
-                                {event.startTime} - {event.endTime}
-                              </Typography>
-                            </>
-                          )}
-                        </Box>
-                      </Tooltip>
+                      <Box
+                        key={hour}
+                        onClick={() => handleCellClick(dateStr, hour)}
+                        sx={{
+                          height: 60,
+                          borderBottom: `1px solid ${theme.palette.divider}`,
+                          bgcolor: isEvenHour
+                            ? theme.palette.mode === 'dark'
+                              ? 'rgba(255,255,255,0.03)'
+                              : 'rgba(0,0,0,0.02)'
+                            : 'transparent',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            bgcolor: 'action.hover',
+                          },
+                        }}
+                      />
                     )
                   })}
+
+                  {/* Absolute Events */}
+                  {(() => {
+                    const overlappingIds = getOverlapMap(dayEvents)
+                    return dayEvents.map((event) => {
+                      const position = getEventPositionStyles(event)
+                      const isShort = parseInt(position.height || '60') <= 30
+                      const isOverlapping = overlappingIds.has(event.id)
+                      const darkerShade = darkenColor(event.color, 50)
+                      
+                      return (
+                        <Tooltip key={event.id} title={`${event.startTime} - ${event.endTime}: ${event.title}`} arrow>
+                          <Box
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedEvent(event)
+                            }}
+                            sx={{
+                              ...position,
+                              bgcolor: event.color,
+                              color: '#0f172a',
+                              borderRadius: '6px',
+                              p: isShort ? '2px 6px' : '5px 8px',
+                              cursor: 'pointer',
+                              overflow: 'hidden',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: isShort ? 'center' : 'flex-start',
+                              borderLeft: `4px solid ${isOverlapping ? darkerShade : 'rgba(15, 23, 42, 0.2)'}`,
+                              borderTop: isOverlapping ? `2px solid ${darkerShade}` : 'none',
+                              borderBottom: isOverlapping ? `2px solid ${darkerShade}` : 'none',
+                              boxShadow: isOverlapping ? '0 1px 3px rgba(0,0,0,0.1)' : '0 2px 4px rgba(0,0,0,0.06)',
+                              transition: 'all 0.15s ease',
+                              '&:hover': {
+                                filter: 'brightness(0.96) contrast(1.05)',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                              },
+                            }}
+                          >
+                            {isShort ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 0.5 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.7rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'inherit' }}>
+                                  {event.title}
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0 }}>
+                                  <Typography variant="caption" sx={{ opacity: 0.75, fontSize: '0.625rem', whiteSpace: 'nowrap', color: 'inherit' }}>
+                                    {event.startTime}
+                                  </Typography>
+                                  {event.meetingUrl && (
+                                    <VideocamIcon
+                                      sx={{ fontSize: '0.625rem', opacity: 0.7 }}
+                                      onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation()
+                                        handleJoinMeeting(event.meetingUrl!)
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                              </Box>
+                            ) : (
+                              <>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.725rem', lineHeight: 1.15, mb: 0.25, overflow: 'hidden', textOverflow: 'ellipsis', color: 'inherit' }}>
+                                  {event.title}
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                  <Typography variant="caption" sx={{ opacity: 0.75, fontSize: '0.625rem', display: 'block', color: 'inherit' }}>
+                                    {event.startTime} - {event.endTime}
+                                  </Typography>
+                                  {event.meetingUrl && (
+                                    <VideocamIcon
+                                      sx={{ fontSize: '0.75rem', opacity: 0.7, flexShrink: 0 }}
+                                      onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation()
+                                        handleJoinMeeting(event.meetingUrl!)
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                              </>
+                            )}
+                          </Box>
+                        </Tooltip>
+                      )
+                    })
+                  })()}
                 </Box>
               )
             })}
@@ -1297,6 +1385,33 @@ export default function CalendarPage() {
                     </Typography>
                   </Box>
                 </Box>
+
+                {/* Join Meeting Section */}
+                {selectedEvent.meetingUrl && (
+                  <Box
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)',
+                      border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.3)' : 'rgba(99,102,241,0.2)'}`,
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                      <VideocamIcon fontSize="inherit" color="primary" />
+                      ONLINE MEETING
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      fullWidth
+                      startIcon={<OpenInNewIcon />}
+                      onClick={() => handleJoinMeeting(selectedEvent.meetingUrl!)}
+                      sx={{ textTransform: 'none', borderRadius: 1.5, fontWeight: 600 }}
+                    >
+                      Join Meeting
+                    </Button>
+                  </Box>
+                )}
 
                 {selectedEvent.description && (
                   <Box>
