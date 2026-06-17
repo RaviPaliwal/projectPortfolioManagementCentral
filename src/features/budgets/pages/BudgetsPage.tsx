@@ -125,6 +125,8 @@ export default function BudgetsPage() {
   const isDark = theme.palette.mode === 'dark'
 
   const { allowed: canCreate } = useAuthorization('BUDGETS', 'create')
+  const { allowed: canEdit } = useAuthorization('BUDGETS', 'update')
+  const { allowed: canDelete } = useAuthorization('BUDGETS', 'delete')
 
   // Data state
   const [budgetLines, setBudgetLines] = useState<BudgetLineModel[]>([])

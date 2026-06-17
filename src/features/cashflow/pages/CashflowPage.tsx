@@ -40,6 +40,8 @@ import { useDataverseAsync } from '@/hooks/useDataverseAsync'
 
 export default function CashflowPage() {
   const { allowed: canCreate } = useAuthorization('CASHFLOW', 'create')
+  const { allowed: canEdit } = useAuthorization('CASHFLOW', 'update')
+  const { allowed: canDelete } = useAuthorization('CASHFLOW', 'delete')
 
   // Standardized CRUD Hook
   const {
@@ -182,13 +184,16 @@ export default function CashflowPage() {
             />
             <StatusTag label={TXN_TYPE_LABELS[String(selectedEntry.pm_transactiontype)] || '—'} variant="outlined" />
           </Box>
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon icon={<EditIcon />} onClick={() => { setFormData(selectedEntry!); setDialogMode('edit') }} label="Edit" color="primary" />
-            <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedEntry)} label="Delete" color="error" />
-          </Box>
-        }
+        )}            headerActions={
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {canEdit && (
+                  <ActionIcon icon={<EditIcon />} onClick={() => { setFormData(selectedEntry!); setDialogMode('edit') }} label="Edit" color="primary" />
+                )}
+                {canDelete && (
+                  <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedEntry)} label="Delete" color="error" />
+                )}
+              </Box>
+            }
       >
         {selectedEntry && <CashflowDetail entry={selectedEntry} />}
       </DetailDrawer>

@@ -125,6 +125,8 @@ export default function SkillsPage() {
   const isDark = theme.palette.mode === 'dark'
 
   const { allowed: canCreate } = useAuthorization('SKILLS', 'create')
+  const { allowed: canEdit } = useAuthorization('SKILLS', 'update')
+  const { allowed: canDelete } = useAuthorization('SKILLS', 'delete')
 
   // Data state
   const [skills, setSkills] = useState<SkillModel[]>([])

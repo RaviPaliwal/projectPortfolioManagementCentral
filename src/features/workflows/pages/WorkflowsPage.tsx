@@ -75,6 +75,8 @@ export default function WorkflowsPage() {
   const isDark = theme.palette.mode === 'dark'
 
   const { allowed: canCreate } = useAuthorization('WORKFLOWS', 'create')
+  const { allowed: canEdit } = useAuthorization('WORKFLOWS', 'update')
+  const { allowed: canDelete } = useAuthorization('WORKFLOWS', 'delete')
 
   // View routing
   const [view, setView] = useState<ViewMode>('list')

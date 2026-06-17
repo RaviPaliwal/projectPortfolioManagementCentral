@@ -44,6 +44,7 @@ import { recalculateProjectFinancials, normalizeLookupId } from '@/services'
 
 export default function ProjectsPage() {
   const { allowed: canCreate } = useAuthorization('PROJECTS', 'create')
+  const { allowed: canEdit } = useAuthorization('PROJECTS', 'update')
 
   // Navigation state
   const [selectedProject, setSelectedProject] = useState<ProjectModel | null>(null)
@@ -382,6 +383,7 @@ export default function ProjectsPage() {
           onAddBenefit={() => setBenefitDialogOpen(true)}
           onAddTask={() => setTaskDialogOpen(true)}
           onNavigateToGateReview={() => setGateReviewDialogOpen(true)}
+          canEdit={canEdit}
           onEditProject={openEditForm}
         />
       ) : (
@@ -416,6 +418,7 @@ export default function ProjectsPage() {
             onRowClick={handleRowClick}
             onAddProject={openCreateForm}
             onEditProject={openEditForm}
+            canEdit={canEdit}
           />
         </>
       )}

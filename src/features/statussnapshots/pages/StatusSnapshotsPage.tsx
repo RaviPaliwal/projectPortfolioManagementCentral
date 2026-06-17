@@ -201,6 +201,8 @@ export default function StatusSnapshotsPage() {
   const isDark = theme.palette.mode === 'dark'
 
   const { allowed: canCreate } = useAuthorization('STATUS_SNAPSHOTS', 'create')
+  const { allowed: canEdit } = useAuthorization('STATUS_SNAPSHOTS', 'update')
+  const { allowed: canDelete } = useAuthorization('STATUS_SNAPSHOTS', 'delete')
 
   const [snapshots, setSnapshots] = useState<ProjectStatusSnapshotModel[]>([])
   const [loading, setLoading] = useState(true)

@@ -91,6 +91,8 @@ export default function HolidaysPage() {
 
   const actionState = useDataverseAsync<any>()
   const { allowed: canCreate } = useAuthorization('HOLIDAYS', 'create')
+  const { allowed: canEdit } = useAuthorization('HOLIDAYS', 'update')
+  const { allowed: canDelete } = useAuthorization('HOLIDAYS', 'delete')
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
@@ -246,8 +248,12 @@ export default function HolidaysPage() {
         subtitle={selectedHoliday && <StatusTag icon={<PublicIcon sx={{ fontSize: 14 }} />} label={selectedHoliday.pm_country || '—'} variant="outlined" />}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon icon={<EditIcon />} onClick={() => { setEditingHoliday(selectedHoliday); setShowForm(true); }} label="Edit" color="primary" />
-            <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedHoliday?.pm_holidayid!)} label="Delete" color="error" />
+            {canEdit && (
+              <ActionIcon icon={<EditIcon />} onClick={() => { setEditingHoliday(selectedHoliday); setShowForm(true); }} label="Edit" color="primary" />
+            )}
+            {canDelete && (
+              <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedHoliday?.pm_holidayid!)} label="Delete" color="error" />
+            )}
           </Box>
         }
       >

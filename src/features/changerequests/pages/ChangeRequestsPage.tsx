@@ -138,6 +138,8 @@ export default function ChangeRequestsPage() {
   const { currentUser } = useUser()
 
   const { allowed: canCreate } = useAuthorization('CHANGE_REQUESTS', 'create')
+  const { allowed: canEdit } = useAuthorization('CHANGE_REQUESTS', 'update')
+  const { allowed: canDelete } = useAuthorization('CHANGE_REQUESTS', 'delete')
 
   // Lookup data state
   const [programmes, setProgrammes] = useState<ProgrammeLookupItem[]>([])

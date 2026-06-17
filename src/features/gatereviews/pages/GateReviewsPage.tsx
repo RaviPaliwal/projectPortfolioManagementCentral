@@ -136,6 +136,8 @@ export default function GateReviewsPage() {
   const isDark = theme.palette.mode === 'dark'
 
   const { allowed: canCreate } = useAuthorization('GATE_REVIEWS', 'create')
+  const { allowed: canEdit } = useAuthorization('GATE_REVIEWS', 'update')
+  const { allowed: canDelete } = useAuthorization('GATE_REVIEWS', 'delete')
 
   const [gateReviews, setGateReviews] = useState<GateReviewModel[]>([])
   const [loading, setLoading] = useState(true)
@@ -364,8 +366,12 @@ export default function GateReviewsPage() {
                 <ActionIcon icon={<GavelIcon />} onClick={() => setShowBoardModal(true)} label="Record Final Decision" color="success" />
               </>
             )}
-            <ActionIcon icon={<EditIcon />} onClick={() => { setEditingReview(selectedReview); setShowFormModal(true) }} label="Edit" color="primary" />
-            <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedReview?.pm_projectgatereviewid!)} label="Delete" color="error" />
+            {canEdit && (
+              <ActionIcon icon={<EditIcon />} onClick={() => { setEditingReview(selectedReview); setShowFormModal(true) }} label="Edit" color="primary" />
+            )}
+            {canDelete && (
+              <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedReview?.pm_projectgatereviewid!)} label="Delete" color="error" />
+            )}
           </Box>
         }
       >
