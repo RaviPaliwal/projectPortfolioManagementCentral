@@ -125,7 +125,7 @@ export default function DashboardTasksWidget({ variant = 'full' }: DashboardTask
   ).length
 
   const taskDisplayCount = 5
-  const insightDisplayCount = 5
+  const insightDisplayCount = 7
 
   if (!currentUser) {
     return (
@@ -145,7 +145,19 @@ export default function DashboardTasksWidget({ variant = 'full' }: DashboardTask
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       {showTasks && (
-        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Paper
+          sx={{
+            borderRadius: 2,
+            overflow: 'hidden',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            '&:hover': {
+              transform: 'translateY(-3px)',
+              boxShadow: (theme) => theme.palette.mode === 'dark'
+                ? '0 12px 20px rgba(0,0,0,0.5)'
+                : '0 8px 16px rgba(99,102,241,0.06)',
+            }
+          }}
+        >
           <Box sx={{ p: 2.5, pb: 1.5 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
               <Box>
@@ -311,7 +323,19 @@ export default function DashboardTasksWidget({ variant = 'full' }: DashboardTask
       )}
 
       {showAI && (
-        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Paper
+          sx={{
+            borderRadius: 2,
+            overflow: 'hidden',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            '&:hover': {
+              transform: 'translateY(-3px)',
+              boxShadow: (theme) => theme.palette.mode === 'dark'
+                ? '0 12px 20px rgba(0,0,0,0.5)'
+                : '0 8px 16px rgba(99,102,241,0.06)',
+            }
+          }}
+        >
           <Box
             sx={{
               p: 2.5, pb: 1.5,
@@ -351,43 +375,68 @@ export default function DashboardTasksWidget({ variant = 'full' }: DashboardTask
                 </Typography>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {(showAllInsights ? insights : insights.slice(0, insightDisplayCount)).map((insight) => (
-                    <Paper
-                      key={insight.id}
-                      variant="outlined"
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 1.5,
-                        borderLeft: '3px solid',
-                        borderLeftColor: insight.priorityCode === 2 ? 'error.main' : insight.priorityCode === 1 ? 'warning.main' : 'info.main',
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                        <Box sx={{ mt: 0.25 }}>
-                          {insight.type === 'Alert' ? (
-                            <WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} />
-                          ) : (
-                            <LightbulbIcon sx={{ fontSize: 16, color: 'info.main' }} />
-                          )}
-                        </Box>
-                        <Box sx={{ minWidth: 0, flex: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>
-                            {insight.title}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5, display: 'block', mt: 0.25 }}>
-                            {insight.description.length > 150 ? insight.description.substring(0, 150) + '...' : insight.description}
-                          </Typography>
-                          <Box sx={{ display: 'flex', gap: 0.75, mt: 0.5, flexWrap: 'wrap' }}>
-                            <Chip label={insight.type} size="small" color={insight.type === 'Alert' ? 'warning' : 'info'} variant="outlined" sx={{ height: 20, fontSize: 10, fontWeight: 600 }} />
-                            <Chip label={insight.priority} size="small" color={insight.priority === 'High' ? 'error' : insight.priority === 'Medium' ? 'warning' : 'default'} variant="filled" sx={{ height: 20, fontSize: 10, fontWeight: 600 }} />
-                            {insight.confidenceScore > 0 && (
-                              <Chip label={`${Math.round(insight.confidenceScore * 100)}% confidence`} size="small" variant="outlined" sx={{ height: 20, fontSize: 10, fontWeight: 600 }} />
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 1,
+                      maxHeight: 450,
+                      overflowY: 'auto',
+                      pr: 0.75,
+                      // Custom scrollbar
+                      '&::-webkit-scrollbar': {
+                        width: '6px',
+                      },
+                      '&::-webkit-scrollbar-track': {
+                        background: 'transparent',
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        background: theme => theme.palette.divider,
+                        borderRadius: '3px',
+                      },
+                      '&::-webkit-scrollbar-thumb:hover': {
+                        background: theme => theme.palette.action.active,
+                      },
+                    }}
+                  >
+                    {(showAllInsights ? insights : insights.slice(0, insightDisplayCount)).map((insight) => (
+                      <Paper
+                        key={insight.id}
+                        variant="outlined"
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 1.5,
+                          borderLeft: '3px solid',
+                          borderLeftColor: insight.priorityCode === 2 ? 'error.main' : insight.priorityCode === 1 ? 'warning.main' : 'info.main',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                          <Box sx={{ mt: 0.25 }}>
+                            {insight.type === 'Alert' ? (
+                              <WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+                            ) : (
+                              <LightbulbIcon sx={{ fontSize: 16, color: 'info.main' }} />
                             )}
                           </Box>
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>
+                              {insight.title}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5, display: 'block', mt: 0.25 }}>
+                              {insight.description.length > 150 ? insight.description.substring(0, 150) + '...' : insight.description}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 0.75, mt: 0.5, flexWrap: 'wrap' }}>
+                              <Chip label={insight.type} size="small" color={insight.type === 'Alert' ? 'warning' : 'info'} variant="outlined" sx={{ height: 20, fontSize: 10, fontWeight: 600 }} />
+                              <Chip label={insight.priority} size="small" color={insight.priority === 'High' ? 'error' : insight.priority === 'Medium' ? 'warning' : 'default'} variant="filled" sx={{ height: 20, fontSize: 10, fontWeight: 600 }} />
+                              {insight.confidenceScore > 0 && (
+                                <Chip label={`${Math.round(insight.confidenceScore * 100)}% confidence`} size="small" variant="outlined" sx={{ height: 20, fontSize: 10, fontWeight: 600 }} />
+                              )}
+                            </Box>
+                          </Box>
                         </Box>
-                      </Box>
-                    </Paper>
-                  ))}
+                      </Paper>
+                    ))}
+                  </Box>
                   {insights.length > insightDisplayCount && (
                     <Button
                       variant="text"
