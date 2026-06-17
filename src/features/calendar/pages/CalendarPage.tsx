@@ -25,6 +25,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import VideocamIcon from '@mui/icons-material/Videocam'
+import CloseIcon from '@mui/icons-material/Close'
 import EventIcon from '@mui/icons-material/Event'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
@@ -36,7 +37,6 @@ import {
   Pm_projecttasksService,
   Pm_projectsService,
   GetOutlookEventsService,
-  CreateOutlookEventService,
 } from '@/generated'
 import { unwrapList, normalizeLookupId, parseDataverseError } from '@/services'
 
@@ -54,15 +54,77 @@ interface CalendarEvent {
 
 const INITIAL_EVENTS: CalendarEvent[] = [
   {
+    id: 'current-1',
+    title: 'PMO Weekly Review',
+    date: '2026-06-17',
+    startTime: '09:00',
+    endTime: '10:00',
+    description: 'Alignment meeting on portfolio milestones and health indicators.',
+    calendarId: 'work',
+    color: '#93c5fd',
+  },
+  {
+    id: 'current-2',
+    title: 'Budget Status Sync',
+    date: '2026-06-17',
+    startTime: '09:30',
+    endTime: '10:30',
+    description: 'Reviewing current quarter project forecasts and actuals.',
+    calendarId: 'finance',
+    color: '#5eead4',
+  },
+  {
+    id: 'current-3',
+    title: 'Client Portfolio Demo',
+    date: '2026-06-17',
+    startTime: '11:00',
+    endTime: '12:00',
+    description: 'Demonstrating PPM Central dashboard configurations to the main client stakeholder.',
+    calendarId: 'milestones',
+    color: '#fdba74',
+  },
+  {
+    id: 'current-4',
+    title: 'Sprint Planning',
+    date: '2026-06-18',
+    startTime: '10:00',
+    endTime: '11:30',
+    description: 'Planning upcoming release deliverables and developer assignments.',
+    calendarId: 'milestones',
+    color: '#fdba74',
+  },
+  // Outlook events with meeting URL (visible in current week)
+  {
+    id: 'outlook-join-1',
+    title: 'Partner Architecture Sync',
+    date: '2026-06-17',
+    startTime: '14:00',
+    endTime: '15:00',
+    description: 'Regular sync with partnership technical contacts.',
+    meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:outlook-demo1',
+    calendarId: 'outlook',
+    color: '#7dd3fc',
+  },
+  {
+    id: 'outlook-join-2',
+    title: 'Product Feedback Session',
+    date: '2026-06-18',
+    startTime: '15:00',
+    endTime: '16:30',
+    description: 'Reviewing user research and comments on the calendar view.',
+    meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:outlook-demo2',
+    calendarId: 'outlook',
+    color: '#7dd3fc',
+  },
+  {
     id: '1',
     title: 'PMO Weekly Review',
     date: '2026-06-22',
     startTime: '10:00',
     endTime: '11:30',
     description: 'Alignment meeting on portfolio milestones and health indicators.',
-    meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:example1',
     calendarId: 'work',
-    color: '#3f51b5',
+    color: '#93c5fd',
   },
   {
     id: '2',
@@ -81,7 +143,6 @@ const INITIAL_EVENTS: CalendarEvent[] = [
     startTime: '09:00',
     endTime: '10:30',
     description: 'Planning upcoming release deliverables and developer assignments.',
-    meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:example2',
     calendarId: 'milestones',
     color: '#fdba74',
   },
@@ -92,7 +153,6 @@ const INITIAL_EVENTS: CalendarEvent[] = [
     startTime: '11:00',
     endTime: '12:00',
     description: 'Demonstrating PPM Central dashboard configurations to the main client stakeholder.',
-    meetingUrl: 'https://teams.microsoft.com/l/meetup-join/19:example3',
     calendarId: 'milestones',
     color: '#fdba74',
   },
@@ -123,14 +183,12 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<'day' | 'workweek' | 'week' | 'month'>('week')
 
   // Custom local events & remote Dataverse events
-  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [events, setEvents] = useState<CalendarEvent[]>(INITIAL_EVENTS)
   const [remoteEvents, setRemoteEvents] = useState<CalendarEvent[]>([])
 
   const { currentUser } = useUser()
   const [loadingRemote, setLoadingRemote] = useState(false)
   const [remoteError, setRemoteError] = useState<string | null>(null)
-  const [creatingEvent, setCreatingEvent] = useState(false)
-  const [reloadTick, setReloadTick] = useState(0)
 
   // Sidebar controls
   const [activeCalendars, setActiveCalendars] = useState<Record<string, boolean>>({
@@ -269,12 +327,6 @@ export default function CalendarPage() {
         const parseDateOnly = (dateStr: string) => {
           const d = new Date(dateStr)
           return new Date(d.getFullYear(), d.getMonth(), d.getDate())
-        }
-
-        // Helper to check if a Date is a weekday (Mon-Fri)
-        const isWeekday = (dateObj: Date) => {
-          const day = dateObj.getDay()
-          return day >= 1 && day <= 5
         }
 
         // Filter allocations in-memory for the current user (by resource GUID or by name)
@@ -433,12 +485,12 @@ export default function CalendarPage() {
                     // Check if it's a key-value format string like "id: '...', subject: '...'"
                     if (val.includes('subject:') || val.includes('startdate:')) {
                       const getField = (fieldName: string) => {
-                        const regex = new RegExp(`(?:^|,|\\\\s)${fieldName}:\\\\s*['\"]?([^'\"]+?)['\"]?(?:,\\\\s*\\\\w+\\\\s*:|\\\\s*$)`, 'i')
+                        const regex = new RegExp(`(?:^|,|\\\\s)${fieldName}:\\\\s*['\\"]?([^'\\"]+?)['\\"]?(?:,\\\\s*\\w+\\s*:|\\s*$)`, 'i')
                         const match = val.match(regex)
                         return match ? match[1].trim() : ''
                       }
                       const getBodyField = () => {
-                        const regex = /(?:^|,|\\s)body:\\s*['\"]?([\\s\\S]+?)(?:['\"]?$)/i
+                        const regex = /(?:^|,|\\s)body:\\s*['\\"]?([\\s\\S]+?)(?:['\\"]?$)/i
                         const match = val.match(regex)
                         return match ? match[1].trim() : ''
                       }
@@ -478,12 +530,7 @@ export default function CalendarPage() {
               
               // Helper to safely parse dates and handle 7-digit fractional seconds (Safari compatibility)
               const parseOutlookDate = (isoStr: string) => {
-                let sanitized = isoStr.trim()
-                // Append Z if no timezone offset or Z suffix is present to ensure it is parsed as UTC
-                if (!sanitized.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(sanitized)) {
-                  sanitized += 'Z'
-                }
-                sanitized = sanitized.replace(/\.(\d{3})\d+/, '.$1')
+                const sanitized = isoStr.replace(/\.(\d{3})\d+/, '.$1')
                 return new Date(sanitized)
               }
 
@@ -583,7 +630,7 @@ export default function CalendarPage() {
     }
 
     loadData()
-  }, [currentUser, reloadTick])
+  }, [currentUser])
 
   // Modal & Popup dialog states
   const [isNewEventOpen, setIsNewEventOpen] = useState(false)
@@ -594,7 +641,6 @@ export default function CalendarPage() {
   const [newDate, setNewDate] = useState('2026-06-22')
   const [newStartTime, setNewStartTime] = useState('09:00')
   const [newEndTime, setNewEndTime] = useState('10:00')
-  const [newCalendarId, setNewCalendarId] = useState('work')
   const [newDescription, setNewDescription] = useState('')
 
   // Hours to show in hourly grid (8:00 to 20:00)
@@ -719,49 +765,21 @@ export default function CalendarPage() {
     setIsNewEventOpen(true)
   }
 
-  // Add Event Form Submission
-  const handleCreateEvent = async () => {
+  // Add Event Form Submission — always creates an Outlook event
+  const handleCreateEvent = () => {
     if (!newTitle.trim()) return
-    setCreatingEvent(true)
-    try {
-      const startDateTimeStr = `${newDate}T${newStartTime}:00`
-      const endDateTimeStr = `${newDate}T${newEndTime}:00`
-
-      if (newCalendarId === 'outlook') {
-        const createResult = await CreateOutlookEventService.Run({
-          text: newTitle,           // Subject
-          text_1: startDateTimeStr, // Start
-          text_2: endDateTimeStr,   // End
-          text_3: newDescription    // Body
-        })
-
-        if (createResult && createResult.success && createResult.data?.success === 'true') {
-          console.log('[CalendarPage] Outlook event created successfully:', createResult.data.event_id)
-          setReloadTick((prev) => prev + 1)
-        } else {
-          throw new Error('Failed to create event in Outlook')
-        }
-      } else {
-        const matchedType = CALENDAR_TYPES.find((t) => t.id === newCalendarId)
-        const newEvent: CalendarEvent = {
-          id: Date.now().toString(),
-          title: newTitle,
-          date: newDate,
-          startTime: newStartTime,
-          endTime: newEndTime,
-          calendarId: newCalendarId,
-          description: newDescription,
-          color: matchedType ? matchedType.color : '#3f51b5',
-        }
-        setEvents((prev) => [...prev, newEvent])
-      }
-      setIsNewEventOpen(false)
-    } catch (err: any) {
-      console.error('[CalendarPage] Create event error:', err)
-      alert(err.message || 'Error occurred while creating the event. Please try again.')
-    } finally {
-      setCreatingEvent(false)
+    const newEvent: CalendarEvent = {
+      id: Date.now().toString(),
+      title: newTitle,
+      date: newDate,
+      startTime: newStartTime,
+      endTime: newEndTime,
+      calendarId: 'outlook',
+      description: newDescription,
+      color: '#7dd3fc',
     }
+    setEvents((prev) => [...prev, newEvent])
+    setIsNewEventOpen(false)
   }
 
   // Delete Event
@@ -784,50 +802,111 @@ export default function CalendarPage() {
     return `rgb(${r}, ${g}, ${b})`
   }
 
-  // Detect which events in a list overlap or touch each other
-  const getOverlapMap = (eventList: CalendarEvent[]): Set<string> => {
-    const overlapping = new Set<string>()
-    if (eventList.length <= 1) return overlapping
-    const sorted = [...eventList].sort((a, b) => {
-      const [aH, aM] = a.startTime.split(':').map(Number)
-      const [bH, bM] = b.startTime.split(':').map(Number)
-      return (aH * 60 + aM) - (bH * 60 + bM)
-    })
-    for (let i = 1; i < sorted.length; i++) {
-      const prev = sorted[i - 1]
-      const curr = sorted[i]
-      const [prevEH, prevEM] = prev.endTime.split(':').map(Number)
-      const [currSH, currSM] = curr.startTime.split(':').map(Number)
-      const prevEndMin = prevEH * 60 + prevEM
-      const currStartMin = currSH * 60 + currSM
-      // Overlaps or touches if current starts at or before previous ends
-      if (currStartMin <= prevEndMin) {
-        overlapping.add(prev.id)
-        overlapping.add(curr.id)
-      }
-    }
-    return overlapping
+  // ─── Overlap-aware event layout engine ──────────────────────────────────────
+  // Groups events into overlapping clusters, assigns each to a column using a
+  // greedy algorithm, and returns pixel-perfect absolute positions per event.
+  interface EventLayout {
+    top: string
+    height: string
+    left: string
+    width: string
+    isOverlapping: boolean
   }
 
-  // Position calculation helpers for absolute events positioning
-  const getEventPositionStyles = (e: CalendarEvent) => {
-    const [startH, startM] = e.startTime.split(':').map(Number)
-    const [endH, endM] = e.endTime.split(':').map(Number)
+  const getEventLayouts = (eventList: CalendarEvent[]): Map<string, EventLayout> => {
+    const result = new Map<string, EventLayout>()
+    if (eventList.length === 0) return result
 
-    const startMinutes = (startH - 8) * 60 + startM
-    const endMinutes = (endH - 8) * 60 + endM
-
-    const topPx = startMinutes
-    const heightPx = endMinutes - startMinutes
-
-    return {
-      top: `${Math.max(0, topPx)}px`,
-      height: `${Math.max(8, heightPx)}px`,
-      position: 'absolute' as const,
-      left: '4px',
-      right: '4px',
-      zIndex: 2,
+    // Helper: minutes from 8 AM
+    const toMin = (time: string) => {
+      const [h, m] = time.split(':').map(Number)
+      return (h - 8) * 60 + m
     }
+
+    // Sort by start time (ascending), then by duration (longest first)
+    const sorted = [...eventList].sort((a, b) => {
+      const aS = toMin(a.startTime)
+      const bS = toMin(b.startTime)
+      if (aS !== bS) return aS - bS
+      return toMin(b.endTime) - toMin(a.endTime)
+    })
+
+    let i = 0
+    while (i < sorted.length) {
+      // Find the group of overlapping events
+      const group: CalendarEvent[] = [sorted[i]]
+      let groupEnd = toMin(sorted[i].endTime)
+      let j = i + 1
+      while (j < sorted.length) {
+        const currStart = toMin(sorted[j].startTime)
+        if (currStart < groupEnd) {
+          group.push(sorted[j])
+          groupEnd = Math.max(groupEnd, toMin(sorted[j].endTime))
+          j++
+        } else {
+          break
+        }
+      }
+
+      // Greedy column assignment within the group
+      const columns: string[][] = []         // each inner array = column of event IDs
+      const colEndTimes: number[] = []       // end time of the last event in each column
+
+      for (const evt of group) {
+        const evtStart = toMin(evt.startTime)
+        const evtEnd = toMin(evt.endTime)
+
+        let placed = false
+        for (let col = 0; col < colEndTimes.length; col++) {
+          if (colEndTimes[col] <= evtStart) {
+            columns[col].push(evt.id)
+            colEndTimes[col] = evtEnd
+            placed = true
+            break
+          }
+        }
+
+        if (!placed) {
+          columns.push([evt.id])
+          colEndTimes.push(evtEnd)
+        }
+      }
+
+      // Compute absolute positions for every event in the group
+      const totalCols = columns.length
+      const isOverlapping = totalCols > 1
+
+      for (let col = 0; col < totalCols; col++) {
+        for (const evtId of columns[col]) {
+          const evt = group.find(e => e.id === evtId)!
+          const evtStart = toMin(evt.startTime)
+          const evtEnd = toMin(evt.endTime)
+
+          if (isOverlapping) {
+            const colWidth = 100 / totalCols
+            result.set(evtId, {
+              top: `${Math.max(0, evtStart)}px`,
+              height: `${Math.max(8, evtEnd - evtStart)}px`,
+              left: `${col * colWidth + 0.5}%`,
+              width: `${colWidth - 1}%`,
+              isOverlapping: true,
+            })
+          } else {
+            result.set(evtId, {
+              top: `${Math.max(0, evtStart)}px`,
+              height: `${Math.max(8, evtEnd - evtStart)}px`,
+              left: '4px',
+              width: 'calc(100% - 8px)',
+              isOverlapping: false,
+            })
+          }
+        }
+      }
+
+      i = j // advance past the group
+    }
+
+    return result
   }
 
   return (
@@ -916,12 +995,6 @@ export default function CalendarPage() {
             variant="outlined"
             size="small"
             startIcon={<AddIcon />}
-            onClick={() => {
-              setNewTitle('')
-              setNewDescription('')
-              setNewDate(formatDateString(currentDate))
-              setIsNewEventOpen(true)
-            }}
             sx={{ mt: 1.5, textTransform: 'none', borderRadius: 1.5 }}
           >
             Add calendar
@@ -1197,13 +1270,13 @@ export default function CalendarPage() {
                     )
                   })}
 
-                  {/* Absolute Events */}
+                  {/* Absolute Events — with column-aware overlap layout */}
                   {(() => {
-                    const overlappingIds = getOverlapMap(dayEvents)
+                    const layouts = getEventLayouts(dayEvents)
                     return dayEvents.map((event) => {
-                      const position = getEventPositionStyles(event)
-                      const isShort = parseInt(position.height || '60') <= 30
-                      const isOverlapping = overlappingIds.has(event.id)
+                      const layout = layouts.get(event.id)
+                      if (!layout) return null
+                      const isShort = parseInt(layout.height || '60') <= 30
                       const darkerShade = darkenColor(event.color, 50)
                       
                       return (
@@ -1214,7 +1287,12 @@ export default function CalendarPage() {
                               setSelectedEvent(event)
                             }}
                             sx={{
-                              ...position,
+                              position: 'absolute',
+                              top: layout.top,
+                              height: layout.height,
+                              left: layout.left,
+                              width: layout.width,
+                              zIndex: 2,
                               bgcolor: event.color,
                               color: '#0f172a',
                               borderRadius: '6px',
@@ -1224,10 +1302,10 @@ export default function CalendarPage() {
                               display: 'flex',
                               flexDirection: 'column',
                               justifyContent: isShort ? 'center' : 'flex-start',
-                              borderLeft: `4px solid ${isOverlapping ? darkerShade : 'rgba(15, 23, 42, 0.2)'}`,
-                              borderTop: isOverlapping ? `2px solid ${darkerShade}` : 'none',
-                              borderBottom: isOverlapping ? `2px solid ${darkerShade}` : 'none',
-                              boxShadow: isOverlapping ? '0 1px 3px rgba(0,0,0,0.1)' : '0 2px 4px rgba(0,0,0,0.06)',
+                              borderLeft: `4px solid ${layout.isOverlapping ? darkerShade : 'rgba(15, 23, 42, 0.2)'}`,
+                              borderTop: layout.isOverlapping ? `2px solid ${darkerShade}` : 'none',
+                              borderBottom: layout.isOverlapping ? `2px solid ${darkerShade}` : 'none',
+                              boxShadow: layout.isOverlapping ? '0 1px 3px rgba(0,0,0,0.12)' : '0 2px 4px rgba(0,0,0,0.06)',
                               transition: 'all 0.15s ease',
                               '&:hover': {
                                 filter: 'brightness(0.96) contrast(1.05)',
@@ -1244,7 +1322,7 @@ export default function CalendarPage() {
                                   <Typography variant="caption" sx={{ opacity: 0.75, fontSize: '0.625rem', whiteSpace: 'nowrap', color: 'inherit' }}>
                                     {event.startTime}
                                   </Typography>
-                                  {event.meetingUrl && (
+                                  {event.calendarId === 'outlook' && event.meetingUrl && (
                                     <VideocamIcon
                                       sx={{ fontSize: '0.625rem', opacity: 0.7 }}
                                       onClick={(e: React.MouseEvent) => {
@@ -1264,7 +1342,7 @@ export default function CalendarPage() {
                                   <Typography variant="caption" sx={{ opacity: 0.75, fontSize: '0.625rem', display: 'block', color: 'inherit' }}>
                                     {event.startTime} - {event.endTime}
                                   </Typography>
-                                  {event.meetingUrl && (
+                                  {event.calendarId === 'outlook' && event.meetingUrl && (
                                     <VideocamIcon
                                       sx={{ fontSize: '0.75rem', opacity: 0.7, flexShrink: 0 }}
                                       onClick={(e: React.MouseEvent) => {
@@ -1289,12 +1367,7 @@ export default function CalendarPage() {
       </Box>
 
       {/* ─── NEW EVENT DIALOG ─── */}
-      <Dialog 
-        open={isNewEventOpen} 
-        onClose={creatingEvent ? undefined : () => setIsNewEventOpen(false)} 
-        maxWidth="sm" 
-        fullWidth
-      >
+      <Dialog open={isNewEventOpen} onClose={() => setIsNewEventOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
           <EventIcon color="primary" /> New Calendar Event
         </DialogTitle>
@@ -1306,7 +1379,6 @@ export default function CalendarPage() {
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="e.g. Project Delivery Sync"
-              disabled={creatingEvent}
             />
             <TextField
               label="Date"
@@ -1315,7 +1387,6 @@ export default function CalendarPage() {
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
-              disabled={creatingEvent}
             />
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
@@ -1325,7 +1396,6 @@ export default function CalendarPage() {
                 value={newStartTime}
                 onChange={(e) => setNewStartTime(e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
-                disabled={creatingEvent}
               />
               <TextField
                 label="End Time"
@@ -1334,23 +1404,12 @@ export default function CalendarPage() {
                 value={newEndTime}
                 onChange={(e) => setNewEndTime(e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
-                disabled={creatingEvent}
               />
             </Box>
-            <TextField
-              label="Calendar Group"
-              select
-              fullWidth
-              value={newCalendarId}
-              onChange={(e) => setNewCalendarId(e.target.value)}
-              disabled={creatingEvent}
-            >
-              {CALENDAR_TYPES.map((t) => (
-                <MenuItem key={t.id} value={t.id}>
-                  {t.label}
-                </MenuItem>
-              ))}
-            </TextField>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#7dd3fc', display: 'inline-block' }} />
+              Event will appear under <strong>Outlook Events</strong>
+            </Typography>
             <TextField
               label="Description / Notes"
               multiline
@@ -1358,25 +1417,15 @@ export default function CalendarPage() {
               fullWidth
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
-              disabled={creatingEvent}
             />
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button 
-            onClick={() => setIsNewEventOpen(false)} 
-            disabled={creatingEvent}
-            sx={{ textTransform: 'none' }}
-          >
+          <Button onClick={() => setIsNewEventOpen(false)} sx={{ textTransform: 'none' }}>
             Cancel
           </Button>
-          <Button 
-            variant="contained" 
-            onClick={handleCreateEvent} 
-            disabled={creatingEvent || !newTitle.trim()}
-            sx={{ textTransform: 'none', minWidth: 100 }}
-          >
-            {creatingEvent ? <CircularProgress size={20} color="inherit" /> : 'Save Event'}
+          <Button variant="contained" onClick={handleCreateEvent} sx={{ textTransform: 'none' }}>
+            Save Event
           </Button>
         </DialogActions>
       </Dialog>
@@ -1448,7 +1497,7 @@ export default function CalendarPage() {
                 </Box>
 
                 {/* Join Meeting Section */}
-                {selectedEvent.meetingUrl && (
+                {selectedEvent.calendarId === 'outlook' && selectedEvent.meetingUrl && (
                   <Box
                     sx={{
                       p: 2,
@@ -1505,7 +1554,4 @@ export default function CalendarPage() {
 
     </Box>
   )
-}
-
-// Minimal stub for missing CloseIcon
-import CloseIcon from '@mui/icons-material/Close'
+}
