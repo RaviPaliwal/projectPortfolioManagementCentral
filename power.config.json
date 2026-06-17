@@ -71,6 +71,21 @@
           "shared_office365": "979042e1-9a63-4d18-acc4-e61cc3535a6b"
         }
       }
+    },
+    "9d99eb99-3878-43b5-bf7e-294f8d7df12c": {
+      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+      "displayName": "Logic flows",
+      "dataSources": [
+        "createoutlookevent"
+      ],
+      "workflowDetails": {
+        "workflowEntityId": "032f6a5f-2a6a-f111-ab0d-6045bd56f0ba",
+        "workflowDisplayName": "Create Outlook Event",
+        "workflowName": "f9c206ec-fcf1-0341-1858-a2b6361c178c",
+        "dependencies": {
+          "shared_office365": "979042e1-9a63-4d18-acc4-e61cc3535a6b"
+        }
+      }
     }
   },
   "databaseReferences": {

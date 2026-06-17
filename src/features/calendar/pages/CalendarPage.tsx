@@ -36,6 +36,7 @@ import {
   Pm_projecttasksService,
   Pm_projectsService,
   GetOutlookEventsService,
+  CreateOutlookEventService,
 } from '@/generated'
 import { unwrapList, normalizeLookupId, parseDataverseError } from '@/services'
 
@@ -128,6 +129,8 @@ export default function CalendarPage() {
   const { currentUser } = useUser()
   const [loadingRemote, setLoadingRemote] = useState(false)
   const [remoteError, setRemoteError] = useState<string | null>(null)
+  const [creatingEvent, setCreatingEvent] = useState(false)
+  const [reloadTick, setReloadTick] = useState(0)
 
   // Sidebar controls
   const [activeCalendars, setActiveCalendars] = useState<Record<string, boolean>>({
@@ -475,7 +478,12 @@ export default function CalendarPage() {
               
               // Helper to safely parse dates and handle 7-digit fractional seconds (Safari compatibility)
               const parseOutlookDate = (isoStr: string) => {
-                const sanitized = isoStr.replace(/\.(\d{3})\d+/, '.$1')
+                let sanitized = isoStr.trim()
+                // Append Z if no timezone offset or Z suffix is present to ensure it is parsed as UTC
+                if (!sanitized.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(sanitized)) {
+                  sanitized += 'Z'
+                }
+                sanitized = sanitized.replace(/\.(\d{3})\d+/, '.$1')
                 return new Date(sanitized)
               }
 
@@ -575,7 +583,7 @@ export default function CalendarPage() {
     }
 
     loadData()
-  }, [currentUser])
+  }, [currentUser, reloadTick])
 
   // Modal & Popup dialog states
   const [isNewEventOpen, setIsNewEventOpen] = useState(false)
@@ -712,21 +720,48 @@ export default function CalendarPage() {
   }
 
   // Add Event Form Submission
-  const handleCreateEvent = () => {
+  const handleCreateEvent = async () => {
     if (!newTitle.trim()) return
-    const matchedType = CALENDAR_TYPES.find((t) => t.id === newCalendarId)
-    const newEvent: CalendarEvent = {
-      id: Date.now().toString(),
-      title: newTitle,
-      date: newDate,
-      startTime: newStartTime,
-      endTime: newEndTime,
-      calendarId: newCalendarId,
-      description: newDescription,
-      color: matchedType ? matchedType.color : '#3f51b5',
+    setCreatingEvent(true)
+    try {
+      const startDateTimeStr = `${newDate}T${newStartTime}:00`
+      const endDateTimeStr = `${newDate}T${newEndTime}:00`
+
+      if (newCalendarId === 'outlook') {
+        const createResult = await CreateOutlookEventService.Run({
+          text: newTitle,           // Subject
+          text_1: startDateTimeStr, // Start
+          text_2: endDateTimeStr,   // End
+          text_3: newDescription    // Body
+        })
+
+        if (createResult && createResult.success && createResult.data?.success === 'true') {
+          console.log('[CalendarPage] Outlook event created successfully:', createResult.data.event_id)
+          setReloadTick((prev) => prev + 1)
+        } else {
+          throw new Error('Failed to create event in Outlook')
+        }
+      } else {
+        const matchedType = CALENDAR_TYPES.find((t) => t.id === newCalendarId)
+        const newEvent: CalendarEvent = {
+          id: Date.now().toString(),
+          title: newTitle,
+          date: newDate,
+          startTime: newStartTime,
+          endTime: newEndTime,
+          calendarId: newCalendarId,
+          description: newDescription,
+          color: matchedType ? matchedType.color : '#3f51b5',
+        }
+        setEvents((prev) => [...prev, newEvent])
+      }
+      setIsNewEventOpen(false)
+    } catch (err: any) {
+      console.error('[CalendarPage] Create event error:', err)
+      alert(err.message || 'Error occurred while creating the event. Please try again.')
+    } finally {
+      setCreatingEvent(false)
     }
-    setEvents((prev) => [...prev, newEvent])
-    setIsNewEventOpen(false)
   }
 
   // Delete Event
@@ -881,6 +916,12 @@ export default function CalendarPage() {
             variant="outlined"
             size="small"
             startIcon={<AddIcon />}
+            onClick={() => {
+              setNewTitle('')
+              setNewDescription('')
+              setNewDate(formatDateString(currentDate))
+              setIsNewEventOpen(true)
+            }}
             sx={{ mt: 1.5, textTransform: 'none', borderRadius: 1.5 }}
           >
             Add calendar
@@ -1248,7 +1289,12 @@ export default function CalendarPage() {
       </Box>
 
       {/* ─── NEW EVENT DIALOG ─── */}
-      <Dialog open={isNewEventOpen} onClose={() => setIsNewEventOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={isNewEventOpen} 
+        onClose={creatingEvent ? undefined : () => setIsNewEventOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+      >
         <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
           <EventIcon color="primary" /> New Calendar Event
         </DialogTitle>
@@ -1260,6 +1306,7 @@ export default function CalendarPage() {
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="e.g. Project Delivery Sync"
+              disabled={creatingEvent}
             />
             <TextField
               label="Date"
@@ -1268,6 +1315,7 @@ export default function CalendarPage() {
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
+              disabled={creatingEvent}
             />
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
@@ -1277,6 +1325,7 @@ export default function CalendarPage() {
                 value={newStartTime}
                 onChange={(e) => setNewStartTime(e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
+                disabled={creatingEvent}
               />
               <TextField
                 label="End Time"
@@ -1285,6 +1334,7 @@ export default function CalendarPage() {
                 value={newEndTime}
                 onChange={(e) => setNewEndTime(e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
+                disabled={creatingEvent}
               />
             </Box>
             <TextField
@@ -1293,6 +1343,7 @@ export default function CalendarPage() {
               fullWidth
               value={newCalendarId}
               onChange={(e) => setNewCalendarId(e.target.value)}
+              disabled={creatingEvent}
             >
               {CALENDAR_TYPES.map((t) => (
                 <MenuItem key={t.id} value={t.id}>
@@ -1307,15 +1358,25 @@ export default function CalendarPage() {
               fullWidth
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
+              disabled={creatingEvent}
             />
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={() => setIsNewEventOpen(false)} sx={{ textTransform: 'none' }}>
+          <Button 
+            onClick={() => setIsNewEventOpen(false)} 
+            disabled={creatingEvent}
+            sx={{ textTransform: 'none' }}
+          >
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleCreateEvent} sx={{ textTransform: 'none' }}>
-            Save Event
+          <Button 
+            variant="contained" 
+            onClick={handleCreateEvent} 
+            disabled={creatingEvent || !newTitle.trim()}
+            sx={{ textTransform: 'none', minWidth: 100 }}
+          >
+            {creatingEvent ? <CircularProgress size={20} color="inherit" /> : 'Save Event'}
           </Button>
         </DialogActions>
       </Dialog>
