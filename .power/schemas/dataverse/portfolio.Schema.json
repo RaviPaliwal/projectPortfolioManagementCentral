@@ -338,13 +338,16 @@
           "x-ms-schema-name": "pm_portfoliostatus",
           "enum": [
             "Active",
-            "On Hold"
+            "Under Approval",
+            "Rejected"
           ],
           "x-ms-enum-values": [
             0,
-            1
+            1,
+            2
           ],
           "Color": [
+            null,
             null,
             null
           ],

@@ -356,14 +356,17 @@
           "enum": [
             "Delivery",
             "Planning",
-            "Initiation"
+            "Initiation",
+            "Under Approval"
           ],
           "x-ms-enum-values": [
             0,
             1,
-            2
+            2,
+            3
           ],
           "Color": [
+            null,
             null,
             null,
             null

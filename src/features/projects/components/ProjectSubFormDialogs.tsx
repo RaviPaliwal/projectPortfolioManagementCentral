@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -10,7 +10,17 @@ import {
   Button,
   Box,
   Typography,
+  Chip,
+  Paper,
+  Alert,
+  AlertTitle,
+  LinearProgress,
 } from '@mui/material'
+import HowToRegIcon from '@mui/icons-material/HowToReg'
+import FactCheckIcon from '@mui/icons-material/FactCheck'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter'
 import {
   createProjectMilestone,
   createRisk,
@@ -21,7 +31,10 @@ import {
   createProjectTask,
   startWorkflowForEntity,
   GovernanceReadinessService,
-  updateResourceAllocation
+  updateResourceAllocation,
+  fetchResourceById,
+  fetchResourceAllocations,
+  fetchProjectsFull,
 } from '@/services'
 import { DynamicFormDialog } from '@/components/common'
 import type { FormField } from '@/components/common'
@@ -112,44 +125,188 @@ export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId
   return <DynamicFormDialog open={open} title="Log Issue" fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText="Log Issue" />
 }
 
+function countWorkingDays(start: string, end: string): number {
+  if (!start || !end) return 0
+  const s = new Date(start)
+  const e = new Date(end)
+  if (isNaN(s.getTime()) || isNaN(e.getTime()) || s > e) return 0
+  let count = 0
+  const cur = new Date(s)
+  while (cur <= e) {
+    const day = cur.getDay()
+    if (day !== 0 && day !== 6) count++
+    cur.setDate(cur.getDate() + 1)
+  }
+  return count
+}
+
+function parseISODate(str: string): string {
+  if (!str) return ''
+  const d = new Date(str)
+  return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10)
+}
+
 export const ResourceDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
   const [resources, setResources] = useState<any[]>([])
+  const [form, setForm] = useState({ pm_resourceId: '', pm_allocatedhours: 0, pm_assignmentrole: '', pm_startdate: '', pm_enddate: '' })
+  const [resourceCache, setResourceCache] = useState<Record<string, any>>({})
+  const [allAllocations, setAllAllocations] = useState<any[]>([])
+  const [projectNames, setProjectNames] = useState<Record<string, string>>({})
+  const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  const roleOptions = useMemo(() => {
+    const roles = new Set<string>()
+    resources.forEach((r) => { if (r.pm_primaryrole) roles.add(r.pm_primaryrole) })
+    return Array.from(roles).sort()
+  }, [resources])
 
   useEffect(() => {
-    if (open && !initialData) {
-      import('@/services').then(({ fetchResources }) => {
-        fetchResources().then(setResources).catch(() => {})
-      })
+    if (open) {
+      ;(async () => {
+        setLoading(true)
+        try {
+          const { fetchResources } = await import('@/services')
+          const list = await fetchResources()
+          setResources(list)
+
+          if (initialData) {
+            const editingResourceId = initialData._pm_resource_value || initialData.pm_resourceId || ''
+            setForm({
+              pm_resourceId: editingResourceId,
+              pm_allocatedhours: Number(initialData.pm_allocatedhours) || 0,
+              pm_assignmentrole: initialData.pm_assignmentrole || '',
+              pm_startdate: parseISODate(initialData.pm_startdate),
+              pm_enddate: parseISODate(initialData.pm_enddate),
+            })
+            if (editingResourceId) {
+              const [res, allocs] = await Promise.all([
+                fetchResourceById(editingResourceId),
+                fetchResourceAllocations(editingResourceId),
+              ])
+              if (res) setResourceCache((c) => ({ ...c, [editingResourceId]: res }))
+              setAllAllocations(allocs)
+              resolveProjectNames(allocs)
+            }
+          } else {
+            setForm({ pm_resourceId: '', pm_allocatedhours: 0, pm_assignmentrole: '', pm_startdate: '', pm_enddate: '' })
+            setResourceCache({})
+            setAllAllocations([])
+          }
+        } catch { /* ignore */ }
+        setLoading(false)
+      })()
     }
   }, [open, initialData])
 
-  const fields: FormField[] = [
-    { 
-      name: 'pm_resourceId', 
-      label: 'Resource', 
-      type: 'select', 
-      required: true, 
-      disabled: !!initialData,
-      options: resources.map(r => ({ value: r.pm_resourceid, label: r.pm_fullname }))
-    },
-    { name: 'pm_allocatedhours', label: 'Allocated hours', type: 'number', defaultValue: 40, gridSize: 6 },
-    { name: 'pm_assignmentrole', label: 'Role', type: 'text', gridSize: 6 },
-    { name: 'pm_startdate', label: 'Start date', type: 'date', gridSize: 6 },
-    { name: 'pm_enddate', label: 'End date', type: 'date', gridSize: 6 }
-  ]
+  const resolveProjectNames = useCallback(async (allocations: any[]) => {
+    const ids = Array.from(new Set(
+      allocations.map((a) => a._pm_project_value).filter(Boolean)
+    )) as string[]
+    if (ids.length === 0) return
+    try {
+      const projects = await fetchProjectsFull()
+      const map: Record<string, string> = {}
+      projects.forEach((p: any) => {
+        if (p.pm_projectid) map[p.pm_projectid] = p.pm_projectname || 'Unknown Project'
+      })
+      setProjectNames(map)
+    } catch { /* ignore */ }
+  }, [])
 
-  const handleSubmit = async (data: Record<string, any>) => {
+  const handleRoleChange = useCallback((role: string) => {
+    setForm((f) => {
+      const currentResource = f.pm_resourceId ? resourceCache[f.pm_resourceId] : null
+      if (currentResource && currentResource.pm_primaryrole !== role) {
+        setAllAllocations([])
+        return { ...f, pm_assignmentrole: role, pm_resourceId: '' }
+      }
+      return { ...f, pm_assignmentrole: role }
+    })
+  }, [resourceCache])
+
+  const handleResourceChange = useCallback(async (resourceId: string) => {
+    setForm((f) => ({ ...f, pm_resourceId: resourceId }))
+    if (!resourceId) { setAllAllocations([]); setProjectNames({}); return }
+    if (!resourceCache[resourceId]) {
+      try {
+        const [res, allocs] = await Promise.all([
+          fetchResourceById(resourceId),
+          fetchResourceAllocations(resourceId),
+        ])
+        if (res) setResourceCache((c) => ({ ...c, [resourceId]: res }))
+        setAllAllocations(allocs)
+        resolveProjectNames(allocs)
+      } catch { /* ignore */ }
+    } else {
+      try {
+        const allocs = await fetchResourceAllocations(resourceId)
+        setAllAllocations(allocs)
+        resolveProjectNames(allocs)
+      } catch { /* ignore */ }
+    }
+  }, [resourceCache, resolveProjectNames])
+
+  const filteredResources = useMemo(() => {
+    if (!form.pm_assignmentrole) return resources
+    return resources.filter((r) => r.pm_primaryrole === form.pm_assignmentrole)
+  }, [resources, form.pm_assignmentrole])
+
+  const selectedResource = form.pm_resourceId ? resourceCache[form.pm_resourceId] : null
+  const dailyCapacity = selectedResource?.pm_dailyworkcapacity ?? 0
+
+  const workingDays = useMemo(() => countWorkingDays(form.pm_startdate, form.pm_enddate), [form.pm_startdate, form.pm_enddate])
+
+  const totalCapacity = dailyCapacity * workingDays
+
+  const overlappingHours = useMemo(() => {
+    if (!form.pm_startdate || !form.pm_enddate || !allAllocations.length) return 0
+    const s = new Date(form.pm_startdate)
+    const e = new Date(form.pm_enddate)
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0
+    let sum = 0
+    for (const alloc of allAllocations) {
+      if (Number(alloc.pm_assignmentstatus) === 1) continue
+      if (initialData?.pm_resourceallocationid && alloc.pm_resourceallocationid === initialData.pm_resourceallocationid) continue
+      const aStart = new Date(alloc.pm_startdate)
+      const aEnd = new Date(alloc.pm_enddate)
+      if (isNaN(aStart.getTime()) || isNaN(aEnd.getTime())) continue
+      if (aStart <= e && aEnd >= s) {
+        sum += Number(alloc.pm_allocatedhours) || 0
+      }
+    }
+    return sum
+  }, [form.pm_startdate, form.pm_enddate, allAllocations, initialData])
+
+  const availableHours = Math.max(0, totalCapacity - overlappingHours)
+  const allocationPercentage = totalCapacity > 0 ? Math.min(100, Math.round((form.pm_allocatedhours / totalCapacity) * 100)) : 0
+  const exceedsAvailable = form.pm_allocatedhours > availableHours && workingDays > 0
+
+  const isFormValid = form.pm_resourceId && form.pm_assignmentrole && form.pm_allocatedhours > 0 && form.pm_startdate && form.pm_enddate && !exceedsAvailable
+
+  const handleSubmit = async () => {
+    if (!isFormValid || submitting) return
+    setSubmitting(true)
     try {
       if (initialData?.pm_resourceallocationid) {
         await updateResourceAllocation(initialData.pm_resourceallocationid, {
-          pm_allocatedhours: Number(data.pm_allocatedhours) || 0,
-          pm_assignmentrole: data.pm_assignmentrole || '',
-          pm_startdate: data.pm_startdate || '',
-          pm_enddate: data.pm_enddate || ''
+          pm_allocatedhours: Number(form.pm_allocatedhours) || 0,
+          pm_assignmentrole: form.pm_assignmentrole || '',
+          pm_startdate: form.pm_startdate || '',
+          pm_enddate: form.pm_enddate || '',
+          pm_allocationpercentage: allocationPercentage,
         })
         onSuccess('Resource allocation updated successfully.')
       } else {
-        const created = await assignResource({ pm_projectid: projectId, pm_resourceid: data.pm_resourceId, pm_allocatedhours: Number(data.pm_allocatedhours) || 0, pm_assignmentrole: data.pm_assignmentrole || '', pm_startdate: data.pm_startdate || '', pm_enddate: data.pm_enddate || '' })
+        const created = await assignResource({
+          pm_projectid: projectId,
+          pm_resourceid: form.pm_resourceId,
+          pm_allocatedhours: Number(form.pm_allocatedhours) || 0,
+          pm_assignmentrole: form.pm_assignmentrole || '',
+          pm_startdate: form.pm_startdate || '',
+          pm_enddate: form.pm_enddate || '',
+          pm_allocationpercentage: allocationPercentage,
+        })
         if (created?.pm_resourceallocationid) {
           try {
             await startWorkflowForEntity('default-template', created.pm_resourceallocationid, MODULE_NAMES.RESOURCES.value, 'System')
@@ -163,9 +320,170 @@ export const ResourceDialog: React.FC<SubDialogProps> = ({ open, onClose, projec
     } catch {
       onError(initialData ? 'Unable to update resource allocation.' : 'Unable to assign resource.')
     }
+    setSubmitting(false)
   }
 
-  return <DynamicFormDialog open={open} title={initialData ? "Edit Resource Allocation" : "Assign Resource"} fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText={initialData ? "Save Changes" : "Assign"} initialData={initialData} />
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ fontWeight: 800, pb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <PersonAddIcon color="primary" />
+        {initialData ? 'Edit Resource Allocation' : 'Assign Resource'}
+      </DialogTitle>
+      {loading && <LinearProgress />}
+      <DialogContent>
+        <Grid container spacing={2.5} sx={{ mt: 0.5 }}>
+          <Grid size={{ xs: 6 }}>
+            <TextField fullWidth type="date" required label="Start date"
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={form.pm_startdate}
+              onChange={(e) => setForm((f) => ({ ...f, pm_startdate: e.target.value }))}
+            />
+          </Grid>
+          <Grid size={{ xs: 6 }}>
+            <TextField fullWidth type="date" required label="End date"
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={form.pm_enddate}
+              onChange={(e) => setForm((f) => ({ ...f, pm_enddate: e.target.value }))}
+            />
+          </Grid>
+          <Grid size={{ xs: 6 }}>
+            <TextField select fullWidth label="Role"
+              value={form.pm_assignmentrole}
+              onChange={(e) => handleRoleChange(e.target.value)}
+            >
+              <MenuItem value="">— Select role —</MenuItem>
+              {roleOptions.map((role) => (
+                <MenuItem key={role} value={role}>{role}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid size={{ xs: 6 }}>
+            <TextField select fullWidth required label="Resource"
+              value={form.pm_resourceId}
+              disabled={!!initialData}
+              onChange={(e) => handleResourceChange(e.target.value)}
+            >
+              {filteredResources.length === 0 && (
+                <MenuItem disabled value="">No resources with this role</MenuItem>
+              )}
+              {filteredResources.map((r) => (
+                <MenuItem key={r.pm_resourceid} value={r.pm_resourceid}>{r.pm_fullname}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid size={{ xs: 6 }}>
+            <TextField fullWidth type="number" required label="Allocated hours"
+              value={form.pm_allocatedhours || ''}
+              placeholder="Enter hours"
+              slotProps={{ htmlInput: { min: 0 } }}
+              onChange={(e) => setForm((f) => ({ ...f, pm_allocatedhours: Number(e.target.value) || 0 }))}
+              error={exceedsAvailable}
+              helperText={exceedsAvailable ? `Exceeds available hours (${availableHours})` : ' '}
+            />
+          </Grid>
+
+          {form.pm_resourceId && form.pm_startdate && form.pm_enddate && (
+            <Grid size={{ xs: 12 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: 'action.hover' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <FactCheckIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  Resource Availability
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">Daily capacity</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{dailyCapacity}h</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">Working days in range</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{workingDays}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">Total capacity</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{totalCapacity}h</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">Already allocated (overlapping)</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: overlappingHours > 0 ? 'warning.main' : 'inherit' }}>-{overlappingHours}h</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">Allocation percentage</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{allocationPercentage}%</Typography>
+                  </Box>
+                  <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 0.75, display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Available hours</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: availableHours > 0 ? 'success.main' : 'error.main' }}>
+                      {availableHours}h
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+          )}
+
+          {exceedsAvailable && (
+            <Grid size={{ xs: 12 }}>
+              <Alert severity="warning" icon={<WarningAmberIcon />}>
+                <AlertTitle>Insufficient availability</AlertTitle>
+                This resource only has <strong>{availableHours}h</strong> available in the selected period. Reduce allocated hours or adjust the date range.
+              </Alert>
+            </Grid>
+          )}
+
+          {form.pm_resourceId && allAllocations.length > 0 && (
+            <Grid size={{ xs: 12 }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: 'action.hover' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <BusinessCenterIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  Current Allocations
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {allAllocations.filter((a) => {
+                    if (Number(a.pm_assignmentstatus) === 1) return false
+                    if (initialData?.pm_resourceallocationid && a.pm_resourceallocationid === initialData.pm_resourceallocationid) return false
+                    return true
+                  }).length === 0 ? (
+                    <Typography variant="caption" color="text.secondary">No active allocations for this resource.</Typography>
+                  ) : (
+                    allAllocations.filter((a) => {
+                      if (Number(a.pm_assignmentstatus) === 1) return false
+                      if (initialData?.pm_resourceallocationid && a.pm_resourceallocationid === initialData.pm_resourceallocationid) return false
+                      return true
+                    }).map((alloc) => (
+                      <Box key={alloc.pm_resourceallocationid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.5, px: 1, bgcolor: 'background.paper', borderRadius: 1 }}>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {projectNames[alloc._pm_project_value] || 'Loading...'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {alloc.pm_startdate ? new Date(alloc.pm_startdate).toLocaleDateString() : '—'} — {alloc.pm_enddate ? new Date(alloc.pm_enddate).toLocaleDateString() : '—'}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                          {Number(alloc.pm_allocatedhours) || 0}h
+                        </Typography>
+                      </Box>
+                    ))
+                  )}
+                </Box>
+              </Paper>
+            </Grid>
+          )}
+        </Grid>
+      </DialogContent>
+      <DialogActions sx={{ p: 2.5, pt: 0 }}>
+        <Button onClick={onClose} variant="outlined" color="inherit">Cancel</Button>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={!isFormValid || submitting || loading}
+          startIcon={<PersonAddIcon />}
+        >
+          {submitting ? 'Saving...' : initialData ? 'Save Changes' : 'Assign'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
 }
 
 export const BudgetDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
@@ -253,7 +571,7 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
 // GateReviewDialog is kept largely intact because it requires a custom Readiness Check UI
 // which is beyond the scope of a standard simple form.
 export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
-  const [form, setForm] = useState({ pm_gatename: '', pm_gatestage: 0, pm_plannedreviewdate: '', pm_documentsurl: '', pm_leadreviewer: '' })
+  const [form, setForm] = useState({ pm_gatename: '', pm_gatestage: 0, pm_plannedreviewdate: '' })
   const [readiness, setReadiness] = useState<any>(null)
   const [checking, setChecking] = useState(false)
 
@@ -294,7 +612,7 @@ export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, proj
         }
       }
 
-      setForm({ pm_gatename: '', pm_gatestage: 0, pm_plannedreviewdate: '', pm_documentsurl: '', pm_leadreviewer: '' })
+      setForm({ pm_gatename: '', pm_gatestage: 0, pm_plannedreviewdate: '' })
       onSuccess('Gate review scheduled successfully and workflow initiated.')
       onClose()
     } catch {
@@ -302,19 +620,34 @@ export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, proj
     }
   }
 
+  const stageLabel = ['Gate 1 (Initiation)', 'Gate 2 (Planning)', 'Gate 3 (Execution)', 'Gate 4 (Closure)'][form.pm_gatestage] || ''
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>Submit for Gate Review</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 800, pb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <HowToRegIcon color="success" />
+        Submit for Gate Review
+      </DialogTitle>
+      <Typography variant="caption" color="text.secondary" sx={{ px: 3, pb: 1 }}>
+        Schedule a formal governance review for this project.
+      </Typography>
       <DialogContent>
-        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+        <Grid container spacing={2.5} sx={{ mt: 0.5 }}>
           <Grid size={{ xs: 12 }}>
-            <TextField fullWidth label="Gate name *" value={form.pm_gatename}
-              onChange={(e) => setForm((f) => ({ ...f, pm_gatename: e.target.value }))} 
-              placeholder="e.g. Gate 1: Concept Approval" />
+            <TextField
+              fullWidth
+              label="Gate name *"
+              value={form.pm_gatename}
+              onChange={(e) => setForm((f) => ({ ...f, pm_gatename: e.target.value }))}
+              placeholder="e.g. Gate 1: Concept Approval"
+            />
           </Grid>
           <Grid size={{ xs: 6 }}>
             <TextField select fullWidth label="Gate stage" value={form.pm_gatestage}
-              onChange={(e) => setForm((f) => ({ ...f, pm_gatestage: Number(e.target.value) }))}>
+              onChange={(e) => {
+                setForm((f) => ({ ...f, pm_gatestage: Number(e.target.value) }))
+                checkReadiness(Number(e.target.value))
+              }}>
               <MenuItem value={0}>Gate 1 (Initiation)</MenuItem>
               <MenuItem value={1}>Gate 2 (Planning)</MenuItem>
               <MenuItem value={2}>Gate 3 (Execution)</MenuItem>
@@ -325,36 +658,57 @@ export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, proj
             <TextField fullWidth type="date" slotProps={{ inputLabel: { shrink: true } }} label="Planned review date"
               value={form.pm_plannedreviewdate} onChange={(e) => setForm((f) => ({ ...f, pm_plannedreviewdate: e.target.value }))} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField fullWidth label="Lead reviewer" value={form.pm_leadreviewer}
-              onChange={(e) => setForm((f) => ({ ...f, pm_leadreviewer: e.target.value }))} />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField fullWidth label="Documentation URL" value={form.pm_documentsurl}
-              onChange={(e) => setForm((f) => ({ ...f, pm_documentsurl: e.target.value }))}
-              placeholder="Link to SharePoint or Teams folder" />
-          </Grid>
 
           <Grid size={{ xs: 12 }}>
-            <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Governance Readiness Check</Typography>
-                {checking && <Typography variant="caption" color="text.secondary">Checking...</Typography>}
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                borderRadius: 1.5,
+                borderLeft: 3,
+                borderLeftColor: !readiness ? 'divider' : readiness.isReady ? 'success.main' : 'error.main',
+                bgcolor: 'action.hover',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <FactCheckIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  Governance Readiness Check
+                </Typography>
+                {checking && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid', borderColor: 'primary.main', borderTopColor: 'transparent', animation: 'spin 0.6s linear infinite' }} />
+                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>Checking...</Typography>
+                  </Box>
+                )}
+                {!checking && readiness && (
+                  <Chip
+                    label={readiness.isReady ? 'Passed' : `${readiness.failedCount} Failed`}
+                    size="small"
+                    color={readiness.isReady ? 'success' : 'error'}
+                    sx={{ fontWeight: 700, borderRadius: 1 }}
+                  />
+                )}
               </Box>
-              
+
               {readiness && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   {readiness.items.map((item: any) => (
-                    <Box key={item.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                      <Typography variant="body2" sx={{ 
-                        color: item.status === 'passed' ? 'success.main' : item.status === 'failed' ? 'error.main' : 'warning.main',
-                        fontWeight: 700, mt: 0.25
+                    <Box key={item.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, py: 0.5 }}>
+                      <Box sx={{
+                        mt: 0.25, width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        bgcolor: item.status === 'passed' ? 'success.main' : item.status === 'failed' ? 'error.main' : 'warning.main',
+                        color: '#fff', fontSize: 11, fontWeight: 700,
                       }}>
-                        {item.status === 'passed' ? '✓' : item.status === 'failed' ? '✗' : '⚠'}
-                      </Typography>
+                        {item.status === 'passed' ? '✓' : item.status === 'failed' ? '✗' : '!'}
+                      </Box>
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.label}</Typography>
-                        {item.message && <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{item.message}</Typography>}
+                        {item.message && (
+                          <Typography variant="caption" color={item.status === 'failed' ? 'error' : 'text.secondary'} sx={{ display: 'block', mt: 0.25 }}>
+                            {item.message}
+                          </Typography>
+                        )}
                       </Box>
                     </Box>
                   ))}
@@ -362,21 +716,24 @@ export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, proj
               )}
 
               {!readiness && !checking && (
-                <Typography variant="caption" color="text.secondary">Select a gate stage to run readiness check.</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  Select a gate stage above to run the readiness check.
+                </Typography>
               )}
-            </Box>
+            </Paper>
           </Grid>
         </Grid>
       </DialogContent>
-      <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} variant="outlined">Cancel</Button>
-        <Button 
-          onClick={handleAdd} 
-          variant="contained" 
-          color={readiness?.overallStatus === 'failed' ? 'inherit' : 'success'} 
+      <DialogActions sx={{ p: 2.5, pt: 0 }}>
+        <Button onClick={onClose} variant="outlined" color="inherit">Cancel</Button>
+        <Button
+          onClick={handleAdd}
+          variant="contained"
+          color={readiness?.isReady === false ? 'inherit' : 'success'}
           disabled={!form.pm_gatename || checking || readiness?.isReady === false}
+          startIcon={<HowToRegIcon />}
         >
-          {readiness?.isReady === false ? 'Not Ready for Submission' : 'Submit for Review'}
+          {readiness?.isReady === false ? 'Not Ready' : 'Submit for Review'}
         </Button>
       </DialogActions>
     </Dialog>

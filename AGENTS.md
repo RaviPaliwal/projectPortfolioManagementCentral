@@ -25,6 +25,18 @@
   - Updated `ApprovalStepResolver` + `FinancialReviewTaskModalWrapper` to pass `entityType` to the modal.
   - `FinancialReviewTaskModal` now detects `entityType === 'Pipeline'` and fetches initiative data via `fetchInitiativeById(id)`, displaying estimated cost/benefits, priority score, and strategic alignment. Gate review logic is unchanged.
 
+### 6. Resource Allocation: Available Hours Validation
+- **Feature**: `ResourceDialog` now calculates and displays available hours before submission.
+- **Implementation**:
+  - Converted from `DynamicFormDialog` to a fully custom dialog with `useEffect` + `useMemo` for reactive availability computation.
+  - On resource selection → fetches `fetchResourceById(resourceId)` (to get `pm_dailyworkcapacity`) and `fetchResourceAllocations(resourceId)` (to get all existing allocations).
+  - Computes working days (Mon–Fri) between start/end dates via `countWorkingDays()`.
+  - `totalCapacity = dailyCapacity × workingDays`
+  - `overlappingHours` = sum of `pm_allocatedhours` for allocations overlapping the date range (excludes current allocation in edit mode via `initialData.pm_resourceallocationid`).
+  - `availableHours = max(0, totalCapacity - overlappingHours)`
+  - Shows a **Resource Availability** paper card with breakdown; **Insufficient Availability** `Alert` when `pm_allocatedhours > availableHours`; submit button disabled until valid.
+- **File**: `ProjectSubFormDialogs.tsx:147-387`
+
 ## Key Architecture Facts
 - `pm_timesheetstatus` option set: `0=Approved`, `1=Submitted`, `2=Rejected`, `3=Draft`.
 - `FORM_DIALOG_DECISION_EVENT = 'form:decision-complete'` dispatched by modals after decision; parent pages listen and refresh.

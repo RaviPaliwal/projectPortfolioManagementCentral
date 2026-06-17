@@ -7,12 +7,10 @@ import {
   Alert,
   Chip,
   Button,
-  Tooltip,
 } from '@mui/material'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import PersonIcon from '@mui/icons-material/Person'
-import LockIcon from '@mui/icons-material/Lock'
 
 import { TabPanel } from '@/components/common'
 import { useUser } from '@/context/UserContext'
@@ -64,7 +62,6 @@ const formatDate = (d?: string | null): string => d ? dateFormatter.format(new D
 
 export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValue, index, refreshTrigger, onAllStepsCompleted }: EntityApprovalTasksProps) {
   const { currentUser } = useUser()
-  const [instances, setInstances] = useState<WorkflowInstanceModel[]>([])
   const [updatedInstances, setUpdatedInstances] = useState<WorkflowInstanceModel[]>([])
   const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
   const [allCompletedSteps, setAllCompletedSteps] = useState<WorkflowApprovalStepModel[]>([])
@@ -178,31 +175,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
           <Typography variant="body2" color="text.disabled">
             {entityLabel} has no workflow approval steps requiring action.
           </Typography>
-          {updatedInstances.length > 0 && (
-            <Box sx={{ mt: 3, textAlign: 'left' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                Workflow Instances
-              </Typography>
-              {updatedInstances.map((inst) => {
-                const statusLabel = inst.pm_status === 0 ? 'Completed' : inst.pm_status === 1 ? 'In Progress' : 'Cancelled'
-                const statusColor = inst.pm_status === 0 ? 'success' : inst.pm_status === 1 ? 'info' : 'default'
-                return (
-                  <Paper key={inst.pm_workflowinstanceid} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {inst.pm_instancename || 'Workflow Instance'}
-                      </Typography>
-                      <Chip label={statusLabel} size="small" color={statusColor as any} variant="outlined" sx={{ fontWeight: 600 }} />
-                    </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, display: 'block' }}>
-                      Started: {formatDate(inst.pm_startdate)}
-                      {inst.pm_completeddate ? ` • Completed: ${formatDate(inst.pm_completeddate)}` : ''}
-                    </Typography>
-                  </Paper>
-                )
-              })}
-            </Box>
-          )}
+
         </Box>
       ) : (
         <Box>
@@ -297,33 +270,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
               )
             })})()}
           </Box>
-          {updatedInstances.length > 0 && (
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                Workflow Instances ({updatedInstances.length})
-              </Typography>
-              {updatedInstances.map((inst) => (
-                <Paper key={inst.pm_workflowinstanceid} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {inst.pm_instancename || 'Workflow Instance'}
-                    </Typography>
-                    <Chip
-                      label={inst.pm_status === 0 ? 'Completed' : inst.pm_status === 1 ? 'In Progress' : 'Cancelled'}
-                      size="small"
-                      color={inst.pm_status === 0 ? 'success' : inst.pm_status === 1 ? 'info' : 'default'}
-                      variant="outlined"
-                      sx={{ fontWeight: 600 }}
-                    />
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatDate(inst.pm_startdate)}
-                    {inst.pm_completeddate ? ` — ${formatDate(inst.pm_completeddate)}` : ' — In progress'}
-                  </Typography>
-                </Paper>
-              ))}
-            </Box>
-          )}
+
         </Box>
       )}
     </TabPanel>

@@ -12,18 +12,16 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 5000,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('plotly.js')) return 'plotly-vendor';
-            if (id.includes('@mui')) return 'mui-vendor';
-            if (id.includes('recharts')) return 'recharts-vendor';
-            return 'vendor';
+    chunkSizeWarningLimit: 5000,        rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('@mui')) return 'mui-vendor';
+              if (id.includes('recharts')) return 'recharts-vendor';
+              return 'vendor';
+            }
           }
         }
       }
-    }
   }
 });

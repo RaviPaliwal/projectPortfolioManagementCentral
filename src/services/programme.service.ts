@@ -103,6 +103,11 @@ export async function updateProgramme(id: string, changes: Partial<ProgrammeMode
   }
 }
 
+export async function updateProgrammePhase(id: string, phase: number): Promise<void> {
+  try { console.debug('[dataverseService] updateProgrammePhase:', { id, phase }) } catch (e) {}
+  await Pm_programmesService.update(id, { pm_programmephase: phase } as any)
+}
+
 export async function deleteProgramme(id: string): Promise<void> {
   await Pm_programmesService.delete(id)
 }

@@ -19,7 +19,8 @@ interface PortfolioSummaryTabProps {
 
 const STATUS_LABELS: Record<string, string> = {
   '0': 'Active',
-  '1': 'On Hold',
+  '1': 'Under Approval',
+  '2': 'Rejected',
 }
 
 export const PortfolioSummaryTab: React.FC<PortfolioSummaryTabProps> = ({
@@ -41,7 +42,7 @@ export const PortfolioSummaryTab: React.FC<PortfolioSummaryTabProps> = ({
               label={STATUS_LABELS[portfolio.pm_portfoliostatus?.toString() ?? ''] ?? 'Active'}
               size="small"
               variant="outlined"
-              color={portfolio.pm_portfoliostatus === 0 || portfolio.pm_portfoliostatus === '0' ? 'success' : 'default'}
+              color={portfolio.pm_portfoliostatus === 0 || portfolio.pm_portfoliostatus === '0' ? 'success' : portfolio.pm_portfoliostatus === 1 || portfolio.pm_portfoliostatus === '1' ? 'warning' : 'error'}
             />
             {portfolio.pm_prioritylevel !== undefined && (
               <StatusTag

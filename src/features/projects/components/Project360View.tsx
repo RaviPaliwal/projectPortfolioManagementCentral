@@ -66,7 +66,7 @@ interface Project360ViewProps {
   onAddBudgetLine: () => void
   onAddBenefit: () => void
   onAddTask: () => void
-  onSubmitGateReview: () => void
+  onNavigateToGateReview?: (gateReview?: GateReviewModel) => void
   onEditProject: (project: ProjectModel) => void
 }
 
@@ -91,7 +91,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onAddBudgetLine,
   onAddBenefit,
   onAddTask,
-  onSubmitGateReview,
+  onNavigateToGateReview,
   onEditProject
 }) => {
   const theme = useTheme()
@@ -159,7 +159,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
         <Button size="small" variant="outlined" startIcon={<AttachMoneyIcon />} onClick={onAddBudgetLine}>Budget</Button>
         <Button size="small" variant="outlined" startIcon={<EmojiEventsIcon />} onClick={onAddBenefit}>Benefit</Button>
         <Button size="small" variant="outlined" startIcon={<AssignmentIcon />} onClick={onAddTask}>Task</Button>
-        <Button size="small" variant="contained" color="success" startIcon={<HowToRegIcon />} onClick={onSubmitGateReview}>Gate Review</Button>
+        <Button size="small" variant="contained" color="success" startIcon={<HowToRegIcon />} onClick={onNavigateToGateReview as any}>Gate Review</Button>
       </Paper>
 
       {/* ── Tabbed Content ────────────────────────────────────── */}
@@ -193,7 +193,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
               {activeTab === 3 && <ProjectRisksIssuesTab risks={risks} issues={issues} />}
               {activeTab === 4 && <ProjectTeamTab resources={resources} onEdit={onEditResource} onComplete={onCompleteResource} />}
               {activeTab === 5 && <ProjectBenefitsTab benefits={benefits} />}
-              {activeTab === 6 && <ProjectGovernanceTab gateReviews={gateReviews} onSubmitReview={onSubmitGateReview} />}
+              {activeTab === 6 && <ProjectGovernanceTab gateReviews={gateReviews} onNavigateToGateReview={onNavigateToGateReview} />}
               {activeTab === 7 && (
                 <EntityApprovalTasks
                   entityId={project.pm_projectid ?? ''}

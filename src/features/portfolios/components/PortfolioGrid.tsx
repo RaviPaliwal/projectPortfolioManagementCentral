@@ -41,7 +41,8 @@ interface PortfolioGridProps {
 
 const STATUS_LABELS: Record<string, string> = {
   '0': 'Active',
-  '1': 'On Hold',
+  '1': 'Under Approval',
+  '2': 'Rejected',
 }
 
 export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
@@ -162,7 +163,7 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                       label={STATUS_LABELS[portfolio.pm_portfoliostatus?.toString() ?? ''] ?? 'Unknown'}
                       size="small"
                       variant="outlined"
-                      color={portfolio.pm_portfoliostatus === 0 || portfolio.pm_portfoliostatus === '0' ? 'success' : 'default'}
+                      color={portfolio.pm_portfoliostatus === 0 || portfolio.pm_portfoliostatus === '0' ? 'success' : portfolio.pm_portfoliostatus === 1 || portfolio.pm_portfoliostatus === '1' ? 'warning' : 'error'}
                     />
                   </TableCell>
                   <TableCell>

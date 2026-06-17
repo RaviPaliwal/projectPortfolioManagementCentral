@@ -234,10 +234,11 @@ export async function assignResource(payload: {
   pm_assignmentrole: string
   pm_startdate: string
   pm_enddate: string
+  pm_allocationpercentage?: number
 }): Promise<any> {
   const result = await Pm_resourceallocationsService.create({
     pm_allocatedhours: payload.pm_allocatedhours,
-    pm_allocationpercentage: Math.min(100, Math.round((payload.pm_allocatedhours / 160) * 100)),
+    pm_allocationpercentage: payload.pm_allocationpercentage ?? Math.min(100, Math.round((payload.pm_allocatedhours / 160) * 100)),
     pm_assignmentrole: payload.pm_assignmentrole,
     pm_assignmentstatus: 0,
     pm_startdate: payload.pm_startdate,

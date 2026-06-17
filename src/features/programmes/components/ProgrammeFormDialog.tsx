@@ -24,7 +24,8 @@ import InfoIcon from '@mui/icons-material/Info'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import MoneyIcon from '@mui/icons-material/Money'
-import { createProgramme, updateProgramme, fetchPortfolioHierarchy } from '@/services'
+import { createProgramme, updateProgramme, fetchPortfolioHierarchy, startWorkflowForEntity } from '@/services'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import { fontSizes } from '@/styles'
 import type { ProgrammeModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
@@ -50,7 +51,7 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
-  const { users } = useUser()
+  const { users, currentUser } = useUser()
   
   const isEdit = !!initialData?.pm_programmeid
   const [actionLoading, setActionLoading] = useState(false)
@@ -59,7 +60,7 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
     pm_programmename: '',
     pm_programmemanager: '',
     pm_sponsorname: '',
-    pm_programmephase: 1,
+    pm_programmephase: 3,
     pm_ragstatus: 1,
     pm_budgeteur: 0,
     pm_actualspendeur: 0,
@@ -77,7 +78,7 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
           pm_programmename: initialData.pm_programmename || '',
           pm_programmemanager: initialData.pm_programmemanager || '',
           pm_sponsorname: initialData.pm_sponsorname || '',
-          pm_programmephase: initialData.pm_programmephase !== undefined ? Number(initialData.pm_programmephase) : 1,
+          pm_programmephase: initialData.pm_programmephase !== undefined ? Number(initialData.pm_programmephase) : 3,
           pm_ragstatus: initialData.pm_ragstatus !== undefined ? Number(initialData.pm_ragstatus) : 1,
           pm_budgeteur: initialData.pm_budgeteur || 0,
           pm_actualspendeur: initialData.pm_actualspendeur || 0,
@@ -92,7 +93,7 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
           pm_programmename: '',
           pm_programmemanager: '',
           pm_sponsorname: '',
-          pm_programmephase: 1,
+          pm_programmephase: 3,
           pm_ragstatus: 1,
           pm_budgeteur: 0,
           pm_actualspendeur: 0,
@@ -146,6 +147,17 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
         onSuccess(freshData.programmes)
         onClose()
         if (!isEdit) {
+          // Trigger approval workflow for newly created programme
+          try {
+            await startWorkflowForEntity(
+              'default-template',
+              result.pm_programmeid!,
+              MODULE_NAMES.PROGRAMMES.value,
+              currentUser?.fullname ?? 'System'
+            )
+          } catch (wfErr) {
+            console.error('[ProgrammeFormDialog] Failed to initiate workflow:', wfErr)
+          }
           setConfirmDialog({ open: true, name: result.pm_programmename || formData.pm_programmename })
         }
       }
@@ -261,6 +273,7 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
                   <MenuItem value={0}>Delivery</MenuItem>
                   <MenuItem value={1}>Planning</MenuItem>
                   <MenuItem value={2}>Initiation</MenuItem>
+                  <MenuItem value={3}>Under Approval</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -432,7 +445,7 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* Success Confirmation Dialog */}
+      {/* Success Confirmation Dialog — Submitted for Approval */}
       <Dialog
         open={confirmDialog.open}
         onClose={() => setConfirmDialog({ open: false, name: '' })}
@@ -453,31 +466,37 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
             width: 56,
             height: 56,
             borderRadius: '50%',
-            bgcolor: 'success.main',
+            bgcolor: 'warning.main',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)',
+            boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
           }}
         >
-          <CheckCircleIcon sx={{ fontSize: 32, color: '#ffffff' }} />
+          <AssignmentIcon sx={{ fontSize: 32, color: '#fff' }} />
         </Box>
-        <DialogTitle sx={{ textAlign: 'center', pt: 5, fontWeight: 700, fontSize: 20 }}>
-          Programme Created
+        <DialogTitle sx={{ textAlign: 'center', pt: 5, pb: 1, fontWeight: 700, fontSize: fontSizes.xl }}>
+          Submitted for Approval
         </DialogTitle>
         <DialogContent sx={{ textAlign: 'center', pb: 3 }}>
-          <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
-            {confirmDialog.name}
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+            <strong style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>{confirmDialog.name}</strong> has been created and submitted for approval.
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            The programme has been created successfully. You can now add projects, assign resources, and manage financials.
+            An approver will review this programme. You can track the approval status from the programme details panel.
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3, gap: 1.5 }}>
           <Button
             variant="contained"
             onClick={() => setConfirmDialog({ open: false, name: '' })}
-            sx={{ borderRadius: 1.5, px: 4, bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}
+            sx={{
+              bgcolor: 'warning.main',
+              '&:hover': { bgcolor: 'warning.dark' },
+              borderRadius: 1.5,
+              px: 4,
+              fontWeight: 600,
+            }}
           >
             Got it
           </Button>

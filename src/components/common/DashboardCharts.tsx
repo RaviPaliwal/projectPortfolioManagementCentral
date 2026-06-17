@@ -359,6 +359,9 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
           Portfolio Trend
         </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Monthly trend of active (blue), completed (green), and delayed (red) projects over the last 12 months based on actual project lifecycle dates.
+        </Typography>
         {renderPortfolioTrend()}
       </Paper>
 

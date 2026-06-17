@@ -4,7 +4,8 @@
  */
 export const Pm_portfoliospm_portfoliostatus = {
   0: 'Active',
-  1: 'OnHold'
+  1: 'UnderApproval',
+  2: 'Rejected'
 } as const;
 export type Pm_portfoliospm_portfoliostatus = keyof typeof Pm_portfoliospm_portfoliostatus;
 export const Pm_portfoliospm_ragstatus = {

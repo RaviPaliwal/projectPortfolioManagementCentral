@@ -39,6 +39,7 @@ import {
   fetchAllRisks,
   fetchAllIssues,
   fetchFinancialPeriods,
+  fetchPortfolioTrendData,
 } from '@/services'
 import {
   StatusChip,
@@ -80,6 +81,7 @@ export default function DashboardPage() {
   const [plannedVsActualData, setPlannedVsActualData] = useState<{ month: string; planned: number; actual: number }[]>([])
   const [utilizationByProjectData, setUtilizationByProjectData] = useState<{ name: string; hours: number }[]>([])
   const [departmentDemandData, setDepartmentDemandData] = useState<{ month: string; role: string; hours: number }[]>([])
+  const [portfolioTrendData, setPortfolioTrendData] = useState<{ month: string; active: number; completed: number; delayed: number }[]>([])
   
   // New data
   const [pipelineKpis, setPipelineKpis] = useState<PipelineKpis>({ totalActiveInitiatives: 0, pendingApprovals: 0, totalEstimatedCost: 0, approvedThisMonth: 0 })
@@ -103,7 +105,7 @@ export default function DashboardPage() {
     if (isRefresh) setRefreshing(true)
     try {
       // Global metrics for the whole dashboard (non-filtered)
-      const [dashboard, activeProjects, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData, periods] = await Promise.all([
+      const [dashboard, activeProjects, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData, periods, portfolioTrend] = await Promise.all([
         fetchDashboardMetrics({}), 
         fetchProjectsFull(),
         fetchPortfolioHierarchy(),
@@ -118,6 +120,7 @@ export default function DashboardPage() {
         fetchAllRisks(),
         fetchAllIssues(),
         fetchFinancialPeriods(),
+        fetchPortfolioTrendData(),
       ])
 
       // Extract unique years (Current + Last 5)
@@ -139,6 +142,7 @@ export default function DashboardPage() {
       setPlannedVsActualData(plannedActual)
       setUtilizationByProjectData(utilByProject)
       setDepartmentDemandData(deptDemand)
+      setPortfolioTrendData(portfolioTrend)
       setPortfolioSnapshot(hierarchy.portfolios.slice().sort(sortByRag).slice(0, 4))
       setProgrammeSnapshot(hierarchy.programmes.slice().sort(sortByRag).slice(0, 4))
       setPipelineKpis(pipeline)
@@ -237,6 +241,7 @@ export default function DashboardPage() {
       <Box sx={{ mb: 3 }}>
         <DashboardCharts
           projectStatusData={projectStatusData}
+          portfolioTrendData={portfolioTrendData}
           capacityAllocationData={capacityAllocationData}
           plannedVsActualData={plannedVsActualData}
           utilizationByProjectData={utilizationByProjectData}
