@@ -6,6 +6,7 @@
 // Models
 export * as AddMembersTeamModel from './models/AddMembersTeamModel';
 export * as CommonModels from './models/CommonModels';
+export * as CreateOutlookEventModel from './models/CreateOutlookEventModel';
 export * as GetOutlookEventsModel from './models/GetOutlookEventsModel';
 export * as InitiateWorkflowModel from './models/InitiateWorkflowModel';
 export * as ManageTeamsModel from './models/ManageTeamsModel';
@@ -50,6 +51,7 @@ export * as WorkflowRoutingHandlerModel from './models/WorkflowRoutingHandlerMod
 
 // Services
 export * from './services/AddMembersTeamService';
+export * from './services/CreateOutlookEventService';
 export * from './services/GetOutlookEventsService';
 export * from './services/InitiateWorkflowService';
 export * from './services/ManageTeamsService';
