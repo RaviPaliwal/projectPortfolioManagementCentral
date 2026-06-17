@@ -13,6 +13,8 @@ import {
 import CloseIcon from '@mui/icons-material/Close'
 import DownloadIcon from '@mui/icons-material/Download'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 
 interface DocumentPreviewDialogProps {
   open: boolean
@@ -171,14 +173,53 @@ export const DocumentPreviewDialog: React.FC<DocumentPreviewDialogProps> = ({
             />
           </Box>
         ) : isPdf && previewUrl ? (
-          <Box sx={{ flex: 1, width: '100%', height: '100%' }}>
-            <iframe
-              src={`${previewUrl}#toolbar=0`}
-              title={fileName}
-              width="100%"
-              height="100%"
-              style={{ border: 'none' }}
-            />
+          <Box sx={{ display: 'flex', flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, textAlign: 'center' }}>
+            <PictureAsPdfIcon sx={{ fontSize: 80, color: '#ef4444', mb: 2, filter: 'drop-shadow(0 4px 10px rgba(239, 68, 68, 0.3))' }} />
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: isDark ? '#f8fafc' : '#0f172a' }}>
+              PDF Document
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 4, maxWidth: 450, lineHeight: 1.6 }}>
+              For security reasons, your host environment's Content Security Policy (CSP) restricts previewing PDF files directly inside the application interface.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Button
+                variant="contained"
+                startIcon={<OpenInNewIcon />}
+                onClick={() => window.open(previewUrl, '_blank')}
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  py: 1,
+                  fontWeight: 600,
+                  bgcolor: '#ef4444',
+                  '&:hover': { bgcolor: '#dc2626' },
+                  boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)',
+                }}
+              >
+                Open PDF in New Tab
+              </Button>
+              {onDownload && (
+                <Button
+                  variant="outlined"
+                  startIcon={<DownloadIcon />}
+                  onClick={onDownload}
+                  sx={{
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1,
+                    fontWeight: 600,
+                    borderColor: isDark ? '#334155' : '#cbd5e1',
+                    color: isDark ? '#cbd5e1' : '#475569',
+                    '&:hover': {
+                      borderColor: isDark ? '#475569' : '#94a3b8',
+                      bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                    },
+                  }}
+                >
+                  Download PDF
+                </Button>
+              )}
+            </Box>
           </Box>
         ) : isText && textContent !== null ? (
           <Box sx={{ flex: 1, p: 3, overflow: 'auto', fontFamily: '"JetBrains Mono", monospace', fontSize: 13, whiteSpace: 'pre-wrap', bgcolor: isDark ? '#090d16' : '#fafafa', color: isDark ? '#cbd5e1' : '#334155' }}>

@@ -51,6 +51,8 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import HubIcon from '@mui/icons-material/Hub'
 import type { Pm_projectstatussnapshots } from '../../../generated/models/Pm_projectstatussnapshotsModel'
 import { useAuthorization } from '@/hooks/useAuthorization'
+import { useUser } from '@/context/UserContext'
+import { fetchPortfolioHierarchy } from '@/services'
 import type { CrudModule } from '@/constants/permissions'
 import { Pm_projectstatussnapshotsService } from '../../../generated'
 import type { ProjectStatusSnapshotModel } from '@/types/dataverse'
@@ -203,6 +205,13 @@ export default function StatusSnapshotsPage() {
   const { allowed: canCreate } = useAuthorization('STATUS_SNAPSHOTS', 'create')
   const { allowed: canEdit } = useAuthorization('STATUS_SNAPSHOTS', 'update')
   const { allowed: canDelete } = useAuthorization('STATUS_SNAPSHOTS', 'delete')
+  const { currentUser } = useUser()
+
+  const [activeHierarchy, setActiveHierarchy] = useState<{
+    portfolios: any[]
+    programmes: any[]
+    projects: any[]
+  }>({ portfolios: [], programmes: [], projects: [] })
 
   const [snapshots, setSnapshots] = useState<ProjectStatusSnapshotModel[]>([])
   const [loading, setLoading] = useState(true)
@@ -236,6 +245,7 @@ export default function StatusSnapshotsPage() {
     pm_projecthighlights: '',
     pm_projectlowlights: '',
     pm_actionitems: '',
+    selectedEntityId: '',
   })
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
@@ -268,6 +278,20 @@ export default function StatusSnapshotsPage() {
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
+
+  useEffect(() => {
+    fetchPortfolioHierarchy()
+      .then((h) => {
+        if (h) {
+          setActiveHierarchy({
+            portfolios: h.portfolios || [],
+            programmes: h.programmes || [],
+            projects: h.projects || [],
+          })
+        }
+      })
+      .catch((err) => console.error('Failed to load portfolio hierarchy for status snapshots:', err))
+  }, [])
 
   const kpiItems = useMemo((): KpiCardItem[] => {
     const total = snapshots.length
@@ -365,14 +389,15 @@ export default function StatusSnapshotsPage() {
       pm_riskragstatus: 1,
       pm_resourceragstatus: 0,
       pm_benefitsragstatus: 0,
-      pm_submissiondate: '',
-      pm_submittedby: '',
+      pm_submissiondate: new Date().toISOString().slice(0, 10),
+      pm_submittedby: currentUser?.fullname ?? '',
       pm_projecthighlights: '',
       pm_projectlowlights: '',
       pm_actionitems: '',
+      selectedEntityId: '',
     })
     setShowForm(true)
-  }, [])
+  }, [currentUser])
 
   const openEdit = useCallback((snapshot: ProjectStatusSnapshotModel) => {
     setEditingSnapshot(snapshot)
@@ -392,6 +417,7 @@ export default function StatusSnapshotsPage() {
       pm_projecthighlights: snapshot.pm_projecthighlights ?? '',
       pm_projectlowlights: snapshot.pm_projectlowlights ?? '',
       pm_actionitems: snapshot.pm_actionitems ?? '',
+      selectedEntityId: '',
     })
     setShowForm(true)
   }, [])
@@ -404,18 +430,25 @@ export default function StatusSnapshotsPage() {
     setError(null)
     setActionLoading(true)
     try {
+      const { selectedEntityId, ...submitData } = formData
+      const payload: any = {
+        ...submitData,
+        statecode: 0,
+      }
+
       if (editingSnapshot?.pm_projectstatussnapshotid) {
-        await Pm_projectstatussnapshotsService.update(editingSnapshot.pm_projectstatussnapshotid, {
-          ...formData,
-          statecode: 0,
-        } as any)
+        await Pm_projectstatussnapshotsService.update(editingSnapshot.pm_projectstatussnapshotid, payload)
         setSuccessMsg('Status snapshot updated successfully.')
       } else {
-        await Pm_projectstatussnapshotsService.create({
-          ...formData,
-          statecode: 0,
-          statuscode: 1,
-        } as any)
+        payload.statuscode = 1
+        if (formData.pm_entitytype === 'Project' && selectedEntityId) {
+          payload['pm_project@odata.bind'] = `/pm_projects(${selectedEntityId})`
+        } else if (formData.pm_entitytype === 'Programme' && selectedEntityId) {
+          payload['pm_programmeName@odata.bind'] = `/pm_programmes(${selectedEntityId})`
+        } else if (formData.pm_entitytype === 'Portfolio' && selectedEntityId) {
+          payload['pm_portfolioLookup@odata.bind'] = `/pm_portfolios(${selectedEntityId})`
+        }
+        await Pm_projectstatussnapshotsService.create(payload)
         setSuccessMsg('Status snapshot created successfully.')
       }
       setShowForm(false)
@@ -880,6 +913,9 @@ export default function StatusSnapshotsPage() {
         handleDelete={handleDelete}
         entityTypeOptions={ENTITY_TYPE_OPTIONS}
         fiscalPeriodOptions={FISCAL_PERIOD_OPTIONS}
+        activePortfolios={activeHierarchy.portfolios}
+        activeProgrammes={activeHierarchy.programmes}
+        activeProjects={activeHierarchy.projects}
       />
     </Box>
   )
