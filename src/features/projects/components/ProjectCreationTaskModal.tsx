@@ -220,27 +220,6 @@ export const ProjectCreationTaskModal: React.FC<ProjectCreationTaskModalProps> =
                   </Box>
                 </>
               )}
-
-              <Divider sx={{ my: 3 }} />
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Review Assessment</Typography>
-              <TextField
-                fullWidth multiline rows={2} size="small"
-                label="Recommendation"
-                placeholder="Summarize your recommendation (e.g., 'Proceed to execution', 'Needs more planning')"
-                value={recommendation}
-                onChange={(e) => setRecommendation(e.target.value)}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth multiline rows={4} size="small"
-                label="Review Notes"
-                placeholder="Enter detailed review notes, concerns, or observations about this project..."
-                value={reviewNotes}
-                onChange={(e) => setReviewNotes(e.target.value)}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-              />
             </Grid>
           </Grid>
         )}

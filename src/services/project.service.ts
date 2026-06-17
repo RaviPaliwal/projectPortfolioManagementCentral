@@ -421,7 +421,11 @@ export async function deleteScheduleTask(id: string): Promise<void> {
 export async function fetchProjectMilestones(projectId: string): Promise<ProjectMilestoneModel[]> {
   const result = await Pm_projectmilestonesService.getAll({
     filter: `_pm_project_value eq '${projectId}'`,
-    select: ['pm_projectmilestoneid', 'pm_milestonename', 'pm_milestonetype', 'pm_planneddate'],
+    select: [
+      'pm_projectmilestoneid', 'pm_milestonename', 'pm_milestonetype',
+      'pm_planneddate', 'pm_actualdate', 'pm_description',
+      'pm_status', 'pm_ragstatus', 'pm_owner', '_pm_project_value',
+    ],
     orderBy: ['pm_planneddate asc'],
     top: 200,
   })
@@ -445,7 +449,16 @@ export async function deleteProjectTask(id: string): Promise<void> {
 }
 
 export async function createProjectMilestone(payload: Partial<ProjectMilestoneModel>): Promise<ProjectMilestoneModel | null> {
-  const result = await Pm_projectmilestonesService.create(payload as any)
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' && key !== '_pm_project_value') {
+      cleanPayload[key] = value
+    }
+  }
+  if (payload._pm_project_value) {
+    cleanPayload['pm_project@odata.bind'] = `/pm_projects(${normalizeLookupId(payload._pm_project_value)})`
+  }
+  const result = await Pm_projectmilestonesService.create({ statecode: 0, statuscode: 1, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_projectmilestones>(result)
   return item ? mapProjectMilestone(item) : null
 }

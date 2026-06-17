@@ -251,6 +251,31 @@ export async function assignResource(payload: {
   return unwrapSingle<any>(result)
 }
 
+export async function fetchAllocatedResourcesByProject(projectId: string): Promise<ResourceModel[]> {
+  try {
+    const allocResult = await Pm_resourceallocationsService.getAll({
+      filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+      select: ['_pm_resource_value', 'pm_resourceallocationid'],
+      top: 500,
+    })
+    const allocations = unwrapList<Pm_resourceallocations>(allocResult)
+    const resourceIds = Array.from(new Set(
+      allocations.map((a) => normalizeLookupId(a._pm_resource_value)).filter(Boolean) as string[]
+    ))
+    if (resourceIds.length === 0) return []
+    const resourceResult = await Pm_resourcesService.getAll({
+      filter: resourceIds.map((id) => `pm_resourceid eq '${id}'`).join(' or '),
+      select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole', 'pm_resourcecategory', 'pm_employmentstatus', 'pm_dailyworkcapacity', 'pm_dailycostrate', 'pm_positiontitle', '_pm_systemuser_value', 'pm_suppliercompany', 'pm_contractstartdate', 'pm_contractenddate'],
+      orderBy: ['pm_fullname asc'],
+      top: 500,
+    })
+    return unwrapList<Pm_resources>(resourceResult).map(mapResource)
+  } catch (err) {
+    console.error('[resourceService] fetchAllocatedResourcesByProject failed:', err)
+    return []
+  }
+}
+
 export async function updateResourceAllocation(id: string, changes: Partial<ResourceAllocationModel>): Promise<ResourceAllocationModel | null> {
   const result = await Pm_resourceallocationsService.update(id, changes as any)
   const item = unwrapSingle<Pm_resourceallocations>(result)

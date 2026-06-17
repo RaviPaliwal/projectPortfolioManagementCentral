@@ -589,7 +589,6 @@ export default function IssuesPage() {
             <TableHead>
               <TableRow>
                 {[
-                  { field: 'pm_issuereference', label: 'ID' },
                   { field: 'pm_issuetitle', label: 'Issue Title' },
                   { field: '', label: 'Project' },
                   { field: 'pm_issuecategory', label: 'Category' },
@@ -637,11 +636,6 @@ export default function IssuesPage() {
                     transition: 'background-color 0.15s ease',
                   }}
                 >
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.8rem' }} color="text.secondary">
-                      {issue.pm_issuereference || '—'}
-                    </Typography>
-                  </TableCell>
                   <TableCell>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
                       {issue.pm_issuetitle || '—'}
