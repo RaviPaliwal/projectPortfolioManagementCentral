@@ -23,8 +23,6 @@ import {
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import AddIcon from '@mui/icons-material/Add'
-import FilterListIcon from '@mui/icons-material/FilterList'
-import VideocamIcon from '@mui/icons-material/Videocam'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EventIcon from '@mui/icons-material/Event'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
@@ -69,7 +67,7 @@ const INITIAL_EVENTS: CalendarEvent[] = [
     endTime: '15:30',
     description: 'Reviewing current quarter project forecasts and actuals.',
     calendarId: 'finance',
-    color: '#009688',
+    color: '#5eead4',
   },
   {
     id: '3',
@@ -78,8 +76,8 @@ const INITIAL_EVENTS: CalendarEvent[] = [
     startTime: '09:00',
     endTime: '10:30',
     description: 'Planning upcoming release deliverables and developer assignments.',
-    calendarId: 'team',
-    color: '#e91e63',
+    calendarId: 'milestones',
+    color: '#fdba74',
   },
   {
     id: '4',
@@ -89,7 +87,7 @@ const INITIAL_EVENTS: CalendarEvent[] = [
     endTime: '12:00',
     description: 'Demonstrating PPM Central dashboard configurations to the main client stakeholder.',
     calendarId: 'milestones',
-    color: '#ff9800',
+    color: '#fdba74',
   },
   {
     id: '5',
@@ -98,16 +96,15 @@ const INITIAL_EVENTS: CalendarEvent[] = [
     startTime: '16:00',
     endTime: '17:00',
     description: 'Weekly team cool-down and casual updates.',
-    calendarId: 'team',
-    color: '#9c27b0',
+    calendarId: 'milestones',
+    color: '#fdba74',
   },
 ]
 
 const CALENDAR_TYPES = [
   { id: 'work', label: 'Work Calendar', color: '#93c5fd' },
-  { id: 'team', label: 'Team Syncs', color: '#f9a8d4' },
-  { id: 'finance', label: 'Finance Milestones', color: '#5eead4' },
-  { id: 'milestones', label: 'Project Deadlines', color: '#fdba74' },
+  { id: 'finance', label: 'Project Milestone', color: '#5eead4' },
+  { id: 'milestones', label: 'Project Task Deadline', color: '#fdba74' },
   { id: 'outlook', label: 'Outlook Events', color: '#7dd3fc' },
 ]
 
@@ -129,7 +126,6 @@ export default function CalendarPage() {
   // Sidebar controls
   const [activeCalendars, setActiveCalendars] = useState<Record<string, boolean>>({
     work: true,
-    team: true,
     finance: true,
     milestones: true,
     outlook: true,
@@ -374,8 +370,8 @@ export default function CalendarPage() {
           const labelSuffix = projName ? ` (${projName})` : ''
 
           const isMilestone = !!task.pm_ismilestone
-          const categoryId = isMilestone ? 'milestones' : 'team'
-          const color = isMilestone ? '#fdba74' : '#f9a8d4' // Orange for milestones, Pink for team tasks
+          const categoryId = isMilestone ? 'finance' : 'milestones'
+          const color = isMilestone ? '#5eead4' : '#fdba74' // Teal for milestones, Orange for task deadlines
 
           // Place tasks at 14:00 - 16:00 to avoid overlapping allocations in the morning
           const startTimeStr = '14:00'
@@ -406,42 +402,108 @@ export default function CalendarPage() {
           
           if (outlookResult && outlookResult.success && outlookResult.data?.event_json) {
             const parsed = JSON.parse(outlookResult.data.event_json)
-            if (Array.isArray(parsed)) {
-              outlookEvents = parsed.map((item: any, index: number) => {
-                // Support both Calendar Events (start/end) and Tasks (dueDateTime/startDateTime/createdDateTime)
-                const startIso = item.start || item.Start || item.startDateTime?.dateTime || item.dueDateTime?.dateTime || item.createdDateTime || new Date().toISOString()
-                const endIso = item.end || item.End || item.endDateTime?.dateTime || item.dueDateTime?.dateTime || startIso
-                
-                const startDateObj = new Date(startIso)
-                let endDateObj = new Date(endIso)
-                
-                // Default task/event duration to 1 hour if start time equals end time
-                if (startDateObj.getTime() === endDateObj.getTime()) {
-                  endDateObj = new Date(startDateObj.getTime() + 60 * 60 * 1000)
+            console.log('[CalendarPage] Raw Outlook Events from flow:', parsed)
+            
+            const eventObjects: any[] = []
+            
+            // Helper to recursively flatten and parse events
+            const extractEvents = (val: any) => {
+              if (Array.isArray(val)) {
+                val.forEach(item => extractEvents(item))
+              } else if (val && typeof val === 'object') {
+                eventObjects.push(val)
+              } else if (typeof val === 'string') {
+                try {
+                  const p = JSON.parse(val)
+                  extractEvents(p)
+                } catch (e) {
+                  try {
+                    const fn = new Function(`return ${val}`)
+                    extractEvents(fn())
+                  } catch (err) {
+                    // Check if it's a key-value format string like "id: '...', subject: '...'"
+                    if (val.includes('subject:') || val.includes('startdate:')) {
+                      const getField = (fieldName: string) => {
+                        const regex = new RegExp(`(?:^|,|\\s)${fieldName}:\\s*['"]?([^'"]+?)['"]?(?:,\\s*\\w+\\s*:|\\s*$)`, 'i')
+                        const match = val.match(regex)
+                        return match ? match[1].trim() : ''
+                      }
+                      const getBodyField = () => {
+                        const regex = /(?:^|,|\s)body:\s*['"]?([\s\S]+?)(?:['"]?$)/i
+                        const match = val.match(regex)
+                        return match ? match[1].trim() : ''
+                      }
+                      eventObjects.push({
+                        id: getField('id'),
+                        subject: getField('subject'),
+                        startdate: getField('startdate') || getField('start'),
+                        enddate: getField('enddate') || getField('end'),
+                        body: getBodyField() || getField('body')
+                      })
+                    }
+                  }
                 }
-                
-                const dateStr = formatDateString(startDateObj)
-                
-                const startHour = String(startDateObj.getHours()).padStart(2, '0')
-                const startMin = String(startDateObj.getMinutes()).padStart(2, '0')
-                const endHour = String(endDateObj.getHours()).padStart(2, '0')
-                const endMin = String(endDateObj.getMinutes()).padStart(2, '0')
-                
-                const isTask = !!(item.dueDateTime || item.createdDateTime || item.status)
-                const prefix = isTask ? '☑ Outlook Task: ' : '📅 Outlook: '
-                
-                return {
-                  id: `outlook-${item.id || index}`,
-                  title: `${prefix}${item.subject || item.Subject || 'Outlook Event'}`,
-                  date: dateStr,
-                  startTime: `${startHour}:${startMin}`,
-                  endTime: `${endHour}:${endMin}`,
-                  calendarId: 'outlook',
-                  color: '#7dd3fc',
-                  description: item.description || item.Description || (isTask ? 'Imported Outlook Task' : 'Imported Outlook Event')
-                }
-              })
+              }
             }
+            
+            extractEvents(parsed)
+            
+            // Helper to strip HTML tags for clean description rendering
+            const stripHtml = (htmlStr: string): string => {
+              if (!htmlStr) return ''
+              if (!htmlStr.includes('<') && !htmlStr.includes('>')) return htmlStr
+              try {
+                const doc = new DOMParser().parseFromString(htmlStr, 'text/html')
+                return doc.body.textContent || doc.body.innerText || ''
+              } catch (e) {
+                return htmlStr.replace(/<[^>]*>/g, '')
+              }
+            }
+
+            outlookEvents = eventObjects.map((item: any, index: number) => {
+              // Prioritize fields with timezone offsets first, then fallbacks (supporting startdate/enddate)
+              const startIso = item.startWithTimeZone || item.start || item.Start || item.startdate || item.startDate || item.startDateTime?.dateTime || item.dueDateTime?.dateTime || item.createdDateTime || new Date().toISOString()
+              const endIso = item.endWithTimeZone || item.end || item.End || item.enddate || item.endDate || item.endDateTime?.dateTime || item.dueDateTime?.dateTime || startIso
+              
+              // Helper to safely parse dates and handle 7-digit fractional seconds (Safari compatibility)
+              const parseOutlookDate = (isoStr: string) => {
+                const sanitized = isoStr.replace(/\.(\d{3})\d+/, '.$1')
+                return new Date(sanitized)
+              }
+
+              const startDateObj = parseOutlookDate(startIso)
+              let endDateObj = parseOutlookDate(endIso)
+              
+              // Default task/event duration to 1 hour if start time equals end time
+              if (startDateObj.getTime() === endDateObj.getTime()) {
+                endDateObj = new Date(startDateObj.getTime() + 60 * 60 * 1000)
+              }
+              
+              const dateStr = formatDateString(startDateObj)
+              
+              const startHour = String(startDateObj.getHours()).padStart(2, '0')
+              const startMin = String(startDateObj.getMinutes()).padStart(2, '0')
+              const endHour = String(endDateObj.getHours()).padStart(2, '0')
+              const endMin = String(endDateObj.getMinutes()).padStart(2, '0')
+              
+              const isTask = !!(item.dueDateTime || item.createdDateTime || item.status)
+              
+              // Fetch description/body content and clean HTML tags if needed
+              const rawDesc = item.description || item.Description || item.body || item.Body || (isTask ? 'Imported Outlook Task' : 'Imported Outlook Event')
+              const cleanDesc = typeof rawDesc === 'string' ? stripHtml(rawDesc).trim() : ''
+              
+              return {
+                id: `outlook-${item.id || index}`,
+                title: item.subject || item.Subject || (isTask ? 'Outlook Task' : 'Outlook Event'),
+                date: dateStr,
+                startTime: `${startHour}:${startMin}`,
+                endTime: `${endHour}:${endMin}`,
+                calendarId: 'outlook',
+                color: '#7dd3fc',
+                description: cleanDesc
+              }
+            })
+            console.log('[CalendarPage] Mapped Outlook Events:', outlookEvents)
           } else {
             console.warn('[CalendarPage] Flow returned unsuccessful result or empty event_json:', outlookResult)
             throw new Error('Flow result unsuccessful')
@@ -451,7 +513,7 @@ export default function CalendarPage() {
           outlookEvents = [
             {
               id: 'outlook-mock-1',
-              title: '📅 Outlook: Partner Architecture Sync',
+              title: 'Partner Architecture Sync',
               date: '2026-06-22',
               startTime: '13:00',
               endTime: '14:00',
@@ -461,7 +523,7 @@ export default function CalendarPage() {
             },
             {
               id: 'outlook-mock-2',
-              title: '📅 Outlook: Standup Meeting',
+              title: 'Standup Meeting',
               date: '2026-06-23',
               startTime: '09:30',
               endTime: '10:00',
@@ -471,7 +533,7 @@ export default function CalendarPage() {
             },
             {
               id: 'outlook-mock-3',
-              title: '📅 Outlook: Product Feedback Session',
+              title: 'Product Feedback Session',
               date: '2026-06-24',
               startTime: '15:00',
               endTime: '16:30',
@@ -877,24 +939,6 @@ export default function CalendarPage() {
             </Select>
 
             <Button
-              variant="outlined"
-              size="small"
-              startIcon={<FilterListIcon />}
-              sx={{ textTransform: 'none', borderRadius: 1.5 }}
-            >
-              Filter
-            </Button>
-
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<VideocamIcon />}
-              sx={{ textTransform: 'none', borderRadius: 1.5 }}
-            >
-              Meet now
-            </Button>
-
-            <Button
               variant="contained"
               size="small"
               startIcon={<AddIcon />}
@@ -1024,6 +1068,9 @@ export default function CalendarPage() {
               const dateStr = formatDateString(day)
               // Filter events that fall on this day
               const dayEvents = filteredEvents.filter((e) => e.date === dateStr)
+              if (dayEvents.length > 0) {
+                console.log('[CalendarPage] rendering date:', dateStr, 'with events:', dayEvents)
+              }
 
               return (
                 <Box
@@ -1053,6 +1100,8 @@ export default function CalendarPage() {
                   {/* Absolute Events */}
                   {dayEvents.map((event) => {
                     const position = getEventPositionStyles(event)
+                    const isShort = parseInt(position.height || '60') <= 30
+                    
                     return (
                       <Tooltip key={event.id} title={`${event.startTime} - ${event.endTime}: ${event.title}`} arrow>
                         <Box
@@ -1063,27 +1112,42 @@ export default function CalendarPage() {
                           sx={{
                             ...position,
                             bgcolor: event.color,
-                            color: theme.palette.getContrastText(event.color || '#3f51b5'),
-                            borderRadius: '4px',
-                            p: '6px 8px',
+                            color: '#0f172a', // Softer modern slate text color on pastel backgrounds
+                            borderRadius: '6px',
+                            p: isShort ? '2px 6px' : '5px 8px',
                             cursor: 'pointer',
                             overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            borderLeft: `4px solid rgba(0,0,0,0.25)`,
-                            boxShadow: theme.shadows[2],
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: isShort ? 'center' : 'flex-start',
+                            borderLeft: `4px solid rgba(15, 23, 42, 0.2)`, // matching semi-translucent left border
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
                             transition: 'all 0.15s ease',
                             '&:hover': {
-                              filter: 'brightness(0.95)',
-                              boxShadow: theme.shadows[4],
+                              filter: 'brightness(0.96) contrast(1.05)',
+                              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
                             },
                           }}
                         >
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.75rem', lineHeight: 1.2 }}>
-                            {event.title}
-                          </Typography>
-                          <Typography variant="caption" sx={{ opacity: 0.85, fontSize: '0.65rem', display: 'block' }}>
-                            {event.startTime} - {event.endTime}
-                          </Typography>
+                          {isShort ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 0.5 }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.7rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'inherit' }}>
+                                {event.title}
+                              </Typography>
+                              <Typography variant="caption" sx={{ opacity: 0.75, fontSize: '0.625rem', whiteSpace: 'nowrap', flexShrink: 0, color: 'inherit' }}>
+                                {event.startTime}
+                              </Typography>
+                            </Box>
+                          ) : (
+                            <>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.725rem', lineHeight: 1.15, mb: 0.25, overflow: 'hidden', textOverflow: 'ellipsis', color: 'inherit' }}>
+                                {event.title}
+                              </Typography>
+                              <Typography variant="caption" sx={{ opacity: 0.75, fontSize: '0.625rem', display: 'block', color: 'inherit' }}>
+                                {event.startTime} - {event.endTime}
+                              </Typography>
+                            </>
+                          )}
                         </Box>
                       </Tooltip>
                     )
