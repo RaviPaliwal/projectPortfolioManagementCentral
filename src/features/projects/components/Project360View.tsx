@@ -29,8 +29,9 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import PersonIcon from '@mui/icons-material/Person'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import EditIcon from '@mui/icons-material/Edit'
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 
-import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader, ActionIcon } from '@/components/common'
+import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader, ActionIcon, EntityDocumentsTab } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 import { RAG_COLORS, phaseLabel, currency } from '../constants'
 import { fontSizes } from '@/styles'
@@ -109,6 +110,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
     { label: 'Benefits', icon: <EmojiEventsIcon fontSize="small" /> },
     { label: 'Governance', icon: <HowToRegIcon fontSize="small" /> },
     { label: 'Tasks', icon: <AssignmentIcon fontSize="small" /> },
+    { label: 'Documents', icon: <InsertDriveFileIcon fontSize="small" /> },
   ]
 
   // RAG color for accent bar
@@ -209,6 +211,13 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   entityLabel="Project"
                   tabValue={activeTab}
                   index={7}
+                />
+              )}
+              {activeTab === 8 && project.pm_projectid && (
+                <EntityDocumentsTab
+                  entityId={project.pm_projectid}
+                  moduleName={MODULE_NAMES.PROJECTS.value}
+                  canEdit={canEdit}
                 />
               )}
             </>

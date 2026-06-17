@@ -32,7 +32,10 @@ import {
   KpiCardRow,
   Breadcrumbs,
   ActionIcon,
+  TabPanel,
+  EntityDocumentsTab,
 } from '@/components/common'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { currencyFormatter } from '@/utils/formatters'
@@ -295,6 +298,7 @@ export default function PortfoliosPage() {
           { label: 'Projects', count: detailProjects.length },
           { label: 'Financials' },
           { label: 'Tasks' },
+          { label: 'Documents' },
         ]}
         tabValue={detailTab}
         onTabChange={setDetailTab}
@@ -338,6 +342,14 @@ export default function PortfoliosPage() {
               tabValue={detailTab}
               index={4}
             />
+
+            <TabPanel value={detailTab} index={5}>
+              <EntityDocumentsTab
+                entityId={selectedPortfolio.pm_portfolioid ?? ''}
+                moduleName={MODULE_NAMES.PORTFOLIOS.value}
+                canEdit={canEdit}
+              />
+            </TabPanel>
           </>
         )}
       </DetailDrawer>

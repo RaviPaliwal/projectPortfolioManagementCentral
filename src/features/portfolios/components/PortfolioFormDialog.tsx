@@ -16,17 +16,20 @@ import {
   useTheme,
   Avatar,
   Divider,
+  Chip,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import InfoIcon from '@mui/icons-material/Info'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import { createPortfolio, updatePortfolio, fetchPortfolioHierarchy, startWorkflowForEntity } from '@/services'
+import AttachFileIcon from '@mui/icons-material/AttachFile'
+import { createPortfolio, updatePortfolio, fetchPortfolioHierarchy, startWorkflowForEntity, uploadDocument } from '@/services'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import { BUSINESS_UNITS } from '@/constants/businessUnits'
 import { fontSizes } from '@/styles'
 import type { PortfolioModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
+import { DocumentPreviewDialog } from '@/components/common'
 
 interface PortfolioFormDialogProps {
   open: boolean
@@ -49,6 +52,13 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
   
   const isEdit = !!initialData?.pm_portfolioid
   const [actionLoading, setActionLoading] = useState(false)
+  const [stagedFiles, setStagedFiles] = useState<File[]>([])
+  const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null)
+
+  const handlePreviewStaged = (file: File) => {
+    const url = URL.createObjectURL(file)
+    setPreviewFile({ name: file.name, url })
+  }
   
   const [formData, setFormData] = useState({
     pm_portfolioname: '',
@@ -66,6 +76,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
 
   useEffect(() => {
     if (open) {
+      setStagedFiles([])
       if (initialData) {
         setFormData({
           pm_portfolioname: initialData.pm_portfolioname || '',
@@ -126,6 +137,16 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
       }
 
       if (result) {
+        const targetPortfolioId = result.pm_portfolioid || initialData?.pm_portfolioid
+        if (targetPortfolioId && stagedFiles.length > 0) {
+          const ownerId = currentUser?.systemuserid || ''
+          await Promise.all(
+            stagedFiles.map((file) =>
+              uploadDocument(MODULE_NAMES.PORTFOLIOS.value, targetPortfolioId, file, ownerId)
+            )
+          )
+        }
+
         const freshData = await fetchPortfolioHierarchy()
         onSuccess(freshData.portfolios)
         onClose()
@@ -358,6 +379,56 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
               />
             </Grid>
           </Grid>
+
+          {/* Section: Supporting Documents */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 4, mb: 2 }}>
+            <AttachFileIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+              Supporting Documents
+            </Typography>
+            <Divider sx={{ flex: 1 }} />
+          </Box>
+
+          <Box sx={{ p: 2.5, border: '1px dashed', borderColor: 'divider', borderRadius: 1.5, textAlign: 'center', bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)' }}>
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<AttachFileIcon />}
+              sx={{ borderRadius: 1.5, mb: stagedFiles.length > 0 ? 2 : 0 }}
+            >
+              Select Files
+              <input
+                type="file"
+                multiple
+                hidden
+                onChange={(e) => {
+                  if (e.target.files) {
+                    const filesArray = Array.from(e.target.files)
+                    const largeFiles = filesArray.filter((f) => f.size > 32 * 1024 * 1024)
+                    if (largeFiles.length > 0) {
+                      alert('Some files exceed the maximum 32MB limit.')
+                      return
+                    }
+                    setStagedFiles((prev) => [...prev, ...filesArray])
+                  }
+                }}
+              />
+            </Button>
+            {stagedFiles.length > 0 && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+                {stagedFiles.map((file, idx) => (
+                  <Chip
+                    key={idx}
+                    label={`${file.name} (${formatBytes(file.size)})`}
+                    onDelete={() => setStagedFiles((prev) => prev.filter((_, i) => i !== idx))}
+                    onClick={() => handlePreviewStaged(file)}
+                    title="Click to preview file"
+                    sx={{ borderRadius: 1.5, fontWeight: 600, cursor: 'pointer' }}
+                  />
+                ))}
+              </Box>
+            )}
+          </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
           <Button onClick={onClose} variant="outlined" disabled={actionLoading}>
@@ -431,8 +502,30 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {previewFile && (
+        <DocumentPreviewDialog
+          open={!!previewFile}
+          onClose={() => {
+            URL.revokeObjectURL(previewFile.url)
+            setPreviewFile(null)
+          }}
+          fileName={previewFile.name}
+          fileUrl={previewFile.url}
+        />
+      )}
     </>
   )
+}
+
+// Staged file size formatter helper
+const formatBytes = (bytes: number, decimals = 1): string => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
 export default PortfolioFormDialog

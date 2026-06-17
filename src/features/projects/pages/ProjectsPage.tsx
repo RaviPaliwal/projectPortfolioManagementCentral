@@ -21,7 +21,10 @@ import {
   fetchProjectsFull,
   fetchMilestonesDueThisMonth,
   fetchPortfolioHierarchy,
+  uploadDocument,
 } from '@/services'
+import { useUser } from '@/context/UserContext'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import { PageHeader, KpiCardRow, ExportButton } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
@@ -43,6 +46,7 @@ import {
 import { recalculateProjectFinancials, normalizeLookupId } from '@/services'
 
 export default function ProjectsPage() {
+  const { currentUser } = useUser()
   const { allowed: canCreate } = useAuthorization('PROJECTS', 'create')
   const { allowed: canEdit } = useAuthorization('PROJECTS', 'update')
 
@@ -187,12 +191,13 @@ export default function ProjectsPage() {
     setShowFormModal(true)
   }
 
-  const handleProjectSave = async (form: Partial<ProjectModel>) => {
+  const handleProjectSave = async (form: Partial<ProjectModel>, files: File[]) => {
     // Determine the ID: either from the updated form data or the state
     const targetId = form.pm_projectid || editingProject?.pm_projectid
     
     setIsSavingProject(true)
     try {
+      let projectId = targetId
       if (targetId) {
         // Perform update — persist to server
         try {
@@ -227,6 +232,7 @@ export default function ProjectsPage() {
         // Perform creation
         const created = await createProject(form)
         if (created) {
+          projectId = created.pm_projectid
           setSuccessMsg('Project created successfully.')
           
           // Prepend the new project to the local list immediately
@@ -235,6 +241,16 @@ export default function ProjectsPage() {
           // Background refresh for consistency
           loadData()
         }
+      }
+
+      // Upload staged documents if we have a valid project ID
+      if (projectId && files && files.length > 0) {
+        const ownerId = currentUser?.systemuserid || ''
+        await Promise.all(
+          files.map((file) =>
+            uploadDocument(MODULE_NAMES.PROJECTS.value, projectId, file, ownerId)
+          )
+        )
       }
       
       setShowFormModal(false)

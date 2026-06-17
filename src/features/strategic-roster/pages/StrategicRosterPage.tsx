@@ -59,8 +59,8 @@ import TreeView from '../components/TreeView'
 // ── Components ──────────────────────────────────────────────────────────────
 
 const RAG_COLORS: Record<string, string> = {
-  '0': '#22c55e', // Green
-  '1': '#f59e0b', // Amber
+  '1': '#22c55e', // Green
+  '0': '#f59e0b', // Amber
   '2': '#ef4444', // Red
 }
 
@@ -178,7 +178,7 @@ const TimelineItem = ({
             {name}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mt: 0.5 }}>
-            <Tooltip title={`RAG: ${ragStatus === '0' ? 'Green' : ragStatus === '1' ? 'Amber' : 'Red'}`}>
+            <Tooltip title={`RAG: ${ragStatus === '1' ? 'Green' : ragStatus === '0' ? 'Amber' : 'Red'}`}>
               <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: ragColor, boxShadow: `0 0 6px ${ragColor}` }} />
             </Tooltip>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -283,6 +283,17 @@ const TimelineItem = ({
   )
 }
 
+const isEntityInYear = (startDate?: string, endDate?: string, yearStr?: string) => {
+  if (!yearStr) return true
+  if (!startDate && !endDate) return true
+  const year = parseInt(yearStr, 10)
+  const start = startDate ? new Date(startDate).getFullYear() : null
+  const end = endDate ? new Date(endDate).getFullYear() : null
+  if (start && start > year) return false
+  if (end && end < year) return false
+  return true
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────────
 
 export default function StrategicRosterPage() {
@@ -300,6 +311,25 @@ export default function StrategicRosterPage() {
   const [maxBudget, setMaxBudget] = useState('')
   const [viewMode, setViewMode] = useState<'timeline' | 'cards' | 'table' | 'tree'>('timeline')
   const [selectedItem, setSelectedItem] = useState<{ id: string; type: string; name: string } | null>(null)
+  const [selectedYear, setSelectedYear] = useState<string>('')
+
+  const availableYears = useMemo(() => {
+    if (!data) return []
+    const yearsSet = new Set<number>()
+    const addYear = (dStr?: string) => {
+      if (!dStr) return
+      const y = new Date(dStr).getFullYear()
+      if (!isNaN(y)) yearsSet.add(y)
+    }
+    data.portfolios.forEach(p => { addYear(p.pm_startdate); addYear(p.pm_enddate) })
+    data.programmes.forEach(p => { addYear(p.pm_startdate); addYear(p.pm_enddate) })
+    data.projects.forEach(p => { addYear(p.pm_plannedstartdate); addYear(p.pm_plannedenddate) })
+    
+    if (yearsSet.size === 0) {
+      yearsSet.add(new Date().getFullYear())
+    }
+    return Array.from(yearsSet).sort((a, b) => a - b)
+  }, [data])
 
   const loadData = useCallback(async () => {
     try {
@@ -356,8 +386,14 @@ export default function StrategicRosterPage() {
     const finalMin = min ? new Date(min) : new Date()
     const finalMax = max ? new Date(max) : new Date()
 
-    finalMin.setMonth(finalMin.getMonth() - 1)
-    finalMax.setMonth(finalMax.getMonth() + 2)
+    if (selectedYear) {
+      const year = parseInt(selectedYear, 10)
+      finalMin.setFullYear(year, 0, 1)
+      finalMax.setFullYear(year, 11, 31)
+    } else {
+      finalMin.setMonth(finalMin.getMonth() - 1)
+      finalMax.setMonth(finalMax.getMonth() + 2)
+    }
 
     const diffDays = (finalMax.getTime() - finalMin.getTime()) / (1000 * 60 * 60 * 24)
 
@@ -366,7 +402,7 @@ export default function StrategicRosterPage() {
       maxDate: finalMax,
       totalDays: Math.max(1, diffDays)
     }
-  }, [data])
+  }, [data, selectedYear])
 
   const kpis = useMemo(() => {
     if (!data) return []
@@ -390,6 +426,24 @@ export default function StrategicRosterPage() {
       const portId = p.pm_portfolioid
       if (!portId) return false
 
+      if (selectedYear && !isEntityInYear(p.pm_startdate, p.pm_enddate, selectedYear)) return false
+
+      if (ragFilter) {
+        const matchesPort = String(p.pm_ragstatus ?? '') === ragFilter
+        const matchesSubItems = data.programmes.some(prog => {
+          if (normalizeLookupId(prog._pm_portfolio_value) === normalizeLookupId(portId)) {
+            if (String(prog.pm_ragstatus ?? '') === ragFilter) return true
+            const normalizedProgId = normalizeLookupId(prog.pm_programmeid)
+            return normalizedProgId && data.projects.some(proj => 
+              normalizeLookupId(proj._pm_programme_value) === normalizedProgId &&
+              String(proj.pm_ragstatus ?? '') === ragFilter
+            )
+          }
+          return false
+        })
+        if (!matchesPort && !matchesSubItems) return false
+      }
+
       if (search) {
         const q = search.toLowerCase()
         const portMatch = p.pm_portfolioname?.toLowerCase().includes(q)
@@ -408,12 +462,11 @@ export default function StrategicRosterPage() {
         if (!portMatch && !progMatch && !projMatch) return false
       }
 
-      if (ragFilter && String(p.pm_ragstatus ?? '') !== ragFilter) return false
       if (minBudget && (p.pm_approvedbudgeteur ?? 0) < parseFloat(minBudget)) return false
       if (maxBudget && (p.pm_approvedbudgeteur ?? 0) > parseFloat(maxBudget)) return false
       return true
     })
-  }, [data, search, ragFilter, minBudget, maxBudget])
+  }, [data, search, ragFilter, minBudget, maxBudget, selectedYear])
 
   const months = useMemo(() => {
     const list: { label: string; left: number; width: number; isYear: boolean; year: number }[] = []
@@ -558,15 +611,21 @@ export default function StrategicRosterPage() {
             />
 
             <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: alpha(theme.palette.divider, 0.4), borderRadius: 3, p: 0.75 }}>
-              <Tooltip title="Zoom out of timeline">
-                <IconButton size="small"><ZoomOutIcon fontSize="small" /></IconButton>
-              </Tooltip>
-              <Typography variant="caption" sx={{ px: 1.5, fontWeight: 800, color: 'text.primary' }}>Q3 2026</Typography>
-              <Tooltip title="Zoom in on timeline">
-                <IconButton size="small"><ZoomInIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            </Box>
+            {/* Year Filter */}
+            <FormControl size="small" sx={{ minWidth: 130 }}>
+              <InputLabel>Year</InputLabel>
+              <Select
+                value={selectedYear}
+                label="Year"
+                onChange={(e) => setSelectedYear(e.target.value)}
+                sx={{ borderRadius: 1.15, fontSize: fontSizes.base }}
+              >
+                <MenuItem value="">All Years</MenuItem>
+                {availableYears.map(y => (
+                  <MenuItem key={y} value={String(y)}>{y}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Box sx={{ flex: 1 }} />
             {/* View Toggle */}
             <ToggleButtonGroup
@@ -603,11 +662,11 @@ export default function StrategicRosterPage() {
             </ToggleButtonGroup>
 
             <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-            {(search || ragFilter || minBudget || maxBudget) && (
+            {(search || ragFilter || minBudget || maxBudget || selectedYear) && (
               <Button
                 size="small"
                 variant="text"
-                onClick={() => { setSearch(''); setRagFilter(''); setMinBudget(''); setMaxBudget('') }}
+                onClick={() => { setSearch(''); setRagFilter(''); setMinBudget(''); setMaxBudget(''); setSelectedYear('') }}
                 sx={{ whiteSpace: 'nowrap', textTransform: 'none', fontWeight: 700 }}
               >
                 Clear filters
@@ -718,7 +777,11 @@ export default function StrategicRosterPage() {
                   {filteredPortfolios.map(port => {
                     const portId = port.pm_portfolioid!
                     const normalizedPortId = normalizeLookupId(portId)!
-                    const programs = data.programmes.filter(pr => normalizeLookupId(pr._pm_portfolio_value) === normalizedPortId)
+                    const programs = data.programmes.filter(pr => 
+                      normalizeLookupId(pr._pm_portfolio_value) === normalizedPortId &&
+                      isEntityInYear(pr.pm_startdate, pr.pm_enddate, selectedYear) &&
+                      (!ragFilter || String(pr.pm_ragstatus ?? '') === ragFilter || data.projects.some(pj => normalizeLookupId(pj._pm_programme_value) === normalizeLookupId(pr.pm_programmeid) && String(pj.pm_ragstatus ?? '') === ragFilter))
+                    )
                     const isExpanded = expandedItems.has(portId)
                     const portAllocated = programs.reduce((sum, p) => sum + (p.pm_budgeteur ?? 0), 0)
 
@@ -746,7 +809,11 @@ export default function StrategicRosterPage() {
                           {programs.map(prog => {
                             const progId = prog.pm_programmeid!
                             const normalizedProgId = normalizeLookupId(progId)!
-                            const projects = data.projects.filter(pj => normalizeLookupId(pj._pm_programme_value) === normalizedProgId)
+                            const projects = data.projects.filter(pj => 
+                              normalizeLookupId(pj._pm_programme_value) === normalizedProgId &&
+                              isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear) &&
+                              (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
+                            )
                             const isProgExpanded = expandedItems.has(progId)
                             const progAllocated = projects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur ?? 0), 0)
 
@@ -804,8 +871,14 @@ export default function StrategicRosterPage() {
           {viewMode === 'cards' && (
             <CardView
               portfolios={filteredPortfolios}
-              programmes={data.programmes}
-              projects={data.projects}
+              programmes={data.programmes.filter(pr => 
+                (!selectedYear || isEntityInYear(pr.pm_startdate, pr.pm_enddate, selectedYear)) &&
+                (!ragFilter || String(pr.pm_ragstatus ?? '') === ragFilter || data.projects.some(pj => normalizeLookupId(pj._pm_programme_value) === normalizeLookupId(pr.pm_programmeid) && String(pj.pm_ragstatus ?? '') === ragFilter))
+              )}
+              projects={data.projects.filter(pj => 
+                (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
+                (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
+              )}
               onItemClick={(id, type, name) => setSelectedItem({ id, type, name })}
             />
           )}
@@ -813,8 +886,14 @@ export default function StrategicRosterPage() {
           {viewMode === 'table' && (
             <TableView
               portfolios={filteredPortfolios}
-              programmes={data.programmes}
-              projects={data.projects}
+              programmes={data.programmes.filter(pr => 
+                (!selectedYear || isEntityInYear(pr.pm_startdate, pr.pm_enddate, selectedYear)) &&
+                (!ragFilter || String(pr.pm_ragstatus ?? '') === ragFilter || data.projects.some(pj => normalizeLookupId(pj._pm_programme_value) === normalizeLookupId(pr.pm_programmeid) && String(pj.pm_ragstatus ?? '') === ragFilter))
+              )}
+              projects={data.projects.filter(pj => 
+                (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
+                (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
+              )}
               onItemClick={(id, type, name) => setSelectedItem({ id, type, name })}
             />
           )}
@@ -822,8 +901,14 @@ export default function StrategicRosterPage() {
           {viewMode === 'tree' && (
             <TreeView
               portfolios={filteredPortfolios}
-              programmes={data.programmes}
-              projects={data.projects}
+              programmes={data.programmes.filter(pr => 
+                (!selectedYear || isEntityInYear(pr.pm_startdate, pr.pm_enddate, selectedYear)) &&
+                (!ragFilter || String(pr.pm_ragstatus ?? '') === ragFilter || data.projects.some(pj => normalizeLookupId(pj._pm_programme_value) === normalizeLookupId(pr.pm_programmeid) && String(pj.pm_ragstatus ?? '') === ragFilter))
+              )}
+              projects={data.projects.filter(pj => 
+                (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
+                (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
+              )}
               onItemClick={(id, type, name) => setSelectedItem({ id, type, name })}
             />
           )}

@@ -60,6 +60,7 @@ import {
   ExportButton,
   Breadcrumbs,
   ActionIcon,
+  EntityDocumentsTab,
 } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { fontSizes } from '@/styles'
@@ -342,6 +343,7 @@ export default function ProgrammesPage() {
             <Tab label="Financials" />
             <Tab label={`Risks & Issues (${detailRisks.length + detailIssues.length})`} />
             <Tab label="Tasks" />
+            <Tab label="Documents" />
           </Tabs>
           <Box sx={{ p: 3 }}>
             <TabPanel value={detailTab} index={0}>
@@ -523,6 +525,15 @@ export default function ProgrammesPage() {
                 tabValue={detailTab}
                 index={4}
               />
+            </TabPanel>
+            <TabPanel value={detailTab} index={5}>
+              {selectedProgrammeId && (
+                <EntityDocumentsTab
+                  entityId={selectedProgrammeId}
+                  moduleName={MODULE_NAMES.PROGRAMMES.value}
+                  canEdit={canEdit}
+                />
+              )}
             </TabPanel>
           </Box>
         </Paper>

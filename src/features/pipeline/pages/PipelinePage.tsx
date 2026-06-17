@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   Box,
   Paper,
@@ -24,8 +24,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  MenuItem as MuiMenuItem, // just in case
   Divider,
   Avatar,
+  Chip,
   InputAdornment,
   List,
   ListItemButton,
@@ -58,6 +60,7 @@ import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import InfoIcon from '@mui/icons-material/Info'
 
 import PauseCircleFilledIcon from '@mui/icons-material/PauseCircleFilled'
+import AttachFileIcon from '@mui/icons-material/AttachFile'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 
@@ -69,15 +72,27 @@ import {
   fetchPipelineKpis,
   fetchPortfolioHierarchy,
   startWorkflowForEntity,
+  uploadDocument,
 } from '@/services'
 
 import { useUser } from '@/context/UserContext'
 import type { InitiativeModel, PortfolioModel, ProgrammeModel } from '@/types/dataverse'
 import type { PipelineKpis } from '@/services'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TabPanel, TableFooter, TableShell, DetailDrawer, SearchFilterBar } from '@/components/common'
-import type { KpiCardItem, FilterOption} from '@/components/common'
-import { ExportButton,StatusTag } from '@/components/common'
+import {
+  PageHeader,
+  KpiCardRow,
+  TabPanel,
+  TableFooter,
+  TableShell,
+  DetailDrawer,
+  SearchFilterBar,
+  ExportButton,
+  StatusTag,
+  EntityDocumentsTab,
+  DocumentPreviewDialog,
+} from '@/components/common'
+import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { WORKFLOW_DECISION_EVENT } from '@/services/workflow.service'
 import { ConvertToProjectDialog } from '../components/ConvertToProjectDialog'
@@ -95,6 +110,14 @@ const pipelineExportColumns: ExportColumn[] = [
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+
+const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
 
 const STATUS_CONFIG: Record<string, { label: string; color: 'success' | 'info' | 'warning' | 'error' | 'secondary' | 'default' }> = {
   '0': { label: 'Approved', color: 'success' },
@@ -182,6 +205,8 @@ export default function PipelinePage() {
 
   // ── Create Modal State ─────────────────────────────────────────────────────
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [stagedFiles, setStagedFiles] = useState<File[]>([])
+  const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null)
   const [createForm, setCreateForm] = useState({
     pm_initiativename: '',
     pm_businesscasedescription: '',
@@ -386,6 +411,18 @@ export default function PipelinePage() {
       const created = await createInitiative(createForm as any)
       if (created) {
         const initiativeName = created.pm_name || createForm.pm_initiativename
+        const initiativeId = created.pm_initiativeid
+
+        // Upload any staged files
+        if (initiativeId && stagedFiles.length > 0) {
+          const ownerId = currentUser?.systemuserid || ''
+          await Promise.all(
+            stagedFiles.map((file) =>
+              uploadDocument(MODULE_NAMES.PIPELINE.value, initiativeId, file, ownerId)
+            )
+          )
+        }
+
         setShowCreateModal(false)
         setConfirmDialog({ open: true, name: initiativeName })
         setCreateForm({
@@ -398,6 +435,7 @@ export default function PipelinePage() {
           pm_pipelinestatus: 1,
           _pm_portfolio_value: '',
         })
+        setStagedFiles([])
         await loadData()
         if (created.pm_initiativeid) {
           startWorkflowForEntity('default-template', created.pm_initiativeid, MODULE_NAMES.PIPELINE.value, currentUser?.fullname ?? 'System')
@@ -450,13 +488,23 @@ export default function PipelinePage() {
     setShowConvertDialog(true)
   }
 
-  const handleCreateProjectFromInitiative = async (projectData: Partial<any>) => {
+  const handleCreateProjectFromInitiative = async (projectData: Partial<any>, files: File[] = []) => {
     if (!selectedInitiative) return
     setActionLoading(true)
     setError(null)
     try {
       const created = await createProject(projectData)
       if (created && created.pm_projectid) {
+        // Upload any staged files linked to the new project ID
+        if (files.length > 0) {
+          const ownerId = currentUser?.systemuserid || ''
+          await Promise.all(
+            files.map((file) =>
+              uploadDocument(MODULE_NAMES.PROJECTS.value, created.pm_projectid!, file, ownerId)
+            )
+          )
+        }
+
         // Update the initiative's conversion reference
         try {
           await updateInitiative(selectedInitiative.pm_initiativeid!, {
@@ -593,7 +641,7 @@ export default function PipelinePage() {
           empty={filteredInitiatives.length === 0}
           emptyIcon={<LightbulbIcon />}
           emptyTitle={searchQuery || statusFilter ? 'No initiatives match your search criteria.' : 'No initiatives found.'}
-          emptyAction={!searchQuery && !statusFilter ? (
+          emptyAction={(!searchQuery && !statusFilter && canCreate) ? (
             <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
               Create your first initiative
             </Button>
@@ -727,6 +775,7 @@ export default function PipelinePage() {
           { label: 'Score & Triage' },
           { label: 'Actions' },
           { label: 'Tasks' },
+          { label: 'Documents' },
         ]}
         tabValue={detailTab}
         onTabChange={(v) => { setDetailTab(v); setEditScoreMode(false) }}
@@ -901,6 +950,17 @@ export default function PipelinePage() {
             />
           )}
         </TabPanel>
+
+        {/* ═══ Tab 4: Documents ═══ */}
+        <TabPanel value={detailTab} index={4} pt={0}>
+          {selectedInitiative?.pm_initiativeid && (
+            <EntityDocumentsTab
+              entityId={selectedInitiative.pm_initiativeid}
+              moduleName={MODULE_NAMES.PIPELINE.value}
+              canEdit={canEdit}
+            />
+          )}
+        </TabPanel>
       </DetailDrawer>
 
       {/* ── 4. Create Initiative Modal ────────────────────────────────────────── */}
@@ -1057,6 +1117,59 @@ export default function PipelinePage() {
             </Grid>
           </Grid>
 
+          {/* ── Section: Supporting Documents ── */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 2 }}>
+            <AttachFileIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+              Supporting Documents
+            </Typography>
+            <Divider sx={{ flex: 1 }} />
+          </Box>
+          <Box sx={{ p: 2.5, border: '1px dashed', borderColor: 'divider', borderRadius: 1.5, textAlign: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)' }}>
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<AttachFileIcon />}
+              sx={{ borderRadius: 1.5, mb: stagedFiles.length > 0 ? 2 : 0 }}
+            >
+              Select Files
+              <input
+                type="file"
+                multiple
+                hidden
+                onChange={(e) => {
+                  if (e.target.files) {
+                    const filesArray = Array.from(e.target.files)
+                    // Validate file sizes
+                    const largeFiles = filesArray.filter((f) => f.size > 32 * 1024 * 1024)
+                    if (largeFiles.length > 0) {
+                      setError(`Some files exceed the maximum 32MB limit.`)
+                      return
+                    }
+                    setStagedFiles((prev) => [...prev, ...filesArray])
+                  }
+                }}
+              />
+            </Button>
+            {stagedFiles.length > 0 && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+                {stagedFiles.map((file, idx) => (
+                  <Chip
+                    key={idx}
+                    label={`${file.name} (${formatBytes(file.size)})`}
+                    onDelete={() => setStagedFiles((prev) => prev.filter((_, i) => i !== idx))}
+                    onClick={() => {
+                      const url = URL.createObjectURL(file)
+                      setPreviewFile({ name: file.name, url })
+                    }}
+                    title="Click to preview file"
+                    sx={{ borderRadius: 1.5, fontWeight: 600, cursor: 'pointer' }}
+                  />
+                ))}
+              </Box>
+            )}
+          </Box>
+
           {/* ── Status badge ── */}
           <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, bgcolor: isDark ? 'background.paper' : '#f0f9ff', borderRadius: 1.5, border: '1px solid', borderColor: isDark ? '#334155' : '#bae6fd' }}>
             <InfoIcon sx={{ fontSize: 18, color: 'primary.main' }} />
@@ -1161,6 +1274,18 @@ export default function PipelinePage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {previewFile && (
+        <DocumentPreviewDialog
+          open={!!previewFile}
+          onClose={() => {
+            URL.revokeObjectURL(previewFile.url)
+            setPreviewFile(null)
+          }}
+          fileName={previewFile.name}
+          fileUrl={previewFile.url}
+        />
+      )}
     </Box>
   )
 }
