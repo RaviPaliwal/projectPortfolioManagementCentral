@@ -1,9 +1,11 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react'
 import {
   Box,
   Alert,
   useTheme,
 } from '@mui/material'
+
+const RiskHeatmap = lazy(() => import('../components/RiskHeatmap').then(m => ({ default: m.RiskHeatmap })))
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import GppGoodIcon from '@mui/icons-material/GppGood'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
@@ -24,7 +26,6 @@ import {
 import type { RiskModel, RiskMitigationActionModel } from '@/types/dataverse'
 import { PageHeader, DetailDrawer, KpiCardRow } from '@/components/common'
 import {
-  RiskHeatmap,
   RiskDistributionCharts,
   RiskTable,
   RiskDialog,
@@ -272,7 +273,9 @@ export default function RisksPage() {
       {/* Heatmap & Charts Section */}
        <RiskDistributionCharts risks={risks} />
       <Box sx={{ mb: 3 }}>
-        <RiskHeatmap risks={risks} />
+        <Suspense fallback={<Box sx={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading heatmap…</Box>}>
+          <RiskHeatmap risks={risks} />
+        </Suspense>
       </Box>
 
 

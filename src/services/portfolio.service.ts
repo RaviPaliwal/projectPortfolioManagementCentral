@@ -164,6 +164,11 @@ export async function updatePortfolio(id: string, changes: Partial<PortfolioMode
     throw err
   }
 }
+export async function updatePortfolioStatus(id: string, status: number): Promise<void> {
+  try { console.debug('[dataverseService] updatePortfolioStatus:', { id, status }) } catch (e) {}
+  await Pm_portfoliosService.update(id, { pm_portfoliostatus: status } as any)
+}
+
 export async function createPortfolio(payload: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {

@@ -282,3 +282,51 @@ export async function fetchDepartmentDemandData(): Promise<
 
   return result
 }
+
+export async function fetchPortfolioTrendData(): Promise<
+  { month: string; active: number; completed: number; delayed: number }[]
+> {
+  const result = await Pm_projectsService.getAll({
+    select: ['createdon', 'pm_actualenddate', 'pm_plannedenddate', 'pm_projectphase', 'pm_projectname'],
+    top: 5000,
+  })
+
+  const projects = unwrapList<Pm_projects>(result)
+
+  const months: { month: string; active: number; completed: number; delayed: number }[] = []
+  const now = new Date()
+
+  for (let i = 11; i >= 0; i--) {
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59)
+    const monthLabel = monthStart.toLocaleDateString('en-US', { month: 'short' })
+
+    let active = 0
+    let completed = 0
+    let delayed = 0
+
+    for (const p of projects) {
+      if (p.pm_projectphase === 4) continue
+
+      const createdOn = p.createdon ? new Date(p.createdon) : null
+      if (!createdOn || createdOn > monthEnd) continue
+
+      const actualEndDate = p.pm_actualenddate ? new Date(p.pm_actualenddate) : null
+      const plannedEndDate = p.pm_plannedenddate ? new Date(p.pm_plannedenddate) : null
+
+      if ((actualEndDate && actualEndDate <= monthEnd) || p.pm_projectphase === 5) {
+        completed++
+        continue
+      }
+
+      active++
+      if (plannedEndDate && plannedEndDate <= monthEnd) {
+        delayed++
+      }
+    }
+
+    months.push({ month: monthLabel, active, completed, delayed })
+  }
+
+  return months
+}

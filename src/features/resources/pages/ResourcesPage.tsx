@@ -25,6 +25,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  FormHelperText,
   Divider,
   Avatar,
   LinearProgress,
@@ -56,7 +57,7 @@ import {
   updateResource,
   deleteResource,
   fetchResourceAllocations,
-
+  fetchResourceBySystemUserId,
 } from '@/services/resource.service'
 import {
   fetchCapacityAllocationData,
@@ -187,6 +188,8 @@ export default function ResourcesPage() {
   // Create/Edit modal state
   const [showFormModal, setShowFormModal] = useState(false)
   const [editingResource, setEditingResource] = useState<ResourceModel | null>(null)
+  const [systemUserConflict, setSystemUserConflict] = useState<string | null>(null)
+  const [checkingUser, setCheckingUser] = useState(false)
   const [formData, setFormData] = useState({
     pm_fullname: '',
     pm_departmentname: '',
@@ -203,6 +206,29 @@ export default function ResourcesPage() {
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
+  // Reactive System User conflict check
+  useEffect(() => {
+    if (!formData._pm_systemuser_value) {
+      setSystemUserConflict(null)
+      return
+    }
+    setCheckingUser(true)
+    let cancelled = false
+    fetchResourceBySystemUserId(formData._pm_systemuser_value).then((existing) => {
+      if (cancelled) return
+      if (existing && existing.pm_resourceid !== editingResource?.pm_resourceid) {
+        setSystemUserConflict(existing.pm_fullname ?? 'another resource')
+      } else {
+        setSystemUserConflict(null)
+      }
+    }).catch(() => {
+      if (!cancelled) setSystemUserConflict(null)
+    }).finally(() => {
+      if (!cancelled) setCheckingUser(false)
+    })
+    return () => { cancelled = true }
+  }, [formData._pm_systemuser_value, editingResource])
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -431,6 +457,22 @@ export default function ResourcesPage() {
       setError('Resource name is required.')
       return
     }
+    if (formData.pm_dailyworkcapacity < 0) {
+      setError('Daily capacity cannot be negative.')
+      return
+    }
+    if (formData.pm_dailyworkcapacity > 24) {
+      setError('Daily capacity cannot exceed 24 hours.')
+      return
+    }
+    if (formData.pm_dailycostrate < 0) {
+      setError('Daily cost rate cannot be negative.')
+      return
+    }
+    if (systemUserConflict) {
+      setError(`System user is already linked to resource "${systemUserConflict}".`)
+      return
+    }
     setError(null)
     setActionLoading(true)
     try {
@@ -648,6 +690,24 @@ export default function ResourcesPage() {
                         <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', color: 'text.secondary' }}>
                           {resource.pm_dailycostrate ? currencyFormatter.format(resource.pm_dailycostrate) : '—'}
                         </Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={(e) => { e.stopPropagation(); openEditForm(resource) }}
+                          >
+                            <EditIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={(e) => { e.stopPropagation(); if (resource.pm_resourceid) setDeleteConfirm(resource.pm_resourceid) }}
+                          >
+                            <DeleteIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -995,7 +1055,7 @@ export default function ResourcesPage() {
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth size="small">
+                  <FormControl fullWidth size="small" error={!!systemUserConflict}>
                     <InputLabel>System User</InputLabel>
                     <Select
                       value={users.find((u) => u.systemuserid === formData._pm_systemuser_value)?.systemuserid || ''}
@@ -1029,6 +1089,12 @@ export default function ResourcesPage() {
                         </MenuItem>
                       ))}
                     </Select>
+                    {systemUserConflict && (
+                      <FormHelperText>Already linked to "{systemUserConflict}"</FormHelperText>
+                    )}
+                    {checkingUser && !systemUserConflict && (
+                      <FormHelperText>Checking...</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
                 {formData.pm_resourcecategory === 1 && (
@@ -1062,7 +1128,9 @@ export default function ResourcesPage() {
                     size="small"
                     value={formData.pm_dailyworkcapacity}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_dailyworkcapacity: Number(e.target.value) }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
+                    slotProps={{ htmlInput: { min: 0, max: 24 }, input: { sx: { borderRadius: 1.5 } } }}
+                    helperText={formData.pm_dailyworkcapacity > 24 ? 'Maximum 24 hours' : ' '}
+                    error={formData.pm_dailyworkcapacity > 24}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }}>
@@ -1096,7 +1164,7 @@ export default function ResourcesPage() {
               <Button
                 onClick={handleSaveResource}
                 variant="contained"
-                disabled={!formData.pm_fullname.trim() || actionLoading}
+                disabled={!formData.pm_fullname.trim() || !!systemUserConflict || actionLoading}
                 sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
               >
                 {actionLoading ? 'Saving...' : editingResource ? 'Update Resource' : 'Create Resource'}

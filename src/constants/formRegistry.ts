@@ -4,6 +4,9 @@ import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 
 // Lazy-load modal components to avoid circular dependencies
+const PortfolioApprovalTaskModalWrapper = lazy(() =>
+  import('@/features/portfolios/components').then((m) => ({ default: m.PortfolioApprovalTaskModalWrapper }))
+)
 const PmoReadinessTaskModalWrapper = lazy(() =>
   import('@/features/gatereviews/components').then((m) => ({ default: m.PmoReadinessTaskModalWrapper }))
 )
@@ -48,6 +51,9 @@ const FundingSourceApprovalTaskModalWrapper = lazy(() =>
 )
 const ChangeRequestApprovalTaskModalWrapper = lazy(() =>
   import('@/features/changerequests/components').then((m) => ({ default: m.ChangeRequestApprovalTaskModalWrapper }))
+)
+const ProgrammeApprovalTaskModalWrapper = lazy(() =>
+  import('@/features/programmes/components').then((m) => ({ default: m.ProgrammeApprovalTaskModalWrapper }))
 )
 
 /**
@@ -200,6 +206,20 @@ export const FORM_REGISTRY: FormRegistryEntry[] = [
     displayName: 'Change Request Approval',
     description: 'Review change request details — verify cost/schedule impacts, justification, and linked project data before approving or rejecting. On approval, dynamically updates project budget and schedule.',
     modalComponent: ChangeRequestApprovalTaskModalWrapper,
+  },
+  {
+    key: 'portfolio_approval',
+    moduleName: MODULE_NAMES.PORTFOLIOS.label,
+    displayName: 'Portfolio Approval',
+    description: 'Approve or reject a newly created portfolio — set status to Active or Rejected',
+    modalComponent: PortfolioApprovalTaskModalWrapper,
+  },
+  {
+    key: 'programme_approval',
+    moduleName: MODULE_NAMES.PROGRAMMES.label,
+    displayName: 'Programme Approval',
+    description: 'Approve or reject a newly created programme — set phase to Initiation or Planning',
+    modalComponent: ProgrammeApprovalTaskModalWrapper,
   },
 ]
 

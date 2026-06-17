@@ -5,7 +5,8 @@
 export const Pm_programmespm_programmephase = {
   0: 'Delivery',
   1: 'Planning',
-  2: 'Initiation'
+  2: 'Initiation',
+  3: 'UnderApproval'
 } as const;
 export type Pm_programmespm_programmephase = keyof typeof Pm_programmespm_programmephase;
 export const Pm_programmespm_ragstatus = {

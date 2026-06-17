@@ -115,7 +115,6 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
           input: { sx: { borderRadius: 1.5 } },
           inputLabel: { shrink: true },
         }}
-        helperText="These notes will be recorded on the workflow approval step and passed to the routing handler."
       />
 
       <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>

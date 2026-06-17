@@ -21,7 +21,9 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import InfoIcon from '@mui/icons-material/Info'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import { createPortfolio, updatePortfolio, fetchPortfolioHierarchy } from '@/services'
+import { createPortfolio, updatePortfolio, fetchPortfolioHierarchy, startWorkflowForEntity } from '@/services'
+import { MODULE_NAMES } from '@/constants/moduleNames'
+import { BUSINESS_UNITS } from '@/constants/businessUnits'
 import { fontSizes } from '@/styles'
 import type { PortfolioModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
@@ -51,7 +53,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
   const [formData, setFormData] = useState({
     pm_portfolioname: '',
     pm_ownerlookup: currentUser?.systemuserid || '',
-    pm_portfoliostatus: 0,
+    pm_portfoliostatus: 1,
     pm_ragstatus: 1,
     pm_approvedbudgeteur: 0,
     pm_startdate: '',
@@ -82,7 +84,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
         setFormData({
           pm_portfolioname: '',
           pm_ownerlookup: currentUser?.systemuserid || '',
-          pm_portfoliostatus: 0,
+          pm_portfoliostatus: 1,
           pm_ragstatus: 1,
           pm_approvedbudgeteur: 0,
           pm_startdate: '',
@@ -128,6 +130,17 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
         onSuccess(freshData.portfolios)
         onClose()
         if (!isEdit) {
+          // Trigger approval workflow for newly created portfolio
+          try {
+            await startWorkflowForEntity(
+              'default-template',
+              result.pm_portfolioid!,
+              MODULE_NAMES.PORTFOLIOS.value,
+              currentUser?.fullname ?? 'System'
+            )
+          } catch (wfErr) {
+            console.error('[PortfolioFormDialog] Failed to initiate workflow:', wfErr)
+          }
           setConfirmDialog({ open: true, name: result.pm_portfolioname || formData.pm_portfolioname })
         }
       }
@@ -205,15 +218,19 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
               </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Business Unit"
-                fullWidth
-                size="small"
-                value={formData.pm_businessunit}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_businessunit: e.target.value }))}
-                placeholder="e.g. Finance, IT, HR"
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-              />
+              <FormControl fullWidth size="small">
+                <InputLabel>Business Unit</InputLabel>
+                <Select
+                  value={formData.pm_businessunit}
+                  label="Business Unit"
+                  onChange={(e) => setFormData((f) => ({ ...f, pm_businessunit: e.target.value }))}
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  {BUSINESS_UNITS.map((bu) => (
+                    <MenuItem key={bu} value={bu}>{bu}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
@@ -241,7 +258,8 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                   sx={{ borderRadius: 1.5 }}
                 >
                   <MenuItem value={0}>Active</MenuItem>
-                  <MenuItem value={1}>On Hold</MenuItem>
+                  <MenuItem value={1}>Under Approval</MenuItem>
+                  <MenuItem value={2}>Rejected</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -356,7 +374,7 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* Success Confirmation Dialog */}
+      {/* Success Confirmation Dialog — Submitted for Approval */}
       <Dialog
         open={confirmDialog.open}
         onClose={() => setConfirmDialog({ open: false, name: '' })}
@@ -377,24 +395,24 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
             width: 56,
             height: 56,
             borderRadius: '50%',
-            bgcolor: 'success.main',
+            bgcolor: 'warning.main',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)',
+            boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
           }}
         >
-          <CheckCircleIcon sx={{ fontSize: 32, color: '#fff' }} />
+          <AssignmentIcon sx={{ fontSize: 32, color: '#fff' }} />
         </Box>
         <DialogTitle sx={{ textAlign: 'center', pt: 5, pb: 1, fontWeight: 700, fontSize: fontSizes.xl }}>
-          Portfolio Created
+          Submitted for Approval
         </DialogTitle>
         <DialogContent sx={{ textAlign: 'center', pb: 3 }}>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            <strong style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>{confirmDialog.name}</strong> has been successfully created.
+            <strong style={{ color: isDark ? '#e2e8f0' : '#0f172a' }}>{confirmDialog.name}</strong> has been created and submitted for approval.
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            You can now link programmes and projects to this portfolio from their respective pages.
+            An approver will review this portfolio. You can track the approval status from the portfolio details panel.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', pb: 3, gap: 1.5 }}>
@@ -402,14 +420,14 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
             variant="contained"
             onClick={() => setConfirmDialog({ open: false, name: '' })}
             sx={{
-              bgcolor: 'primary.main',
-              '&:hover': { bgcolor: 'primary.dark' },
+              bgcolor: 'warning.main',
+              '&:hover': { bgcolor: 'warning.dark' },
               borderRadius: 1.5,
               px: 4,
               fontWeight: 600,
             }}
           >
-            Done
+            Got it
           </Button>
         </DialogActions>
       </Dialog>

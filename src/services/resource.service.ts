@@ -234,10 +234,11 @@ export async function assignResource(payload: {
   pm_assignmentrole: string
   pm_startdate: string
   pm_enddate: string
+  pm_allocationpercentage?: number
 }): Promise<any> {
   const result = await Pm_resourceallocationsService.create({
     pm_allocatedhours: payload.pm_allocatedhours,
-    pm_allocationpercentage: Math.min(100, Math.round((payload.pm_allocatedhours / 160) * 100)),
+    pm_allocationpercentage: payload.pm_allocationpercentage ?? Math.min(100, Math.round((payload.pm_allocatedhours / 160) * 100)),
     pm_assignmentrole: payload.pm_assignmentrole,
     pm_assignmentstatus: 0,
     pm_startdate: payload.pm_startdate,
@@ -249,6 +250,31 @@ export async function assignResource(payload: {
   } as any)
   try { console.debug('[dataverseService] assignResource payload/result:', payload, result) } catch (e) {}
   return unwrapSingle<any>(result)
+}
+
+export async function fetchAllocatedResourcesByProject(projectId: string): Promise<ResourceModel[]> {
+  try {
+    const allocResult = await Pm_resourceallocationsService.getAll({
+      filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+      select: ['_pm_resource_value', 'pm_resourceallocationid'],
+      top: 500,
+    })
+    const allocations = unwrapList<Pm_resourceallocations>(allocResult)
+    const resourceIds = Array.from(new Set(
+      allocations.map((a) => normalizeLookupId(a._pm_resource_value)).filter(Boolean) as string[]
+    ))
+    if (resourceIds.length === 0) return []
+    const resourceResult = await Pm_resourcesService.getAll({
+      filter: resourceIds.map((id) => `pm_resourceid eq '${id}'`).join(' or '),
+      select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole', 'pm_resourcecategory', 'pm_employmentstatus', 'pm_dailyworkcapacity', 'pm_dailycostrate', 'pm_positiontitle', '_pm_systemuser_value', 'pm_suppliercompany', 'pm_contractstartdate', 'pm_contractenddate'],
+      orderBy: ['pm_fullname asc'],
+      top: 500,
+    })
+    return unwrapList<Pm_resources>(resourceResult).map(mapResource)
+  } catch (err) {
+    console.error('[resourceService] fetchAllocatedResourcesByProject failed:', err)
+    return []
+  }
 }
 
 export async function updateResourceAllocation(id: string, changes: Partial<ResourceAllocationModel>): Promise<ResourceAllocationModel | null> {

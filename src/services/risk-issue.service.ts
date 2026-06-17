@@ -118,7 +118,7 @@ export async function createIssue(payload: Partial<IssueModel> & { pm_projectid:
     pm_issuecategory: payload.pm_issuecategory as any,
     pm_prioritylevel: payload.pm_prioritylevel as any,
     pm_ragstatus: payload.pm_ragstatus as any,
-    pm_issueowner: payload.pm_issueowner,
+    "pm_issueOwner@odata.bind": (payload as any).pm_issueownerid ? `/pm_resources(${(payload as any).pm_issueownerid})` : undefined,
     pm_issuestatus: 0,
     pm_dateraised: new Date().toISOString().split('T')[0],
     pm_targetresolutiondate: payload.pm_targetresolutiondate,
@@ -126,7 +126,7 @@ export async function createIssue(payload: Partial<IssueModel> & { pm_projectid:
     statecode: 0,
     statuscode: 1,
   } as any)
-  try { console.debug('[dataverseService] createIssue payload/result:', payload, result) } catch (e) {}
+  try { console.log('[dataverseService] createIssue RAW result:', JSON.stringify(result), 'isArray:', Array.isArray(result), 'dataIsArray:', Array.isArray((result as any)?.data)) } catch (e) {}
   const item = unwrapSingle<Pm_issues>(result)
   return item ? {
     pm_issueid: item.pm_issueid,

@@ -376,7 +376,7 @@ export default function ProjectsPage() {
           onAddBudgetLine={() => setBudgetDialogOpen(true)}
           onAddBenefit={() => setBenefitDialogOpen(true)}
           onAddTask={() => setTaskDialogOpen(true)}
-          onSubmitGateReview={() => setGateReviewDialogOpen(true)}
+          onNavigateToGateReview={() => setGateReviewDialogOpen(true)}
           onEditProject={openEditForm}
         />
       ) : (
