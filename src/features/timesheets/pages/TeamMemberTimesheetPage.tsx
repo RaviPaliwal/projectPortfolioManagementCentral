@@ -7,6 +7,7 @@ import LockIcon from "@mui/icons-material/Lock";
 import WarningIcon from "@mui/icons-material/Warning";
 import CommentIcon from "@mui/icons-material/Comment";
 import SendIcon from "@mui/icons-material/Send";
+import DateRangeIcon from "@mui/icons-material/DateRange";
 import { useTheme, Box, Avatar as MuiAvatar, Typography, CircularProgress, Alert, MenuItem, TextField, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
 import {
   fetchResourceBySystemUserId,
@@ -529,24 +530,26 @@ const TeamMemberTimesheetPage = () => {
         }}
       />
       <div className="ts-shell">
-        <div className="ts-sidebar">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <p className="ts-sidebar-label" style={{ margin: 0 }}>Recent periods</p>
+        {timesheets.length > 0 && (
+          <div className="ts-sidebar">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <p className="ts-sidebar-label" style={{ margin: 0 }}>Recent periods</p>
+            </div>
+            {timesheets.map((p) => (
+              <button
+                key={p.pm_timesheetid}
+                className={cls("ts-period-row", p.pm_timesheetid === selectedId && "ts-period-row-active")}
+                onClick={() => setSelectedId(p.pm_timesheetid!)}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p className="ts-period-label" title={p.pm_timesheetname}>{getTimesheetPeriodLabel(p)}</p>
+                  <p className="ts-mono ts-period-hours">{p.pm_totalhours || 0}h logged</p>
+                </div>
+                <StatusFlap status={Number(p.pm_timesheetstatus)} />
+              </button>
+            ))}
           </div>
-          {timesheets.map((p) => (
-            <button
-              key={p.pm_timesheetid}
-              className={cls("ts-period-row", p.pm_timesheetid === selectedId && "ts-period-row-active")}
-              onClick={() => setSelectedId(p.pm_timesheetid!)}
-            >
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <p className="ts-period-label" title={p.pm_timesheetname}>{getTimesheetPeriodLabel(p)}</p>
-                <p className="ts-mono ts-period-hours">{p.pm_totalhours || 0}h logged</p>
-              </div>
-              <StatusFlap status={Number(p.pm_timesheetstatus)} />
-            </button>
-          ))}
-        </div>
+        )}
         {selectedTimesheet ? (
           <div className="ts-detail">
             <div className="ts-detail-head">
@@ -678,6 +681,49 @@ const TeamMemberTimesheetPage = () => {
               </div>
             )}
           </div>
+        ) : timesheets.length === 0 ? (
+          <div className="ts-detail ts-empty-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: '400px' }}>
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(99,102,241,0.1) 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 3,
+                boxShadow: '0 8px 16px rgba(99,102,241,0.05)',
+                border: '1px solid rgba(99,102,241,0.15)',
+                mx: 'auto'
+              }}
+            >
+              <DateRangeIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: 'text.primary', width: '100%', textAlign: 'center' }}>
+              No Timesheets Yet
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360, mb: 3.5, lineHeight: 1.6, mx: 'auto', textAlign: 'center' }}>
+              It looks like you haven't created any timesheet periods. Start tracking your working hours by creating a new timesheet.
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleOpenCreate}
+                startIcon={<AddIcon />}
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  py: 1,
+                  fontWeight: 600,
+                  boxShadow: '0 4px 12px rgba(59,130,246,0.25)',
+                }}
+              >
+                Start First Timesheet
+              </Button>
+            </Box>
+          </div>
         ) : (
           <div className="ts-detail" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography color="text.secondary">Select a timesheet to view details</Typography>
@@ -751,6 +797,7 @@ function generateCSS(theme: any) {
 .ts-period-hours{font-size:11.5px; color:var(--ink-soft); margin:2px 0 0;}
 .ts-flap{display:inline-flex; align-items:center; font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#fff; padding:4px 9px; border-radius:5px; white-space:nowrap;}
 .ts-detail{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px;}
+.ts-empty-state{display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:420px; padding:40px 20px;}
 .ts-detail-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;}
 .ts-serial{font-size:11px; color:var(--ink-soft); margin:0 0 2px;}
 .ts-detail-head h1{font-size:24px; font-weight:700; margin:0;}

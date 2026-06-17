@@ -12,6 +12,7 @@ import type {
   PerformanceMeasureModel,
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
+import { fetchProjectDetails, fetchProjectsFull } from './project.service'
 
 export const mapGateReview = (item: Pm_projectgatereviews): GateReviewModel => ({
   pm_projectgatereviewid: item.pm_projectgatereviewid,
@@ -84,7 +85,25 @@ export async function fetchGateReviewById(id: string): Promise<GateReviewModel |
     ],
   })
   const item = unwrapSingle<Pm_projectgatereviews>(result)
-  return item ? mapGateReview(item) : null
+  if (!item) return null
+  const review = mapGateReview(item)
+
+  try {
+    const projId = normalizeLookupId(review._pm_project_value)
+    if (projId) {
+      const proj = await fetchProjectDetails(projId)
+      if (proj) {
+        review.pm_projectcode = proj.pm_projectcode ? `[${proj.pm_projectcode}] ${proj.pm_projectname || ''}` : proj.pm_projectname
+        review.pm_projectname = proj.pm_projectname
+        review.pm_programmename = proj.pm_programmename
+        review.pm_portfolioname = proj.pm_portfolioname
+      }
+    }
+  } catch (err) {
+    console.warn('[governanceService] fetchGateReviewById project resolution failed:', err)
+  }
+
+  return review
 }
 
 export async function fetchGateReviews(): Promise<GateReviewModel[]> {
@@ -100,7 +119,31 @@ export async function fetchGateReviews(): Promise<GateReviewModel[]> {
     orderBy: ['pm_plannedreviewdate desc'],
     top: 500,
   })
-  return unwrapList<Pm_projectgatereviews>(result).map(mapGateReview)
+  const list = unwrapList<Pm_projectgatereviews>(result).map(mapGateReview)
+
+  try {
+    const projects = await fetchProjectsFull()
+    const projectMap = new Map<string, any>()
+    for (const p of projects) {
+      if (p.pm_projectid) {
+        projectMap.set(normalizeLookupId(p.pm_projectid)!, p)
+      }
+    }
+    for (const r of list) {
+      const projId = normalizeLookupId(r._pm_project_value)
+      if (projId && projectMap.has(projId)) {
+        const p = projectMap.get(projId)!
+        r.pm_projectcode = p.pm_projectcode ? `[${p.pm_projectcode}] ${p.pm_projectname || ''}` : p.pm_projectname
+        r.pm_projectname = p.pm_projectname
+        r.pm_programmename = p.pm_programmename
+        r.pm_portfolioname = p.pm_portfolioname
+      }
+    }
+  } catch (err) {
+    console.warn('[governanceService] fetchGateReviews project resolution failed:', err)
+  }
+
+  return list
 }
 
 export async function createGateReview(payload: Partial<GateReviewModel>): Promise<GateReviewModel | null> {

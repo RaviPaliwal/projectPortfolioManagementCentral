@@ -29,6 +29,8 @@ import {
   WORKFLOW_DECISION_EVENT,
 } from '@/services'
 import type { WorkflowInstanceModel, WorkflowApprovalStepModel } from '@/types/dataverse'
+import { useUser } from '@/context/UserContext'
+import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 
 // ─── Styled Step Connector ────────────────────────────────────────────────
 
@@ -114,6 +116,26 @@ const DECISION_CONFIG: Record<string, DecisionConfig> = {
 
 function getDecisionConfig(status: string | number | undefined): DecisionConfig {
   return DECISION_CONFIG[String(status ?? '1')] || DECISION_CONFIG['1']
+}
+
+/** Check if a step is assigned to the given user */
+function isStepAssignedToUser(
+  step: WorkflowApprovalStepModel,
+  userId: string,
+  userName: string
+): boolean {
+  // Team assignment — always visible (no per-user filter for team-assigned tasks)
+  if (String(step.pm_assigneetype) === '1') return true
+
+  const assigneeDisplay = (step.pm_assigneedisplayname || '').toLowerCase()
+  const approverName = (step.pm_approvername || '').toLowerCase()
+
+  if (assigneeDisplay === userId.toLowerCase()) return true
+  if (assigneeDisplay === userName.toLowerCase()) return true
+  if (approverName === userId.toLowerCase()) return true
+  if (approverName === userName.toLowerCase()) return true
+
+  return false
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────
@@ -315,12 +337,7 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                             sx={{
                               mt: 1,
                               textAlign: 'center',
-                              ...(isActionable && {
-                                cursor: 'pointer',
-                                '&:hover .step-action-hint': { opacity: 1 },
-                              }),
                             }}
-                            onClick={isActionable ? () => handleStepClick(step) : undefined}
                           >
                             <Typography
                               variant="body2"
@@ -367,26 +384,7 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                               />
                             </Box>
 
-                            {/* Click hint for actionable steps */}
-                            {isActionable && (
-                              <Typography
-                                className="step-action-hint"
-                                variant="caption"
-                                color="primary"
-                                sx={{
-                                  display: 'block',
-                                  mt: 0.5,
-                                  fontSize: '0.55rem',
-                                  fontWeight: 600,
-                                  opacity: 0,
-                                  transition: 'opacity 0.2s ease',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.05em',
-                                }}
-                              >
-                                Open form
-                              </Typography>
-                            )}
+
 
                             {/* Due Date / Decision Date */}
                             {(step.pm_duedate || step.pm_decisiondate) && (
@@ -432,6 +430,18 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                 </Stepper>
               )}
             </Box>
+
+            {!isCompleted && (
+              <Box sx={{ px: 3, pb: 3, borderTop: `1px solid ${theme.palette.divider}`, pt: 2 }}>
+                <EntityApprovalTasks
+                  entityId={entityId}
+                  moduleName={moduleName}
+                  entityLabel=""
+                  tabValue={0}
+                  index={0}
+                />
+              </Box>
+            )}
           </Paper>
         )
       })}

@@ -7,7 +7,10 @@ import {
   Link,
   Divider,
   useTheme,
+  Button as MuiButton,
+  CircularProgress,
 } from '@mui/material'
+import { GovernanceReadinessService } from '@/services'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
@@ -93,6 +96,27 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const [readiness, setReadiness] = React.useState<any>(null)
+  const [loadingReadiness, setLoadingReadiness] = React.useState(false)
+
+  React.useEffect(() => {
+    const checkReadiness = async () => {
+      const projId = review._pm_project_value
+      if (projId) {
+        setLoadingReadiness(true)
+        try {
+          const report = await GovernanceReadinessService.checkProjectReadiness(projId, Number(review.pm_gatestage ?? 0))
+          setReadiness(report)
+        } catch (e) {
+          console.error('Failed to load readiness checks:', e)
+        } finally {
+          setLoadingReadiness(false)
+        }
+      }
+    }
+    checkReadiness()
+  }, [review._pm_project_value, review.pm_gatestage])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -257,6 +281,40 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
               </Grid>
             </Grid>
 
+            {/* Governance Readiness Check Card */}
+            <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 2.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FactCheckIcon sx={{ color: 'success.main' }} /> Governance Readiness Check (Gate {Number(review.pm_gatestage ?? 0) + 1})
+              </Typography>
+              {loadingReadiness ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={24} /></Box>
+              ) : readiness ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {readiness.items.map((item: any) => (
+                    <Box key={item.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                      <Box sx={{
+                        mt: 0.25, width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        bgcolor: item.status === 'passed' ? 'success.main' : item.status === 'failed' ? 'error.main' : 'warning.main',
+                        color: '#fff', fontSize: 12, fontWeight: 700,
+                      }}>
+                        {item.status === 'passed' ? '✓' : item.status === 'failed' ? '✗' : '!'}
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.label}</Typography>
+                        {item.message && (
+                          <Typography variant="caption" color={item.status === 'failed' ? 'error.main' : 'text.secondary'} sx={{ display: 'block', mt: 0.25 }}>
+                            {item.message}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">No readiness information available.</Typography>
+              )}
+            </Paper>
+
           </Box>
         </Grid>
 
@@ -270,7 +328,7 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
-                  Project Lookup
+                  Project
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <AccountTreeIcon sx={{ color: 'primary.main', fontSize: 22 }} />
@@ -285,7 +343,7 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
 
               <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
-                  Programme Lookup
+                  Programme
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <AccountTreeIcon sx={{ color: 'secondary.main', fontSize: 22 }} />
@@ -294,6 +352,21 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
                       {review.pm_programmename || '—'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">Associated Programme</Typography>
+                  </Box>
+                </Box>
+              </Paper>
+
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
+                  Portfolio
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <AccountTreeIcon sx={{ color: 'info.main', fontSize: 22 }} />
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {review.pm_portfolioname || '—'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">Associated Portfolio</Typography>
                   </Box>
                 </Box>
               </Paper>
