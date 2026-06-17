@@ -18,6 +18,7 @@ import TasksPage from '@/features/tasks/pages/TasksPage'
 import FundingSourcesPage from '@/features/fundingsources/pages/FundingSourcesPage'
 import SkillsPage from '@/features/skills/pages/SkillsPage'
 import WorkflowsPage from '@/features/workflows/pages/WorkflowsPage'
+import StrategicRosterPage from '@/features/strategic-roster/pages/StrategicRosterPage'
 
 import HolidaysPage from '@/features/holidays/pages/HolidaysPage'
 import StatusSnapshotsPage from '@/features/statussnapshots/pages/StatusSnapshotsPage'
@@ -41,6 +42,7 @@ export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, Re
   issues: <IssuesPage />,
   changerequests: <ChangeRequestsPage />,
   tasks: <TasksPage />,
+  strategicRoster: <StrategicRosterPage />,
   fundingsources: <FundingSourcesPage />,
   workflows: <WorkflowsPage />,
   skills: <SkillsPage />,

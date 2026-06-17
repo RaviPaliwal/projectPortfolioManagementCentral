@@ -11,22 +11,22 @@ export type Persona =
 
 export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
   SystemAdministrator: [
-    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline', 'resources',
+    'dashboard', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline', 'resources',
     'timesheets', 'budgets', 'gatereviews', 'benefits', 'risks',
     'issues', 'changerequests', 'cashflow', 'tasks', 'fundingsources',
     'statussnapshots', 'configurations', 'workflows', 'teamadmin', 'skills', 'holidays', 'calendar'
   ],
   PortfolioExecutive: [
-    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline',
+    'dashboard', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
     'gatereviews', 'benefits', 'changerequests', 'statussnapshots', 'calendar'
   ],
   PMO: [
-    'dashboard', 'portfolios', 'programmes', 'projects', 'pipeline',
+    'dashboard', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
     'gatereviews', 'changerequests', 'tasks', 'statussnapshots',
     'workflows', 'teamadmin', 'calendar'
   ],
   ProjectManager: [
-    'dashboard', 'projects', 'resources', 'timesheets', 'gatereviews',
+    'dashboard', 'strategicRoster', 'projects', 'resources', 'timesheets', 'gatereviews',
     'risks', 'issues', 'changerequests', 'tasks', 'statussnapshots', 'calendar'
   ],
   FinancialController: [

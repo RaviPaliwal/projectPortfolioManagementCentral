@@ -19,6 +19,12 @@ import {
   Tab,
   IconButton,
   Tooltip,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material'
 import ErrorIcon from '@mui/icons-material/Error'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
@@ -34,6 +40,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import EditIcon from '@mui/icons-material/Edit'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate'
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 
 import { fetchProgrammeDetails, fetchPortfolioHierarchy } from '@/services'
 import {
@@ -109,6 +116,10 @@ export default function ProgrammesPage() {
   // ── List View State ────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('')
   const [portfolioFilter, setPortfolioFilter] = useState('all')
+  const [phaseFilter, setPhaseFilter] = useState('')
+  const [ragFilter, setRagFilter] = useState('')
+  const [minBudget, setMinBudget] = useState('')
+  const [maxBudget, setMaxBudget] = useState('')
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(25)
 
@@ -209,6 +220,18 @@ export default function ProgrammesPage() {
     }))
   }
 
+  const hasActiveFilters = !!(searchQuery || portfolioFilter !== 'all' || phaseFilter || ragFilter || minBudget || maxBudget)
+
+  const handleClearAll = useCallback(() => {
+    setSearchQuery('')
+    setPortfolioFilter('all')
+    setPhaseFilter('')
+    setRagFilter('')
+    setMinBudget('')
+    setMaxBudget('')
+    setPage(0)
+  }, [])
+
   // ── Derived Data ──────────────────────────────────────────────────────────
   const filteredProgrammes = useMemo(() => {
     let list = programmes
@@ -224,6 +247,20 @@ export default function ProgrammesPage() {
     if (portfolioFilter !== 'all') {
       list = list.filter(p => p._pm_portfolio_value === portfolioFilter)
     }
+    if (phaseFilter) {
+      list = list.filter(p => String(p.pm_programmephase ?? '') === phaseFilter)
+    }
+    if (ragFilter) {
+      list = list.filter(p => String(p.pm_ragstatus ?? '') === ragFilter)
+    }
+    if (minBudget) {
+      const min = parseFloat(minBudget)
+      if (!isNaN(min)) list = list.filter(p => (p.pm_budgeteur ?? 0) >= min)
+    }
+    if (maxBudget) {
+      const max = parseFloat(maxBudget)
+      if (!isNaN(max)) list = list.filter(p => (p.pm_budgeteur ?? 0) <= max)
+    }
     return [...list].sort((a, b) => {
       let cmp = 0
       switch (sort.field) {
@@ -238,7 +275,7 @@ export default function ProgrammesPage() {
       }
       return sort.dir === 'asc' ? cmp : -cmp
     })
-  }, [programmes, searchQuery, portfolioFilter, sort])
+  }, [programmes, searchQuery, portfolioFilter, phaseFilter, ragFilter, minBudget, maxBudget, sort])
 
   const paginatedProgrammes = useMemo(() =>
     filteredProgrammes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
@@ -509,8 +546,76 @@ export default function ProgrammesPage() {
           searchPlaceholder="Search by name, manager, sponsor..."
           filterValue={portfolioFilter}
           onFilterChange={(v) => { setPortfolioFilter(v); setPage(0) }}
+          filterLabel="Portfolio"
           filterOptions={[{ value: 'all', label: 'All Portfolios' }, ...portfolios.map(p => ({ value: p.id, label: p.name }))]}
-          onClear={() => { setSearchQuery(''); setPortfolioFilter('all'); setPage(0) }}
+          secondaryFilterValue={phaseFilter}
+          onSecondaryFilterChange={(v) => { setPhaseFilter(v); setPage(0) }}
+          secondaryFilterLabel="Phase"
+          secondaryFilterOptions={[
+            { value: '', label: 'All Phases' },
+            { value: '0', label: 'Delivery' },
+            { value: '1', label: 'Planning' },
+            { value: '2', label: 'Initiation' },
+          ]}
+          extraFilters={
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <FormControl size="small" sx={{ minWidth: 130 }}>
+                <InputLabel>RAG</InputLabel>
+                <Select
+                  value={ragFilter}
+                  label="RAG"
+                  onChange={(e) => { setRagFilter(e.target.value); setPage(0) }}
+                  sx={{ borderRadius: 1.15, fontSize: fontSizes.base }}
+                >
+                  <MenuItem value="">All RAG</MenuItem>
+                  <MenuItem value="1">Green</MenuItem>
+                  <MenuItem value="0">Amber</MenuItem>
+                  <MenuItem value="2">Red</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                size="small"
+                placeholder="Min budget"
+                value={minBudget}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+                    setMinBudget(val)
+                    setPage(0)
+                  }
+                }}
+                slotProps={{
+                  input: {
+                    startAdornment: <InputAdornment position="start"><AttachMoneyIcon sx={{ fontSize: 16, color: 'text.secondary' }} /></InputAdornment>,
+                    sx: { borderRadius: 1.15, fontSize: fontSizes.base },
+                  },
+                }}
+                sx={{ maxWidth: 140 }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ userSelect: 'none' }}>—</Typography>
+              <TextField
+                size="small"
+                placeholder="Max budget"
+                value={maxBudget}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+                    setMaxBudget(val)
+                    setPage(0)
+                  }
+                }}
+                slotProps={{
+                  input: {
+                    startAdornment: <InputAdornment position="start"><AttachMoneyIcon sx={{ fontSize: 16, color: 'text.secondary' }} /></InputAdornment>,
+                    sx: { borderRadius: 1.15, fontSize: fontSizes.base },
+                  },
+                }}
+                sx={{ maxWidth: 140 }}
+              />
+            </Box>
+          }
+          showClear={hasActiveFilters}
+          onClear={handleClearAll}
         />
         <TableShell loading={loading} empty={filteredProgrammes.length === 0} emptyIcon={<AccountTreeIcon />}>
           <TableContainer sx={{ maxHeight: 'calc(100vh - 480px)' }}>
