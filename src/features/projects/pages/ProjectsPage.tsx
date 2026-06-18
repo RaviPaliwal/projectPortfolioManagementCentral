@@ -22,6 +22,7 @@ import {
   fetchMilestonesDueThisMonth,
   fetchPortfolioHierarchy,
   uploadDocument,
+  updateProjectTask,
 } from '@/services'
 import { useUser } from '@/context/UserContext'
 import { MODULE_NAMES } from '@/constants/moduleNames'
@@ -327,6 +328,49 @@ export default function ProjectsPage() {
     } catch { /* silent */ }
   }
 
+  const handleMarkTaskAsDone = async (taskId: string) => {
+    if (!selectedProject?.pm_projectid) return
+    try {
+      // 1. Update task in Dataverse
+      await updateProjectTask(taskId, {
+        pm_percentcomplete: 100,
+        pm_taskstatus: '0'
+      })
+
+      // 2. Map and update details local state
+      const updatedTasks = detailTasks.map((t) =>
+        t.pm_projecttaskid === taskId ? { ...t, pm_percentcomplete: 100, pm_taskstatus: '0' } : t
+      )
+
+      // 3. Compute new average progress
+      const total = updatedTasks.length
+      const avgProgress = total > 0
+        ? Math.round(updatedTasks.reduce((s, t) => s + (t.pm_percentcomplete ?? 0), 0) / total)
+        : 0
+
+      // 4. Update the project in Dataverse
+      await updateProject(selectedProject.pm_projectid, {
+        pm_percentcomplete: avgProgress
+      })
+
+      setSuccessMsg('Task marked as complete and project progress updated.')
+
+      // 5. Update UI states
+      setDetailTasks(updatedTasks)
+      setSelectedProject((prev) => (prev ? { ...prev, pm_percentcomplete: avgProgress } : null))
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.pm_projectid === selectedProject.pm_projectid ? { ...p, pm_percentcomplete: avgProgress } : p
+        )
+      )
+
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err) {
+      console.error('[ProjectsPage] handleMarkTaskAsDone error:', err)
+      setError('Unable to mark task as completed.')
+    }
+  }
+
   // ── KPIs ────────────────────────────────────────────────────────────────
   const kpiItems = useMemo((): KpiCardItem[] => [
     {
@@ -401,6 +445,7 @@ export default function ProjectsPage() {
           onNavigateToGateReview={() => setGateReviewDialogOpen(true)}
           canEdit={canEdit}
           onEditProject={openEditForm}
+          onMarkTaskAsDone={handleMarkTaskAsDone}
         />
       ) : (
         <>
