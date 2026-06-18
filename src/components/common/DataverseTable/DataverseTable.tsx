@@ -78,10 +78,10 @@ export function DataverseTable<T extends Record<string, any>>({
         />
         <Box sx={{ display: 'flex', gap: 1 }}>
           {extraHeaderActions}
-          <ExportButton 
-            data={data} 
-            columns={columns.map(c => ({ key: c.key as string, label: c.label }))} 
-            filename={exportFileName} 
+          <ExportButton
+            data={data}
+            columns={columns.map(c => ({ key: c.key as string, label: c.label }))}
+            filename={exportFileName}
           />
         </Box>
       </Box>
@@ -111,7 +111,7 @@ export function DataverseTable<T extends Record<string, any>>({
             {paginatedData.map((item, idx) => {
               const idKey = Object.keys(item).find(k => k.endsWith('id')) || 'id';
               const id = item[idKey] || idx;
-              
+
               return (
                 <TableRow
                   key={id}

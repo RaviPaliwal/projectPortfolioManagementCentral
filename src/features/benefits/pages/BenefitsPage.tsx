@@ -6,6 +6,8 @@ import {
   useTheme,
   Button,
   Paper,
+  Grid,
+  Divider,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
@@ -28,18 +30,17 @@ import {
   Pm_performancemeasuresService
 } from '@/generated'
 import type { BenefitModel, PerformanceMeasureModel } from '@/types/dataverse'
-import { 
-  PageHeader, 
-  KpiCardRow, 
-  DetailDrawer, 
-  TabPanel, 
-  StatusTag, 
+import {
+  PageHeader,
+  KpiCardRow,
+  StatusTag,
   ActionIcon,
-  ConfirmDialog
+  ConfirmDialog,
+  Breadcrumbs
 } from '@/components/common'
 import { fontSizes } from '@/styles/fontSizes'
-import { formatDate, currencyFormatter } from '@/utils/formatters'
-import { RAG_LABELS } from '@/constants/mappings'
+import { formatDate, currencyFormatter, numberFormatter } from '@/utils/formatters'
+import { RAG_LABELS, RAG_COLORS } from '@/constants/mappings'
 import {
   BenefitsGrid,
   PerformanceMeasuresTable,
@@ -73,7 +74,7 @@ export default function BenefitsPage() {
   // Specialized async states
   const measuresState = useDataverseAsync<PerformanceMeasureModel[]>()
   const actionState = useDataverseAsync<any>()
-  
+
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
@@ -83,7 +84,10 @@ export default function BenefitsPage() {
 
   // Detail panel state
   const [selectedBenefit, setSelectedBenefit] = useState<BenefitModel | null>(null)
-  const [detailTab, setDetailTab] = useState(0)
+
+  const handleSelectBenefit = (benefit: BenefitModel) => {
+    setSelectedBenefit(benefit)
+  }
 
   // Form states
   const [showFormModal, setShowFormModal] = useState(false)
@@ -100,18 +104,30 @@ export default function BenefitsPage() {
     fetchAll()
   }, [fetchAll])
 
+  const { execute: executeLoadMeasures } = measuresState
+
   const loadMeasures = useCallback(async (benefitId: string) => {
-    measuresState.execute(Pm_performancemeasuresService.getAll({ 
+    executeLoadMeasures(Pm_performancemeasuresService.getAll({
       filter: `_pm_benefit_value eq '${benefitId}'`,
-      top: 50 
+      top: 50
     }))
-  }, [measuresState])
+  }, [executeLoadMeasures])
 
   useEffect(() => {
     if (selectedBenefit?.pm_benefitid) {
       loadMeasures(selectedBenefit.pm_benefitid)
     }
-  }, [selectedBenefit, loadMeasures])
+  }, [selectedBenefit?.pm_benefitid, loadMeasures])
+
+  // Sync selectedBenefit with latest data from benefits list
+  useEffect(() => {
+    if (selectedBenefit?.pm_benefitid) {
+      const updated = benefits.find(b => b.pm_benefitid === selectedBenefit.pm_benefitid)
+      if (updated) {
+        setSelectedBenefit(updated)
+      }
+    }
+  }, [benefits, selectedBenefit?.pm_benefitid])
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
   const kpiItems = useMemo(() => {
@@ -122,20 +138,20 @@ export default function BenefitsPage() {
     const atRisk = benefits.filter((b) => String(b.pm_ragstatus) === '2').length
     const totalTarget = benefits.reduce((s, b) => s + (b.pm_targetvalue ?? 0), 0)
     const totalBaseline = benefits.reduce((s, b) => s + (b.pm_baselinevalue ?? 0), 0)
-    
+
     return [
       { label: 'Total Benefits', value: total, icon: <EmojiEventsIcon />, color: 'primary.main' },
-      { 
+      {
         label: 'Realised', value: realised, icon: <TaskAltIcon />, color: 'success.main',
         subtitle: realised > 0 ? `${((realised / (total || 1)) * 100).toFixed(0)}% completion` : 'None realised'
       },
       { label: 'In Progress', value: inProgress, icon: <HistoryIcon />, color: 'warning.main' },
       { label: 'On Track', value: onTrack, icon: <CheckCircleIcon />, color: 'success.main' },
-      { 
+      {
         label: 'At Risk', value: atRisk, icon: <WarningAmberIcon />, color: atRisk > 0 ? 'error.main' : 'text.secondary',
         subtitle: atRisk > 0 ? `${atRisk} benefit(s) flagged red` : 'No red-flagged benefits'
       },
-      { 
+      {
         label: 'Target Value', value: currencyFormatter.format(totalTarget), icon: <AttachMoneyIcon />, color: 'primary.main',
         subtitle: `vs ${currencyFormatter.format(totalBaseline)} baseline`
       },
@@ -145,7 +161,7 @@ export default function BenefitsPage() {
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSaveBenefit = async (data: Record<string, any>) => {
     const result = await actionState.execute(
-      editingBenefit?.pm_benefitid 
+      editingBenefit?.pm_benefitid
         ? update(editingBenefit.pm_benefitid, data)
         : create(data)
     )
@@ -174,7 +190,7 @@ export default function BenefitsPage() {
 
   const handleSaveMeasure = async (data: Record<string, any>) => {
     if (!selectedBenefit?.pm_benefitid) return
-    
+
     const result = await actionState.execute(Pm_performancemeasuresService.create({
       ...data,
       pm_variance: data.pm_cumulativeplanned > 0
@@ -207,6 +223,217 @@ export default function BenefitsPage() {
     }
   }
 
+  // ── Render ────────────────────────────────────────────────────────────────
+  if (selectedBenefit) {
+    return (
+      <Box>
+        <Breadcrumbs
+          items={[{ label: 'Benefits', path: 'list' }, { label: selectedBenefit.pm_benefitname ?? 'Detail' }]}
+          onNavigate={() => setSelectedBenefit(null)}
+        />
+        <PageHeader
+          title={selectedBenefit.pm_benefitname ?? 'Benefit Detail'}
+          subtitle={selectedBenefit.pm_benefitreference ? `Reference: ${selectedBenefit.pm_benefitreference}` : undefined}
+          actionElement={
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+              {canEdit && (
+                <ActionIcon
+                  icon={<EditIcon />}
+                  onClick={() => { setEditingBenefit(selectedBenefit); setShowFormModal(true); }}
+                  label="Edit Benefit"
+                  color="primary"
+                />
+              )}
+              {canDelete && (
+                <ActionIcon
+                  icon={<DeleteIcon />}
+                  onClick={() => setDeleteConfirm(selectedBenefit.pm_benefitid!)}
+                  label="Delete Benefit"
+                  color="error"
+                />
+              )}
+            </Box>
+          }
+        />
+
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 3 }}>
+          <StatusTag label={CATEGORY_LABELS[String(selectedBenefit.pm_benefitcategory)]} color={CATEGORY_COLORS[String(selectedBenefit.pm_benefitcategory)]} />
+          <StatusTag label={STATUS_LABELS[String(selectedBenefit.pm_benefitstatus)]} color={STATUS_COLORS[String(selectedBenefit.pm_benefitstatus)]} />
+        </Box>
+
+        {(error || crudError || actionState.error) && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            {error || crudError || actionState.error}
+          </Alert>
+        )}
+        {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
+
+        <Grid container spacing={3}>
+          {/* Block 1: Benefit Info & Description (7-columns) */}
+          <Grid size={{ xs: 12, md: 7 }}>
+            <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
+                {/* Benefit Information */}
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Benefit Information
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Reference / ID</Typography>
+                      <Typography variant="body2">{selectedBenefit.pm_benefitreference || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Category</Typography>
+                      <Typography variant="body2">{CATEGORY_LABELS[String(selectedBenefit.pm_benefitcategory)] || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Benefit Type</Typography>
+                      <Typography variant="body2">
+                        {selectedBenefit.pm_benefittype === 0 || String(selectedBenefit.pm_benefittype) === '0' ? 'Quantitative' :
+                          selectedBenefit.pm_benefittype === 1 || String(selectedBenefit.pm_benefittype) === '1' ? 'Qualitative' : '—'}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Owner</Typography>
+                      <Typography variant="body2">{selectedBenefit.pm_benifitownername || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Project / Programme</Typography>
+                      <Typography variant="body2">{selectedBenefit.pm_projectcode || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>RAG Status</Typography>
+                      <Box sx={{ mt: 0.5 }}>
+                        <StatusTag
+                          label={RAG_LABELS[String(selectedBenefit.pm_ragstatus) as keyof typeof RAG_LABELS] ?? '—'}
+                          color={RAG_COLORS[String(selectedBenefit.pm_ragstatus) as keyof typeof RAG_COLORS]}
+                        />
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Divider />
+
+                {/* Description */}
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                    {selectedBenefit.pm_benefitdescription || 'No description provided.'}
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Block 2: Targets, Baseline & Timeline (5-columns) */}
+          <Grid size={{ xs: 12, md: 5 }}>
+            <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
+                {/* Target & Baseline values */}
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TrackChangesIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Target & Baseline
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Unit of Measure</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedBenefit.pm_unitofmeasure || '—'}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.text.secondary}` }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Baseline</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                          {selectedBenefit.pm_baselinevalue != null ? numberFormatter.format(selectedBenefit.pm_baselinevalue) : '—'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Target</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
+                          {selectedBenefit.pm_targetvalue != null ? numberFormatter.format(selectedBenefit.pm_targetvalue) : '—'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Divider />
+
+                {/* Timeline */}
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TimelineIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Realisation Timeline
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Start Date</Typography>
+                      <Typography variant="body2">{selectedBenefit.pm_realisationstartdate ? formatDate(selectedBenefit.pm_realisationstartdate) : '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>End Date</Typography>
+                      <Typography variant="body2">{selectedBenefit.pm_realisationenddate ? formatDate(selectedBenefit.pm_realisationenddate) : '—'}</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Block 3: Performance Measures (12-columns) */}
+          <Grid size={{ xs: 12 }}>
+            <Paper sx={{ p: 3, borderRadius: 1.5 }}>
+              <Box sx={{ 
+                '& .MuiPaper-root': { 
+                  boxShadow: 'none', 
+                  border: 'none', 
+                  bgcolor: 'transparent', 
+                  backgroundImage: 'none',
+                  borderRadius: 0,
+                  mb: 0
+                } 
+              }}>
+                <PerformanceMeasuresTable
+                  measures={measuresState.data || []}
+                  loading={measuresState.loading}
+                  onAddClick={() => { setShowMeasureModal(true); }}
+                  onDeleteClick={handleDeleteMeasure}
+                  isDark={isDark}
+                />
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
+
+        <BenefitDialog
+          open={showFormModal}
+          onClose={() => setShowFormModal(false)}
+          onSave={handleSaveBenefit}
+          initialData={editingBenefit}
+        />
+
+        <MeasureDialog
+          open={showMeasureModal}
+          onClose={() => setShowMeasureModal(false)}
+          onSave={handleSaveMeasure}
+        />
+
+        <ConfirmDialog
+          open={!!deleteConfirm}
+          title="Remove Benefit"
+          message="Are you sure you want to remove this benefit? All related performance measures will also be removed."
+          confirmLabel="Remove"
+          confirmColor="error"
+          loading={actionState.loading}
+          onConfirm={handleDeleteBenefit}
+          onClose={() => setDeleteConfirm(null)}
+        />
+      </Box>
+    )
+  }
+
   return (
     <Box>
       <PageHeader
@@ -233,65 +460,14 @@ export default function BenefitsPage() {
       <BenefitsGrid
         benefits={benefits}
         loading={loading}
-        onRowClick={setSelectedBenefit}
-        selectedId={selectedBenefit?.pm_benefitid}
+        onRowClick={handleSelectBenefit}
+        selectedId={undefined}
         onCreateClick={() => { setEditingBenefit(null); setShowFormModal(true); }}
         categoryFilter={categoryFilter}
         onCategoryFilterChange={setCategoryFilter}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
       />
-
-      <DetailDrawer
-        open={!!selectedBenefit}
-        onClose={() => setSelectedBenefit(null)}
-        icon={<EmojiEventsIcon sx={{ color: 'primary.main', fontSize: fontSizes.xl }} />}
-        title={selectedBenefit?.pm_benefitname ?? ''}
-        subtitle={selectedBenefit && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-            <StatusTag label={CATEGORY_LABELS[String(selectedBenefit.pm_benefitcategory)]} color={CATEGORY_COLORS[String(selectedBenefit.pm_benefitcategory)]} />
-            <StatusTag label={STATUS_LABELS[String(selectedBenefit.pm_benefitstatus)]} color={STATUS_COLORS[String(selectedBenefit.pm_benefitstatus)]} />
-          </Box>
-        )}            headerActions={
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                {canEdit && (
-                  <ActionIcon icon={<EditIcon />} onClick={() => { setEditingBenefit(selectedBenefit); setShowFormModal(true); }} label="Edit" />
-                )}
-                {canDelete && (
-                  <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedBenefit?.pm_benefitid!)} label="Delete" color="error" />
-                )}
-              </Box>
-            }
-        tabs={[{ label: 'Overview' }, { label: 'Performance Measures' }]}
-        tabValue={detailTab}
-        onTabChange={(_e, v) => setDetailTab(v)}
-      >
-        {selectedBenefit && (
-          <>
-            <TabPanel value={detailTab} index={0} pt={0}>
-              {/* Summary view logic remains consistent with original design */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Benefit Information</Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                       <Box><Typography variant="caption">Category</Typography><Typography variant="body2">{CATEGORY_LABELS[String(selectedBenefit.pm_benefitcategory)]}</Typography></Box>
-                       <Box><Typography variant="caption">Owner</Typography><Typography variant="body2">{selectedBenefit.pm_benifitownername || '—'}</Typography></Box>
-                    </Box>
-                 </Paper>
-              </Box>
-            </TabPanel>
-            <TabPanel value={detailTab} index={1} pt={0}>
-              <PerformanceMeasuresTable
-                measures={measuresState.data || []}
-                loading={measuresState.loading}
-                onAddClick={() => { setShowMeasureModal(true); }}
-                onDeleteClick={handleDeleteMeasure}
-                isDark={isDark}
-              />
-            </TabPanel>
-          </>
-        )}
-      </DetailDrawer>
 
       <BenefitDialog
         open={showFormModal}

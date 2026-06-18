@@ -1,4 +1,5 @@
 import { Box, Paper, Typography, Skeleton, FormControl, Select, MenuItem, InputLabel } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import GppBadIcon from '@mui/icons-material/GppBad'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
@@ -12,6 +13,7 @@ interface BudgetHealthPanelProps {
   selectedYear?: number | 'all'
   availableYears?: number[]
   onYearChange?: (year: number | 'all') => void
+  sx?: SxProps<Theme>
 }
 
 export const BudgetHealthPanel = ({ 
@@ -20,7 +22,8 @@ export const BudgetHealthPanel = ({
   loading, 
   selectedYear,
   availableYears = [],
-  onYearChange
+  onYearChange,
+  sx
 }: BudgetHealthPanelProps) => {
   const budgetVariance = totalApprovedBudget - totalActualSpend
 
@@ -34,7 +37,8 @@ export const BudgetHealthPanel = ({
           boxShadow: (theme) => theme.palette.mode === 'dark'
             ? '0 12px 20px rgba(0,0,0,0.5)'
             : '0 8px 16px rgba(99,102,241,0.06)',
-        }
+        },
+        ...sx
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>

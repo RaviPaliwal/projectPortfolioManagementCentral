@@ -76,11 +76,14 @@ function getEntityIcon(entityType?: string) {
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 const formatDate = (d?: string | null): string => d ? dateFormatter.format(new Date(d)) : '—'
 
+import type { SxProps, Theme } from '@mui/material'
+
 interface DashboardTasksWidgetProps {
   variant?: 'full' | 'tasks' | 'insights'
+  sx?: SxProps<Theme>
 }
 
-export default function DashboardTasksWidget({ variant = 'full' }: DashboardTasksWidgetProps) {
+export default function DashboardTasksWidget({ variant = 'full', sx }: DashboardTasksWidgetProps) {
   const { currentUser } = useUser()
   const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
   const [insights, setInsights] = useState<AgentInsightModel[]>([])
@@ -143,12 +146,15 @@ export default function DashboardTasksWidget({ variant = 'full' }: DashboardTask
   const showAI = variant === 'full' || variant === 'insights'
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, ...sx }}>
       {showTasks && (
         <Paper
           sx={{
             borderRadius: 2,
             overflow: 'hidden',
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             '&:hover': {
               transform: 'translateY(-3px)',
@@ -201,7 +207,7 @@ export default function DashboardTasksWidget({ variant = 'full' }: DashboardTask
 
           {error && <Alert severity="error" sx={{ mx: 2.5, mb: 1.5 }}>{error}</Alert>}
 
-          <Box sx={{ px: 2.5, pb: 2.5 }}>
+          <Box sx={{ px: 2.5, pb: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
             {loading ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {[1, 2, 3].map((i) => (
@@ -209,13 +215,13 @@ export default function DashboardTasksWidget({ variant = 'full' }: DashboardTask
                 ))}
               </Box>
             ) : totalTasks === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 3 }}>
+              <Box sx={{ textAlign: 'center', py: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                 <CheckCircleIcon sx={{ fontSize: 40, color: '#22c55e', mb: 1 }} />
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>No pending approvals</Typography>
                 <Typography variant="caption" color="text.disabled">All caught up! You have no tasks requiring action.</Typography>
               </Box>
             ) : (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, flexGrow: 1 }}>
                 {steps.slice(0, 5).map((step) => {
                   const isOverdue = step.pm_duedate && new Date(step.pm_duedate) < new Date()
                   return (

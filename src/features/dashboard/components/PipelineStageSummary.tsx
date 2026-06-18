@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Box, Paper, Typography, Skeleton, Divider } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material'
 import type { InitiativeModel } from '@/types/dataverse'
 
 const PIPELINE_STAGES: Record<number, { label: string; color: string }> = {
@@ -13,9 +14,10 @@ const PIPELINE_STAGES: Record<number, { label: string; color: string }> = {
 interface PipelineStageSummaryProps {
   initiatives: InitiativeModel[]
   loading: boolean
+  sx?: SxProps<Theme>
 }
 
-export const PipelineStageSummary = ({ initiatives, loading }: PipelineStageSummaryProps) => {
+export const PipelineStageSummary = ({ initiatives, loading, sx }: PipelineStageSummaryProps) => {
   const pipelineStages = useMemo(() => {
     const counts: Record<number, number> = {}
     for (const init of initiatives) {
@@ -34,13 +36,16 @@ export const PipelineStageSummary = ({ initiatives, loading }: PipelineStageSumm
     <Paper
       sx={{
         p: 3,
+        display: 'flex',
+        flexDirection: 'column',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         '&:hover': {
           transform: 'translateY(-3px)',
           boxShadow: (theme) => theme.palette.mode === 'dark'
             ? '0 12px 20px rgba(0,0,0,0.5)'
             : '0 8px 16px rgba(99,102,241,0.06)',
-        }
+        },
+        ...sx
       }}
     >
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -51,44 +56,46 @@ export const PipelineStageSummary = ({ initiatives, loading }: PipelineStageSumm
       </Typography>
 
       {loading ? (
-        <Skeleton variant="rounded" height={180} />
+        <Skeleton variant="rounded" sx={{ flexGrow: 1, minHeight: 180 }} />
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {pipelineStages.map((stage) => (
-            <Box key={stage.key} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  bgcolor: stage.color,
-                  flexShrink: 0,
-                }}
-              />
-              <Typography variant="body2" sx={{ flex: 1, fontWeight: 500 }}>
-                {stage.label}
-              </Typography>
-              <Box
-                sx={{
-                  px: 1.25,
-                  py: 0.25,
-                  borderRadius: 1.5,
-                  bgcolor: `${stage.color}18`,
-                  minWidth: 32,
-                  textAlign: 'center',
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: stage.color, fontSize: '0.85rem' }}
-                >
-                  {stage.count}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, flexGrow: 1 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, flexGrow: 1 }}>
+            {pipelineStages.map((stage) => (
+              <Box key={stage.key} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    bgcolor: stage.color,
+                    flexShrink: 0,
+                  }}
+                />
+                <Typography variant="body2" sx={{ flex: 1, fontWeight: 500 }}>
+                  {stage.label}
                 </Typography>
+                <Box
+                  sx={{
+                    px: 1.25,
+                    py: 0.25,
+                    borderRadius: 1.5,
+                    bgcolor: `${stage.color}18`,
+                    minWidth: 32,
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: stage.color, fontSize: '0.85rem' }}
+                  >
+                    {stage.count}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          ))}
+            ))}
+          </Box>
           <Divider sx={{ my: 0.5 }} />
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 'auto' }}>
             <Typography variant="body2" sx={{ fontWeight: 700 }}>Total</Typography>
             <Typography variant="body2" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
               {pipelineStages.reduce((s, st) => s + st.count, 0)}

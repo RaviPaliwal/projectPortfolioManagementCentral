@@ -1,4 +1,5 @@
 import { Box, Paper, Typography, Skeleton, Divider, useTheme } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import { StatusChip, HealthSplitBar, StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
@@ -14,6 +15,7 @@ interface PortfolioHealthSnapshotProps {
   programmeSnapshot: ProgrammeModel[]
   milestonesDue: number
   loading: boolean
+  sx?: SxProps<Theme>
 }
 
 export const PortfolioHealthSnapshot = ({
@@ -22,6 +24,7 @@ export const PortfolioHealthSnapshot = ({
   programmeSnapshot,
   milestonesDue,
   loading,
+  sx,
 }: PortfolioHealthSnapshotProps) => {
   const theme = useTheme()
 
@@ -35,7 +38,8 @@ export const PortfolioHealthSnapshot = ({
           boxShadow: (theme) => theme.palette.mode === 'dark'
             ? '0 12px 20px rgba(0,0,0,0.5)'
             : '0 8px 16px rgba(99,102,241,0.06)',
-        }
+        },
+        ...sx
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
