@@ -56,7 +56,7 @@ import {
 } from '@/services'
 import type { BudgetLineModel, FundingSourceModel, FinancialPeriodModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, WorkflowMilestone } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, Breadcrumbs } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
@@ -197,6 +197,16 @@ export default function BudgetsPage() {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // Synchronize selected budget with the latest data from the budget list
+  useEffect(() => {
+    if (selectedBudget) {
+      const updated = budgetLines.find(b => b.pm_budgetlineid === selectedBudget.pm_budgetlineid)
+      if (updated && JSON.stringify(updated) !== JSON.stringify(selectedBudget)) {
+        setSelectedBudget(updated)
+      }
+    }
+  }, [budgetLines, selectedBudget])
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
   const kpiItems = useMemo((): KpiCardItem[] => {
@@ -436,7 +446,6 @@ export default function BudgetsPage() {
       setActionLoading(false)
     }
   }
-
   const handleDeleteBudget = async () => {
     if (!deleteConfirm) return
     setActionLoading(true)
@@ -467,463 +476,456 @@ export default function BudgetsPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Box>
-      <PageHeader
-        title="Budgets"
-        subtitle="Track and manage budgets across portfolios, programmes, and projects — monitor spend, forecast, and variance."
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <ExportButton filename="budgets.csv" columns={budgetExportColumns} data={filteredBudgetLines} />
-            {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-                Add Budget Line
-              </Button>
-            )}
-          </Box>
-        }
-      />
-
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-      {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
-
-      {/* ── KPI Row ──────────────────────────────────── */}
-      {!loading && <KpiCardRow items={kpiItems} />}
-
-      {/* ── Budget Grid ──────────────────────────────── */}
-      <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-        <SearchFilterBar
-          searchQuery={searchQuery}
-          onSearchChange={handleSearchChange}
-          searchPlaceholder="Search by name, category, portfolio, programme..."
-          filterValue={categoryFilter}
-          onFilterChange={handleCategoryFilterChange}
-          filterLabel="Category"
-          filterOptions={CATEGORY_FILTER_OPTIONS}
-          onClear={() => { setSearchQuery(''); setCategoryFilter(''); setPage(0) }}
-        />
-
-        <TableShell
-          loading={loading}
-          empty={filteredBudgetLines.length === 0}
-          emptyIcon={<AccountBalanceWalletIcon />}
-          emptyTitle={searchQuery || categoryFilter ? 'No budget lines match your criteria.' : 'No budget lines found.'}
-          emptyAction={!searchQuery && !categoryFilter ? (
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreateForm}>
-              Add your first budget line
-            </Button>
-          ) : undefined}
-        >
-          <Table stickyHeader size="small" sx={{ minWidth: 1100 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Budget Line
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'category'} direction={sort.field === 'category' ? sort.dir : 'asc'} onClick={() => handleSort('category')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Category
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'budget'} direction={sort.field === 'budget' ? sort.dir : 'asc'} onClick={() => handleSort('budget')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Approved Budget
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'revised'} direction={sort.field === 'revised' ? sort.dir : 'asc'} onClick={() => handleSort('revised')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Revised Budget
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'actual'} direction={sort.field === 'actual' ? sort.dir : 'asc'} onClick={() => handleSort('actual')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Actual Spend
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <TableSortLabel active={sort.field === 'variance'} direction={sort.field === 'variance' ? sort.dir : 'asc'} onClick={() => handleSort('variance')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                    Variance
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  Entity
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginatedBudgetLines.map((line, idx) => {
-                const ut = budgetUtilization(line)
-                const variance = line.pm_varianceeur
-                const isOverBudget = variance != null && variance < 0
-                return (
-                  <TableRow
-                    key={line.pm_budgetlineid}
-                    hover
-                    onClick={() => handleRowClick(line)}
-                    sx={{
-                      cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                      transition: 'background-color 0.15s ease',
-                      '& td': { px: 2.5, py: 1.25 },
-                    }}
-                  >
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
-                          {(line.pm_budgetlinename ?? 'B').charAt(0).toUpperCase()}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {line.pm_budgetlinename ?? 'Unnamed'}
-                          </Typography>
-                          {line.pm_fundingsourcename && (
-                            <Typography variant="caption" color="text.secondary">
-                              {line.pm_fundingsourcename}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <StatusTag
-                        label={CATEGORY_LABELS[String(line.pm_costcategory ?? '')] ?? 'Unknown'}
-                        color={CATEGORY_COLORS[String(line.pm_costcategory ?? '')] ?? 'default'}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
-                        {line.pm_approvedbudgeteur != null ? currencyFormatter.format(line.pm_approvedbudgeteur) : '—'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
-                        {line.pm_revisedbudgeteur != null ? currencyFormatter.format(line.pm_revisedbudgeteur) : '—'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
-                        <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
-                          {line.pm_actualspendeur != null ? currencyFormatter.format(line.pm_actualspendeur) : '—'}
-                        </Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={ut}
-                          sx={{
-                            width: '100%',
-                            maxWidth: 100,
-                            height: 4,
-                            borderRadius: 1.5,
-                            bgcolor: isDark ? '#334155' : '#e2e8f0',
-                            '& .MuiLinearProgress-bar': {
-                              bgcolor: ut > 85 ? 'error.main' : ut > 65 ? 'warning.main' : 'success.main',
-                            },
-                          }}
-                        />
-                      </Box>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
-                        {isOverBudget && <WarningAmberIcon sx={{ fontSize: 16, color: 'error.main' }} />}
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontFamily: '"JetBrains Mono", monospace',
-                            fontWeight: 700,
-                            color: getVarianceColor(variance),
-                          }}
-                        >
-                          {variance != null ? `${variance >= 0 ? '+' : ''}${currencyFormatter.format(variance)}` : '—'}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {line.pm_portfolio || line.pm_programme || line.pm_projectcode || '—'}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </TableShell>
-
-        {!loading && filteredBudgetLines.length > 0 && (
-          <TableFooter
-            filteredCount={filteredBudgetLines.length}
-            totalCount={budgetLines.length}
-            itemLabel="budget line"
-            totals={[
-              { label: 'Total budget', value: `€${numberFormatter.format(filteredBudgetLines.reduce((s, l) => s + (l.pm_approvedbudgeteur ?? 0), 0))}` },
-              { label: 'Total spend', value: `€${numberFormatter.format(filteredBudgetLines.reduce((s, l) => s + (l.pm_actualspendeur ?? 0), 0))}` },
+      {selectedBudget ? (
+        // ── Detail View ──
+        <Box>
+          <Breadcrumbs
+            items={[
+              { label: 'Budgets', path: 'list' },
+              { label: selectedBudget.pm_budgetlinename ?? 'Detail' }
             ]}
+            onNavigate={() => setSelectedBudget(null)}
           />
-        )}
-        {!loading && filteredBudgetLines.length > 0 && (
-          <TablePagination
-            component="div"
-            count={filteredBudgetLines.length}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[25, 50, 100]}
+          <PageHeader
+            title={selectedBudget.pm_budgetlinename ?? 'Budget Line Detail'}
+            subtitle={selectedBudget.pm_fundingsourcename ? `Funding: ${selectedBudget.pm_fundingsourcename}` : ''}
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                {canEdit && (
+                  <ActionIcon
+                    icon={<EditIcon />}
+                    onClick={() => openEditForm(selectedBudget)}
+                    label="Edit Budget"
+                    color="primary"
+                  />
+                )}
+                {canDelete && (
+                  <ActionIcon
+                    icon={<DeleteIcon />}
+                    onClick={() => selectedBudget.pm_budgetlineid && setDeleteConfirm(selectedBudget.pm_budgetlineid)}
+                    label="Delete Budget"
+                    color="error"
+                  />
+                )}
+              </Box>
+            }
           />
-        )}
-      </Paper>
 
-      {/* ── Detail Drawer ────────────────────────────── */}
-      <DetailDrawer
-        open={!!selectedBudget}
-        onClose={handleCloseDetail}
-        icon={<AccountBalanceWalletIcon sx={{ color: 'primary.main', fontSize: fontSizes.xl }} />}
-        title={selectedBudget?.pm_budgetlinename ?? ''}
-        subtitle={selectedBudget && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 3 }}>
             <StatusTag
               label={CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] ?? 'Unknown'}
               color={CATEGORY_COLORS[String(selectedBudget.pm_costcategory ?? '')] ?? 'default'}
             />
-            {selectedBudget.pm_fundingsourcename && (
-              <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
-                <SourceIcon sx={{ fontSize: fontSizes.sm, mr: 0.5 }} />
-                {selectedBudget.pm_fundingsourcename}
+            {selectedBudget.pm_fiscalperiodname && (
+              <Typography variant="body2" color="text.secondary">
+                Period: {selectedBudget.pm_fiscalperiodname}
               </Typography>
             )}
           </Box>
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {canEdit && (
-              <ActionIcon
-                icon={<EditIcon />}
-                onClick={() => selectedBudget && openEditForm(selectedBudget)}
-                label="Edit Budget"
-              />
-            )}
-            {canDelete && (
-              <ActionIcon
-                icon={<DeleteIcon />}
-                onClick={() => selectedBudget?.pm_budgetlineid && setDeleteConfirm(selectedBudget.pm_budgetlineid)}
-                label="Delete Budget"
-                color="error"
-              />
-            )}
-          </Box>
-        }
-        tabs={[
-          { label: 'Overview' },
-          { label: 'Details' },
-          { label: 'Approval' },
-          { label: 'Tasks' },
-        ]}
-        tabValue={detailTab}
-        onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
-      >
-        {selectedBudget && (
-          <>
-            {/* Overview Tab */}
-            <TabPanel value={detailTab} index={0} pt={0}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                {/* Budget Utilization */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <AccountBalanceWalletIcon sx={{ fontSize: fontSizes.md }} /> Budget Utilization
-                  </Typography>
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Budget Used
-                      </Typography>
-                      <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {budgetUtilization(selectedBudget)}%
-                      </Typography>
+
+          <Grid container spacing={3}>
+            {/* Column 1: Budget Utilization & Variance Analysis */}
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Budget Utilization
+                    </Typography>
+                    <Box sx={{ mb: 2 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                        <Typography variant="caption" color="text.secondary">
+                          Budget Used
+                        </Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                          {budgetUtilization(selectedBudget)}%
+                        </Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={budgetUtilization(selectedBudget)}
+                        sx={{
+                          height: 8,
+                          borderRadius: 1.5,
+                          bgcolor: isDark ? 'divider' : '#e2e8f0',
+                          '& .MuiLinearProgress-bar': {
+                            bgcolor: budgetUtilization(selectedBudget) > 85 ? 'error.main'
+                              : budgetUtilization(selectedBudget) > 65 ? 'warning.main' : 'success.main',
+                          },
+                        }}
+                      />
                     </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={budgetUtilization(selectedBudget)}
-                      sx={{
-                        height: 8,
-                        borderRadius: 1.5,
-                        bgcolor: isDark ? 'divider' : '#e2e8f0',
-                        '& .MuiLinearProgress-bar': {
-                          bgcolor: budgetUtilization(selectedBudget) > 85 ? 'error.main'
-                            : budgetUtilization(selectedBudget) > 65 ? 'warning.main' : 'success.main',
-                        },
-                      }}
-                    />
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Revised Budget</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
+                          {selectedBudget.pm_revisedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_revisedbudgeteur) : '—'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.success.main}` }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Actual Spend</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'success.main' }}>
+                          {selectedBudget.pm_actualspendeur != null ? currencyFormatter.format(selectedBudget.pm_actualspendeur) : '—'}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </Box>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
-                        Revised Budget
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.base }}>
-                        {selectedBudget.pm_revisedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_revisedbudgeteur) : '—'}
-                      </Typography>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: (theme) => `3px solid ${theme.palette.success.main}` }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
-                        Actual Spend
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.base }}>
-                        {selectedBudget.pm_actualspendeur != null ? currencyFormatter.format(selectedBudget.pm_actualspendeur) : '—'}
-                      </Typography>
-                    </Paper>
-                  </Box>
-                </Paper>
 
-                {/* Variance Display */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <CurrencyExchangeIcon sx={{ fontSize: fontSizes.md }} /> Variance Analysis
-                  </Typography>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 2,
-                        borderRadius: 1.5,
-                        textAlign: 'center',
-                        borderColor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0 ? 'success.main' : 'error.main',
-                        bgcolor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
-                          ? (isDark ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.05)')
-                          : (isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)'),
-                      }}
-                    >
-                      {selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
-                        ? <VerifiedIcon sx={{ fontSize: 24, color: 'success.main', mb: 0.5 }} />
-                        : <WarningAmberIcon sx={{ fontSize: 24, color: 'error.main', mb: 0.5 }} />
-                      }
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: getVarianceColor(selectedBudget.pm_varianceeur) }}>
-                        {selectedBudget.pm_varianceeur != null
-                          ? `${selectedBudget.pm_varianceeur >= 0 ? '+' : ''}${currencyFormatter.format(selectedBudget.pm_varianceeur)}`
-                          : '—'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">Variance</Typography>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {selectedBudget.pm_committedspendeur != null ? currencyFormatter.format(selectedBudget.pm_committedspendeur) : '—'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">Committed Spend</Typography>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {selectedBudget.pm_forecastspendeur != null ? currencyFormatter.format(selectedBudget.pm_forecastspendeur) : '—'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">Forecast</Typography>
-                    </Paper>
-                  </Box>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate at Completion</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {selectedBudget.pm_estimateatcompletioneur != null ? currencyFormatter.format(selectedBudget.pm_estimateatcompletioneur) : '—'}
-                      </Typography>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate to Complete</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {selectedBudget.pm_estimatetocompleteeur != null ? currencyFormatter.format(selectedBudget.pm_estimatetocompleteeur) : '—'}
-                      </Typography>
-                    </Paper>
-                  </Box>
-                </Paper>
-              </Box>
-            </TabPanel>
+                  <Divider />
 
-            {/* Details Tab */}
-            <TabPanel value={detailTab} index={1} pt={0}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <CategoryIcon sx={{ fontSize: fontSizes.md }} /> Line Details
-                </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Category</Typography>
-                    <Typography variant="body2">{selectedBudget.pm_costcategoryname || CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Funding Source</Typography>
-                    <Typography variant="body2">{selectedBudget.pm_fundingsourcename || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Fiscal Period</Typography>
-                    <Typography variant="body2">{selectedBudget.pm_fiscalperiodname || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Funding Period</Typography>
-                    <Typography variant="body2">{selectedBudget.pm_fundingperiod || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Portfolio</Typography>
-                    <Typography variant="body2">{selectedBudget.pm_portfolio || selectedBudget.pm_portfoliolookupname || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme</Typography>
-                    <Typography variant="body2">{selectedBudget.pm_programme || selectedBudget.pm_programmelookupname || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project</Typography>
-                    <Typography variant="body2">{selectedBudget.pm_projectname || selectedBudget.pm_projectcode || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Funding Source Code</Typography>
-                    <Typography variant="body2">{selectedBudget.pm_fundingsourcecode || '—'}</Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CurrencyExchangeIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Variance Analysis
+                    </Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                      <Box
+                        sx={{
+                          p: 2,
+                          borderRadius: 1,
+                          textAlign: 'center',
+                          border: (theme) => `1px solid ${selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0 ? theme.palette.success.main : theme.palette.error.main}`,
+                          bgcolor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
+                            ? (isDark ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.05)')
+                            : (isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)'),
+                        }}
+                      >
+                        {selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
+                          ? <VerifiedIcon sx={{ fontSize: 24, color: 'success.main', mb: 0.5 }} />
+                          : <WarningAmberIcon sx={{ fontSize: 24, color: 'error.main', mb: 0.5 }} />
+                        }
+                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: getVarianceColor(selectedBudget.pm_varianceeur) }}>
+                          {selectedBudget.pm_varianceeur != null
+                            ? `${selectedBudget.pm_varianceeur >= 0 ? '+' : ''}${currencyFormatter.format(selectedBudget.pm_varianceeur)}`
+                            : '—'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">Variance</Typography>
+                      </Box>
+                      <Box sx={{ p: 2, borderRadius: 1, textAlign: 'center', border: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                          {selectedBudget.pm_committedspendeur != null ? currencyFormatter.format(selectedBudget.pm_committedspendeur) : '—'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">Committed</Typography>
+                      </Box>
+                      <Box sx={{ p: 2, borderRadius: 1, textAlign: 'center', border: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                          {selectedBudget.pm_forecastspendeur != null ? currencyFormatter.format(selectedBudget.pm_forecastspendeur) : '—'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">Forecast</Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
+                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate at Completion</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                          {selectedBudget.pm_estimateatcompletioneur != null ? currencyFormatter.format(selectedBudget.pm_estimateatcompletioneur) : '—'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate to Complete</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                          {selectedBudget.pm_estimatetocompleteeur != null ? currencyFormatter.format(selectedBudget.pm_estimatetocompleteeur) : '—'}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </Box>
                 </Box>
-                {selectedBudget.pm_notes && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Notes</Typography>
-                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>{selectedBudget.pm_notes}</Typography>
-                  </Box>
-                )}
               </Paper>
-            </TabPanel>
+            </Grid>
 
-                {/* Approval Tab */}
-                <TabPanel value={detailTab} index={2} pt={0}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <TimelineIcon sx={{ fontSize: 20 }} /> Approval Workflow Timeline
-                  </Typography>
-                  {selectedBudget?.pm_budgetlineid ? (
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AccountBalanceWalletIcon sx={{ fontSize: 16 }} />
-                        {selectedBudget.pm_budgetlinename || 'Budget Line'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                        {selectedBudget.pm_approvedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_approvedbudgeteur) : ''}
-                        {selectedBudget.pm_costcategoryname ? ` A� ${selectedBudget.pm_costcategoryname}` : ''}
-                      </Typography>
-                      <WorkflowMilestone
-                        moduleName={MODULE_NAMES.BUDGETS.value}
-                        entityId={selectedBudget.pm_budgetlineid}
-                      />
-                    </Paper>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
-                      No workflow tracking available for this budget line.
+            {/* Column 2: Line Details & Notes */}
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CategoryIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Line Details
                     </Typography>
-                  )}
-                </TabPanel>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Category</Typography>
+                        <Typography variant="body2">{selectedBudget.pm_costcategoryname || CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] || '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Funding Source</Typography>
+                        <Typography variant="body2">{selectedBudget.pm_fundingsourcename || '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Fiscal Period</Typography>
+                        <Typography variant="body2">{selectedBudget.pm_fiscalperiodname || '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Funding Period</Typography>
+                        <Typography variant="body2">{selectedBudget.pm_fundingperiod || '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Portfolio</Typography>
+                        <Typography variant="body2">{selectedBudget.pm_portfolio || selectedBudget.pm_portfoliolookupname || '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Programme</Typography>
+                        <Typography variant="body2">{selectedBudget.pm_programme || selectedBudget.pm_programmelookupname || '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Project</Typography>
+                        <Typography variant="body2">{selectedBudget.pm_projectname || selectedBudget.pm_projectcode || '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Funding Source Code</Typography>
+                        <Typography variant="body2">{selectedBudget.pm_fundingsourcecode || '—'}</Typography>
+                      </Box>
+                    </Box>
+                  </Box>
 
-                <TabPanel value={detailTab} index={3} pt={0}>
-                  {selectedBudget?.pm_budgetlineid && (
-                    <EntityApprovalTasks
-                      entityId={selectedBudget.pm_budgetlineid}
-                      moduleName={MODULE_NAMES.BUDGETS.value}
-                      entityLabel="Budget Line"
-                      tabValue={detailTab}
-                      index={3}
-                    />
+                  {selectedBudget.pm_notes && (
+                    <>
+                      <Divider />
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <NotesIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Notes
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                          {selectedBudget.pm_notes}
+                        </Typography>
+                      </Box>
+                    </>
                   )}
-                </TabPanel>
-              </>
+                </Box>
+              </Paper>
+            </Grid>
+
+            {/* Column 3: Approval Tasks */}
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
+                  <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AssignmentIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Pending Decisions
+                    </Typography>
+                    {selectedBudget.pm_budgetlineid && (
+                      <EntityApprovalTasks
+                        entityId={selectedBudget.pm_budgetlineid}
+                        moduleName={MODULE_NAMES.BUDGETS.value}
+                        entityLabel="Budget Line"
+                        tabValue={3}
+                        index={3}
+                      />
+                    )}
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      ) : (
+        // ── List View ──
+        <>
+          <PageHeader
+            title="Budgets"
+            subtitle="Track and manage budgets across portfolios, programmes, and projects — monitor spend, forecast, and variance."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <ExportButton filename="budgets.csv" columns={budgetExportColumns} data={filteredBudgetLines} />
+                {canCreate && (
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+                    Add Budget Line
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+
+          {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+          {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
+
+          {/* ── KPI Row ──────────────────────────────────── */}
+          {!loading && <KpiCardRow items={kpiItems} />}
+
+          {/* ── Budget Grid ──────────────────────────────── */}
+          <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+            <SearchFilterBar
+              searchQuery={searchQuery}
+              onSearchChange={handleSearchChange}
+              searchPlaceholder="Search by name, category, portfolio, programme..."
+              filterValue={categoryFilter}
+              onFilterChange={handleCategoryFilterChange}
+              filterLabel="Category"
+              filterOptions={CATEGORY_FILTER_OPTIONS}
+              onClear={() => { setSearchQuery(''); setCategoryFilter(''); setPage(0) }}
+            />
+
+            <TableShell
+              loading={loading}
+              empty={filteredBudgetLines.length === 0}
+              emptyIcon={<AccountBalanceWalletIcon />}
+              emptyTitle={searchQuery || categoryFilter ? 'No budget lines match your criteria.' : 'No budget lines found.'}
+              emptyAction={!searchQuery && !categoryFilter ? (
+                <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreateForm}>
+                  Add your first budget line
+                </Button>
+              ) : undefined}
+            >
+              <Table stickyHeader size="small" sx={{ minWidth: 1100 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Budget Line
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'category'} direction={sort.field === 'category' ? sort.dir : 'asc'} onClick={() => handleSort('category')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Category
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'budget'} direction={sort.field === 'budget' ? sort.dir : 'asc'} onClick={() => handleSort('budget')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Approved Budget
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'revised'} direction={sort.field === 'revised' ? sort.dir : 'asc'} onClick={() => handleSort('revised')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Revised Budget
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'actual'} direction={sort.field === 'actual' ? sort.dir : 'asc'} onClick={() => handleSort('actual')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Actual Spend
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      <TableSortLabel active={sort.field === 'variance'} direction={sort.field === 'variance' ? sort.dir : 'asc'} onClick={() => handleSort('variance')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
+                        Variance
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                      Entity
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paginatedBudgetLines.map((line, idx) => {
+                    const ut = budgetUtilization(line)
+                    const variance = line.pm_varianceeur
+                    const isOverBudget = variance != null && variance < 0
+                    return (
+                      <TableRow
+                        key={line.pm_budgetlineid}
+                        hover
+                        onClick={() => handleRowClick(line)}
+                        sx={{
+                          cursor: 'pointer',
+                          bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
+                          '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                          transition: 'background-color 0.15s ease',
+                          '& td': { px: 2.5, py: 1.25 },
+                        }}
+                      >
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
+                              {(line.pm_budgetlinename ?? 'B').charAt(0).toUpperCase()}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {line.pm_budgetlinename ?? 'Unnamed'}
+                              </Typography>
+                              {line.pm_fundingsourcename && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {line.pm_fundingsourcename}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <StatusTag
+                            label={CATEGORY_LABELS[String(line.pm_costcategory ?? '')] ?? 'Unknown'}
+                            color={CATEGORY_COLORS[String(line.pm_costcategory ?? '')] ?? 'default'}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
+                            {line.pm_approvedbudgeteur != null ? currencyFormatter.format(line.pm_approvedbudgeteur) : '—'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                            {line.pm_revisedbudgeteur != null ? currencyFormatter.format(line.pm_revisedbudgeteur) : '—'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+                            <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
+                              {line.pm_actualspendeur != null ? currencyFormatter.format(line.pm_actualspendeur) : '—'}
+                            </Typography>
+                            <LinearProgress
+                              variant="determinate"
+                              value={ut}
+                              sx={{
+                                width: '100%',
+                                maxWidth: 100,
+                                height: 4,
+                                borderRadius: 1.5,
+                                bgcolor: isDark ? '#334155' : '#e2e8f0',
+                                '& .MuiLinearProgress-bar': {
+                                  bgcolor: ut > 85 ? 'error.main' : ut > 65 ? 'warning.main' : 'success.main',
+                                },
+                              }}
+                            />
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
+                            {isOverBudget && <WarningAmberIcon sx={{ fontSize: 16, color: 'error.main' }} />}
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontFamily: '"JetBrains Mono", monospace',
+                                fontWeight: 700,
+                                color: getVarianceColor(variance),
+                              }}
+                            >
+                              {variance != null ? `${variance >= 0 ? '+' : ''}${currencyFormatter.format(variance)}` : '—'}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {line.pm_portfolio || line.pm_programme || line.pm_projectcode || '—'}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </TableShell>
+
+            {!loading && filteredBudgetLines.length > 0 && (
+              <TableFooter
+                filteredCount={filteredBudgetLines.length}
+                totalCount={budgetLines.length}
+                itemLabel="budget line"
+                totals={[
+                  { label: 'Total budget', value: `€${numberFormatter.format(filteredBudgetLines.reduce((s, l) => s + (l.pm_approvedbudgeteur ?? 0), 0))}` },
+                  { label: 'Total spend', value: `€${numberFormatter.format(filteredBudgetLines.reduce((s, l) => s + (l.pm_actualspendeur ?? 0), 0))}` },
+                ]}
+              />
             )}
-          </DetailDrawer>
+            {!loading && filteredBudgetLines.length > 0 && (
+              <TablePagination
+                component="div"
+                count={filteredBudgetLines.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[25, 50, 100]}
+              />
+            )}
+          </Paper>
+        </>
+      )}
 
       {/* ── Create/Edit Modal ──────────────────────── */}
       <Dialog

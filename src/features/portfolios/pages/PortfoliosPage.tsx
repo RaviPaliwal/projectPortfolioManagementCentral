@@ -6,6 +6,9 @@ import {
   IconButton,
   Button,
   Grid,
+  Tabs,
+  Tab,
+  Paper,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -19,6 +22,9 @@ import FolderIcon from '@mui/icons-material/Folder'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import ErrorIcon from '@mui/icons-material/Error'
+import LightbulbIcon from '@mui/icons-material/Lightbulb'
+import DescriptionIcon from '@mui/icons-material/Description'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 
@@ -27,27 +33,28 @@ import { fetchPortfolioHierarchy } from '@/services'
 import {
   PageHeader,
   HealthSplitBar,
-  DetailDrawer,
   ExportButton,
   KpiCardRow,
   Breadcrumbs,
   ActionIcon,
   TabPanel,
   EntityDocumentsTab,
+  StatusChip,
+  StatusTag,
+  VarianceDisplay,
+  StatusProgressBar,
+  DataverseTable,
 } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { currencyFormatter } from '@/utils/formatters'
+import { navigateToProgramme, navigateToProject } from '@/utils/navigation'
+import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 
 // Sub-components
 import { PortfolioGrid } from '../components/PortfolioGrid'
 import { PortfolioFormDialog } from '../components/PortfolioFormDialog'
-import { PortfolioSummaryTab } from '../components/tabs/PortfolioSummaryTab'
-import { PortfolioProgrammesTab } from '../components/tabs/PortfolioProgrammesTab'
-import { PortfolioProjectsTab } from '../components/tabs/PortfolioProjectsTab'
-import { PortfolioFinancialsTab } from '../components/tabs/PortfolioFinancialsTab'
-import { PortfolioApprovalTasksTab } from '../components/tabs/PortfolioApprovalTasksTab'
 
 // ── Export columns ────────────────────────────────────────────────────────────
 const portfolioExportColumns: ExportColumn[] = [
@@ -172,6 +179,366 @@ export default function PortfoliosPage() {
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
+  if (selectedPortfolio) {
+    const detailProgrammes = programmesByPortfolio[selectedPortfolio.pm_portfolioid ?? ''] ?? []
+    const detailProjects = projectsByPortfolio[selectedPortfolio.pm_portfolioid ?? ''] ?? []
+
+    const STATUS_LABELS: Record<string, string> = {
+      '0': 'Active',
+      '1': 'Under Approval',
+      '2': 'Rejected',
+    }
+
+    const programmeColumns = [
+      {
+        key: 'pm_programmename',
+        label: 'Programme Name',
+        format: (val: any, item: ProgrammeModel) => (
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              cursor: 'pointer',
+              color: 'primary.main',
+              '&:hover': { textDecoration: 'underline' }
+            }}
+            onClick={() => item.pm_programmeid && navigateToProgramme(item.pm_programmeid)}
+          >
+            {val}
+            <OpenInNewIcon sx={{ fontSize: 12 }} />
+          </Typography>
+        )
+      },
+      {
+        key: 'pm_programmephase',
+        label: 'Phase',
+        format: (val: any) => <StatusChip status={val} type="prog_phase" size="small" />
+      },
+      {
+        key: 'pm_ragstatus',
+        label: 'RAG',
+        format: (val: any) => <StatusChip status={val} type="rag" size="small" />
+      },
+      {
+        key: 'pm_startdate',
+        label: 'Start Date',
+        format: (val: any) => val ? new Date(val).toLocaleDateString() : '—'
+      },
+      {
+        key: 'pm_enddate',
+        label: 'End Date',
+        format: (val: any) => val ? new Date(val).toLocaleDateString() : '—'
+      }
+    ]
+
+    const projectColumns = [
+      {
+        key: 'pm_projectname',
+        label: 'Project Name',
+        format: (val: any, item: ProjectModel) => (
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              cursor: 'pointer',
+              color: 'primary.main',
+              '&:hover': { textDecoration: 'underline' }
+            }}
+            onClick={() => item.pm_projectid && navigateToProject(item.pm_projectid)}
+          >
+            {val}
+            <OpenInNewIcon sx={{ fontSize: 12 }} />
+          </Typography>
+        )
+      },
+      {
+        key: 'pm_projectcode',
+        label: 'Project Code',
+        format: (val: any) => (
+          <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+            {val || '—'}
+          </Typography>
+        )
+      },
+      {
+        key: 'pm_projectphase',
+        label: 'Phase',
+        format: (val: any) => <StatusChip status={val} type="phase" size="small" />
+      },
+      {
+        key: 'pm_ragstatus',
+        label: 'RAG',
+        format: (val: any) => <StatusChip status={val} type="rag" size="small" />
+      },
+      {
+        key: 'pm_projectmanager',
+        label: 'Project Manager',
+        format: (val: any) => val || '—'
+      }
+    ]
+
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+        <Breadcrumbs
+          items={[
+            { label: 'Portfolios', path: 'list' },
+            { label: selectedPortfolio.pm_portfolioname ?? 'Detail' }
+          ]}
+          onNavigate={() => setSelectedPortfolio(null)}
+        />
+        <PageHeader
+          title={selectedPortfolio.pm_portfolioname ?? 'Portfolio Detail'}
+          subtitle={selectedPortfolio.pm_businessunit ? `Business Unit: ${selectedPortfolio.pm_businessunit}` : undefined}
+          actionElement={
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+              {canEdit && (
+                <Button
+                  variant="outlined"
+                  startIcon={<EditIcon />}
+                  onClick={() => openEditForm(selectedPortfolio)}
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  Edit Portfolio
+                </Button>
+              )}
+            </Box>
+          }
+        />
+
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: -1.5 }}>
+          <StatusChip status={selectedPortfolio.pm_ragstatus} type="rag" size="medium" />
+          <StatusTag
+            label={STATUS_LABELS[selectedPortfolio.pm_portfoliostatus?.toString() ?? ''] ?? 'Active'}
+            size="small"
+            variant="outlined"
+            color={selectedPortfolio.pm_portfoliostatus === 0 || selectedPortfolio.pm_portfoliostatus === '0' ? 'success' : selectedPortfolio.pm_portfoliostatus === 1 || selectedPortfolio.pm_portfoliostatus === '1' ? 'warning' : 'error'}
+          />
+          {selectedPortfolio.pm_prioritylevel !== undefined && (
+            <StatusTag
+              label={`Priority: ${selectedPortfolio.pm_prioritylevel}`}
+              size="small"
+              variant="outlined"
+              color="primary"
+            />
+          )}
+          {(selectedPortfolio.pm_startdate || selectedPortfolio.pm_enddate) && (
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto', fontWeight: 600 }}>
+              Timeline: {selectedPortfolio.pm_startdate ? new Date(selectedPortfolio.pm_startdate).toLocaleDateString() : '—'} — {selectedPortfolio.pm_enddate ? new Date(selectedPortfolio.pm_enddate).toLocaleDateString() : '—'}
+            </Typography>
+          )}
+        </Box>
+
+        {/* Block 1: Details & Overview Grouping */}
+        <Box>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Overview
+          </Typography>
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Details
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Owner</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedPortfolio.pm_ownerlookupname || '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Unit</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedPortfolio.pm_businessunit || '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Programmes Linked</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{detailProgrammes.length}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Projects Linked</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{detailProjects.length}</Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {selectedPortfolio.pm_portfoliodescription && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                      <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                      {selectedPortfolio.pm_portfoliodescription}
+                    </Typography>
+                  </Box>
+                )}
+                {selectedPortfolio.pm_strategicobjective && (
+                  <Box sx={{ mt: 'auto' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                      <LightbulbIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Strategic Objective
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', lineHeight: 1.6 }}>
+                      "{selectedPortfolio.pm_strategicobjective}"
+                    </Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Block 2: Financials */}
+        <Box>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Financials
+          </Typography>
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
+                  Budget Overview
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Approved Budget</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                      {currencyFormatter.format(selectedPortfolio.pm_approvedbudgeteur ?? 0)}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>
+                      {currencyFormatter.format(selectedPortfolio.pm_actualspendeur ?? 0)}
+                    </Typography>
+                  </Box>
+                </Box>
+                <StatusProgressBar
+                  value={selectedPortfolio.pm_actualspendeur ?? 0}
+                  total={selectedPortfolio.pm_approvedbudgeteur ?? 0}
+                  label="Budget Utilization"
+                />
+              </Paper>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Budget Variance
+                </Typography>
+                <VarianceDisplay budget={selectedPortfolio.pm_approvedbudgeteur} consumed={selectedPortfolio.pm_actualspendeur} />
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
+                  {selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0
+                    ? `${((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100).toFixed(1)}% of budget consumed`
+                    : 'No budget data available'}
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Block 3: Linked Programmes Grid */}
+        <Box>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Programmes
+          </Typography>
+          <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
+            <Box sx={{
+              '& .MuiPaper-root': {
+                boxShadow: 'none',
+                border: 'none',
+                bgcolor: 'transparent',
+                backgroundImage: 'none',
+                borderRadius: 0,
+                mb: 0
+              }
+            }}>
+              <DataverseTable
+                data={detailProgrammes}
+                columns={programmeColumns}
+                loading={loading}
+                emptyIcon={<FolderIcon />}
+                emptyTitle="No programmes linked to this portfolio."
+                searchPlaceholder="Search programmes..."
+                searchFields={['pm_programmename']}
+              />
+            </Box>
+          </Paper>
+        </Box>
+
+        {/* Block 4: Linked Projects Grid */}
+        <Box>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Projects
+          </Typography>
+          <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
+            <Box sx={{
+              '& .MuiPaper-root': {
+                boxShadow: 'none',
+                border: 'none',
+                bgcolor: 'transparent',
+                backgroundImage: 'none',
+                borderRadius: 0,
+                mb: 0
+              }
+            }}>
+              <DataverseTable
+                data={detailProjects}
+                columns={projectColumns}
+                loading={loading}
+                emptyIcon={<AccountTreeIcon />}
+                emptyTitle="No projects linked to this portfolio."
+                searchPlaceholder="Search projects..."
+                searchFields={['pm_projectname', 'pm_projectcode']}
+              />
+            </Box>
+          </Paper>
+        </Box>
+
+        {/* Block 5: Tasks & Documents */}
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
+                Approval Tasks
+              </Typography>
+              <EntityApprovalTasks
+                entityId={selectedPortfolio.pm_portfolioid ?? ''}
+                moduleName={MODULE_NAMES.PORTFOLIOS.value}
+                entityLabel="Portfolio"
+                tabValue={0}
+                index={0}
+              />
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
+                Documents
+              </Typography>
+              <EntityDocumentsTab
+                entityId={selectedPortfolio.pm_portfolioid ?? ''}
+                moduleName={MODULE_NAMES.PORTFOLIOS.value}
+                canEdit={canEdit}
+              />
+            </Paper>
+          </Grid>
+        </Grid>
+
+        <PortfolioFormDialog
+          open={showFormModal}
+          onClose={() => setShowFormModal(false)}
+          onSuccess={handleSuccess}
+          onError={(msg) => setError(msg)}
+          initialData={editingPortfolio}
+        />
+      </Box>
+    )
+  }
+
   return (
     <Box>
       <PageHeader
@@ -255,104 +622,6 @@ export default function PortfoliosPage() {
         onFilteredDataChange={setFilteredPortfolios}
         canEdit={canEdit}
       />
-
-      {/* ── 3. Slide-Out Detail Panel ──────────────────────────────────── */}
-      <DetailDrawer
-        open={!!selectedPortfolio}
-        onClose={() => setSelectedPortfolio(null)}
-        icon={<AccountTreeIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
-        title={selectedPortfolio?.pm_portfolioname ?? ''}
-        subtitle={selectedPortfolio && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            {selectedPortfolio.pm_ownerlookupname && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">
-                  {selectedPortfolio.pm_ownerlookupname}
-                </Typography>
-              </Box>
-            )}
-            {selectedPortfolio.pm_businessunit && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <BusinessIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                <Typography variant="body2" color="text.secondary">
-                  {selectedPortfolio.pm_businessunit}
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        )}
-        headerActions={
-          canEdit && (
-            <ActionIcon
-              icon={<EditIcon />}
-              onClick={() => selectedPortfolio && openEditForm(selectedPortfolio)}
-              label="Edit Portfolio"
-              color="primary"
-            />
-          )
-        }
-        tabs={[
-          { label: 'Summary' },
-          { label: 'Programmes', count: detailProgrammes.length },
-          { label: 'Projects', count: detailProjects.length },
-          { label: 'Financials' },
-          { label: 'Tasks' },
-          { label: 'Documents' },
-        ]}
-        tabValue={detailTab}
-        onTabChange={setDetailTab}
-      >
-        {selectedPortfolio && (
-          <>
-            {editInfo && (
-              <Alert severity="info" onClose={() => setEditInfo(null)} sx={{ mb: 2 }}>
-                {editInfo}
-              </Alert>
-            )}
-
-            <PortfolioSummaryTab
-              portfolio={selectedPortfolio}
-              tabValue={detailTab}
-              index={0}
-              programmeCount={detailProgrammes.length}
-              projectCount={detailProjects.length}
-            />
-
-            <PortfolioProgrammesTab
-              programmes={detailProgrammes}
-              tabValue={detailTab}
-              index={1}
-            />
-
-            <PortfolioProjectsTab
-              projects={detailProjects}
-              tabValue={detailTab}
-              index={2}
-            />
-
-            <PortfolioFinancialsTab
-              portfolio={selectedPortfolio}
-              tabValue={detailTab}
-              index={3}
-            />
-
-            <PortfolioApprovalTasksTab
-              portfolioId={selectedPortfolio.pm_portfolioid ?? ''}
-              tabValue={detailTab}
-              index={4}
-            />
-
-            <TabPanel value={detailTab} index={5}>
-              <EntityDocumentsTab
-                entityId={selectedPortfolio.pm_portfolioid ?? ''}
-                moduleName={MODULE_NAMES.PORTFOLIOS.value}
-                canEdit={canEdit}
-              />
-            </TabPanel>
-          </>
-        )}
-      </DetailDrawer>
 
       {/* ── 4. Create/Edit Portfolio Modal & Confirmation ──────────────── */}
       <PortfolioFormDialog
