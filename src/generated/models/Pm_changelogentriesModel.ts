@@ -28,6 +28,7 @@ export interface Pm_changelogentriesBase {
   "pm_ChangeBy@odata.bind"?: string;
   pm_changelogentryid: string;
   pm_changetimestamp?: string;
+  pm_description?: string;
   pm_entityname?: string;
   pm_fieldname?: string;
   pm_ipaddress?: string;
