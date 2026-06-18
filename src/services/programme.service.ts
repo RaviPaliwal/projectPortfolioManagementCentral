@@ -42,8 +42,8 @@ export const mapProgramme = (item: Pm_programmes): ProgrammeModel => ({
 export async function createProgramme(payload: Partial<ProgrammeModel>): Promise<ProgrammeModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '' && 
-        key !== 'pm_programmemanager' && key !== '_pm_portfolio_value') {
+    if (value !== undefined && value !== null && value !== '' &&
+      key !== 'pm_programmemanager' && key !== '_pm_portfolio_value') {
       cleanPayload[key] = value
     }
   }
@@ -84,8 +84,8 @@ export async function updateProgramme(id: string, changes: Partial<ProgrammeMode
 
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null && key !== 'pm_programmeid' && 
-        key !== 'pm_programmemanager' && key !== '_pm_portfolio_value') {
+    if (value !== undefined && value !== null && key !== 'pm_programmeid' &&
+      key !== 'pm_programmemanager' && key !== '_pm_portfolio_value') {
       cleanPayload[key] = value
     }
   }
@@ -104,11 +104,11 @@ export async function updateProgramme(id: string, changes: Partial<ProgrammeMode
     })
     const uItem = unwrapSingle<Pm_programmes>(details)
     if (uItem) original = mapProgramme(uItem)
-  } catch (e) {}
+  } catch (e) { }
 
   try {
     const result = await Pm_programmesService.update(normalizedId, cleanPayload as any)
-    try { console.debug('[dataverseService] updateProgramme result:', result) } catch (e) {}
+    try { console.debug('[dataverseService] updateProgramme result:', result) } catch (e) { }
 
     // Log audit entries for changed fields
     if (original) {
@@ -143,14 +143,14 @@ export async function updateProgramme(id: string, changes: Partial<ProgrammeMode
     const item = unwrapSingle<Pm_programmes>(fresh)
     return item ? mapProgramme(item) : null
   } catch (err) {
-    try { console.error('[dataverseService] updateProgramme failed:', err) } catch (e) {}
+    try { console.error('[dataverseService] updateProgramme failed:', err) } catch (e) { }
     throw err
   }
 }
 
 export async function updateProgrammePhase(id: string, phase: number): Promise<void> {
-  try { console.debug('[dataverseService] updateProgrammePhase:', { id, phase }) } catch (e) {}
-  
+  try { console.debug('[dataverseService] updateProgrammePhase:', { id, phase }) } catch (e) { }
+
   let recordName = id
   let oldPhaseStr = ''
   try {
@@ -160,7 +160,7 @@ export async function updateProgrammePhase(id: string, phase: number): Promise<v
       if (item.pm_programmename) recordName = item.pm_programmename
       oldPhaseStr = String(item.pm_programmephase ?? '')
     }
-  } catch (e) {}
+  } catch (e) { }
 
   await Pm_programmesService.update(id, { pm_programmephase: phase } as any)
 
@@ -181,7 +181,7 @@ export async function deleteProgramme(id: string): Promise<void> {
     const details = await Pm_programmesService.get(id, { select: ['pm_programmename'] })
     const item = unwrapSingle<Pm_programmes>(details)
     if (item?.pm_programmename) recordName = item.pm_programmename
-  } catch (e) {}
+  } catch (e) { }
 
   await Pm_programmesService.delete(id)
 
@@ -202,6 +202,39 @@ export interface ProgrammeDetail {
   risks: RiskModel[]
   issues: IssueModel[]
 }
+
+const mapRisk = (item: Pm_risks): RiskModel => ({
+  pm_riskid: item.pm_riskid,
+  pm_risktitle: item.pm_risktitle,
+  pm_riskcategory: item.pm_riskcategory,
+  pm_riskdescription: item.pm_riskdescription,
+  pm_ragstatus: item.pm_ragstatus,
+  pm_riskownername: (item as any)['_pm_riskowner_value@OData.Community.Display.V1.FormattedValue'] ?? item.pm_riskownername,
+  pm_riskstatus: item.pm_riskstatus,
+  pm_escalated: item.pm_escalated,
+  pm_identifieddate: item.pm_identifieddate,
+  pm_targetclosedate: item.pm_targetclosedate,
+  pm_inherentscore: item.pm_inherentscore,
+  pm_residualscore: item.pm_residualscore,
+  _pm_project_value: item._pm_project_value,
+  _pm_riskowner_value: item._pm_riskowner_value,
+})
+
+
+const mapIssue = (item: Pm_issues): IssueModel => ({
+  pm_issueid: item.pm_issueid,
+  pm_issuetitle: item.pm_issuetitle,
+  pm_issuedescription: item.pm_issuedescription,
+  pm_issuecategory: item.pm_issuecategory,
+  pm_ragstatus: item.pm_ragstatus,
+  pm_issueowner: item.pm_issueownername ?? (typeof item.pm_issueowner === 'string' ? item.pm_issueowner : undefined),
+  pm_issuestatus: item.pm_issuestatus,
+  pm_escalationstatus: item.pm_escalationstatus,
+  pm_prioritylevel: item.pm_prioritylevel,
+  pm_dateraised: item.pm_dateraised,
+  pm_targetresolutiondate: item.pm_targetresolutiondate,
+})
+
 
 export async function fetchProgrammeDetails(programmeId: string): Promise<ProgrammeDetail> {
   const normalizedId = normalizeLookupId(programmeId)
@@ -232,60 +265,40 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
     }
   }
 
-  const [projectsResult, risksResult, issuesResult] = await Promise.all([
-    Pm_projectsService.getAll({
-      filter: `_pm_programme_value eq '${normalizedId}'`,
-      select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_percentcomplete', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudgeteur', 'pm_actualcosteur'],
-      top: 200,
-    }),
-  
-    Pm_risksService.getAll({
-      filter: `_pm_programmefk_value eq '${normalizedId}'`,
-      select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskowner', 'pm_riskstatus', 'pm_escalated', 'pm_identifieddate', 'pm_targetclosedate', 'pm_inherentscore', 'pm_residualscore'],
-      top: 200,
-    }),
-    Pm_issuesService.getAll({
-      filter: `_pm_programmefk_value eq '${normalizedId}'`,
-      select: ['pm_issueid', 'pm_issuetitle', 'pm_issuedescription', 'pm_issuecategory', 'pm_ragstatus', 'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel', 'pm_dateraised', 'pm_targetresolutiondate'],
-      top: 200,
-    }),
-  ])
+  const projectsResult = await Pm_projectsService.getAll({
+    filter: `_pm_programme_value eq '${normalizedId}'`,
+    select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_percentcomplete', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudgeteur', 'pm_actualcosteur'],
+    top: 200,
+  })
   console.log('fetchProgrammeDetails - raw projects result:', projectsResult)
-  const mapRisk = (item: Pm_risks): RiskModel => ({
-    pm_riskid: item.pm_riskid,
-    pm_risktitle: item.pm_risktitle,
-    pm_riskcategory: item.pm_riskcategory,
-    pm_riskdescription: item.pm_riskdescription,
-    pm_ragstatus: item.pm_ragstatus,
-    pm_riskowner: item.pm_riskowner,
-    pm_riskstatus: item.pm_riskstatus,
-    pm_escalated: item.pm_escalated,
-    pm_identifieddate: item.pm_identifieddate,
-    pm_targetclosedate: item.pm_targetclosedate,
-    pm_inherentscore: item.pm_inherentscore,
-    pm_residualscore: item.pm_residualscore,
-    _pm_programmefk_value: item._pm_programmefk_value,
-  })
+  const projects = unwrapList<Pm_projects>(projectsResult).map(mapProject)
+  const projectIds = projects.map(p => p.pm_projectid).filter(Boolean) as string[]
 
-  const mapIssue = (item: Pm_issues): IssueModel => ({
-    pm_issueid: item.pm_issueid,
-    pm_issuetitle: item.pm_issuetitle,
-    pm_issuedescription: item.pm_issuedescription,
-    pm_issuecategory: item.pm_issuecategory,
-    pm_ragstatus: item.pm_ragstatus,
-    pm_issueowner: item.pm_issueownername ?? (typeof item.pm_issueowner === 'string' ? item.pm_issueowner : undefined),
-    pm_issuestatus: item.pm_issuestatus,
-    pm_escalationstatus: item.pm_escalationstatus,
-    pm_prioritylevel: item.pm_prioritylevel,
-    pm_dateraised: item.pm_dateraised,
-    pm_targetresolutiondate: item.pm_targetresolutiondate,
-    _pm_programmefk_value: item._pm_programmefk_value,
-  })
+  // Fetch risks & issues linked through projects (programme FK removed from risk/issue schema)
+  let risks: RiskModel[] = []
+  let issues: IssueModel[] = []
+  if (projectIds.length > 0) {
+    const projectFilter = projectIds.map(id => `_pm_project_value eq '${id}'`).join(' or ')
+    const [risksResult, issuesResult] = await Promise.all([
+      Pm_risksService.getAll({
+        filter: `(${projectFilter}) and statecode eq 0`,
+        select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskstatus', 'pm_escalated', 'pm_identifieddate', 'pm_targetclosedate', 'pm_inherentscore', 'pm_residualscore', '_pm_project_value', '_pm_riskowner_value'],
+        top: 200,
+      }),
+      Pm_issuesService.getAll({
+        filter: `(${projectFilter}) and statecode eq 0`,
+        select: ['pm_issueid', 'pm_issuetitle', 'pm_issuedescription', 'pm_issuecategory', 'pm_ragstatus', 'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel', 'pm_dateraised', 'pm_targetresolutiondate'],
+        top: 200,
+      }),
+    ])
+    risks = unwrapList<Pm_risks>(risksResult).map(mapRisk)
+    issues = unwrapList<Pm_issues>(issuesResult).map(mapIssue)
+  }
 
   return {
     programme,
-    projects: unwrapList<Pm_projects>(projectsResult).map(mapProject),
-    risks: unwrapList<Pm_risks>(risksResult).map(mapRisk),
-    issues: unwrapList<Pm_issues>(issuesResult).map(mapIssue),
+    projects,
+    risks,
+    issues,
   }
 }

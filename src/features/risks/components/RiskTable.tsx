@@ -92,7 +92,7 @@ export const RiskTable = ({
     reset,
   } = useDataGrid(risks, {
     initialSort: { field: 'pm_risktitle', dir: 'asc' },
-    searchFields: ['pm_risktitle', 'pm_riskowner', 'pm_riskreference', 'pm_riskdescription', 'pm_projectcode'],
+    searchFields: ['pm_risktitle', 'pm_riskownername', 'pm_riskdescription'],
     filterFn: (r) => {
       if (categoryFilter && String(r.pm_riskcategory ?? '') !== categoryFilter) return false
       if (ragFilter && String(r.pm_ragstatus ?? '') !== ragFilter) return false
@@ -106,7 +106,7 @@ export const RiskTable = ({
       <SearchFilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="Search by title, owner, reference, description, project…"
+        searchPlaceholder="Search by title, owner, description…"
         onClear={() => {
           reset()
           setCategoryFilter('')
@@ -259,11 +259,6 @@ export const RiskTable = ({
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
                           {risk.pm_risktitle ?? '—'}
                         </Typography>
-                        {risk.pm_riskreference && (
-                          <Typography variant="caption" color="text.secondary">
-                            {risk.pm_riskreference}
-                          </Typography>
-                        )}
                       </Box>
                     </Box>
                   </TableCell>
@@ -281,7 +276,7 @@ export const RiskTable = ({
                     />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">{risk.pm_riskowner ?? '—'}</Typography>
+                    <Typography variant="body2">{risk.pm_riskownername ?? '—'}</Typography>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">{PROBABILITY_LABELS[String(risk.pm_inherentprobability ?? '')] ?? '—'}</Typography>

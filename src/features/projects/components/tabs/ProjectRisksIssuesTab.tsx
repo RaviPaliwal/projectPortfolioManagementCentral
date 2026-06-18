@@ -72,7 +72,7 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
                       {r.pm_risktitle}
                       <OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} />
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>{r.pm_riskowner ?? 'Unassigned'} {r.pm_targetclosedate ? `· Target: ${new Date(r.pm_targetclosedate).toLocaleDateString()}` : ''}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>{r.pm_riskownername ?? 'Unassigned'} {r.pm_targetclosedate ? `· Target: ${new Date(r.pm_targetclosedate).toLocaleDateString()}` : ''}</Typography>
                   </Box>
                   <StatusTag label={['Resource','Financial','Legal','Technical','External'][Number(r.pm_riskcategory)] ?? '—'} size="small" variant="outlined" />
                 </Paper>

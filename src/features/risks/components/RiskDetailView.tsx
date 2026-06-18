@@ -89,12 +89,8 @@ export const RiskDetailView = ({
         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Risk Details</Typography>
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid size={6}>
-            <Typography variant="caption" color="text.secondary">Reference</Typography>
-            <Typography variant="body2">{selectedRisk.pm_riskreference ?? '—'}</Typography>
-          </Grid>
-          <Grid size={6}>
-            <Typography variant="caption" color="text.secondary">Risk Owner</Typography>
-            <Typography variant="body2">{selectedRisk.pm_riskowner ?? '—'}</Typography>
+            <Typography variant="caption" color="text.secondary">Risk</Typography>
+            <Typography variant="body2">{selectedRisk.pm_risktitle ?? '—'}</Typography>
           </Grid>
           <Grid size={6}>
             <Typography variant="caption" color="text.secondary">Identified Date</Typography>
@@ -105,12 +101,12 @@ export const RiskDetailView = ({
             <Typography variant="body2">{selectedRisk.pm_targetclosedate ?? '—'}</Typography>
           </Grid>
           <Grid size={6}>
-            <Typography variant="caption" color="text.secondary">Programme</Typography>
-            <Typography variant="body2">{selectedRisk.pm_programme ?? '—'}</Typography>
+            <Typography variant="caption" color="text.secondary">Owner</Typography>
+            <Typography variant="body2">{selectedRisk.pm_riskownername ?? '—'}</Typography>
           </Grid>
           <Grid size={6}>
             <Typography variant="caption" color="text.secondary">Project</Typography>
-            <Typography variant="body2">{selectedRisk.pm_projectcode ?? '—'}</Typography>
+            <Typography variant="body2">{selectedRisk.pm_projectname ?? '—'}</Typography>
           </Grid>
         </Grid>
 

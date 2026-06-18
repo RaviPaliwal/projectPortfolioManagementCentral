@@ -24,9 +24,11 @@ import {
   updateRiskFull,
   deleteRisk,
   fetchMitigationActions,
+  fetchResourceById,
 } from '@/services'
 import type { RiskModel, RiskMitigationActionModel } from '@/types/dataverse'
 import { PageHeader, DetailDrawer, KpiCardRow } from '@/components/common'
+import type { KpiCardItem } from '@/components/common'
 import {
   RiskDistributionCharts,
   RiskTable,
@@ -141,24 +143,57 @@ export default function RisksPage() {
     setDialogOpen(true)
   }
 
-  const openEdit = (risk: RiskModel) => {
+  const openEdit = async (risk: RiskModel) => {
+    console.log('[RisksPage] openEdit called, risk._pm_riskowner_value:', risk._pm_riskowner_value)
+    // Resolve resource GUID (_pm_riskowner_value) to systemuser GUID
+    // so the user-select-id dropdown can display the current owner
+    if (risk._pm_riskowner_value) {
+      try {
+        const resource = await fetchResourceById(risk._pm_riskowner_value)
+        console.log('[RisksPage] openEdit - fetched resource:', resource ? { id: resource.pm_resourceid, name: resource.pm_fullname, sysUser: resource._pm_systemuser_value } : 'null')
+        if (resource?._pm_systemuser_value) {
+          console.log('[RisksPage] openEdit - resolved to systemuser GUID:', resource._pm_systemuser_value)
+          setEditingRisk({ ...risk, _pm_riskowner_value: resource._pm_systemuser_value })
+          setDialogOpen(true)
+          return
+        }
+        console.log('[RisksPage] openEdit - resource has no _pm_systemuser_value, using original value')
+      } catch (err) {
+        console.warn('[RisksPage] openEdit - fetchResourceById threw:', err)
+      }
+    } else {
+      console.log('[RisksPage] openEdit - risk has no _pm_riskowner_value (unassigned)')
+    }
     setEditingRisk(risk)
     setDialogOpen(true)
   }
 
   const handleSave = async (data: Record<string, any>) => {
     if (!data.pm_risktitle?.trim()) return
+    console.log('[RisksPage] handleSave called')
+    console.log('[RisksPage] handleSave - editingRisk?.pm_riskid:', editingRisk?.pm_riskid)
+    console.log('[RisksPage] handleSave - data._pm_riskowner_value:', data._pm_riskowner_value)
+    console.log('[RisksPage] handleSave - full data keys:', Object.keys(data))
+    
     setSaving(true)
     setError(null)
     try {
       if (editingRisk?.pm_riskid) {
+        console.log('[RisksPage] Calling updateRiskFull with id:', editingRisk.pm_riskid)
         const updated = await updateRiskFull(editingRisk.pm_riskid, data)
+        console.log('[RisksPage] updateRiskFull returned:', updated ? 'risk object' : 'null')
         if (updated) {
+          console.log('[RisksPage] Updated risk _pm_riskowner_value:', updated._pm_riskowner_value)
+          console.log('[RisksPage] Updated risk pm_riskownername:', updated.pm_riskownername)
           setRisks((prev) => prev.map((r) => (r.pm_riskid === updated.pm_riskid ? updated : r)))
           setSuccessMsg('Risk updated.')
+        } else {
+          console.warn('[RisksPage] updateRiskFull returned null - update may not have applied')
         }
       } else {
+        console.log('[RisksPage] Calling createRiskFull')
         const created = await createRiskFull(data)
+        console.log('[RisksPage] createRiskFull returned:', created ? 'risk object' : 'null')
         if (created) {
           setRisks((prev) => [...prev, created])
           setSuccessMsg('Risk created.')
@@ -166,7 +201,8 @@ export default function RisksPage() {
       }
       setDialogOpen(false)
       setTimeout(() => setSuccessMsg(null), 3000)
-    } catch {
+    } catch (err) {
+      console.error('[RisksPage] handleSave caught error:', err)
       setError('Unable to save risk.')
     } finally {
       setSaving(false)
@@ -216,7 +252,7 @@ export default function RisksPage() {
   }
 
   // KPIs
-  const kpiItems = useMemo(() => {
+  const kpiItems = useMemo((): KpiCardItem[] => {
     const total = risks.length
     const open = risks.filter((r) => String(r.pm_riskstatus ?? '') === '1').length
     const mitigation = risks.filter((r) => String(r.pm_riskstatus ?? '') === '0').length
@@ -225,21 +261,21 @@ export default function RisksPage() {
       return score >= 8
     }).length
     const escalated = risks.filter((r) => r.pm_escalated).length
-    const closed = risks.filter((r) => String(r.pm_riskstatus ?? '') === '2' || String(r.pm_riskstatus ?? '') === 'Inactive').length // Assuming 2 or Inactive as closed
+    const closed = risks.filter((r) => String(r.pm_riskstatus ?? '') === '2' || String(r.pm_riskstatus ?? '') === 'Inactive').length
 
     return [
-      { label: "Total Risks", value: total, color: "'primary.main'", icon: <WarningAmberIcon /> },
-      { 
-        label: "Open Risks", 
-        value: open, 
-        color: "'warning.main'", 
+      { label: 'Total Risks', value: total, color: 'primary.main', icon: <WarningAmberIcon /> },
+      {
+        label: 'Open Risks',
+        value: open,
+        color: 'warning.main',
         icon: <GppMaybeIcon />,
         subtitle: total > 0 ? `${Math.round((open / total) * 100)}% of total` : 'None open'
       },
-      { label: "High / Critical", value: high, color: "'error.main'", icon: <ArrowUpwardIcon /> },
-      { label: "In Mitigation", value: mitigation, color: "'success.main'", icon: <GppGoodIcon /> },
-      { label: "Escalated", value: escalated, color: "'error.main'", icon: <ArrowCircleUpIcon />, subtitle: 'Active escalations' },
-      { label: "Closed", value: closed, color: "#64748b", icon: <CheckCircleIcon />, subtitle: 'Resolved/Inactive' },
+      { label: 'High / Critical', value: high, color: 'error.main', icon: <ArrowUpwardIcon /> },
+      { label: 'In Mitigation', value: mitigation, color: 'success.main', icon: <GppGoodIcon /> },
+      { label: 'Escalated', value: escalated, color: 'error.main', icon: <ArrowCircleUpIcon />, subtitle: 'Active escalations' },
+      { label: 'Closed', value: closed, color: 'text.secondary', icon: <CheckCircleIcon />, subtitle: 'Resolved/Inactive' },
     ]
   }, [risks])
 
@@ -279,7 +315,7 @@ export default function RisksPage() {
       />
 
       {/* Heatmap & Charts Section */}
-       <RiskDistributionCharts risks={risks} />
+      <RiskDistributionCharts risks={risks} />
       <Box sx={{ mb: 3 }}>
         <Suspense fallback={<Box sx={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading heatmap…</Box>}>
           <RiskHeatmap risks={risks} />

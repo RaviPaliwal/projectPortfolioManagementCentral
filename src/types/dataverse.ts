@@ -45,7 +45,7 @@ export interface RiskModel {
   pm_riskcategory?: number | string
   pm_riskdescription?: string
   pm_ragstatus?: RagStatusCode
-  pm_riskowner?: string
+  pm_riskownername?: string
   pm_riskstatus?: number | string
   pm_escalated?: boolean
   pm_identifieddate?: string
@@ -59,12 +59,9 @@ export interface RiskModel {
   pm_responsestrategy?: number | string
   pm_riskcause?: string
   pm_riskeffect?: string
-  pm_riskreference?: string
-  pm_programme?: string
-  pm_projectcode?: string
-  pm_programmename?: string
+  pm_projectname?: string
   _pm_project_value?: string
-  _pm_programmefk_value?: string
+  _pm_riskowner_value?: string
   statecode?: number
 }
 

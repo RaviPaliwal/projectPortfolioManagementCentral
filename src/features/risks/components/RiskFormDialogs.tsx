@@ -13,14 +13,13 @@ interface RiskDialogProps {
 export const RiskDialog: React.FC<RiskDialogProps> = ({ open, onClose, onSave, initialData }) => {
   const fields: FormField[] = [
     { name: 'pm_risktitle', label: 'Risk Title', type: 'text', required: true, gridSize: 8 },
-    { name: 'pm_riskreference', label: 'Reference', type: 'text', gridSize: 4 },
     { name: 'pm_riskcategory', label: 'Category', type: 'select', gridSize: 4, options: [
       { value: '0', label: 'Strategic' }, { value: '1', label: 'Operational' }, { value: '2', label: 'Financial' }, { value: '3', label: 'Compliance' }, { value: '4', label: 'Technology' }
     ]},
     { name: 'pm_ragstatus', label: 'RAG Status', type: 'select', gridSize: 4, options: [
       { value: '1', label: 'Green — Low Risk' }, { value: '0', label: 'Amber — Medium Risk' }, { value: '2', label: 'Red — High Risk' }
     ]},
-    { name: 'pm_riskowner', label: 'Risk Owner', type: 'user-select', gridSize: 4 },
+    { name: '_pm_riskowner_value', label: 'Risk Owner', type: 'user-select-id', gridSize: 4 },
     { name: 'pm_identifieddate', label: 'Identified Date', type: 'date', gridSize: 6 },
     { name: 'pm_targetclosedate', label: 'Target Close Date', type: 'date', gridSize: 6 },
     { name: 'pm_riskcause', label: 'Cause', type: 'text', gridSize: 6 },
@@ -41,8 +40,7 @@ export const RiskDialog: React.FC<RiskDialogProps> = ({ open, onClose, onSave, i
     { name: 'pm_responsestrategy', label: 'Response Strategy', type: 'select', gridSize: 4, options: [
       { value: '0', label: 'Accept' }, { value: '1', label: 'Avoid' }, { value: '2', label: 'Transfer' }, { value: '3', label: 'Mitigate' }
     ]},
-    { name: '_pm_programmefk_value', label: 'Programme FK (GUID)', type: 'text', gridSize: 6 },
-    { name: '_pm_project_value', label: 'Project FK (GUID)', type: 'text', gridSize: 6 },
+    { name: '_pm_project_value', label: 'Project', type: 'project-select', gridSize: 6 },
   ]
 
   return (

@@ -43,7 +43,7 @@ export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, Re
   issues: <IssuesPage />,
   changerequests: <ChangeRequestsPage />,
   tasks: <TasksPage />,
-  strategicRoster: <StrategicRosterPage />,
+  strategicRoster: <StrategicRosterPage onNavigate={onNavigate} />,
   fundingsources: <FundingSourcesPage />,
   workflows: <WorkflowsPage />,
   skills: <SkillsPage />,

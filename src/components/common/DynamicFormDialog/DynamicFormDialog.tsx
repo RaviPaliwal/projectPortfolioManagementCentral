@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import {
   Grid,
   TextField,
@@ -9,11 +9,13 @@ import {
   Box,
   Avatar,
   Typography,
+  CircularProgress,
 } from '@mui/material'
 import { Dialog } from '../Dialog/Dialog'
 import { useUser } from '@/context/UserContext'
+import { fetchProjectsFull } from '@/services'
 
-export type FormFieldType = 'text' | 'number' | 'date' | 'select' | 'user-select' | 'user-select-id' | 'multiline'
+export type FormFieldType = 'text' | 'number' | 'date' | 'select' | 'user-select' | 'user-select-id' | 'multiline' | 'project-select'
 
 export interface FormFieldOption {
   value: string | number
@@ -61,7 +63,23 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
   const { users } = useUser()
   const [formData, setFormData] = useState<Record<string, any>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [projects, setProjects] = useState<Array<{ pm_projectid: string; pm_projectname: string }>>([])
+  const [projectsLoading, setProjectsLoading] = useState(false)
   const prevOpenRef = useRef(open)
+
+  // Fetch projects when dialog opens (for project-select fields)
+  const hasProjectSelect = useMemo(() => fields.some((f) => f.type === 'project-select'), [fields])
+  const fetchProjects = useCallback(async () => {
+    if (!hasProjectSelect || projects.length > 0) return
+    setProjectsLoading(true)
+    try {
+      const list = await fetchProjectsFull()
+      setProjects(list.map((p) => ({ pm_projectid: p.pm_projectid ?? '', pm_projectname: p.pm_projectname ?? '' })).filter(p => p.pm_projectid))
+    } catch {
+      console.warn('[DynamicFormDialog] Failed to fetch projects')
+    }
+    setProjectsLoading(false)
+  }, [hasProjectSelect, projects.length])
 
   // Initialize form data
   useEffect(() => {
@@ -74,9 +92,10 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
       })
       setFormData(init)
       setIsSubmitting(false)
+      fetchProjects()
     }
     prevOpenRef.current = open
-  }, [open, fields, initialData])
+  }, [open, fields, initialData, fetchProjects])
 
   const handleChange = (name: string, value: any) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -253,6 +272,31 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
                 </MenuItem>
               ))}
             </Select>
+          </FormControl>
+        )
+      case 'project-select':
+        return (
+          <FormControl fullWidth size="medium" disabled={field.disabled}>
+            <InputLabel>{label}</InputLabel>
+            {projectsLoading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+                <CircularProgress size={16} />
+                <Typography variant="caption" color="text.secondary">Loading projects...</Typography>
+              </Box>
+            ) : (
+              <Select
+                value={value || ''}
+                label={label}
+                onChange={(e) => handleChange(field.name, e.target.value)}
+              >
+                {!field.required && <MenuItem value="">— Select a project —</MenuItem>}
+                {projects.map((proj) => (
+                  <MenuItem key={proj.pm_projectid} value={proj.pm_projectid}>
+                    {proj.pm_projectname}
+                  </MenuItem>
+                ))}
+              </Select>
+            )}
           </FormControl>
         )
       default:

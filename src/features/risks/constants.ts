@@ -113,18 +113,16 @@ export const getScoreLabel = (score: number): string => {
 }
 
 export const riskExportColumns: ExportColumn<RiskModel>[] = [
-  { key: 'pm_riskreference', label: 'Reference' },
   { key: 'pm_risktitle', label: 'Risk Title' },
   { key: 'pm_riskcategory', label: 'Category', format: (v) => RISK_CATEGORY_LABELS[String(v ?? '')] ?? String(v ?? '') },
   { key: 'pm_ragstatus', label: 'RAG', format: (v) => RAG_LABELS[String(v ?? '')] ?? String(v ?? '') },
-  { key: 'pm_riskowner', label: 'Owner' },
+  { key: 'pm_riskownername', label: 'Owner' },
   { key: 'pm_riskstatus', label: 'Status', format: (v) => RISK_STATUS_LABELS[String(v ?? '')] ?? String(v ?? '') },
   { key: 'pm_inherentprobability', label: 'Inherent Probability', format: (v) => PROBABILITY_LABELS[String(v ?? '')] ?? String(v ?? '') },
   { key: 'pm_inherentimpact', label: 'Inherent Impact', format: (v) => IMPACT_LABELS[String(v ?? '')] ?? String(v ?? '') },
   { key: 'pm_identifieddate', label: 'Identified Date' },
   { key: 'pm_targetclosedate', label: 'Target Close Date' },
   { key: 'pm_riskdescription', label: 'Description' },
-  { key: 'pm_projectcode', label: 'Project' },
   { key: 'pm_riskcause', label: 'Cause' },
   { key: 'pm_riskeffect', label: 'Effect' },
 ]
@@ -134,7 +132,7 @@ export const emptyForm: Partial<RiskModel> = {
   pm_riskdescription: '',
   pm_riskcategory: '',
   pm_ragstatus: '',
-  pm_riskowner: '',
+  pm_riskownername: '',
   pm_riskstatus: 1,
   pm_escalated: false,
   pm_identifieddate: new Date().toISOString().split('T')[0],
@@ -146,7 +144,6 @@ export const emptyForm: Partial<RiskModel> = {
   pm_responsestrategy: '',
   pm_riskcause: '',
   pm_riskeffect: '',
-  pm_riskreference: '',
   _pm_project_value: '',
-  _pm_programmefk_value: '',
+  _pm_riskowner_value: '',
 }

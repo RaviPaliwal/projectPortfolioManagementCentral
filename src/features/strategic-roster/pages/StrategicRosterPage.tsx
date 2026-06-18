@@ -48,8 +48,9 @@ import TableChartIcon from '@mui/icons-material/TableChart'
 import AccountTreeIconOutlined from '@mui/icons-material/AccountTreeOutlined'
 
 import { fetchPortfolioHierarchy, normalizeLookupId } from '@/services'
-import { PageHeader, KpiCardRow, DetailDrawer, HealthSplitBar } from '@/components/common'
+import { PageHeader, KpiCardRow } from '@/components/common'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
+import type { TabKey } from '@/components/layout/PrimaryShell'
 import { currencyFormatter } from '@/utils/formatters'
 import { fontSizes } from '@/styles'
 import CardView from '../components/CardView'
@@ -296,7 +297,11 @@ const isEntityInYear = (startDate?: string, endDate?: string, yearStr?: string) 
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 
-export default function StrategicRosterPage() {
+interface StrategicRosterPageProps {
+  onNavigate?: (tab: TabKey) => void
+}
+
+export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageProps) {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
@@ -310,7 +315,6 @@ export default function StrategicRosterPage() {
   const [minBudget, setMinBudget] = useState('')
   const [maxBudget, setMaxBudget] = useState('')
   const [viewMode, setViewMode] = useState<'timeline' | 'cards' | 'table' | 'tree'>('timeline')
-  const [selectedItem, setSelectedItem] = useState<{ id: string; type: string; name: string } | null>(null)
   const [selectedYear, setSelectedYear] = useState<string>('')
 
   const availableYears = useMemo(() => {
@@ -801,7 +805,7 @@ export default function StrategicRosterPage() {
                           hasChildren={programs.length > 0}
                           expanded={isExpanded}
                           onToggle={() => toggleExpand(portId)}
-                          onOpenDetails={() => setSelectedItem({ id: portId, type: 'portfolio', name: port.pm_portfolioname! })}
+                          onOpenDetails={() => onNavigate?.('portfolios')}
                           minDate={minDate}
                           totalDays={totalDays}
                         />
@@ -833,7 +837,7 @@ export default function StrategicRosterPage() {
                                   hasChildren={projects.length > 0}
                                   expanded={isProgExpanded}
                                   onToggle={() => toggleExpand(progId)}
-                                  onOpenDetails={() => setSelectedItem({ id: progId, type: 'programme', name: prog.pm_programmename! })}
+                                  onOpenDetails={() => onNavigate?.('programmes')}
                                   minDate={minDate}
                                   totalDays={totalDays}
                                 />
@@ -852,7 +856,7 @@ export default function StrategicRosterPage() {
                                       level={2}
                                       minDate={minDate}
                                       totalDays={totalDays}
-                                      onOpenDetails={() => setSelectedItem({ id: proj.pm_projectid!, type: 'project', name: proj.pm_projectname! })}
+                                      onOpenDetails={() => onNavigate?.('projects')}
                                     />
                                   ))}
                                 </Collapse>
@@ -879,7 +883,7 @@ export default function StrategicRosterPage() {
                 (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
                 (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
               )}
-              onItemClick={(id, type, name) => setSelectedItem({ id, type, name })}
+              onItemClick={(id, type, name) => onNavigate?.(type === 'portfolio' ? 'portfolios' : type === 'programme' ? 'programmes' : 'projects')}
             />
           )}
 
@@ -894,7 +898,7 @@ export default function StrategicRosterPage() {
                 (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
                 (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
               )}
-              onItemClick={(id, type, name) => setSelectedItem({ id, type, name })}
+              onItemClick={(id, type, name) => onNavigate?.(type === 'portfolio' ? 'portfolios' : type === 'programme' ? 'programmes' : 'projects')}
             />
           )}
 
@@ -909,79 +913,11 @@ export default function StrategicRosterPage() {
                 (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
                 (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
               )}
-              onItemClick={(id, type, name) => setSelectedItem({ id, type, name })}
+              onItemClick={(id, type, name) => onNavigate?.(type === 'portfolio' ? 'portfolios' : type === 'programme' ? 'programmes' : 'projects')}
             />
           )}
         </Paper>
       </Box>
-
-      {/* Detail Inspector Drawer */}
-      <DetailDrawer
-        open={!!selectedItem}
-        onClose={() => setSelectedItem(null)}
-        title={selectedItem?.name || 'Item Details'}
-        subtitle={`${selectedItem?.type.toUpperCase()} Overview`}
-      >
-        {selectedItem && (
-          <Box sx={{ p: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>{selectedItem.name}</Typography>
-            <Divider sx={{ mb: 3 }} />
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Box>
-                <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.disabled', textTransform: 'uppercase' }}>Current Health</Typography>
-                <Box sx={{ mt: 1 }}>
-                  {/*
-                    FIX 5: HealthSplitBar prop names — `cost`, `schedule`, `benefits` don't
-                    exist on HealthSplitBarProps. Check your component's interface and replace
-                    the prop names below to match. Common alternatives:
-                      costRag / scheduleRag / benefitsRag
-                      costStatus / scheduleStatus / benefitsStatus
-                      costRagStatus / scheduleRagStatus / benefitsRagStatus
-                    Example if your props are costRag, scheduleRag, benefitsRag:
-                  */}
-                  <HealthSplitBar
-                    green={0}
-                    amber={0}
-                    red={0}
-                  />
-                </Box>
-              </Box>
-
-              <Box>
-                <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.disabled', textTransform: 'uppercase' }}>Financials</Typography>
-                <Paper variant="outlined" sx={{ p: 2, mt: 1, borderRadius: 2, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" color="text.secondary">Total Budget</Typography>
-                    {/* FIX 3 (continued): currencyFormatter.format() */}
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{currencyFormatter.format(1250000)}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary">Actual Consumption</Typography>
-                    {/* FIX 3 (continued): currencyFormatter.format() */}
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{currencyFormatter.format(840000)}</Typography>
-                  </Box>
-                </Paper>
-              </Box>
-
-              <Box>
-                <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.disabled', textTransform: 'uppercase' }}>Key Resources</Typography>
-                <AvatarGroup max={4} sx={{ justifyContent: 'flex-start', mt: 1 }}>
-                  <Avatar alt="Remy Sharp" src="/static/images/avatar/1.jpg" />
-                  <Avatar alt="Travis Howard" src="/static/images/avatar/2.jpg" />
-                  <Avatar alt="Cindy Baker" src="/static/images/avatar/3.jpg" />
-                  <Avatar alt="Agnes Walker" src="/static/images/avatar/4.jpg" />
-                  <Avatar alt="Trevor Henderson" src="/static/images/avatar/5.jpg" />
-                </AvatarGroup>
-              </Box>
-
-              <Button variant="contained" fullWidth sx={{ mt: 2, borderRadius: 2 }}>
-                Full Management Workspace
-              </Button>
-            </Box>
-          </Box>
-        )}
-      </DetailDrawer>
     </Box>
   )
 }

@@ -246,9 +246,22 @@ export default function TeamWorkspacePage() {
   }
 
   const handleReportRisk = async (data: { pm_risktitle: string; pm_riskcategory: string; pm_riskdescription: string }) => {
+    // Resolve the resource ID linked to the current system user
+    let riskOwnerValue: string | undefined
+    if (currentUser?.systemuserid) {
+      try {
+        const { fetchResourceBySystemUserId } = await import('@/services')
+        const resource = await fetchResourceBySystemUserId(currentUser.systemuserid)
+        if (resource?.pm_resourceid) {
+          riskOwnerValue = resource.pm_resourceid
+        }
+      } catch (e) {
+        console.error('[TeamWorkspacePage] Failed to resolve resource for risk owner:', e)
+      }
+    }
     const payload = {
       ...data,
-      pm_riskowner: currentUserName,
+      _pm_riskowner_value: riskOwnerValue,
       pm_riskstatus: '1', // Open
     }
     const created = await createRiskFull(payload)
