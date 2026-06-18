@@ -590,6 +590,18 @@ export async function deleteProjectMilestone(id: string): Promise<void> {
   await Pm_projectmilestonesService.delete(id)
 }
 
+export async function updateProjectMilestone(id: string, changes: Partial<ProjectMilestoneModel>): Promise<ProjectMilestoneModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null && key !== 'pm_projectmilestoneid' && key !== '_pm_project_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_projectmilestonesService.update(id, cleanPayload as any)
+  const item = unwrapSingle<Pm_projectmilestones>(result)
+  return item ? mapProjectMilestone(item) : null
+}
+
 export async function recalculateProjectFinancials(projectId: string): Promise<ProjectModel | null> {
   try {
     const { Pm_budgetlinesService } = await import('@/generated')

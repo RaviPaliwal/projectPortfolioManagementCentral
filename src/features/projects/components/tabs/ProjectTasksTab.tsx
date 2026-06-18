@@ -13,11 +13,14 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
-  useTheme
+  useTheme,
+  Menu,
+  MenuItem
 } from '@mui/material'
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import AssignmentIcon from '@mui/icons-material/Assignment'
+import EditIcon from '@mui/icons-material/Edit'
 
 import { useUser } from '@/context/UserContext'
 import { StatusTag } from '@/components/common'
@@ -29,18 +32,24 @@ interface ProjectTasksTabProps {
   project: ProjectModel
   tasks: ProjectTaskModel[]
   onMarkTaskAsDone?: (taskId: string) => Promise<void>
+  onEditTask?: (task: ProjectTaskModel) => void
+  onUpdateTaskStatus?: (taskId: string, status: string, percent: number) => Promise<void>
 }
 
 export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
   project,
   tasks,
-  onMarkTaskAsDone
+  onMarkTaskAsDone,
+  onEditTask,
+  onUpdateTaskStatus
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const { currentUserPersona } = useUser()
   const [activeSubTab, setActiveSubTab] = useState(0)
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
+
+  const [statusMenuAnchor, setStatusMenuAnchor] = useState<{ element: HTMLElement | null, task: ProjectTaskModel | null }>({ element: null, task: null })
 
   // Only PMO, ProjectManager, or SystemAdministrator can mark standard tasks as complete
   const canMarkAsDone = ['PMO', 'ProjectManager', 'SystemAdministrator'].includes(currentUserPersona)
@@ -50,6 +59,33 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
     setUpdatingTaskId(taskId)
     try {
       await onMarkTaskAsDone(taskId)
+    } finally {
+      setUpdatingTaskId(null)
+    }
+  }
+
+  const handleStatusTagClick = (event: React.MouseEvent<HTMLElement>, task: ProjectTaskModel) => {
+    if (!canMarkAsDone) return
+    setStatusMenuAnchor({ element: event.currentTarget, task })
+  }
+
+  const handleStatusSelect = async (status: string) => {
+    const task = statusMenuAnchor.task
+    setStatusMenuAnchor({ element: null, task: null })
+    if (!task || !onUpdateTaskStatus) return
+    
+    let percent = 0
+    if (status === '0') {
+      percent = 100
+    } else if (status === '1') {
+      percent = task.pm_percentcomplete && task.pm_percentcomplete > 0 && task.pm_percentcomplete < 100 
+        ? task.pm_percentcomplete 
+        : 50
+    }
+    
+    setUpdatingTaskId(task.pm_projecttaskid!)
+    try {
+      await onUpdateTaskStatus(task.pm_projecttaskid!, status, percent)
     } finally {
       setUpdatingTaskId(null)
     }
@@ -149,43 +185,69 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
                         </Box>
                       </TableCell>
                       <TableCell align="center">
-                        <StatusTag
-                          label={isComplete ? 'Complete' : String(task.pm_taskstatus) === '1' ? 'In Progress' : 'Not Started'}
-                          size="small"
-                          color={isComplete ? 'success' : String(task.pm_taskstatus) === '1' ? 'info' : 'default'}
-                        />
+                        <Tooltip title={canMarkAsDone ? "Change Status" : ""}>
+                          <span>
+                            <StatusTag
+                              label={isComplete ? 'Complete' : String(task.pm_taskstatus) === '1' ? 'In Progress' : 'Not Started'}
+                              size="small"
+                              color={isComplete ? 'success' : String(task.pm_taskstatus) === '1' ? 'info' : 'default'}
+                              onClick={canMarkAsDone ? (e) => handleStatusTagClick(e, task) : undefined}
+                              sx={{
+                                cursor: canMarkAsDone ? 'pointer' : 'default',
+                                '&:hover': canMarkAsDone ? { opacity: 0.8 } : {}
+                              }}
+                            />
+                          </span>
+                        </Tooltip>
                       </TableCell>
                       {canMarkAsDone && (
                         <TableCell align="right" sx={{ pr: 3 }}>
-                          {!isComplete ? (
-                            <Tooltip title="Mark as Done">
+                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <Tooltip title="Edit Task Details">
                               <IconButton
                                 size="small"
-                                color="success"
+                                onClick={() => onEditTask?.(task)}
                                 disabled={updatingTaskId === task.pm_projecttaskid}
-                                onClick={() => handleMarkAsDoneClick(task.pm_projecttaskid!)}
                                 sx={{
                                   border: '1px solid',
-                                  borderColor: 'success.light',
-                                  '&:hover': { bgcolor: 'success.lighter' }
+                                  borderColor: 'divider',
+                                  '&:hover': { bgcolor: 'action.hover' }
                                 }}
                               >
-                                {updatingTaskId === task.pm_projecttaskid ? (
-                                  <CircularProgress size={16} color="inherit" />
-                                ) : (
-                                  <CheckCircleIcon sx={{ fontSize: 16 }} />
-                                )}
+                                <EditIcon sx={{ fontSize: 16 }} />
                               </IconButton>
                             </Tooltip>
-                          ) : (
-                            <Tooltip title="Completed">
-                              <span>
-                                <IconButton size="small" disabled sx={{ color: 'text.disabled' }}>
-                                  <CheckCircleIcon sx={{ fontSize: 16 }} />
+
+                            {!isComplete ? (
+                              <Tooltip title="Mark as Done">
+                                <IconButton
+                                  size="small"
+                                  color="success"
+                                  disabled={updatingTaskId === task.pm_projecttaskid}
+                                  onClick={() => handleMarkAsDoneClick(task.pm_projecttaskid!)}
+                                  sx={{
+                                    border: '1px solid',
+                                    borderColor: 'success.light',
+                                    '&:hover': { bgcolor: 'success.lighter' }
+                                  }}
+                                >
+                                  {updatingTaskId === task.pm_projecttaskid ? (
+                                    <CircularProgress size={16} color="inherit" />
+                                  ) : (
+                                    <CheckCircleIcon sx={{ fontSize: 16 }} />
+                                  )}
                                 </IconButton>
-                              </span>
-                            </Tooltip>
-                          )}
+                              </Tooltip>
+                            ) : (
+                              <Tooltip title="Completed">
+                                <span>
+                                  <IconButton size="small" disabled sx={{ color: 'text.disabled' }}>
+                                    <CheckCircleIcon sx={{ fontSize: 16 }} />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            )}
+                          </Box>
                         </TableCell>
                       )}
                     </TableRow>
@@ -196,6 +258,19 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
           </Table>
         </Paper>
       )}
+
+      {/* Quick Status Selector Menu */}
+      <Menu
+        anchorEl={statusMenuAnchor.element}
+        open={Boolean(statusMenuAnchor.element)}
+        onClose={() => setStatusMenuAnchor({ element: null, task: null })}
+        transformOrigin={{ horizontal: 'center', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
+      >
+        <MenuItem onClick={() => handleStatusSelect('2')}>Not Started</MenuItem>
+        <MenuItem onClick={() => handleStatusSelect('1')}>In Progress</MenuItem>
+        <MenuItem onClick={() => handleStatusSelect('0')}>Complete</MenuItem>
+      </Menu>
     </Box>
   )
 }

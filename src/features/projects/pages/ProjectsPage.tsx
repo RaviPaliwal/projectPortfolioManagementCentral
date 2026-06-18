@@ -70,6 +70,7 @@ export default function ProjectsPage() {
   const [isSavingProject, setIsSavingProject] = useState(false)
   
   const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false)
+  const [editingMilestone, setEditingMilestone] = useState<ProjectMilestoneModel | null>(null)
   const [riskDialogOpen, setRiskDialogOpen] = useState(false)
   const [issueDialogOpen, setIssueDialogOpen] = useState(false)
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false)
@@ -77,6 +78,7 @@ export default function ProjectsPage() {
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false)
   const [benefitDialogOpen, setBenefitDialogOpen] = useState(false)
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState<ProjectTaskModel | null>(null)
   const [gateReviewDialogOpen, setGateReviewDialogOpen] = useState(false)
 
   // Detail sub-data
@@ -385,6 +387,59 @@ export default function ProjectsPage() {
     }
   }
 
+  const handleUpdateTaskStatus = async (taskId: string, status: string, percentComplete: number) => {
+    if (!selectedProject?.pm_projectid) return
+    try {
+      // 1. Update task in Dataverse
+      await updateProjectTask(taskId, {
+        pm_percentcomplete: percentComplete,
+        pm_taskstatus: status
+      })
+
+      // 2. Map and update details local state
+      const updatedTasks = detailTasks.map((t) =>
+        t.pm_projecttaskid === taskId ? { ...t, pm_percentcomplete: percentComplete, pm_taskstatus: status } : t
+      )
+
+      // 3. Compute new average progress
+      const total = updatedTasks.length
+      const avgProgress = total > 0
+        ? Math.round(updatedTasks.reduce((s, t) => s + (t.pm_percentcomplete ?? 0), 0) / total)
+        : 0
+
+      // 4. Update the project in Dataverse
+      await updateProject(selectedProject.pm_projectid, {
+        pm_percentcomplete: avgProgress
+      })
+
+      setSuccessMsg('Task status updated successfully.')
+
+      // 5. Update UI states
+      setDetailTasks(updatedTasks)
+      setSelectedProject((prev) => (prev ? { ...prev, pm_percentcomplete: avgProgress } : null))
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.pm_projectid === selectedProject.pm_projectid ? { ...p, pm_percentcomplete: avgProgress } : p
+        )
+      )
+
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err) {
+      console.error('[ProjectsPage] handleUpdateTaskStatus error:', err)
+      setError('Unable to update task status.')
+    }
+  }
+
+  const handleEditMilestone = (milestone: ProjectMilestoneModel) => {
+    setEditingMilestone(milestone)
+    setMilestoneDialogOpen(true)
+  }
+
+  const handleEditTask = (task: ProjectTaskModel) => {
+    setEditingTask(task)
+    setTaskDialogOpen(true)
+  }
+
   // ── KPIs ────────────────────────────────────────────────────────────────
   const kpiItems = useMemo((): KpiCardItem[] => [
     {
@@ -444,7 +499,11 @@ export default function ProjectsPage() {
           tasks={detailTasks}
           gateReviews={detailGateReviews}
           onBack={handleBack}
-          onAddMilestone={() => setMilestoneDialogOpen(true)}
+          onAddMilestone={() => {
+            setEditingMilestone(null)
+            setMilestoneDialogOpen(true)
+          }}
+          onEditMilestone={handleEditMilestone}
           onLogRisk={() => setRiskDialogOpen(true)}
           onLogIssue={() => setIssueDialogOpen(true)}
           onAssignResource={() => {
@@ -455,11 +514,16 @@ export default function ProjectsPage() {
           onCompleteResource={handleCompleteResource}
           onAddBudgetLine={() => setBudgetDialogOpen(true)}
           onAddBenefit={() => setBenefitDialogOpen(true)}
-          onAddTask={() => setTaskDialogOpen(true)}
+          onAddTask={() => {
+            setEditingTask(null)
+            setTaskDialogOpen(true)
+          }}
+          onEditTask={handleEditTask}
           onNavigateToGateReview={() => setGateReviewDialogOpen(true)}
           canEdit={canEdit}
           onEditProject={openEditForm}
           onMarkTaskAsDone={handleMarkTaskAsDone}
+          onUpdateTaskStatus={handleUpdateTaskStatus}
         />
       ) : (
         <>
@@ -513,8 +577,12 @@ export default function ProjectsPage() {
         <>
           <MilestoneDialog
             open={milestoneDialogOpen}
-            onClose={() => setMilestoneDialogOpen(false)}
+            onClose={() => {
+              setMilestoneDialogOpen(false)
+              setEditingMilestone(null)
+            }}
             projectId={selectedProject.pm_projectid!}
+            initialData={editingMilestone ? editingMilestone as any : undefined}
             onSuccess={(msg) => { setSuccessMsg(msg); refreshDetailData('milestone'); setTimeout(() => setSuccessMsg(null), 3000) }}
             onError={(msg) => setError(msg)}
           />
@@ -562,8 +630,12 @@ export default function ProjectsPage() {
           />
           <TaskDialog
             open={taskDialogOpen}
-            onClose={() => setTaskDialogOpen(false)}
+            onClose={() => {
+              setTaskDialogOpen(false)
+              setEditingTask(null)
+            }}
             projectId={selectedProject.pm_projectid!}
+            initialData={editingTask ? editingTask as any : undefined}
             onSuccess={(msg) => { setSuccessMsg(msg); refreshDetailData('task'); setTimeout(() => setSuccessMsg(null), 3000) }}
             onError={(msg) => setError(msg)}
           />
