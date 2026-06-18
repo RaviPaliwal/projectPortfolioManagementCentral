@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import {
   Grid,
   TextField,
@@ -46,11 +46,13 @@ export interface DynamicFormDialogProps {
   cancelText?: string
 }
 
+const DEFAULT_INITIAL_DATA = {}
+
 export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
   open,
   title,
   fields,
-  initialData = {},
+  initialData = DEFAULT_INITIAL_DATA,
   onClose,
   onSubmit,
   submitText = 'Save',
@@ -59,10 +61,11 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
   const { users } = useUser()
   const [formData, setFormData] = useState<Record<string, any>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const prevOpenRef = useRef(open)
 
   // Initialize form data
   useEffect(() => {
-    if (open) {
+    if (open && !prevOpenRef.current) {
       const init: Record<string, any> = { ...initialData }
       fields.forEach((field) => {
         if (init[field.name] === undefined) {
@@ -72,6 +75,7 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
       setFormData(init)
       setIsSubmitting(false)
     }
+    prevOpenRef.current = open
   }, [open, fields, initialData])
 
   const handleChange = (name: string, value: any) => {
@@ -148,7 +152,8 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
             type="date"
             slotProps={{ inputLabel: { shrink: true } }}
             label={label}
-            value={value}
+            // Convert ISO datetime (e.g. "2024-12-31T18:30:00Z") to "yyyy-MM-dd" for date input
+            value={typeof value === 'string' && value.includes('T') ? value.split('T')[0] : value}
             onChange={(e) => handleChange(field.name, e.target.value)}
             disabled={field.disabled}
           />
@@ -159,7 +164,8 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
             select
             fullWidth
             label={label}
-            value={value}
+            // Coerce to string so numeric option values (0, 1, 2) match MenuItem value strings ("0", "1", "2")
+            value={value !== '' && value !== undefined && value !== null ? String(value) : ''}
             onChange={(e) => handleChange(field.name, e.target.value)}
             disabled={field.disabled}
           >

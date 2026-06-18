@@ -85,6 +85,13 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pm_documents": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_documentid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pm_fiscalperiods": {
     "tableId": "",
     "version": "",

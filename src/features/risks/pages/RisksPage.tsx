@@ -53,6 +53,8 @@ export default function RisksPage() {
   const theme = useTheme()
 
   const { allowed: canCreate } = useAuthorization('RISKS', 'create')
+  const { allowed: canEdit } = useAuthorization('RISKS', 'update')
+  const { allowed: canDelete } = useAuthorization('RISKS', 'delete')
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [risks, setRisks] = useState<RiskModel[]>([])
@@ -299,6 +301,8 @@ export default function RisksPage() {
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         openCreate={openCreate}
+        canEdit={canEdit}
+        canDelete={canDelete}
       />
 
       {/* Detail Drawer */}

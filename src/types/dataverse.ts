@@ -329,7 +329,9 @@ export interface GateReviewModel {
   pm_reviewconditions?: string
   pm_documentsurl?: string
   pm_projectcode?: string
+  pm_projectname?: string
   pm_programmename?: string
+  pm_portfolioname?: string
   _pm_project_value?: string
   _pm_programmelookup_value?: string
   statecode?: number

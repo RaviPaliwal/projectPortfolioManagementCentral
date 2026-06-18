@@ -30,6 +30,8 @@ import type { ApprovalRequestModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon, Button } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import { fontSizes } from '@/styles'
 import { formatDate } from '@/utils/formatters'
 
@@ -123,6 +125,10 @@ export default function ApprovalRequestsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(25)
   const [selectedRequest, setSelectedRequest] = useState<ApprovalRequestModel | null>(null)
 
+    const { allowed: canCreate } = useAuthorization('APPROVAL_REQUESTS' as CrudModule, 'create')
+  const { allowed: canEdit } = useAuthorization('APPROVAL_REQUESTS' as CrudModule, 'update')
+  const { allowed: canDelete } = useAuthorization('APPROVAL_REQUESTS' as CrudModule, 'delete')
+
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<ApprovalRequestModel | null>(null)
   const [formData, setFormData] = useState<Partial<ApprovalRequestModel>>({})
@@ -210,9 +216,11 @@ export default function ApprovalRequestsPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={filteredRequests} columns={approvalExportColumns} filename="Approvals" />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setFormData({}); setDialogMode('create') }}>
-              New Request
-            </Button>
+            {canCreate && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setFormData({}); setDialogMode('create') }}>
+                New Request
+              </Button>
+            )}
           </Box>
         }
       />
@@ -265,8 +273,12 @@ export default function ApprovalRequestsPage() {
                   <TableCell>{formatDate(req.pm_duedate)}</TableCell>
                   <TableCell align="right">
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }} onClick={(e) => e.stopPropagation()}>
-                      <ActionIcon icon={<EditIcon />} onClick={() => { setFormData(req); setDialogMode('edit') }} label="Edit" color="primary" />
-                      <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(req)} label="Delete" color="error" />
+                      {canEdit && (
+                        <ActionIcon icon={<EditIcon />} onClick={() => { setFormData(req); setDialogMode('edit') }} label="Edit" color="primary" />
+                      )}
+                      {canDelete && (
+                        <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(req)} label="Delete" color="error" />
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -283,8 +295,12 @@ export default function ApprovalRequestsPage() {
         icon={<ChecklistIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <ActionIcon icon={<EditIcon />} onClick={() => { setFormData(selectedRequest!); setDialogMode('edit') }} label="Edit" color="primary" />
-            <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedRequest)} label="Delete" color="error" />
+            {canEdit && (
+              <ActionIcon icon={<EditIcon />} onClick={() => { setFormData(selectedRequest!); setDialogMode('edit') }} label="Edit" color="primary" />
+            )}
+            {canDelete && (
+              <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedRequest)} label="Delete" color="error" />
+            )}
           </Box>
         }
       >

@@ -12,6 +12,7 @@ import type {
   PerformanceMeasureModel,
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
+import { fetchProjectDetails, fetchProjectsFull } from './project.service'
 
 export const mapGateReview = (item: Pm_projectgatereviews): GateReviewModel => ({
   pm_projectgatereviewid: item.pm_projectgatereviewid,
@@ -46,8 +47,8 @@ export const mapBenefit = (item: Pm_benefits): BenefitModel => ({
   pm_ragstatus: item.pm_ragstatus,
   pm_realisationstartdate: item.pm_realisationstartdate,
   pm_realisationenddate: item.pm_realisationenddate,
-  pm_programmename: item.pm_programmelookupname || item.pm_programmename,
-  pm_projectcode: item.pm_projectcode,
+  pm_programmename: item.pm_programmelookupname,
+  pm_projectcode: item._pm_project_value ? undefined : item.pm_projectname,
   pm_benifitownername: item.pm_benifitownername || (item as any)['_pm_benifitowner_value@OData.Community.Display.V1.FormattedValue'],
   pm_programmelookupname: item.pm_programmelookupname,
   pm_projectname: item.pm_projectname,
@@ -84,7 +85,25 @@ export async function fetchGateReviewById(id: string): Promise<GateReviewModel |
     ],
   })
   const item = unwrapSingle<Pm_projectgatereviews>(result)
-  return item ? mapGateReview(item) : null
+  if (!item) return null
+  const review = mapGateReview(item)
+
+  try {
+    const projId = normalizeLookupId(review._pm_project_value)
+    if (projId) {
+      const proj = await fetchProjectDetails(projId)
+      if (proj) {
+        review.pm_projectcode = proj.pm_projectcode ? `[${proj.pm_projectcode}] ${proj.pm_projectname || ''}` : proj.pm_projectname
+        review.pm_projectname = proj.pm_projectname
+        review.pm_programmename = proj.pm_programmename
+        review.pm_portfolioname = proj.pm_portfolioname
+      }
+    }
+  } catch (err) {
+    console.warn('[governanceService] fetchGateReviewById project resolution failed:', err)
+  }
+
+  return review
 }
 
 export async function fetchGateReviews(): Promise<GateReviewModel[]> {
@@ -100,7 +119,31 @@ export async function fetchGateReviews(): Promise<GateReviewModel[]> {
     orderBy: ['pm_plannedreviewdate desc'],
     top: 500,
   })
-  return unwrapList<Pm_projectgatereviews>(result).map(mapGateReview)
+  const list = unwrapList<Pm_projectgatereviews>(result).map(mapGateReview)
+
+  try {
+    const projects = await fetchProjectsFull()
+    const projectMap = new Map<string, any>()
+    for (const p of projects) {
+      if (p.pm_projectid) {
+        projectMap.set(normalizeLookupId(p.pm_projectid)!, p)
+      }
+    }
+    for (const r of list) {
+      const projId = normalizeLookupId(r._pm_project_value)
+      if (projId && projectMap.has(projId)) {
+        const p = projectMap.get(projId)!
+        r.pm_projectcode = p.pm_projectcode ? `[${p.pm_projectcode}] ${p.pm_projectname || ''}` : p.pm_projectname
+        r.pm_projectname = p.pm_projectname
+        r.pm_programmename = p.pm_programmename
+        r.pm_portfolioname = p.pm_portfolioname
+      }
+    }
+  } catch (err) {
+    console.warn('[governanceService] fetchGateReviews project resolution failed:', err)
+  }
+
+  return list
 }
 
 export async function createGateReview(payload: Partial<GateReviewModel>): Promise<GateReviewModel | null> {
@@ -148,7 +191,7 @@ export async function fetchBenefits(): Promise<BenefitModel[]> {
     'pm_benefitdescription', 'pm_benefitstatus', 'pm_benefittype',
     'pm_benefitreference', 'pm_baselinevalue', 'pm_targetvalue',
     'pm_unitofmeasure', 'pm_ragstatus', 'pm_realisationstartdate',
-    'pm_realisationenddate', 'pm_programmename', 'pm_projectcode',
+    'pm_realisationenddate',
     '_pm_benifitowner_value', '_pm_programmelookup_value', '_pm_project_value',
   ]
   const options = {
@@ -185,7 +228,80 @@ export async function createBenefit(payload: Partial<BenefitModel>): Promise<Ben
 }
 
 export async function updateBenefit(id: string, changes: Partial<BenefitModel>): Promise<BenefitModel | null> {
-  const result = await Pm_benefitsService.update(id, changes as any)
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null &&
+        key !== 'pm_benefitid' && key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_benefitsService.update(id, cleanPayload as any)
+  const item = unwrapSingle<Pm_benefits>(result)
+  return item ? mapBenefit(item) : null
+}
+
+export async function createBenefitFull(payload: Partial<BenefitModel>): Promise<BenefitModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+      cleanPayload[key] = value
+    }
+  }
+  const defaults: Record<string, any> = {
+    statecode: 0,
+    statuscode: 1,
+  }
+  if (payload._pm_benifitowner_value) {
+    const ownerId = normalizeLookupId(payload._pm_benifitowner_value)
+    if (ownerId) {
+      cleanPayload['pm_BenifitOwner@odata.bind'] = `/systemusers(${ownerId})`
+    }
+  }
+  if (payload._pm_programmelookup_value) {
+    const programmeId = normalizeLookupId(payload._pm_programmelookup_value)
+    if (programmeId) {
+      cleanPayload['pm_ProgrammeLookup@odata.bind'] = `/pm_programmes(${programmeId})`
+    }
+  }
+  if (payload._pm_project_value) {
+    const projectId = normalizeLookupId(payload._pm_project_value)
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+    }
+  }
+  const result = await Pm_benefitsService.create({ ...defaults, ...cleanPayload } as any)
+  const item = unwrapSingle<Pm_benefits>(result)
+  return item ? mapBenefit(item) : null
+}
+
+export async function updateBenefitFull(id: string, changes: Partial<BenefitModel>): Promise<BenefitModel | null> {
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null &&
+        key !== 'pm_benefitid' && key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+      cleanPayload[key] = value
+    }
+  }
+  if (changes._pm_benifitowner_value) {
+    const ownerId = normalizeLookupId(changes._pm_benifitowner_value)
+    if (ownerId) {
+      cleanPayload['pm_BenifitOwner@odata.bind'] = `/systemusers(${ownerId})`
+    }
+  }
+  if (changes._pm_programmelookup_value) {
+    const programmeId = normalizeLookupId(changes._pm_programmelookup_value)
+    if (programmeId) {
+      cleanPayload['pm_ProgrammeLookup@odata.bind'] = `/pm_programmes(${programmeId})`
+    }
+  }
+  if (changes._pm_project_value) {
+    const projectId = normalizeLookupId(changes._pm_project_value)
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+    }
+  }
+  const result = await Pm_benefitsService.update(id, cleanPayload as any)
   const item = unwrapSingle<Pm_benefits>(result)
   return item ? mapBenefit(item) : null
 }

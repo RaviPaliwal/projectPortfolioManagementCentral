@@ -27,8 +27,6 @@ import {
   Divider,
   Avatar,
   LinearProgress,
-  Tabs,
-  Tab,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -58,7 +56,7 @@ import {
 } from '@/services'
 import type { BudgetLineModel, FundingSourceModel, FinancialPeriodModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, WorkflowMilestone, Breadcrumbs } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, WorkflowMilestone } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
@@ -199,16 +197,6 @@ export default function BudgetsPage() {
   useEffect(() => {
     loadData()
   }, [loadData])
-
-  // Sync selectedBudget with latest data from budgetLines list
-  useEffect(() => {
-    if (selectedBudget?.pm_budgetlineid) {
-      const updated = budgetLines.find(b => b.pm_budgetlineid === selectedBudget.pm_budgetlineid)
-      if (updated) {
-        setSelectedBudget(updated)
-      }
-    }
-  }, [budgetLines, selectedBudget?.pm_budgetlineid])
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
   const kpiItems = useMemo((): KpiCardItem[] => {
@@ -477,476 +465,6 @@ export default function BudgetsPage() {
   }, [])
 
   // ── Render ────────────────────────────────────────────────────────────────
-  if (selectedBudget) {
-    return (
-      <Box>
-        <Breadcrumbs
-          items={[{ label: 'Budgets', path: 'list' }, { label: selectedBudget.pm_budgetlinename ?? 'Detail' }]}
-          onNavigate={handleCloseDetail}
-        />
-        <PageHeader
-          title={selectedBudget.pm_budgetlinename ?? 'Budget Line Detail'}
-          subtitle={selectedBudget.pm_fundingsourcename ? `Funding Source: ${selectedBudget.pm_fundingsourcename}` : undefined}
-          actionElement={
-            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-              {canEdit && (
-                <ActionIcon
-                  icon={<EditIcon />}
-                  onClick={() => openEditForm(selectedBudget)}
-                  label="Edit Budget"
-                  color="primary"
-                />
-              )}
-              {canDelete && (
-                <ActionIcon
-                  icon={<DeleteIcon />}
-                  onClick={() => setDeleteConfirm(selectedBudget.pm_budgetlineid!)}
-                  label="Delete Budget"
-                  color="error"
-                />
-              )}
-            </Box>
-          }
-        />
-
-        {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-        {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
-
-        <Grid container spacing={3}>
-          {/* Block 1: Budget Utilization & Variance Analysis */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
-                {/* Budget Utilization Section */}
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Budget Utilization
-                  </Typography>
-                  <Box sx={{ mb: 2.5 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                        Budget Used
-                      </Typography>
-                      <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {budgetUtilization(selectedBudget)}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={budgetUtilization(selectedBudget)}
-                      sx={{
-                        height: 8,
-                        borderRadius: 1.5,
-                        bgcolor: isDark ? 'divider' : '#e2e8f0',
-                        '& .MuiLinearProgress-bar': {
-                          bgcolor: budgetUtilization(selectedBudget) > 85 ? 'error.main'
-                            : budgetUtilization(selectedBudget) > 65 ? 'warning.main' : 'success.main',
-                        },
-                      }}
-                    />
-                  </Box>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-                    <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase', fontSize: fontSizes.xs }}>
-                        Revised Budget
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {selectedBudget.pm_revisedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_revisedbudgeteur) : '—'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.success.main}` }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase', fontSize: fontSizes.xs }}>
-                        Actual Spend
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {selectedBudget.pm_actualspendeur != null ? currencyFormatter.format(selectedBudget.pm_actualspendeur) : '—'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-
-                <Divider />
-
-                {/* Variance Analysis Section */}
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CurrencyExchangeIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Variance Analysis
-                  </Typography>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, mb: 2 }}>
-                    <Box
-                      sx={{
-                        p: 1,
-                        borderRadius: 1,
-                        textAlign: 'center',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        border: '1px solid',
-                        borderColor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0 ? 'success.light' : 'error.light',
-                        bgcolor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
-                          ? (isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.04)')
-                          : (isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.04)'),
-                      }}
-                    >
-                      {selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
-                        ? <VerifiedIcon sx={{ fontSize: 16, color: 'success.main', mb: 0.5 }} />
-                        : <WarningAmberIcon sx={{ fontSize: 16, color: 'error.main', mb: 0.5 }} />
-                      }
-                      <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: getVarianceColor(selectedBudget.pm_varianceeur), fontSize: '0.75rem' }}>
-                        {selectedBudget.pm_varianceeur != null
-                          ? `${selectedBudget.pm_varianceeur >= 0 ? '+' : ''}${currencyFormatter.format(selectedBudget.pm_varianceeur)}`
-                          : '—'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, fontSize: '0.65rem' }}>Variance</Typography>
-                    </Box>
-                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                      <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {selectedBudget.pm_committedspendeur != null ? currencyFormatter.format(selectedBudget.pm_committedspendeur) : '—'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontSize: '0.65rem' }}>Committed</Typography>
-                    </Box>
-                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                      <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {selectedBudget.pm_forecastspendeur != null ? currencyFormatter.format(selectedBudget.pm_forecastspendeur) : '—'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontSize: '0.65rem' }}>Forecast</Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-                    <Box sx={{ p: 1.25, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25, fontSize: '0.65rem' }}>Estimate at Completion</Typography>
-                      <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {selectedBudget.pm_estimateatcompletioneur != null ? currencyFormatter.format(selectedBudget.pm_estimateatcompletioneur) : '—'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ p: 1.25, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25, fontSize: '0.65rem' }}>Estimate to Complete</Typography>
-                      <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {selectedBudget.pm_estimatetocompleteeur != null ? currencyFormatter.format(selectedBudget.pm_estimatetocompleteeur) : '—'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
-
-          {/* Block 2: Line Details & Notes */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CategoryIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Line Details
-                  </Typography>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Category</Typography>
-                      <Typography variant="body2">{selectedBudget.pm_costcategoryname || CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Funding Source</Typography>
-                      <Typography variant="body2">{selectedBudget.pm_fundingsourcename || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Fiscal Period</Typography>
-                      <Typography variant="body2">{selectedBudget.pm_fiscalperiodname || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Funding Period</Typography>
-                      <Typography variant="body2">{selectedBudget.pm_fundingperiod || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Portfolio</Typography>
-                      <Typography variant="body2">{selectedBudget.pm_portfolio || selectedBudget.pm_portfoliolookupname || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Programme</Typography>
-                      <Typography variant="body2">{selectedBudget.pm_programme || selectedBudget.pm_programmelookupname || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Project</Typography>
-                      <Typography variant="body2">{selectedBudget.pm_projectname || selectedBudget.pm_projectcode || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Funding Source Code</Typography>
-                      <Typography variant="body2">{selectedBudget.pm_fundingsourcecode || '—'}</Typography>
-                    </Box>
-                  </Box>
-                </Box>
-
-                {selectedBudget.pm_notes && (
-                  <>
-                    <Divider />
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Notes</Typography>
-                      <Box sx={{ p: 2, borderRadius: 1, border: '1px dashed', borderColor: 'divider', bgcolor: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)' }}>
-                        <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>{selectedBudget.pm_notes}</Typography>
-                      </Box>
-                    </Box>
-                  </>
-                )}
-              </Box>
-            </Paper>
-          </Grid>
-
-          {/* Block 3: Approval Tasks */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AssignmentIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Approval Tasks
-                </Typography>
-                {selectedBudget?.pm_budgetlineid && (
-                  <EntityApprovalTasks
-                    entityId={selectedBudget.pm_budgetlineid}
-                    moduleName={MODULE_NAMES.BUDGETS.value}
-                    entityLabel="Budget Line"
-                    tabValue={0}
-                    index={0}
-                  />
-                )}
-              </Box>
-            </Paper>
-          </Grid>
-        </Grid>
-
-        {showFormModal && (
-          <Dialog
-            open={showFormModal}
-            onClose={() => !actionLoading && setShowFormModal(false)}
-            maxWidth="md"
-            fullWidth
-            slotProps={{
-              paper: { sx: { borderRadius: 1.5 } },
-            }}
-          >
-            <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: 1.5 }}>
-                {editingBudget ? <EditIcon sx={{ fontSize: 18, color: '#fff' }} /> : <AccountBalanceWalletIcon sx={{ fontSize: 18, color: '#fff' }} />}
-              </Avatar>
-              {editingBudget ? 'Edit Budget Line' : 'Add Budget Line'}
-            </DialogTitle>
-            <DialogContent sx={{ pt: 2 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {editingBudget ? `Update details for ${editingBudget.pm_budgetlinename}.` : 'Create a new budget line for tracking approved amounts, actual spend, and variance.'}
-              </Typography>
-              {/* Basic Information */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-                  Basic Information
-                </Typography>
-              </Box>
-              <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    label="Budget Line Name"
-                    fullWidth
-                    size="small"
-                    value={formData.pm_budgetlinename}
-                    onChange={(e) => setFormData((f) => ({ ...f, pm_budgetlinename: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Category</InputLabel>
-                    <Select
-                      value={formData.pm_costcategory}
-                      label="Category"
-                      onChange={(e) => setFormData((f) => ({ ...f, pm_costcategory: Number(e.target.value) }))}
-                      sx={{ borderRadius: 1.5 }}
-                    >
-                      <MenuItem value={0}>Staff</MenuItem>
-                      <MenuItem value={1}>Contractors</MenuItem>
-                      <MenuItem value={2}>Licences</MenuItem>
-                      <MenuItem value={3}>Infrastructure</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    label="Approved Budget"
-                    fullWidth
-                    size="small"
-                    type="number"
-                    value={formData.pm_approvedbudgeteur || ''}
-                    onChange={(e) => setFormData((f) => ({ ...f, pm_approvedbudgeteur: Number(e.target.value) }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    label="Revised Budget"
-                    fullWidth
-                    size="small"
-                    type="number"
-                    value={formData.pm_revisedbudgeteur || ''}
-                    onChange={(e) => setFormData((f) => ({ ...f, pm_revisedbudgeteur: Number(e.target.value) }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField
-                    label="Actual Spend"
-                    fullWidth
-                    size="small"
-                    type="number"
-                    value={formData.pm_actualspendeur || ''}
-                    onChange={(e) => setFormData((f) => ({ ...f, pm_actualspendeur: Number(e.target.value) }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField
-                    label="Committed Spend"
-                    fullWidth
-                    size="small"
-                    type="number"
-                    value={formData.pm_committedspendeur || ''}
-                    onChange={(e) => setFormData((f) => ({ ...f, pm_committedspendeur: Number(e.target.value) }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField
-                    label="Forecast Spend"
-                    fullWidth
-                    size="small"
-                    type="number"
-                    value={formData.pm_forecastspendeur || ''}
-                    onChange={(e) => setFormData((f) => ({ ...f, pm_forecastspendeur: Number(e.target.value) }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
-                </Grid>
-              </Grid>
-
-              {/* Classification */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 2 }}>
-                <CategoryIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-                  Classification
-                </Typography>
-              </Box>
-              <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Funding Source</InputLabel>
-                    <Select
-                      value={formData._pm_fundingsource_value || ''}
-                      label="Funding Source"
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const name = fundingSources.find(s => s.pm_fundingsourceid === val)?.pm_fundingsourcename || '';
-                        setFormData((f) => ({ ...f, _pm_fundingsource_value: val, pm_fundingsourcename: name }));
-                      }}
-                      sx={{ borderRadius: 1.5 }}
-                    >
-                      {fundingSources.map((s) => (
-                        <MenuItem key={s.pm_fundingsourceid} value={s.pm_fundingsourceid}>{s.pm_fundingsourcename}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Fiscal Period</InputLabel>
-                    <Select
-                      value={formData._pm_fiscalperiod_value || ''}
-                      label="Fiscal Period"
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const name = financialPeriods.find(p => p.pm_fiscalperiodid === val)?.pm_periodname || '';
-                        setFormData((f) => ({ ...f, _pm_fiscalperiod_value: val, pm_fiscalperiodname: name }));
-                      }}
-                      sx={{ borderRadius: 1.5 }}
-                    >
-                      {financialPeriods.map((p) => (
-                        <MenuItem key={p.pm_fiscalperiodid} value={p.pm_fiscalperiodid}>{p.pm_periodname}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-
-              {/* Extra Details */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 2 }}>
-                <NotesIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-                  Hierarchy & Notes
-                </Typography>
-              </Box>
-              <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField
-                    label="Portfolio"
-                    fullWidth
-                    size="small"
-                    value={formData.pm_portfolio}
-                    onChange={(e) => setFormData((f) => ({ ...f, pm_portfolio: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField
-                    label="Programme"
-                    fullWidth
-                    size="small"
-                    value={formData.pm_programme}
-                    onChange={(e) => setFormData((f) => ({ ...f, pm_programme: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField
-                    label="Project Code"
-                    fullWidth
-                    size="small"
-                    value={formData.pm_projectcode}
-                    onChange={(e) => setFormData((f) => ({ ...f, pm_projectcode: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <TextField
-                    label="Notes"
-                    fullWidth
-                    multiline
-                    rows={3}
-                    size="small"
-                    value={formData.pm_notes}
-                    onChange={(e) => setFormData((f) => ({ ...f, pm_notes: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
-                </Grid>
-              </Grid>
-            </DialogContent>
-            <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setShowFormModal(false)} sx={{ textTransform: 'none', fontWeight: 600 }}>Cancel</Button>
-              <Button variant="contained" onClick={handleSaveBudget} disabled={actionLoading} sx={{ textTransform: 'none', fontWeight: 600 }}>
-                {editingBudget ? 'Save Changes' : 'Create Budget'}
-              </Button>
-            </DialogActions>
-          </Dialog>
-        )}
-
-        {deleteConfirm && (
-          <Dialog open={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}>
-            <DialogTitle sx={{ fontWeight: 700 }}>Confirm Delete</DialogTitle>
-            <DialogContent><Typography>Are you sure you want to delete this budget line?</Typography></DialogContent>
-            <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setDeleteConfirm(null)} sx={{ textTransform: 'none', fontWeight: 600 }}>Cancel</Button>
-              <Button variant="contained" color="error" onClick={handleDeleteBudget} sx={{ textTransform: 'none', fontWeight: 600 }}>Delete</Button>
-            </DialogActions>
-          </Dialog>
-        )}
-      </Box>
-    )
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Box>
       <PageHeader
@@ -1154,6 +672,258 @@ export default function BudgetsPage() {
           />
         )}
       </Paper>
+
+      {/* ── Detail Drawer ────────────────────────────── */}
+      <DetailDrawer
+        open={!!selectedBudget}
+        onClose={handleCloseDetail}
+        icon={<AccountBalanceWalletIcon sx={{ color: 'primary.main', fontSize: fontSizes.xl }} />}
+        title={selectedBudget?.pm_budgetlinename ?? ''}
+        subtitle={selectedBudget && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <StatusTag
+              label={CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] ?? 'Unknown'}
+              color={CATEGORY_COLORS[String(selectedBudget.pm_costcategory ?? '')] ?? 'default'}
+            />
+            {selectedBudget.pm_fundingsourcename && (
+              <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                <SourceIcon sx={{ fontSize: fontSizes.sm, mr: 0.5 }} />
+                {selectedBudget.pm_fundingsourcename}
+              </Typography>
+            )}
+          </Box>
+        )}
+        headerActions={
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            {canEdit && (
+              <ActionIcon
+                icon={<EditIcon />}
+                onClick={() => selectedBudget && openEditForm(selectedBudget)}
+                label="Edit Budget"
+              />
+            )}
+            {canDelete && (
+              <ActionIcon
+                icon={<DeleteIcon />}
+                onClick={() => selectedBudget?.pm_budgetlineid && setDeleteConfirm(selectedBudget.pm_budgetlineid)}
+                label="Delete Budget"
+                color="error"
+              />
+            )}
+          </Box>
+        }
+        tabs={[
+          { label: 'Overview' },
+          { label: 'Details' },
+          { label: 'Approval' },
+          { label: 'Tasks' },
+        ]}
+        tabValue={detailTab}
+        onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
+      >
+        {selectedBudget && (
+          <>
+            {/* Overview Tab */}
+            <TabPanel value={detailTab} index={0} pt={0}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                {/* Budget Utilization */}
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <AccountBalanceWalletIcon sx={{ fontSize: fontSizes.md }} /> Budget Utilization
+                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Budget Used
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                        {budgetUtilization(selectedBudget)}%
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={budgetUtilization(selectedBudget)}
+                      sx={{
+                        height: 8,
+                        borderRadius: 1.5,
+                        bgcolor: isDark ? 'divider' : '#e2e8f0',
+                        '& .MuiLinearProgress-bar': {
+                          bgcolor: budgetUtilization(selectedBudget) > 85 ? 'error.main'
+                            : budgetUtilization(selectedBudget) > 65 ? 'warning.main' : 'success.main',
+                        },
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
+                        Revised Budget
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.base }}>
+                        {selectedBudget.pm_revisedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_revisedbudgeteur) : '—'}
+                      </Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: (theme) => `3px solid ${theme.palette.success.main}` }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
+                        Actual Spend
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.base }}>
+                        {selectedBudget.pm_actualspendeur != null ? currencyFormatter.format(selectedBudget.pm_actualspendeur) : '—'}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                </Paper>
+
+                {/* Variance Display */}
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <CurrencyExchangeIcon sx={{ fontSize: fontSizes.md }} /> Variance Analysis
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        borderRadius: 1.5,
+                        textAlign: 'center',
+                        borderColor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0 ? 'success.main' : 'error.main',
+                        bgcolor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
+                          ? (isDark ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.05)')
+                          : (isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)'),
+                      }}
+                    >
+                      {selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
+                        ? <VerifiedIcon sx={{ fontSize: 24, color: 'success.main', mb: 0.5 }} />
+                        : <WarningAmberIcon sx={{ fontSize: 24, color: 'error.main', mb: 0.5 }} />
+                      }
+                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: getVarianceColor(selectedBudget.pm_varianceeur) }}>
+                        {selectedBudget.pm_varianceeur != null
+                          ? `${selectedBudget.pm_varianceeur >= 0 ? '+' : ''}${currencyFormatter.format(selectedBudget.pm_varianceeur)}`
+                          : '—'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Variance</Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                        {selectedBudget.pm_committedspendeur != null ? currencyFormatter.format(selectedBudget.pm_committedspendeur) : '—'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Committed Spend</Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                        {selectedBudget.pm_forecastspendeur != null ? currencyFormatter.format(selectedBudget.pm_forecastspendeur) : '—'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Forecast</Typography>
+                    </Paper>
+                  </Box>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate at Completion</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                        {selectedBudget.pm_estimateatcompletioneur != null ? currencyFormatter.format(selectedBudget.pm_estimateatcompletioneur) : '—'}
+                      </Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate to Complete</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                        {selectedBudget.pm_estimatetocompleteeur != null ? currencyFormatter.format(selectedBudget.pm_estimatetocompleteeur) : '—'}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                </Paper>
+              </Box>
+            </TabPanel>
+
+            {/* Details Tab */}
+            <TabPanel value={detailTab} index={1} pt={0}>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <CategoryIcon sx={{ fontSize: fontSizes.md }} /> Line Details
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Category</Typography>
+                    <Typography variant="body2">{selectedBudget.pm_costcategoryname || CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] || '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Funding Source</Typography>
+                    <Typography variant="body2">{selectedBudget.pm_fundingsourcename || '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Fiscal Period</Typography>
+                    <Typography variant="body2">{selectedBudget.pm_fiscalperiodname || '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Funding Period</Typography>
+                    <Typography variant="body2">{selectedBudget.pm_fundingperiod || '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Portfolio</Typography>
+                    <Typography variant="body2">{selectedBudget.pm_portfolio || selectedBudget.pm_portfoliolookupname || '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme</Typography>
+                    <Typography variant="body2">{selectedBudget.pm_programme || selectedBudget.pm_programmelookupname || '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project</Typography>
+                    <Typography variant="body2">{selectedBudget.pm_projectname || selectedBudget.pm_projectcode || '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Funding Source Code</Typography>
+                    <Typography variant="body2">{selectedBudget.pm_fundingsourcecode || '—'}</Typography>
+                  </Box>
+                </Box>
+                {selectedBudget.pm_notes && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Notes</Typography>
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>{selectedBudget.pm_notes}</Typography>
+                  </Box>
+                )}
+              </Paper>
+            </TabPanel>
+
+                {/* Approval Tab */}
+                <TabPanel value={detailTab} index={2} pt={0}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TimelineIcon sx={{ fontSize: 20 }} /> Approval Workflow Timeline
+                  </Typography>
+                  {selectedBudget?.pm_budgetlineid ? (
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <AccountBalanceWalletIcon sx={{ fontSize: 16 }} />
+                        {selectedBudget.pm_budgetlinename || 'Budget Line'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                        {selectedBudget.pm_approvedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_approvedbudgeteur) : ''}
+                        {selectedBudget.pm_costcategoryname ? ` A� ${selectedBudget.pm_costcategoryname}` : ''}
+                      </Typography>
+                      <WorkflowMilestone
+                        moduleName={MODULE_NAMES.BUDGETS.value}
+                        entityId={selectedBudget.pm_budgetlineid}
+                      />
+                    </Paper>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
+                      No workflow tracking available for this budget line.
+                    </Typography>
+                  )}
+                </TabPanel>
+
+                <TabPanel value={detailTab} index={3} pt={0}>
+                  {selectedBudget?.pm_budgetlineid && (
+                    <EntityApprovalTasks
+                      entityId={selectedBudget.pm_budgetlineid}
+                      moduleName={MODULE_NAMES.BUDGETS.value}
+                      entityLabel="Budget Line"
+                      tabValue={detailTab}
+                      index={3}
+                    />
+                  )}
+                </TabPanel>
+              </>
+            )}
+          </DetailDrawer>
 
       {/* ── Create/Edit Modal ──────────────────────── */}
       <Dialog

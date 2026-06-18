@@ -87,3 +87,7 @@ export type { DynamicFormDialogProps, FormField, FormFieldOption, FormFieldType 
 export { LedgerCalendar } from './LedgerCalendar/LedgerCalendar'
 export type { LedgerCalendarProps, CalendarEntry } from './LedgerCalendar/LedgerCalendar'
 
+export { EntityDocumentsTab } from './EntityDocumentsTab/EntityDocumentsTab'
+export { DocumentPreviewDialog } from './DocumentPreviewDialog/DocumentPreviewDialog'
+
+

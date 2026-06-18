@@ -170,6 +170,8 @@ export default function CashflowPage() {
         onSelectEntry={setSelectedEntry}
         onEditEntry={(entry) => { setFormData(entry); setDialogMode('edit') }}
         onDeleteEntry={setDeleteTarget}
+        canEdit={canEdit}
+        canDelete={canDelete}
       />
 
       <DetailDrawer

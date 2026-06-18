@@ -15,9 +15,16 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
+  Tabs,
+  Tab,
   IconButton,
   Tooltip,
-  Divider,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material'
 import ErrorIcon from '@mui/icons-material/Error'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
@@ -33,6 +40,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import EditIcon from '@mui/icons-material/Edit'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate'
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
@@ -46,13 +54,13 @@ import {
   HealthSplitBar,
   VarianceDisplay,
   SearchFilterBar,
+  TabPanel,
   TableFooter,
   TableShell,
   ExportButton,
   Breadcrumbs,
   ActionIcon,
-  DataverseTable,
-  type Column,
+  EntityDocumentsTab,
 } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { fontSizes } from '@/styles'
@@ -114,6 +122,10 @@ export default function ProgrammesPage() {
   // ── List View State ────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('')
   const [portfolioFilter, setPortfolioFilter] = useState('all')
+  const [phaseFilter, setPhaseFilter] = useState('')
+  const [ragFilter, setRagFilter] = useState('')
+  const [minBudget, setMinBudget] = useState('')
+  const [maxBudget, setMaxBudget] = useState('')
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(25)
 
@@ -214,6 +226,18 @@ export default function ProgrammesPage() {
     }))
   }
 
+  const hasActiveFilters = !!(searchQuery || portfolioFilter !== 'all' || phaseFilter || ragFilter || minBudget || maxBudget)
+
+  const handleClearAll = useCallback(() => {
+    setSearchQuery('')
+    setPortfolioFilter('all')
+    setPhaseFilter('')
+    setRagFilter('')
+    setMinBudget('')
+    setMaxBudget('')
+    setPage(0)
+  }, [])
+
   // ── Derived Data ──────────────────────────────────────────────────────────
   const filteredProgrammes = useMemo(() => {
     let list = programmes
@@ -229,6 +253,20 @@ export default function ProgrammesPage() {
     if (portfolioFilter !== 'all') {
       list = list.filter(p => p._pm_portfolio_value === portfolioFilter)
     }
+    if (phaseFilter) {
+      list = list.filter(p => String(p.pm_programmephase ?? '') === phaseFilter)
+    }
+    if (ragFilter) {
+      list = list.filter(p => String(p.pm_ragstatus ?? '') === ragFilter)
+    }
+    if (minBudget) {
+      const min = parseFloat(minBudget)
+      if (!isNaN(min)) list = list.filter(p => (p.pm_budgeteur ?? 0) >= min)
+    }
+    if (maxBudget) {
+      const max = parseFloat(maxBudget)
+      if (!isNaN(max)) list = list.filter(p => (p.pm_budgeteur ?? 0) <= max)
+    }
     return [...list].sort((a, b) => {
       let cmp = 0
       switch (sort.field) {
@@ -243,7 +281,7 @@ export default function ProgrammesPage() {
       }
       return sort.dir === 'asc' ? cmp : -cmp
     })
-  }, [programmes, searchQuery, portfolioFilter, sort])
+  }, [programmes, searchQuery, portfolioFilter, phaseFilter, ragFilter, minBudget, maxBudget, sort])
 
   const paginatedProgrammes = useMemo(() =>
     filteredProgrammes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
@@ -278,41 +316,6 @@ export default function ProgrammesPage() {
     const detailRisks = detailData.risks
     const detailIssues = detailData.issues
 
-    const projectColumns: Column<ProjectModel>[] = [
-      {
-        key: 'pm_projectname',
-        label: 'Project Name',
-        format: (val) => (
-          <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            {val}
-            <OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} />
-          </Typography>
-        ),
-      },
-      {
-        key: 'pm_projectphase',
-        label: 'Phase',
-        format: (val) => <StatusChip status={val} type="phase" size="small" />,
-      },
-      {
-        key: 'pm_ragstatus',
-        label: 'RAG',
-        format: (val) => <StatusChip status={val} type="rag" size="small" />,
-      },
-      {
-        key: 'pm_percentcomplete',
-        label: '% Complete',
-        align: 'right',
-        format: (val) => `${val ?? 0}%`,
-      },
-      {
-        key: 'pm_approvedbudgeteur',
-        label: 'Budget',
-        align: 'right',
-        format: (val) => currencyFormatter.format(val ?? 0),
-      },
-    ]
-
     return (
       <Box>
         <Breadcrumbs
@@ -325,225 +328,215 @@ export default function ProgrammesPage() {
           actionElement={
             <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
               {canEdit && (
-                <ActionIcon icon={<EditIcon />} onClick={() => prog && openEditForm(prog)} label="Edit Programme" color="primary" />
-              )}
+              <ActionIcon icon={<EditIcon />} onClick={() => prog && openEditForm(prog)} label="Edit Programme" color="primary" />
+            )}
               <StatusChip status={prog?.pm_ragstatus} type="rag" size="small" />
               <StatusChip status={prog?.pm_programmephase} type="prog_phase" size="small" />
               {prog?.pm_portfolioname && <StatusTag label={prog.pm_portfolioname} size="small" color="primary" variant="outlined" />}
             </Box>
           }
         />
-
-        {/* Section: Financials */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
-            Financials
-          </Typography>
-          <Grid container spacing={3}>
-            {/* Block 3: Total Budget (4-columns) */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 3, borderRadius: 1.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Total Budget</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, mt: 1, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>
-                  {currencyFormatter.format(prog?.pm_budgeteur ?? 0)}
-                </Typography>
-              </Paper>
-            </Grid>
-
-            {/* Block 4: Actual Spend (4-columns) */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 3, borderRadius: 1.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Actual Spend</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, mt: 1, color: 'warning.main', fontFamily: '"JetBrains Mono", monospace' }}>
-                  {currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}
-                </Typography>
-              </Paper>
-            </Grid>
-
-            {/* Block 5: Variance (4-columns) */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 3, borderRadius: 1.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Variance</Typography>
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    fontWeight: 700, 
-                    mt: 1, 
-                    color: ((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? 'error.main' : 'success.main',
-                    fontFamily: '"JetBrains Mono", monospace'
-                  }}
-                >
-                  {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
-
-        {/* Section: Overview */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
-            Overview
-          </Typography>
-          <Grid container spacing={3}>
-            {/* Block 1: Details (6-columns) */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Details
-                </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Phase</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{['Delivery', 'Planning', 'Initiation'][Number(prog?.pm_programmephase)] ?? '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Manager</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_programmemanagername || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Sponsor</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_sponsorname || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Business Unit</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_businessunit || '—'}</Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
-
-            {/* Block 2: Objectives (6-columns) */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LightbulbIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Objectives
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                  {prog?.pm_programmedescription || 'No description provided.'}
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
-
-        {/* Section: Projects Block */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AccountTreeIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Projects ({detailProjects.length})
-          </Typography>
-          <DataverseTable
-            data={detailProjects}
-            columns={projectColumns}
-            loading={detailLoading}
-            searchPlaceholder="Search projects by name..."
-            searchFields={['pm_projectname']}
-            emptyIcon={<AccountTreeIcon />}
-            emptyTitle="No projects linked."
-            onRowClick={(item) => item.pm_projectid && navigateToProject(item.pm_projectid)}
-            exportFileName={`${prog?.pm_programmename || 'programme'}_projects`}
-          />
-        </Box>
-
-        {/* Section: Risks, Issues & Approvals */}
-        <Grid container spacing={3}>
-          {/* Block 7: Risks & Issues (8-columns) */}
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <GppMaybeIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Risks & Issues
-              </Typography>
+        <Paper sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
+          <Tabs value={detailTab} onChange={(_, v) => setDetailTab(v)} sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
+            <Tab label="Overview" />
+            <Tab label={`Projects (${detailProjects.length})`} />
+            <Tab label="Financials" />
+            <Tab label={`Risks & Issues (${detailRisks.length + detailIssues.length})`} />
+            <Tab label="Tasks" />
+            <Tab label="Documents" />
+          </Tabs>
+          <Box sx={{ p: 3 }}>
+            <TabPanel value={detailTab} index={0}>
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    Escalated Risks ({detailRisks.length})
-                  </Typography>
-                  {detailRisks.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {detailRisks.map(r => (
-                        <Box 
-                          key={r.pm_riskid} 
-                          sx={{ 
-                            p: 1.5, 
-                            borderRadius: 1.5, 
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            borderLeft: '3px solid', 
-                            borderLeftColor: 'error.main', 
-                            cursor: 'pointer', 
-                            bgcolor: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)',
-                            transition: 'all 0.15s ease', 
-                            '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } 
-                          }} 
-                          onClick={() => r.pm_riskid && navigateToRisk(r.pm_riskid)}
-                        >
-                          <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {r.pm_risktitle}
-                            <OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} />
-                          </Typography>
-                        </Box>
-                      ))}
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <DescriptionIcon sx={{ fontSize: 18 }} /> Details
+                    </Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Phase</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{['Delivery', 'Planning', 'Initiation'][Number(prog?.pm_programmephase)] ?? '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Manager</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_programmemanagername || '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Sponsor</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_sponsorname || '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Business Unit</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{prog?.pm_businessunit || '—'}</Typography>
+                      </Box>
                     </Box>
-                  ) : (
-                    <Typography variant="caption" color="text.secondary">No escalated risks.</Typography>
-                  )}
+                  </Paper>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    Issues ({detailIssues.length})
-                  </Typography>
-                  {detailIssues.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {detailIssues.map(i => (
-                        <Box 
-                          key={i.pm_issueid} 
-                          sx={{ 
-                            p: 1.5, 
-                            borderRadius: 1.5, 
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            borderLeft: '3px solid', 
-                            borderLeftColor: 'warning.main', 
-                            cursor: 'pointer', 
-                            bgcolor: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)',
-                            transition: 'all 0.15s ease', 
-                            '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } 
-                          }} 
-                          onClick={() => i.pm_issueid && navigateToIssue(i.pm_issueid)}
-                        >
-                          <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {i.pm_issuetitle}
-                            <OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, height: '100%' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LightbulbIcon sx={{ fontSize: 18 }} /> Objectives
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">{prog?.pm_programmedescription || 'No description provided.'}</Typography>
+                  </Paper>
+                </Grid>
+
+                {/* Linked Projects Summary */}
+                <Grid size={{ xs: 12 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AccountTreeIcon sx={{ fontSize: 18 }} /> Linked Projects ({detailProjects.length})
+                    </Typography>
+                    {detailProjects.length > 0 ? (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {detailProjects.slice(0, 10).map((proj) => (
+                          <Paper
+                            key={proj.pm_projectid}
+                            variant="outlined"
+                            sx={{
+                              p: 1.5, borderRadius: 1.5, cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+                            }}
+                            onClick={() => proj.pm_projectid && navigateToProject(proj.pm_projectid)}
+                          >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  {proj.pm_projectname}
+                                  <OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} />
+                                </Typography>
+                                {proj.pm_projectcode && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                                    {proj.pm_projectcode}
+                                  </Typography>
+                                )}
+                              </Box>
+                              <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center', flexShrink: 0 }}>
+                                <StatusChip status={proj.pm_projectphase} type="phase" size="small" />
+                                <StatusChip status={proj.pm_ragstatus} type="rag" size="small" />
+                                {proj.pm_percentcomplete != null && (
+                                  <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace', color: proj.pm_percentcomplete >= 100 ? 'success.main' : 'text.secondary' }}>
+                                    {proj.pm_percentcomplete}%
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Box>
+                          </Paper>
+                        ))}
+                        {detailProjects.length > 10 && (
+                          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', mt: 0.5 }}>
+                            + {detailProjects.length - 10} more project{detailProjects.length - 10 !== 1 ? 's' : ''} — switch to the Projects tab for the full list
                           </Typography>
-                        </Box>
-                      ))}
-                    </Box>
-                  ) : (
-                    <Typography variant="caption" color="text.secondary">No active issues.</Typography>
-                  )}
+                        )}
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+                        No projects linked to this programme.
+                      </Typography>
+                    )}
+                  </Paper>
                 </Grid>
               </Grid>
-            </Paper>
-          </Grid>
+            </TabPanel>
 
-          {/* Block 8: Approval Tasks (4-columns) */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AssignmentLateIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Approval Tasks
-                </Typography>
-                <EntityApprovalTasks
+            <TabPanel value={detailTab} index={1}>
+              {detailProjects.length > 0 ? (
+                <TableContainer sx={{ maxHeight: 420, borderRadius: 1.5, border: (theme) => `1px solid ${theme.palette.divider}` }}>
+                  <Table stickyHeader size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700 }}>Project Name</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Phase</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>RAG</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>% Complete</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>Budget</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {detailProjects.map((proj) => (
+                        <TableRow key={proj.pm_projectid} hover sx={{ cursor: 'pointer' }} onClick={() => proj.pm_projectid && navigateToProject(proj.pm_projectid)}>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              {proj.pm_projectname}
+                              <OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} />
+                            </Typography>
+                          </TableCell>
+                          <TableCell><StatusChip status={proj.pm_projectphase} type="phase" size="small" /></TableCell>
+                          <TableCell><StatusChip status={proj.pm_ragstatus} type="rag" size="small" /></TableCell>
+                          <TableCell align="right">{proj.pm_percentcomplete}%</TableCell>
+                          <TableCell align="right">{currencyFormatter.format(proj.pm_approvedbudgeteur ?? 0)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 4 }}><Typography color="text.secondary">No projects linked.</Typography></Box>
+              )}
+            </TabPanel>
+
+            <TabPanel value={detailTab} index={2}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                  <Typography variant="caption" color="text.secondary">Total Budget</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
+                </Paper>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                  <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>{currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}</Typography>
+                </Paper>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                  <Typography variant="caption" color="text.secondary">Variance</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: ((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? 'error.main' : 'success.main' }}>
+                    {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
+                  </Typography>
+                </Paper>
+              </Box>
+            </TabPanel>
+
+            <TabPanel value={detailTab} index={3}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>Escalated Risks</Typography>
+                  {detailRisks.length > 0 ? detailRisks.map(r => (
+                    <Paper key={r.pm_riskid} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'error.main', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }} onClick={() => r.pm_riskid && navigateToRisk(r.pm_riskid)}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>{r.pm_risktitle}<OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} /></Typography>
+                    </Paper>
+                  )) : <Typography variant="caption" color="text.secondary">No risks.</Typography>}
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>Issues</Typography>
+                  {detailIssues.length > 0 ? detailIssues.map(i => (
+                    <Paper key={i.pm_issueid} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'warning.main', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' } }} onClick={() => i.pm_issueid && navigateToIssue(i.pm_issueid)}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>{i.pm_issuetitle}<OpenInNewIcon sx={{ fontSize: 12, color: 'primary.main', opacity: 0.5 }} /></Typography>
+                    </Paper>
+                  )) : <Typography variant="caption" color="text.secondary">No issues.</Typography>}
+                </Box>
+              </Box>
+            </TabPanel>
+
+            <TabPanel value={detailTab} index={4}>
+              <EntityApprovalTasks
+                entityId={selectedProgrammeId}
+                moduleName={MODULE_NAMES.PROGRAMMES.value}
+                entityLabel="Programme"
+                tabValue={detailTab}
+                index={4}
+              />
+            </TabPanel>
+            <TabPanel value={detailTab} index={5}>
+              {selectedProgrammeId && (
+                <EntityDocumentsTab
                   entityId={selectedProgrammeId}
                   moduleName={MODULE_NAMES.PROGRAMMES.value}
-                  entityLabel="Programme"
-                  tabValue={0}
-                  index={0}
+                  canEdit={canEdit}
                 />
-              </Box>
-            </Paper>
-          </Grid>
-        </Grid>
+              )}
+            </TabPanel>
+          </Box>
+        </Paper>
       </Box>
     )
   }
@@ -573,8 +566,76 @@ export default function ProgrammesPage() {
           searchPlaceholder="Search by name, manager, sponsor..."
           filterValue={portfolioFilter}
           onFilterChange={(v) => { setPortfolioFilter(v); setPage(0) }}
+          filterLabel="Portfolio"
           filterOptions={[{ value: 'all', label: 'All Portfolios' }, ...portfolios.map(p => ({ value: p.id, label: p.name }))]}
-          onClear={() => { setSearchQuery(''); setPortfolioFilter('all'); setPage(0) }}
+          secondaryFilterValue={phaseFilter}
+          onSecondaryFilterChange={(v) => { setPhaseFilter(v); setPage(0) }}
+          secondaryFilterLabel="Phase"
+          secondaryFilterOptions={[
+            { value: '', label: 'All Phases' },
+            { value: '0', label: 'Delivery' },
+            { value: '1', label: 'Planning' },
+            { value: '2', label: 'Initiation' },
+          ]}
+          extraFilters={
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <FormControl size="small" sx={{ minWidth: 130 }}>
+                <InputLabel>RAG</InputLabel>
+                <Select
+                  value={ragFilter}
+                  label="RAG"
+                  onChange={(e) => { setRagFilter(e.target.value); setPage(0) }}
+                  sx={{ borderRadius: 1.15, fontSize: fontSizes.base }}
+                >
+                  <MenuItem value="">All RAG</MenuItem>
+                  <MenuItem value="1">Green</MenuItem>
+                  <MenuItem value="0">Amber</MenuItem>
+                  <MenuItem value="2">Red</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                size="small"
+                placeholder="Min budget"
+                value={minBudget}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+                    setMinBudget(val)
+                    setPage(0)
+                  }
+                }}
+                slotProps={{
+                  input: {
+                    startAdornment: <InputAdornment position="start"><AttachMoneyIcon sx={{ fontSize: 16, color: 'text.secondary' }} /></InputAdornment>,
+                    sx: { borderRadius: 1.15, fontSize: fontSizes.base },
+                  },
+                }}
+                sx={{ maxWidth: 140 }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ userSelect: 'none' }}>—</Typography>
+              <TextField
+                size="small"
+                placeholder="Max budget"
+                value={maxBudget}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+                    setMaxBudget(val)
+                    setPage(0)
+                  }
+                }}
+                slotProps={{
+                  input: {
+                    startAdornment: <InputAdornment position="start"><AttachMoneyIcon sx={{ fontSize: 16, color: 'text.secondary' }} /></InputAdornment>,
+                    sx: { borderRadius: 1.15, fontSize: fontSizes.base },
+                  },
+                }}
+                sx={{ maxWidth: 140 }}
+              />
+            </Box>
+          }
+          showClear={hasActiveFilters}
+          onClear={handleClearAll}
         />
         <TableShell loading={loading} empty={filteredProgrammes.length === 0} emptyIcon={<AccountTreeIcon />}>
           <TableContainer sx={{ maxHeight: 'calc(100vh - 480px)' }}>

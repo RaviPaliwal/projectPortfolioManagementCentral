@@ -60,7 +60,31 @@ export const getTheme = (mode: PaletteMode) =>
       MuiDialog: { styleOverrides: { paper: { borderRadius: 1.155 * 12 } } },
       MuiTab: { styleOverrides: { root: { textTransform: 'none', fontWeight: 600, fontSize: fontSizes.smMd } } },
       MuiTableCell: { styleOverrides: { root: { fontSize: fontSizes.sm } } },
-      MuiInputBase: { styleOverrides: { root: { fontSize: fontSizes.base, borderRadius: 1.155 * 12 } } },
+      MuiInputBase: { styleOverrides: { root: { fontSize: fontSizes.base } } },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            borderRadius: 1.155 * 12,
+          },
+        },
+      },
+      MuiInputLabel: {
+        styleOverrides: {
+          root: {
+            fontSize: fontSizes.base,
+          },
+          outlined: {
+            '&.MuiInputLabel-shrink': {
+              transform: 'translate(14px, -9px) scale(0.75)',
+            },
+          },
+          sizeSmall: {
+            '&.MuiInputLabel-shrink': {
+              transform: 'translate(14px, -6px) scale(0.75)',
+            },
+          },
+        },
+      },
       MuiPaper: { styleOverrides: { rounded: { borderRadius: 1.155 * 12 } } },
     },
   })

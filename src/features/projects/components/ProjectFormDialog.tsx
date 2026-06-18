@@ -17,14 +17,17 @@ import {
   Divider,
   Slider,
   Paper,
+  Chip,
 } from '@mui/material'
 import InfoIcon from '@mui/icons-material/Info'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import GppGoodIcon from '@mui/icons-material/GppGood'
+import AttachFileIcon from '@mui/icons-material/AttachFile'
 import type { ProjectModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
 import { fontSizes } from '@/styles'
+import { DocumentPreviewDialog } from '@/components/common'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
@@ -54,7 +57,7 @@ const defaultProjectForm: Partial<ProjectModel> = {
 interface ProjectFormDialogProps {
   open: boolean
   onClose: () => void
-  onSave: (project: Partial<ProjectModel>) => Promise<void>
+  onSave: (project: Partial<ProjectModel>, files: File[]) => Promise<void>
   isSaving: boolean
   initialData?: Partial<ProjectModel> | null
   portfolios: { id: string; name: string }[]
@@ -72,9 +75,12 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
 }) => {
   const { users } = useUser()
   const [form, setForm] = useState<Partial<ProjectModel>>(defaultProjectForm)
+  const [stagedFiles, setStagedFiles] = useState<File[]>([])
+  const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null)
 
   useEffect(() => {
     if (open) {
+      setStagedFiles([])
       if (initialData) {
         setForm({
           ...defaultProjectForm,
@@ -97,7 +103,12 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
   }, [open, initialData])
 
   const handleSave = () => {
-    onSave(form)
+    onSave(form, stagedFiles)
+  }
+
+  const handlePreviewStaged = (file: File) => {
+    const url = URL.createObjectURL(file)
+    setPreviewFile({ name: file.name, url })
   }
 
   const filteredProgrammes = programmes.filter(p => 
@@ -336,6 +347,56 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
               value={form.pm_actualenddate ?? ''} onChange={(e) => setForm((p) => ({ ...p, pm_actualenddate: e.target.value }))} />
           </Grid>
         </Grid>
+
+        {/* Section: Supporting Documents */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 4, mb: 2 }}>
+          <AttachFileIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+            Supporting Documents
+          </Typography>
+          <Divider sx={{ flex: 1 }} />
+        </Box>
+
+        <Box sx={{ p: 2.5, border: '1px dashed', borderColor: 'divider', borderRadius: 1.5, textAlign: 'center', bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)' }}>
+          <Button
+            variant="outlined"
+            component="label"
+            startIcon={<AttachFileIcon />}
+            sx={{ borderRadius: 1.5, mb: stagedFiles.length > 0 ? 2 : 0 }}
+          >
+            Select Files
+            <input
+              type="file"
+              multiple
+              hidden
+              onChange={(e) => {
+                if (e.target.files) {
+                  const filesArray = Array.from(e.target.files)
+                  const largeFiles = filesArray.filter((f) => f.size > 32 * 1024 * 1024)
+                  if (largeFiles.length > 0) {
+                    alert('Some files exceed the maximum 32MB limit.')
+                    return
+                  }
+                  setStagedFiles((prev) => [...prev, ...filesArray])
+                }
+              }}
+            />
+          </Button>
+          {stagedFiles.length > 0 && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+              {stagedFiles.map((file, idx) => (
+                <Chip
+                  key={idx}
+                  label={`${file.name} (${formatBytes(file.size)})`}
+                  onDelete={() => setStagedFiles((prev) => prev.filter((_, i) => i !== idx))}
+                  onClick={() => handlePreviewStaged(file)}
+                  title="Click to preview file"
+                  sx={{ borderRadius: 1.5, fontWeight: 600, cursor: 'pointer' }}
+                />
+              ))}
+            </Box>
+          )}
+        </Box>
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1 }}>
         <Button onClick={onClose} variant="outlined" disabled={isSaving}>Cancel</Button>
@@ -343,6 +404,30 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           {isSaving ? 'Saving...' : initialData?.pm_projectid ? 'Save Changes' : 'Create Project'}
         </Button>
       </DialogActions>
+
+      {previewFile && (
+        <DocumentPreviewDialog
+          open={!!previewFile}
+          onClose={() => {
+            URL.revokeObjectURL(previewFile.url)
+            setPreviewFile(null)
+          }}
+          fileName={previewFile.name}
+          fileUrl={previewFile.url}
+        />
+      )}
     </Dialog>
   )
 }
+
+// Staged file size formatter helper
+const formatBytes = (bytes: number, decimals = 1): string => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+}
+
+

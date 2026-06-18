@@ -6,14 +6,12 @@ import {
   IconButton,
   Button,
   Grid,
-  Paper,
-  Tabs,
-  Tab,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
+import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import BusinessIcon from '@mui/icons-material/Business'
 import PersonIcon from '@mui/icons-material/Person'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
@@ -29,11 +27,15 @@ import { fetchPortfolioHierarchy } from '@/services'
 import {
   PageHeader,
   HealthSplitBar,
+  DetailDrawer,
   ExportButton,
   KpiCardRow,
   Breadcrumbs,
   ActionIcon,
+  TabPanel,
+  EntityDocumentsTab,
 } from '@/components/common'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { currencyFormatter } from '@/utils/formatters'
@@ -170,109 +172,6 @@ export default function PortfoliosPage() {
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
-  if (selectedPortfolio) {
-    return (
-      <Box>
-        <Breadcrumbs
-          items={[{ label: 'Portfolios', path: 'list' }, { label: selectedPortfolio.pm_portfolioname ?? 'Detail' }]}
-          onNavigate={() => setSelectedPortfolio(null)}
-        />
-        <PageHeader
-          title={selectedPortfolio.pm_portfolioname ?? 'Portfolio Detail'}
-          subtitle={selectedPortfolio.pm_businessunit ? `Business Unit: ${selectedPortfolio.pm_businessunit}` : undefined}
-          actionElement={
-            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-              {canEdit && (
-                <ActionIcon
-                  icon={<EditIcon />}
-                  onClick={() => openEditForm(selectedPortfolio)}
-                  label="Edit Portfolio"
-                  color="primary"
-                />
-              )}
-            </Box>
-          }
-        />
-
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', mb: 3 }}>
-          {selectedPortfolio.pm_ownerlookupname && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="body2" color="text.secondary">
-                {selectedPortfolio.pm_ownerlookupname}
-              </Typography>
-            </Box>
-          )}
-          {selectedPortfolio.pm_businessunit && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <BusinessIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="body2" color="text.secondary">
-                {selectedPortfolio.pm_businessunit}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-
-        {editInfo && (
-          <Alert severity="info" onClose={() => setEditInfo(null)} sx={{ mb: 2 }}>
-            {editInfo}
-          </Alert>
-        )}
-
-        <Paper sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
-          <Tabs value={detailTab} onChange={(_, v) => setDetailTab(v)} sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
-            <Tab label="Summary" />
-            <Tab label={`Programmes (${detailProgrammes.length})`} />
-            <Tab label={`Projects (${detailProjects.length})`} />
-            <Tab label="Financials" />
-            <Tab label="Tasks" />
-          </Tabs>
-          <Box sx={{ p: 1.5 }}>
-            <PortfolioSummaryTab
-              portfolio={selectedPortfolio}
-              tabValue={detailTab}
-              index={0}
-              programmeCount={detailProgrammes.length}
-              projectCount={detailProjects.length}
-            />
-
-            <PortfolioProgrammesTab
-              programmes={detailProgrammes}
-              tabValue={detailTab}
-              index={1}
-            />
-
-            <PortfolioProjectsTab
-              projects={detailProjects}
-              tabValue={detailTab}
-              index={2}
-            />
-
-            <PortfolioFinancialsTab
-              portfolio={selectedPortfolio}
-              tabValue={detailTab}
-              index={3}
-            />
-
-            <PortfolioApprovalTasksTab
-              portfolioId={selectedPortfolio.pm_portfolioid ?? ''}
-              tabValue={detailTab}
-              index={4}
-            />
-          </Box>
-        </Paper>
-
-        <PortfolioFormDialog
-          open={showFormModal}
-          onClose={() => setShowFormModal(false)}
-          onSuccess={handleSuccess}
-          onError={(msg) => setError(msg)}
-          initialData={editingPortfolio}
-        />
-      </Box>
-    )
-  }
-
   return (
     <Box>
       <PageHeader
@@ -354,7 +253,106 @@ export default function PortfoliosPage() {
         onCreateClick={openCreateForm}
         onEditClick={openEditForm}
         onFilteredDataChange={setFilteredPortfolios}
+        canEdit={canEdit}
       />
+
+      {/* ── 3. Slide-Out Detail Panel ──────────────────────────────────── */}
+      <DetailDrawer
+        open={!!selectedPortfolio}
+        onClose={() => setSelectedPortfolio(null)}
+        icon={<AccountTreeIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
+        title={selectedPortfolio?.pm_portfolioname ?? ''}
+        subtitle={selectedPortfolio && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            {selectedPortfolio.pm_ownerlookupname && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary">
+                  {selectedPortfolio.pm_ownerlookupname}
+                </Typography>
+              </Box>
+            )}
+            {selectedPortfolio.pm_businessunit && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <BusinessIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary">
+                  {selectedPortfolio.pm_businessunit}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+        headerActions={
+          canEdit && (
+            <ActionIcon
+              icon={<EditIcon />}
+              onClick={() => selectedPortfolio && openEditForm(selectedPortfolio)}
+              label="Edit Portfolio"
+              color="primary"
+            />
+          )
+        }
+        tabs={[
+          { label: 'Summary' },
+          { label: 'Programmes', count: detailProgrammes.length },
+          { label: 'Projects', count: detailProjects.length },
+          { label: 'Financials' },
+          { label: 'Tasks' },
+          { label: 'Documents' },
+        ]}
+        tabValue={detailTab}
+        onTabChange={setDetailTab}
+      >
+        {selectedPortfolio && (
+          <>
+            {editInfo && (
+              <Alert severity="info" onClose={() => setEditInfo(null)} sx={{ mb: 2 }}>
+                {editInfo}
+              </Alert>
+            )}
+
+            <PortfolioSummaryTab
+              portfolio={selectedPortfolio}
+              tabValue={detailTab}
+              index={0}
+              programmeCount={detailProgrammes.length}
+              projectCount={detailProjects.length}
+            />
+
+            <PortfolioProgrammesTab
+              programmes={detailProgrammes}
+              tabValue={detailTab}
+              index={1}
+            />
+
+            <PortfolioProjectsTab
+              projects={detailProjects}
+              tabValue={detailTab}
+              index={2}
+            />
+
+            <PortfolioFinancialsTab
+              portfolio={selectedPortfolio}
+              tabValue={detailTab}
+              index={3}
+            />
+
+            <PortfolioApprovalTasksTab
+              portfolioId={selectedPortfolio.pm_portfolioid ?? ''}
+              tabValue={detailTab}
+              index={4}
+            />
+
+            <TabPanel value={detailTab} index={5}>
+              <EntityDocumentsTab
+                entityId={selectedPortfolio.pm_portfolioid ?? ''}
+                moduleName={MODULE_NAMES.PORTFOLIOS.value}
+                canEdit={canEdit}
+              />
+            </TabPanel>
+          </>
+        )}
+      </DetailDrawer>
 
       {/* ── 4. Create/Edit Portfolio Modal & Confirmation ──────────────── */}
       <PortfolioFormDialog

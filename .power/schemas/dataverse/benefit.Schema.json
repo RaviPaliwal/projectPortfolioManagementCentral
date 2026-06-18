@@ -403,28 +403,12 @@
           "x-ms-read-only": true,
           "maxLength": 850
         },
-        "pm_programmename": {
-          "type": "string",
-          "title": "Programme",
-          "x-ms-dataverse-attribute": "pm_programmename",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_programmename",
-          "maxLength": 100
-        },
         "pm_project": {
           "type": "string",
           "title": "Project",
           "x-ms-dataverse-attribute": "pm_project",
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_project"
-        },
-        "pm_projectcode": {
-          "type": "string",
-          "title": "Project",
-          "x-ms-dataverse-attribute": "pm_projectcode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projectcode",
-          "maxLength": 100
         },
         "pm_projectname": {
           "type": "string",

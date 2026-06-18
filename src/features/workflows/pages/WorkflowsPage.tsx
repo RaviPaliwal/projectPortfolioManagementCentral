@@ -354,8 +354,12 @@ export default function WorkflowsPage() {
                       <StatusTag label={String(stepTemplates.filter((s) => s._pm_workflowlookup_value === wf.pm_workflowid).length)} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
                     </TableCell>
                     <TableCell align="right">
-                      <IconButton size="small" onClick={() => navigateTo('edit', wf)} sx={{ borderRadius: 1.5 }} title="Edit"><EditIcon sx={{ fontSize: 18 }} /></IconButton>
-                      <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: wf.pm_workflowid!, type: 'workflow' })} sx={{ borderRadius: 1.5 }} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
+                      {canEdit && (
+                        <IconButton size="small" onClick={() => navigateTo('edit', wf)} sx={{ borderRadius: 1.5 }} title="Edit"><EditIcon sx={{ fontSize: 18 }} /></IconButton>
+                      )}
+                      {canDelete && (
+                        <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: wf.pm_workflowid!, type: 'workflow' })} sx={{ borderRadius: 1.5 }} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -432,7 +436,9 @@ export default function WorkflowsPage() {
                               <OpenInNewIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                           </Tooltip>
-                          <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' })} sx={{ borderRadius: 1.5 }} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
+                          {canDelete && (
+                            <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' })} sx={{ borderRadius: 1.5 }} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>

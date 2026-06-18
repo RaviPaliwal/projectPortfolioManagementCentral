@@ -29,6 +29,8 @@ interface CashflowTableProps {
   onSelectEntry: (entry: CashflowEntryModel) => void
   onEditEntry: (entry: CashflowEntryModel) => void
   onDeleteEntry: (entry: CashflowEntryModel) => void
+  canEdit?: boolean
+  canDelete?: boolean
 }
 
 export const CashflowTable: React.FC<CashflowTableProps> = ({
@@ -43,6 +45,8 @@ export const CashflowTable: React.FC<CashflowTableProps> = ({
   onSelectEntry,
   onEditEntry,
   onDeleteEntry,
+  canEdit = true,
+  canDelete = true,
 }) => {
   
   const columns: Column<CashflowEntryModel>[] = [
@@ -116,18 +120,22 @@ export const CashflowTable: React.FC<CashflowTableProps> = ({
       }}
       actions={(entry) => (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
-          <ActionIcon
-            icon={<EditIcon />}
-            onClick={() => onEditEntry(entry)}
-            label="Edit"
-            color="primary"
-          />
-          <ActionIcon
-            icon={<DeleteIcon />}
-            onClick={() => onDeleteEntry(entry)}
-            label="Delete"
-            color="error"
-          />
+          {canEdit && (
+            <ActionIcon
+              icon={<EditIcon />}
+              onClick={() => onEditEntry(entry)}
+              label="Edit"
+              color="primary"
+            />
+          )}
+          {canDelete && (
+            <ActionIcon
+              icon={<DeleteIcon />}
+              onClick={() => onDeleteEntry(entry)}
+              label="Delete"
+              color="error"
+            />
+          )}
         </Box>
       )}
     />

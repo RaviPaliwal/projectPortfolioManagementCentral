@@ -7,6 +7,7 @@ import {
   Alert,
   Chip,
   Button,
+  Tooltip,
 } from '@mui/material'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
@@ -96,8 +97,6 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
 
       const pendingSteps: WorkflowApprovalStepModel[] = []
       const completedSteps: WorkflowApprovalStepModel[] = []
-      const userId = currentUser?.systemuserid || ''
-      const userName = currentUser?.fullname || ''
 
       for (const instance of workflowInstances) {
         const instanceId = instance.pm_workflowinstanceid
@@ -106,10 +105,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
         for (const s of instanceSteps) {
           // Only show steps that are actually Assigned (actionable), not Pending
           if (s.pm_decisionstatus === 2) {
-            // Only add to pending if assigned to the current user
-            if (isStepAssignedToUser(s, userId, userName)) {
-              pendingSteps.push(s)
-            }
+            pendingSteps.push(s)
           } else if (s.pm_decisionstatus === 0 || s.pm_decisionstatus === 3) {
             completedSteps.push(s)
           }
@@ -197,6 +193,9 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
               const workflowName = step._pm_workflowinstancelookup_value
                 ? workflowMap[step._pm_workflowinstancelookup_value] || null
                 : null
+              const userId = currentUser?.systemuserid || ''
+              const userName = currentUser?.fullname || ''
+              const isAssignedToMe = isStepAssignedToUser(step, userId, userName)
               return (
                 <Paper
                   key={step.pm_workflowapprovalstepid}
@@ -230,25 +229,29 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                       <Typography variant="caption" color={isOverdue ? 'error' : 'text.secondary'} sx={{ fontWeight: 600 }}>
                         {step.pm_duedate ? (isOverdue ? 'Overdue' : `Due ${formatDate(step.pm_duedate)}`) : 'No due date'}
                       </Typography>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="primary"
-                        disabled={openingStep === step.pm_workflowapprovalstepid}
-                        onClick={async () => {
-                          const sid = step.pm_workflowapprovalstepid!
-                          setOpeningStep(sid)
-                          try {
-                            await openApprovalStepTask(sid)
-                            loadData()
-                          } finally {
-                            setOpeningStep(null)
-                          }
-                        }}
-                        sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 90 }}
-                      >
-                        {openingStep === step.pm_workflowapprovalstepid ? 'Opening...' : 'Review'}
-                      </Button>
+                      <Tooltip title={!isAssignedToMe ? "Only the assignee can review this task" : ""}>
+                        <Box component="span" sx={{ display: 'inline-flex' }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                            disabled={openingStep === step.pm_workflowapprovalstepid || !isAssignedToMe}
+                            onClick={async () => {
+                              const sid = step.pm_workflowapprovalstepid!
+                              setOpeningStep(sid)
+                              try {
+                                await openApprovalStepTask(sid)
+                                loadData()
+                              } finally {
+                                setOpeningStep(null)
+                              }
+                            }}
+                            sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 90 }}
+                          >
+                            {openingStep === step.pm_workflowapprovalstepid ? 'Opening...' : 'Review'}
+                          </Button>
+                        </Box>
+                      </Tooltip>
                     </Box>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>

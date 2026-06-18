@@ -14,6 +14,8 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import GroupIcon from '@mui/icons-material/Group'
 import PersonIcon from '@mui/icons-material/Person'
 import TimerIcon from '@mui/icons-material/Timer'
+import { useAuthorization } from '@/hooks/useAuthorization'
+import type { CrudModule } from '@/constants/permissions'
 import { fontSizes } from '@/styles'
 import {
   fetchWorkflowStepTemplates, createWorkflowStepTemplate,
@@ -48,6 +50,10 @@ interface Props {
 }
  
 export default function WorkflowStepConfigPage({ workflow }: Props) {
+  const { allowed: canCreate } = useAuthorization('WORKFLOWS' as CrudModule, 'create')
+  const { allowed: canEdit } = useAuthorization('WORKFLOWS' as CrudModule, 'update')
+  const { allowed: canDelete } = useAuthorization('WORKFLOWS' as CrudModule, 'delete')
+
   const [steps, setSteps] = useState<WorkflowStepTemplateModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -168,10 +174,12 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
             </Typography>
           )}
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}
-          sx={{ bgcolor: 'secondary.main', '&:hover': { bgcolor: '#7c3aed' }, borderRadius: 1.5, fontWeight: 600, textTransform: 'none', px: 2.5, boxShadow: '0 2px 8px rgba(139,92,246,0.25)' }}>
-          Add Step
-        </Button>
+        {canCreate && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}
+            sx={{ bgcolor: 'secondary.main', '&:hover': { bgcolor: '#7c3aed' }, borderRadius: 1.5, fontWeight: 600, textTransform: 'none', px: 2.5, boxShadow: '0 2px 8px rgba(139,92,246,0.25)' }}>
+            Add Step
+          </Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
@@ -191,10 +199,12 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
           <Typography variant="body2" color="text.disabled" sx={{ mb: 3, maxWidth: 360, mx: 'auto' }}>
             Define approval steps for this workflow. Each step represents a stage in the approval process.
           </Typography>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}
-            sx={{ bgcolor: 'secondary.main', '&:hover': { bgcolor: '#7c3aed' }, borderRadius: 1.5, fontWeight: 600, textTransform: 'none', px: 3, boxShadow: '0 2px 8px rgba(139,92,246,0.25)' }}>
-            Configure First Step
-          </Button>
+          {canCreate && (
+            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}
+              sx={{ bgcolor: 'secondary.main', '&:hover': { bgcolor: '#7c3aed' }, borderRadius: 1.5, fontWeight: 600, textTransform: 'none', px: 3, boxShadow: '0 2px 8px rgba(139,92,246,0.25)' }}>
+              Configure First Step
+            </Button>
+          )}
         </Paper>
       )}
  
@@ -272,12 +282,16 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                 </Box>
               </Box>
               <Box sx={{ display: 'flex', gap: 0.5 }}>
-                <IconButton size="small" onClick={() => openEdit(step)} sx={{ borderRadius: 1.5 }}>
-                  <EditIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-                <IconButton size="small" color="error" onClick={() => setDeleteConfirm(step.pm_workflowsteptemplateid!)} sx={{ borderRadius: 1.5 }}>
-                  <DeleteIcon sx={{ fontSize: 18 }} />
-                </IconButton>
+                {canEdit && (
+                  <IconButton size="small" onClick={() => openEdit(step)} sx={{ borderRadius: 1.5 }}>
+                    <EditIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                )}
+                {canDelete && (
+                  <IconButton size="small" color="error" onClick={() => setDeleteConfirm(step.pm_workflowsteptemplateid!)} sx={{ borderRadius: 1.5 }}>
+                    <DeleteIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                )}
               </Box>
             </Paper>
           )})}

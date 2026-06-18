@@ -520,11 +520,11 @@ export const BudgetDialog: React.FC<SubDialogProps> = ({ open, onClose, projectI
 export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
   const fields: FormField[] = [
     { name: 'pm_benefitname', label: 'Benefit name', type: 'text', required: true },
-    { name: 'pm_benefitcategory', label: 'Category', type: 'select', defaultValue: '1', gridSize: 6, options: [
-      { value: '1', label: 'Financial' }, { value: '2', label: 'Strategic' }, { value: '0', label: 'Operational' }
+    { name: 'pm_benefitcategory', label: 'Category', type: 'select', defaultValue: '0', gridSize: 6, options: [
+      { value: '0', label: 'Financial' }, { value: '1', label: 'Non Financial' }, { value: '2', label: 'Strategic' }
     ]},
     { name: 'pm_benefitstatus', label: 'Status', type: 'select', defaultValue: '0', gridSize: 6, options: [
-      { value: '0', label: 'Not Started' }, { value: '1', label: 'In Progress' }, { value: '2', label: 'Achieved' }
+      { value: '0', label: 'On Track' }, { value: '1', label: 'Planned' }, { value: '2', label: 'At Risk' }
     ]},
     { name: 'pm_targetvalue', label: 'Target value', type: 'number', defaultValue: 0, gridSize: 6 },
     { name: 'pm_unitofmeasure', label: 'Unit of measure', type: 'text', gridSize: 6 },

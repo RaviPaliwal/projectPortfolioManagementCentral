@@ -29,8 +29,9 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import PersonIcon from '@mui/icons-material/Person'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import EditIcon from '@mui/icons-material/Edit'
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 
-import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader, ActionIcon } from '@/components/common'
+import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader, ActionIcon, EntityDocumentsTab } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 import { RAG_COLORS, phaseLabel, currency } from '../constants'
 import { fontSizes } from '@/styles'
@@ -109,6 +110,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
     { label: 'Benefits', icon: <EmojiEventsIcon fontSize="small" /> },
     { label: 'Governance', icon: <HowToRegIcon fontSize="small" /> },
     { label: 'Tasks', icon: <AssignmentIcon fontSize="small" /> },
+    { label: 'Documents', icon: <InsertDriveFileIcon fontSize="small" /> },
   ]
 
   // RAG color for accent bar
@@ -156,14 +158,18 @@ export const Project360View: React.FC<Project360ViewProps> = ({
       {/* ── Action Buttons Bar ────────────────────────────────── */}
       <Paper sx={{ px: 2.5, py: 1.5, mb: 2.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mr: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>Actions:</Typography>
-        <Button size="small" variant="outlined" startIcon={<FlagIcon />} onClick={onAddMilestone}>Milestone</Button>
-        <Button size="small" variant="outlined" color="error" startIcon={<ErrorIcon />} onClick={onLogRisk}>Risk</Button>
-        <Button size="small" variant="outlined" color="warning" startIcon={<WarningAmberIcon />} onClick={onLogIssue}>Issue</Button>
-        <Button size="small" variant="outlined" startIcon={<PersonAddIcon />} onClick={onAssignResource}>Resource</Button>
-        <Button size="small" variant="outlined" startIcon={<AttachMoneyIcon />} onClick={onAddBudgetLine}>Budget</Button>
-        <Button size="small" variant="outlined" startIcon={<EmojiEventsIcon />} onClick={onAddBenefit}>Benefit</Button>
-        <Button size="small" variant="outlined" startIcon={<AssignmentIcon />} onClick={onAddTask}>Task</Button>
-        <Button size="small" variant="contained" color="success" startIcon={<HowToRegIcon />} onClick={onNavigateToGateReview as any}>Gate Review</Button>
+        {canEdit && (
+          <>
+            <Button size="small" variant="outlined" startIcon={<FlagIcon />} onClick={onAddMilestone}>Milestone</Button>
+            <Button size="small" variant="outlined" color="error" startIcon={<ErrorIcon />} onClick={onLogRisk}>Risk</Button>
+            <Button size="small" variant="outlined" color="warning" startIcon={<WarningAmberIcon />} onClick={onLogIssue}>Issue</Button>
+            <Button size="small" variant="outlined" startIcon={<PersonAddIcon />} onClick={onAssignResource}>Resource</Button>
+            <Button size="small" variant="outlined" startIcon={<AttachMoneyIcon />} onClick={onAddBudgetLine}>Budget</Button>
+            <Button size="small" variant="outlined" startIcon={<EmojiEventsIcon />} onClick={onAddBenefit}>Benefit</Button>
+            <Button size="small" variant="outlined" startIcon={<AssignmentIcon />} onClick={onAddTask}>Task</Button>
+            <Button size="small" variant="contained" color="success" startIcon={<HowToRegIcon />} onClick={onNavigateToGateReview as any}>Gate Review</Button>
+          </>
+        )}
       </Paper>
 
       {/* ── Tabbed Content ────────────────────────────────────── */}
@@ -205,6 +211,13 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   entityLabel="Project"
                   tabValue={activeTab}
                   index={7}
+                />
+              )}
+              {activeTab === 8 && project.pm_projectid && (
+                <EntityDocumentsTab
+                  entityId={project.pm_projectid}
+                  moduleName={MODULE_NAMES.PROJECTS.value}
+                  canEdit={canEdit}
                 />
               )}
             </>

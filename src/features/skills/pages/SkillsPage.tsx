@@ -617,18 +617,22 @@ export default function SkillsPage() {
           )}
           headerActions={
             <Box sx={{ display: 'flex', gap: 0.5 }}>
-              <ActionIcon
-                icon={<EditIcon />}
-                onClick={() => selectedSkill && openEditSkill(selectedSkill)}
-                label="Edit Skill"
-                color="primary"
-              />
-              <ActionIcon
-                icon={<DeleteIcon />}
-                onClick={() => { setDeleteType('skill'); selectedSkill?.pm_skillid && setDeleteConfirm(selectedSkill.pm_skillid) }}
-                label="Delete Skill"
-                color="error"
-              />
+              {canEdit && (
+                <ActionIcon
+                  icon={<EditIcon />}
+                  onClick={() => selectedSkill && openEditSkill(selectedSkill)}
+                  label="Edit Skill"
+                  color="primary"
+                />
+              )}
+              {canDelete && (
+                <ActionIcon
+                  icon={<DeleteIcon />}
+                  onClick={() => { setDeleteType('skill'); selectedSkill?.pm_skillid && setDeleteConfirm(selectedSkill.pm_skillid) }}
+                  label="Delete Skill"
+                  color="error"
+                />
+              )}
             </Box>
           }
         >
