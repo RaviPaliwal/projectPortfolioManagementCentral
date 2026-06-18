@@ -478,7 +478,7 @@ export default function BudgetsPage() {
     <Box>
       {selectedBudget ? (
         // ── Detail View ──
-        <Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Breadcrumbs
             items={[
               { label: 'Budgets', path: 'list' },
@@ -490,28 +490,33 @@ export default function BudgetsPage() {
             title={selectedBudget.pm_budgetlinename ?? 'Budget Line Detail'}
             subtitle={selectedBudget.pm_fundingsourcename ? `Funding: ${selectedBudget.pm_fundingsourcename}` : ''}
             actionElement={
-              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 {canEdit && (
-                  <ActionIcon
-                    icon={<EditIcon />}
+                  <Button
+                    variant="outlined"
+                    startIcon={<EditIcon />}
                     onClick={() => openEditForm(selectedBudget)}
-                    label="Edit Budget"
-                    color="primary"
-                  />
+                    sx={{ borderRadius: 1.5 }}
+                  >
+                    Edit
+                  </Button>
                 )}
                 {canDelete && (
-                  <ActionIcon
-                    icon={<DeleteIcon />}
-                    onClick={() => selectedBudget.pm_budgetlineid && setDeleteConfirm(selectedBudget.pm_budgetlineid)}
-                    label="Delete Budget"
+                  <Button
+                    variant="contained"
                     color="error"
-                  />
+                    startIcon={<DeleteIcon />}
+                    onClick={() => selectedBudget.pm_budgetlineid && setDeleteConfirm(selectedBudget.pm_budgetlineid)}
+                    sx={{ borderRadius: 1.5 }}
+                  >
+                    Remove
+                  </Button>
                 )}
               </Box>
             }
           />
 
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 3 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', mt: -1.5, mb: 2 }}>
             <StatusTag
               label={CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] ?? 'Unknown'}
               color={CATEGORY_COLORS[String(selectedBudget.pm_costcategory ?? '')] ?? 'default'}
