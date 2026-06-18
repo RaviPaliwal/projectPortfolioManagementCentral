@@ -5,6 +5,7 @@ import {
   Pm_portfoliosService,
   Pm_programmesService,
 } from '@/generated'
+import { writeAuditLog } from './changelog.service'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
 import type { Pm_projecttasks } from '@/generated/models/Pm_projecttasksModel'
 import type { Pm_projectmilestones } from '@/generated/models/Pm_projectmilestonesModel'
@@ -120,10 +121,12 @@ export async function fetchProjectDetails(projectId: string): Promise<ProjectMod
         '_pm_portfolio_value', '_pm_programme_value',
         '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus',
         'pm_plannedstartdate', 'pm_plannedenddate',
+        'pm_actualstartdate', 'pm_actualenddate',
         'pm_approvedbudgeteur', 'pm_actualcosteur',
         'pm_percentcomplete', 'pm_businessunit',
         'pm_projectsponsor', 'pm_costragstatus',
-        'pm_scheduleragstatus', 'pm_benefitsragstatus'
+        'pm_scheduleragstatus', 'pm_benefitsragstatus',
+        'pm_isactive', 'pm_projectpriority'
       ]
     })
     
@@ -258,12 +261,47 @@ export async function createProject(payload: Partial<ProjectModel>): Promise<Pro
   const defaults = { statecode: 0, statuscode: 1 }
   const result = await Pm_projectsService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_projects>(result)
+  if (item && item.pm_projectid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_projects',
+      recordId: item.pm_projectid,
+      recordName: item.pm_projectname || '',
+      newValue: `Project created: ${item.pm_projectname || ''}`
+    })
+  }
   return item ? mapProject(item) : null
 }
 
 export async function updateProject(id: string, changes: Partial<ProjectModel>): Promise<ProjectModel | null> {
   const normalizedId = normalizeLookupId(id)
+  console.log('[updateProject] ⏳ updateProject called for ID:', id, 'normalized:', normalizedId, 'changes:', changes)
   if (!normalizedId) return null
+
+  let original: ProjectModel | null = null
+  try {
+    original = await fetchProjectDetails(normalizedId)
+    console.log('[updateProject] Original project details fetched:', original)
+  } catch (e) {
+    console.error('[updateProject] Failed to fetch original project details:', e)
+  }
+
+  const hasChanged = (key: string, newVal: any): boolean => {
+    if (original === null) return true
+    const oldVal = (original as any)[key]
+    
+    const formatCompare = (val: any): string => {
+      if (val === undefined || val === null) return ''
+      // Normalize dates: if ISO string containing T, extract only YYYY-MM-DD
+      if (typeof val === 'string' && val.includes('T') && /^\d{4}-\d{2}-\d{2}T/.test(val)) {
+        return val.split('T')[0]
+      }
+      if (typeof val === 'object') return JSON.stringify(val)
+      return String(val).trim()
+    }
+    
+    return formatCompare(oldVal) !== formatCompare(newVal)
+  }
 
   const cleanPayload: Record<string, any> = {}
   // Only include fields that are in Pm_projectsBase (the update schema).
@@ -279,44 +317,129 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
   ]
   
   for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null && value !== '' && !exclude.includes(key)) {
-      cleanPayload[key] = value
+    if (value !== undefined && value !== null && !exclude.includes(key)) {
+      if (hasChanged(key, value)) {
+        cleanPayload[key] = value
+      }
     }
   }
 
-  // Handle lookup bindings — always set them so clearing a lookup works too.
-  // If the value is empty/falsy, set the odata.bind to null to clear it.
-  if (changes._pm_portfolio_value !== undefined) {
+  // Handle lookup bindings only if they have changed
+  if (changes._pm_portfolio_value !== undefined && hasChanged('_pm_portfolio_value', changes._pm_portfolio_value)) {
     cleanPayload['pm_portfolio@odata.bind'] = changes._pm_portfolio_value
       ? `/pm_portfolios(${normalizeLookupId(changes._pm_portfolio_value)})`
       : null
   }
-  if (changes._pm_programme_value !== undefined) {
+  if (changes._pm_programme_value !== undefined && hasChanged('_pm_programme_value', changes._pm_programme_value)) {
     cleanPayload['pm_programme@odata.bind'] = changes._pm_programme_value
       ? `/pm_programmes(${normalizeLookupId(changes._pm_programme_value)})`
       : null
   }
-  if (changes.pm_projectmanager !== undefined) {
+  if (changes.pm_projectmanager !== undefined && hasChanged('_pm_projectmanager_value', changes.pm_projectmanager)) {
     cleanPayload['pm_ProjectManager@odata.bind'] = changes.pm_projectmanager
       ? `/systemusers(${normalizeLookupId(changes.pm_projectmanager)})`
       : null
   }
 
+  if (Object.keys(cleanPayload).length === 0) {
+    console.log('[updateProject] ℹ️ No changes detected. Skipping API update and auditing.')
+    return original
+  }
+
   try {
+    console.log('[updateProject] Sending update payload to Dataverse:', cleanPayload)
     const result = await Pm_projectsService.update(normalizedId, cleanPayload as any)
-    try { console.debug('[dataverseService] updateProject API response:', result) } catch (e) {}
+    console.log('[updateProject] API update call completed. Response:', result)
     
+    // Log audit entries for changed fields
+    if (original) {
+      const formatVal = (val: any): string => {
+        if (val === undefined || val === null) return ''
+        if (typeof val === 'object') return JSON.stringify(val)
+        return String(val)
+      }
+
+      // Log standard fields in cleanPayload (excluding lookup bind keys)
+      for (const [key, value] of Object.entries(cleanPayload)) {
+        if (key.includes('@odata.bind')) continue
+        const oldVal = (original as any)[key]
+        const isStatus = key === 'pm_projectstatus' || key === 'statuscode' || key === 'statecode'
+        writeAuditLog({
+          actionType: isStatus ? 'StatusChange' : 'Update',
+          entityName: 'pm_projects',
+          recordId: normalizedId,
+          recordName: original.pm_projectname || '',
+          fieldName: key,
+          oldValue: formatVal(oldVal),
+          newValue: formatVal(value)
+        })
+      }
+
+      // Log lookup field updates if any
+      if (changes._pm_portfolio_value !== undefined && hasChanged('_pm_portfolio_value', changes._pm_portfolio_value)) {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_projects',
+          recordId: normalizedId,
+          recordName: original.pm_projectname || '',
+          fieldName: 'pm_portfolio',
+          oldValue: original._pm_portfolio_value || '',
+          newValue: changes._pm_portfolio_value || ''
+        })
+      }
+      if (changes._pm_programme_value !== undefined && hasChanged('_pm_programme_value', changes._pm_programme_value)) {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_projects',
+          recordId: normalizedId,
+          recordName: original.pm_projectname || '',
+          fieldName: 'pm_programme',
+          oldValue: original._pm_programme_value || '',
+          newValue: changes._pm_programme_value || ''
+        })
+      }
+      if (changes.pm_projectmanager !== undefined && hasChanged('_pm_projectmanager_value', changes.pm_projectmanager)) {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_projects',
+          recordId: normalizedId,
+          recordName: original.pm_projectname || '',
+          fieldName: 'pm_projectmanager',
+          oldValue: original._pm_projectmanager_value || '',
+          newValue: changes.pm_projectmanager || ''
+        })
+      }
+    } else {
+      console.warn('[updateProject] Cannot write audit logs because original project details could not be retrieved.')
+    }
+
     // Dataverse update often returns empty. We ALWAYS fetch fresh full details 
     // to ensure the UI gets the complete record with all computed/lookup fields.
     return fetchProjectDetails(normalizedId)
   } catch (err) {
-    try { console.error('[dataverseService] updateProject failed:', err) } catch (e) {}
+    console.error('[updateProject] ❌ updateProject failed:', err)
     throw err
   }
 }
 
 export async function deleteProject(id: string): Promise<void> {
+  let recordName = id
+  try {
+    const details = await fetchProjectDetails(id)
+    if (details?.pm_projectname) recordName = details.pm_projectname
+  } catch (e) {}
+
   await Pm_projectsService.delete(id)
+
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_projects',
+    recordId: id,
+    recordName: recordName,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted'
+  })
 }
 
 export async function fetchProjectTasks(projectId: string): Promise<ProjectTaskModel[]> {

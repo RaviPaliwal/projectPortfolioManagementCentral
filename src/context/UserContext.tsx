@@ -173,6 +173,7 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
     if (user.systemuserid) {
       try {
         localStorage.setItem('ppm_selected_user_id', user.systemuserid)
+        localStorage.setItem('ppm_selected_user_fullname', user.fullname || '')
       } catch (e) {
         console.debug('[UserContext] Failed to write to localStorage:', e)
       }
@@ -319,6 +320,14 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         
         if (startingUser) {
           setCurrentUser(startingUser)
+          if (startingUser.systemuserid) {
+            try {
+              localStorage.setItem('ppm_selected_user_id', startingUser.systemuserid)
+              localStorage.setItem('ppm_selected_user_fullname', startingUser.fullname || '')
+            } catch (e) {
+              console.debug('[UserContext] Failed to write to localStorage:', e)
+            }
+          }
         }
       }
     } catch (err) {

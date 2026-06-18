@@ -45,6 +45,7 @@ import { ProjectRisksIssuesTab } from './tabs/ProjectRisksIssuesTab'
 import { ProjectTeamTab } from './tabs/ProjectTeamTab'
 import { ProjectGovernanceTab } from './tabs/ProjectGovernanceTab'
 import { ProjectBenefitsTab } from './tabs/ProjectBenefitsTab'
+import { ProjectTasksTab } from './tabs/ProjectTasksTab'
 
 interface Project360ViewProps {
   project: ProjectModel
@@ -70,6 +71,7 @@ interface Project360ViewProps {
   onNavigateToGateReview?: (gateReview?: GateReviewModel) => void
   onEditProject: (project: ProjectModel) => void
   canEdit?: boolean
+  onMarkTaskAsDone?: (taskId: string) => Promise<void>
 }
 
 export const Project360View: React.FC<Project360ViewProps> = ({
@@ -95,7 +97,8 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onAddTask,
   onNavigateToGateReview,
   onEditProject,
-  canEdit = false
+  canEdit = false,
+  onMarkTaskAsDone
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -201,16 +204,14 @@ export const Project360View: React.FC<Project360ViewProps> = ({
               {activeTab === 1 && <ProjectScheduleTab milestones={milestones} tasks={tasks} />}
               {activeTab === 2 && <ProjectFinancialsTab budgetLines={budgetLines} />}
               {activeTab === 3 && <ProjectRisksIssuesTab risks={risks} issues={issues} />}
-              {activeTab === 4 && <ProjectTeamTab resources={resources} onEdit={onEditResource} onComplete={onCompleteResource} />}
+              {activeTab === 4 && <ProjectTeamTab resources={resources} tasks={tasks} onEdit={onEditResource} onComplete={onCompleteResource} />}
               {activeTab === 5 && <ProjectBenefitsTab benefits={benefits} />}
               {activeTab === 6 && <ProjectGovernanceTab gateReviews={gateReviews} onNavigateToGateReview={onNavigateToGateReview} />}
               {activeTab === 7 && (
-                <EntityApprovalTasks
-                  entityId={project.pm_projectid ?? ''}
-                  moduleName={MODULE_NAMES.PROJECTS.value}
-                  entityLabel="Project"
-                  tabValue={activeTab}
-                  index={7}
+                <ProjectTasksTab
+                  project={project}
+                  tasks={tasks}
+                  onMarkTaskAsDone={onMarkTaskAsDone}
                 />
               )}
               {activeTab === 8 && project.pm_projectid && (

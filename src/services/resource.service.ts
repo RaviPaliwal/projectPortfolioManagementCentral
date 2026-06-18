@@ -1,8 +1,9 @@
-﻿import {
+import {
   Pm_resourcesService,
   Pm_resourceallocationsService,
   Pm_projectsService,
 } from '@/generated'
+import { writeAuditLog } from './changelog.service'
 import type { Pm_resources } from '@/generated/models/Pm_resourcesModel'
 import type { Pm_resourceallocations } from '@/generated/models/Pm_resourceallocationsModel'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
@@ -83,11 +84,24 @@ export async function createResource(payload: Partial<ResourceModel>): Promise<R
   const item = unwrapSingle<Pm_resources>(result)
   if (!item) {
     console.error('[dataverseService] createResource: unwrapSingle returned null, raw result:', JSON.stringify(result).slice(0, 1000))
+  } else if (item.pm_resourceid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_resources',
+      recordId: item.pm_resourceid,
+      recordName: item.pm_fullname || '',
+      newValue: `Resource created: ${item.pm_fullname || ''}`
+    })
   }
   return item ? mapResource(item) : null
 }
 
 export async function updateResource(id: string, changes: Partial<ResourceModel>): Promise<ResourceModel | null> {
+  let original: ResourceModel | null = null
+  try {
+    original = await fetchResourceById(id)
+  } catch (e) {}
+
   const cleanChanges: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null &&
@@ -104,15 +118,54 @@ export async function updateResource(id: string, changes: Partial<ResourceModel>
   const result = await Pm_resourcesService.update(id, cleanChanges as any)
   try { console.debug('[dataverseService] updateResource id/changes/result:', id, cleanChanges, result) } catch (e) {}
   const item = unwrapSingle<Pm_resources>(result)
-  if (!item) {
-    console.error('[dataverseService] updateResource: unwrapSingle returned null, raw result:', JSON.stringify(result).slice(0, 1000))
+  
+  if (item && original) {
+    const formatVal = (val: any): string => {
+      if (val === undefined || val === null) return ''
+      if (typeof val === 'object') return JSON.stringify(val)
+      return String(val)
+    }
+
+    for (const [key, value] of Object.entries(changes)) {
+      if (key === 'pm_resourceid') continue
+      const oldVal = (original as any)[key]
+      if (formatVal(oldVal) !== formatVal(value)) {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_resources',
+          recordId: id,
+          recordName: original.pm_fullname || '',
+          fieldName: key,
+          oldValue: formatVal(oldVal),
+          newValue: formatVal(value)
+        })
+      }
+    }
   }
   return item ? mapResource(item) : null
 }
 
 export async function deleteResource(id: string): Promise<void> {
+  let recordName = id
+  try {
+    const original = await fetchResourceById(id)
+    if (original?.pm_fullname) {
+      recordName = original.pm_fullname
+    }
+  } catch (e) {}
+
   try { console.debug('[dataverseService] deleteResource id:', id) } catch (e) {}
   await Pm_resourcesService.delete(id)
+
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_resources',
+    recordId: id,
+    recordName: recordName,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted'
+  })
 }
 
 export async function fetchResourceBySystemUserId(systemUserId: string): Promise<ResourceModel | null> {
@@ -249,7 +302,17 @@ export async function assignResource(payload: {
     statuscode: 1,
   } as any)
   try { console.debug('[dataverseService] assignResource payload/result:', payload, result) } catch (e) {}
-  return unwrapSingle<any>(result)
+  const item = unwrapSingle<any>(result)
+  if (item && item.pm_resourceallocationid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_resourceallocations',
+      recordId: item.pm_resourceallocationid,
+      recordName: `Resource Allocation for Project ${payload.pm_projectid}`,
+      newValue: `Allocated ${payload.pm_allocatedhours} hours as ${payload.pm_assignmentrole}`
+    })
+  }
+  return item
 }
 
 export async function fetchAllocatedResourcesByProject(projectId: string): Promise<ResourceModel[]> {
@@ -278,8 +341,41 @@ export async function fetchAllocatedResourcesByProject(projectId: string): Promi
 }
 
 export async function updateResourceAllocation(id: string, changes: Partial<ResourceAllocationModel>): Promise<ResourceAllocationModel | null> {
+  let original: ResourceAllocationModel | null = null
+  try {
+    const details = await fetchResourceAllocationById(id)
+    if (details) original = details
+  } catch (e) {}
+
   const result = await Pm_resourceallocationsService.update(id, changes as any)
   const item = unwrapSingle<Pm_resourceallocations>(result)
+
+  // Log audit entries for changed fields
+  if (original) {
+    const formatVal = (val: any): string => {
+      if (val === undefined || val === null) return ''
+      if (typeof val === 'object') return JSON.stringify(val)
+      return String(val)
+    }
+
+    for (const [key, value] of Object.entries(changes)) {
+      if (key === 'pm_resourceallocationid') continue
+      const oldVal = (original as any)[key]
+      if (formatVal(oldVal) !== formatVal(value)) {
+        const isStatus = key === 'pm_assignmentstatus' || key === 'statecode'
+        writeAuditLog({
+          actionType: isStatus ? 'StatusChange' : 'Update',
+          entityName: 'pm_resourceallocations',
+          recordId: id,
+          recordName: `Resource Allocation ${id}`,
+          fieldName: key,
+          oldValue: formatVal(oldVal),
+          newValue: formatVal(value)
+        })
+      }
+    }
+  }
+
   return item ? mapResourceAllocation(item) : null
 }
 

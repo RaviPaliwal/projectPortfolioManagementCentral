@@ -250,9 +250,9 @@ export default function DashboardPage() {
       </Box>
 
       {/* Main grid */}
-      <Grid container spacing={2.5}>
-        {/* Left column — Budget Health + Portfolio Health Snapshot */}
-        <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
+        {/* Row 1: Budget Health + Tasks */}
+        <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex' }}>
           <BudgetHealthPanel
             totalApprovedBudget={budgetMetrics.approved}
             totalActualSpend={budgetMetrics.actual}
@@ -260,23 +260,34 @@ export default function DashboardPage() {
             selectedYear={budgetYear}
             availableYears={availableYears}
             onYearChange={handleBudgetYearChange}
+            sx={{ flex: 1, height: '100%' }}
           />
+        </Grid>
+        <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex' }}>
+          <DashboardTasksWidget variant="tasks" sx={{ flex: 1, height: '100%' }} />
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={2.5}>
+        {/* Left column — Portfolio Health Snapshot */}
+        <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex' }}>
           <PortfolioHealthSnapshot
             metrics={metrics}
             portfolioSnapshot={portfolioSnapshot}
             programmeSnapshot={programmeSnapshot}
             milestonesDue={milestonesDue}
             loading={loading}
+            sx={{ flex: 1, height: '100%' }}
           />
         </Grid>
 
-        {/* Right column — Tasks + AI Insights + Pipeline Stage Summary */}
+        {/* Right column — AI Insights + Pipeline Stage Summary */}
         <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          <DashboardTasksWidget variant="tasks" />
           <DashboardTasksWidget variant="insights" />
           <PipelineStageSummary
             initiatives={initiatives}
             loading={loading}
+            sx={{ flex: 1 }}
           />
         </Grid>
       </Grid>

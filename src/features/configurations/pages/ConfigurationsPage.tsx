@@ -12,6 +12,8 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import PeopleIcon from '@mui/icons-material/People'
 import PsychologyIcon from '@mui/icons-material/Psychology'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
+import MenuBookIcon from '@mui/icons-material/MenuBook'
+import AssignmentIndIcon from '@mui/icons-material/AssignmentInd'
 import { PageHeader } from '@/components/common'
 import type { TabKey } from '@/components/layout/PrimaryShell'
 
@@ -112,6 +114,13 @@ export default function ConfigurationsPage({ onNavigate }: ConfigurationsPagePro
       description: 'Configure official public holidays and non-working periods for scheduling.',
       icon: <CalendarMonthIcon fontSize="large" />,
       color: 'warning.main'
+    },
+    {
+      key: 'resources' as TabKey,
+      title: 'Resources',
+      description: 'Manage resource profiles, capacities, daily rates, and system user mappings.',
+      icon: <AssignmentIndIcon fontSize="large" />,
+      color: '#8b5cf6'
     }
   ]
 

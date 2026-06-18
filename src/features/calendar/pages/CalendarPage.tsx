@@ -1479,7 +1479,20 @@ export default function CalendarPage() {
       </Dialog>
 
       {/* ─── EVENT DETAILS DIALOG ─── */}
-      <Dialog open={!!selectedEvent} onClose={() => setSelectedEvent(null)} maxWidth="xs" fullWidth>
+      <Dialog
+        open={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        maxWidth={
+          selectedEvent?.description
+            ? selectedEvent.description.length > 500
+              ? 'md'
+              : selectedEvent.description.length > 150
+                ? 'sm'
+                : 'xs'
+            : 'xs'
+        }
+        fullWidth
+      >
         {selectedEvent && (
           <>
             <DialogTitle

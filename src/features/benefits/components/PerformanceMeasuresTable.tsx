@@ -90,7 +90,7 @@ export const PerformanceMeasuresTable = ({
     const totalPlanned = measures.reduce((s, m) => s + (m.pm_cumulativeplanned ?? 0), 0)
     const totalActual = measures.reduce((s, m) => s + (m.pm_cumulativeactual ?? 0), 0)
     const overallVariance = totalPlanned > 0 ? ((totalActual - totalPlanned) / totalPlanned) * 100 : 0
-    
+
     return (
       <Box sx={{ p: 2, display: 'flex', gap: 4, bgcolor: isDark ? '#1a2332' : 'background.default' }}>
         <Box>
@@ -113,7 +113,7 @@ export const PerformanceMeasuresTable = ({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <TrackChangesIcon sx={{ fontSize: 16 }} /> Measures by Period
         </Typography>

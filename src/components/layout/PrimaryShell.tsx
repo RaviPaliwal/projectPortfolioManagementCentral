@@ -44,7 +44,7 @@ import { useEffect } from 'react'
 import NotificationCenter from './NotificationCenter'
 import { PERSONA_PERMISSIONS } from '@/constants/permissions'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'calendar' | 'strategicRoster'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'calendar' | 'strategicRoster' | 'activitylog'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?: boolean }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -53,7 +53,7 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?:
   { key: 'programmes', label: 'Programmes', icon: <FolderOpenIcon /> },
   { key: 'projects', label: 'Projects', icon: <TaskIcon /> },
   { key: 'pipeline', label: 'Pipeline', icon: <TimelineIcon /> },
-  { key: 'resources', label: 'Resources', icon: <PeopleIcon /> },
+  { key: 'resources', label: 'Resources', icon: <PeopleIcon />, hidden: true },
   { key: 'calendar', label: 'Calendar', icon: <CalendarMonthIcon /> },
   { key: 'timesheets', label: 'Timesheets', icon: <AccessTimeIcon /> },
   { key: 'budgets', label: 'Budgets', icon: <AccountBalanceWalletIcon /> },
@@ -66,6 +66,7 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?:
   { key: 'tasks', label: 'Tasks', icon: <AssignmentIcon /> },
   { key: 'fundingsources', label: 'Funding Sources', icon: <SavingsIcon /> },
   { key: 'statussnapshots', label: 'Status Snapshots', icon: <AssessmentIcon /> },
+  { key: 'activitylog', label: 'Activity Log', icon: <MenuBookIcon /> },
   { key: 'configurations', label: 'Configurations', icon: <SettingsIcon /> },
 
   // Hidden sub-navigation items (accessible via Configurations or deep links)
