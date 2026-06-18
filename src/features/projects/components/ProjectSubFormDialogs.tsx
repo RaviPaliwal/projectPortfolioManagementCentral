@@ -49,26 +49,55 @@ interface SubDialogProps {
   initialData?: Record<string, any>
 }
 
-export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
+export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
   const fields: FormField[] = [
     { name: 'pm_milestonename', label: 'Milestone name', type: 'text', required: true },
     { name: 'pm_planneddate', label: 'Planned date', type: 'date' },
     { name: 'pm_milestonetype', label: 'Type', type: 'select', options: [
       { value: '0', label: 'Delivery' }, { value: '1', label: 'Governance' }
+    ]},
+    { name: 'pm_ragstatus', label: 'RAG Status', type: 'select', defaultValue: '1', options: [
+      { value: '1', label: 'Green' }, { value: '0', label: 'Amber' }, { value: '2', label: 'Red' }
+    ]},
+    { name: 'pm_status', label: 'Status', type: 'select', defaultValue: '1', options: [
+      { value: '1', label: 'Active / Planned' }, { value: '2', label: 'Completed' }
     ]}
   ]
 
   const handleSubmit = async (data: Record<string, any>) => {
     try {
-      await createProjectMilestone({ ...data, _pm_project_value: projectId })
-      onSuccess('Milestone added successfully.')
+      const payload = {
+        ...data,
+        pm_milestonetype: data.pm_milestonetype !== '' ? Number(data.pm_milestonetype) : undefined,
+        pm_ragstatus: data.pm_ragstatus !== '' ? Number(data.pm_ragstatus) : undefined,
+        pm_status: data.pm_status !== '' ? Number(data.pm_status) : undefined,
+      }
+      
+      if (initialData?.pm_projectmilestoneid) {
+        const { updateProjectMilestone } = await import('@/services')
+        await updateProjectMilestone(initialData.pm_projectmilestoneid, payload)
+        onSuccess('Milestone updated successfully.')
+      } else {
+        await createProjectMilestone({ ...payload, _pm_project_value: projectId })
+        onSuccess('Milestone added successfully.')
+      }
       onClose()
     } catch {
-      onError('Unable to add milestone.')
+      onError(initialData?.pm_projectmilestoneid ? 'Unable to update milestone.' : 'Unable to add milestone.')
     }
   }
 
-  return <DynamicFormDialog open={open} title="Add Milestone" fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText="Add" />
+  return (
+    <DynamicFormDialog 
+      open={open} 
+      title={initialData ? "Edit Milestone" : "Add Milestone"} 
+      fields={fields} 
+      initialData={initialData} 
+      onClose={onClose} 
+      onSubmit={handleSubmit} 
+      submitText={initialData ? "Save Changes" : "Add"} 
+    />
+  )
 }
 
 export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
@@ -544,7 +573,7 @@ export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, project
   return <DynamicFormDialog open={open} title="Add Benefit" fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText="Add Benefit" />
 }
 
-export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
+export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
   const fields: FormField[] = [
     { name: 'pm_taskname', label: 'Task name', type: 'text', required: true },
     { name: 'pm_taskdescription', label: 'Description', type: 'multiline', rows: 2 },
@@ -557,15 +586,41 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
 
   const handleSubmit = async (data: Record<string, any>) => {
     try {
-      await createProjectTask({ ...data, _pm_project_value: projectId, pm_durationdays: data.pm_durationdays || undefined })
-      onSuccess('Task added successfully.')
+      const statusVal = data.pm_percentcomplete === 100 ? '0' : '1'
+      if (initialData?.pm_projecttaskid) {
+        const { updateProjectTask } = await import('@/services')
+        await updateProjectTask(initialData.pm_projecttaskid, { 
+          ...data, 
+          pm_taskstatus: statusVal,
+          pm_durationdays: data.pm_durationdays || undefined 
+        })
+        onSuccess('Task updated successfully.')
+      } else {
+        await createProjectTask({ 
+          ...data, 
+          _pm_project_value: projectId, 
+          pm_taskstatus: statusVal,
+          pm_durationdays: data.pm_durationdays || undefined 
+        })
+        onSuccess('Task added successfully.')
+      }
       onClose()
     } catch {
-      onError('Unable to add task.')
+      onError(initialData?.pm_projecttaskid ? 'Unable to update task.' : 'Unable to add task.')
     }
   }
 
-  return <DynamicFormDialog open={open} title="Add Task" fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText="Add Task" />
+  return (
+    <DynamicFormDialog 
+      open={open} 
+      title={initialData ? "Edit Task" : "Add Task"} 
+      fields={fields} 
+      initialData={initialData} 
+      onClose={onClose} 
+      onSubmit={handleSubmit} 
+      submitText={initialData ? "Save Changes" : "Add Task"} 
+    />
+  )
 }
 
 // GateReviewDialog is kept largely intact because it requires a custom Readiness Check UI

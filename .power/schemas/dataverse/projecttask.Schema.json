@@ -232,6 +232,22 @@
           "x-ms-dataverse-type": "DateTimeType",
           "x-ms-schema-name": "pm_actualstartdate"
         },
+        "pm_assignedtoresource": {
+          "type": "string",
+          "title": "Assigned To Resource",
+          "x-ms-dataverse-attribute": "pm_assignedtoresource",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_AssignedToResource"
+        },
+        "pm_assignedtoresourcename": {
+          "type": "string",
+          "title": "pm_assignedtoresourcename",
+          "x-ms-dataverse-attribute": "pm_assignedtoresourcename",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_AssignedToResourceName",
+          "x-ms-read-only": true,
+          "maxLength": 850
+        },
         "pm_baselineenddate": {
           "type": "string",
           "title": "Baseline End",

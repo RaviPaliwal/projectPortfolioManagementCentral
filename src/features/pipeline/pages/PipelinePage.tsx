@@ -39,6 +39,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange'
 import PersonIcon from '@mui/icons-material/Person'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
@@ -76,7 +77,7 @@ import {
 } from '@/services'
 
 import { useUser } from '@/context/UserContext'
-import type { InitiativeModel, PortfolioModel, ProgrammeModel } from '@/types/dataverse'
+import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import type { PipelineKpis } from '@/services'
 import { fontSizes } from '@/styles'
 import {
@@ -233,7 +234,30 @@ export default function PipelinePage() {
   // ── Portfolio options for create modal ──────────────────────────────────
   const [portfolios, setPortfolios] = useState<PortfolioModel[]>([])
   const [programmes, setProgrammes] = useState<ProgrammeModel[]>([])
+  const [projects, setProjects] = useState<ProjectModel[]>([])
   const [showConvertDialog, setShowConvertDialog] = useState(false)
+
+  // ── Portfolio budget info for create modal ──────────────────────────────
+  const portfolioBudgetInfo = useMemo(() => {
+    if (!createForm._pm_portfolio_value) return null
+    const selectedPortfolio = portfolios.find((p) => p.pm_portfolioid === createForm._pm_portfolio_value)
+    if (!selectedPortfolio) return null
+
+    const portfolioBudget = selectedPortfolio.pm_approvedbudgeteur ?? 0
+    // Sum of programme budgets under this portfolio
+    const programmeBudgets = programmes
+      .filter((p) => p._pm_portfolio_value === createForm._pm_portfolio_value)
+      .reduce((s, p) => s + (p.pm_budgeteur ?? 0), 0)
+    // Sum of other initiative estimated costs under this portfolio (exclude current if being edited)
+    const initiativeCosts = initiatives
+      .filter((i) => i._pm_portfolio_value === createForm._pm_portfolio_value)
+      .reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)
+    const usedBudget = programmeBudgets + initiativeCosts
+    const availableBudget = Math.max(0, portfolioBudget - usedBudget)
+    return { portfolioBudget, usedBudget, availableBudget }
+  }, [createForm._pm_portfolio_value, portfolios, programmes, initiatives])
+
+  const hasBudgetError = portfolioBudgetInfo !== null && createForm.pm_estimatedcosteur > portfolioBudgetInfo.availableBudget
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -249,6 +273,7 @@ export default function PipelinePage() {
       setKpis(kpiData)
       setPortfolios(hierarchy.portfolios)
       setProgrammes(hierarchy.programmes)
+      setProjects(hierarchy.projects)
     } catch {
       setError('Unable to load pipeline data.')
     } finally {
@@ -1073,6 +1098,8 @@ export default function PipelinePage() {
                 size="small"
                 value={createForm.pm_estimatedcosteur}
                 onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedcosteur: Number(e.target.value) }))}
+                error={hasBudgetError}
+                helperText={hasBudgetError ? `Exceeds remaining portfolio budget by ${currencyFormatter.format(createForm.pm_estimatedcosteur - portfolioBudgetInfo!.availableBudget)}` : ''}
                 slotProps={{
                   input: { startAdornment: <CurrencyExchangeIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} />, sx: { borderRadius: 1.5 } },
                 }}
@@ -1092,6 +1119,38 @@ export default function PipelinePage() {
               />
             </Grid>
           </Grid>
+
+          {portfolioBudgetInfo && (
+            <Paper variant="outlined" sx={{ p: 1.5, mb: 3, borderRadius: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'grey.50' }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <AccountBalanceWalletIcon sx={{ fontSize: 14 }} /> Portfolio Budget Allocation
+              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                <Typography variant="caption" color="text.secondary">Portfolio Budget</Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace' }}>{currencyFormatter.format(portfolioBudgetInfo.portfolioBudget)}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                <Typography variant="caption" color="text.secondary">Allocated to programmes & other initiatives</Typography>
+                <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace', color: 'warning.main' }}>{currencyFormatter.format(portfolioBudgetInfo.usedBudget)}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="caption" sx={{ fontWeight: 700 }}>Available</Typography>
+                <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: 'monospace', color: portfolioBudgetInfo.availableBudget <= 0 ? 'error.main' : 'success.main' }}>{currencyFormatter.format(portfolioBudgetInfo.availableBudget)}</Typography>
+              </Box>
+              {portfolioBudgetInfo.availableBudget <= 0 && (
+                <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.75, fontWeight: 600 }}>No remaining budget in this portfolio.</Typography>
+              )}
+            </Paper>
+          )}
+
+          {hasBudgetError && (
+            <Box sx={{ mb: 2, p: 1.25, borderRadius: 1.5, bgcolor: 'error.50', border: '1px solid', borderColor: 'error.200', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <WarningAmberIcon sx={{ fontSize: 18, color: 'error.main', flexShrink: 0 }} />
+              <Typography variant="caption" color="error.dark" sx={{ fontWeight: 600 }}>
+                Estimated cost exceeds available portfolio budget by {currencyFormatter.format(createForm.pm_estimatedcosteur - portfolioBudgetInfo!.availableBudget)}.
+              </Typography>
+            </Box>
+          )}
 
           {/* ── Section: Business Case ── */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -1192,7 +1251,7 @@ export default function PipelinePage() {
           <Button
             onClick={handleCreateInitiative}
             variant="contained"
-            disabled={!createForm.pm_initiativename.trim() || actionLoading}
+            disabled={!createForm.pm_initiativename.trim() || actionLoading || hasBudgetError}
             startIcon={actionLoading ? undefined : <AddIcon />}
             sx={{
               bgcolor: 'primary.main',
@@ -1213,6 +1272,7 @@ export default function PipelinePage() {
         initiative={selectedInitiative}
         portfolios={portfolios}
         programmes={programmes}
+        allProjects={projects}
         onConvert={handleCreateProjectFromInitiative}
         converting={actionLoading}
       />

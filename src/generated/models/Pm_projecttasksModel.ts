@@ -25,6 +25,7 @@ export interface Pm_projecttasksBase {
   owneridtype: string;
   pm_actualenddate?: string;
   pm_actualstartdate?: string;
+  "pm_AssignedToResource@odata.bind"?: string;
   pm_baselineenddate?: string;
   pm_baselinestartdate?: string;
   pm_durationdays?: number;
@@ -37,7 +38,6 @@ export interface Pm_projecttasksBase {
   "pm_project@odata.bind"?: string;
   "pm_projecttask@odata.bind"?: string;
   pm_projecttaskid: string;
-  "pm_resource@odata.bind"?: string;
   pm_tasklevel?: number;
   pm_taskname?: string;
   pm_taskstatus?: Pm_projecttaskspm_taskstatus;
@@ -62,11 +62,11 @@ export interface Pm_projecttasks extends Pm_projecttasksBase {
   owneridname: string;
   owneridyominame: string;
   owningbusinessunitname: string;
+  pm_assignedtoresourcename?: string;
   pm_oncriticalpathname?: string;
   pm_predecessortaskname?: string;
   pm_projectname?: string;
   pm_projecttaskname?: string;
-  pm_resourcename?: string;
   pm_taskstatusname?: string;
   statecodename?: string;
   statuscodename?: string;
@@ -85,12 +85,12 @@ export interface Pm_projecttasks extends Pm_projecttasksBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
+  pm_assignedtoresource?: object;
+  _pm_assignedtoresource_value?: string;
   pm_predecessortask?: object;
   _pm_predecessortask_value?: string;
   pm_project?: object;
   _pm_project_value?: string;
   pm_projecttask?: object;
   _pm_projecttask_value?: string;
-  pm_resource?: object;
-  _pm_resource_value?: string;
 }

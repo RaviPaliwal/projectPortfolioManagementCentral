@@ -156,7 +156,13 @@ export default function ProgrammesPage() {
       setPortfolios(
         hierarchy.portfolios
           .filter((p) => p.pm_portfolioid && p.pm_portfolioname)
-          .map((p) => ({ id: p.pm_portfolioid!, name: p.pm_portfolioname!, budget: p.pm_approvedbudgeteur ?? 0 }))
+          .map((p) => ({ 
+            id: p.pm_portfolioid!, 
+            name: p.pm_portfolioname!, 
+            budget: p.pm_approvedbudgeteur ?? 0,
+            startDate: p.pm_startdate ?? '',
+            endDate: p.pm_enddate ?? '',
+          }))
       )
     } catch {
       setError('Unable to load programme data.')

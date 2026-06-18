@@ -15,11 +15,14 @@ import {
   Tabs,
   Tab,
   Grid,
+  IconButton,
+  Tooltip,
 } from '@mui/material'
 import FlagIcon from '@mui/icons-material/Flag'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import ViewWeekIcon from '@mui/icons-material/ViewWeek'
 import ListIcon from '@mui/icons-material/List'
+import EditIcon from '@mui/icons-material/Edit'
 import { StatusChip, StatusTag, MetricTile } from '@/components/common'
 import GanttChart from '@/components/common/GanttChart/GanttChart'
 import type { ProjectMilestoneModel, ProjectTaskModel } from '@/types/dataverse'
@@ -28,9 +31,16 @@ import { fontSizes } from '@/styles'
 interface ProjectScheduleTabProps {
   milestones: ProjectMilestoneModel[]
   tasks: ProjectTaskModel[]
+  onEditMilestone?: (milestone: ProjectMilestoneModel) => void
+  canEdit?: boolean
 }
 
-export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ milestones, tasks }) => {
+export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ 
+  milestones, 
+  tasks, 
+  onEditMilestone, 
+  canEdit = false 
+}) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const [activeView, setActiveView] = useState(0)
@@ -138,13 +148,14 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ mileston
                   <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase', py: 1.5, pl: 3 }}>Schedule Item</TableCell>
                   <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase' }}>Responsible</TableCell>
                   <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase' }} align="center">Progress / Date</TableCell>
-                  <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase', pr: 3 }} align="right">Status</TableCell>
+                  <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase' }} align="right">Status</TableCell>
+                  {canEdit && <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase', pr: 3 }} align="right">Actions</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {timelineItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} sx={{ py: 8, textAlign: 'center' }}>
+                    <TableCell colSpan={canEdit ? 5 : 4} sx={{ py: 8, textAlign: 'center' }}>
                       <Typography variant="body2" color="text.secondary">No items in the project schedule.</Typography>
                     </TableCell>
                   </TableRow>
@@ -213,7 +224,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ mileston
                         )}
                       </TableCell>
 
-                      <TableCell align="right" sx={{ pr: 3 }}>
+                      <TableCell align="right" sx={{ pr: canEdit ? 1 : 3 }}>
                         {item.type === 'milestone' ? (
                           <StatusChip status={(item as any).rag} type="rag" size="small" />
                         ) : (
@@ -224,6 +235,25 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ mileston
                           />
                         )}
                       </TableCell>
+                      {canEdit && (
+                        <TableCell align="right" sx={{ pr: 3 }}>
+                          {item.type === 'milestone' ? (
+                            <Tooltip title="Edit Milestone">
+                              <IconButton
+                                size="small"
+                                onClick={() => onEditMilestone?.(milestones.find(m => m.pm_projectmilestoneid === item.id)!)}
+                                sx={{
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                  '&:hover': { bgcolor: 'action.hover' }
+                                }}
+                              >
+                                <EditIcon sx={{ fontSize: 14 }} />
+                              </IconButton>
+                            </Tooltip>
+                          ) : '—'}
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 )}

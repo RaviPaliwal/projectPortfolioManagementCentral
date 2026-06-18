@@ -72,6 +72,9 @@ interface Project360ViewProps {
   onEditProject: (project: ProjectModel) => void
   canEdit?: boolean
   onMarkTaskAsDone?: (taskId: string) => Promise<void>
+  onEditMilestone?: (milestone: ProjectMilestoneModel) => void
+  onEditTask?: (task: ProjectTaskModel) => void
+  onUpdateTaskStatus?: (taskId: string, status: string, percent: number) => Promise<void>
 }
 
 export const Project360View: React.FC<Project360ViewProps> = ({
@@ -98,7 +101,10 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onNavigateToGateReview,
   onEditProject,
   canEdit = false,
-  onMarkTaskAsDone
+  onMarkTaskAsDone,
+  onEditMilestone,
+  onEditTask,
+  onUpdateTaskStatus
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -200,11 +206,36 @@ export const Project360View: React.FC<Project360ViewProps> = ({
             </Box>
           ) : (
             <>
-              {activeTab === 0 && <ProjectOverviewTab project={project} />}
-              {activeTab === 1 && <ProjectScheduleTab milestones={milestones} tasks={tasks} />}
+              {activeTab === 0 && (
+                <ProjectOverviewTab 
+                  project={project} 
+                  milestones={milestones}
+                  tasks={tasks}
+                  risks={risks}
+                  issues={issues}
+                  benefits={benefits}
+                />
+              )}
+              {activeTab === 1 && (
+                <ProjectScheduleTab 
+                  milestones={milestones} 
+                  tasks={tasks} 
+                  onEditMilestone={onEditMilestone}
+                  canEdit={canEdit}
+                />
+              )}
               {activeTab === 2 && <ProjectFinancialsTab budgetLines={budgetLines} />}
               {activeTab === 3 && <ProjectRisksIssuesTab risks={risks} issues={issues} />}
-              {activeTab === 4 && <ProjectTeamTab resources={resources} tasks={tasks} onEdit={onEditResource} onComplete={onCompleteResource} />}
+              {activeTab === 4 && (
+                <ProjectTeamTab 
+                  resources={resources} 
+                  tasks={tasks} 
+                  onEdit={onEditResource} 
+                  onComplete={onCompleteResource} 
+                  onEditTask={onEditTask}
+                  onUpdateTaskStatus={onUpdateTaskStatus}
+                />
+              )}
               {activeTab === 5 && <ProjectBenefitsTab benefits={benefits} />}
               {activeTab === 6 && <ProjectGovernanceTab gateReviews={gateReviews} onNavigateToGateReview={onNavigateToGateReview} />}
               {activeTab === 7 && (
@@ -212,6 +243,8 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   project={project}
                   tasks={tasks}
                   onMarkTaskAsDone={onMarkTaskAsDone}
+                  onEditTask={onEditTask}
+                  onUpdateTaskStatus={onUpdateTaskStatus}
                 />
               )}
               {activeTab === 8 && project.pm_projectid && (

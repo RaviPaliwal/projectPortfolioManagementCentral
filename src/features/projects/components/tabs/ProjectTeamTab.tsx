@@ -11,6 +11,8 @@ import {
   Collapse,
   Divider,
   Button,
+  Tooltip,
+  CircularProgress,
 } from '@mui/material'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import EditIcon from '@mui/icons-material/Edit'
@@ -18,22 +20,32 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import { StatusTag } from '@/components/common'
+import { useUser } from '@/context/UserContext'
 
 interface ProjectTeamTabProps {
   resources: any[]
   tasks?: any[]
   onEdit?: (resource: any) => void
   onComplete?: (resource: any) => void
+  onEditTask?: (task: any) => void
+  onUpdateTaskStatus?: (taskId: string, status: string, percent: number) => Promise<void>
 }
 
 export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({ 
   resources, 
   tasks = [], 
   onEdit, 
-  onComplete 
+  onComplete,
+  onEditTask,
+  onUpdateTaskStatus
 }) => {
+  const { currentUserPersona } = useUser()
+  const isManager = ['PMO', 'ProjectManager', 'SystemAdministrator'].includes(currentUserPersona)
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
+  
   const [anchorEl, setAnchorEl] = useState<{ element: HTMLElement | null, resource: any | null }>({ element: null, resource: null })
   const [expandedAllocIds, setExpandedAllocIds] = useState<Record<string, boolean>>({})
+  const [taskStatusMenuAnchor, setTaskStatusMenuAnchor] = useState<{ element: HTMLElement | null, task: any | null }>({ element: null, task: null })
 
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, resource: any) => {
     setAnchorEl({ element: event.currentTarget, resource })
@@ -55,6 +67,33 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
 
   const toggleExpand = (allocId: string) => {
     setExpandedAllocIds(prev => ({ ...prev, [allocId]: !prev[allocId] }))
+  }
+
+  const handleTaskStatusTagClick = (event: React.MouseEvent<HTMLElement>, task: any) => {
+    if (!isManager) return
+    setTaskStatusMenuAnchor({ element: event.currentTarget, task })
+  }
+
+  const handleTaskStatusSelect = async (status: string) => {
+    const task = taskStatusMenuAnchor.task
+    setTaskStatusMenuAnchor({ element: null, task: null })
+    if (!task || !onUpdateTaskStatus) return
+    
+    let percent = 0
+    if (status === '0') {
+      percent = 100
+    } else if (status === '1') {
+      percent = task.pm_percentcomplete && task.pm_percentcomplete > 0 && task.pm_percentcomplete < 100 
+        ? task.pm_percentcomplete 
+        : 50
+    }
+    
+    setUpdatingTaskId(task.pm_projecttaskid!)
+    try {
+      await onUpdateTaskStatus(task.pm_projecttaskid!, status, percent)
+    } finally {
+      setUpdatingTaskId(null)
+    }
   }
 
   return (
@@ -146,7 +185,10 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
                             display: 'flex', 
                             alignItems: 'center', 
                             justifyContent: 'space-between', 
-                            py: 0.25,
+                            py: 0.5,
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            '&:last-child': { border: 0 },
                             opacity: isComplete ? 0.65 : 1 
                           }}
                         >
@@ -161,16 +203,46 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
                             )}
                           </Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            {updatingTaskId === task.pm_projecttaskid && (
+                              <CircularProgress size={14} color="inherit" />
+                            )}
                             {task.pm_percentcomplete !== undefined && (
                               <Typography variant="caption" sx={{ fontWeight: 600, color: isComplete ? 'success.main' : 'text.secondary' }}>
                                 {task.pm_percentcomplete}%
                               </Typography>
                             )}
-                            <StatusTag
-                              label={isComplete ? 'Complete' : String(task.pm_taskstatus) === '1' ? 'In Progress' : 'Not Started'}
-                              size="small"
-                              color={isComplete ? 'success' : String(task.pm_taskstatus) === '1' ? 'info' : 'default'}
-                            />
+                            <Tooltip title={isManager ? "Change Status" : ""}>
+                              <span>
+                                <StatusTag
+                                  label={isComplete ? 'Complete' : String(task.pm_taskstatus) === '1' ? 'In Progress' : 'Not Started'}
+                                  size="small"
+                                  color={isComplete ? 'success' : String(task.pm_taskstatus) === '1' ? 'info' : 'default'}
+                                  onClick={isManager ? (e) => handleTaskStatusTagClick(e, task) : undefined}
+                                  sx={{
+                                    cursor: isManager ? 'pointer' : 'default',
+                                    '&:hover': isManager ? { opacity: 0.8 } : {}
+                                  }}
+                                />
+                              </span>
+                            </Tooltip>
+
+                            {isManager && (
+                              <Tooltip title="Edit Task Details">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => onEditTask?.(task)}
+                                  disabled={updatingTaskId === task.pm_projecttaskid}
+                                  sx={{
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    p: 0.4,
+                                    '&:hover': { bgcolor: 'action.hover' }
+                                  }}
+                                >
+                                  <EditIcon sx={{ fontSize: 13 }} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                           </Box>
                         </Box>
                       )
@@ -202,6 +274,19 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
           <ListItemIcon><CheckCircleIcon fontSize="small" /></ListItemIcon>
           <ListItemText>Mark as Completed</ListItemText>
         </MenuItem>
+      </Menu>
+
+      {/* Task Quick Status Selector Menu */}
+      <Menu
+        anchorEl={taskStatusMenuAnchor.element}
+        open={Boolean(taskStatusMenuAnchor.element)}
+        onClose={() => setTaskStatusMenuAnchor({ element: null, task: null })}
+        transformOrigin={{ horizontal: 'center', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
+      >
+        <MenuItem onClick={() => handleTaskStatusSelect('2')}>Not Started</MenuItem>
+        <MenuItem onClick={() => handleTaskStatusSelect('1')}>In Progress</MenuItem>
+        <MenuItem onClick={() => handleTaskStatusSelect('0')}>Complete</MenuItem>
       </Menu>
     </Box>
   )

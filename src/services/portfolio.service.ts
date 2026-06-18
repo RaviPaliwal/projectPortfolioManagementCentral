@@ -118,20 +118,7 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
     return port
   })
 
-  const updatedProgrammes = rawProgrammes.map(prog => {
-    const progId = normalizeLookupId(prog.pm_programmeid)
-    const childProjects = projects.filter(p => normalizeLookupId(p._pm_programme_value) === progId)
-
-    if (childProjects.length > 0) {
-      const aggregates = aggregateFinancials(childProjects, 'pm_approvedbudgeteur', 'pm_actualcosteur')
-      return {
-        ...prog,
-        pm_budgeteur: aggregates.budget > 0 ? aggregates.budget : prog.pm_budgeteur,
-        pm_actualspendeur: aggregates.actual > 0 ? aggregates.actual : prog.pm_actualspendeur,
-      }
-    }
-    return prog
-  })
+  const updatedProgrammes = rawProgrammes.map(prog => prog)
 
   try {
     console.debug('[dataverseService] fetchPortfolioHierarchy rollup complete:', { portfolios: updatedPortfolios.length, programmes: updatedProgrammes.length, projects: projects.length })

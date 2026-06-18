@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -27,6 +27,8 @@ import AttachFileIcon from '@mui/icons-material/AttachFile'
 import type { ProjectModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
 import { fontSizes } from '@/styles'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import { DocumentPreviewDialog } from '@/components/common'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
@@ -61,7 +63,7 @@ interface ProjectFormDialogProps {
   isSaving: boolean
   initialData?: Partial<ProjectModel> | null
   portfolios: { id: string; name: string }[]
-  programmes: { id: string; name: string; portfolioId?: string }[]
+  programmes: { id: string; name: string; portfolioId?: string; budget?: number; startDate?: string; endDate?: string; availableBudget?: number }[]
 }
 
 export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
@@ -77,6 +79,52 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
   const [form, setForm] = useState<Partial<ProjectModel>>(defaultProjectForm)
   const [stagedFiles, setStagedFiles] = useState<File[]>([])
   const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null)
+
+  // ── Programme budget & date validation ────────────────────────────────
+  const selectedProgramme = useMemo(() => {
+    if (!form._pm_programme_value) return null
+    return programmes.find((p) => p.id === form._pm_programme_value) || null
+  }, [form._pm_programme_value, programmes])
+
+  const programmeBudgetInfo = useMemo(() => {
+    if (!selectedProgramme) return null
+    const progBudget = selectedProgramme.budget ?? 0
+    let available = selectedProgramme.availableBudget ?? progBudget
+    // In edit mode, add back the current project's own budget since it was
+    // subtracted from availableBudget in the parent's calculation and shouldn't
+    // be counted against itself.
+    if (initialData?.pm_projectid && (initialData.pm_approvedbudgeteur ?? 0) > 0) {
+      available += initialData.pm_approvedbudgeteur ?? 0
+    }
+    return { programmeBudget: progBudget, availableBudget: available }
+  }, [selectedProgramme, initialData])
+
+  const dateErrors = useMemo(() => {
+    const errors: { startDate?: string; endDate?: string } = {}
+    if (!selectedProgramme) return errors
+    const { startDate: progStart, endDate: progEnd } = selectedProgramme
+    if (!progStart || !progEnd) return errors
+
+    if (form.pm_plannedstartdate && form.pm_plannedstartdate < progStart) {
+      errors.startDate = `Cannot be before programme start (${new Date(progStart).toLocaleDateString()})`
+    }
+    if (form.pm_plannedenddate && form.pm_plannedenddate > progEnd) {
+      errors.endDate = `Cannot be after programme end (${new Date(progEnd).toLocaleDateString()})`
+    }
+    if (form.pm_plannedstartdate && form.pm_plannedenddate && form.pm_plannedstartdate > form.pm_plannedenddate) {
+      errors.endDate = 'End date must be after start date'
+    }
+    return errors
+  }, [form.pm_plannedstartdate, form.pm_plannedenddate, selectedProgramme])
+
+  const hasDateErrors = !!dateErrors.startDate || !!dateErrors.endDate
+  const hasBudgetError = programmeBudgetInfo !== null && (form.pm_approvedbudgeteur ?? 0) > programmeBudgetInfo.availableBudget
+  const canSave = !!form.pm_projectname?.trim() && !hasDateErrors && !hasBudgetError
+
+  // ── Filter programmes by selected portfolio ────────────────────────────
+  const filteredProgrammes = programmes.filter(p => 
+    !form._pm_portfolio_value || p.portfolioId === form._pm_portfolio_value
+  )
 
   useEffect(() => {
     if (open) {
@@ -110,10 +158,6 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
     const url = URL.createObjectURL(file)
     setPreviewFile({ name: file.name, url })
   }
-
-  const filteredProgrammes = programmes.filter(p => 
-    !form._pm_portfolio_value || p.portfolioId === form._pm_portfolio_value
-  )
 
   return (
     <Dialog open={open} onClose={() => !isSaving && onClose()} maxWidth="md" fullWidth>
@@ -312,13 +356,48 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
         <Grid container spacing={2.5} sx={{ mb: 4 }}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth type="number" label="Approved Budget (EUR)" size="small" value={form.pm_approvedbudgeteur ?? 0}
-              onChange={(e) => setForm((p) => ({ ...p, pm_approvedbudgeteur: Number(e.target.value) }))} />
+              onChange={(e) => setForm((p) => ({ ...p, pm_approvedbudgeteur: Number(e.target.value) }))}
+              error={hasBudgetError}
+              helperText={hasBudgetError ? `Exceeds programme budget by ${currencyFormatter.format((form.pm_approvedbudgeteur ?? 0) - programmeBudgetInfo!.availableBudget)}` : ''}
+            />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth type="number" label="Actual Cost (EUR)" size="small" value={form.pm_actualcosteur ?? 0}
               onChange={(e) => setForm((p) => ({ ...p, pm_actualcosteur: Number(e.target.value) }))} />
           </Grid>
         </Grid>
+
+        {programmeBudgetInfo && (
+          <Paper variant="outlined" sx={{ p: 1.5, mb: 2, borderRadius: 1.5, bgcolor: 'grey.50' }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
+              <AccountBalanceWalletIcon sx={{ fontSize: 14 }} /> Programme Budget Allocation
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">Total Programme Budget</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace' }}>{currencyFormatter.format(programmeBudgetInfo.programmeBudget)}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">Already allocated to other projects</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace', color: 'warning.main' }}>{currencyFormatter.format(programmeBudgetInfo.programmeBudget - programmeBudgetInfo.availableBudget)}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="caption" sx={{ fontWeight: 700 }}>Remaining for this project</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: 'monospace', color: programmeBudgetInfo.availableBudget <= 0 ? 'error.main' : 'success.main' }}>{currencyFormatter.format(programmeBudgetInfo.availableBudget)}</Typography>
+            </Box>
+            {programmeBudgetInfo.availableBudget <= 0 && (
+              <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.75, fontWeight: 600 }}>No remaining budget in this programme.</Typography>
+            )}
+          </Paper>
+        )}
+
+        {hasBudgetError && (
+          <Box sx={{ mb: 2, p: 1.25, borderRadius: 1.5, bgcolor: 'error.50', border: '1px solid', borderColor: 'error.200', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <WarningAmberIcon sx={{ fontSize: 18, color: 'error.main', flexShrink: 0 }} />
+            <Typography variant="caption" color="error.dark" sx={{ fontWeight: 600 }}>
+              Approved budget exceeds programme budget by {currencyFormatter.format((form.pm_approvedbudgeteur ?? 0) - programmeBudgetInfo!.availableBudget)}.
+            </Typography>
+          </Box>
+        )}
 
         {/* Section: Timeline */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -329,14 +408,32 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           <Divider sx={{ flex: 1 }} />
         </Box>
 
+        {selectedProgramme && selectedProgramme.startDate && (
+          <Paper variant="outlined" sx={{ p: 1.5, mb: 2, borderRadius: 1.5, bgcolor: 'grey.50', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <TimelineIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+            <Typography variant="caption" color="text.secondary">
+              Programme date range:{' '}
+              <strong>{new Date(selectedProgramme.startDate).toLocaleDateString()}</strong>
+              {' — '}
+              <strong>{selectedProgramme.endDate ? new Date(selectedProgramme.endDate).toLocaleDateString() : 'No end date'}</strong>
+              {' · Project must be within this range'}
+            </Typography>
+          </Paper>
+        )}
         <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth type="date" size="small" slotProps={{ inputLabel: { shrink: true } }} label="Planned Start"
-              value={form.pm_plannedstartdate ?? ''} onChange={(e) => setForm((p) => ({ ...p, pm_plannedstartdate: e.target.value }))} />
+              value={form.pm_plannedstartdate ?? ''} onChange={(e) => setForm((p) => ({ ...p, pm_plannedstartdate: e.target.value }))}
+              error={!!dateErrors.startDate}
+              helperText={dateErrors.startDate || ''}
+            />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth type="date" size="small" slotProps={{ inputLabel: { shrink: true } }} label="Planned End"
-              value={form.pm_plannedenddate ?? ''} onChange={(e) => setForm((p) => ({ ...p, pm_plannedenddate: e.target.value }))} />
+              value={form.pm_plannedenddate ?? ''} onChange={(e) => setForm((p) => ({ ...p, pm_plannedenddate: e.target.value }))}
+              error={!!dateErrors.endDate}
+              helperText={dateErrors.endDate || ''}
+            />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth type="date" size="small" slotProps={{ inputLabel: { shrink: true } }} label="Actual Start"
@@ -400,7 +497,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1 }}>
         <Button onClick={onClose} variant="outlined" disabled={isSaving}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained" disabled={isSaving || !form.pm_projectname} sx={{ px: 4 }}>
+        <Button onClick={handleSave} variant="contained" disabled={isSaving || !canSave} sx={{ px: 4 }}>
           {isSaving ? 'Saving...' : initialData?.pm_projectid ? 'Save Changes' : 'Create Project'}
         </Button>
       </DialogActions>
