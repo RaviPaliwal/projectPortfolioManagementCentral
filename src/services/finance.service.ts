@@ -33,9 +33,6 @@ export const mapBudgetLine = (item: Pm_budgetlines): BudgetLineModel => ({
   pm_estimateatcompletioneur: item.pm_estimateatcompletioneur,
   pm_estimatetocompleteeur: item.pm_estimatetocompleteeur,
   pm_costcategory: item.pm_costcategory,
-  pm_costcategoryname: item.pm_costcategoryname,
-  pm_fundingperiod: item.pm_fundingperiod,
-  pm_fundingsourcecode: item.pm_fundingsourcecode,
   pm_notes: item.pm_notes,
   pm_portfolio: item.pm_portfolio,
   pm_programme: item.pm_programme,
@@ -111,7 +108,6 @@ export async function fetchBudgetLines(): Promise<BudgetLineModel[]> {
     'pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur',
     'pm_revisedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur',
     'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory',
-    'pm_fundingperiod', 'pm_fundingsourcecode',
     'pm_notes',
     'pm_estimateatcompletioneur', 'pm_estimatetocompleteeur',
   ]
@@ -121,10 +117,10 @@ export async function fetchBudgetLines(): Promise<BudgetLineModel[]> {
     top: 500,
   }
   const result = await Pm_budgetlinesService.getAll({ ...options, filter: 'statecode eq 0' })
-  try { console.debug('[dataverseService] fetchBudgetLines result:', result) } catch (e) {}
+  try { console.debug('[dataverseService] fetchBudgetLines result:', result) } catch (e) { }
   let list = unwrapList<Pm_budgetlines>(result).map(mapBudgetLine)
   if (list.length === 0) {
-    try { console.warn('[dataverseService] fetchBudgetLines: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
+    try { console.warn('[dataverseService] fetchBudgetLines: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) { }
     const fallbackResult = await Pm_budgetlinesService.getAll(options)
     list = unwrapList<Pm_budgetlines>(fallbackResult).map(mapBudgetLine)
   }
@@ -137,22 +133,26 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
       'pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur',
       'pm_revisedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur',
       'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory',
-      'pm_costcategoryname', 'pm_estimateatcompletioneur', 'pm_estimatetocompleteeur',
-      'pm_fundingperiod', 'pm_fundingsourcecode', 'pm_fundingsourcename',
+      'pm_estimateatcompletioneur', 'pm_estimatetocompleteeur',
+      'pm_fundingsourcename',
       'pm_fiscalperiodname', 'pm_portfolio', 'pm_programme', 'pm_projectcode',
       'pm_projectname', 'pm_portfoliolookupname', 'pm_programmelookupname',
       'pm_notes',
     ],
   })
-  try { console.debug('[dataverseService] fetchBudgetLineById result:', result) } catch (e) {}
+  try { console.debug('[dataverseService] fetchBudgetLineById result:', result) } catch (e) { }
   const item = unwrapSingle<Pm_budgetlines>(result)
   return item ? mapBudgetLine(item) : null
-}
-
-export async function createBudgetLine(payload: Partial<BudgetLineModel>): Promise<BudgetLineModel | null> {
+} export async function createBudgetLine(payload: Partial<BudgetLineModel>): Promise<BudgetLineModel | null> {
+  const SKIP_VIRTUAL = new Set([
+    'pm_fiscalperiodname', 'pm_fundingsourcename',
+    'pm_portfoliolookupname', 'pm_programmelookupname', 'pm_projectname',
+    '_pm_fiscalperiod_value', '_pm_fundingsource_value',
+    '_pm_portfoliolookup_value', '_pm_programmelookup_value', '_pm_project_value',
+  ])
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && value !== '' && !SKIP_VIRTUAL.has(key)) {
       cleanPayload[key] = value
     }
   }
@@ -163,7 +163,7 @@ export async function createBudgetLine(payload: Partial<BudgetLineModel>): Promi
   const result = await Pm_budgetlinesService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_budgetlines>(result)
   const mapped = item ? mapBudgetLine(item) : null
-  
+
   if (mapped && mapped.pm_budgetlineid) {
     writeAuditLog({
       actionType: 'Create',
@@ -172,15 +172,26 @@ export async function createBudgetLine(payload: Partial<BudgetLineModel>): Promi
       recordName: mapped.pm_budgetlinename || 'Budget Line',
     })
   }
-  
-  return mapped
-}
 
-export async function updateBudgetLine(id: string, changes: Partial<BudgetLineModel>): Promise<BudgetLineModel | null> {
-  const result = await Pm_budgetlinesService.update(id, changes as any)
+  return mapped
+} export async function updateBudgetLine(id: string, changes: Partial<BudgetLineModel>): Promise<BudgetLineModel | null> {
+  const SKIP_VIRTUAL = new Set([
+    'pm_budgetlineid',
+    'pm_fiscalperiodname', 'pm_fundingsourcename',
+    'pm_portfoliolookupname', 'pm_programmelookupname', 'pm_projectname',
+    '_pm_fiscalperiod_value', '_pm_fundingsource_value',
+    '_pm_portfoliolookup_value', '_pm_programmelookup_value', '_pm_project_value',
+  ])
+  const cleanPayload: Record<string, any> = {}
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== undefined && value !== null && !SKIP_VIRTUAL.has(key)) {
+      cleanPayload[key] = value
+    }
+  }
+  const result = await Pm_budgetlinesService.update(id, cleanPayload as any)
   const item = unwrapSingle<Pm_budgetlines>(result)
   const mapped = item ? mapBudgetLine(item) : null
-  
+
   if (mapped && mapped.pm_budgetlineid) {
     Object.keys(changes).forEach((key) => {
       const val = (changes as any)[key]
@@ -196,7 +207,7 @@ export async function updateBudgetLine(id: string, changes: Partial<BudgetLineMo
       }
     })
   }
-  
+
   return mapped
 }
 
@@ -225,10 +236,10 @@ export async function fetchFundingSources(): Promise<FundingSourceModel[]> {
     top: 500,
   }
   const result = await Pm_fundingsourcesService.getAll({ ...options, filter: 'statecode eq 0' })
-  try { console.debug('[dataverseService] fetchFundingSources result:', result) } catch (e) {}
+  try { console.debug('[dataverseService] fetchFundingSources result:', result) } catch (e) { }
   let list = unwrapList<Pm_fundingsources>(result).map(mapFundingSource)
   if (list.length === 0) {
-    try { console.warn('[dataverseService] fetchFundingSources: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
+    try { console.warn('[dataverseService] fetchFundingSources: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) { }
     const fallbackResult = await Pm_fundingsourcesService.getAll(options)
     list = unwrapList<Pm_fundingsources>(fallbackResult).map(mapFundingSource)
   }
@@ -245,7 +256,7 @@ export async function fetchFundingSourceById(fundingSourceId: string): Promise<F
       'pm_portfolioname', 'pm_programmename',
     ],
   })
-  try { console.debug('[dataverseService] fetchFundingSourceById result:', result) } catch (e) {}
+  try { console.debug('[dataverseService] fetchFundingSourceById result:', result) } catch (e) { }
   const item = unwrapSingle<Pm_fundingsources>(result)
   return item ? mapFundingSource(item) : null
 }
@@ -262,10 +273,10 @@ export async function createFundingSource(payload: Partial<FundingSourceModel>):
     statuscode: 1,
   }
   const result = await Pm_fundingsourcesService.create({ ...defaults, ...cleanPayload } as any)
-  try { console.debug('[dataverseService] createFundingSource payload/result:', cleanPayload, result) } catch (e) {}
+  try { console.debug('[dataverseService] createFundingSource payload/result:', cleanPayload, result) } catch (e) { }
   const item = unwrapSingle<Pm_fundingsources>(result)
   const mapped = item ? mapFundingSource(item) : null
-  
+
   if (mapped && mapped.pm_fundingsourceid) {
     writeAuditLog({
       actionType: 'Create',
@@ -274,7 +285,7 @@ export async function createFundingSource(payload: Partial<FundingSourceModel>):
       recordName: mapped.pm_fundingsourcename || 'Funding Source',
     })
   }
-  
+
   return mapped
 }
 
@@ -286,10 +297,10 @@ export async function updateFundingSource(id: string, changes: Partial<FundingSo
     }
   }
   const result = await Pm_fundingsourcesService.update(id, cleanPayload as any)
-  try { console.debug('[dataverseService] updateFundingSource id/changes/result:', id, cleanPayload, result) } catch (e) {}
+  try { console.debug('[dataverseService] updateFundingSource id/changes/result:', id, cleanPayload, result) } catch (e) { }
   const item = unwrapSingle<Pm_fundingsources>(result)
   const mapped = item ? mapFundingSource(item) : null
-  
+
   if (mapped && mapped.pm_fundingsourceid) {
     Object.keys(changes).forEach((key) => {
       const val = (changes as any)[key]
@@ -305,12 +316,12 @@ export async function updateFundingSource(id: string, changes: Partial<FundingSo
       }
     })
   }
-  
+
   return mapped
 }
 
 export async function deleteFundingSource(id: string): Promise<void> {
-  try { console.debug('[dataverseService] deleteFundingSource id:', id) } catch (e) {}
+  try { console.debug('[dataverseService] deleteFundingSource id:', id) } catch (e) { }
   writeAuditLog({
     actionType: 'Update',
     entityName: 'pm_fundingsources',
@@ -397,7 +408,7 @@ export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
       if (normFiscId && fiscalPeriodNameById.has(normFiscId)) entry.pm_fiscalperiodname = fiscalPeriodNameById.get(normFiscId)
     }
   } catch (err) {
-    try { console.warn('[dataverseService] fetchCashflowEntries: failed to resolve lookup names', err) } catch (e) {}
+    try { console.warn('[dataverseService] fetchCashflowEntries: failed to resolve lookup names', err) } catch (e) { }
   }
 
   return list
@@ -447,7 +458,7 @@ export async function createCashflowEntry(payload: Partial<CashflowEntryModel>):
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null && value !== '' &&
-        key !== '_pm_fiscalperiod_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+      key !== '_pm_fiscalperiod_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
       cleanPayload[key] = value
     }
   }
@@ -476,7 +487,7 @@ export async function createCashflowEntry(payload: Partial<CashflowEntryModel>):
   const result = await Pm_cashflowentriesService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_cashflowentries>(result)
   const mapped = item ? mapCashflowEntry(item) : null
-  
+
   if (mapped && mapped.pm_cashflowentryid) {
     writeAuditLog({
       actionType: 'Create',
@@ -485,7 +496,7 @@ export async function createCashflowEntry(payload: Partial<CashflowEntryModel>):
       recordName: mapped.pm_entryname || 'Cash Flow Entry',
     })
   }
-  
+
   return mapped
 }
 
@@ -493,14 +504,14 @@ export async function updateCashflowEntry(id: string, changes: Partial<CashflowE
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null &&
-        key !== 'pm_cashflowentryid' && key !== '_pm_fiscalperiod_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+      key !== 'pm_cashflowentryid' && key !== '_pm_fiscalperiod_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
       cleanPayload[key] = value
     }
   }
   const result = await Pm_cashflowentriesService.update(id, cleanPayload as any)
   const item = unwrapSingle<Pm_cashflowentries>(result)
   const mapped = item ? mapCashflowEntry(item) : null
-  
+
   if (mapped && mapped.pm_cashflowentryid) {
     Object.keys(changes).forEach((key) => {
       const val = (changes as any)[key]
@@ -516,7 +527,7 @@ export async function updateCashflowEntry(id: string, changes: Partial<CashflowE
       }
     })
   }
-  
+
   return mapped
 }
 

@@ -66,7 +66,6 @@ import { MODULE_NAMES } from '@/constants/moduleNames'
 
 const budgetExportColumns: ExportColumn[] = [
   { key: 'pm_budgetlinename', label: 'Name' },
-  { key: 'pm_costcategoryname', label: 'Category' },
   { key: 'pm_portfolioname', label: 'Portfolio' },
   { key: 'pm_programmename', label: 'Programme' },
   { key: 'pm_projectname', label: 'Project' },
@@ -273,7 +272,6 @@ export default function BudgetsPage() {
       list = list.filter(
         (l) =>
           l.pm_budgetlinename?.toLowerCase().includes(q) ||
-          l.pm_costcategoryname?.toLowerCase().includes(q) ||
           l.pm_portfolio?.toLowerCase().includes(q) ||
           l.pm_programme?.toLowerCase().includes(q) ||
           l.pm_projectcode?.toLowerCase().includes(q) ||
@@ -419,9 +417,14 @@ export default function BudgetsPage() {
         pm_estimatetocompleteeur: (formData.pm_forecastspendeur || 0) - ((formData.pm_committedspendeur || 0) - (formData.pm_actualspendeur || 0)),
         pm_varianceeur: variance,
       }
-      // Strip lookup fields that are just display names
-      delete payload._pm_fiscalperiod_value
-      delete payload._pm_fundingsource_value
+      // Strip read-only virtual/display fields that would cause API errors
+      const SKIP_VIRTUAL = ['pm_fiscalperiodname', 'pm_fundingsourcename',
+        'pm_portfoliolookupname', 'pm_programmelookupname', 'pm_projectname',
+        '_pm_fiscalperiod_value', '_pm_fundingsource_value',
+        '_pm_portfoliolookup_value', '_pm_programmelookup_value', '_pm_project_value']
+      for (const key of SKIP_VIRTUAL) {
+        delete payload[key]
+      }
 
       if (editingBudget?.pm_budgetlineid) {
         await updateBudgetLine(editingBudget.pm_budgetlineid, payload)
@@ -643,7 +646,7 @@ export default function BudgetsPage() {
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                       <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Category</Typography>
-                        <Typography variant="body2">{selectedBudget.pm_costcategoryname || CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] || '—'}</Typography>
+                        <Typography variant="body2">{selectedBudget.pm_costcategory || CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] || '—'}</Typography>
                       </Box>
                       <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Funding Source</Typography>
@@ -655,7 +658,7 @@ export default function BudgetsPage() {
                       </Box>
                       <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Funding Period</Typography>
-                        <Typography variant="body2">{selectedBudget.pm_fundingperiod || '—'}</Typography>
+                        <Typography variant="body2">{selectedBudget.pm_fiscalperiodname || '—'}</Typography>
                       </Box>
                       <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Portfolio</Typography>
@@ -669,10 +672,7 @@ export default function BudgetsPage() {
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Project</Typography>
                         <Typography variant="body2">{selectedBudget.pm_projectname || selectedBudget.pm_projectcode || '—'}</Typography>
                       </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Funding Source Code</Typography>
-                        <Typography variant="body2">{selectedBudget.pm_fundingsourcecode || '—'}</Typography>
-                      </Box>
+
                     </Box>
                   </Box>
 
@@ -797,9 +797,7 @@ export default function BudgetsPage() {
                         Variance
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                      Entity
-                    </TableCell>
+
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -888,11 +886,6 @@ export default function BudgetsPage() {
                               {variance != null ? `${variance >= 0 ? '+' : ''}${currencyFormatter.format(variance)}` : '—'}
                             </Typography>
                           </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {line.pm_portfolio || line.pm_programme || line.pm_projectcode || '—'}
-                          </Typography>
                         </TableCell>
                       </TableRow>
                     )

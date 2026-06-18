@@ -252,9 +252,6 @@ export interface BudgetLineModel {
   pm_estimateatcompletioneur?: number
   pm_estimatetocompleteeur?: number
   pm_costcategory?: number | string
-  pm_costcategoryname?: string
-  pm_fundingperiod?: string
-  pm_fundingsourcecode?: string
   pm_notes?: string
   pm_portfolio?: string
   pm_programme?: string
@@ -597,5 +594,5 @@ export interface WorkflowApprovalStepModel {
   _pm_workflowinstancelookup_value?: string
   _pm_workflowtemplate_value?: string
   statecode?: number
-  pm_stepname?:string
+  pm_stepname?: string
 }

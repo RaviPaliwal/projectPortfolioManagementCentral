@@ -37,7 +37,6 @@ export interface Pm_budgetlinesBase {
   pm_forecastspendeur?: number;
   pm_fundingperiod?: string;
   "pm_fundingsource@odata.bind"?: string;
-  pm_fundingsourcecode?: string;
   pm_notes?: string;
   pm_portfolio?: string;
   "pm_portfolioLookup@odata.bind"?: string;
@@ -72,7 +71,6 @@ export interface Pm_budgetlines extends Pm_budgetlinesBase {
   pm_actualspendeur_base?: number;
   pm_approvedbudgeteur_base?: number;
   pm_committedspendeur_base?: number;
-  pm_costcategoryname?: string;
   pm_estimateatcompletioneur_base?: number;
   pm_estimatetocompleteeur_base?: number;
   pm_fiscalperiodname?: string;

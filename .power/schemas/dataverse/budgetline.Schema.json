@@ -319,14 +319,6 @@
           "x-ms-optionsetdisplayname": "Cost Category",
           "x-ms-optionSetType": "Picklist"
         },
-        "pm_costcategoryname": {
-          "type": "string",
-          "title": "pm_costcategoryname",
-          "x-ms-dataverse-attribute": "pm_costcategoryname",
-          "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_costcategoryName",
-          "x-ms-read-only": true
-        },
         "pm_estimateatcompletioneur": {
           "type": "string",
           "title": "EAC (EUR)",
@@ -388,28 +380,12 @@
           "x-ms-schema-name": "pm_forecastspendeur_Base",
           "x-ms-read-only": true
         },
-        "pm_fundingperiod": {
-          "type": "string",
-          "title": "Period",
-          "x-ms-dataverse-attribute": "pm_fundingperiod",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_fundingperiod",
-          "maxLength": 100
-        },
         "pm_fundingsource": {
           "type": "string",
           "title": "Funding Source",
           "x-ms-dataverse-attribute": "pm_fundingsource",
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_fundingsource"
-        },
-        "pm_fundingsourcecode": {
-          "type": "string",
-          "title": "Funding Source",
-          "x-ms-dataverse-attribute": "pm_fundingsourcecode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_fundingsourcecode",
-          "maxLength": 100
         },
         "pm_fundingsourcename": {
           "type": "string",
