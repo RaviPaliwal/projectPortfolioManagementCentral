@@ -19,11 +19,13 @@ import {
   Slider,
   Paper,
   Chip,
+  InputAdornment,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import InfoIcon from '@mui/icons-material/Info'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import MoneyIcon from '@mui/icons-material/Money'
 import AttachFileIcon from '@mui/icons-material/AttachFile'
 import { createProgramme, updateProgramme, fetchPortfolioHierarchy, startWorkflowForEntity, uploadDocument } from '@/services'
@@ -43,7 +45,7 @@ interface ProgrammeFormDialogProps {
   onSuccess: (programmes: ProgrammeModel[]) => void
   onError: (message: string) => void
   initialData?: ProgrammeModel | null
-  portfolios: { id: string; name: string; budget: number }[]
+  portfolios: { id: string; name: string; budget: number; startDate?: string; endDate?: string }[]
   /** All programmes (used to compute remaining budget per portfolio) */
   allProgrammes?: ProgrammeModel[]
 }
@@ -78,7 +80,6 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
     pm_programmephase: 3,
     pm_ragstatus: 1,
     pm_budgeteur: 0,
-    pm_actualspendeur: 0,
     pm_businessunit: '',
     pm_startdate: '',
     pm_enddate: '',
@@ -97,7 +98,6 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
           pm_programmephase: initialData.pm_programmephase !== undefined ? Number(initialData.pm_programmephase) : 3,
           pm_ragstatus: initialData.pm_ragstatus !== undefined ? Number(initialData.pm_ragstatus) : 1,
           pm_budgeteur: initialData.pm_budgeteur || 0,
-          pm_actualspendeur: initialData.pm_actualspendeur || 0,
           pm_businessunit: initialData.pm_businessunit || '',
           pm_startdate: initialData.pm_startdate?.split('T')[0] || '',
           pm_enddate: initialData.pm_enddate?.split('T')[0] || '',
@@ -112,7 +112,6 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
           pm_programmephase: 3,
           pm_ragstatus: 1,
           pm_budgeteur: 0,
-          pm_actualspendeur: 0,
           pm_businessunit: '',
           pm_startdate: '',
           pm_enddate: '',
@@ -143,8 +142,42 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
     return { portfolioBudget, usedBudget, availableBudget, programmeCount: otherProgrammes.length }
   }, [formData._pm_portfolio_value, portfolios, allProgrammes, initialData?.pm_programmeid])
 
+  // Selected portfolio's date range for validation
+  const selectedPortfolioDates = useMemo(() => {
+    if (!formData._pm_portfolio_value) return null
+    const selected = portfolios.find((p) => p.id === formData._pm_portfolio_value)
+    if (!selected) return null
+    return { startDate: selected.startDate, endDate: selected.endDate }
+  }, [formData._pm_portfolio_value, portfolios])
+
+  // Date validation
+  const dateErrors = useMemo(() => {
+    const errors: { startDate?: string; endDate?: string } = {}
+    if (!selectedPortfolioDates) return errors
+
+    const { startDate: portStart, endDate: portEnd } = selectedPortfolioDates
+    if (!portStart || !portEnd) return errors
+
+    if (formData.pm_startdate && formData.pm_startdate < portStart) {
+      errors.startDate = `Start date cannot be before portfolio start (${new Date(portStart).toLocaleDateString()})`
+    }
+    if (formData.pm_enddate && formData.pm_enddate > portEnd) {
+      errors.endDate = `End date cannot be after portfolio end (${new Date(portEnd).toLocaleDateString()})`
+    }
+    if (formData.pm_startdate && formData.pm_enddate) {
+      if (formData.pm_startdate > formData.pm_enddate) {
+        errors.endDate = 'End date must be after start date'
+      }
+    }
+    return errors
+  }, [formData.pm_startdate, formData.pm_enddate, selectedPortfolioDates])
+
+  const hasDateErrors = !!dateErrors.startDate || !!dateErrors.endDate
+  const hasBudgetErrors = formData.pm_budgeteur > portfolioBudgetInfo.availableBudget
+  const canSave = !!formData.pm_programmename.trim() && !hasDateErrors && !hasBudgetErrors && !!formData._pm_portfolio_value
+
   const handleSave = async () => {
-    if (!formData.pm_programmename.trim()) return
+    if (!canSave) return
     setActionLoading(true)
     try {
       const payload: Partial<ProgrammeModel> = {
@@ -154,7 +187,6 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
         pm_programmephase: formData.pm_programmephase,
         pm_ragstatus: formData.pm_ragstatus,
         pm_budgeteur: formData.pm_budgeteur || 0,
-        pm_actualspendeur: formData.pm_actualspendeur || 0,
         pm_businessunit: formData.pm_businessunit || undefined,
         pm_startdate: formData.pm_startdate || undefined,
         pm_enddate: formData.pm_enddate || undefined,
@@ -353,6 +385,8 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
                 size="small"
                 value={formData.pm_startdate}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_startdate: e.target.value }))}
+                error={!!dateErrors.startDate}
+                helperText={dateErrors.startDate || (selectedPortfolioDates?.startDate ? `Portfolio range: ${new Date(selectedPortfolioDates.startDate).toLocaleDateString()} – ${new Date(selectedPortfolioDates.endDate!).toLocaleDateString()}` : '')}
                 slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
@@ -364,10 +398,25 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
                 size="small"
                 value={formData.pm_enddate}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_enddate: e.target.value }))}
+                error={!!dateErrors.endDate}
+                helperText={dateErrors.endDate}
                 slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
           </Grid>
+
+          {selectedPortfolioDates && selectedPortfolioDates.startDate && (
+            <Paper variant="outlined" sx={{ p: 1.5, mt: -1.5, mb: 3, borderRadius: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'grey.50', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <CalendarTodayIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+              <Typography variant="caption" color="text.secondary">
+                Portfolio date range:{' '}
+                <strong>{new Date(selectedPortfolioDates.startDate).toLocaleDateString()}</strong>
+                {' — '}
+                <strong>{selectedPortfolioDates.endDate ? new Date(selectedPortfolioDates.endDate).toLocaleDateString() : 'No end date'}</strong>
+                {' · Programme must be within this range'}
+              </Typography>
+            </Paper>
+          )}
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <AttachMoneyIcon sx={{ fontSize: 18, color: 'primary.main' }} />
@@ -378,59 +427,87 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
           </Box>
 
           <Grid container spacing={2.5} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Grid size={{ xs: 12 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                 <MoneyIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                Programme Budget
-              </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Programme Budget
+                </Typography>
+              </Box>
               <Paper
                 variant="outlined"
                 sx={{
-                  p: 1.5,
+                  p: 2,
                   borderRadius: 1.5,
                   bgcolor: isDark ? 'background.paper' : 'background.default',
                   borderColor: isDark ? '#334155' : '#e2e8f0',
                 }}
               >
-                <Box sx={{ textAlign: 'center', mb: 1 }}>
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 700,
-                      fontFamily: '"JetBrains Mono", monospace',
-                      color: formData.pm_budgeteur > 0 ? 'primary.main' : 'text.secondary',
-                    }}
-                  >
-                    {currencyFormatter.format(formData.pm_budgeteur)}
-                  </Typography>
-                  {formData.pm_budgeteur > 0 && portfolioBudgetInfo.availableBudget > 0 && (
-                    <Typography variant="caption" color="text.secondary">
-                      {((formData.pm_budgeteur / portfolioBudgetInfo.availableBudget) * 100).toFixed(1)}% of available budget
-                    </Typography>
-                  )}
-                </Box>
-                <Slider
-                  value={formData.pm_budgeteur}
-                  onChange={(_, value) => setFormData((f) => ({ ...f, pm_budgeteur: value as number }))}
-                  min={0}
-                  max={Math.max(portfolioBudgetInfo.availableBudget, formData.pm_budgeteur)}
-                  step={portfolioBudgetInfo.availableBudget > 10_000_000 ? 100_000 : 50_000}
-                  sx={{
-                    color: formData.pm_budgeteur > portfolioBudgetInfo.availableBudget
-                      ? 'error.main'
-                      : formData.pm_budgeteur > portfolioBudgetInfo.availableBudget * 0.9
-                        ? 'warning.main'
-                        : 'primary.main',
-                    '& .MuiSlider-thumb': {
-                      width: 18,
-                      height: 18,
-                      transition: 'box-shadow 0.15s ease',
-                      '&:hover, &.Mui-focusVisible': {
-                        boxShadow: '0 0 0 8px rgba(14, 165, 233, 0.16)',
-                      },
-                    },
-                  }}
-                />
+                <Grid container spacing={2} sx={{ alignItems: 'center' }}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <TextField
+                      label="Budget Amount (EUR)"
+                      type="number"
+                      fullWidth
+                      size="small"
+                      value={formData.pm_budgeteur}
+                      onChange={(e) => {
+                        const val = Number(e.target.value)
+                        if (!isNaN(val) && val >= 0) {
+                          setFormData((f) => ({ ...f, pm_budgeteur: val }))
+                        }
+                      }}
+                      slotProps={{
+                        input: {
+                          startAdornment: <InputAdornment position="start"><AttachMoneyIcon sx={{ fontSize: 16 }} /></InputAdornment>,
+                          sx: { borderRadius: 1.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 },
+                        },
+                      }}
+                      sx={{ mb: { xs: 1, sm: 0 } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 8 }}>
+                    <Box sx={{ textAlign: 'center', mb: 0.5 }}>
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 700,
+                          fontFamily: '"JetBrains Mono", monospace',
+                          color: formData.pm_budgeteur > 0 ? 'primary.main' : 'text.secondary',
+                        }}
+                      >
+                        {currencyFormatter.format(formData.pm_budgeteur)}
+                      </Typography>
+                      {formData.pm_budgeteur > 0 && portfolioBudgetInfo.availableBudget > 0 && (
+                        <Typography variant="caption" color="text.secondary">
+                          {((formData.pm_budgeteur / portfolioBudgetInfo.availableBudget) * 100).toFixed(1)}% of available budget
+                        </Typography>
+                      )}
+                    </Box>
+                    <Slider
+                      value={formData.pm_budgeteur}
+                      onChange={(_, value) => setFormData((f) => ({ ...f, pm_budgeteur: value as number }))}
+                      min={0}
+                      max={Math.max(portfolioBudgetInfo.availableBudget, formData.pm_budgeteur)}
+                      step={portfolioBudgetInfo.availableBudget > 10_000_000 ? 100_000 : 50_000}
+                      sx={{
+                        color: formData.pm_budgeteur > portfolioBudgetInfo.availableBudget
+                          ? 'error.main'
+                          : formData.pm_budgeteur > portfolioBudgetInfo.availableBudget * 0.9
+                            ? 'warning.main'
+                            : 'primary.main',
+                        '& .MuiSlider-thumb': {
+                          width: 18,
+                          height: 18,
+                          transition: 'box-shadow 0.15s ease',
+                          '&:hover, &.Mui-focusVisible': {
+                            boxShadow: '0 0 0 8px rgba(14, 165, 233, 0.16)',
+                          },
+                        },
+                      }}
+                    />
+                  </Grid>
+                </Grid>
               </Paper>
 
               {formData._pm_portfolio_value && (
@@ -481,18 +558,6 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
                   </Typography>
                 </Box>
               )}
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Actual Spend (EUR)"
-                type="number"
-                fullWidth
-                size="small"
-                value={formData.pm_actualspendeur}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_actualspendeur: Number(e.target.value) }))}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                sx={{ mt: 4.5 }}
-              />
             </Grid>
           </Grid>
 
@@ -576,7 +641,7 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
           <Button
             onClick={handleSave}
             variant="contained"
-            disabled={!formData.pm_programmename.trim() || actionLoading}
+            disabled={!canSave || actionLoading}
             sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, px: 3 }}
           >
             {actionLoading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Programme'}

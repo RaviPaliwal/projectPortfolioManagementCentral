@@ -69,16 +69,36 @@ const RAG_COLORS: Record<string, string> = {
   notset: 'text.disabled',
 }
 
-const getRagColor = (status: number | string | undefined | null): string => {
+const getRagColor = (field: string, status: number | string | undefined | null): string => {
   const v = Number(status)
+  const isRev = field === 'pm_costragstatus' || field === 'pm_resourceragstatus'
+  if (isRev) {
+    if (v === 0) return RAG_COLORS.green
+    if (v === 1) return RAG_COLORS.amber
+    return RAG_COLORS.notset
+  }
+  if (field === 'pm_benefitsragstatus') {
+    if (v === 0) return RAG_COLORS.green
+    return RAG_COLORS.notset
+  }
   if (v === 1) return RAG_COLORS.green
   if (v === 0) return RAG_COLORS.amber
   if (v === 2) return RAG_COLORS.red
   return RAG_COLORS.notset
 }
 
-const getRagLabel = (status: number | string | undefined | null): string => {
+const getRagLabel = (field: string, status: number | string | undefined | null): string => {
   const v = Number(status)
+  const isRev = field === 'pm_costragstatus' || field === 'pm_resourceragstatus'
+  if (isRev) {
+    if (v === 0) return 'Green'
+    if (v === 1) return 'Amber'
+    return 'Not Set'
+  }
+  if (field === 'pm_benefitsragstatus') {
+    if (v === 0) return 'Green'
+    return 'Not Set'
+  }
   if (v === 1) return 'Green'
   if (v === 0) return 'Amber'
   if (v === 2) return 'Red'
@@ -146,10 +166,13 @@ const mapSnapshot = (item: Pm_projectstatussnapshots): ProjectStatusSnapshotMode
   pm_entitytype: item.pm_entitytype,
   pm_projectcode: item.pm_projectcode,
   pm_projectname: item.pm_projectname,
+  _pm_project_value: item._pm_project_value,
   pm_portfolio: item.pm_portfolio,
   pm_portfoliolookupname: item.pm_portfoliolookupname,
+  _pm_portfoliolookup_value: item._pm_portfoliolookup_value,
   pm_programme: item.pm_programme,
   pm_programmenamename: item.pm_programmenamename,
+  _pm_programmename_value: item._pm_programmename_value,
   pm_actionitems: item.pm_actionitems,
   pm_approvalstatus: item.pm_approvalstatus,
   pm_benefitsragstatus: item.pm_benefitsragstatus,
@@ -176,16 +199,30 @@ const formatDate = (dateStr?: string): string => {
   } catch { return dateStr }
 }
 
-function RagChip({ value, label }: { value?: number | string | null; label?: string }) {
+function RagChip({ field, value }: { field: string; value?: number | string | null }) {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const v = Number(value)
-  const color = v === 1 ? 'success' : v === 0 ? 'warning' : v === 2 ? 'error' : 'default'
-  const IconComponent = v === 1 ? CheckCircleIcon : v === 0 ? WarningAmberIcon : v === 2 ? ErrorIcon : ChecklistIcon
+  const isRev = field === 'pm_costragstatus' || field === 'pm_resourceragstatus'
+  let color: 'success' | 'warning' | 'error' | 'default' = 'default'
+  let IconComponent = ChecklistIcon
+  let label = 'Not Set'
+
+  if (isRev) {
+    if (v === 0) { color = 'success'; IconComponent = CheckCircleIcon; label = 'Green' }
+    else if (v === 1) { color = 'warning'; IconComponent = WarningAmberIcon; label = 'Amber' }
+  } else if (field === 'pm_benefitsragstatus') {
+    if (v === 0) { color = 'success'; IconComponent = CheckCircleIcon; label = 'Green' }
+  } else {
+    if (v === 1) { color = 'success'; IconComponent = CheckCircleIcon; label = 'Green' }
+    else if (v === 0) { color = 'warning'; IconComponent = WarningAmberIcon; label = 'Amber' }
+    else if (v === 2) { color = 'error'; IconComponent = ErrorIcon; label = 'Red' }
+  }
+
   return (
     <StatusTag
       icon={<IconComponent sx={{ fontSize: 14 }} />}
-      label={label || (v === 1 ? 'Green' : v === 0 ? 'Amber' : v === 2 ? 'Red' : 'Not Set')}
+      label={label}
       color={color}
       size="small"
       variant="outlined"
@@ -256,22 +293,31 @@ export default function StatusSnapshotsPage() {
       const result = await Pm_projectstatussnapshotsService.getAll({
         select: [
           'pm_projectstatussnapshotid', 'pm_snapshotname', 'pm_entitytype',
-          'pm_projectcode', 'pm_projectname', 'pm_portfolio', 'pm_programme',
-          'pm_portfoliolookupname', 'pm_programmenamename',
+          'pm_projectcode', 'pm_portfolio', 'pm_programme',
+          '_pm_project_value', '_pm_portfoliolookup_value', '_pm_programmename_value',
           'pm_actionitems', 'pm_approvalstatus',
           'pm_benefitsragstatus', 'pm_costragstatus', 'pm_overallragstatus',
           'pm_resourceragstatus', 'pm_riskragstatus', 'pm_scheduleragstatus',
           'pm_projecthighlights', 'pm_projectlowlights',
-          'pm_reportingperiod', 'pm_reportingfiscalperiodname',
-          'pm_submissiondate', 'pm_submittedby', 'statecode',
+          'pm_reportingperiod', 'pm_submissiondate', 'pm_submittedby',
+          'statecode',
         ],
         orderBy: ['pm_snapshotname asc'],
         top: 1000,
       })
+      if (!result.success) {
+        console.error('[StatusSnapshotsPage] loadData failed:', result.error)
+        setError('Unable to load status snapshots data.')
+        setSnapshots([])
+        return
+      }
       const list = unwrapSnapshotList(result).map(mapSnapshot)
+      console.log('[StatusSnapshotsPage] loadData loaded', list.length, 'snapshots')
       setSnapshots(list)
-    } catch {
+    } catch (err: any) {
+      console.error('[StatusSnapshotsPage] loadData exception:', err)
       setError('Unable to load status snapshots data.')
+      setSnapshots([])
     } finally {
       setLoading(false)
     }
@@ -434,10 +480,14 @@ export default function StatusSnapshotsPage() {
       const payload: any = {
         ...submitData,
         statecode: 0,
+        'ownerid@odata.bind': currentUser?.systemuserid ? `/systemusers(${currentUser.systemuserid})` : undefined,
       }
 
       if (editingSnapshot?.pm_projectstatussnapshotid) {
-        await Pm_projectstatussnapshotsService.update(editingSnapshot.pm_projectstatussnapshotid, payload)
+        const result = await Pm_projectstatussnapshotsService.update(editingSnapshot.pm_projectstatussnapshotid, payload)
+        if (!result.success) {
+          throw new Error(result.error?.message || 'Update failed')
+        }
         setSuccessMsg('Status snapshot updated successfully.')
       } else {
         payload.statuscode = 1
@@ -451,15 +501,19 @@ export default function StatusSnapshotsPage() {
             payload['pm_portfolioLookup@odata.bind'] = `/pm_portfolios(${cleanEntityId})`
           }
         }
-        await Pm_projectstatussnapshotsService.create(payload)
+        const result = await Pm_projectstatussnapshotsService.create(payload)
+        if (!result.success) {
+          throw new Error(result.error?.message || 'Create failed')
+        }
         setSuccessMsg('Status snapshot created successfully.')
       }
       setShowForm(false)
       setTimeout(() => setSuccessMsg(null), 3000)
       await loadData()
     } catch (err: any) {
+      const detail = err?.message || err?.error?.message || err?.statusText || ''
       console.error('[StatusSnapshotsPage] handleSave failed:', err)
-      setError(editingSnapshot ? 'Unable to update snapshot.' : 'Unable to create snapshot.')
+      setError((editingSnapshot ? 'Unable to update snapshot.' : 'Unable to create snapshot.') + (detail ? ' ' + detail : ''))
     } finally {
       setActionLoading(false)
     }
@@ -740,7 +794,7 @@ export default function StatusSnapshotsPage() {
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      <RagChip value={snapshot.pm_overallragstatus} label={getRagLabel(snapshot.pm_overallragstatus)} />
+                      <RagChip field="pm_overallragstatus" value={snapshot.pm_overallragstatus} />
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontSize: fontSizes.sm }}>
@@ -755,19 +809,19 @@ export default function StatusSnapshotsPage() {
                     <TableCell>
                       <Stack direction="row" spacing={0.5}>
                         <Tooltip title="Cost" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor(snapshot.pm_costragstatus) }} />
+                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_costragstatus', snapshot.pm_costragstatus) }} />
                         </Tooltip>
                         <Tooltip title="Schedule" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor(snapshot.pm_scheduleragstatus) }} />
+                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_scheduleragstatus', snapshot.pm_scheduleragstatus) }} />
                         </Tooltip>
                         <Tooltip title="Risk" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor(snapshot.pm_riskragstatus) }} />
+                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_riskragstatus', snapshot.pm_riskragstatus) }} />
                         </Tooltip>
                         <Tooltip title="Resource" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor(snapshot.pm_resourceragstatus) }} />
+                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_resourceragstatus', snapshot.pm_resourceragstatus) }} />
                         </Tooltip>
                         <Tooltip title="Benefits" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor(snapshot.pm_benefitsragstatus) }} />
+                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_benefitsragstatus', snapshot.pm_benefitsragstatus) }} />
                         </Tooltip>
                       </Stack>
                     </TableCell>
@@ -829,7 +883,7 @@ export default function StatusSnapshotsPage() {
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>
                         {dim.label}
                       </Typography>
-                      <RagChip value={(selectedSnapshot as any)[dim.field]} label={getRagLabel((selectedSnapshot as any)[dim.field])} />
+                      <RagChip field={dim.field} value={(selectedSnapshot as any)[dim.field]} />
                     </Box>
                   </Grid>
                 ))}
@@ -870,7 +924,11 @@ export default function StatusSnapshotsPage() {
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Entity Type</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedSnapshot.pm_entitytype || '\u2014'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project Code</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedSnapshot.pm_projectcode || '\u2014'}</Typography>
                 </Box>
                 <Box>
@@ -889,6 +947,24 @@ export default function StatusSnapshotsPage() {
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Approval Status</Typography>
                   <StatusTag label={Number(selectedSnapshot.pm_approvalstatus) === 0 ? 'Approved' : 'Pending'} color={Number(selectedSnapshot.pm_approvalstatus) === 0 ? 'success' : 'warning'} size="small" sx={{ fontWeight: 600 }} />
                 </Box>
+                {selectedSnapshot._pm_project_value && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project Ref</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>{selectedSnapshot._pm_project_value}</Typography>
+                  </Box>
+                )}
+                {selectedSnapshot._pm_portfoliolookup_value && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Portfolio Ref</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>{selectedSnapshot._pm_portfoliolookup_value}</Typography>
+                  </Box>
+                )}
+                {selectedSnapshot._pm_programmename_value && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme Ref</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>{selectedSnapshot._pm_programmename_value}</Typography>
+                  </Box>
+                )}
               </Box>
             </Paper>
 

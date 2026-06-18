@@ -25,7 +25,21 @@
   - Updated `ApprovalStepResolver` + `FinancialReviewTaskModalWrapper` to pass `entityType` to the modal.
   - `FinancialReviewTaskModal` now detects `entityType === 'Pipeline'` and fetches initiative data via `fetchInitiativeById(id)`, displaying estimated cost/benefits, priority score, and strategic alignment. Gate review logic is unchanged.
 
-### 6. Resource Allocation: Available Hours Validation
+### 6. Status Snapshot `loadData` Failing Silently (No Data in Grid)
+- **Root Cause**: `$select` in `StatusSnapshotsPage.loadData` included `pm_projectname`, `pm_portfoliolookupname`, and `pm_programmenamename` — fields that don't exist as selectable properties on the `pm_projectstatussnapshot` entity in Dataverse. The generated TypeScript model incorrectly includes these as properties. The API returns HTTP 400, which was silently caught by the generic catch handler, leaving the grid empty.
+- **Fix**: Removed the three invalid fields from `$select`. Added `result.success` check and console logging for future debugging. `mapSnapshot` already handles undefined values for these optional fields.
+- **File**: `StatusSnapshotsPage.tsx:256-269`
+
+### 7. Snapshot Create Fails with ODataException (ownerid Format)
+- **Root Cause**: `handleSave` sent `ownerid` as a raw GUID string, but Dataverse requires lookup field format `/systemusers(GUID)` via `ownerid@odata.bind`.
+- **Fix**: Changed to `'ownerid@odata.bind': currentUser?.systemuserid ? \`/systemusers(${currentUser.systemuserid})\` : undefined`. Also added `result.success` check for create/update since `createRecordAsync`/`updateRecordAsync` return `IOperationResult` with `success: boolean` and do NOT throw on API failure.
+- **File**: `StatusSnapshotsPage.tsx:433-466`
+
+### 8. Programme Budget Wrongly Aggregating from Child Projects
+- **Root Cause**: `portfolio.service.ts:120-133` aggregated `pm_approvedbudgeteur` from child projects into the programme's `pm_budgeteur`.
+- **Fix**: Removed the aggregation code. Programme budget now uses its own `pm_budgeteur` field directly.
+
+### 9. Resource Allocation: Available Hours Validation
 - **Feature**: `ResourceDialog` now calculates and displays available hours before submission.
 - **Implementation**:
   - Converted from `DynamicFormDialog` to a fully custom dialog with `useEffect` + `useMemo` for reactive availability computation.

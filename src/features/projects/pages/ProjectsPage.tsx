@@ -101,7 +101,21 @@ export default function ProjectsPage() {
       setProjects(projList)
       setMilestonesDue(milestones)
       setPortfolios(hierarchy.portfolios.map(p => ({ id: p.pm_portfolioid!, name: p.pm_portfolioname! })))
-      setProgrammes(hierarchy.programmes.map(p => ({ id: p.pm_programmeid!, name: p.pm_programmename!, portfolioId: p._pm_portfolio_value })))
+      setProgrammes(hierarchy.programmes.map(p => {
+        const progBudget = p.pm_budgeteur ?? 0
+        const allocatedToProjects = projList
+          .filter(pj => normalizeLookupId(pj._pm_programme_value) === normalizeLookupId(p.pm_programmeid!))
+          .reduce((sum, pj) => sum + (pj.pm_approvedbudgeteur ?? 0), 0)
+        return {
+          id: p.pm_programmeid!,
+          name: p.pm_programmename!,
+          portfolioId: p._pm_portfolio_value,
+          budget: p.pm_budgeteur,
+          startDate: p.pm_startdate,
+          endDate: p.pm_enddate,
+          availableBudget: progBudget - allocatedToProjects,
+        }
+      }))
     } catch (err) {
       setError('Unable to load project data.')
     } finally {
