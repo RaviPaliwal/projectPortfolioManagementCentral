@@ -13,6 +13,7 @@ import type {
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
 import { fetchProjectDetails, fetchProjectsFull } from './project.service'
+import { writeAuditLog } from './changelog.service'
 
 export const mapGateReview = (item: Pm_projectgatereviews): GateReviewModel => ({
   pm_projectgatereviewid: item.pm_projectgatereviewid,
@@ -172,16 +173,53 @@ export async function createGateReview(payload: Partial<GateReviewModel>): Promi
   }
   const result = await Pm_projectgatereviewsService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_projectgatereviews>(result)
-  return item ? mapGateReview(item) : null
+  const mapped = item ? mapGateReview(item) : null
+  
+  if (mapped && mapped.pm_projectgatereviewid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_projectgatereviews',
+      recordId: mapped.pm_projectgatereviewid,
+      recordName: mapped.pm_gatename || 'Gate Review',
+    })
+  }
+  
+  return mapped
 }
 
 export async function updateGateReview(id: string, changes: Partial<GateReviewModel>): Promise<GateReviewModel | null> {
   const result = await Pm_projectgatereviewsService.update(id, changes as any)
   const item = unwrapSingle<Pm_projectgatereviews>(result)
-  return item ? mapGateReview(item) : null
+  const mapped = item ? mapGateReview(item) : null
+  
+  if (mapped && mapped.pm_projectgatereviewid) {
+    Object.keys(changes).forEach((key) => {
+      const val = (changes as any)[key]
+      if (val !== undefined && key !== 'pm_projectgatereviewid') {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_projectgatereviews',
+          recordId: id,
+          recordName: mapped.pm_gatename || 'Gate Review',
+          fieldName: key,
+          newValue: String(val),
+        })
+      }
+    })
+  }
+  
+  return mapped
 }
 
 export async function deleteGateReview(id: string): Promise<void> {
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_projectgatereviews',
+    recordId: id,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted',
+  })
   await Pm_projectgatereviewsService.delete(id)
 }
 
@@ -224,7 +262,18 @@ export async function createBenefit(payload: Partial<BenefitModel>): Promise<Ben
   }
   const result = await Pm_benefitsService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_benefits>(result)
-  return item ? mapBenefit(item) : null
+  const mapped = item ? mapBenefit(item) : null
+  
+  if (mapped && mapped.pm_benefitid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_benefits',
+      recordId: mapped.pm_benefitid,
+      recordName: mapped.pm_benefitname,
+    })
+  }
+  
+  return mapped
 }
 
 export async function updateBenefit(id: string, changes: Partial<BenefitModel>): Promise<BenefitModel | null> {
@@ -237,7 +286,25 @@ export async function updateBenefit(id: string, changes: Partial<BenefitModel>):
   }
   const result = await Pm_benefitsService.update(id, cleanPayload as any)
   const item = unwrapSingle<Pm_benefits>(result)
-  return item ? mapBenefit(item) : null
+  const mapped = item ? mapBenefit(item) : null
+  
+  if (mapped && mapped.pm_benefitid) {
+    Object.keys(changes).forEach((key) => {
+      const val = (changes as any)[key]
+      if (val !== undefined && key !== 'pm_benefitid') {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_benefits',
+          recordId: id,
+          recordName: mapped.pm_benefitname,
+          fieldName: key,
+          newValue: String(val),
+        })
+      }
+    })
+  }
+  
+  return mapped
 }
 
 export async function createBenefitFull(payload: Partial<BenefitModel>): Promise<BenefitModel | null> {
@@ -272,7 +339,18 @@ export async function createBenefitFull(payload: Partial<BenefitModel>): Promise
   }
   const result = await Pm_benefitsService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_benefits>(result)
-  return item ? mapBenefit(item) : null
+  const mapped = item ? mapBenefit(item) : null
+  
+  if (mapped && mapped.pm_benefitid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_benefits',
+      recordId: mapped.pm_benefitid,
+      recordName: mapped.pm_benefitname,
+    })
+  }
+  
+  return mapped
 }
 
 export async function updateBenefitFull(id: string, changes: Partial<BenefitModel>): Promise<BenefitModel | null> {
@@ -303,10 +381,36 @@ export async function updateBenefitFull(id: string, changes: Partial<BenefitMode
   }
   const result = await Pm_benefitsService.update(id, cleanPayload as any)
   const item = unwrapSingle<Pm_benefits>(result)
-  return item ? mapBenefit(item) : null
+  const mapped = item ? mapBenefit(item) : null
+  
+  if (mapped && mapped.pm_benefitid) {
+    Object.keys(changes).forEach((key) => {
+      const val = (changes as any)[key]
+      if (val !== undefined && key !== 'pm_benefitid') {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_benefits',
+          recordId: id,
+          recordName: mapped.pm_benefitname,
+          fieldName: key,
+          newValue: String(val),
+        })
+      }
+    })
+  }
+  
+  return mapped
 }
 
 export async function deleteBenefit(id: string): Promise<void> {
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_benefits',
+    recordId: id,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted',
+  })
   await Pm_benefitsService.delete(id)
 }
 
@@ -345,15 +449,52 @@ export async function createPerformanceMeasure(payload: Partial<PerformanceMeasu
   }
   const result = await Pm_performancemeasuresService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_performancemeasures>(result)
-  return item ? mapPerformanceMeasure(item) : null
+  const mapped = item ? mapPerformanceMeasure(item) : null
+  
+  if (mapped && mapped.pm_performancemeasureid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_performancemeasures',
+      recordId: mapped.pm_performancemeasureid,
+      recordName: mapped.pm_measurename,
+    })
+  }
+  
+  return mapped
 }
 
 export async function updatePerformanceMeasure(id: string, changes: Partial<PerformanceMeasureModel>): Promise<PerformanceMeasureModel | null> {
   const result = await Pm_performancemeasuresService.update(id, changes as any)
   const item = unwrapSingle<Pm_performancemeasures>(result)
-  return item ? mapPerformanceMeasure(item) : null
+  const mapped = item ? mapPerformanceMeasure(item) : null
+  
+  if (mapped && mapped.pm_performancemeasureid) {
+    Object.keys(changes).forEach((key) => {
+      const val = (changes as any)[key]
+      if (val !== undefined && key !== 'pm_performancemeasureid') {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_performancemeasures',
+          recordId: id,
+          recordName: mapped.pm_measurename,
+          fieldName: key,
+          newValue: String(val),
+        })
+      }
+    })
+  }
+  
+  return mapped
 }
 
 export async function deletePerformanceMeasure(id: string): Promise<void> {
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_performancemeasures',
+    recordId: id,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted',
+  })
   await Pm_performancemeasuresService.delete(id)
 }

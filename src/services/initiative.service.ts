@@ -10,6 +10,7 @@ import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
 import type { Systemusers } from '@/generated/models/SystemusersModel'
 import type { InitiativeModel } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
+import { writeAuditLog } from './changelog.service'
 
 export const mapInitiative = (item: Pm_initiatives): InitiativeModel => ({
   pm_initiativeid: item.pm_initiativeid,
@@ -150,6 +151,14 @@ export async function updateInitiativeStatus(initiativeId: string, status: numbe
   try { console.debug('[dataverseService] updateInitiativeStatus updating:', { initiativeId, status }) } catch (e) {}
   const res = await Pm_initiativesService.update(initiativeId, { pm_pipelinestatus: status } as any)
   try { console.debug('[dataverseService] updateInitiativeStatus result raw:', res) } catch (e) {}
+  
+  writeAuditLog({
+    actionType: 'StatusChange',
+    entityName: 'pm_initiatives',
+    recordId: initiativeId,
+    fieldName: 'pm_pipelinestatus',
+    newValue: String(status),
+  })
 }
 
 export async function convertInitiativeToProject(initiative: InitiativeModel): Promise<string | null> {
@@ -169,6 +178,26 @@ export async function convertInitiativeToProject(initiative: InitiativeModel): P
       } catch (e) {
         console.warn('[dataverseService] convertInitiativeToProject: failed to update initiative conversion reference', e)
       }
+      
+      // Log project creation audit
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_projects',
+        recordId: createdItem.pm_projectid,
+        recordName: createdItem.pm_projectname || initiative.pm_name || '',
+        newValue: `Project created via conversion from Initiative: ${createdItem.pm_projectname || initiative.pm_name || ''}`
+      })
+
+      // Log initiative conversion reference update audit
+      writeAuditLog({
+        actionType: 'Update',
+        entityName: 'pm_initiatives',
+        recordId: initiative.pm_initiativeid!,
+        recordName: initiative.pm_name,
+        fieldName: 'pm_convertedtoreference',
+        newValue: createdItem.pm_projectid,
+      })
+
       return createdItem.pm_projectid
     }
   } catch (err) {
@@ -197,14 +226,43 @@ export async function createInitiative(payload: Partial<InitiativeModel> & { _pm
   const result = await Pm_initiativesService.create({ ...defaults, ...cleanPayload } as any)
   try { console.debug('[dataverseService] createInitiative payload/result:', payload, result) } catch (e) {}
   const item = unwrapSingle<Pm_initiatives>(result)
-  return item ? mapInitiative(item) : null
+  const mapped = item ? mapInitiative(item) : null
+  
+  if (mapped && mapped.pm_initiativeid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_initiatives',
+      recordId: mapped.pm_initiativeid,
+      recordName: mapped.pm_name,
+    })
+  }
+  
+  return mapped
 }
 
 export async function updateInitiative(id: string, changes: Partial<InitiativeModel>): Promise<InitiativeModel | null> {
   const result = await Pm_initiativesService.update(id, changes as any)
   try { console.debug('[dataverseService] updateInitiative id/changes/result:', id, changes, result) } catch (e) {}
   const item = unwrapSingle<Pm_initiatives>(result)
-  return item ? mapInitiative(item) : null
+  const mapped = item ? mapInitiative(item) : null
+  
+  if (mapped && mapped.pm_initiativeid) {
+    Object.keys(changes).forEach((key) => {
+      const val = (changes as any)[key]
+      if (val !== undefined && key !== 'pm_initiativeid') {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_initiatives',
+          recordId: id,
+          recordName: mapped.pm_name,
+          fieldName: key,
+          newValue: String(val),
+        })
+      }
+    })
+  }
+  
+  return mapped
 }
 
 export interface PipelineKpis {

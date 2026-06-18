@@ -3,6 +3,7 @@ import {
   Pm_programmesService,
   Pm_projectsService,
 } from '@/generated'
+import { writeAuditLog } from './changelog.service'
 import type { Pm_portfolios } from '@/generated/models/Pm_portfoliosModel'
 import type { Pm_programmes } from '@/generated/models/Pm_programmesModel'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
@@ -158,9 +159,44 @@ export async function updatePortfolio(id: string, changes: Partial<PortfolioMode
     }
   }
 
+  let original: PortfolioModel | null = null
+  try {
+    const details = await Pm_portfoliosService.get(normalizedId, {
+      select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit'],
+    })
+    const uItem = unwrapSingle<Pm_portfolios>(details)
+    if (uItem) original = mapPortfolio(uItem)
+  } catch (e) {}
+
   try {
     const result = await Pm_portfoliosService.update(normalizedId, cleanPayload as any)
     try { console.debug('[dataverseService] updatePortfolio result:', result) } catch (e) {}
+
+    // Log audit entries for changed fields
+    if (original) {
+      const formatVal = (val: any): string => {
+        if (val === undefined || val === null) return ''
+        if (typeof val === 'object') return JSON.stringify(val)
+        return String(val)
+      }
+
+      for (const [key, value] of Object.entries(changes)) {
+        if (key === 'pm_portfolioid') continue
+        const oldVal = (original as any)[key]
+        if (formatVal(oldVal) !== formatVal(value)) {
+          const isStatus = key === 'pm_portfoliostatus' || key === 'statuscode' || key === 'statecode'
+          writeAuditLog({
+            actionType: isStatus ? 'StatusChange' : 'Update',
+            entityName: 'pm_portfolios',
+            recordId: normalizedId,
+            recordName: original.pm_portfolioname || '',
+            fieldName: key,
+            oldValue: formatVal(oldVal),
+            newValue: formatVal(value)
+          })
+        }
+      }
+    }
 
     // ALWAYS fetch fresh full details after update
     const fresh = await Pm_portfoliosService.get(normalizedId, {
@@ -175,7 +211,29 @@ export async function updatePortfolio(id: string, changes: Partial<PortfolioMode
 }
 export async function updatePortfolioStatus(id: string, status: number): Promise<void> {
   try { console.debug('[dataverseService] updatePortfolioStatus:', { id, status }) } catch (e) {}
+  
+  let recordName = id
+  let oldStatusStr = ''
+  try {
+    const details = await Pm_portfoliosService.get(id, { select: ['pm_portfolioname', 'pm_portfoliostatus'] })
+    const item = unwrapSingle<Pm_portfolios>(details)
+    if (item) {
+      if (item.pm_portfolioname) recordName = item.pm_portfolioname
+      oldStatusStr = String(item.pm_portfoliostatus ?? '')
+    }
+  } catch (e) {}
+
   await Pm_portfoliosService.update(id, { pm_portfoliostatus: status } as any)
+
+  writeAuditLog({
+    actionType: 'StatusChange',
+    entityName: 'pm_portfolios',
+    recordId: id,
+    recordName: recordName,
+    fieldName: 'pm_portfoliostatus',
+    oldValue: oldStatusStr,
+    newValue: String(status)
+  })
 }
 
 export async function createPortfolio(payload: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
@@ -198,6 +256,15 @@ export async function createPortfolio(payload: Partial<PortfolioModel>): Promise
     try { console.debug('[dataverseService] createPortfolio payload/result:', cleanPayload, result) } catch (e) {}
     const item = unwrapSingle<Pm_portfolios>(result)
     if (item) {
+      if (item.pm_portfolioid) {
+        writeAuditLog({
+          actionType: 'Create',
+          entityName: 'pm_portfolios',
+          recordId: item.pm_portfolioid,
+          recordName: item.pm_portfolioname || '',
+          newValue: `Portfolio created: ${item.pm_portfolioname || ''}`
+        })
+      }
       return mapPortfolio(item)
     }
     try {

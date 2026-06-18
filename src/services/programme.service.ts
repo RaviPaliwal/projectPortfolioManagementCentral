@@ -5,6 +5,7 @@ import {
   Pm_risksService,
   Pm_issuesService,
 } from '@/generated'
+import { writeAuditLog } from './changelog.service'
 import type { Pm_programmes } from '@/generated/models/Pm_programmesModel'
 import type { Pm_portfolios } from '@/generated/models/Pm_portfoliosModel'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
@@ -61,6 +62,15 @@ export async function createProgramme(payload: Partial<ProgrammeModel>): Promise
   try {
     const result = await Pm_programmesService.create({ ...defaults, ...cleanPayload } as any)
     const item = unwrapSingle<Pm_programmes>(result)
+    if (item && item.pm_programmeid) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_programmes',
+        recordId: item.pm_programmeid,
+        recordName: item.pm_programmename || '',
+        newValue: `Programme created: ${item.pm_programmename || ''}`
+      })
+    }
     return item ? mapProgramme(item) : null
   } catch (err: any) {
     console.error('[dataverseService] createProgramme failed:', err)
@@ -87,9 +97,44 @@ export async function updateProgramme(id: string, changes: Partial<ProgrammeMode
     cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${normalizeLookupId(changes._pm_portfolio_value)})`
   }
 
+  let original: ProgrammeModel | null = null
+  try {
+    const details = await Pm_programmesService.get(normalizedId, {
+      select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', '_pm_programmemanager_value', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'],
+    })
+    const uItem = unwrapSingle<Pm_programmes>(details)
+    if (uItem) original = mapProgramme(uItem)
+  } catch (e) {}
+
   try {
     const result = await Pm_programmesService.update(normalizedId, cleanPayload as any)
     try { console.debug('[dataverseService] updateProgramme result:', result) } catch (e) {}
+
+    // Log audit entries for changed fields
+    if (original) {
+      const formatVal = (val: any): string => {
+        if (val === undefined || val === null) return ''
+        if (typeof val === 'object') return JSON.stringify(val)
+        return String(val)
+      }
+
+      for (const [key, value] of Object.entries(changes)) {
+        if (key === 'pm_programmeid') continue
+        const oldVal = (original as any)[key]
+        if (formatVal(oldVal) !== formatVal(value)) {
+          const isStatus = key === 'pm_programmephase' || key === 'statuscode' || key === 'statecode'
+          writeAuditLog({
+            actionType: isStatus ? 'StatusChange' : 'Update',
+            entityName: 'pm_programmes',
+            recordId: normalizedId,
+            recordName: original.pm_programmename || '',
+            fieldName: key,
+            oldValue: formatVal(oldVal),
+            newValue: formatVal(value)
+          })
+        }
+      }
+    }
 
     // ALWAYS fetch fresh full details after update
     const fresh = await Pm_programmesService.get(normalizedId, {
@@ -105,11 +150,50 @@ export async function updateProgramme(id: string, changes: Partial<ProgrammeMode
 
 export async function updateProgrammePhase(id: string, phase: number): Promise<void> {
   try { console.debug('[dataverseService] updateProgrammePhase:', { id, phase }) } catch (e) {}
+  
+  let recordName = id
+  let oldPhaseStr = ''
+  try {
+    const details = await Pm_programmesService.get(id, { select: ['pm_programmename', 'pm_programmephase'] })
+    const item = unwrapSingle<Pm_programmes>(details)
+    if (item) {
+      if (item.pm_programmename) recordName = item.pm_programmename
+      oldPhaseStr = String(item.pm_programmephase ?? '')
+    }
+  } catch (e) {}
+
   await Pm_programmesService.update(id, { pm_programmephase: phase } as any)
+
+  writeAuditLog({
+    actionType: 'StatusChange',
+    entityName: 'pm_programmes',
+    recordId: id,
+    recordName: recordName,
+    fieldName: 'pm_programmephase',
+    oldValue: oldPhaseStr,
+    newValue: String(phase)
+  })
 }
 
 export async function deleteProgramme(id: string): Promise<void> {
+  let recordName = id
+  try {
+    const details = await Pm_programmesService.get(id, { select: ['pm_programmename'] })
+    const item = unwrapSingle<Pm_programmes>(details)
+    if (item?.pm_programmename) recordName = item.pm_programmename
+  } catch (e) {}
+
   await Pm_programmesService.delete(id)
+
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_programmes',
+    recordId: id,
+    recordName: recordName,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted'
+  })
 }
 
 export interface ProgrammeDetail {

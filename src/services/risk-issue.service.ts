@@ -3,6 +3,7 @@ import {
   Pm_issuesService,
   Pm_riskmitigationactionsService,
 } from '@/generated'
+import { writeAuditLog } from './changelog.service'
 import type { Pm_risks } from '@/generated/models/Pm_risksModel'
 import type { Pm_issues } from '@/generated/models/Pm_issuesModel'
 import type { Pm_riskmitigationactions } from '@/generated/models/Pm_riskmitigationactionsModel'
@@ -97,6 +98,15 @@ export async function createRisk(payload: Partial<RiskModel> & { pm_projectid: s
   } as any)
   try { console.debug('[dataverseService] createRisk payload/result:', payload, result) } catch (e) {}
   const item = unwrapSingle<Pm_risks>(result)
+  if (item && item.pm_riskid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_risks',
+      recordId: item.pm_riskid,
+      recordName: item.pm_risktitle || '',
+      newValue: `Risk created: ${item.pm_risktitle || ''}`
+    })
+  }
   return item ? {
     pm_riskid: item.pm_riskid,
     pm_risktitle: item.pm_risktitle,
@@ -128,6 +138,15 @@ export async function createIssue(payload: Partial<IssueModel> & { pm_projectid:
   } as any)
   try { console.log('[dataverseService] createIssue RAW result:', JSON.stringify(result), 'isArray:', Array.isArray(result), 'dataIsArray:', Array.isArray((result as any)?.data)) } catch (e) {}
   const item = unwrapSingle<Pm_issues>(result)
+  if (item && item.pm_issueid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_issues',
+      recordId: item.pm_issueid,
+      recordName: item.pm_issuetitle || '',
+      newValue: `Issue created: ${item.pm_issuetitle || ''}`
+    })
+  }
   return item ? {
     pm_issueid: item.pm_issueid,
     pm_issuetitle: item.pm_issuetitle,
@@ -224,10 +243,28 @@ export async function createRiskFull(payload: Partial<RiskModel>): Promise<RiskM
   }
   const result = await Pm_risksService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_risks>(result)
+  if (item && item.pm_riskid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_risks',
+      recordId: item.pm_riskid,
+      recordName: item.pm_risktitle || '',
+      newValue: `Risk created: ${item.pm_risktitle || ''}`
+    })
+  }
   return item ? mapRisk(item) : null
 }
 
 export async function updateRiskFull(id: string, changes: Partial<RiskModel>): Promise<RiskModel | null> {
+  let original: RiskModel | null = null
+  try {
+    const details = await Pm_risksService.get(id, {
+      select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskowner', 'pm_riskstatus', 'pm_escalated', 'pm_identifieddate', 'pm_targetclosedate']
+    })
+    const uItem = unwrapSingle<Pm_risks>(details)
+    if (uItem) original = mapRisk(uItem)
+  } catch (e) {}
+
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null &&
@@ -237,11 +274,55 @@ export async function updateRiskFull(id: string, changes: Partial<RiskModel>): P
   }
   const result = await Pm_risksService.update(id, cleanPayload as any)
   const item = unwrapSingle<Pm_risks>(result)
+
+  // Log audit entries for changed fields
+  if (original) {
+    const formatVal = (val: any): string => {
+      if (val === undefined || val === null) return ''
+      if (typeof val === 'object') return JSON.stringify(val)
+      return String(val)
+    }
+
+    for (const [key, value] of Object.entries(changes)) {
+      if (key === 'pm_riskid') continue
+      const oldVal = (original as any)[key]
+      if (formatVal(oldVal) !== formatVal(value)) {
+        const isStatus = key === 'pm_riskstatus' || key === 'statecode'
+        writeAuditLog({
+          actionType: isStatus ? 'StatusChange' : 'Update',
+          entityName: 'pm_risks',
+          recordId: id,
+          recordName: original.pm_risktitle || '',
+          fieldName: key,
+          oldValue: formatVal(oldVal),
+          newValue: formatVal(value)
+        })
+      }
+    }
+  }
+
   return item ? mapRisk(item) : null
 }
 
 export async function deleteRisk(id: string): Promise<void> {
+  let recordName = id
+  try {
+    const details = await Pm_risksService.get(id, { select: ['pm_risktitle'] })
+    const uItem = unwrapSingle<Pm_risks>(details)
+    if (uItem?.pm_risktitle) recordName = uItem.pm_risktitle
+  } catch (e) {}
+
   await Pm_risksService.delete(id)
+
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_risks',
+    recordId: id,
+    recordName: recordName,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted'
+  })
 }
 
 /**
@@ -356,10 +437,28 @@ export async function createIssueFull(payload: Partial<IssueModel>): Promise<Iss
   const result = await Pm_issuesService.create({ ...defaults, ...cleanPayload } as any)
   try { console.debug('[dataverseService] createIssueFull payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_issues>(result)
+  if (item && item.pm_issueid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_issues',
+      recordId: item.pm_issueid,
+      recordName: item.pm_issuetitle || '',
+      newValue: `Issue created: ${item.pm_issuetitle || ''}`
+    })
+  }
   return item ? mapIssue(item) : null
 }
 
 export async function updateIssueFull(id: string, changes: Partial<IssueModel>): Promise<IssueModel | null> {
+  let original: IssueModel | null = null
+  try {
+    const details = await Pm_issuesService.get(id, {
+      select: ['pm_issueid', 'pm_issuetitle', 'pm_issuedescription', 'pm_issuecategory', 'pm_ragstatus', 'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel', 'pm_impactlevel', 'pm_issuereference', 'pm_dateraised', 'pm_targetresolutiondate']
+    })
+    const uItem = unwrapSingle<Pm_issues>(details)
+    if (uItem) original = mapIssue(uItem)
+  } catch (e) {}
+
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null &&
@@ -394,10 +493,54 @@ export async function updateIssueFull(id: string, changes: Partial<IssueModel>):
   const result = await Pm_issuesService.update(id, cleanPayload as any)
   try { console.debug('[dataverseService] updateIssueFull id/changes/result:', id, cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_issues>(result)
+
+  // Log audit entries for changed fields
+  if (original) {
+    const formatVal = (val: any): string => {
+      if (val === undefined || val === null) return ''
+      if (typeof val === 'object') return JSON.stringify(val)
+      return String(val)
+    }
+
+    for (const [key, value] of Object.entries(changes)) {
+      if (key === 'pm_issueid') continue
+      const oldVal = (original as any)[key]
+      if (formatVal(oldVal) !== formatVal(value)) {
+        const isStatus = key === 'pm_issuestatus' || key === 'statecode'
+        writeAuditLog({
+          actionType: isStatus ? 'StatusChange' : 'Update',
+          entityName: 'pm_issues',
+          recordId: id,
+          recordName: original.pm_issuetitle || '',
+          fieldName: key,
+          oldValue: formatVal(oldVal),
+          newValue: formatVal(value)
+        })
+      }
+    }
+  }
+
   return item ? mapIssue(item) : null
 }
 
 export async function deleteIssue(id: string): Promise<void> {
+  let recordName = id
+  try {
+    const details = await Pm_issuesService.get(id, { select: ['pm_issuetitle'] })
+    const uItem = unwrapSingle<Pm_issues>(details)
+    if (uItem?.pm_issuetitle) recordName = uItem.pm_issuetitle
+  } catch (e) {}
+
   try { console.debug('[dataverseService] deleteIssue id:', id) } catch (e) {}
   await Pm_issuesService.delete(id)
+
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_issues',
+    recordId: id,
+    recordName: recordName,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted'
+  })
 }

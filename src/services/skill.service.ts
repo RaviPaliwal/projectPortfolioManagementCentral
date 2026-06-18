@@ -8,6 +8,7 @@ import { Pm_skillspm_skillcategory } from '@/generated/models/Pm_skillsModel'
 import type { Pm_resourceskills } from '@/generated/models/Pm_resourceskillsModel'
 import type { SkillModel, ResourceSkillModel } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
+import { writeAuditLog } from './changelog.service'
 
 export const mapSkill = (item: Pm_skills): SkillModel => ({
   pm_skillid: item.pm_skillid,
@@ -61,10 +62,26 @@ export async function createSkill(payload: Partial<SkillModel>): Promise<SkillMo
   const result = await Pm_skillsService.create({ ...defaults, ...cleanPayload } as any)
   try { console.debug('[dataverseService] createSkill payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_skills>(result)
+  if (item && item.pm_skillid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_skills',
+      recordId: item.pm_skillid,
+      recordName: item.pm_skillname || '',
+      newValue: `Skill created: ${item.pm_skillname || ''}`
+    })
+  }
   return item ? mapSkill(item) : null
 }
 
 export async function updateSkill(id: string, changes: Partial<SkillModel>): Promise<SkillModel | null> {
+  let original: SkillModel | null = null
+  try {
+    const details = await Pm_skillsService.get(id, { select: ['pm_skillid', 'pm_skillname', 'pm_skillcategory', 'pm_skilldescription', 'pm_isactive'] })
+    const uItem = unwrapSingle<Pm_skills>(details)
+    if (uItem) original = mapSkill(uItem)
+  } catch (e) {}
+
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null && value !== '' && key !== 'pm_skillid') {
@@ -74,12 +91,53 @@ export async function updateSkill(id: string, changes: Partial<SkillModel>): Pro
   const result = await Pm_skillsService.update(id, cleanPayload as any)
   try { console.debug('[dataverseService] updateSkill id/changes/result:', id, cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_skills>(result)
+
+  if (item && original) {
+    const formatVal = (val: any): string => {
+      if (val === undefined || val === null) return ''
+      if (typeof val === 'object') return JSON.stringify(val)
+      return String(val)
+    }
+
+    for (const [key, value] of Object.entries(changes)) {
+      if (key === 'pm_skillid') continue
+      const oldVal = (original as any)[key]
+      if (formatVal(oldVal) !== formatVal(value)) {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_skills',
+          recordId: id,
+          recordName: original.pm_skillname || '',
+          fieldName: key,
+          oldValue: formatVal(oldVal),
+          newValue: formatVal(value)
+        })
+      }
+    }
+  }
   return item ? mapSkill(item) : null
 }
 
 export async function deleteSkill(id: string): Promise<void> {
+  let recordName = id
+  try {
+    const details = await Pm_skillsService.get(id, { select: ['pm_skillname'] })
+    const uItem = unwrapSingle<Pm_skills>(details)
+    if (uItem?.pm_skillname) recordName = uItem.pm_skillname
+  } catch (e) {}
+
   try { console.debug('[dataverseService] deleteSkill id:', id) } catch (e) {}
   await Pm_skillsService.delete(id)
+
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_skills',
+    recordId: id,
+    recordName: recordName,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted'
+  })
 }
 
 export async function fetchResourceSkills(): Promise<ResourceSkillModel[]> {
@@ -179,10 +237,28 @@ export async function createResourceSkill(payload: Partial<ResourceSkillModel>):
   const result = await Pm_resourceskillsService.create({ ...defaults, ...cleanPayload } as any)
   try { console.debug('[dataverseService] createResourceSkill payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_resourceskills>(result)
+  if (item && item.pm_resourceskillid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_resourceskills',
+      recordId: item.pm_resourceskillid,
+      recordName: `Resource skill mapping`,
+      newValue: `Linked resource ${payload._pm_resource_value} to skill ${payload._pm_skill_value}`
+    })
+  }
   return item ? mapResourceSkill(item) : null
 }
 
 export async function updateResourceSkill(id: string, changes: Partial<ResourceSkillModel>): Promise<ResourceSkillModel | null> {
+  let original: ResourceSkillModel | null = null
+  try {
+    const details = await Pm_resourceskillsService.get(id, {
+      select: ['pm_resourceskillid', 'pm_proficiencylevel', 'pm_yearsofexperience', 'pm_certificationexpirydate', 'pm_certificationname', 'pm_certified', 'pm_primaryskill', '_pm_resource_value', '_pm_skill_value']
+    })
+    const uItem = unwrapSingle<Pm_resourceskills>(details)
+    if (uItem) original = mapResourceSkill(uItem)
+  } catch (e) {}
+
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null && value !== '' &&
@@ -193,10 +269,44 @@ export async function updateResourceSkill(id: string, changes: Partial<ResourceS
   const result = await Pm_resourceskillsService.update(id, cleanPayload as any)
   try { console.debug('[dataverseService] updateResourceSkill id/changes/result:', id, cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_resourceskills>(result)
+
+  if (item && original) {
+    const formatVal = (val: any): string => {
+      if (val === undefined || val === null) return ''
+      if (typeof val === 'object') return JSON.stringify(val)
+      return String(val)
+    }
+
+    for (const [key, value] of Object.entries(changes)) {
+      if (key === 'pm_resourceskillid') continue
+      const oldVal = (original as any)[key]
+      if (formatVal(oldVal) !== formatVal(value)) {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_resourceskills',
+          recordId: id,
+          recordName: `Resource skill mapping ${id}`,
+          fieldName: key,
+          oldValue: formatVal(oldVal),
+          newValue: formatVal(value)
+        })
+      }
+    }
+  }
   return item ? mapResourceSkill(item) : null
 }
 
 export async function deleteResourceSkill(id: string): Promise<void> {
   try { console.debug('[dataverseService] deleteResourceSkill id:', id) } catch (e) {}
   await Pm_resourceskillsService.delete(id)
+
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_resourceskills',
+    recordId: id,
+    recordName: `Resource skill mapping ${id}`,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted'
+  })
 }

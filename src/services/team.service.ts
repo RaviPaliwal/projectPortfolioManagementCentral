@@ -8,6 +8,7 @@ import type { Systemusers } from '@/generated/models/SystemusersModel'
 import type { Teams } from '@/generated/models/TeamsModel'
 import type { Teammemberships } from '@/generated/models/TeammembershipsModel'
 import { unwrapList, normalizeLookupId } from './common'
+import { writeAuditLog } from './changelog.service'
 
 export async function fetchSystemUsers(): Promise<Systemusers[]> {
   try {
@@ -111,9 +112,19 @@ export async function manageTeamMember(teamId: string, userId: string, action: '
     } as any);
  
     if (result && result.success) {
+      writeAuditLog({
+        actionType: 'Update',
+        entityName: 'teammemberships',
+        recordId: teamId,
+        recordName: `Team membership adjustment`,
+        fieldName: 'membership',
+        oldValue: action === 'Add' ? 'Not Member' : 'Member',
+        newValue: action === 'Add' ? 'Member' : 'Not Member',
+        description: `${action}ed user '${userId}' to/from team '${teamId}'`
+      })
       return true;
     } else {
-      console.warn(`[dataverseService] Flow returned a failure status:`, result?.error);
+      console.warn(`[dataverseService] manageTeamMember Flow returned a failure status:`, result?.error);
       return false;
     }
   } catch (err) {
