@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import {
   Box, Paper, Typography, useTheme,
   Table, TableBody, TableCell, TableHead, TableRow,
-  TableSortLabel, TablePagination, Button, IconButton,
+  TableSortLabel, TablePagination, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Avatar, Alert,
 } from '@mui/material'
@@ -21,7 +21,7 @@ import {
   rejectWorkflowStep,
 } from '@/services'
 import type { WorkflowApprovalStepModel } from '@/types/dataverse'
-import { PageHeader, TableShell, TableFooter, StatusTag, TaskLink } from '@/components/common'
+import { PageHeader, TableShell, TableFooter, StatusTag, TaskLink, Button, TableHeader } from '@/components/common'
 import { FORM_DIALOG_DECISION_EVENT } from '@/utils/formDialogEvents'
 
 const APPROVAL_STATUS_LABELS: Record<string, string> = { '0': 'Approved', '1': 'Pending' }
@@ -205,10 +205,9 @@ export default function PendingApprovalsPage() {
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setPage(0) }}
             sx={{ minWidth: 280 }}
-            slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
           />
           {searchQuery && (
-            <Button size="small" onClick={() => { setSearchQuery(''); setPage(0) }} sx={{ borderRadius: 1.5 }}>
+            <Button size="small" onClick={() => { setSearchQuery(''); setPage(0) }}>
               Clear
             </Button>
           )}
@@ -227,48 +226,14 @@ export default function PendingApprovalsPage() {
           }
         >
           <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
-            <TableHead>
-              <TableRow>
-                {([
-                  { field: 'order' as SortField, label: 'Step #', align: 'center' as const },
-                  { field: 'workflow' as SortField, label: 'Workflow' },
-                  { field: 'due' as SortField, label: 'Due Date' },
-                  { field: 'assigned' as SortField, label: 'Assigned To' },
-                  { label: 'Form' },
-                  { label: '', align: 'right' as const },
-                ]).map((col, idx) => (
-                  <TableCell
-                    key={idx}
-                    align={col.align || 'left'}
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: '0.75rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                      color: 'text.secondary',
-                      py: 1.5,
-                      borderBottom: '2px solid',
-                      borderColor: 'divider',
-                      cursor: col.field ? 'pointer' : 'default',
-                      '&:hover': col.field ? { color: 'primary.main' } : {},
-                      whiteSpace: 'nowrap',
-                    }}
-                    onClick={col.field ? () => handleSortClick(col.field!) : undefined}
-                  >
-                    {col.field ? (
-                      <TableSortLabel
-                        active={sort.field === col.field}
-                        direction={sort.field === col.field ? sort.dir : 'asc'}
-                      >
-                        {col.label}
-                      </TableSortLabel>
-                    ) : (
-                      col.label
-                    )}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
+            <TableHeader cells={[
+              { label: 'Step #', align: 'center', sortable: true, active: sort.field === 'order', dir: sort.dir, onClick: () => handleSortClick('order') },
+              { label: 'Workflow', sortable: true, active: sort.field === 'workflow', dir: sort.dir, onClick: () => handleSortClick('workflow') },
+              { label: 'Due Date', sortable: true, active: sort.field === 'due', dir: sort.dir, onClick: () => handleSortClick('due') },
+              { label: 'Assigned To', sortable: true, active: sort.field === 'assigned', dir: sort.dir, onClick: () => handleSortClick('assigned') },
+              { label: 'Form' },
+              { label: '', align: 'right' },
+            ]} />
             <TableBody>
               {paginatedSteps.map((step, idx) => {
                 const isOverdue = step.pm_duedate && new Date(step.pm_duedate) < new Date()
@@ -371,7 +336,7 @@ export default function PendingApprovalsPage() {
                           disabled={actionLoading === step.pm_workflowapprovalstepid}
                           onClick={() => handleApprove(step)}
                           startIcon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
-                          sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
+                          sx={{ fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
                         >
                           Approve
                         </Button>
@@ -382,7 +347,7 @@ export default function PendingApprovalsPage() {
                           disabled={actionLoading === step.pm_workflowapprovalstepid}
                           onClick={() => setRejectDialog({ open: true, step, reason: '' })}
                           startIcon={<CancelOutlinedIcon sx={{ fontSize: 16 }} />}
-                          sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
+                          sx={{ fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 80 }}
                         >
                           Reject
                         </Button>
@@ -417,7 +382,6 @@ export default function PendingApprovalsPage() {
         onClose={() => !actionLoading && setRejectDialog({ open: false, step: null, reason: '' })}
         maxWidth="sm"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
           <CancelOutlinedIcon sx={{ color: 'error.main' }} />
@@ -435,7 +399,6 @@ export default function PendingApprovalsPage() {
             value={rejectDialog.reason}
             onChange={(e) => setRejectDialog((prev) => ({ ...prev, reason: e.target.value }))}
             placeholder="Explain why this step is being rejected..."
-            slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             autoFocus
           />
         </DialogContent>
@@ -444,7 +407,6 @@ export default function PendingApprovalsPage() {
             onClick={() => setRejectDialog({ open: false, step: null, reason: '' })}
             variant="outlined"
             disabled={!!actionLoading}
-            sx={{ borderRadius: 1.5 }}
           >
             Cancel
           </Button>
@@ -454,7 +416,7 @@ export default function PendingApprovalsPage() {
             color="error"
             disabled={!!actionLoading}
             startIcon={actionLoading ? undefined : <CancelOutlinedIcon />}
-            sx={{ borderRadius: 1.5, fontWeight: 600 }}
+            sx={{ fontWeight: 600 }}
           >
             {actionLoading ? 'Rejecting...' : 'Reject Step'}
           </Button>

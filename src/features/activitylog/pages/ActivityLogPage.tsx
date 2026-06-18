@@ -17,7 +17,7 @@ import {
   FormControl,
   Select,
   MenuItem,
-  Button
+  useTheme
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import InfoIcon from '@mui/icons-material/Info'
@@ -36,7 +36,8 @@ import DnsIcon from '@mui/icons-material/Dns'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined'
 import GroupIcon from '@mui/icons-material/Group'
 
-import { PageHeader, KpiCardRow, DataverseTable } from '@/components/common'
+import { PageHeader, KpiCardRow, DataverseTable, Button } from '@/components/common'
+import { fontSizes } from '@/styles'
 import type { Column } from '@/components/common'
 import { useUser } from '@/context/UserContext'
 import { Pm_changelogentriesService } from '@/generated/services/Pm_changelogentriesService'
@@ -174,28 +175,28 @@ export default function ActivityLogPage() {
         label: 'TOTAL OPERATIONS',
         value: stats.total,
         icon: <HistoryIcon />,
-        color: '#0ea5e9', // blue
+        color: 'primary.main',
         subtitle: 'Latest 500 logs'
       },
       {
         label: 'RECORDS CREATED',
         value: stats.creates,
         icon: <CheckCircleOutlineIcon />,
-        color: '#10b981', // green
+        color: 'success.main',
         subtitle: stats.total > 0 ? `${Math.round((stats.creates / stats.total) * 100)}% of total` : '0%'
       },
       {
         label: 'UPDATES & CHANGES',
         value: stats.updates + stats.statusChanges,
         icon: <AccessTimeIcon />,
-        color: '#f59e0b', // orange
+        color: 'warning.main',
         subtitle: stats.total > 0 ? `${Math.round(((stats.updates + stats.statusChanges) / stats.total) * 100)}% of total` : '0%'
       },
       {
         label: 'ACTIVE ACTORS',
         value: stats.usersCount,
         icon: <GroupIcon />,
-        color: '#ef4444', // red
+        color: 'error.main',
         subtitle: 'Admins active'
       }
     ]
@@ -222,17 +223,14 @@ export default function ActivityLogPage() {
     const act = action !== undefined ? Number(action) : -1
     
     let label = 'UPDATE'
-    let color = '#0284c7' // blue
-    let bg = '#f0f9ff'
+    let color: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'default' = 'info'
 
     if (act === 0) { // StatusChange
       label = 'STATUS CHANGE'
-      color = '#c084fc' // purple
-      bg = '#faf5ff'
+      color = 'secondary'
     } else if (act === 2) { // Create
       label = 'CREATE'
-      color = '#22c55e' // green
-      bg = '#f0fdf4'
+      color = 'success'
     }
 
     return (
@@ -240,13 +238,10 @@ export default function ActivityLogPage() {
         label={label}
         size="small"
         variant="outlined"
+        color={color}
         sx={{
-          borderColor: color,
-          color: color,
-          bgcolor: bg,
           fontWeight: 700,
-          borderRadius: 1.5,
-          fontSize: '0.675rem',
+          fontSize: fontSizes.xs,
           letterSpacing: '0.3px',
           px: 0.5
         }}
@@ -265,46 +260,36 @@ export default function ActivityLogPage() {
     return userNameMap.get(cleanGuid) || (log._pm_changeby_value ? `User (${log._pm_changeby_value.substring(0, 8)}...)` : 'System')
   }
 
-  const getEntityTagColors = (name: string | undefined) => {
+  const getEntityColor = (name: string | undefined): 'primary' | 'secondary' | 'warning' | 'error' | 'default' => {
     const key = (name || '').toLowerCase()
-    if (key.includes('project')) {
-      return { border: '#bae6fd', bg: '#f0f9ff', text: '#0284c7' }
-    }
-    if (key.includes('portfolio')) {
-      return { border: '#e9d5ff', bg: '#faf5ff', text: '#9c27b0' }
-    }
-    if (key.includes('programme')) {
-      return { border: '#fed7aa', bg: '#fffbeb', text: '#d97706' }
-    }
-    if (key.includes('risk') || key.includes('issue')) {
-      return { border: '#fecaca', bg: '#fef2f2', text: '#ef4444' }
-    }
-    return { border: '#cbd5e1', bg: '#f8fafc', text: '#64748b' }
+    if (key.includes('project')) return 'primary'
+    if (key.includes('portfolio')) return 'secondary'
+    if (key.includes('programme')) return 'warning'
+    if (key.includes('risk') || key.includes('issue')) return 'error'
+    return 'default'
   }
 
   const ModuleTag = ({ entityName }: { entityName: string | undefined }) => {
-    if (!entityName) return <Chip label="SYSTEM" size="small" variant="outlined" sx={{ borderRadius: 1.5, fontWeight: 700 }} />
+    if (!entityName) return <Chip label="SYSTEM" size="small" variant="outlined" sx={{ fontWeight: 700 }} />
     const label = getEntityLabel(entityName).toUpperCase()
-    const colors = getEntityTagColors(entityName)
+    const color = getEntityColor(entityName)
     
     return (
       <Chip
         label={label}
         size="small"
         variant="outlined"
+        color={color}
         sx={{
-          borderColor: colors.border,
-          bgcolor: colors.bg,
-          color: colors.text,
           fontWeight: 700,
-          borderRadius: 1.5,
-          fontSize: '0.675rem'
+          fontSize: fontSizes.xs
         }}
       />
     )
   }
 
   const RecordCell = ({ log }: { log: Pm_changelogentries }) => {
+    const theme = useTheme()
     const recordName = log.pm_recordname || 'System Auto'
     const initials = recordName
       .split(' ')
@@ -313,7 +298,14 @@ export default function ActivityLogPage() {
       .substring(0, 1)
       .toUpperCase()
 
-    const colors = ['#22c55e', '#ef4444', '#f59e0b', '#0ea5e9', '#8b5cf6', '#ec4899']
+    const colors = [
+      theme.palette.success.main,
+      theme.palette.error.main,
+      theme.palette.warning.main,
+      theme.palette.primary.main,
+      theme.palette.secondary.main,
+      theme.palette.info.main
+    ]
     let hash = 0
     for (let i = 0; i < recordName.length; i++) {
       hash = recordName.charCodeAt(i) + ((hash << 5) - hash)
@@ -328,7 +320,7 @@ export default function ActivityLogPage() {
             height: 28, 
             bgcolor: color, 
             color: '#fff', 
-            fontSize: '0.75rem', 
+            fontSize: fontSizes.sm, 
             fontWeight: 700,
             boxShadow: 'none'
           }}
@@ -340,7 +332,7 @@ export default function ActivityLogPage() {
             {recordName}
           </Typography>
           {log.pm_fieldname && (
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.725rem', fontFamily: 'monospace' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs, fontFamily: 'monospace' }}>
               {log.pm_fieldname}
             </Typography>
           )}
@@ -357,7 +349,7 @@ export default function ActivityLogPage() {
       <Tooltip title={exact} arrow placement="top">
         <Stack direction="row" spacing={0.8} sx={{ alignItems: "center", color: "text.secondary" }}>
           <AccessTimeIcon sx={{ fontSize: 14, opacity: 0.6 }} />
-          <Typography variant="body2" sx={{ fontSize: '0.825rem' }}>
+          <Typography variant="body2" sx={{ fontSize: fontSizes.sm }}>
             {relative}
           </Typography>
         </Stack>
@@ -460,7 +452,7 @@ export default function ActivityLogPage() {
   )
 
   return (
-    <Box sx={{ pb: 4, bgcolor: '#f8fafc', minHeight: '100vh', p: 3, borderRadius: 2 }}>
+    <Box sx={{ pb: 4, bgcolor: 'background.default', minHeight: '100vh', p: 3 }}>
       <PageHeader
         title="Admin Activity Log"
         subtitle="Track mutations, record updates, and status adjustments across the portfolio system."
@@ -469,7 +461,6 @@ export default function ActivityLogPage() {
             variant="outlined"
             startIcon={<RefreshIcon />}
             onClick={handleRefresh}
-            sx={{ borderRadius: 1.5, fontWeight: 600, px: 2, bgcolor: '#fff', borderColor: 'divider' }}
           >
             Refresh
           </Button>
@@ -510,16 +501,6 @@ export default function ActivityLogPage() {
         onClose={() => setSelectedLog(null)}
         maxWidth="md"
         fullWidth
-        slotProps={{ 
-          paper: { 
-            sx: { 
-              borderRadius: 3, 
-              overflow: 'hidden', 
-              boxShadow: '0 12px 32px rgba(0,0,0,0.08)',
-              bgcolor: '#fff'
-            } 
-          } 
-        }}
       >
         {selectedLog && (
           <>
@@ -529,7 +510,7 @@ export default function ActivityLogPage() {
                 py: 2.5, 
                 borderBottom: '1px solid', 
                 borderColor: 'divider', 
-                bgcolor: '#fff',
+                bgcolor: 'background.paper',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between'
@@ -549,13 +530,13 @@ export default function ActivityLogPage() {
               <Box sx={{ ml: 2 }}>{getActionChip(selectedLog.pm_actiontype)}</Box>
             </DialogTitle>
 
-            <DialogContent sx={{ px: 3.5, py: 3, bgcolor: '#fff' }}>
+            <DialogContent sx={{ px: 3.5, py: 3, bgcolor: 'background.paper' }}>
               <Grid container spacing={3}>
                 {/* Visual Summary Box */}
                 <Grid size={{ xs: 12 }}>
                   <Box
                     sx={{
-                      bgcolor: '#f8fafc',
+                      bgcolor: 'background.default',
                       borderLeft: '4px solid',
                       borderColor: 'primary.main',
                       p: 2.5,
@@ -563,10 +544,10 @@ export default function ActivityLogPage() {
                       mt: 1.5
                     }}
                   >
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.725rem' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>
                       Change Description
                     </Typography>
-                    <Typography variant="body2" color="text.primary" sx={{ lineHeight: 1.5, fontSize: '0.875rem' }}>
+                    <Typography variant="body2" color="text.primary" sx={{ lineHeight: 1.5, fontSize: fontSizes.base }}>
                       {selectedLog.pm_description || 'No description provided.'}
                     </Typography>
                   </Box>
@@ -574,7 +555,7 @@ export default function ActivityLogPage() {
 
                 {/* Actor Profile & Target Record row */}
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Card variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: '#fff', boxShadow: 'none', borderColor: 'divider', height: '100%' }}>
+                  <Card variant="outlined" sx={{ p: 2, bgcolor: 'background.paper', boxShadow: 'none', borderColor: 'divider', height: '100%' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                       Performed By
                     </Typography>
@@ -598,7 +579,7 @@ export default function ActivityLogPage() {
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Card variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: '#fff', boxShadow: 'none', borderColor: 'divider', height: '100%' }}>
+                  <Card variant="outlined" sx={{ p: 2, bgcolor: 'background.paper', boxShadow: 'none', borderColor: 'divider', height: '100%' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                       Target Record
                     </Typography>
@@ -638,7 +619,7 @@ export default function ActivityLogPage() {
                         borderColor: 'divider',
                         borderRadius: 2,
                         p: 3,
-                        bgcolor: '#fcfaff',
+                        bgcolor: 'action.hover',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -647,12 +628,12 @@ export default function ActivityLogPage() {
                     >
                       <Stack spacing={0.5} sx={{ alignItems: 'center' }}>
                         <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700 }}>Before</Typography>
-                        <Chip label={selectedLog.pm_oldvalue || 'Unknown'} color="error" variant="outlined" sx={{ fontWeight: 700, borderRadius: 1.5 }} />
+                        <Chip label={selectedLog.pm_oldvalue || 'Unknown'} color="error" variant="outlined" sx={{ fontWeight: 700 }} />
                       </Stack>
                       <ArrowForwardIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
                       <Stack spacing={0.5} sx={{ alignItems: 'center' }}>
                         <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700 }}>After</Typography>
-                        <Chip label={selectedLog.pm_newvalue || 'Unknown'} color="success" sx={{ fontWeight: 700, borderRadius: 1.5 }} />
+                        <Chip label={selectedLog.pm_newvalue || 'Unknown'} color="success" sx={{ fontWeight: 700 }} />
                       </Stack>
                     </Box>
                   )}
@@ -661,27 +642,27 @@ export default function ActivityLogPage() {
                   {Number(selectedLog.pm_actiontype) === 1 && (
                     <Grid container spacing={2}>
                       <Grid size={{ xs: 12, md: 4 }}>
-                        <Card variant="outlined" sx={{ p: 2, height: '100%', bgcolor: '#f8fafc', borderRadius: 2, borderStyle: 'dashed' }}>
+                        <Card variant="outlined" sx={{ p: 2, height: '100%', bgcolor: 'background.default', borderStyle: 'dashed' }}>
                           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block', mb: 0.5, textTransform: 'uppercase' }}>Field Name</Typography>
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'primary.main', fontSize: '0.85rem' }}>
+                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'primary.main', fontSize: fontSizes.sm }}>
                             {selectedLog.pm_fieldname || 'N/A'}
                           </Typography>
                         </Card>
                       </Grid>
                       
                       <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Card variant="outlined" sx={{ p: 2, height: '100%', borderColor: '#fee2e2', bgcolor: '#fef2f2', borderRadius: 2 }}>
+                        <Card variant="outlined" sx={{ p: 2, height: '100%', borderColor: 'error.light', bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2' }}>
                           <Typography variant="caption" color="error.main" sx={{ fontWeight: 800, display: 'block', mb: 0.5 }}>BEFORE (OLD VALUE)</Typography>
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'error.dark', wordBreak: 'break-all', whiteSpace: 'pre-wrap', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                          <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'error.dark', wordBreak: 'break-all', whiteSpace: 'pre-wrap', fontSize: fontSizes.sm, lineHeight: 1.4 }}>
                             {selectedLog.pm_oldvalue || '(empty)'}
                           </Typography>
                         </Card>
                       </Grid>
 
                       <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Card variant="outlined" sx={{ p: 2, height: '100%', borderColor: '#dcfce7', bgcolor: '#f0fdf4', borderRadius: 2 }}>
+                        <Card variant="outlined" sx={{ p: 2, height: '100%', borderColor: 'success.light', bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(34, 197, 94, 0.1)' : '#f0fdf4' }}>
                           <Typography variant="caption" color="success.main" sx={{ fontWeight: 800, display: 'block', mb: 0.5 }}>AFTER (NEW VALUE)</Typography>
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'success.dark', wordBreak: 'break-all', whiteSpace: 'pre-wrap', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                          <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'success.dark', wordBreak: 'break-all', whiteSpace: 'pre-wrap', fontSize: fontSizes.sm, lineHeight: 1.4 }}>
                             {selectedLog.pm_newvalue || '(empty)'}
                           </Typography>
                         </Card>
@@ -694,16 +675,16 @@ export default function ActivityLogPage() {
                     <Box
                       sx={{
                         border: '1px dashed',
-                        borderColor: '#bbf7d0',
+                        borderColor: 'success.light',
                         borderRadius: 2,
                         p: 3,
-                        bgcolor: '#f0fdf4',
+                        bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(34, 197, 94, 0.1)' : '#f0fdf4',
                         textAlign: 'center'
                       }}
                     >
-                      <CheckCircleOutlineIcon sx={{ color: '#22c55e', fontSize: 40, mb: 1 }} />
-                      <Typography variant="subtitle2" sx={{ color: '#166534', fontWeight: 800, mb: 0.5 }}>Record Created Successfully</Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.825rem' }}>
+                      <CheckCircleOutlineIcon sx={{ color: 'success.main', fontSize: 40, mb: 1 }} />
+                      <Typography variant="subtitle2" sx={{ color: theme => theme.palette.mode === 'dark' ? 'success.light' : 'success.dark', fontWeight: 800, mb: 0.5 }}>Record Created Successfully</Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: fontSizes.sm }}>
                         This audit log tracks the initial registration of this record within the portfolio environment.
                       </Typography>
                     </Box>
@@ -753,7 +734,7 @@ export default function ActivityLogPage() {
                           variant="body2" 
                           sx={{ 
                             fontFamily: 'monospace', 
-                            fontSize: '0.75rem', 
+                            fontSize: fontSizes.sm, 
                             wordBreak: 'break-all',
                             color: 'text.primary',
                             fontWeight: 600
@@ -768,8 +749,8 @@ export default function ActivityLogPage() {
                 )}
               </Grid>
             </DialogContent>
-            <DialogActions sx={{ px: 3.5, pb: 2.5, pt: 1, borderTop: '1px solid', borderColor: 'divider', bgcolor: '#fff' }}>
-              <Button onClick={() => setSelectedLog(null)} variant="outlined" sx={{ fontWeight: 700, borderRadius: 1.5, px: 3 }}>
+            <DialogActions sx={{ px: 3.5, pb: 2.5, pt: 1, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+              <Button onClick={() => setSelectedLog(null)} variant="outlined" sx={{ fontWeight: 700, px: 3 }}>
                 Close
               </Button>
             </DialogActions>

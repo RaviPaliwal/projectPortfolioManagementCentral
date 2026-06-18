@@ -292,7 +292,7 @@ export default function ApprovalRequestsPage() {
         open={!!selectedRequest}
         onClose={() => setSelectedRequest(null)}
         title={selectedRequest?.pm_requesttitle ?? ''}
-        icon={<ChecklistIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
+        icon={<ChecklistIcon sx={{ color: 'primary.main', fontSize: fontSizes.xl }} />}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             {canEdit && (

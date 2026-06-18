@@ -1,6 +1,6 @@
 import React from 'react';
-import { Table, TableBody, TableCell, TableHead, TableRow, Paper, Box, TablePagination } from '@mui/material';
-import { TableShell, SearchFilterBar, ExportButton } from '@/components/common';
+import { Table, TableBody, TableCell, TableRow, Paper, Box, TablePagination } from '@mui/material';
+import { TableShell, SearchFilterBar, ExportButton, TableHeader } from '@/components/common';
 import { useDataGrid, type SortState } from '@/hooks/useDataGrid';
 import type { ReactNode } from 'react';
 
@@ -93,20 +93,12 @@ export function DataverseTable<T extends Record<string, any>>({
         emptyTitle={emptyTitle}
       >
         <Table size="small">
-          <TableHead>
-            <TableRow sx={{ bgcolor: 'background.default' }}>
-              {columns.map((col) => (
-                <TableCell
-                  key={col.key as string}
-                  align={col.align}
-                  sx={{ fontWeight: 700, width: col.width }}
-                >
-                  {col.label}
-                </TableCell>
-              ))}
-              {actions && <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>}
-            </TableRow>
-          </TableHead>
+          <TableHeader
+            cells={[
+              ...columns.map((col) => ({ label: col.label, align: col.align as 'left'|'right'|'center'|undefined, width: col.width })),
+              ...(actions ? [{ label: 'Actions', align: 'right' as const }] : []),
+            ]}
+          />
           <TableBody>
             {paginatedData.map((item, idx) => {
               const idKey = Object.keys(item).find(k => k.endsWith('id')) || 'id';

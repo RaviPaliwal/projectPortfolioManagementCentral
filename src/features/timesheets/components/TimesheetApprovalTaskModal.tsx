@@ -17,6 +17,7 @@ import type { TimesheetModel, TimesheetEntryModel } from '@/types/dataverse'
 import { LedgerCalendar } from '@/components/common'
 import type { CalendarEntry } from '@/components/common/LedgerCalendar/LedgerCalendar'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
+import { fontSizes } from '@/styles'
 
 interface TimesheetApprovalTaskModalProps {
   open: boolean
@@ -29,10 +30,10 @@ interface TimesheetApprovalTaskModalProps {
 }
 
 const ACTIVITY_COLORS: Record<string, string> = {
-  chargeable: '#22c55e',
-  admin: '#6b7280',
-  leave: '#f59e0b',
-  sick: '#ef4444',
+  chargeable: 'success.main',
+  admin: 'grey.500',
+  leave: 'warning.main',
+  sick: 'error.main',
 }
 
 function getActivity(entry: TimesheetEntryModel): string {
@@ -102,7 +103,7 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
           </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'white' }}>
+          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'common.white' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -120,14 +121,14 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
                 <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                 <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Resource</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: fontSizes.xs, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Resource</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{timesheet.pm_resourcename || timesheet.pm_ownername || '\u2014'}</Typography>
                 </Box>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
                 <DateRangeIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                 <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Period</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: fontSizes.xs, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Period</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {timesheet.pm_periodstartdate ? dateFormatter.format(new Date(timesheet.pm_periodstartdate)) : '\u2014'}
                     {' \u2013 '}
@@ -138,7 +139,7 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
                 <BusinessIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                 <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Timesheet</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: fontSizes.xs, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Timesheet</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{timesheet.pm_timesheetname || '\u2014'}</Typography>
                 </Box>
               </Box>
@@ -146,22 +147,22 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
 
             {/* Summary Cards */}
             <Box sx={{ display: 'flex', gap: 1.5, p: 2.5, pb: 0 }}>
-              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, textAlign: 'center' }}>
+              <Paper variant="outlined" sx={{ p: 1.5, flex: 1, textAlign: 'center' }}>
                 <AccessTimeIcon sx={{ fontSize: 20, color: 'primary.main', mb: 0.5 }} />
                 <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{totalHours.toFixed(1)}</Typography>
                 <Typography variant="caption" color="text.secondary">Total Hours</Typography>
               </Paper>
-              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, textAlign: 'center' }}>
+              <Paper variant="outlined" sx={{ p: 1.5, flex: 1, textAlign: 'center' }}>
                 <CheckCircleIcon sx={{ fontSize: 20, color: 'success.main', mb: 0.5 }} />
                 <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'success.main' }}>{chargeableHours.toFixed(1)}</Typography>
                 <Typography variant="caption" color="text.secondary">Chargeable</Typography>
               </Paper>
-              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, textAlign: 'center' }}>
+              <Paper variant="outlined" sx={{ p: 1.5, flex: 1, textAlign: 'center' }}>
                 <CancelIcon sx={{ fontSize: 20, color: 'text.disabled', mb: 0.5 }} />
                 <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'text.secondary' }}>{(totalHours - chargeableHours).toFixed(1)}</Typography>
                 <Typography variant="caption" color="text.secondary">Non-Chargeable</Typography>
               </Paper>
-              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, textAlign: 'center' }}>
+              <Paper variant="outlined" sx={{ p: 1.5, flex: 1, textAlign: 'center' }}>
                 <EventNoteIcon sx={{ fontSize: 20, color: 'info.main', mb: 0.5 }} />
                 <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{entries.length}</Typography>
                 <Typography variant="caption" color="text.secondary">Entries</Typography>
@@ -193,11 +194,12 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
                       month={start.getMonth()}
                       entries={calEntries}
                       hideLegend
+                      colorMap={ACTIVITY_COLORS}
                     />
                   )
                 })()}
                 {/* Total Bar */}
-                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: 'background.default', borderRadius: 1.5, display: 'flex', justifyContent: 'space-between' }}>
+                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: 'background.default', display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body2" sx={{ fontWeight: 700 }}>Total: {totalHours.toFixed(1)}h</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: timesheet?.pm_totalhours != null && Math.abs(totalHours - timesheet.pm_totalhours) > 0.01 ? 'warning.main' : 'inherit' }}>
                     {timesheet?.pm_totalhours != null ? '(Recorded: ' + timesheet.pm_totalhours + 'h)' : ''}
@@ -207,7 +209,7 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
             )}
             {entries.length === 0 && (
               <Box sx={{ p: 2.5 }}>
-                <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', borderRadius: 1.5 }}>
+                <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
                   <Typography variant="body2" color="text.secondary">No entries found for this timesheet.</Typography>
                 </Paper>
               </Box>

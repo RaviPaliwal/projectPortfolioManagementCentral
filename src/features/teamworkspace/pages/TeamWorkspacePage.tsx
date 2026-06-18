@@ -2,14 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Box,
   Alert,
-  Button,
   Typography,
   Snackbar,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import BugReportIcon from '@mui/icons-material/BugReport'
-import { PageHeader } from '@/components/common'
+import { PageHeader, Button } from '@/components/common'
 import { useUser } from '@/context/UserContext'
 import { fetchIssuesForSystemUser, fetchAllRisks, fetchMitigationActions, createIssueFull, createRiskFull, fetchIssueComments, createIssueComment, fetchProjectsForSystemUser, fetchResources } from '@/services'
 import { Pm_programmesService } from '@/generated'
@@ -336,7 +335,7 @@ export default function TeamWorkspacePage() {
     <Box>
       {/* Alert Messages */}
       {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: 1.5 }}>
+        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
@@ -351,7 +350,7 @@ export default function TeamWorkspacePage() {
               variant="outlined"
               startIcon={<WarningAmberIcon />}
               onClick={() => setReportRiskOpen(true)}
-              sx={{ borderRadius: 1.5, fontWeight: 600 }}
+              sx={{ fontWeight: 600 }}
             >
               Report Risk
             </Button>
@@ -359,7 +358,7 @@ export default function TeamWorkspacePage() {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setLogIssueOpen(true)}
-              sx={{ borderRadius: 1.5, fontWeight: 600 }}
+              sx={{ fontWeight: 600 }}
             >
               Log Issue
             </Button>
@@ -437,7 +436,6 @@ export default function TeamWorkspacePage() {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         sx={{
           '& .MuiSnackbarContent-root': {
-            borderRadius: 1.5,
             fontWeight: 600,
           },
         }}

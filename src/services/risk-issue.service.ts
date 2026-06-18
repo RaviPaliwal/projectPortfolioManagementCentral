@@ -4,6 +4,7 @@ import {
   Pm_riskmitigationactionsService,
 } from '@/generated'
 import { writeAuditLog } from './changelog.service'
+import { fetchResourceBySystemUserId } from './resource.service'
 import type { Pm_risks } from '@/generated/models/Pm_risksModel'
 import type { Pm_issues } from '@/generated/models/Pm_issuesModel'
 import type { Pm_riskmitigationactions } from '@/generated/models/Pm_riskmitigationactionsModel'
@@ -41,7 +42,6 @@ async function resolveRiskOwnerResourceId(id: string): Promise<string | null> {
   
   // Try 2: resolve systemuser → resource
   try {
-    const { fetchResourceBySystemUserId } = await import('./resource.service')
     const resource = await fetchResourceBySystemUserId(id)
     console.log('[resolveRiskOwnerResourceId] Try 2 - fetchResourceBySystemUserId result:', resource ? JSON.stringify({ pm_resourceid: resource.pm_resourceid, pm_fullname: resource.pm_fullname }) : null)
     if (resource?.pm_resourceid) {

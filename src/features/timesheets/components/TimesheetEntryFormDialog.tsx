@@ -4,7 +4,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   Typography,
   Grid,
   TextField,
@@ -14,6 +13,7 @@ import {
   Autocomplete,
   Alert,
 } from '@mui/material'
+import { Button } from '@/components/common'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 
 interface ProjectOption {
@@ -81,11 +81,10 @@ export function TimesheetEntryFormDialog({
       onClose={() => !loading && onClose()}
       maxWidth="sm"
       fullWidth
-      slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
     >
       <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', borderRadius: 1.5 }}>
-          <AccessTimeIcon sx={{ fontSize: 18, color: '#fff' }} />
+        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+          <AccessTimeIcon sx={{ fontSize: 18, color: 'common.white' }} />
         </Avatar>
         Log Time Entry
       </DialogTitle>
@@ -95,7 +94,7 @@ export function TimesheetEntryFormDialog({
         </Typography>
 
         {validationError && (
-          <Alert severity="warning" sx={{ mb: 2, borderRadius: 1.5 }}>
+          <Alert severity="warning" sx={{ mb: 2 }}>
             {validationError}
           </Alert>
         )}
@@ -112,7 +111,7 @@ export function TimesheetEntryFormDialog({
               onChange={(e) => setForm((f) => ({ ...f, pm_workdate: e.target.value }))}
               slotProps={{
                 inputLabel: { shrink: true },
-                input: { sx: { borderRadius: 1.5 }, inputProps: { max: todayStr() } },
+                input: { inputProps: { max: todayStr() } },
               }}
             />
           </Grid>
@@ -125,7 +124,7 @@ export function TimesheetEntryFormDialog({
               size="small"
               value={form.pm_hoursworked}
               onChange={(e) => setForm((f) => ({ ...f, pm_hoursworked: Number(e.target.value) }))}
-              slotProps={{ input: { sx: { borderRadius: 1.5 }, inputProps: { min: 0, max: 24, step: 0.5 } } }}
+              slotProps={{ input: { inputProps: { min: 0, max: 24, step: 0.5 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
@@ -160,7 +159,6 @@ export function TimesheetEntryFormDialog({
               value={form.pm_worknotes}
               onChange={(e) => setForm((f) => ({ ...f, pm_worknotes: e.target.value }))}
               placeholder="What did you work on?"
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
@@ -178,14 +176,13 @@ export function TimesheetEntryFormDialog({
         </Grid>
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-        <Button onClick={onClose} variant="outlined" disabled={loading} sx={{ borderRadius: 1.5 }}>
+        <Button onClick={onClose} variant="outlined" disabled={loading}>
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
           disabled={!form.pm_workdate || form.pm_hoursworked <= 0 || loading || !!validationError}
-          sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
         >
           {loading ? 'Adding...' : 'Add Entry'}
         </Button>

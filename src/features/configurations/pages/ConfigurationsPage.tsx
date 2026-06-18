@@ -92,14 +92,14 @@ export default function ConfigurationsPage({ onNavigate }: ConfigurationsPagePro
       title: 'Workflows',
       description: 'Design and manage automated approval paths and business processes.',
       icon: <AccountTreeIcon fontSize="large" />,
-      color: '#3b82f6'
+      color: 'primary.main'
     },
     {
       key: 'teamadmin' as TabKey,
       title: 'Teams & Users',
       description: 'Manage administrative teams, memberships, and security assignments.',
       icon: <PeopleIcon fontSize="large" />,
-      color: '#10b981'
+      color: 'success.main'
     },
     {
       key: 'skills' as TabKey,
@@ -120,7 +120,7 @@ export default function ConfigurationsPage({ onNavigate }: ConfigurationsPagePro
       title: 'Resources',
       description: 'Manage resource profiles, capacities, daily rates, and system user mappings.',
       icon: <AssignmentIndIcon fontSize="large" />,
-      color: '#8b5cf6'
+      color: 'secondary.main'
     }
   ]
 

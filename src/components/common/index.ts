@@ -76,6 +76,9 @@ export { DecisionBox } from './DecisionBox/DecisionBox'
 export type { DecisionBoxProps } from './DecisionBox/DecisionBox'
 
 export { DataverseTable } from './DataverseTable/DataverseTable'
+
+export { TableHeader } from './TableHeader/TableHeader'
+export type { HeaderCell } from './TableHeader/TableHeader'
 export type { DataverseTableProps, Column } from './DataverseTable/DataverseTable'
 
 export { ConfirmDialog } from './ConfirmDialog/ConfirmDialog'

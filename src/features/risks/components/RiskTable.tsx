@@ -5,7 +5,6 @@ import {
   Avatar,
   Tooltip,
   Table,
-  TableHead,
   TextField,
   TableBody,
   TableRow,
@@ -13,7 +12,6 @@ import {
   TablePagination,
   Paper,
   useTheme,
-  TableSortLabel,
   MenuItem,
   Button,
 } from '@mui/material'
@@ -24,7 +22,7 @@ import AddIcon from '@mui/icons-material/Add'
 import FlagIcon from '@mui/icons-material/Flag'
 import type { RiskModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { TableFooter, TableShell, SearchFilterBar, StatusTag } from '@/components/common'
+import { TableFooter, TableShell, SearchFilterBar, StatusTag, TableHeader } from '@/components/common'
 import {
   RISK_CATEGORY_LABELS,
   RISK_CATEGORY_COLORS,
@@ -94,9 +92,9 @@ export const RiskTable = ({
     initialSort: { field: 'pm_risktitle', dir: 'asc' },
     searchFields: ['pm_risktitle', 'pm_riskownername', 'pm_riskdescription'],
     filterFn: (r) => {
-      if (categoryFilter && String(r.pm_riskcategory ?? '') !== categoryFilter) return false
-      if (ragFilter && String(r.pm_ragstatus ?? '') !== ragFilter) return false
-      if (statusFilter && String(r.pm_riskstatus ?? '') !== statusFilter) return false
+      if (categoryFilter !== 'all' && String(r.pm_riskcategory ?? '') !== categoryFilter) return false
+      if (ragFilter !== 'all' && String(r.pm_ragstatus ?? '') !== ragFilter) return false
+      if (statusFilter !== 'all' && String(r.pm_riskstatus ?? '') !== statusFilter) return false
       return true
     },
   })
@@ -109,9 +107,9 @@ export const RiskTable = ({
         searchPlaceholder="Search by title, owner, description…"
         onClear={() => {
           reset()
-          setCategoryFilter('')
-          setRagFilter('')
-          setStatusFilter('')
+          setCategoryFilter('all')
+          setRagFilter('all')
+          setStatusFilter('all')
         }}
         extraFilters={
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -123,9 +121,8 @@ export const RiskTable = ({
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 fullWidth
                 size="small"
-                slotProps={{ select: { displayEmpty: true } }}
               >
-                <MenuItem value="">All</MenuItem>
+                <MenuItem value="all">All</MenuItem>
                 {Object.entries(RISK_CATEGORY_LABELS).map(([k, v]) => (
                   <MenuItem key={k} value={k}>{v}</MenuItem>
                 ))}
@@ -139,9 +136,8 @@ export const RiskTable = ({
                 onChange={(e) => setRagFilter(e.target.value)}
                 fullWidth
                 size="small"
-                slotProps={{ select: { displayEmpty: true } }}
               >
-                <MenuItem value="">All</MenuItem>
+                <MenuItem value="all">All</MenuItem>
                 {Object.entries(RAG_LABELS).map(([k, v]) => (
                   <MenuItem key={k} value={k}>{v}</MenuItem>
                 ))}
@@ -155,9 +151,8 @@ export const RiskTable = ({
                 onChange={(e) => setStatusFilter(e.target.value)}
                 fullWidth
                 size="small"
-                slotProps={{ select: { displayEmpty: true } }}
               >
-                <MenuItem value="">All</MenuItem>
+                <MenuItem value="all">All</MenuItem>
                 {Object.entries(RISK_STATUS_LABELS).map(([k, v]) => (
                   <MenuItem key={k} value={k}>{v}</MenuItem>
                 ))}
@@ -171,60 +166,28 @@ export const RiskTable = ({
         loading={loading}
         empty={filteredCount === 0}
         emptyIcon={<WarningAmberIcon />}
-        emptyTitle={searchQuery || categoryFilter || ragFilter || statusFilter
+        emptyTitle={searchQuery || categoryFilter !== 'all' || ragFilter !== 'all' || statusFilter !== 'all'
           ? 'No risks match your criteria.'
           : 'No risks found.'}
-        emptyAction={!searchQuery && !categoryFilter && !ragFilter && !statusFilter && (
+        emptyAction={!searchQuery && categoryFilter === 'all' && ragFilter === 'all' && statusFilter === 'all' && (
           <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreate}>
             Add your first risk
           </Button>
         )}
       >
         <Table stickyHeader size="small" sx={{ minWidth: 1000 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5, width: 50 }}>
-                #
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                <TableSortLabel active={sort.field === 'pm_risktitle'} direction={sort.field === 'pm_risktitle' ? sort.dir : 'asc'} onClick={() => setSort('pm_risktitle')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                  Risk Title
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                <TableSortLabel active={sort.field === 'pm_riskcategory'} direction={sort.field === 'pm_riskcategory' ? sort.dir : 'asc'} onClick={() => setSort('pm_riskcategory')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                  Category
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                <TableSortLabel active={sort.field === 'pm_ragstatus'} direction={sort.field === 'pm_ragstatus' ? sort.dir : 'asc'} onClick={() => setSort('pm_ragstatus')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                  RAG
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                Owner
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                Probability
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                Impact
-              </TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                <TableSortLabel active={sort.field === 'pm_inherentscore'} direction={sort.field === 'pm_inherentscore' ? sort.dir : 'asc'} onClick={() => setSort('pm_inherentscore')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                  Score
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                <TableSortLabel active={sort.field === 'pm_riskstatus'} direction={sort.field === 'pm_riskstatus' ? sort.dir : 'asc'} onClick={() => setSort('pm_riskstatus')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                  Status
-                </TableSortLabel>
-              </TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
+          <TableHeader cells={[
+            { label: '#', width: 50 },
+            { label: 'Risk Title', sortable: true, active: sort.field === 'pm_risktitle', dir: sort.dir, onClick: () => setSort('pm_risktitle') },
+            { label: 'Category', sortable: true, active: sort.field === 'pm_riskcategory', dir: sort.dir, onClick: () => setSort('pm_riskcategory') },
+            { label: 'RAG', sortable: true, active: sort.field === 'pm_ragstatus', dir: sort.dir, onClick: () => setSort('pm_ragstatus') },
+            { label: 'Owner' },
+            { label: 'Probability' },
+            { label: 'Impact' },
+            { label: 'Score', align: 'right', sortable: true, active: sort.field === 'pm_inherentscore', dir: sort.dir, onClick: () => setSort('pm_inherentscore') },
+            { label: 'Status', sortable: true, active: sort.field === 'pm_riskstatus', dir: sort.dir, onClick: () => setSort('pm_riskstatus') },
+            { label: 'Actions', align: 'right' },
+          ]} />
           <TableBody>
             {paginatedData.map((risk, idx) => {
               const score = riskScore(risk.pm_inherentprobability, risk.pm_inherentimpact)

@@ -7,7 +7,6 @@ import {
   Grid,
   TextField,
   MenuItem,
-  Button,
   FormControl,
   InputLabel,
   Select,
@@ -19,6 +18,8 @@ import {
   Alert,
   Chip,
   Paper,
+  useTheme,
+  alpha,
 } from '@mui/material'
 import InfoIcon from '@mui/icons-material/Info'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
@@ -30,7 +31,7 @@ import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel } fr
 import { useUser } from '@/context/UserContext'
 import { normalizeLookupId } from '@/services'
 import { fontSizes } from '@/styles'
-import { DocumentPreviewDialog } from '@/components/common'
+import { DocumentPreviewDialog, Button } from '@/components/common'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import AttachFileIcon from '@mui/icons-material/AttachFile'
@@ -58,6 +59,8 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
   converting,
   allProjects = [],
 }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const { users } = useUser()
   const [stagedFiles, setStagedFiles] = useState<File[]>([])
   const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null)
@@ -186,11 +189,9 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
 
   return (
     <>
-      <Dialog open={open} onClose={() => !converting && onClose()} maxWidth="md" fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
-      >
+      <Dialog open={open} onClose={() => !converting && onClose()} maxWidth="md" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: 'success.main', borderRadius: 1.5 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: 'success.main' }}>
             <TransformIcon sx={{ fontSize: 18, color: '#fff' }} />
           </Avatar>
           Convert Initiative to Project
@@ -203,7 +204,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
         </Typography>
 
         {initiative?.pm_businesscase && (
-          <Alert severity="info" sx={{ mb: 3, borderRadius: 1.5 }}>
+          <Alert severity="info" sx={{ mb: 3 }}>
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Business Case</Typography>
             <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
               {initiative.pm_businesscase}
@@ -228,7 +229,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               size="small"
               value={form.pm_projectname}
               onChange={handleChange('pm_projectname')}
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -239,7 +239,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               value={form.pm_projectcode}
               onChange={handleChange('pm_projectcode')}
               placeholder="e.g. PROJ-001"
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -249,7 +248,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               size="small"
               value={selectedPortfolio?.pm_portfolioname ?? 'No portfolio'}
               disabled
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -259,7 +257,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               size="small"
               value={form.pm_projectsponsor || '—'}
               disabled
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -269,7 +266,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               size="small"
               value={initiative?.pm_estimatedcost ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
               disabled
-              slotProps={{ input: { sx: { borderRadius: 1.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 } } }}
+              slotProps={{ input: { sx: { fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -279,7 +276,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               size="small"
               value={initiative?.pm_estimatedbenefits ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '—'}
               disabled
-              slotProps={{ input: { sx: { borderRadius: 1.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 } } }}
+              slotProps={{ input: { sx: { fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 } } }}
             />
           </Grid>
         </Grid>
@@ -301,7 +298,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                 value={form._pm_programme_value}
                 label="Programme"
                 onChange={(e) => setForm((p) => ({ ...p, _pm_programme_value: e.target.value }))}
-                sx={{ borderRadius: 1.5 }}
               >
                 <MenuItem value="">None</MenuItem>
                 {filteredProgrammes.map((p) => (
@@ -319,7 +315,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                 value={form.pm_projectmanager}
                 label="Project Manager"
                 onChange={(e) => setForm((p) => ({ ...p, pm_projectmanager: e.target.value }))}
-                sx={{ borderRadius: 1.5 }}
                 renderValue={(selected) => {
                   const user = users.find((u) => u.systemuserid === selected)
                   return (
@@ -353,7 +348,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               size="small"
               value={form.pm_businessunit}
               onChange={handleChange('pm_businessunit')}
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -363,7 +357,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                 value={form.pm_projectpriority}
                 label="Priority"
                 onChange={(e) => setForm((p) => ({ ...p, pm_projectpriority: e.target.value as number }))}
-                sx={{ borderRadius: 1.5 }}
               >
                 <MenuItem value={1}>1 - High</MenuItem>
                 <MenuItem value={2}>2 - Medium</MenuItem>
@@ -391,7 +384,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               size="small"
               value={form.pm_ragstatus}
               onChange={handleChange('pm_ragstatus')}
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             >
               <MenuItem value="1">Green — On Track</MenuItem>
               <MenuItem value="0">Amber — At Risk</MenuItem>
@@ -406,7 +398,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               size="small"
               value={form.pm_projectphase}
               onChange={handleChange('pm_projectphase')}
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             >
               <MenuItem value="3">Initiation</MenuItem>
               <MenuItem value="0">Execution</MenuItem>
@@ -424,7 +415,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               size="small"
               value={form.pm_costragstatus}
               onChange={handleChange('pm_costragstatus')}
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             >
               <MenuItem value="0">Green</MenuItem>
               <MenuItem value="1">Amber</MenuItem>
@@ -438,7 +428,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               size="small"
               value={form.pm_scheduleragstatus}
               onChange={handleChange('pm_scheduleragstatus')}
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             >
               <MenuItem value="1">Green</MenuItem>
               <MenuItem value="0">Amber</MenuItem>
@@ -453,7 +442,6 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               size="small"
               value={form.pm_benefitsragstatus}
               onChange={handleChange('pm_benefitsragstatus')}
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             >
               <MenuItem value="0">Green</MenuItem>
               <MenuItem value="1">Amber</MenuItem>
@@ -500,7 +488,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                   startAdornment: (
                     <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>€</Typography>
                   ),
-                  sx: { borderRadius: 1.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 },
+                  sx: { fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 },
                 },
               }}
             />
@@ -518,7 +506,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                   startAdornment: (
                     <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>€</Typography>
                   ),
-                  sx: { borderRadius: 1.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 },
+                  sx: { fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 },
                 },
               }}
             />
@@ -526,7 +514,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
         </Grid>
 
         {programmeBudgetInfo && (
-          <Paper variant="outlined" sx={{ p: 1.5, mb: 2, borderRadius: 1.5, bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'grey.50' }}>
+          <Paper variant="outlined" sx={{ p: 1.5, mb: 2, bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'grey.50' }}>
             <Typography variant="caption" sx={{ fontWeight: 700, mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.75 }}>
               <AccountBalanceWalletIcon sx={{ fontSize: 14 }} /> Programme Budget Allocation
             </Typography>
@@ -549,7 +537,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
         )}
 
         {hasBudgetError && (
-          <Box sx={{ mb: 2, p: 1.25, borderRadius: 1.5, bgcolor: 'error.50', border: '1px solid', borderColor: 'error.200', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ mb: 2, p: 1.25, bgcolor: alpha(theme.palette.error.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.error.main, 0.2), display: 'flex', alignItems: 'center', gap: 1 }}>
             <WarningAmberIcon sx={{ fontSize: 18, color: 'error.main', flexShrink: 0 }} />
             <Typography variant="caption" color="error.dark" sx={{ fontWeight: 600 }}>
               Approved budget exceeds programme budget by {currencyFormatter.format(form.pm_approvedbudgeteur - programmeBudgetInfo!.availableBudget)}.
@@ -567,7 +555,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
         </Box>
 
         {selectedProgramme && selectedProgramme.pm_startdate && (
-          <Paper variant="outlined" sx={{ p: 1.5, mb: 2, borderRadius: 1.5, bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'grey.50', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Paper variant="outlined" sx={{ p: 1.5, mb: 2, bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'grey.50', display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <TimelineIcon sx={{ fontSize: 16, color: 'primary.main' }} />
             <Typography variant="caption" color="text.secondary">
               Programme date range:{' '}
@@ -584,7 +572,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               fullWidth
               type="date"
               size="small"
-              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
+              slotProps={{ inputLabel: { shrink: true } }}
               label="Planned Start"
               value={form.pm_plannedstartdate}
               onChange={handleChange('pm_plannedstartdate')}
@@ -597,7 +585,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               fullWidth
               type="date"
               size="small"
-              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
+              slotProps={{ inputLabel: { shrink: true } }}
               label="Planned End"
               value={form.pm_plannedenddate}
               onChange={handleChange('pm_plannedenddate')}
@@ -610,7 +598,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               fullWidth
               type="date"
               size="small"
-              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
+              slotProps={{ inputLabel: { shrink: true } }}
               label="Actual Start"
               value={form.pm_actualstartdate}
               onChange={handleChange('pm_actualstartdate')}
@@ -621,7 +609,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               fullWidth
               type="date"
               size="small"
-              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
+              slotProps={{ inputLabel: { shrink: true } }}
               label="Actual End"
               value={form.pm_actualenddate}
               onChange={handleChange('pm_actualenddate')}
@@ -638,12 +626,12 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
           <Divider sx={{ flex: 1 }} />
         </Box>
 
-        <Box sx={{ p: 2.5, border: '1px dashed', borderColor: 'divider', borderRadius: 1.5, textAlign: 'center', bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)' }}>
+        <Box sx={{ p: 2.5, border: '1px dashed', borderColor: 'divider', textAlign: 'center', bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)' }}>
           <Button
             variant="outlined"
             component="label"
             startIcon={<AttachFileIcon />}
-            sx={{ borderRadius: 1.5, mb: stagedFiles.length > 0 ? 2 : 0 }}
+            sx={{ mb: stagedFiles.length > 0 ? 2 : 0 }}
           >
             Select Files
             <input
@@ -672,7 +660,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                   onDelete={() => setStagedFiles((prev) => prev.filter((_, i) => i !== idx))}
                   onClick={() => handlePreviewStaged(file)}
                   title="Click to preview file"
-                  sx={{ borderRadius: 1.5, fontWeight: 600, cursor: 'pointer' }}
+                  sx={{ fontWeight: 600, cursor: 'pointer' }}
                 />
               ))}
             </Box>
@@ -681,7 +669,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-        <Button onClick={onClose} variant="outlined" disabled={converting} sx={{ borderRadius: 1.5 }}>
+        <Button onClick={onClose} variant="outlined" disabled={converting}>
           Cancel
         </Button>
         <Button
@@ -690,7 +678,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
           color="success"
           disabled={converting || !canSubmit}
           startIcon={<TransformIcon />}
-          sx={{ borderRadius: 1.5, fontWeight: 600 }}
+          sx={{ fontWeight: 600 }}
         >
           {converting ? 'Creating Project...' : 'Create Project'}
         </Button>

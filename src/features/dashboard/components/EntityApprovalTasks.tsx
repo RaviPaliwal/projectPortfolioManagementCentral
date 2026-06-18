@@ -6,14 +6,14 @@ import {
   Skeleton,
   Alert,
   Chip,
-  Button,
   Tooltip,
 } from '@mui/material'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import PersonIcon from '@mui/icons-material/Person'
 
-import { TabPanel } from '@/components/common'
+import { TabPanel, Button } from '@/components/common'
+import { fontSizes } from '@/styles'
 import { useUser } from '@/context/UserContext'
 import {
   fetchWorkflowInstancesForEntity,
@@ -164,7 +164,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
         </Box>
       ) : steps.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 6 }}>
-          <CheckCircleIcon sx={{ fontSize: 48, color: '#22c55e', mb: 1.5 }} />
+          <CheckCircleIcon sx={{ fontSize: 48, color: 'success.main', mb: 1.5 }} />
           <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5, fontWeight: 600 }}>
             No pending approvals
           </Typography>
@@ -179,7 +179,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
               Pending Approval Tasks
             </Typography>
-            <Chip label={`${steps.length} pending`} color="warning" size="small" sx={{ fontWeight: 700, borderRadius: 1 }} />
+            <Chip label={`${steps.length} pending`} color="warning" size="small" sx={{ fontWeight: 700 }} />
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {(() => {
@@ -202,7 +202,6 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                   variant="outlined"
                   sx={{
                     p: 1.5,
-                    borderRadius: 1.5,
                     borderLeft: '3px solid',
                     borderLeftColor: isOverdue ? 'error.main' : 'warning.main',
                     transition: 'all 0.15s ease',
@@ -219,7 +218,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                           {step.pm_stepname || 'Approval Step'}
                         </Typography>
                         {workflowName && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.3, fontSize: 11 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.3, fontSize: fontSizes.xs }}>
                             {workflowName}
                           </Typography>
                         )}
@@ -246,7 +245,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                                 setOpeningStep(null)
                               }
                             }}
-                            sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 90 }}
+                            sx={{ fontWeight: 600, fontSize: fontSizes.xs, py: 0.5, minWidth: 90 }}
                           >
                             {openingStep === step.pm_workflowapprovalstepid ? 'Opening...' : 'Review'}
                           </Button>
@@ -257,7 +256,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     {((step as any).pm_assigneename || step.pm_approvername) && (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <PersonIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
+                        <PersonIcon sx={{ fontSize: fontSizes.sm, color: 'text.secondary' }} />
                         <Typography variant="caption" color="text.secondary">
                           {(step as any).pm_assigneename || step.pm_approvername}
                         </Typography>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Dialog, DialogContent, Box, Typography,
-  Button, CircularProgress, TextField, Paper, Divider, Chip,
-  IconButton, useTheme,
+  CircularProgress, TextField, Paper, Divider, Chip,
+  IconButton, useTheme, alpha
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
@@ -13,6 +13,8 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import FlagIcon from '@mui/icons-material/Flag'
 import UndoIcon from '@mui/icons-material/Undo'
 
+import { Button } from '@/components/common'
+import { fontSizes } from '@/styles/fontSizes'
 import { GovernanceReadinessService, fetchProjectDetails, updateGateReview, fetchGateReviewById } from '@/services'
 import { submitWorkflowDecision } from '@/services/workflow.service'
 import type { ProjectReadinessReport } from '@/services/governance-readiness.service'
@@ -25,13 +27,6 @@ const STEPS = [
   { id: 'readiness', label: 'Readiness Checks',   icon: '✅' },
   { id: 'decision',  label: 'PMO Decision',       icon: '⚖️' },
 ]
-
-const CHECK_STATUS_COLORS: Record<string, string> = {
-  passed: '#10B981',
-  failed: '#EF4444',
-  warning: '#F59E0B',
-  waived: '#6366F1',
-}
 
 // ── Props ──────────────────────────────────────────────────────────────
 
@@ -60,10 +55,10 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ decision, projectName, ga
   const isDark = theme.palette.mode === 'dark'
 
   const map: Record<string, { color: string; label: string; emoji: string }> = {
-    approve:     { color: '#10B981', label: 'Gate Approved',          emoji: '🎉' },
-    conditional: { color: '#6366F1', label: 'Approved with Conditions', emoji: '📋' },
-    defer:       { color: '#F59E0B', label: 'Decision Deferred',       emoji: '⏸️' },
-    reject:      { color: '#EF4444', label: 'Gate Rejected',           emoji: '🚫' },
+    approve:     { color: theme.palette.success.main, label: 'Gate Approved',          emoji: '🎉' },
+    conditional: { color: theme.palette.secondary.main, label: 'Approved with Conditions', emoji: '📋' },
+    defer:       { color: theme.palette.warning.main, label: 'Decision Deferred',       emoji: '⏸️' },
+    reject:      { color: theme.palette.error.main, label: 'Gate Rejected',           emoji: '🚫' },
   }
   const d = map[decision] || map.approve
 
@@ -75,8 +70,8 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ decision, projectName, ga
         alignItems: 'center',
         justifyContent: 'center',
         background: isDark
-          ? 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.08) 100%)'
-          : 'linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%)',
+          ? `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.08)} 0%, ${alpha(theme.palette.success.main, 0.08)} 100%)`
+          : `linear-gradient(135deg, ${alpha(theme.palette.secondary.light, 0.2)} 0%, ${alpha(theme.palette.success.light, 0.2)} 100%)`,
         p: 4,
       }}
     >
@@ -84,7 +79,6 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ decision, projectName, ga
         elevation={0}
         sx={{
           p: 5,
-          borderRadius: 3,
           maxWidth: 460,
           width: '100%',
           textAlign: 'center',
@@ -110,7 +104,7 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ decision, projectName, ga
         <Button
           variant="outlined"
           onClick={onBack}
-          sx={{ mt: 1, borderRadius: 1.5, fontWeight: 600 }}
+          sx={{ mt: 1, fontWeight: 600 }}
         >
           ← Back to Review
         </Button>
@@ -156,7 +150,7 @@ const StepContext: React.FC<StepContextProps> = ({ project, gateReview }) => {
       </Typography>
 
       {/* Progress bar */}
-      <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.08)' : '#EEF2FF' }}>
+      <Paper variant="outlined" sx={{ p: 2, bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04) }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
           <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
             Overall Progress
@@ -165,7 +159,7 @@ const StepContext: React.FC<StepContextProps> = ({ project, gateReview }) => {
             {progress}%
           </Typography>
         </Box>
-        <Box sx={{ height: 6, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.2)' : '#C7D2FE', borderRadius: 3, overflow: 'hidden' }}>
+        <Box sx={{ height: 6, bgcolor: (theme) => alpha(theme.palette.primary.main, 0.15), borderRadius: 3, overflow: 'hidden' }}>
           <Box sx={{ height: '100%', width: `${progress}%`, bgcolor: 'primary.main', borderRadius: 3, transition: 'width 0.6s ease' }} />
         </Box>
         <Typography variant="caption" color="primary.main" sx={{ mt: 1, display: 'block', opacity: 0.8 }}>
@@ -174,11 +168,11 @@ const StepContext: React.FC<StepContextProps> = ({ project, gateReview }) => {
       </Paper>
 
       {/* Metadata grid */}
-      <Paper variant="outlined" sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
+      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
           {fields.map(([label, val]) => (
             <Box key={label} sx={{ p: 1.5, borderBottom: '1px solid', borderColor: 'divider', '&:nth-of-type(odd)': { borderRight: '1px solid', borderColor: 'divider' } }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem', mb: 0.25 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: fontSizes.xs, mb: 0.25 }}>
                 {label}
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -193,7 +187,7 @@ const StepContext: React.FC<StepContextProps> = ({ project, gateReview }) => {
       {tags.length > 0 && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
           {tags.map((t) => t && (
-            <Chip key={t} label={t} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: 1 }} />
+            <Chip key={t} label={t} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
           ))}
         </Box>
       )}
@@ -239,11 +233,11 @@ const StepReadiness: React.FC<StepReadinessProps> = ({ readiness, overrides, onS
       </Typography>
 
       {/* Summary bar */}
-      <Paper variant="outlined" sx={{ display: 'flex', borderRadius: 1.5, overflow: 'hidden' }}>
+      <Paper variant="outlined" sx={{ display: 'flex', overflow: 'hidden' }}>
         {[
-          { count: passed, label: 'Passed', color: '#10B981' },
-          { count: waived, label: 'Overridden', color: '#6366F1' },
-          { count: pending, label: 'Pending', color: pending > 0 ? '#EF4444' : '#10B981' },
+          { count: passed, label: 'Passed', color: theme.palette.success.main },
+          { count: waived, label: 'Overridden', color: theme.palette.secondary.main },
+          { count: pending, label: 'Pending', color: pending > 0 ? theme.palette.error.main : theme.palette.success.main },
         ].map((stat, i) => (
           <React.Fragment key={stat.label}>
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', py: 2 }}>
@@ -265,19 +259,22 @@ const StepReadiness: React.FC<StepReadinessProps> = ({ readiness, overrides, onS
           const isOverridden = !!overrides[item.id]
           const effectivePass = item.status === 'passed' || item.status === 'warning' || isOverridden
           const isExpanded = expanded === item.id
-          const borderColor = isOverridden ? '#6366F1' : effectivePass ? '#10B981' : '#F59E0B'
+          const borderColor = isOverridden
+            ? theme.palette.secondary.main
+            : effectivePass
+              ? theme.palette.success.main
+              : theme.palette.warning.main
 
           return (
             <Paper
               key={item.id}
               variant="outlined"
               sx={{
-                borderRadius: 1.5,
                 borderLeft: '3px solid',
                 borderLeftColor: borderColor,
                 overflow: 'hidden',
                 transition: 'all 0.15s ease',
-                '&:hover': { borderColor: effectivePass ? '#10B981' : '#F59E0B' },
+                '&:hover': { borderColor: effectivePass ? theme.palette.success.main : theme.palette.warning.main },
               }}
             >
               {/* Header */}
@@ -294,20 +291,20 @@ const StepReadiness: React.FC<StepReadinessProps> = ({ readiness, overrides, onS
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <Box>
                     {isOverridden ? (
-                      <AssignmentTurnedInIcon sx={{ fontSize: 20, color: '#6366F1' }} />
+                      <AssignmentTurnedInIcon sx={{ fontSize: 20, color: theme.palette.secondary.main }} />
                     ) : item.status === 'passed' ? (
-                      <CheckCircleIcon sx={{ fontSize: 20, color: '#10B981' }} />
+                      <CheckCircleIcon sx={{ fontSize: 20, color: theme.palette.success.main }} />
                     ) : item.status === 'failed' ? (
-                      <ErrorIcon sx={{ fontSize: 20, color: '#EF4444' }} />
+                      <ErrorIcon sx={{ fontSize: 20, color: theme.palette.error.main }} />
                     ) : (
-                      <WarningAmberIcon sx={{ fontSize: 20, color: '#F59E0B' }} />
+                      <WarningAmberIcon sx={{ fontSize: 20, color: theme.palette.warning.main }} />
                     )}
                   </Box>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {item.label}
                   </Typography>
                   {isOverridden && (
-                    <Chip label="Overridden" size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.2)' : '#EEF2FF', color: '#6366F1' }} />
+                    <Chip label="Overridden" size="small" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 700, bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.secondary.main, 0.2) : alpha(theme.palette.secondary.main, 0.08), color: theme.palette.secondary.main }} />
                   )}
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -315,7 +312,7 @@ const StepReadiness: React.FC<StepReadinessProps> = ({ readiness, overrides, onS
                     <Button
                       size="small"
                       variant="text"
-                      sx={{ fontSize: 11, fontWeight: 600, minWidth: 0 }}
+                      sx={{ fontSize: fontSizes.xs, fontWeight: 600, minWidth: 0 }}
                       onClick={(e) => { e.stopPropagation(); setExpanded(isExpanded ? null : item.id) }}
                     >
                       Override
@@ -336,7 +333,7 @@ const StepReadiness: React.FC<StepReadinessProps> = ({ readiness, overrides, onS
                       transform: isExpanded ? 'rotate(180deg)' : 'none',
                       transition: 'transform 0.2s',
                       color: 'text.disabled',
-                      fontSize: 12,
+                      fontSize: fontSizes.sm,
                       flexShrink: 0,
                     }}
                   >
@@ -355,19 +352,19 @@ const StepReadiness: React.FC<StepReadinessProps> = ({ readiness, overrides, onS
                   )}
 
                   {isOverridden && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.1)' : '#EEF2FF', borderRadius: 1, p: 1 }}>
-                      <Typography variant="caption" sx={{ color: '#6366F1', fontWeight: 600 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.secondary.main, 0.1) : alpha(theme.palette.secondary.main, 0.08), borderRadius: 1, p: 1 }}>
+                      <Typography variant="caption" sx={{ color: theme.palette.secondary.main, fontWeight: 600 }}>
                         Rationale: {overrides[item.id]}
                       </Typography>
                     </Box>
                   )}
 
                   {item.status === 'failed' && !isOverridden && (
-                    <Box sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.08)' : '#FFFBEB', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.2)' : '#FDE68A', borderRadius: 1, p: 1.5 }}>
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: '#92400E', display: 'block', mb: 0.5 }}>
+                    <Box sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.warning.main, 0.08) : alpha(theme.palette.warning.main, 0.04), border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.warning.main, 0.2) : alpha(theme.palette.warning.main, 0.15), borderRadius: 1, p: 1.5 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: theme.palette.warning.dark, display: 'block', mb: 0.5 }}>
                         Override this check
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontSize: '0.75rem' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontSize: fontSizes.sm }}>
                         Only allowed if the Portfolio Director has approved the deviation in writing.
                       </Typography>
                       <TextField
@@ -385,7 +382,7 @@ const StepReadiness: React.FC<StepReadinessProps> = ({ readiness, overrides, onS
                         variant="contained"
                         disabled={!overrideInput.trim()}
                         onClick={() => handleApplyOverride(item.id)}
-                        sx={{ borderRadius: 1, fontWeight: 600, fontSize: 12 }}
+                        sx={{ fontWeight: 600, fontSize: fontSizes.xs }}
                       >
                         Apply Override
                       </Button>
@@ -450,10 +447,10 @@ const StepDecision: React.FC<StepDecisionProps> = ({
   }
 
   const decisionOptions = [
-    { key: 'approve',     label: 'Approve Gate',     color: '#10B981', bg: isDark ? 'rgba(16,185,129,0.1)' : '#ECFDF5', border: isDark ? 'rgba(16,185,129,0.3)' : '#6EE7B7', desc: 'Project proceeds to the next stage.' },
-    { key: 'conditional', label: 'Approve with Conditions', color: '#6366F1', bg: isDark ? 'rgba(99,102,241,0.1)' : '#EEF2FF', border: isDark ? 'rgba(99,102,241,0.3)' : '#A5B4FC', desc: 'Approve but attach mandatory conditions.' },
-    { key: 'defer',       label: 'Defer Decision',   color: '#F59E0B', bg: isDark ? 'rgba(245,158,11,0.1)' : '#FFFBEB', border: isDark ? 'rgba(245,158,11,0.3)' : '#FDE68A', desc: 'Pause for additional information.' },
-    { key: 'reject',      label: 'Reject Gate',      color: '#EF4444', bg: isDark ? 'rgba(239,68,68,0.1)' : '#FEF2F2', border: isDark ? 'rgba(239,68,68,0.3)' : '#FCA5A5', desc: 'Project does not proceed; returns to planning.' },
+    { key: 'approve',     label: 'Approve Gate',     color: theme.palette.success.main, bg: isDark ? alpha(theme.palette.success.main, 0.1) : alpha(theme.palette.success.light, 0.08), border: isDark ? alpha(theme.palette.success.main, 0.3) : alpha(theme.palette.success.light, 0.4), desc: 'Project proceeds to the next stage.' },
+    { key: 'conditional', label: 'Approve with Conditions', color: theme.palette.secondary.main, bg: isDark ? alpha(theme.palette.secondary.main, 0.1) : alpha(theme.palette.secondary.light, 0.08), border: isDark ? alpha(theme.palette.secondary.main, 0.3) : alpha(theme.palette.secondary.light, 0.4), desc: 'Approve but attach mandatory conditions.' },
+    { key: 'defer',       label: 'Defer Decision',   color: theme.palette.warning.main, bg: isDark ? alpha(theme.palette.warning.main, 0.1) : alpha(theme.palette.warning.light, 0.08), border: isDark ? alpha(theme.palette.warning.main, 0.3) : alpha(theme.palette.warning.light, 0.4), desc: 'Pause for additional information.' },
+    { key: 'reject',      label: 'Reject Gate',      color: theme.palette.error.main, bg: isDark ? alpha(theme.palette.error.main, 0.1) : alpha(theme.palette.error.light, 0.08), border: isDark ? alpha(theme.palette.error.main, 0.3) : alpha(theme.palette.error.light, 0.4), desc: 'Project does not proceed; returns to planning.' },
   ]
 
   return (
@@ -463,7 +460,7 @@ const StepDecision: React.FC<StepDecisionProps> = ({
       </Typography>
 
       {/* Readiness snapshot */}
-      <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+      <Paper variant="outlined" sx={{ p: 2 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
           Readiness Snapshot
         </Typography>
@@ -474,15 +471,15 @@ const StepDecision: React.FC<StepDecisionProps> = ({
             return (
               <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 {pass ? (
-                  <CheckCircleIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                  <CheckCircleIcon sx={{ fontSize: 16, color: theme.palette.success.main }} />
                 ) : (
-                  <ErrorIcon sx={{ fontSize: 16, color: '#EF4444' }} />
+                  <ErrorIcon sx={{ fontSize: 16, color: theme.palette.error.main }} />
                 )}
-                <Typography variant="body2" sx={{ color: pass ? 'text.primary' : '#92400E' }}>
+                <Typography variant="body2" sx={{ color: pass ? 'text.primary' : theme.palette.warning.dark }}>
                   {item.label}
                 </Typography>
                 {isOverridden && (
-                  <Chip label="Overridden" size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 700, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.2)' : '#EEF2FF', color: '#6366F1' }} />
+                  <Chip label="Overridden" size="small" sx={{ fontSize: fontSizes.xs, fontWeight: 700, bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.secondary.main, 0.2) : alpha(theme.palette.secondary.main, 0.08), color: theme.palette.secondary.main }} />
                 )}
               </Box>
             )
@@ -492,9 +489,9 @@ const StepDecision: React.FC<StepDecisionProps> = ({
 
       {/* Blocking banner */}
       {!canApprove && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.1)' : '#FEF2F2', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.2)' : '#FCA5A5', borderRadius: 1, p: 1.5 }}>
-          <FlagIcon sx={{ fontSize: 16, color: '#EF4444' }} />
-          <Typography variant="body2" sx={{ color: '#991B1B' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.error.main, 0.1) : alpha(theme.palette.error.light, 0.08), border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.error.main, 0.2) : alpha(theme.palette.error.light, 0.4), borderRadius: 1, p: 1.5 }}>
+          <FlagIcon sx={{ fontSize: 16, color: theme.palette.error.main }} />
+          <Typography variant="body2" sx={{ color: theme.palette.error.dark }}>
             {pendingIssues} unresolved issue{pendingIssues > 1 ? 's' : ''} — resolve in Readiness Checks tab or apply an override before approving.
           </Typography>
         </Box>
@@ -502,15 +499,15 @@ const StepDecision: React.FC<StepDecisionProps> = ({
 
       {/* Auto-generated conditions */}
       <Box>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1, fontSize: fontSizes.xs }}>
           Auto-generated Conditions
         </Typography>
         {conditions.map((c, i) => (
-          <Box key={i} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.08)' : '#EEF2FF', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.15)' : '#C7D2FE', borderRadius: 1, p: 1.5, mb: 1 }}>
-            <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: '#6366F1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0, mt: 0.25 }}>
+          <Box key={i} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start', bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.secondary.main, 0.08) : alpha(theme.palette.secondary.light, 0.08), border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.secondary.main, 0.15) : alpha(theme.palette.secondary.light, 0.4), borderRadius: 1, p: 1.5, mb: 1 }}>
+            <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: theme.palette.secondary.main, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: fontSizes.xs, fontWeight: 700, flexShrink: 0, mt: 0.25 }}>
               {i + 1}
             </Box>
-            <Typography variant="body2" sx={{ color: (theme) => theme.palette.mode === 'dark' ? '#A5B4FC' : '#3730A3', lineHeight: 1.6 }}>
+            <Typography variant="body2" sx={{ color: (theme) => theme.palette.mode === 'dark' ? theme.palette.secondary.light : theme.palette.secondary.dark, lineHeight: 1.6 }}>
               {c}
             </Typography>
           </Box>
@@ -519,7 +516,7 @@ const StepDecision: React.FC<StepDecisionProps> = ({
 
       {/* PMO Notes */}
       <Box>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1, fontSize: fontSizes.xs }}>
           PMO Review Notes
         </Typography>
         <TextField
@@ -530,13 +527,12 @@ const StepDecision: React.FC<StepDecisionProps> = ({
           value={pmoNotes}
           onChange={(e) => onPmoNotesChange(e.target.value)}
           disabled={saving}
-          slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
         />
       </Box>
 
       {/* Decision picker */}
       <Box>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1, fontSize: fontSizes.xs }}>
           Your Decision
         </Typography>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -553,7 +549,6 @@ const StepDecision: React.FC<StepDecisionProps> = ({
                   gap: 1.5,
                   border: '1.5px solid',
                   borderColor: isSelected ? opt.border : 'divider',
-                  borderRadius: 1.5,
                   p: 1.5,
                   cursor: isBlocked ? 'not-allowed' : 'pointer',
                   bgcolor: isSelected ? opt.bg : 'transparent',
@@ -586,8 +581,8 @@ const StepDecision: React.FC<StepDecisionProps> = ({
 
       {/* Decision Rationale */}
       <Box>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>
-          Decision Rationale <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1, fontSize: fontSizes.xs }}>
+          Decision Rationale <Box component="span" sx={{ color: theme.palette.error.main }}>*</Box>
         </Typography>
         <TextField
           fullWidth
@@ -597,7 +592,6 @@ const StepDecision: React.FC<StepDecisionProps> = ({
           value={decisionNotes}
           onChange={(e) => onDecisionNotesChange(e.target.value)}
           disabled={saving}
-          slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
         />
       </Box>
 
@@ -608,13 +602,12 @@ const StepDecision: React.FC<StepDecisionProps> = ({
         onClick={onSubmit}
         sx={{
           alignSelf: 'flex-start',
-          borderRadius: 1.5,
           fontWeight: 700,
           px: 4,
           py: 1.25,
-          bgcolor: decision === 'reject' ? '#EF4444' : decision === 'defer' ? '#F59E0B' : decision === 'conditional' ? '#6366F1' : '#10B981',
+          bgcolor: decision === 'reject' ? theme.palette.error.main : decision === 'defer' ? theme.palette.warning.main : decision === 'conditional' ? theme.palette.secondary.main : theme.palette.success.main,
           '&:hover': {
-            bgcolor: decision === 'reject' ? '#DC2626' : decision === 'defer' ? '#D97706' : decision === 'conditional' ? '#4F46E5' : '#059669',
+            bgcolor: decision === 'reject' ? theme.palette.error.dark : decision === 'defer' ? theme.palette.warning.dark : decision === 'conditional' ? theme.palette.secondary.dark : theme.palette.success.dark,
           },
         }}
       >
@@ -770,7 +763,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
       maxWidth="lg"
       fullWidth
       slotProps={{
-        paper: { sx: { borderRadius: 2, overflow: 'hidden', maxHeight: '90vh', minHeight: 500 } },
+        paper: { sx: { overflow: 'hidden', maxHeight: '90vh', minHeight: 500 } },
       }}
     >
       {submitted ? (
@@ -778,7 +771,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
           {/* Submitted state header */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: decision === 'reject' ? '#EF4444' : decision === 'defer' ? '#F59E0B' : decision === 'conditional' ? '#6366F1' : '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <Box sx={{ width: 36, height: 36, bgcolor: decision === 'reject' ? theme.palette.error.main : decision === 'defer' ? theme.palette.warning.main : decision === 'conditional' ? theme.palette.secondary.main : theme.palette.success.main, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', borderRadius: '50%' }}>
                 <AssignmentTurnedInIcon sx={{ fontSize: 18 }} />
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>PMO Readiness Task</Typography>
@@ -797,18 +790,18 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
           {/* ── Header ────────────────────────────────────────────── */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'primary.contrastText' }}>
+              <Box sx={{ width: 36, height: 36, bgcolor: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'primary.contrastText', borderRadius: '50%' }}>
                 <AssignmentTurnedInIcon sx={{ fontSize: 18 }} />
               </Box>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>PMO Readiness Task</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: fontSizes.sm }}>
                   {gateReview?.pm_gatename || project?.pm_projectcode ? `${project?.pm_projectcode} · ${gateReview?.pm_gatename || ''}` : 'Gate Review'}
                 </Typography>
               </Box>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Chip label="Pending PMO Review" color="warning" size="small" sx={{ fontWeight: 700, borderRadius: 1 }} />
+              <Chip label="Pending PMO Review" color="warning" size="small" sx={{ fontWeight: 700 }} />
               <IconButton size="small" onClick={onClose} disabled={saving}><CloseIcon fontSize="small" /></IconButton>
             </Box>
           </Box>
@@ -829,7 +822,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
                     borderRight: { md: '1px solid' },
                     borderBottom: { xs: '1px solid', md: 'none' },
                     borderColor: 'divider',
-                    bgcolor: isDark ? 'rgba(30,27,75,0.3)' : '#F8FAFC',
+                    bgcolor: isDark ? 'rgba(30,27,75,0.3)' : 'background.paper',
                     p: 2,
                     display: 'flex',
                     flexDirection: 'column',
@@ -852,11 +845,11 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
                             p: 1.25,
                             borderRadius: 1,
                             cursor: 'pointer',
-                            bgcolor: active ? (isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.08)') : 'transparent',
+                            bgcolor: active ? (isDark ? alpha(theme.palette.secondary.main, 0.15) : alpha(theme.palette.secondary.main, 0.08)) : 'transparent',
                             borderLeft: '2px solid',
                             borderLeftColor: active ? 'primary.main' : 'transparent',
                             transition: 'all 0.15s ease',
-                            '&:hover': { bgcolor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.04)' },
+                            '&:hover': { bgcolor: isDark ? alpha(theme.palette.secondary.main, 0.08) : alpha(theme.palette.secondary.main, 0.04) },
                           }}
                         >
                           {/* Step indicator */}
@@ -869,21 +862,21 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
                               alignItems: 'center',
                               justifyContent: 'center',
                               flexShrink: 0,
-                              fontSize: 11,
+                              fontSize: fontSizes.xs,
                               fontWeight: 700,
-                              bgcolor: done ? '#6366F1' : active ? '#6366F1' : (isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB'),
+                              bgcolor: done ? theme.palette.secondary.main : active ? theme.palette.secondary.main : (isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB'),
                               color: done || active ? '#fff' : (isDark ? '#9CA3AF' : '#6B7280'),
                             }}
                           >
                             {done ? '✓' : i + 1}
                           </Box>
                           <Box sx={{ flex: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: active ? 700 : 500, fontSize: '0.82rem', color: active ? (isDark ? '#E0E7FF' : '#111827') : done ? (isDark ? '#A5B4FC' : '#6366F1') : (isDark ? '#9CA3AF' : '#6B7280') }}>
+                            <Typography variant="body2" sx={{ fontWeight: active ? 700 : 500, fontSize: fontSizes.sm, color: active ? (isDark ? '#E0E7FF' : '#111827') : done ? (isDark ? '#A5B4FC' : theme.palette.secondary.main) : 'text.secondary' }}>
                               {st.label}
                             </Typography>
                           </Box>
                           {st.id === 'readiness' && warnCount > 0 && (
-                            <Box sx={{ bgcolor: '#F59E0B', color: '#fff', borderRadius: 1, fontSize: 10, fontWeight: 700, px: 0.75, py: 0.25, lineHeight: 1.2 }}>
+                            <Box sx={{ bgcolor: theme.palette.warning.main, color: '#fff', borderRadius: 1, fontSize: fontSizes.xs, fontWeight: 700, px: 0.75, py: 0.25, lineHeight: 1.2 }}>
                               {warnCount}
                             </Box>
                           )}
@@ -897,7 +890,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
                       Pending PMO Review
                     </Typography>
-                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
+                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: fontSizes.xs }}>
                       {project?.pm_projectmanagername || project?.pm_projectname || ''}
                     </Typography>
                   </Box>
@@ -907,7 +900,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
                 <Box sx={{ flex: 1, p: 2.5, overflow: 'auto', maxHeight: { md: 'calc(90vh - 140px)' } }}>
                   {/* Step indicator */}
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: fontSizes.xs }}>
                       Step {step + 1} of {STEPS.length}
                     </Typography>
                     <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25 }}>
@@ -953,7 +946,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
               size="small"
               disabled={step === 0}
               onClick={() => setStep(p => p - 1)}
-              sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 13 }}
+              sx={{ fontWeight: 600, fontSize: fontSizes.sm }}
             >
               ← Previous
             </Button>
@@ -968,7 +961,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
                     width: 8,
                     height: 8,
                     borderRadius: '50%',
-                    bgcolor: i === step ? 'primary.main' : i < step ? '#A5B4FC' : (isDark ? 'rgba(255,255,255,0.15)' : '#E5E7EB'),
+                    bgcolor: i === step ? 'primary.main' : i < step ? alpha(theme.palette.primary.main, 0.5) : (isDark ? 'rgba(255,255,255,0.15)' : '#E5E7EB'),
                     cursor: 'pointer',
                     transition: 'background 0.2s',
                   }}
@@ -981,7 +974,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
                 variant="contained"
                 size="small"
                 onClick={() => setStep(p => p + 1)}
-                sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 13 }}
+                sx={{ fontWeight: 600, fontSize: fontSizes.sm }}
               >
                 Next →
               </Button>

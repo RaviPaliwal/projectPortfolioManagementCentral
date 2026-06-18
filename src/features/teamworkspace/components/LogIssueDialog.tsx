@@ -6,7 +6,6 @@ import {
   DialogActions,
   TextField,
   MenuItem,
-  Button,
   Box,
   Typography,
   IconButton,
@@ -23,6 +22,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import AttachFileIcon from '@mui/icons-material/AttachFile'
 import BugReportIcon from '@mui/icons-material/BugReport'
 import { fontSizes } from '@/styles'
+import { Button } from '@/components/common'
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -306,15 +306,10 @@ export const LogIssueDialog = ({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
-      slotProps={{
-        paper: {
-          sx: { borderRadius: 2 },
-        },
-      }}
     >
       <DialogTitle sx={{ px: 3, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <BugReportIcon sx={{ color: '#0ea5e9', fontSize: 22 }} />
+          <BugReportIcon sx={{ color: 'info.main', fontSize: 22 }} />
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
               Log New Issue
@@ -331,7 +326,7 @@ export const LogIssueDialog = ({
 
       <DialogContent sx={{ px: 3, py: 1 }}>
         {error && (
-          <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }}>
+          <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
@@ -454,7 +449,6 @@ export const LogIssueDialog = ({
                 </li>
               )}
               noOptionsText="No projects found — you may not be allocated to any projects"
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.15 } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -492,7 +486,6 @@ export const LogIssueDialog = ({
                 />
               )}
               noOptionsText="No resources found"
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.15 } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -536,7 +529,6 @@ export const LogIssueDialog = ({
                 value={escalated ? '1' : '0'}
                 label="Escalation Status"
                 onChange={e => setEscalated(e.target.value === '1')}
-                sx={{ borderRadius: 1.15 }}
               >
                 <MenuItem value="0">Not Escalated</MenuItem>
                 <MenuItem value="1">Escalated</MenuItem>
@@ -570,7 +562,6 @@ export const LogIssueDialog = ({
                 />
               )}
               noOptionsText="No risks found for this project"
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.15 } }}
             />
           </Grid>
 
@@ -597,7 +588,6 @@ export const LogIssueDialog = ({
                 sx={{
                   border: '2px dashed',
                   borderColor: 'divider',
-                  borderRadius: 1.5,
                   p: 2,
                   textAlign: 'center',
                   cursor: 'pointer',
@@ -633,7 +623,7 @@ export const LogIssueDialog = ({
                       size="small"
                       onDelete={() => removeAttachment(idx)}
                       variant="outlined"
-                      sx={{ borderRadius: 1, fontSize: fontSizes.xs }}
+                      sx={{ fontSize: fontSizes.xs }}
                     />
                   ))}
                 </Box>
@@ -648,7 +638,6 @@ export const LogIssueDialog = ({
           onClick={handleClose}
           variant="outlined"
           disabled={isSubmitting}
-          sx={{ borderRadius: 1.5 }}
         >
           Cancel
         </Button>
@@ -657,7 +646,7 @@ export const LogIssueDialog = ({
           variant="contained"
           disabled={isSubmitting}
           startIcon={isSubmitting ? undefined : <BugReportIcon />}
-          sx={{ borderRadius: 1.5, fontWeight: 700 }}
+          sx={{ fontWeight: 700 }}
         >
           {isSubmitting ? 'Submitting...' : 'Submit Issue'}
         </Button>

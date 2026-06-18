@@ -38,7 +38,7 @@ function ApprovalStepResolver({ approvalStepId, entityId: preResolvedEntityId, o
   }, [load])
 
   if (loading) { return (<Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress size={32} /><Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>Resolving initiative...</Typography></Box>) }
-  if (error || !entityId) { return (<Box sx={{ p: 3 }}><Alert severity="error" sx={{ borderRadius: 1.5 }}>{error || 'Unable to resolve initiative for this task.'}</Alert></Box>) }
+  if (error || !entityId) { return (<Box sx={{ p: 3 }}><Alert severity="error">{error || 'Unable to resolve initiative for this task.'}</Alert></Box>) }
   return <>{children(entityId)}</>
 }
 

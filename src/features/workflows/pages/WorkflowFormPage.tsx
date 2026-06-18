@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import {
-  Box, Paper, Typography, TextField, Button, Stepper, Step, StepLabel,
+  Box, Paper, Typography, TextField, Stepper, Step, StepLabel,
   Alert, Avatar, Divider, CircularProgress, FormControl,
   InputLabel, Select, MenuItem, Switch, FormControlLabel,
   Stack,
@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  alpha,
 } from '@mui/material'
 
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
@@ -41,7 +42,7 @@ import {
 import type { TeamOption } from '@/services'
 import { useUser } from '@/context/UserContext'
 import type { WorkflowModel, WorkflowStepTemplateModel } from '@/types/dataverse'
-import { StatusTag } from '@/components/common'
+import { StatusTag, Button } from '@/components/common'
 import { getModuleOptionsForWorkflow } from '@/constants/moduleNames'
 import { FORM_REGISTRY } from '@/constants/formRegistry'
 
@@ -113,7 +114,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
       }
       loadData()
     } else {
-      fetchOwnerTeams().then(setTeams).catch(() => {})
+      fetchOwnerTeams().then(setTeams).catch(() => { })
     }
   }, [isEdit, workflow])
   const handleSave = async () => {
@@ -231,8 +232,8 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
   const stepListContent = (
     <Stack spacing={2}>
       {(stepTemplates as any[]).map((step: any, idx: number) => (
-        <Paper key={idx} variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 3, borderLeft: '4px solid', borderLeftColor: 'primary.main', bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fff' }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontWeight: 800, fontSize: 14 }}>{idx + 1}</Avatar>
+        <Paper key={idx} variant="outlined" sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 3, borderLeft: '4px solid', borderLeftColor: 'primary.main', bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fff' }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontWeight: 800, fontSize: fontSizes.base }}>{idx + 1}</Avatar>
           <Box sx={{ flex: 1 }}>
             <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>{step.pm_workflowname}</Typography>
             <Stack direction="row" spacing={3} sx={{ mt: 0.75 }}>
@@ -254,15 +255,15 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
             </Stack>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton size="small" onClick={() => openEditStep(idx)} sx={{ borderRadius: 1.5, bgcolor: 'action.hover' }}><EditIcon fontSize="small" /></IconButton>
-            <IconButton size="small" color="error" onClick={() => deleteStep(idx)} sx={{ borderRadius: 1.5, bgcolor: 'error.lighter' }}><DeleteIcon fontSize="small" /></IconButton>
+            <IconButton size="small" onClick={() => openEditStep(idx)} sx={{ bgcolor: 'action.hover' }}><EditIcon fontSize="small" /></IconButton>
+            <IconButton size="small" color="error" onClick={() => deleteStep(idx)} sx={{ bgcolor: 'error.lighter' }}><DeleteIcon fontSize="small" /></IconButton>
           </Box>
         </Paper>
       ))}
     </Stack>
   )
   const stepDialog = (
-    <Dialog open={showStepForm} onClose={() => setShowStepForm(false)} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}>
+    <Dialog open={showStepForm} onClose={() => setShowStepForm(false)} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>{editingStepIdx !== null ? 'Edit Step' : 'Add Approval Step'}</DialogTitle>
       <DialogContent sx={{ pt: 1 }}>
         <Stack spacing={2.5} sx={{ mt: 1 }}>
@@ -330,8 +331,8 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
         </Stack>
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1 }}>
-        <Button onClick={() => setShowStepForm(false)} variant="outlined" sx={{ borderRadius: 1.5 }}>Cancel</Button>
-        <Button onClick={saveStep} variant="contained" disabled={!stepFormData.pm_workflowname || !stepFormData.pm_assigneeid} sx={{ borderRadius: 1.5 }}>{editingStepIdx !== null ? 'Update Step' : 'Add Step'}</Button>
+        <Button onClick={() => setShowStepForm(false)} variant="outlined">Cancel</Button>
+        <Button onClick={saveStep} variant="contained" disabled={!stepFormData.pm_workflowname || !stepFormData.pm_assigneeid}>{editingStepIdx !== null ? 'Update Step' : 'Add Step'}</Button>
       </DialogActions>
     </Dialog>
   )
@@ -339,7 +340,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
     <Grid container spacing={3}>
       <Grid size={{ xs: 12, md: 5 }}>
         <Stack spacing={3}>
-          <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fcfcfc' }}>
+          <Paper variant="outlined" sx={{ p: 3, bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fcfcfc' }}>
             <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, color: 'text.disabled', mb: 2.5, display: 'block' }}>
               Template Details
             </Typography>
@@ -376,7 +377,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
         </Stack>
       </Grid>
       <Grid size={{ xs: 12, md: 7 }}>
-        <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, height: '100%' }}>
+        <Paper variant="outlined" sx={{ p: 3, height: '100%' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, color: 'text.disabled', display: 'block' }}>
               Approval Chain ({stepTemplates.length})
@@ -388,7 +389,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
                 {idx !== stepTemplates.length - 1 && (
                   <Box sx={{ position: 'absolute', left: 15, top: 32, bottom: -24, width: 2, bgcolor: 'divider' }} />
                 )}
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', border: '4px solid', borderColor: theme.palette.background.paper, boxShadow: '0 0 0 1px ', zIndex: 1, fontSize: 14, fontWeight: 800 }}>
+                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', border: '4px solid', borderColor: theme.palette.background.paper, boxShadow: '0 0 0 1px ', zIndex: 1, fontSize: fontSizes.base, fontWeight: 800 }}>
                   {idx + 1}
                 </Avatar>
                 <Box sx={{ flex: 1, mt: 0.5 }}>
@@ -409,7 +410,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
                         <Typography variant="caption" sx={{ fontWeight: 600 }}>{step.pm_sladays} Day SLA</Typography>
                       </Box>
                     )}
-                    <StatusTag label={step.pm_assignetype === 1 ? 'TEAM' : 'USER'} color={step.pm_assignetype === 1 ? 'warning' : 'primary'} size="small" sx={{ height: 16, fontSize: 8, fontWeight: 900 }} />
+                    <StatusTag label={step.pm_assignetype === 1 ? 'TEAM' : 'USER'} color={step.pm_assignetype === 1 ? 'warning' : 'primary'} size="small" sx={{ height: 16, fontSize: fontSizes.xs, fontWeight: 900 }} />
                   </Box>
                 </Box>
               </Box>
@@ -421,7 +422,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
   )
   return (
     <Box sx={{ pt: 2 }}>
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 1.5 }} onClose={() => setError(null)}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
 
       <Box sx={{ mb: 6 }}>
         <Stepper activeStep={activeStep} alternativeLabel>
@@ -450,7 +451,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Stack spacing={1}>
               <Typography variant="h6" sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 32, height: 32, bgcolor: 'primary.lighter', color: 'primary.main', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Box sx={{ width: 32, height: 32, bgcolor: 'primary.lighter', color: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <AccountTreeIcon sx={{ fontSize: 18 }} />
                 </Box>
                 {isEdit ? 'General Information' : 'Template Identity'}
@@ -466,12 +467,12 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
                 value={f.pm_workflowname}
                 onChange={(e) => u('pm_workflowname', e.target.value)}
                 placeholder={isEdit ? '' : 'e.g. Project Approval Process'}
-                slotProps={{ input: { sx: { borderRadius: 1.5, fontWeight: 600 } } }}
+                slotProps={{ input: { sx: { fontWeight: 600 } } }}
                 autoFocus={!isEdit}
               />
               <FormControl fullWidth>
                 <InputLabel sx={{ fontWeight: 500 }}>Target Module</InputLabel>
-                <Select value={f.pm_module} label="Target Module" onChange={(e) => u('pm_module', e.target.value)} sx={{ borderRadius: 1.5, fontWeight: 600 }}>
+                <Select value={f.pm_module} label="Target Module" onChange={(e) => u('pm_module', e.target.value)} sx={{ fontWeight: 600 }}>
                   {MODULES.map((o) => <MenuItem key={o.value} value={o.value} disabled={!o.value}>{o.label}</MenuItem>)}
                 </Select>
               </FormControl>
@@ -480,7 +481,6 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
                 value={f.pm_workflowdescription}
                 onChange={(e) => u('pm_workflowdescription', e.target.value)}
                 placeholder={isEdit ? '' : 'Optional purpose of this workflow...'}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Stack>
           </Box>
@@ -490,7 +490,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <Stack spacing={1}>
                 <Typography variant="h6" sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ width: 32, height: 32, bgcolor: '#f5f3ff', color: 'secondary.main', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Box sx={{ width: 32, height: 32, bgcolor: alpha(theme.palette.secondary.main, 0.1), color: 'secondary.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <LayersIcon sx={{ fontSize: 18 }} />
                   </Box>
                   Approval Chain
@@ -503,18 +503,16 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={openAddStep}
-                sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 700, bgcolor: 'secondary.main', '&:hover': { bgcolor: '#7c3aed' }, boxShadow: 'none' }}
+                sx={{ textTransform: 'none', fontWeight: 700, bgcolor: 'secondary.main', '&:hover': { bgcolor: 'secondary.dark' }, boxShadow: 'none' }}
               >
                 Add Step
               </Button>
+              <Divider />
             </Box>
-
-            <Divider />
-
             {loadingSteps ? (
               <Box sx={{ py: 10, textAlign: 'center' }}><CircularProgress /></Box>
             ) : stepTemplates.length === 0 ? (
-              <Box sx={{ py: 12, textAlign: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa', borderRadius: 1.5, border: '2px dashed', borderColor: 'divider' }}>
+              <Box sx={{ py: 12, textAlign: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa', border: '2px dashed', borderColor: 'divider' }}>
                 <LayersIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2, opacity: 0.3 }} />
                 <Typography color="text.secondary" variant="body2" sx={{ fontWeight: 500 }}>No approval steps defined yet.</Typography>
                 <Button size="small" onClick={openAddStep} sx={{ mt: 2, fontWeight: 700 }}>Add your first step</Button>
@@ -528,7 +526,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Stack spacing={1}>
               <Typography variant="h6" sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 32, height: 32, bgcolor: 'success.lighter', color: 'success.main', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Box sx={{ width: 32, height: 32, bgcolor: 'success.lighter', color: 'success.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <SettingsIcon sx={{ fontSize: 18 }} />
                 </Box>
                 {isEdit ? 'Workflow Settings' : 'Operational Settings'}
@@ -539,7 +537,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
             </Stack>
 
             <Stack spacing={3}>
-              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa' }}>
+              <Paper variant="outlined" sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa' }}>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 800 }}>
                     {isEdit ? 'Version Update' : 'Initial Version'}
@@ -552,14 +550,14 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
                   <Stack component="div" direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                     <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>v{currentVersion}.0</Typography>
                     <HistoryIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                    <StatusTag label={.0} color="info" sx={{ fontWeight: 800, px: 2 }} />
+                    <StatusTag label={`v${nextVersion}.0`} color="info" sx={{ fontWeight: 800, px: 2 }} />
                   </Stack>
                 ) : (
                   <StatusTag label="v1.0.0" color="info" sx={{ fontWeight: 800, px: 2 }} />
                 )}
               </Paper>
 
-              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5 }}>
+              <Paper variant="outlined" sx={{ p: 3 }}>
                 <FormControlLabel
                   control={
                     <Switch checked={f.pm_isactive} onChange={(e) => u('pm_isactive', e.target.checked)} color="primary" />
@@ -580,7 +578,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
                 />
               </Paper>
 
-              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5 }}>
+              <Paper variant="outlined" sx={{ p: 3 }}>
                 <Typography variant="body2" sx={{ fontWeight: 800, mb: 1 }}>Post-Approval Actions</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
                   Post-approval actions are now managed by the Power Automate workflow router flow.
@@ -593,7 +591,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Stack spacing={1}>
               <Typography variant="h6" sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 32, height: 32, bgcolor: 'info.lighter', color: 'info.main', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Box sx={{ width: 32, height: 32, bgcolor: 'info.lighter', color: 'info.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <CheckCircleIcon sx={{ fontSize: 18 }} />
                 </Box>
                 Detailed Configuration Review
@@ -613,7 +611,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
           variant="text"
           onClick={() => setActiveStep((s) => Math.max(0, s - 1))}
           disabled={activeStep === 0 || saving}
-          sx={{ borderRadius: 1.5, px: 3, fontWeight: 800, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
+          sx={{ px: 3, fontWeight: 800, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
         >
           Back
         </Button>
@@ -623,7 +621,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
               variant="contained"
               onClick={() => setActiveStep((s) => s + 1)}
               disabled={!f.pm_workflowname.trim() || !f.pm_module || (activeStep === 1 && stepTemplates.length === 0)}
-              sx={{ borderRadius: 1.5, fontWeight: 800, px: 6, py: 1.25, boxShadow: 'none', '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' } }}
+              sx={{ fontWeight: 800, px: 6, py: 1.25, boxShadow: 'none', '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' } }}
             >
               Continue
             </Button>
@@ -633,7 +631,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
               onClick={handleSave}
               disabled={saving || !f.pm_workflowname.trim()}
               startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <PublishIcon />}
-              sx={{ bgcolor: 'success.main', '&:hover': { bgcolor: 'success.dark' }, borderRadius: 1.5, fontWeight: 800, px: 6, py: 1.25, boxShadow: 'none' }}
+              sx={{ bgcolor: 'success.main', '&:hover': { bgcolor: 'success.dark' }, fontWeight: 800, px: 6, py: 1.25, boxShadow: 'none' }}
             >
               {saving ? 'Saving...' : (isEdit ? 'Save Changes' : 'Finalize & Create')}
             </Button>

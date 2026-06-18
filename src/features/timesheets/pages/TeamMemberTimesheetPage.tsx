@@ -567,7 +567,6 @@ const TeamMemberTimesheetPage = () => {
                     sx={{
                       border: '1px solid',
                       borderColor: 'error.main',
-                      borderRadius: 1.5,
                       p: 0.5,
                       '&:hover': { bgcolor: 'error.lighter' },
                     }}
@@ -713,7 +712,6 @@ const TeamMemberTimesheetPage = () => {
                 onClick={handleOpenCreate}
                 startIcon={<AddIcon />}
                 sx={{
-                  borderRadius: 2,
                   px: 3,
                   py: 1,
                   fontWeight: 600,
@@ -796,7 +794,7 @@ function generateCSS(theme: any) {
 .ts-period-label{font-size:13.5px; font-weight:600; margin:0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 .ts-period-hours{font-size:11.5px; color:var(--ink-soft); margin:2px 0 0;}
 .ts-flap{display:inline-flex; align-items:center; font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#fff; padding:4px 9px; border-radius:5px; white-space:nowrap;}
-.ts-detail{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px;}
+.ts-detail{flex:1; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px;}
 .ts-empty-state{display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:420px; padding:40px 20px;}
 .ts-detail-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;}
 .ts-serial{font-size:11px; color:var(--ink-soft); margin:0 0 2px;}

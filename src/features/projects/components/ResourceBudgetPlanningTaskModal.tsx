@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
-  IconButton, CircularProgress, TextField, Divider, Chip, Paper,
+  IconButton, CircularProgress, TextField, Divider, Chip, Paper, useTheme,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
@@ -11,6 +11,7 @@ import type { ProjectModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
+import { fontSizes } from '@/styles'
 
 interface ResourceBudgetPlanningTaskModalProps {
   open: boolean
@@ -26,6 +27,8 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
   open, onClose, projectId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
 }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [project, setProject] = useState<ProjectModel | null>(null)
@@ -74,8 +77,8 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
           <Typography variant="h6" sx={{ fontWeight: 700 }}>Resource & Budget Planning</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip label="Pending" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'white' }}>
+          <Chip label="Pending" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'common.white' }} />
+          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'common.white' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -102,11 +105,11 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{phaseLabel}</Typography>
                 </Box>
               </Box>
-              <Box sx={{ mt: 4, p: 2, bgcolor: '#fefce8', borderRadius: 1.5, border: '1px solid', borderColor: '#fef9c3' }}>
+              <Box sx={{ mt: 4, p: 2, bgcolor: isDark ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.04)', border: '1px solid', borderColor: 'warning.light' }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <PeopleIcon sx={{ fontSize: 16 }} /> Instructions
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.8rem' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: fontSizes.sm }}>
                   Review the budget and resource requirements. Ensure adequate funding and resource allocation before project execution.
                 </Typography>
               </Box>
@@ -116,13 +119,13 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
                 <AccountBalanceWalletIcon sx={{ fontSize: 16 }} /> Budget Summary
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1 }}>
+                <Paper variant="outlined" sx={{ p: 1.5, flex: 1 }}>
                   <Typography variant="caption" color="text.secondary">Approved Budget</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
                     {project?.pm_approvedbudgeteur != null ? currencyFormatter.format(project.pm_approvedbudgeteur) : '-'}
                   </Typography>
                 </Paper>
-                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1 }}>
+                <Paper variant="outlined" sx={{ p: 1.5, flex: 1 }}>
                   <Typography variant="caption" color="text.secondary">Actual Cost</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
                     {project?.pm_actualcosteur != null ? currencyFormatter.format(project.pm_actualcosteur) : '-'}
@@ -131,7 +134,7 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
               </Box>
 
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Resource Allocation</Typography>
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, mb: 3, bgcolor: 'background.paper' }}>
+              <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'background.paper' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                   <PeopleIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                   <Typography variant="body2" color="text.secondary">
@@ -148,7 +151,6 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
                 placeholder="Enter notes about resource requirements, budget allocation, or constraints..."
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
           </Grid>

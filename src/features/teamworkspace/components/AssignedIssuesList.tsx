@@ -3,7 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  Button,
   Chip,
   IconButton,
   Tooltip,
@@ -19,7 +18,7 @@ import PersonIcon from '@mui/icons-material/Person'
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { fontSizes } from '@/styles'
-import { StatusTag } from '@/components/common'
+import { StatusTag, Button } from '@/components/common'
 import type { IssueModel } from '@/types/dataverse'
 
 const ISSUE_CATEGORY_LABELS: Record<string, string> = {
@@ -31,13 +30,13 @@ const ISSUE_CATEGORY_LABELS: Record<string, string> = {
   '5': 'Quality',
 }
 
-const ISSUE_CATEGORY_COLORS: Record<string, string> = {
-  '0': '#0ea5e9',
-  '1': '#8b5cf6',
-  '2': '#22c55e',
-  '3': '#f59e0b',
-  '4': '#ef4444',
-  '5': '#ec4899',
+const ISSUE_CATEGORY_COLORS: Record<string, 'info' | 'secondary' | 'success' | 'warning' | 'error' | 'primary'> = {
+  '0': 'info',
+  '1': 'secondary',
+  '2': 'success',
+  '3': 'warning',
+  '4': 'error',
+  '5': 'primary',
 }
 
 const RAG_LABELS: Record<string, string> = {
@@ -59,11 +58,11 @@ const STATUS_LABELS: Record<string, string> = {
   '3': 'Closed',
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  '0': '#f59e0b',
-  '1': '#0ea5e9',
-  '2': '#22c55e',
-  '3': '#64748b',
+const STATUS_COLORS: Record<string, 'warning' | 'info' | 'success' | 'default'> = {
+  '0': 'warning',
+  '1': 'info',
+  '2': 'success',
+  '3': 'default',
 }
 
 interface AssignedIssuesListProps {
@@ -116,13 +115,13 @@ export const AssignedIssuesList = ({
   }
 
   return (
-    <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+    <Paper sx={{ overflow: 'hidden' }}>
       {/* Header */}
       <Box sx={{ px: 2.5, py: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <BugReportIcon sx={{ color: '#0ea5e9', fontSize: 22 }} />
+              <BugReportIcon sx={{ color: 'info.main', fontSize: 22 }} />
               My Assigned Issues
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -134,7 +133,7 @@ export const AssignedIssuesList = ({
             size="small"
             startIcon={<AddIcon />}
             onClick={onLogIssue}
-            sx={{ borderRadius: 1.5, fontWeight: 600 }}
+            sx={{ fontWeight: 600 }}
           >
             Log Issue
           </Button>
@@ -154,7 +153,7 @@ export const AssignedIssuesList = ({
                     <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                   </InputAdornment>
                 ),
-                sx: { borderRadius: 1.15, fontSize: fontSizes.base },
+                sx: { fontSize: fontSizes.base },
               },
             }}
             sx={{ flex: '1 1 240px', maxWidth: 360 }}
@@ -200,10 +199,10 @@ export const AssignedIssuesList = ({
         {loading ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {[1, 2, 3].map(i => (
-              <Paper key={i} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+              <Paper key={i} variant="outlined" sx={{ p: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Box sx={{ width: '60%', height: 14, bgcolor: 'action.hover', borderRadius: 1 }} />
-                  <Box sx={{ width: 60, height: 24, bgcolor: 'action.hover', borderRadius: 1 }} />
+                  <Box sx={{ width: '60%', height: 14, bgcolor: 'action.hover' }} />
+                  <Box sx={{ width: 60, height: 24, bgcolor: 'action.hover' }} />
                 </Box>
               </Paper>
             ))}
@@ -241,7 +240,6 @@ export const AssignedIssuesList = ({
                   variant="outlined"
                   sx={{
                     p: 2,
-                    borderRadius: 1.5,
                     borderLeft: '4px solid',
                     borderLeftColor: isEscalated
                       ? 'error.main'
@@ -300,9 +298,8 @@ export const AssignedIssuesList = ({
                     <StatusTag
                       label={ISSUE_CATEGORY_LABELS[String(issue.pm_issuecategory ?? '')] ?? '—'}
                       variant="outlined"
+                      color={ISSUE_CATEGORY_COLORS[String(issue.pm_issuecategory ?? '')] || 'default'}
                       sx={{
-                        borderColor: ISSUE_CATEGORY_COLORS[String(issue.pm_issuecategory ?? '')],
-                        color: ISSUE_CATEGORY_COLORS[String(issue.pm_issuecategory ?? '')],
                         fontSize: fontSizes.xs,
                       }}
                     />
@@ -314,9 +311,8 @@ export const AssignedIssuesList = ({
                     <StatusTag
                       label={STATUS_LABELS[String(issue.pm_issuestatus ?? '')] ?? '—'}
                       variant="filled"
+                      color={STATUS_COLORS[String(issue.pm_issuestatus ?? '')] || 'default'}
                       sx={{
-                        bgcolor: STATUS_COLORS[String(issue.pm_issuestatus ?? '')],
-                        color: '#fff',
                         fontSize: fontSizes.xs,
                       }}
                     />

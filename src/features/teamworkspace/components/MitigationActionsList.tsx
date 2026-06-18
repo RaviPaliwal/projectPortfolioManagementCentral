@@ -3,7 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  Button,
   TextField,
   MenuItem,
   InputAdornment,
@@ -19,7 +18,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseCircleIcon from '@mui/icons-material/PauseCircle'
 import { fontSizes } from '@/styles'
-import { StatusTag } from '@/components/common'
+import { StatusTag, Button } from '@/components/common'
 import type { RiskMitigationActionModel } from '@/types/dataverse'
 
 const ACTION_STATUS_LABELS: Record<string, string> = {
@@ -30,12 +29,12 @@ const ACTION_STATUS_LABELS: Record<string, string> = {
   '4': 'Cancelled',
 }
 
-const ACTION_STATUS_COLORS: Record<string, string> = {
-  '0': '#94a3b8',
-  '1': '#0ea5e9',
-  '2': '#f59e0b',
-  '3': '#22c55e',
-  '4': '#ef4444',
+const ACTION_STATUS_COLORS: Record<string, 'default' | 'info' | 'warning' | 'success' | 'error'> = {
+  '0': 'default',
+  '1': 'info',
+  '2': 'warning',
+  '3': 'success',
+  '4': 'error',
 }
 
 const ACTION_STATUS_ICONS: Record<string, React.ReactNode> = {
@@ -83,13 +82,13 @@ export const MitigationActionsList = ({
   }
 
   return (
-    <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+    <Paper sx={{ overflow: 'hidden' }}>
       {/* Header */}
       <Box sx={{ px: 2.5, py: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AssignmentIcon sx={{ color: '#8b5cf6', fontSize: 22 }} />
+              <AssignmentIcon sx={{ color: 'secondary.main', fontSize: 22 }} />
               My Mitigation Actions
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -114,11 +113,9 @@ export const MitigationActionsList = ({
               value={completionPercent}
               sx={{
                 height: 6,
-                borderRadius: 3,
                 bgcolor: 'action.hover',
                 '& .MuiLinearProgress-bar': {
-                  borderRadius: 3,
-                  bgcolor: completionPercent === 100 ? '#22c55e' : '#8b5cf6',
+                  bgcolor: completionPercent === 100 ? 'success.main' : 'secondary.main',
                   transition: 'width 0.5s ease',
                 },
               }}
@@ -140,7 +137,7 @@ export const MitigationActionsList = ({
                     <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                   </InputAdornment>
                 ),
-                sx: { borderRadius: 1.15, fontSize: fontSizes.base },
+                sx: { fontSize: fontSizes.base },
               },
             }}
             sx={{ flex: '1 1 240px', maxWidth: 360 }}
@@ -172,9 +169,9 @@ export const MitigationActionsList = ({
         {loading ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {[1, 2, 3].map(i => (
-              <Paper key={i} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                <Box sx={{ width: '50%', height: 14, bgcolor: 'action.hover', borderRadius: 1, mb: 1 }} />
-                <Box sx={{ width: '100%', height: 6, bgcolor: 'action.hover', borderRadius: 3 }} />
+              <Paper key={i} variant="outlined" sx={{ p: 2 }}>
+                <Box sx={{ width: '50%', height: 14, bgcolor: 'action.hover', mb: 1 }} />
+                <Box sx={{ width: '100%', height: 6, bgcolor: 'action.hover' }} />
               </Paper>
             ))}
           </Box>
@@ -205,13 +202,14 @@ export const MitigationActionsList = ({
                   variant="outlined"
                   sx={{
                     p: 2,
-                    borderRadius: 1.5,
                     borderLeft: '4px solid',
                     borderLeftColor: isCompleted
                       ? 'success.main'
                       : isOverdue
                         ? 'error.main'
-                        : ACTION_STATUS_COLORS[status] || 'primary.main',
+                        : status === '0'
+                          ? 'text.disabled'
+                          : `${ACTION_STATUS_COLORS[status] || 'primary'}.main`,
                     transition: 'all 0.15s ease',
                     '&:hover': {
                       borderColor: 'primary.main',
@@ -246,9 +244,8 @@ export const MitigationActionsList = ({
                         label={ACTION_STATUS_LABELS[status] || '—'}
                         variant={isCompleted ? 'filled' : 'subtle'}
                         icon={ACTION_STATUS_ICONS[status]}
+                        color={ACTION_STATUS_COLORS[status] || 'default'}
                         sx={{
-                          bgcolor: isCompleted ? ACTION_STATUS_COLORS[status] : undefined,
-                          color: isCompleted ? '#fff' : ACTION_STATUS_COLORS[status],
                           fontSize: fontSizes.xs,
                         }}
                       />
@@ -259,7 +256,6 @@ export const MitigationActionsList = ({
                           startIcon={<EditIcon />}
                           onClick={() => onUpdateAction(action)}
                           sx={{
-                            borderRadius: 1.5,
                             fontWeight: 600,
                             fontSize: 11,
                             py: 0.5,
@@ -284,15 +280,13 @@ export const MitigationActionsList = ({
                       value={isCompleted ? 100 : status === '1' ? 50 : status === '2' ? 75 : 10}
                       sx={{
                         height: 5,
-                        borderRadius: 3,
                         bgcolor: 'action.hover',
                         '& .MuiLinearProgress-bar': {
-                          borderRadius: 3,
                           bgcolor: isCompleted
-                            ? '#22c55e'
+                            ? 'success.main'
                             : isOverdue
-                              ? '#ef4444'
-                              : '#8b5cf6',
+                              ? 'error.main'
+                              : 'secondary.main',
                         },
                       }}
                     />

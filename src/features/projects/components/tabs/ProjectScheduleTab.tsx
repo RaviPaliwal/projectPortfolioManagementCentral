@@ -125,7 +125,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
       </Grid>
 
       {/* ── View Toggle ── */}
-      <Paper sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
+      <Paper sx={{ overflow: 'hidden' }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Tabs value={activeView} onChange={(_, v) => setActiveView(v)}>
             <Tab label="Gantt Chart" icon={<ViewWeekIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
@@ -178,7 +178,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                             <Typography variant="body2" sx={{ fontWeight: item.type === 'milestone' ? 800 : 600, color: item.type === 'milestone' ? 'warning.dark' : 'text.primary' }}>
                               {item.name}
                               {item.type === 'milestone' && (
-                                <Typography variant="caption" sx={{ ml: 1, px: 0.8, py: 0.2, bgcolor: 'warning.lighter', color: 'warning.dark', borderRadius: 1, fontWeight: 800, textTransform: 'uppercase', fontSize: 9 }}>
+                                <Typography variant="caption" sx={{ ml: 1, px: 0.8, py: 0.2, bgcolor: 'rgba(245, 158, 11, 0.08)', color: 'warning.dark', fontWeight: 800, textTransform: 'uppercase', fontSize: fontSizes.xs }}>
                                   Milestone
                                 </Typography>
                               )}
@@ -214,7 +214,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                             <LinearProgress 
                               variant="determinate" 
                               value={(item as any).progress || 0} 
-                              sx={{ height: 6, borderRadius: 1.5, bgcolor: theme.palette.action.hover, '& .MuiLinearProgress-bar': { borderRadius: 1.5, bgcolor: (item as any).progress === 100 ? 'success.main' : 'primary.main' } }} 
+                              sx={{ height: 6, bgcolor: theme.palette.action.hover, '& .MuiLinearProgress-bar': { bgcolor: (item as any).progress === 100 ? 'success.main' : 'primary.main' } }} 
                             />
                           </Box>
                         ) : (

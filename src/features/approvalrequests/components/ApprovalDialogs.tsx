@@ -1,7 +1,6 @@
 import {
   Box,
   Typography,
-  Button,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -18,6 +17,7 @@ import ChecklistIcon from '@mui/icons-material/Checklist'
 import DescriptionIcon from '@mui/icons-material/Description'
 import PersonIcon from '@mui/icons-material/Person'
 import type { ApprovalRequestModel } from '@/types/dataverse'
+import { Button, ConfirmDialog } from '@/components/common'
 import { fontSizes } from '@/styles'
 
 interface ApprovalDialogsProps {
@@ -61,7 +61,6 @@ export const ApprovalDialogs: React.FC<ApprovalDialogsProps> = ({
         onClose={onClose} 
         maxWidth="md" 
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 2 } } }}
       >
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
           {dialogMode === 'create' ? 'Create Approval Request' : 'Edit Approval Request'}
@@ -84,7 +83,6 @@ export const ApprovalDialogs: React.FC<ApprovalDialogsProps> = ({
                 onChange={(e) => onFieldChange('pm_requesttitle', e.target.value)}
                 error={!!formErrors.pm_requesttitle}
                 helperText={formErrors.pm_requesttitle}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
 
@@ -95,7 +93,6 @@ export const ApprovalDialogs: React.FC<ApprovalDialogsProps> = ({
                   value={String(formData.pm_approvalstage ?? '0')}
                   label="Stage"
                   onChange={(e) => onFieldChange('pm_approvalstage', e.target.value)}
-                  sx={{ borderRadius: 1.5 }}
                 >
                   {stageOptions.filter(o => o.value !== '').map(o => (
                     <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
@@ -111,7 +108,6 @@ export const ApprovalDialogs: React.FC<ApprovalDialogsProps> = ({
                   value={String(formData.pm_entitytype ?? '0')}
                   label="Entity Type"
                   onChange={(e) => onFieldChange('pm_entitytype', e.target.value)}
-                  sx={{ borderRadius: 1.5 }}
                 >
                   {entityOptions.filter(o => o.value !== '').map(o => (
                     <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
@@ -127,7 +123,6 @@ export const ApprovalDialogs: React.FC<ApprovalDialogsProps> = ({
                   value={String(formData.pm_prioritylevel ?? '0')}
                   label="Priority"
                   onChange={(e) => onFieldChange('pm_prioritylevel', e.target.value)}
-                  sx={{ borderRadius: 1.5 }}
                 >
                   {priorityOptions.filter(o => o.value !== '').map(o => (
                     <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
@@ -156,7 +151,6 @@ export const ApprovalDialogs: React.FC<ApprovalDialogsProps> = ({
                 rows={3}
                 value={formData.pm_decisionnotes || ''}
                 onChange={(e) => onFieldChange('pm_decisionnotes', e.target.value)}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
 
@@ -168,7 +162,7 @@ export const ApprovalDialogs: React.FC<ApprovalDialogsProps> = ({
                 size="small"
                 value={formData.pm_duedate ? formData.pm_duedate.split('T')[0] : ''}
                 onChange={(e) => onFieldChange('pm_duedate', e.target.value)}
-                slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
             </Grid>
 
@@ -179,7 +173,6 @@ export const ApprovalDialogs: React.FC<ApprovalDialogsProps> = ({
                 size="small"
                 value={formData.pm_approvername || ''}
                 onChange={(e) => onFieldChange('pm_approvername', e.target.value)}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
           </Grid>
@@ -193,26 +186,16 @@ export const ApprovalDialogs: React.FC<ApprovalDialogsProps> = ({
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog 
-        open={!!deleteTarget} 
-        onClose={onDeleteClose} 
-        maxWidth="xs" 
-        fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 2 } } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700 }}>Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            Are you sure you want to delete <strong>{deleteTarget?.pm_requesttitle}</strong>? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={onDeleteClose} variant="outlined" disabled={actionLoading}>Cancel</Button>
-          <Button onClick={onDeleteConfirm} variant="contained" color="error" disabled={actionLoading}>
-            {actionLoading ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Confirm Deletion"
+        message={deleteTarget ? `Are you sure you want to delete ${deleteTarget.pm_requesttitle}? This action cannot be undone.` : ''}
+        confirmLabel={actionLoading ? 'Deleting...' : 'Delete'}
+        confirmColor="error"
+        loading={actionLoading}
+        onConfirm={onDeleteConfirm}
+        onClose={onDeleteClose}
+      />
     </>
   )
 }

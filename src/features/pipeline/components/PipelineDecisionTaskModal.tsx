@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
-  Button, IconButton, CircularProgress, TextField, Divider, Chip, Paper,
+  IconButton, CircularProgress, TextField, Divider, Chip, Paper,
   FormControl, InputLabel, Select, MenuItem,
+  useTheme,
+  alpha,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import GavelIcon from '@mui/icons-material/Gavel'
@@ -10,7 +12,7 @@ import FactCheckIcon from '@mui/icons-material/FactCheck'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import { fetchInitiativeById, updateInitiativeStatus } from '@/services/initiative.service'
 import type { InitiativeModel } from '@/types/dataverse'
-import { StatusTag } from '@/components/common'
+import { StatusTag, Button } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
 import DescriptionIcon from '@mui/icons-material/Description'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
@@ -35,6 +37,8 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
   open, onClose, initiativeId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
 }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [initiative, setInitiative] = useState<InitiativeModel | null>(null)
@@ -203,7 +207,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                   </Typography>
                 </Box>
               )}
-              <Box sx={{ mt: 4, p: 2, bgcolor: 'success.50', borderRadius: 1.5, border: '1px solid', borderColor: 'success.100' }}>
+              <Box sx={{ mt: 4, p: 2, bgcolor: alpha(theme.palette.success.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.success.main, 0.2) }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <FactCheckIcon sx={{ fontSize: 16 }} /> Authority Required
                 </Typography>
@@ -218,14 +222,14 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <DescriptionIcon sx={{ fontSize: 16 }} /> Business Case
                   </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, mb: 3, bgcolor: 'background.paper', maxHeight: 120, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
+                  <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'background.paper', maxHeight: 120, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
                     {initiative.pm_businesscase}
                   </Paper>
                 </>
               )}
 
               {initiative?.pm_estimatedbenefits != null && initiative?.pm_estimatedcost != null && (
-                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, mb: 3, bgcolor: 'primary.50', border: '1px solid', borderColor: 'primary.100' }}>
+                <Paper variant="outlined" sx={{ p: 1.5, mb: 3, bgcolor: alpha(theme.palette.primary.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.primary.main, 0.2) }}>
                   <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main' }}>Net Business Value</Typography>
                   <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: initiative.pm_estimatedbenefits - initiative.pm_estimatedcost >= 0 ? 'success.main' : 'error.main' }}>
                     {currencyFormatter.format(initiative.pm_estimatedbenefits - initiative.pm_estimatedcost)}
@@ -245,7 +249,6 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                       value={selectedOutcome}
                       label="Outcome"
                       onChange={(e) => setSelectedOutcome(Number(e.target.value))}
-                      sx={{ borderRadius: 1.5 }}
                     >
                       {OUTCOME_OPTIONS.map((opt) => (
                         <MenuItem key={opt.value} value={opt.value}>
@@ -266,7 +269,6 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                     size="small"
                     value={decisionNotes}
                     onChange={(e) => setDecisionNotes(e.target.value)}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                     placeholder="Provide the rationale for this decision..."
                   />
                 </Grid>
@@ -279,11 +281,6 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                       size="small"
                       value={conditions}
                       onChange={(e) => setConditions(e.target.value)}
-                      slotProps={{
-                        input: {
-                          sx: { borderRadius: 1.5 },
-                        },
-                      }}
                       placeholder="What conditions must be met before this initiative can be reconsidered?"
                       sx={{ '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: 'warning.main' } } }}
                     />
@@ -298,7 +295,6 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                       size="small"
                       value={conditions}
                       onChange={(e) => setConditions(e.target.value)}
-                      slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                       placeholder="Any conditions or prerequisites for conversion?"
                     />
                   </Grid>

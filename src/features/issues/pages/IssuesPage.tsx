@@ -7,9 +7,7 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableRow,
-  TableSortLabel,
   TablePagination,
   TextField,
   MenuItem,
@@ -43,6 +41,7 @@ import {
   SearchFilterBar,
   ConfirmDialog,
   TabPanel,
+  TableHeader,
 } from '@/components/common'
 import type { FilterOption } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
@@ -173,10 +172,10 @@ export default function IssuesPage() {
 
   // Grid state: search, filters, sort, pagination
   const [searchQuery, setSearchQuery] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
-  const [ragFilter, setRagFilter] = useState('')
-  const [priorityFilter, setPriorityFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [ragFilter, setRagFilter] = useState('all')
+  const [priorityFilter, setPriorityFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [sort, setSort] = useState<SortState>({ field: 'pm_dateraised', direction: 'desc' })
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(25)
@@ -390,22 +389,22 @@ export default function IssuesPage() {
     }
 
     // Category filter
-    if (categoryFilter) {
+    if (categoryFilter !== 'all') {
       list = list.filter(i => String(i.pm_issuecategory ?? '') === categoryFilter)
     }
 
     // RAG filter
-    if (ragFilter) {
+    if (ragFilter !== 'all') {
       list = list.filter(i => String(i.pm_ragstatus ?? '') === ragFilter)
     }
 
     // Priority filter
-    if (priorityFilter) {
+    if (priorityFilter !== 'all') {
       list = list.filter(i => String(i.pm_prioritylevel ?? '') === priorityFilter)
     }
 
     // Status filter
-    if (statusFilter) {
+    if (statusFilter !== 'all') {
       list = list.filter(i => String(i.pm_issuestatus ?? '') === statusFilter)
     }
 
@@ -444,7 +443,7 @@ export default function IssuesPage() {
     [filteredIssues, page, rowsPerPage]
   )
 
-  const hasActiveFilters = searchQuery || categoryFilter || ragFilter || priorityFilter || statusFilter
+  const hasActiveFilters = searchQuery || categoryFilter !== 'all' || ragFilter !== 'all' || priorityFilter !== 'all' || statusFilter !== 'all'
 
   const handleSearchChange = useCallback((value: string) => { setSearchQuery(value); setPage(0) }, [])
   const handleCategoryFilterChange = useCallback((value: string) => { setCategoryFilter(value); setPage(0) }, [])
@@ -453,10 +452,10 @@ export default function IssuesPage() {
   const handleStatusFilterChange = useCallback((value: string) => { setStatusFilter(value); setPage(0) }, [])
   const handleClearFilters = useCallback(() => {
     setSearchQuery('')
-    setCategoryFilter('')
-    setRagFilter('')
-    setPriorityFilter('')
-    setStatusFilter('')
+    setCategoryFilter('all')
+    setRagFilter('all')
+    setPriorityFilter('all')
+    setStatusFilter('all')
     setPage(0)
   }, [])
   const handleSort = useCallback((field: string) => {
@@ -471,35 +470,24 @@ export default function IssuesPage() {
     setPage(0)
   }, [])
 
-  const SortHeader = ({ field, label }: { field: string; label: string }) => (
-    <TableSortLabel
-      active={sort.field === field}
-      direction={sort.field === field ? sort.direction : 'asc'}
-      onClick={() => handleSort(field)}
-      sx={{ fontWeight: 700, color: 'inherit', '&.Mui-active': { color: 'inherit' } }}
-    >
-      {label}
-    </TableSortLabel>
-  )
-
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
   const filterOptions = useMemo((): { categoryOptions: FilterOption[]; ragOptions: FilterOption[]; priorityOptions: FilterOption[]; statusOptions: FilterOption[] } => ({
     categoryOptions: [
-      { value: '', label: 'All Categories' },
+      { value: 'all', label: 'All Categories' },
       ...Object.entries(ISSUE_CATEGORY_LABELS).map(([k, v]) => ({ value: k, label: v })),
     ],
     ragOptions: [
-      { value: '', label: 'All RAG' },
+      { value: 'all', label: 'All RAG' },
       ...Object.entries(RAG_LABELS).map(([k, v]) => ({ value: k, label: v })),
     ],
     priorityOptions: [
-      { value: '', label: 'All Priorities' },
+      { value: 'all', label: 'All Priorities' },
       ...Object.entries(PRIORITY_LABELS).map(([k, v]) => ({ value: k, label: v })),
     ],
     statusOptions: [
-      { value: '', label: 'All Statuses' },
+      { value: 'all', label: 'All Statuses' },
       ...Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v })),
     ],
   }), [])
@@ -571,7 +559,6 @@ export default function IssuesPage() {
                 value={priorityFilter}
                 onChange={e => handlePriorityFilterChange(e.target.value)}
                 sx={{ minWidth: 150 }}
-                slotProps={{ select: { displayEmpty: true } }}
               >
                 {filterOptions.priorityOptions.map(opt => (
                   <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
@@ -584,7 +571,6 @@ export default function IssuesPage() {
                 value={statusFilter}
                 onChange={e => handleStatusFilterChange(e.target.value)}
                 sx={{ minWidth: 150 }}
-                slotProps={{ select: { displayEmpty: true } }}
               >
                 {filterOptions.statusOptions.map(opt => (
                   <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
@@ -603,42 +589,16 @@ export default function IssuesPage() {
           emptyMessage={hasActiveFilters ? 'Try adjusting your search or filter criteria.' : 'Create your first issue to start tracking project issues.'}
         >
           <Table stickyHeader size="small" sx={{ minWidth: 1200 }}>
-            <TableHead>
-              <TableRow>
-                {[
-                  { field: 'pm_issuetitle', label: 'Issue Title' },
-                  { field: '', label: 'Project' },
-                  { field: 'pm_issuecategory', label: 'Category' },
-                  { field: 'pm_ragstatus', label: 'RAG' },
-                  { field: 'pm_prioritylevel', label: 'Priority' },
-                  { field: '', label: 'Owner' },
-                  { field: 'pm_targetresolutiondate', label: 'Target Date' },
-                ].map(col => (
-                  <TableCell
-                    key={col.field || col.label}
-                    sx={{
-                      fontWeight: 700,
-                      bgcolor: isDark ? 'background.paper' : 'background.default',
-                      borderBottom: `2px solid ${theme.palette.divider}`,
-                      px: 2.5,
-                      py: 1.5,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {col.field ? (
-                      <SortHeader field={col.field} label={col.label} />
-                    ) : (
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                        {col.label}
-                      </Typography>
-                    )}
-                  </TableCell>
-                ))}
-                <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Actions</Typography>
-                </TableCell>
-              </TableRow>
-            </TableHead>
+            <TableHeader cells={[
+              { label: 'Issue Title', sortable: true, active: sort.field === 'pm_issuetitle', dir: sort.direction, onClick: () => handleSort('pm_issuetitle') },
+              { label: 'Project' },
+              { label: 'Category', sortable: true, active: sort.field === 'pm_issuecategory', dir: sort.direction, onClick: () => handleSort('pm_issuecategory') },
+              { label: 'RAG', sortable: true, active: sort.field === 'pm_ragstatus', dir: sort.direction, onClick: () => handleSort('pm_ragstatus') },
+              { label: 'Priority', sortable: true, active: sort.field === 'pm_prioritylevel', dir: sort.direction, onClick: () => handleSort('pm_prioritylevel') },
+              { label: 'Owner' },
+              { label: 'Target Date', sortable: true, active: sort.field === 'pm_targetresolutiondate', dir: sort.direction, onClick: () => handleSort('pm_targetresolutiondate') },
+              { label: 'Actions', align: 'right' },
+            ]} />
             <TableBody>
               {paginatedIssues.map((issue, idx) => (
                 <TableRow

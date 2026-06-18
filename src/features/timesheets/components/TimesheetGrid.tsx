@@ -172,9 +172,12 @@ export function TimesheetGrid({
                 selected={selectedTimesheetId === ts.pm_timesheetid}
                 sx={{
                   cursor: 'pointer',
-                  bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                  '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                  '&.Mui-selected': { bgcolor: isDark ? '#1e3a5f' : '#e0e7ff' },
+                  bgcolor: idx % 2 === 1 ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)') : 'transparent',
+                  '&:hover': { bgcolor: 'action.hover !important' },
+                  '&.Mui-selected': { 
+                    bgcolor: isDark ? 'rgba(139, 92, 246, 0.15) !important' : 'rgba(139, 92, 246, 0.08) !important',
+                    '&:hover': { bgcolor: isDark ? 'rgba(139, 92, 246, 0.25) !important' : 'rgba(139, 92, 246, 0.12) !important' }
+                  },
                   transition: 'background-color 0.15s ease',
                   '& td': { px: 2.5, py: 1.25 },
                 }}

@@ -3,7 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  Button,
   Skeleton,
   Alert,
   Chip,
@@ -31,7 +30,8 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import DescriptionIcon from '@mui/icons-material/Description'
 
 import { useUser } from '@/context/UserContext'
-import { StatusTag } from '@/components/common'
+import { StatusTag, Button } from '@/components/common'
+import { fontSizes } from '@/styles'
 import {
   fetchPendingWorkflowApprovals,
   fetchAgentInsights,
@@ -58,19 +58,19 @@ function getEntityLabel(entityType?: string): string {
 }
 
 function getEntityIcon(entityType?: string) {
-  if (!entityType) return <AssignmentIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+  if (!entityType) return <AssignmentIcon sx={{ fontSize: fontSizes.sm, color: 'text.secondary' }} />
   const icons: Record<string, React.ReactNode> = {
-    project: <AccountTreeIcon sx={{ fontSize: 14, color: '#6366f1' }} />,
-    projects: <AccountTreeIcon sx={{ fontSize: 14, color: '#6366f1' }} />,
-    budget: <AccountBalanceWalletIcon sx={{ fontSize: 14, color: '#22c55e' }} />,
-    budgets: <AccountBalanceWalletIcon sx={{ fontSize: 14, color: '#22c55e' }} />,
-    timesheet: <AccessTimeIcon sx={{ fontSize: 14, color: '#f59e0b' }} />,
-    timesheets: <AccessTimeIcon sx={{ fontSize: 14, color: '#f59e0b' }} />,
-    resource: <GroupIcon sx={{ fontSize: 14, color: '#3b82f6' }} />,
-    resources: <GroupIcon sx={{ fontSize: 14, color: '#3b82f6' }} />,
-    pipeline: <DescriptionIcon sx={{ fontSize: 14, color: '#ec4899' }} />,
+    project: <AccountTreeIcon sx={{ fontSize: fontSizes.sm, color: 'primary.main' }} />,
+    projects: <AccountTreeIcon sx={{ fontSize: fontSizes.sm, color: 'primary.main' }} />,
+    budget: <AccountBalanceWalletIcon sx={{ fontSize: fontSizes.sm, color: 'success.main' }} />,
+    budgets: <AccountBalanceWalletIcon sx={{ fontSize: fontSizes.sm, color: 'success.main' }} />,
+    timesheet: <AccessTimeIcon sx={{ fontSize: fontSizes.sm, color: 'warning.main' }} />,
+    timesheets: <AccessTimeIcon sx={{ fontSize: fontSizes.sm, color: 'warning.main' }} />,
+    resource: <GroupIcon sx={{ fontSize: fontSizes.sm, color: 'info.main' }} />,
+    resources: <GroupIcon sx={{ fontSize: fontSizes.sm, color: 'info.main' }} />,
+    pipeline: <DescriptionIcon sx={{ fontSize: fontSizes.sm, color: 'secondary.main' }} />,
   }
-  return icons[entityType.toLowerCase()] || <AssignmentIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+  return icons[entityType.toLowerCase()] || <AssignmentIcon sx={{ fontSize: fontSizes.sm, color: 'text.secondary' }} />
 }
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -168,7 +168,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AssignmentIcon sx={{ color: '#6366f1' }} />
+                  <AssignmentIcon sx={{ color: 'primary.main' }} />
                   Tasks
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -216,7 +216,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
               </Box>
             ) : totalTasks === 0 ? (
               <Box sx={{ textAlign: 'center', py: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                <CheckCircleIcon sx={{ fontSize: 40, color: '#22c55e', mb: 1 }} />
+                <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>No pending approvals</Typography>
                 <Typography variant="caption" color="text.disabled">All caught up! You have no tasks requiring action.</Typography>
               </Box>
@@ -240,7 +240,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, minWidth: 0 }}>
                           <Box sx={{ position: 'relative', mt: 0.25 }}>
-                            <AssignmentIcon sx={{ fontSize: 16, color: isOverdue ? 'error.main' : '#6366f1' }} />
+                            <AssignmentIcon sx={{ fontSize: fontSizes.md, color: isOverdue ? 'error.main' : 'primary.main' }} />
                             {(step as any).pm_entitytype && (
                               <Box sx={{ position: 'absolute', top: -6, right: -6, transform: 'scale(0.7)' }}>
                                 {getEntityIcon((step as any).pm_entitytype)}
@@ -248,21 +248,21 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                             )}
                           </Box>
                           <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: fontSizes.sm }}>
                               {step.pm_stepname || 'Approval Step'}
                             </Typography>
                             {(step as any).pm_entitytype && (
-                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.3, fontSize: 11 }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.3, fontSize: fontSizes.xs }}>
                                 {getEntityLabel((step as any).pm_entitytype)}
                               </Typography>
                             )}
                             {(step as any).pm_workflowname && (
-                              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', lineHeight: 1.3, fontSize: 10, mt: 0.25 }}>
+                              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', lineHeight: 1.3, fontSize: fontSizes.xs, mt: 0.25 }}>
                                 {(step as any).pm_workflowname}
                               </Typography>
                             )}
                             {(step as any).pm_initiatedby && (
-                              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', lineHeight: 1.3, fontSize: 10 }}>
+                              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', lineHeight: 1.3, fontSize: fontSizes.xs }}>
                                 Requested by {(step as any).pm_initiatedby}
                               </Typography>
                             )}
@@ -284,7 +284,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                           )}
                           {((step as any).pm_assigneename || step.pm_approvername) && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <PersonIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
+                              <PersonIcon sx={{ fontSize: fontSizes.sm, color: 'text.secondary' }} />
                               <Typography variant="caption" color="text.secondary">{(step as any).pm_assigneename || step.pm_approvername}</Typography>
                             </Box>
                           )}
@@ -303,7 +303,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                               setOpeningStep(null)
                             }
                           }}
-                          sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 11, py: 0.5, minWidth: 90 }}
+                          sx={{ fontWeight: 600, fontSize: fontSizes.xs, py: 0.5, minWidth: 90 }}
                         >
                           {openingStep === step.pm_workflowapprovalstepid ? 'Opening...' : 'Review'}
                         </Button>
@@ -352,7 +352,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
             onClick={() => setShowInsights(!showInsights)}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AutoAwesomeIcon sx={{ color: '#f59e0b', fontSize: 20 }} />
+              <AutoAwesomeIcon sx={{ color: 'warning.main', fontSize: 20 }} />
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>AI Insights</Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -425,17 +425,17 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                             )}
                           </Box>
                           <Box sx={{ minWidth: 0, flex: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: fontSizes.sm }}>
                               {insight.title}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5, display: 'block', mt: 0.25 }}>
                               {insight.description.length > 150 ? insight.description.substring(0, 150) + '...' : insight.description}
                             </Typography>
                             <Box sx={{ display: 'flex', gap: 0.75, mt: 0.5, flexWrap: 'wrap' }}>
-                              <Chip label={insight.type} size="small" color={insight.type === 'Alert' ? 'warning' : 'info'} variant="outlined" sx={{ height: 20, fontSize: 10, fontWeight: 600 }} />
-                              <Chip label={insight.priority} size="small" color={insight.priority === 'High' ? 'error' : insight.priority === 'Medium' ? 'warning' : 'default'} variant="filled" sx={{ height: 20, fontSize: 10, fontWeight: 600 }} />
+                              <Chip label={insight.type} size="small" color={insight.type === 'Alert' ? 'warning' : 'info'} variant="outlined" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
+                              <Chip label={insight.priority} size="small" color={insight.priority === 'High' ? 'error' : insight.priority === 'Medium' ? 'warning' : 'default'} variant="filled" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
                               {insight.confidenceScore > 0 && (
-                                <Chip label={`${Math.round(insight.confidenceScore * 100)}% confidence`} size="small" variant="outlined" sx={{ height: 20, fontSize: 10, fontWeight: 600 }} />
+                                <Chip label={`${Math.round(insight.confidenceScore * 100)}% confidence`} size="small" variant="outlined" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
                               )}
                             </Box>
                           </Box>

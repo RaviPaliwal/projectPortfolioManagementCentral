@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Dialog, DialogContent, Box, Typography,
-  Button, CircularProgress, TextField, Paper, Divider, Chip,
-  IconButton, useTheme,
+  CircularProgress, TextField, Paper, Divider, Chip,
+  IconButton, useTheme, alpha
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import GavelIcon from '@mui/icons-material/Gavel'
@@ -14,15 +14,8 @@ import HistoryIcon from '@mui/icons-material/History'
 import { fetchProjectDetails, updateGateReview, fetchGateReviewById } from '@/services'
 import { submitWorkflowDecision } from '@/services/workflow.service'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
-import { StatusTag } from '@/components/common'
-
-// ── Constants ──────────────────────────────────────────────────────────
-
-const OUTCOME_OPTIONS = [
-  { value: 0, label: 'Approved',          color: '#10B981', desc: 'Project proceeds to the next gate stage.' },
-  { value: 1, label: 'Conditional Approval', color: '#F59E0B', desc: 'Approve subject to mandatory conditions.' },
-  { value: 4, label: 'Not Approved',       color: '#EF4444', desc: 'Project does not proceed; returns to planning.' },
-]
+import { StatusTag, Button } from '@/components/common'
+import { fontSizes } from '@/styles/fontSizes'
 
 // ── Props ──────────────────────────────────────────────────────────────
 
@@ -51,9 +44,9 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ outcome, projectName, gat
   const isDark = theme.palette.mode === 'dark'
 
   const map: Record<number, { color: string; label: string; emoji: string }> = {
-    0: { color: '#10B981', label: 'Gate Approved',       emoji: '🎉' },
-    1: { color: '#F59E0B', label: 'Conditional Approval', emoji: '📋' },
-    2: { color: '#EF4444', label: 'Not Approved',          emoji: '🚫' },
+    0: { color: theme.palette.success.main, label: 'Gate Approved',       emoji: '🎉' },
+    1: { color: theme.palette.warning.main, label: 'Conditional Approval', emoji: '📋' },
+    2: { color: theme.palette.error.main, label: 'Not Approved',          emoji: '🚫' },
   }
   const d = map[outcome] || map[0]
 
@@ -65,8 +58,8 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ outcome, projectName, gat
         alignItems: 'center',
         justifyContent: 'center',
         background: isDark
-          ? 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.08) 100%)'
-          : 'linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%)',
+          ? `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.08)} 0%, ${alpha(theme.palette.success.main, 0.08)} 100%)`
+          : `linear-gradient(135deg, ${alpha(theme.palette.secondary.light, 0.2)} 0%, ${alpha(theme.palette.success.light, 0.2)} 100%)`,
         p: 4,
       }}
     >
@@ -74,7 +67,6 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ outcome, projectName, gat
         elevation={0}
         sx={{
           p: 5,
-          borderRadius: 3,
           maxWidth: 460,
           width: '100%',
           textAlign: 'center',
@@ -100,7 +92,7 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ outcome, projectName, gat
         <Button
           variant="outlined"
           onClick={onBack}
-          sx={{ mt: 1, borderRadius: 1.5, fontWeight: 600 }}
+          sx={{ mt: 1, fontWeight: 600 }}
         >
           ← Back to Review
         </Button>
@@ -119,6 +111,12 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  const OUTCOME_OPTIONS = [
+    { value: 0, label: 'Approved',          color: theme.palette.success.main, desc: 'Project proceeds to the next gate stage.' },
+    { value: 1, label: 'Conditional Approval', color: theme.palette.warning.main, desc: 'Approve subject to mandatory conditions.' },
+    { value: 4, label: 'Not Approved',       color: theme.palette.error.main, desc: 'Project does not proceed; returns to planning.' },
+  ]
 
   // ── Data State ─────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false)
@@ -237,7 +235,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
       maxWidth="lg"
       fullWidth
       slotProps={{
-        paper: { sx: { borderRadius: 2, overflow: 'hidden', maxHeight: '90vh', minHeight: 500 } },
+        paper: { sx: { overflow: 'hidden', maxHeight: '90vh', minHeight: 500 } },
       }}
     >
       {submitted ? (
@@ -245,7 +243,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
           {/* Submitted state header */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-               <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: outcome === 4 ? '#EF4444' : outcome === 1 ? '#F59E0B' : '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+               <Box sx={{ width: 36, height: 36, bgcolor: outcome === 4 ? theme.palette.error.main : outcome === 1 ? theme.palette.warning.main : theme.palette.success.main, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', borderRadius: '50%' }}>
                 <GavelIcon sx={{ fontSize: 18 }} />
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>Governance Board Decision</Typography>
@@ -264,18 +262,18 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
           {/* ── Header ────────────────────────────────────────────── */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: 'success.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'success.contrastText' }}>
+              <Box sx={{ width: 36, height: 36, bgcolor: 'success.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'success.contrastText', borderRadius: '50%' }}>
                 <GavelIcon sx={{ fontSize: 18 }} />
               </Box>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Governance Board Decision</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: fontSizes.sm }}>
                   {gateReview?.pm_gatename || project?.pm_projectcode ? `${project?.pm_projectcode} · ${gateReview?.pm_gatename || ''}` : 'Gate Review'}
                 </Typography>
               </Box>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Chip label="Pending Final Decision" color="warning" size="small" sx={{ fontWeight: 700, borderRadius: 1 }} />
+              <Chip label="Pending Final Decision" color="warning" size="small" sx={{ fontWeight: 700 }} />
               <IconButton size="small" onClick={onClose} disabled={saving}><CloseIcon fontSize="small" /></IconButton>
             </Box>
           </Box>
@@ -296,7 +294,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                     borderRight: { md: '1px solid' },
                     borderBottom: { xs: '1px solid', md: 'none' },
                     borderColor: 'divider',
-                    bgcolor: isDark ? 'rgba(21,128,61,0.15)' : '#F0FDF4',
+                    bgcolor: isDark ? alpha(theme.palette.success.main, 0.15) : alpha(theme.palette.success.light, 0.2),
                     p: 2,
                     display: 'flex',
                     flexDirection: 'column',
@@ -305,14 +303,14 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                 >
                   {/* Brand row */}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'success.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                    <Box sx={{ width: 32, height: 32, bgcolor: 'success.main', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', borderRadius: '50%' }}>
                       <GavelIcon sx={{ fontSize: 16 }} />
                     </Box>
                     <Box>
                       <Typography variant="caption" sx={{ fontWeight: 700, color: isDark ? '#86EFAC' : '#166534', display: 'block', lineHeight: 1.2 }}>
                         Governance Board
                       </Typography>
-                      <Typography variant="caption" sx={{ fontSize: '0.65rem', color: isDark ? '#4ADE80' : '#22C55E' }}>
+                      <Typography variant="caption" sx={{ fontSize: fontSizes.xs, color: isDark ? '#4ADE80' : '#22C55E' }}>
                         Final Decision
                       </Typography>
                     </Box>
@@ -333,7 +331,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                           gap: 1.5,
                           p: 1.25,
                           borderRadius: 1,
-                          bgcolor: st.active ? (isDark ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.08)') : 'transparent',
+                          bgcolor: st.active ? (isDark ? alpha(theme.palette.success.main, 0.15) : alpha(theme.palette.success.light, 0.08)) : 'transparent',
                           borderLeft: '2px solid',
                           borderLeftColor: st.active ? 'success.main' : 'transparent',
                         }}
@@ -342,7 +340,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                           sx={{
                             width: 22, height: 22, borderRadius: '50%',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 11, fontWeight: 700, flexShrink: 0,
+                            fontSize: fontSizes.xs, fontWeight: 700, flexShrink: 0,
                             bgcolor: st.done ? '#22C55E' : (isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB'),
                             color: st.done ? '#fff' : (isDark ? '#9CA3AF' : '#6B7280'),
                           }}
@@ -352,7 +350,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                         <Typography
                           variant="body2"
                           sx={{
-                            fontWeight: st.active ? 700 : 500, fontSize: '0.82rem',
+                            fontWeight: st.active ? 700 : 500, fontSize: fontSizes.sm,
                             color: st.active ? (isDark ? '#86EFAC' : '#166534') : (isDark ? '#9CA3AF' : '#6B7280'),
                           }}
                         >
@@ -367,7 +365,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
                       Pending Board Decision
                     </Typography>
-                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
+                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: fontSizes.xs }}>
                       {project?.pm_projectmanagername || project?.pm_projectname || ''}
                     </Typography>
                   </Box>
@@ -376,7 +374,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                 {/* ─── Content Area ──────────────────────────────────── */}
                 <Box sx={{ flex: 1, p: 2.5, overflow: 'auto', maxHeight: { md: 'calc(90vh - 140px)' } }}>
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: fontSizes.xs }}>
                       ⚖️ Board Decision
                     </Typography>
                     <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25 }}>
@@ -386,7 +384,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
 
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                     {/* Project Summary Card */}
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(16,185,129,0.05)' : '#F0FDF4' }}>
+                    <Paper variant="outlined" sx={{ p: 2, bgcolor: (t) => t.palette.mode === 'dark' ? alpha(t.palette.success.main, 0.05) : alpha(t.palette.success.light, 0.2) }}>
                       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
                         <Box>
                           <Typography variant="body1" sx={{ fontWeight: 700 }}>
@@ -401,7 +399,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                             <StatusTag label={ragLabel} color={ragColor} />
                           </Box>
                           <Box sx={{ textAlign: 'center' }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.6rem' }}>Progress</Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: fontSizes.xs }}>Progress</Typography>
                             <Typography variant="body2" sx={{ fontWeight: 700 }}>{project?.pm_percentcomplete || 0}%</Typography>
                           </Box>
                         </Box>
@@ -419,8 +417,8 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                     </Paper>
 
                     {/* Previous Endorsements */}
-                    <Paper variant="outlined" sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.5, bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(99,102,241,0.08)' : '#EEF2FF', borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.5, bgcolor: (t) => t.palette.mode === 'dark' ? alpha(t.palette.primary.main, 0.08) : alpha(t.palette.primary.light, 0.15), borderBottom: '1px solid', borderColor: 'divider' }}>
                         <HistoryIcon sx={{ fontSize: 16, color: 'primary.main' }} />
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
                           Previous Endorsements & Notes
@@ -428,7 +426,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                       </Box>
                       <Box sx={{
                         p: 2, maxHeight: 160, overflowY: 'auto',
-                        whiteSpace: 'pre-wrap', fontSize: '0.8rem',
+                        whiteSpace: 'pre-wrap', fontSize: fontSizes.sm,
                         color: 'text.secondary', fontFamily: 'monospace',
                         bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.15)' : '#FAFAFA',
                       }}>
@@ -440,7 +438,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
 
                     {/* Decision Form */}
                     <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1.5 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1.5, fontSize: fontSizes.xs }}>
                         Decision Details
                       </Typography>
 
@@ -461,13 +459,12 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                                   alignItems: 'center',
                                   gap: 1.5,
                                   border: '1.5px solid',
-                                  borderColor: isSelected ? (isDark ? `${opt.color}80` : opt.color) : 'divider',
-                                  borderRadius: 1.5,
+                                  borderColor: isSelected ? (isDark ? alpha(opt.color, 0.5) : opt.color) : 'divider',
                                   p: 1.5,
                                   cursor: 'pointer',
-                                  bgcolor: isSelected ? (isDark ? `${opt.color}15` : `${opt.color}10`) : 'transparent',
+                                  bgcolor: isSelected ? (isDark ? alpha(opt.color, 0.15) : alpha(opt.color, 0.08)) : 'transparent',
                                   transition: 'all 0.15s ease',
-                                  '&:hover': { borderColor: opt.color, bgcolor: (t) => t.palette.mode === 'dark' ? `${opt.color}10` : `${opt.color}08` },
+                                  '&:hover': { borderColor: opt.color, bgcolor: (t) => t.palette.mode === 'dark' ? alpha(opt.color, 0.1) : alpha(opt.color, 0.04) },
                                 }}
                               >
                                 <input
@@ -501,14 +498,14 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                             size="small"
                             value={reviewDate}
                             onChange={(e) => setReviewDate(e.target.value)}
-                            slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
+                            slotProps={{ inputLabel: { shrink: true } }}
                           />
                         </Box>
 
                         {/* Board Comments */}
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                            Final Board Comments <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                            Final Board Comments <Box component="span" sx={{ color: theme.palette.error.main }}>*</Box>
                           </Typography>
                           <TextField
                             fullWidth
@@ -516,7 +513,6 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                             rows={4}
                             value={boardComments}
                             onChange={(e) => setBoardComments(e.target.value)}
-                            slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                             placeholder="Summarize the board's rationale for this decision..."
                           />
                         </Box>
@@ -534,7 +530,6 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                               rows={3}
                               value={conditions}
                               onChange={(e) => setConditions(e.target.value)}
-                              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                               placeholder="What specific conditions must the PM meet before the next phase?"
                               sx={{ '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: 'warning.main' } } }}
                             />
@@ -555,7 +550,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
               size="small"
               onClick={onClose}
               disabled={saving}
-              sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 13 }}
+              sx={{ fontWeight: 600, fontSize: fontSizes.sm }}
             >
               Cancel
             </Button>
@@ -566,13 +561,12 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
               disabled={!boardComments.trim() || saving}
               onClick={handleSubmit}
               sx={{
-                borderRadius: 1.5,
                 fontWeight: 700,
                 px: 3,
                 py: 1,
-                bgcolor: outcome === 4 ? '#EF4444' : outcome === 1 ? '#F59E0B' : '#10B981',
+                bgcolor: outcome === 4 ? theme.palette.error.main : outcome === 1 ? theme.palette.warning.main : theme.palette.success.main,
                 '&:hover': {
-                  bgcolor: outcome === 4 ? '#DC2626' : outcome === 1 ? '#D97706' : '#059669',
+                  bgcolor: outcome === 4 ? theme.palette.error.dark : outcome === 1 ? theme.palette.warning.dark : theme.palette.success.dark,
                 },
               }}
             >

@@ -30,7 +30,7 @@ function ApprovalStepResolver({ approvalStepId, onClose, onSuccess, onError, chi
   useEffect(() => { load() }, [load])
 
   if (loading) { return (<Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress size={32} /><Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>Resolving timesheet...</Typography></Box>) }
-  if (error || !entityId) { return (<Box sx={{ p: 3 }}><Alert severity="error" sx={{ borderRadius: 1.5 }}>{error || 'Unable to resolve timesheet for this task.'}</Alert></Box>) }
+  if (error || !entityId) { return (<Box sx={{ p: 3 }}><Alert severity="error">{error || 'Unable to resolve timesheet for this task.'}</Alert></Box>) }
   return <>{children(entityId)}</>
 }
 

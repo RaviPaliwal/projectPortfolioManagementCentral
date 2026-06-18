@@ -82,7 +82,7 @@ function ApprovalStepResolver({ approvalStepId, onClose, onSuccess, onError, chi
   if (error || !entityId) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error" sx={{ borderRadius: 1.5 }}>
+        <Alert severity="error">
           {error || 'Unable to resolve entity for this task.'}
         </Alert>
       </Box>
@@ -92,7 +92,7 @@ function ApprovalStepResolver({ approvalStepId, onClose, onSuccess, onError, chi
   return <>{children(entityId, entityType)}</>
 }
 
-// ΓöÇΓöÇΓöÇ PMO Readiness ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── PMO Readiness ───────────────────────────────────────────────────────────
 
 export interface PmoReadinessTaskModalWrapperProps {
   approvalStepId: string
@@ -135,7 +135,7 @@ export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapper
   )
 }
 
-// ΓöÇΓöÇΓöÇ Financial Review ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Financial Review ────────────────────────────────────────────────────────
 
 export interface FinancialReviewTaskModalWrapperProps {
   approvalStepId: string
@@ -164,11 +164,12 @@ export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalW
       onSuccess={onSuccess}
       onError={onError}
     >
-      {(gateReviewId) => (
+      {(gateReviewId, entityType) => (
         <FinancialReviewTaskModal
           open={open}
           onClose={handleClose}
           gateReviewId={gateReviewId}
+          entityType={entityType}
           onSuccess={onSuccess || (() => {})}
           onError={onError || (() => {})}
           approvalStepId={approvalStepId}
@@ -177,7 +178,7 @@ export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalW
     </ApprovalStepResolver>
   )
 }
-// ΓöÇΓöÇΓöÇ Board Decision ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Board Decision ─────────────────────────────────────────────────────────
 
 export interface BoardDecisionTaskModalWrapperProps {
   approvalStepId: string

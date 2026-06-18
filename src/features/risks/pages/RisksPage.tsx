@@ -65,9 +65,9 @@ export default function RisksPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   // Filters (passed to RiskTable which uses useDataGrid)
-  const [categoryFilter, setCategoryFilter] = useState<string>('')
-  const [ragFilter, setRagFilter] = useState<string>('')
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [ragFilter, setRagFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
 
   // Drawer
   const [selectedRisk, setSelectedRisk] = useState<RiskModel | null>(null)

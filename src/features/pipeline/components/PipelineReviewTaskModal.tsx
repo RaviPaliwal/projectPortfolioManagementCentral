@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, type ComponentType } from 'rea
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
   IconButton, CircularProgress, TextField, Divider, Chip, Paper,
+  useTheme,
+  alpha,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
@@ -28,6 +30,8 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
   open, onClose, initiativeId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
 }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [initiative, setInitiative] = useState<InitiativeModel | null>(null)
@@ -154,7 +158,7 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
                   </Box>
                 </Box>
               </Box>
-              <Box sx={{ mt: 4, p: 2, bgcolor: 'warning.50', borderRadius: 1.5, border: '1px solid', borderColor: 'warning.100' }}>
+              <Box sx={{ mt: 4, p: 2, bgcolor: alpha(theme.palette.warning.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.warning.main, 0.2) }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <FactCheckIcon sx={{ fontSize: 16 }} /> Review Instructions
                 </Typography>
@@ -169,7 +173,7 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <DescriptionIcon sx={{ fontSize: 16 }} /> Business Case
                   </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, mb: 3, bgcolor: 'background.paper', maxHeight: 150, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
+                  <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'background.paper', maxHeight: 150, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
                     {initiative.pm_businesscase}
                   </Paper>
                 </>
@@ -179,20 +183,20 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
                 <MonetizationOnIcon sx={{ fontSize: 16 }} /> Financial Summary
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, minWidth: 120 }}>
+                <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
                   <Typography variant="caption" color="text.secondary">Est. Cost</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
                     {initiative?.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
                   </Typography>
                 </Paper>
-                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, minWidth: 120 }}>
+                <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
                   <Typography variant="caption" color="text.secondary">Est. Benefits</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
                     {initiative?.pm_estimatedbenefits != null ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '-'}
                   </Typography>
                 </Paper>
                 {initiative?.pm_estimatedbenefits != null && initiative?.pm_estimatedcost != null && (
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, flex: 1, minWidth: 120, bgcolor: 'success.50', border: '1px solid', borderColor: 'success.100' }}>
+                  <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120, bgcolor: alpha(theme.palette.success.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.success.main, 0.2) }}>
                     <Typography variant="caption" color="success.main" sx={{ fontWeight: 700 }}>Net Benefit</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: initiative.pm_estimatedbenefits - initiative.pm_estimatedcost >= 0 ? 'success.main' : 'error.main' }}>
                       {currencyFormatter.format(initiative.pm_estimatedbenefits - initiative.pm_estimatedcost)}
@@ -210,7 +214,6 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
                 placeholder="Summarize your recommendation (e.g., 'Proceed to financial review', 'Needs more information')"
                 value={recommendation}
                 onChange={(e) => setRecommendation(e.target.value)}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                 sx={{ mb: 2 }}
               />
               <TextField
@@ -219,7 +222,6 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
                 placeholder="Enter detailed review notes, concerns, or observations about this initiative..."
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>
           </Grid>

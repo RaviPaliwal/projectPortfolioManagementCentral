@@ -21,7 +21,7 @@ export interface LedgerCalendarProps {
   selectedDates?: string[]
   onSelectDate?: (date: string) => void
   onDoubleClickDate?: (date: string) => void
-  holidays?: Array<{ pm_holidaydate: string }>
+  holidays?: Array<{ pm_holidaydate: string; pm_holidayname?: string }>
   dailyCapacity?: number
   hideLegend?: boolean
   colorMap?: Record<string, string>
@@ -56,7 +56,17 @@ export const LedgerCalendar: React.FC<LedgerCalendarProps> = ({
 }) => {
   const theme = useTheme()
   const todayStr = new Date().toISOString().split('T')[0]
-  const holidayDates = new Set(holidays.map((h) => h.pm_holidaydate?.split('T')[0]))
+
+  const holidayMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    for (const h of holidays) {
+      const d = h.pm_holidaydate?.split('T')[0]
+      if (d) {
+        map.set(d, h.pm_holidayname || 'Public Holiday')
+      }
+    }
+    return map
+  }, [holidays])
 
   let daysInMonth: number
   let startDow: number
@@ -99,7 +109,7 @@ export const LedgerCalendar: React.FC<LedgerCalendarProps> = ({
 
   return (
     <Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5, mb: 0.5 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 0.5, mb: 0.5 }}>
         {DAYS.map((d) => (
           <Typography
             key={d}
@@ -110,19 +120,23 @@ export const LedgerCalendar: React.FC<LedgerCalendarProps> = ({
           </Typography>
         ))}
       </Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 0.5 }}>
         {cells.map((day, idx) => {
           if (!day) return <Box key={`blank-${idx}`} sx={{ borderRadius: 1, minHeight: 80 }} />
 
           const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
           const dow = (startDow + day - 1) % 7
           const isWeekend = dow === 0 || dow === 6
-          const isHoliday = holidayDates.has(dateStr)
+          const holidayName = holidayMap.get(dateStr)
+          const isHoliday = !!holidayName
           const isToday = dateStr === todayStr
           const isSelected = selectedDates.includes(dateStr)
           const dayEntries = byDate.get(dateStr) || []
           const total = dayEntries.reduce((s, e) => s + e.hours, 0)
           const tooltipLines: string[] = []
+          if (isHoliday) {
+            tooltipLines.push(`Holiday: ${holidayName}`)
+          }
           for (const e of dayEntries) {
             let line = `${e.hours}h ${e.type}`
             if (e.projectName) line += ` \u2022 ${e.projectName}`
@@ -159,6 +173,26 @@ export const LedgerCalendar: React.FC<LedgerCalendarProps> = ({
                 {day}
               </Typography>
               {isHoliday && <FlagIcon sx={{ position: 'absolute', top: 2, right: 2, fontSize: 11, color: colorMap['leave'] }} />}
+              {isHoliday && (
+                <Typography
+                  variant="caption"
+                  title={holidayName}
+                  sx={{
+                    fontSize: '0.58rem',
+                    display: 'block',
+                    lineHeight: 1.2,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    color: isSelected ? 'inherit' : 'warning.main',
+                    fontWeight: 700,
+                    mt: 0.5,
+                    maxWidth: '100%',
+                  }}
+                >
+                  {holidayName}
+                </Typography>
+              )}
               {dayEntries.length > 0 && (
                 <>
                   <Box sx={{ display: 'flex', height: 4, borderRadius: 0.5, overflow: 'hidden', mt: 1.5, mb: 0.3 }}>

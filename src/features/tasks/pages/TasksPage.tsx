@@ -21,7 +21,7 @@ import {
 import { Pm_projecttasksService } from '@/generated/services/Pm_projecttasksService'
 import { unwrapList } from '@/services/common'
 import type { WorkflowApprovalStepModel, InitiativeModel } from '@/types/dataverse'
-import { PageHeader, TableShell, TableFooter, StatusTag, TaskLink } from '@/components/common'
+import { PageHeader, TableShell, TableFooter, StatusTag, TaskLink, TableHeader } from '@/components/common'
 import { FORM_DIALOG_DECISION_EVENT } from '@/utils/formDialogEvents'
 
 const APPROVAL_STATUS_LABELS: Record<string, string> = { '0': 'Approved', '1': 'Pending' }
@@ -126,22 +126,6 @@ export default function TasksPage() {
     setMyPage(0)
   }, [])
 
-  const renderTableHeader = (cells: Array<{
-    label: string; sortable?: boolean; active?: boolean; dir?: SortDir; onClick?: () => void; align?: 'left' | 'center' | 'right'
-  }>) => (
-    <TableHead>
-      <TableRow>
-        {cells.map((cell, idx) => (
-          <TableCell key={idx} align={cell.align || 'left'}
-            sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'text.secondary', py: 1.5, borderBottom: '2px solid', borderColor: 'divider', cursor: cell.sortable ? 'pointer' : 'default', '&:hover': cell.sortable ? { color: 'primary.main' } : {}, whiteSpace: 'nowrap' }}
-            onClick={cell.onClick}>
-            {cell.sortable ? <TableSortLabel active={cell.active} direction={cell.active ? cell.dir : 'asc'}>{cell.label}</TableSortLabel> : cell.label}
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
-  )
-
   const totalPending = filteredSteps.length
 
   return (
@@ -198,12 +182,12 @@ export default function TasksPage() {
             emptyTitle={!currentUser?.fullname ? 'No user selected \u2014 switch users from the top bar.' : mySearch ? 'No tasks match your search.' : 'All clear! No pending tasks.'}>
             {filteredSteps.length > 0 && (
               <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
-                {renderTableHeader([
+                <TableHeader cells={[
                   { label: 'Task', sortable: true, active: mySort.field === 'order', dir: mySort.dir, onClick: () => handleMySort('order') },
                   { label: 'Due Date', sortable: true, active: mySort.field === 'due', dir: mySort.dir, onClick: () => handleMySort('due') },
                   { label: 'Assigned To', sortable: true, active: mySort.field === 'assigned', dir: mySort.dir, onClick: () => handleMySort('assigned') },
                   { label: 'Action' },
-                ])}
+                ]} />
                 <TableBody>
                   {paginatedSteps.map((step, idx) => {
                     const isOverdue = step.pm_duedate && new Date(step.pm_duedate) < new Date()

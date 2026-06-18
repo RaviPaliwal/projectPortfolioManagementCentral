@@ -50,7 +50,7 @@ import {
 } from '@/services'
 import type { GateReviewModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableShell, SearchFilterBar, ExportButton, StatusTag, ActionIcon, Button } from '@/components/common'
+import { PageHeader, KpiCardRow, TableShell, SearchFilterBar, ExportButton, StatusTag, ActionIcon, Button, ConfirmDialog, TableHeader } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { MODULE_NAMES } from '@/constants/moduleNames'
@@ -359,7 +359,7 @@ export default function GateReviewsPage() {
 
           {!loading && <KpiCardRow items={kpiItems} />}
 
-          <Paper sx={{ overflow: 'hidden', mb: 3, borderRadius: 2 }}>
+          <Paper sx={{ overflow: 'hidden', mb: 3 }}>
             <SearchFilterBar
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
@@ -381,16 +381,14 @@ export default function GateReviewsPage() {
 
             <TableShell loading={loading} empty={filteredReviews.length === 0}>
               <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ bgcolor: 'background.default' }}>
-                    <TableCell sx={{ fontWeight: 700 }}>Gate Review</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Stage</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Outcome</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Planned Date</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Reviewer</TableCell>
-                  </TableRow>
-                </TableHead>
+                <TableHeader cells={[
+                  { label: 'Gate Review' },
+                  { label: 'Stage' },
+                  { label: 'Outcome' },
+                  { label: 'Status' },
+                  { label: 'Planned Date' },
+                  { label: 'Reviewer' },
+                ]} />
                 <TableBody>
                   {filteredReviews.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map((review) => (
                     <TableRow key={review.pm_projectgatereviewid} hover onClick={() => setSelectedReview(review)} sx={{ cursor: 'pointer' }}>
@@ -417,15 +415,15 @@ export default function GateReviewsPage() {
         </>
       )}
 
-      <Dialog open={showFormModal} onClose={() => setShowFormModal(false)} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
+      <Dialog open={showFormModal} onClose={() => setShowFormModal(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700 }}>{editingReview ? 'Edit Review' : 'Schedule Review'}</DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid size={{ xs: 12 }}><TextField label="Gate Name" fullWidth size="small" value={formData.pm_gatename} onChange={(e) => setFormData(f => ({ ...f, pm_gatename: e.target.value }))} slotProps={{ input: { sx: { borderRadius: 1.5 } } }} /></Grid>
+            <Grid size={{ xs: 12 }}><TextField label="Gate Name" fullWidth size="small" value={formData.pm_gatename} onChange={(e) => setFormData(f => ({ ...f, pm_gatename: e.target.value }))} /></Grid>
             <Grid size={{ xs: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Stage</InputLabel>
-                <Select value={formData.pm_gatestage} label="Stage" onChange={(e) => setFormData(f => ({ ...f, pm_gatestage: e.target.value as number }))} sx={{ borderRadius: 1.5 }}>
+                <Select value={formData.pm_gatestage} label="Stage" onChange={(e) => setFormData(f => ({ ...f, pm_gatestage: e.target.value as number }))}>
                   <MenuItem value={0}>Gate 1</MenuItem><MenuItem value={1}>Gate 2</MenuItem><MenuItem value={2}>Gate 3</MenuItem><MenuItem value={3}>Gate 4</MenuItem>
                 </Select>
               </FormControl>
@@ -438,14 +436,14 @@ export default function GateReviewsPage() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent><Typography>Are you sure you want to delete this review?</Typography></DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setDeleteConfirm(null)}>Cancel</Button>
-          <Button variant="contained" color="error" onClick={handleDeleteReview}>Delete</Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={handleDeleteReview}
+        title="Delete Gate Review?"
+        message="Are you sure you want to delete this review? This action cannot be undone."
+        loading={actionLoading}
+      />
 
       {selectedReview && (
         <PmoReadinessTaskModal

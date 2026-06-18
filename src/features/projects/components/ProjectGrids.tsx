@@ -3,7 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  Button,
   Table,
   TableBody,
   TableCell,
@@ -19,7 +18,7 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
-import { SearchFilterBar, TableFooter, TableShell, ExportButton, StatusTag, StatusChip } from '@/components/common'
+import { SearchFilterBar, TableFooter, TableShell, ExportButton, StatusTag, StatusChip, Button } from '@/components/common'
 import type { ProjectModel } from '@/types/dataverse'
 import { RAG_COLORS, RAG_LABELS, PHASE_COLORS, phaseLabel, currency, projectExportColumns } from '../constants'
 
@@ -185,7 +184,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                 </TableCell>
               ))}
               <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>Actions</Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary' }}>Actions</Typography>
               </TableCell>
             </TableRow>
           </TableHead>
@@ -199,7 +198,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                   cursor: 'pointer',
                   bgcolor: idx % 2 === 1 ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)') : 'transparent',
                   '& td': { py: 1.25, px: 2.5 },
-                  '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                  '&:hover': { bgcolor: 'action.hover !important' },
                   transition: 'background-color 0.15s ease',
                 }}
               >
@@ -226,7 +225,6 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                       sx={{
                         width: 64,
                         height: 6,
-                        borderRadius: 1.5,
                         bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
                         '& .MuiLinearProgress-bar': {
                           bgcolor: (project.pm_percentcomplete ?? 0) >= 100 ? 'success.main' : 'primary.main',

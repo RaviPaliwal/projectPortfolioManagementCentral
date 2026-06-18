@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
-  IconButton, CircularProgress, TextField, Divider, Chip, Paper, Button,
-  FormControl, InputLabel, Select, MenuItem,
+  IconButton, CircularProgress, TextField, Divider, Chip, Paper,
+  FormControl, InputLabel, Select, MenuItem, useTheme,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import GroupIcon from '@mui/icons-material/Group'
@@ -10,7 +10,9 @@ import PersonIcon from '@mui/icons-material/Person'
 import BadgeIcon from '@mui/icons-material/Badge'
 import { fetchProjectDetails, fetchResources, assignResource } from '@/services'
 import type { ProjectModel, ResourceModel } from '@/types/dataverse'
+import { Button } from '@/components/common'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
+import { fontSizes } from '@/styles'
 
 interface TeamMemberEntry {
   resourceId: string
@@ -35,6 +37,8 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
   open, onClose, projectId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
 }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [project, setProject] = useState<ProjectModel | null>(null)
@@ -127,14 +131,14 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
 
   return (
     <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#7c3aed', color: 'white', py: 1.5, pr: 1 }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'secondary.main', color: 'common.white', py: 1.5, pr: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <GroupIcon />
           <Typography variant="h6" sx={{ fontWeight: 700 }}>Team Assembly</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip label="Pending" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'white' }}>
+          <Chip label="Pending" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'common.white' }} />
+          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'common.white' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -155,11 +159,11 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
                 <Typography variant="caption" color="text.secondary">Project Manager</Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_projectmanagername || 'Unassigned'}</Typography>
               </Box>
-              <Box sx={{ mt: 4, p: 2, bgcolor: '#f5f3ff', borderRadius: 1.5, border: '1px solid', borderColor: '#ede9fe' }}>
+              <Box sx={{ mt: 4, p: 2, bgcolor: isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.04)', border: '1px solid', borderColor: 'secondary.light' }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <BadgeIcon sx={{ fontSize: 16 }} /> Instructions
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.8rem' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: fontSizes.sm }}>
                   Define the core project team members and their roles. This ensures all key roles are assigned before project execution begins.
                 </Typography>
               </Box>
@@ -170,8 +174,8 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
               {teamMembers.length > 0 && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
                   {teamMembers.map((m, i) => (
-                    <Paper key={i} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <PersonIcon sx={{ fontSize: 18, color: '#7c3aed' }} />
+                    <Paper key={i} variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <PersonIcon sx={{ fontSize: 18, color: 'secondary.main' }} />
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.resourceName}</Typography>
                         <Typography variant="caption" color="text.secondary">{m.role} &middot; {m.allocatedHours}h &middot; {m.startDate} to {m.endDate}</Typography>
@@ -230,7 +234,7 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
                 </Grid>
                 <Button variant="outlined" startIcon={<PersonIcon />} onClick={handleAddMember}
                   disabled={!selectedResourceId || !role.trim()}
-                  sx={{ borderRadius: 1.5, alignSelf: 'flex-start' }}>
+                  sx={{ alignSelf: 'flex-start' }}>
                   Add Member
                 </Button>
               </Box>

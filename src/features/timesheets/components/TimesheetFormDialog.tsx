@@ -1,10 +1,9 @@
-﻿import { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   Typography,
   Grid,
   TextField,
@@ -19,6 +18,7 @@ import {
 import EventNoteIcon from '@mui/icons-material/EventNote'
 import type { ResourceModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
+import { Button } from '@/components/common'
 
 interface TimesheetFormDialogProps {
   open: boolean
@@ -99,11 +99,10 @@ export function TimesheetFormDialog({
       onClose={() => !loading && onClose()}
       maxWidth="sm"
       fullWidth
-      slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}
     >
       <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', borderRadius: 1.5 }}>
-          <EventNoteIcon sx={{ fontSize: 18, color: '#fff' }} />
+        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+          <EventNoteIcon sx={{ fontSize: 18, color: 'common.white' }} />
         </Avatar>
         {draftMode ? 'New Timesheet Entry' : 'New Timesheet'}
       </DialogTitle>
@@ -122,7 +121,6 @@ export function TimesheetFormDialog({
                 value={form._pm_resource_value}
                 label="Resource"
                 onChange={(e) => setForm((f) => ({ ...f, _pm_resource_value: e.target.value }))}
-                sx={{ borderRadius: 1.5 }}
               >
                 <MenuItem value="">None (enter name manually)</MenuItem>
                 {resourceOptions.map((r) => (
@@ -141,7 +139,7 @@ export function TimesheetFormDialog({
               size="small"
               value={form.pm_periodstartdate}
               onChange={(e) => setForm((f) => ({ ...f, pm_periodstartdate: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
+              slotProps={{ inputLabel: { shrink: true } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -153,19 +151,19 @@ export function TimesheetFormDialog({
               size="small"
               value={form.pm_periodenddate}
               onChange={(e) => setForm((f) => ({ ...f, pm_periodenddate: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true }, input: { sx: { borderRadius: 1.5 } } }}
+              slotProps={{ inputLabel: { shrink: true } }}
             />
           </Grid>
           {periodError && (
             <Grid size={{ xs: 12 }}>
-              <Alert severity="error" onClose={() => setPeriodError(null)} sx={{ borderRadius: 1.5 }}>
+              <Alert severity="error" onClose={() => setPeriodError(null)}>
                 {periodError}
               </Alert>
             </Grid>
           )}
           {overlapError && (
             <Grid size={{ xs: 12 }}>
-              <Alert severity="warning" sx={{ borderRadius: 1.5 }}>
+              <Alert severity="warning">
                 {overlapError}
               </Alert>
             </Grid>
@@ -173,14 +171,13 @@ export function TimesheetFormDialog({
         </Grid>
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-        <Button onClick={onClose} variant="outlined" disabled={loading} sx={{ borderRadius: 1.5 }}>
+        <Button onClick={onClose} variant="outlined" disabled={loading}>
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
           disabled={!form.pm_periodstartdate || !form.pm_periodenddate || (!form._pm_resource_value && !form.ownerid) || loading}
-          sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' }, borderRadius: 1.5, fontWeight: 600 }}
         >
           {loading ? 'Creating...' : draftMode ? 'Create Entry' : 'Create Timesheet'}
         </Button>

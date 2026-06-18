@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState, useMemo } from 'react'
 import {
   Box,
   Alert,
-  Button,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
@@ -26,7 +25,7 @@ import {
 } from '@/services'
 import { useUser } from '@/context/UserContext'
 import { MODULE_NAMES } from '@/constants/moduleNames'
-import { PageHeader, KpiCardRow, ExportButton } from '@/components/common'
+import { PageHeader, KpiCardRow, ExportButton, Button } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 
@@ -473,7 +472,7 @@ export default function ProjectsPage() {
       label: 'Total Active Budget',
       value: currency(projects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur ?? 0), 0)),
       icon: <AttachMoneyIcon />,
-      color: '#3b82f6',
+      color: 'primary.main',
     },
     {
       label: 'Milestones Due',

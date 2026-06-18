@@ -7,13 +7,14 @@ import {
   Grid,
   Box,
   Typography,
-  Button,
   CircularProgress,
   TextField,
   Divider,
   Chip,
   Paper,
   IconButton,
+  useTheme,
+  alpha
 } from '@mui/material'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
@@ -28,7 +29,8 @@ import WarningIcon from '@mui/icons-material/Warning'
 import { fetchProjectDetails, updateGateReview, fetchGateReviewById, fetchInitiativeById } from '@/services'
 import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ProjectModel, GateReviewModel, InitiativeModel } from '@/types/dataverse'
-import { StatusTag } from '@/components/common'
+import { StatusTag, Button } from '@/components/common'
+import { fontSizes } from '@/styles/fontSizes'
 import { currencyFormatter } from '@/utils/formatters'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 
@@ -247,23 +249,21 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
 
   const entityTitle = initiative?.pm_name || project?.pm_projectname || gateReview?.pm_gatename || ''
 
-  if (!open) return null
-
   return (
     <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'secondary.main', color: 'secondary.contrastText', py: 1.5, pr: 1 }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', py: 2, px: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <AccountBalanceIcon />
+          <AccountBalanceIcon sx={{ color: 'secondary.main' }} />
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Financial Review Task</Typography>
-            <Typography variant="caption" sx={{ opacity: 0.85 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: fontSizes.xs }}>
               {entityTitle}
             </Typography>
           </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip label="Pending Financial Review" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'white' }}>
+          <Chip label="Pending Financial Review" color="warning" size="small" sx={{ fontWeight: 600 }} />
+          <IconButton size="small" onClick={onClose} disabled={saving}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -283,11 +283,11 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
               {initiative ? (
                 <>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: 'secondary.light', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <BusinessIcon sx={{ color: 'secondary.dark' }} />
+                    <Box sx={{ width: 40, height: 40, bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: '50%' }}>
+                      <BusinessIcon sx={{ color: 'secondary.main' }} />
                     </Box>
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 700, lineHeight: 1.2 }} noWrap>{initiative.pm_name || 'ΓÇö'}</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 700, lineHeight: 1.2 }} noWrap>{initiative.pm_name || '—'}</Typography>
                       <Typography variant="caption" color="text.secondary">Initiative</Typography>
                     </Box>
                   </Box>
@@ -296,13 +296,13 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                       <Typography variant="caption" color="text.secondary">
-                        Req: {initiative.pm_requestorname || 'ΓÇö'}
+                        Req: {initiative.pm_requestorname || '—'}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                       <Typography variant="caption" color="text.secondary">
-                        Submitted by: {initiative.pm_createdbyname || 'ΓÇö'}
+                        Submitted by: {initiative.pm_createdbyname || '—'}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -314,35 +314,35 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                   <Divider sx={{ mb: 2 }} />
 
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <AttachMoneyIcon fontSize="small" /> Estimated Cost
                       </Typography>
                       <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>
-                        {initiative.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : 'ΓÇö'}
+                        {initiative.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
                       </Typography>
                     </Paper>
 
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <TrendingUpIcon sx={{ fontSize: 14 }} /> Estimated Benefits
                       </Typography>
                       <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main', fontFamily: '"JetBrains Mono", monospace' }}>
-                        {initiative.pm_estimatedbenefits != null ? currencyFormatter.format(initiative.pm_estimatedbenefits) : 'ΓÇö'}
+                        {initiative.pm_estimatedbenefits != null ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '—'}
                       </Typography>
                     </Paper>
 
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
                       <Typography variant="caption" color="text.secondary">Priority Score</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {initiative.pm_priorityscore ?? 'ΓÇö'}
+                        {initiative.pm_priorityscore ?? '—'}
                       </Typography>
                     </Paper>
 
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
                       <Typography variant="caption" color="text.secondary">Strategic Alignment Score</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {initiative.pm_strategicalignmentscore ?? 'ΓÇö'}
+                        {initiative.pm_strategicalignmentscore ?? '—'}
                       </Typography>
                     </Paper>
                   </Box>
@@ -350,19 +350,19 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
               ) : project ? (
                 <>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: 'secondary.light', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <BusinessIcon sx={{ color: 'secondary.dark' }} />
+                    <Box sx={{ width: 40, height: 40, bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: '50%' }}>
+                      <BusinessIcon sx={{ color: 'secondary.main' }} />
                     </Box>
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 700, lineHeight: 1.2 }} noWrap>{project.pm_projectname || 'ΓÇö'}</Typography>
-                      <Typography variant="caption" color="text.secondary">{project.pm_projectcode || 'ΓÇö'}</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 700, lineHeight: 1.2 }} noWrap>{project.pm_projectname || '—'}</Typography>
+                      <Typography variant="caption" color="text.secondary">{project.pm_projectcode || '—'}</Typography>
                     </Box>
                   </Box>
 
                   <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">{project.pm_projectmanagername || 'ΓÇö'}</Typography>
+                      <Typography variant="caption" color="text.secondary">{project.pm_projectmanagername || '—'}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <FlagIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
@@ -373,7 +373,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                   <Divider sx={{ mb: 2 }} />
 
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <AttachMoneyIcon fontSize="small" /> Approved Budget
                       </Typography>
@@ -382,19 +382,19 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                       </Typography>
                     </Paper>
 
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
                       <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
                         {currencyFormatter.format(spend)}
                       </Typography>
                       {budget > 0 && (
-                        <Box sx={{ mt: 0.5, width: '100%', height: 4, bgcolor: 'grey.200', borderRadius: 2, overflow: 'hidden' }}>
+                        <Box sx={{ mt: 0.5, width: '100%', height: 4, bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.divider, 0.4) : '#e2e8f0', borderRadius: 2, overflow: 'hidden' }}>
                           <Box sx={{ width: `${Math.min(spendPct, 100)}%`, height: '100%', bgcolor: spendPct > 90 ? 'error.main' : spendPct > 75 ? 'warning.main' : 'success.main', borderRadius: 2, transition: 'width 0.3s ease' }} />
                         </Box>
                       )}
                     </Paper>
 
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
                       <Typography variant="caption" color="text.secondary">Remaining Budget</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 700, color: remaining < 0 ? 'error.main' : 'success.main', fontFamily: '"JetBrains Mono", monospace' }}>
                         {currencyFormatter.format(remaining)}
@@ -406,7 +406,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                       )}
                     </Paper>
 
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Box>
                           <Typography variant="caption" color="text.secondary">Cost RAG</Typography>
@@ -429,7 +429,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                       </Box>
                     </Paper>
 
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <TrendingUpIcon sx={{ fontSize: 14 }} /> Spend vs Budget
                       </Typography>
@@ -453,9 +453,9 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>Financial Assessment</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                 {isInitiative ? (
-                  <>Initiative: <strong>{initiative?.pm_name || 'ΓÇö'}</strong></>
+                  <>Initiative: <strong>{initiative?.pm_name || '—'}</strong></>
                 ) : (
-                  <>Gate: <strong>{gateReview?.pm_gatename || 'ΓÇö'}</strong>
+                  <>Gate: <strong>{gateReview?.pm_gatename || '—'}</strong>
                   {gateReview?.pm_gatestage ? ` | Stage: ${gateReview.pm_gatestage}` : ''}
                   {gateReview?.pm_reviewstatus ? ` | Status: ${gateReview.pm_reviewstatus}` : ''}</>
                 )}
@@ -475,11 +475,10 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                 placeholder="Enter financial clearance notes, concerns, or budget conditions..."
                 value={financeNotes}
                 onChange={(e) => setFinanceNotes(e.target.value)}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
 
-              <Box sx={{ mt: 2.5, p: 2, bgcolor: 'warning.50', borderRadius: 1.5, border: '1px solid', borderColor: 'warning.100' }}>
-                 <Typography variant="body2" color="warning.900" sx={{ fontSize: '0.8rem' }}>
+              <Box sx={{ mt: 2.5, p: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.warning.main, 0.1) : alpha(theme.palette.warning.light, 0.2), border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.warning.main, 0.2) : alpha(theme.palette.warning.light, 0.4), borderRadius: 1 }}>
+                 <Typography variant="body2" color="warning.main" sx={{ fontSize: fontSizes.xs }}>
                   <strong>Note:</strong> Endorsing the financials does not approve the gate review. It provides clearance for the Governance Board to make the final decision.
                 </Typography>
               </Box>
@@ -502,13 +501,13 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
           />
         ) : (
           <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>
-            <Button onClick={onClose} disabled={saving} sx={{ borderRadius: 1.5 }}>Cancel</Button>
+            <Button onClick={onClose} disabled={saving}>Cancel</Button>
             <Button
               variant="outlined"
               color="error"
               disabled={loading || saving}
               onClick={() => handleLegacyDecision('Rejected')}
-              sx={{ borderRadius: 1.5, fontWeight: 600, minWidth: 140 }}
+              sx={{ fontWeight: 600, minWidth: 140 }}
             >
               Reject Financials
             </Button>
@@ -517,7 +516,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
               color="success"
               disabled={loading || saving || !financeNotes.trim()}
               onClick={() => handleLegacyDecision('Endorsed')}
-              sx={{ borderRadius: 1.5, fontWeight: 600, minWidth: 160 }}
+              sx={{ fontWeight: 600, minWidth: 160 }}
             >
               {saving ? 'Processing...' : 'Endorse Financials'}
             </Button>

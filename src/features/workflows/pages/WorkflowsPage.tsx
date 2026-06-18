@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   Box, Paper, Typography, Alert, useTheme,
   Table, TableBody, TableCell, TableHead, TableRow,
-  TableSortLabel, TablePagination, Button, IconButton,
+  TableSortLabel, TablePagination, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions,
   Avatar, Tabs, Tab, TextField, FormControl, InputLabel, Select, MenuItem,
   LinearProgress, Tooltip, Chip,
@@ -29,8 +29,8 @@ import {
   fetchWorkflowInstances, deleteWorkflowInstance,
   fetchWorkflowStepTemplates,
 } from '@/services'
-import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, TabPanel, ExportButton, StatusTag } from '@/components/common'
+import { fontSizes } from '@/styles/fontSizes'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, TabPanel, ExportButton, StatusTag, Button, ConfirmDialog, TableHeader } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import { navigateToModule } from '@/utils/navigation'
 
@@ -238,24 +238,8 @@ export default function WorkflowsPage() {
     }
   }
 
-  const renderTableHeader = (cells: Array<{
-    label: string; sortable?: boolean; active?: boolean; dir?: SortDir; onClick?: () => void; align?: 'left' | 'center' | 'right'
-  }>) => (
-    <TableHead>
-      <TableRow>
-        {cells.map((cell, idx) => (
-          <TableCell key={idx} align={cell.align || 'left'}
-            sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'text.secondary', py: 1.5, borderBottom: '2px solid', borderColor: 'divider', cursor: cell.sortable ? 'pointer' : 'default', '&:hover': { color: cell.sortable ? 'primary.main' : 'inherit' } }}
-            onClick={cell.onClick}>
-            {cell.sortable ? <TableSortLabel active={cell.active} direction={cell.active ? cell.dir : 'asc'}>{cell.label}</TableSortLabel> : cell.label}
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
-  )
-
   const handleDialogClose = () => { if (!actionLoading) navigateTo('list') }
-  const dialogSx = { '& .MuiDialog-paper': { borderRadius: 1.5, maxWidth: 900, width: '100%', minHeight: '80vh' } }
+  const dialogSx = { '& .MuiDialog-paper': { maxWidth: 900, width: '100%', minHeight: '80vh' } }
 
   return (
     <>
@@ -263,7 +247,7 @@ export default function WorkflowsPage() {
       <Dialog open={view === 'create'} onClose={handleDialogClose} maxWidth="md" fullWidth sx={dialogSx}>
         <DialogTitle sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Typography variant="h6" sx={{ fontWeight: 800 }}>Create New Workflow</Typography>
-          <IconButton size="small" onClick={handleDialogClose} sx={{ borderRadius: 1.5 }}><CloseIcon fontSize="small" /></IconButton>
+          <IconButton size="small" onClick={handleDialogClose}><CloseIcon fontSize="small" /></IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 4 }}>
           <WorkflowFormPage onStepChange={setDialogStep} onCreated={() => { loadData(); navigateTo('list') }} />
@@ -274,7 +258,7 @@ export default function WorkflowsPage() {
       <Dialog open={view === 'edit' && !!viewWorkflow} onClose={handleDialogClose} maxWidth="md" fullWidth sx={dialogSx}>
         <DialogTitle sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Typography variant="h6" sx={{ fontWeight: 800 }}>Edit Workflow Template</Typography>
-          <IconButton size="small" onClick={handleDialogClose} sx={{ borderRadius: 1.5 }}><CloseIcon fontSize="small" /></IconButton>
+          <IconButton size="small" onClick={handleDialogClose}><CloseIcon fontSize="small" /></IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 4 }}>
           {viewWorkflow && (
@@ -302,7 +286,7 @@ export default function WorkflowsPage() {
       {!loading && <KpiCardRow items={kpiItems} />}
 
       <Tabs value={pageTab} onChange={(_, v) => { setPageTab(v); setError(null) }}
-        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider', '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40, px: 3 }, '& .Mui-selected': { color: 'primary.main' } }}>
+        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider', '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: fontSizes.base, minHeight: 40, px: 3 }, '& .Mui-selected': { color: 'primary.main' } }}>
         <Tab icon={<AccountTreeIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Templates" />
         <Tab icon={<PlayArrowIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Active Instances" />
       </Tabs>
@@ -311,26 +295,26 @@ export default function WorkflowsPage() {
       <TabPanel value={pageTab} index={0} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField size="small" placeholder="Search templates..." value={wfSearch} onChange={(e) => { setWfSearch(e.target.value); setWfPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
+            <TextField size="small" placeholder="Search templates..." value={wfSearch} onChange={(e) => { setWfSearch(e.target.value); setWfPage(0) }} sx={{ minWidth: 240 }} />
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Status</InputLabel>
-              <Select value={wfStatusFilter} label="Status" onChange={(e) => { setWfStatusFilter(e.target.value); setWfPage(0) }} sx={{ borderRadius: 1.5 }}>
+              <Select value={wfStatusFilter} label="Status" onChange={(e) => { setWfStatusFilter(e.target.value); setWfPage(0) }}>
                 {STATUS_FILTERS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </Select>
             </FormControl>
-            {(wfSearch || wfStatusFilter) && <Button size="small" onClick={() => { setWfSearch(''); setWfStatusFilter(''); setWfPage(0) }} sx={{ borderRadius: 1.5 }}>Clear</Button>}
+            {(wfSearch || wfStatusFilter) && <Button size="small" onClick={() => { setWfSearch(''); setWfStatusFilter(''); setWfPage(0) }}>Clear</Button>}
           </Box>
           <TableShell loading={loading} empty={filteredWorkflows.length === 0} emptyIcon={<AccountTreeIcon />}
             emptyTitle={wfSearch || wfStatusFilter ? 'No templates match.' : 'No workflow templates yet.'}
             emptyAction={!wfSearch && !wfStatusFilter ? <Button variant="outlined" startIcon={<AddIcon />} onClick={() => navigateTo('create')}>Create your first workflow</Button> : undefined}>
             <Table stickyHeader size="small" sx={{ minWidth: 700 }}>
-              {renderTableHeader([
+              <TableHeader cells={[
                 { label: 'Workflow Name', sortable: true, active: wfSort.field === 'name', dir: wfSort.dir, onClick: () => handleWfSort('name') },
                 { label: 'Module Name', sortable: true, active: wfSort.field === 'entity', dir: wfSort.dir, onClick: () => handleWfSort('entity') },
                 { label: 'Status', sortable: true, active: wfSort.field === 'status', dir: wfSort.dir, onClick: () => handleWfSort('status'), align: 'center' },
                 { label: 'Steps', align: 'center' },
                 { label: '', align: 'right' },
-              ])}
+              ]} />
               <TableBody>
                 {paginatedWorkflows.map((wf, idx) => (
                   <TableRow key={wf.pm_workflowid} hover
@@ -355,10 +339,10 @@ export default function WorkflowsPage() {
                     </TableCell>
                     <TableCell align="right">
                       {canEdit && (
-                        <IconButton size="small" onClick={() => navigateTo('edit', wf)} sx={{ borderRadius: 1.5 }} title="Edit"><EditIcon sx={{ fontSize: 18 }} /></IconButton>
+                        <IconButton size="small" onClick={() => navigateTo('edit', wf)} title="Edit"><EditIcon sx={{ fontSize: 18 }} /></IconButton>
                       )}
                       {canDelete && (
-                        <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: wf.pm_workflowid!, type: 'workflow' })} sx={{ borderRadius: 1.5 }} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
+                        <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: wf.pm_workflowid!, type: 'workflow' })} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
                       )}
                     </TableCell>
                   </TableRow>
@@ -379,25 +363,25 @@ export default function WorkflowsPage() {
       <TabPanel value={pageTab} index={1} pt={0}>
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField size="small" placeholder="Search instances..." value={instSearch} onChange={(e) => { setInstSearch(e.target.value); setInstPage(0) }} sx={{ minWidth: 240 }} slotProps={{ input: { sx: { borderRadius: 1.5 } } }} />
+            <TextField size="small" placeholder="Search instances..." value={instSearch} onChange={(e) => { setInstSearch(e.target.value); setInstPage(0) }} sx={{ minWidth: 240 }} />
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Status</InputLabel>
-              <Select value={instStatusFilter} label="Status" onChange={(e) => { setInstStatusFilter(e.target.value); setInstPage(0) }} sx={{ borderRadius: 1.5 }}>
+              <Select value={instStatusFilter} label="Status" onChange={(e) => { setInstStatusFilter(e.target.value); setInstPage(0) }}>
                 {INSTANCE_STATUS_FILTERS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </Select>
             </FormControl>
-            {(instSearch || instStatusFilter) && <Button size="small" onClick={() => { setInstSearch(''); setInstStatusFilter(''); setInstPage(0) }} sx={{ borderRadius: 1.5 }}>Clear</Button>}
+            {(instSearch || instStatusFilter) && <Button size="small" onClick={() => { setInstSearch(''); setInstStatusFilter(''); setInstPage(0) }}>Clear</Button>}
           </Box>
           <TableShell loading={loading} empty={filteredInstances.length === 0} emptyIcon={<PlayArrowIcon />} emptyTitle={instSearch || instStatusFilter ? 'No instances match.' : 'No workflow instances yet.'}>
             <Table stickyHeader size="small" sx={{ minWidth: 800 }}>
-              {renderTableHeader([
+              <TableHeader cells={[
                 { label: 'Workflow', sortable: true, active: instSort.field === 'workflow', dir: instSort.dir, onClick: () => handleInstSort('workflow') },
                 { label: 'Module', sortable: false },
                 { label: 'Progress', sortable: true, active: instSort.field === 'completion', dir: instSort.dir, onClick: () => handleInstSort('completion') },
                 { label: 'Status', sortable: true, active: instSort.field === 'status', dir: instSort.dir, onClick: () => handleInstSort('status'), align: 'center' },
                 { label: 'Date', sortable: true, active: instSort.field === 'date', dir: instSort.dir, onClick: () => handleInstSort('date') },
                 { label: '', align: 'right' },
-              ])}
+              ]} />
               <TableBody>
                 {paginatedInstances.map((inst, idx) => {
                   const completion = getInstanceCompletion(inst)
@@ -415,7 +399,7 @@ export default function WorkflowsPage() {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Chip label={moduleName} size="small" variant="outlined" sx={{ borderRadius: 1.5, fontWeight: 600 }} />
+                        <Chip label={moduleName} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
                       </TableCell>
                       <TableCell sx={{ minWidth: 160 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -432,12 +416,12 @@ export default function WorkflowsPage() {
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
                           <Tooltip title="View Target Record">
-                            <IconButton size="small" onClick={() => handleRowClick(inst)} sx={{ borderRadius: 1.5 }} color="primary">
+                            <IconButton size="small" onClick={() => handleRowClick(inst)} color="primary">
                               <OpenInNewIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                           </Tooltip>
                           {canDelete && (
-                            <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' })} sx={{ borderRadius: 1.5 }} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
+                            <IconButton size="small" color="error" onClick={() => setDeleteConfirm({ id: inst.pm_workflowinstanceid!, type: 'instance' })} title="Delete"><DeleteIcon sx={{ fontSize: 18 }} /></IconButton>
                           )}
                         </Box>
                       </TableCell>
@@ -457,20 +441,16 @@ export default function WorkflowsPage() {
       </TabPanel>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteConfirm} onClose={() => !actionLoading && setDeleteConfirm(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 1.5 } } }}>
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>{deleteConfirm?.type === 'workflow' ? 'Delete Workflow' : 'Delete Instance'}</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            {deleteConfirm?.type === 'workflow' ? 'Are you sure? This will delete the workflow template. This action cannot be undone.' : 'Are you sure you want to delete this workflow instance? This action cannot be undone.'}
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button onClick={() => setDeleteConfirm(null)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>Cancel</Button>
-          <Button onClick={handleDelete} variant="contained" color="error" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
-            {actionLoading ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title={deleteConfirm?.type === 'workflow' ? 'Delete Workflow' : 'Delete Instance'}
+        message={deleteConfirm?.type === 'workflow' ? 'Are you sure? This will delete the workflow template. This action cannot be undone.' : 'Are you sure you want to delete this workflow instance? This action cannot be undone.'}
+        confirmLabel={actionLoading ? 'Deleting...' : 'Delete'}
+        confirmColor="error"
+        loading={actionLoading}
+        onConfirm={handleDelete}
+      />
       </Box>
     </>
   )

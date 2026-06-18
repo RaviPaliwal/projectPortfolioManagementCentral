@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Button,
   Box,
   Typography,
   IconButton,
@@ -23,7 +22,7 @@ import PersonIcon from '@mui/icons-material/Person'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import SendIcon from '@mui/icons-material/Send'
 import { fontSizes } from '@/styles'
-import { StatusTag } from '@/components/common'
+import { StatusTag, Button } from '@/components/common'
 import type { IssueModel } from '@/types/dataverse'
 import type { IssueComment } from '@/services/annotation.service'
 
@@ -36,13 +35,13 @@ const ISSUE_CATEGORY_LABELS: Record<string, string> = {
   '5': 'Quality',
 }
 
-const ISSUE_CATEGORY_COLORS: Record<string, string> = {
-  '0': '#0ea5e9',
-  '1': '#8b5cf6',
-  '2': '#22c55e',
-  '3': '#f59e0b',
-  '4': '#ef4444',
-  '5': '#ec4899',
+const ISSUE_CATEGORY_COLORS: Record<string, 'info' | 'secondary' | 'success' | 'warning' | 'error' | 'primary'> = {
+  '0': 'info',
+  '1': 'secondary',
+  '2': 'success',
+  '3': 'warning',
+  '4': 'error',
+  '5': 'primary',
 }
 
 const RAG_LABELS: Record<string, string> = {
@@ -137,7 +136,7 @@ export const IssueDetailDialog = ({
       fullWidth
       slotProps={{
         paper: {
-          sx: { borderRadius: 2, minHeight: 500 },
+          sx: { minHeight: 500 },
         },
       }}
     >
@@ -145,7 +144,7 @@ export const IssueDetailDialog = ({
       <DialogTitle sx={{ px: 3, py: 2.5, borderBottom: 1, borderColor: 'divider' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <BugReportIcon sx={{ color: '#0ea5e9', fontSize: 22 }} />
+            <BugReportIcon sx={{ color: 'info.main', fontSize: 22 }} />
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
                 {issue.pm_issuetitle || 'Untitled Issue'}
@@ -154,9 +153,8 @@ export const IssueDetailDialog = ({
                 <StatusTag
                   label={ISSUE_CATEGORY_LABELS[String(issue.pm_issuecategory ?? '')] ?? '—'}
                   variant="outlined"
+                  color={ISSUE_CATEGORY_COLORS[String(issue.pm_issuecategory ?? '')] || 'default'}
                   sx={{
-                    borderColor: ISSUE_CATEGORY_COLORS[String(issue.pm_issuecategory ?? '')],
-                    color: ISSUE_CATEGORY_COLORS[String(issue.pm_issuecategory ?? '')],
                     fontSize: fontSizes.xs,
                   }}
                 />
@@ -167,10 +165,8 @@ export const IssueDetailDialog = ({
                 <StatusTag
                   label={STATUS_LABELS[String(issue.pm_issuestatus ?? '')] ?? '—'}
                   variant="filled"
+                  color={issue.pm_issuestatus === '2' || issue.pm_issuestatus === '3' ? 'success' : 'info'}
                   sx={{
-                    bgcolor: issue.pm_issuestatus === '2' || issue.pm_issuestatus === '3'
-                      ? '#22c55e' : '#0ea5e9',
-                    color: '#fff',
                     fontSize: fontSizes.xs,
                   }}
                 />
@@ -212,7 +208,6 @@ export const IssueDetailDialog = ({
                   ml: 0.75,
                   px: 0.75,
                   py: 0.1,
-                  borderRadius: 1,
                   fontSize: 10,
                   fontWeight: 700,
                   bgcolor: activeTab === tab.key ? 'primary.main' : 'action.hover',
@@ -345,7 +340,7 @@ export const IssueDetailDialog = ({
               {commentsLoading ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   {[1, 2].map(i => (
-                    <Paper key={i} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                    <Paper key={i} variant="outlined" sx={{ p: 2 }}>
                       <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                         <Skeleton variant="circular" width={32} height={32} />
                         <Box sx={{ flex: 1 }}>
@@ -369,9 +364,9 @@ export const IssueDetailDialog = ({
                 </Box>
               ) : (
                 comments.map(comment => (
-                  <Paper key={comment.id} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                  <Paper key={comment.id} variant="outlined" sx={{ p: 2 }}>
                     <Box sx={{ display: 'flex', gap: 1.5 }}>
-                      <Avatar sx={{ width: 32, height: 32, bgcolor: '#0ea5e9', fontSize: 14 }}>
+                      <Avatar sx={{ width: 32, height: 32, bgcolor: 'info.main', fontSize: 14 }}>
                         {comment.author.charAt(0).toUpperCase()}
                       </Avatar>
                       <Box sx={{ flex: 1 }}>
@@ -411,17 +406,12 @@ export const IssueDetailDialog = ({
                 onChange={e => setNewComment(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isSendingComment}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1.5,
-                  },
-                }}
               />
               <Button
                 variant="contained"
                 onClick={handleAddComment}
                 disabled={!newComment.trim() || isSendingComment}
-                sx={{ borderRadius: 1.5, minWidth: 44, px: 2, height: 40 }}
+                sx={{ minWidth: 44, px: 2, height: 40 }}
               >
                 <SendIcon sx={{ fontSize: 18 }} />
               </Button>
@@ -439,7 +429,7 @@ export const IssueDetailDialog = ({
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {sampleAttachments.map(att => (
-                  <Paper key={att.id} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                  <Paper key={att.id} variant="outlined" sx={{ p: 1.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <AttachFileIcon sx={{ fontSize: 20, color: 'text.disabled' }} />
                       <Box sx={{ flex: 1 }}>
@@ -450,7 +440,7 @@ export const IssueDetailDialog = ({
                           {att.size}
                         </Typography>
                       </Box>
-                      <Button size="small" variant="outlined" sx={{ borderRadius: 1.5 }}>
+                      <Button size="small" variant="outlined">
                         Download
                       </Button>
                     </Box>
@@ -461,7 +451,7 @@ export const IssueDetailDialog = ({
             <Button
               variant="outlined"
               startIcon={<AttachFileIcon />}
-              sx={{ mt: 2, borderRadius: 1.5 }}
+              sx={{ mt: 2 }}
               fullWidth
               disabled
             >
@@ -472,7 +462,7 @@ export const IssueDetailDialog = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2, borderTop: 1, borderColor: 'divider' }}>
-        <Button onClick={onClose} variant="outlined" sx={{ borderRadius: 1.5 }}>
+        <Button onClick={onClose} variant="outlined">
           Close
         </Button>
       </DialogActions>

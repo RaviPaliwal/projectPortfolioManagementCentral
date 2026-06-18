@@ -123,7 +123,7 @@ export const ProjectLifecycleStepper: React.FC<ProjectLifecycleStepperProps> = (
   const currentIdx = phases.findIndex(p => String(p.code) === currentPhaseCode)
 
   return (
-    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
+    <Paper variant="outlined" sx={{ p: 2.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <FlagCircleIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Project Lifecycle
@@ -227,7 +227,7 @@ export const ProjectLifecycleStepper: React.FC<ProjectLifecycleStepperProps> = (
             return (
               <Box
                 sx={{
-                  p: 2, borderRadius: 1.5,
+                  p: 2,
                   bgcolor: isPast ? 'rgba(34, 197, 94, 0.05)' : isCurrent ? 'rgba(59, 130, 246, 0.05)' : 'action.hover',
                   border: '1px solid',
                   borderColor: isPast ? 'success.light' : isCurrent ? 'primary.light' : 'divider',
@@ -274,15 +274,15 @@ export const ProjectLifecycleStepper: React.FC<ProjectLifecycleStepperProps> = (
                         )}
                       </Box>
                       {substep.isDone && (
-                        <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 700, fontSize: 9, flexShrink: 0 }}>DONE</Typography>
+                        <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 700, fontSize: fontSizes.xs, flexShrink: 0 }}>DONE</Typography>
                       )}
                     </Box>
                   ))}
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
-                  <Chip label={`${doneCount}/${phase.substeps.length} substeps`} size="small" color={doneCount === phase.substeps.length ? 'success' : 'default'} variant="outlined" sx={{ fontWeight: 600, fontSize: 10 }} />
-                  {isPast && doneCount === phase.substeps.length && <Chip label="Phase Complete" size="small" color="success" sx={{ fontWeight: 700, fontSize: 10 }} />}
-                  {isCurrent && <Chip label="Active Phase" size="small" color="primary" sx={{ fontWeight: 700, fontSize: 10 }} />}
+                  <Chip label={`${doneCount}/${phase.substeps.length} substeps`} size="small" color={doneCount === phase.substeps.length ? 'success' : 'default'} variant="outlined" sx={{ fontWeight: 600, fontSize: fontSizes.xs }} />
+                  {isPast && doneCount === phase.substeps.length && <Chip label="Phase Complete" size="small" color="success" sx={{ fontWeight: 700, fontSize: fontSizes.xs }} />}
+                  {isCurrent && <Chip label="Active Phase" size="small" color="primary" sx={{ fontWeight: 700, fontSize: fontSizes.xs }} />}
                 </Box>
               </Box>
             )

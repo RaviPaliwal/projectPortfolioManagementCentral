@@ -7,7 +7,6 @@ import {
   Link,
   Divider,
   useTheme,
-  Button as MuiButton,
   CircularProgress,
 } from '@mui/material'
 import { GovernanceReadinessService } from '@/services'
@@ -176,7 +175,7 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             
             {/* Review Overview Card */}
-            <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
+            <Paper variant="outlined" sx={{ p: 3, position: 'relative', overflow: 'hidden' }}>
               <Box sx={{ position: 'absolute', right: -20, top: -20, opacity: 0.03 }}>
                 <FactCheckIcon sx={{ fontSize: 160 }} />
               </Box>
@@ -259,7 +258,7 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
             {/* Notes & Conditions Grid */}
             <Grid container spacing={3}>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, height: '100%' }}>
+                <Paper variant="outlined" sx={{ p: 3, height: '100%' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, textTransform: 'uppercase', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
                     <AssignmentIcon sx={{ color: 'primary.main', fontSize: 18 }} /> Review Notes
                   </Typography>
@@ -270,7 +269,7 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
               </Grid>
               
               <Grid size={{ xs: 12, sm: 6 }}>
-                <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, height: '100%' }}>
+                <Paper variant="outlined" sx={{ p: 3, height: '100%' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, textTransform: 'uppercase', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
                     <CheckCircleIcon sx={{ color: 'warning.main', fontSize: 18 }} /> Review Conditions
                   </Typography>
@@ -282,7 +281,7 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
             </Grid>
 
             {/* Governance Readiness Check Card */}
-            <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
+            <Paper variant="outlined" sx={{ p: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 800, mb: 2.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <FactCheckIcon sx={{ color: 'success.main' }} /> Governance Readiness Check (Gate {Number(review.pm_gatestage ?? 0) + 1})
               </Typography>
@@ -295,7 +294,7 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
                       <Box sx={{
                         mt: 0.25, width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                         bgcolor: item.status === 'passed' ? 'success.main' : item.status === 'failed' ? 'error.main' : 'warning.main',
-                        color: '#fff', fontSize: 12, fontWeight: 700,
+                        color: 'common.white', fontSize: fontSizes.xs, fontWeight: 700,
                       }}>
                         {item.status === 'passed' ? '✓' : item.status === 'failed' ? '✗' : '!'}
                       </Box>
@@ -326,7 +325,7 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
             </Typography>
             
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2.5 }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
                   Project
                 </Typography>
@@ -341,7 +340,7 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
                 </Box>
               </Paper>
 
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2.5 }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
                   Programme
                 </Typography>
@@ -356,7 +355,7 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
                 </Box>
               </Paper>
 
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Paper variant="outlined" sx={{ p: 2.5 }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
                   Portfolio
                 </Typography>

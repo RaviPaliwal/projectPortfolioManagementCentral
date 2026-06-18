@@ -1,16 +1,10 @@
-﻿import { useEffect, useState, useMemo, useCallback, type ReactElement } from 'react'
+import { useEffect, useState, useMemo, useCallback, type ReactElement } from 'react'
 import {
   Box,
   Alert,
   Chip,
   useTheme,
-  Button,
   Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  DialogContentText,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import ScheduleIcon from '@mui/icons-material/Schedule'
@@ -47,6 +41,8 @@ import {
   KpiCardRow,
   StatusTag,
   WorkflowMilestone,
+  Button,
+  ConfirmDialog,
 } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
@@ -487,7 +483,7 @@ export default function TimesheetsPage() {
                 variant="outlined"
                 onClick={() => setDeleteConfirmOpen(true)}
                 disabled={actionLoading || deleteLoading}
-                sx={{ borderRadius: 1.5, minWidth: 0, px: 1.5 }}
+                sx={{ minWidth: 0, px: 1.5 }}
               >
                 Delete
               </Button>
@@ -578,24 +574,14 @@ export default function TimesheetsPage() {
         existingEntryDates={existingEntryDates}
       />
 
-      <Dialog
+      <ConfirmDialog
         open={deleteConfirmOpen}
-        onClose={() => !deleteLoading && setDeleteConfirmOpen(false)}
-      >
-        <DialogTitle>Delete Timesheet?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete "{selectedTimesheet?.pm_timesheetname}"?
-            All time entries in this timesheet will also be deleted. This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleteLoading}>Cancel</Button>
-          <Button onClick={handleDeleteTimesheet} color="error" disabled={deleteLoading}>
-            {deleteLoading ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDeleteTimesheet}
+        title="Delete Timesheet?"
+        message={`Are you sure you want to delete "${selectedTimesheet?.pm_timesheetname}"? All time entries in this timesheet will also be deleted. This action cannot be undone.`}
+        loading={deleteLoading}
+      />
     </Box>
   )
 }
