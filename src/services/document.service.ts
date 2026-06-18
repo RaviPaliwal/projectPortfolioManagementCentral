@@ -1,6 +1,7 @@
 import { Pm_documentsService } from '@/generated'
 import type { Pm_documents } from '@/generated/models/Pm_documentsModel'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
+import { writeAuditLog } from './changelog.service'
 
 /**
  * Fetch all active documents for a specific entity GUID and module name.
@@ -61,6 +62,14 @@ export async function uploadDocument(
       throw new Error('Failed to create document metadata record.')
     }
 
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_documents',
+      recordId: created.pm_documentid,
+      recordName: file.name,
+      newValue: `Uploaded file to module ${moduleName} for entity ${entityId}`
+    })
+
     // 2. Upload the file binary content to the 'pm_file' column of the newly created record
     await Pm_documentsService.upload(
       created.pm_documentid,
@@ -95,8 +104,24 @@ export async function downloadDocumentFile(documentId: string): Promise<Uint8Arr
  * Delete a document record (and its attached file) from Dataverse.
  */
 export async function deleteDocument(documentId: string): Promise<boolean> {
+  let recordName = documentId
+  try {
+    const details = await Pm_documentsService.get(documentId, { select: ['pm_documenttitle'] })
+    const uItem = unwrapSingle<Pm_documents>(details)
+    if (uItem?.pm_documenttitle) recordName = uItem.pm_documenttitle
+  } catch (e) {}
+
   try {
     await Pm_documentsService.delete(documentId)
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_documents',
+      recordId: documentId,
+      recordName: recordName,
+      fieldName: 'deleted',
+      oldValue: 'Active',
+      newValue: 'Deleted'
+    })
     return true
   } catch (err) {
     console.error(`[documentService] deleteDocument failed for ${documentId}:`, err)

@@ -19,6 +19,7 @@ import type {
   FinancialPeriodModel,
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
+import { writeAuditLog } from './changelog.service'
 
 export const mapBudgetLine = (item: Pm_budgetlines): BudgetLineModel => ({
   pm_budgetlineid: item.pm_budgetlineid,
@@ -161,16 +162,53 @@ export async function createBudgetLine(payload: Partial<BudgetLineModel>): Promi
   }
   const result = await Pm_budgetlinesService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_budgetlines>(result)
-  return item ? mapBudgetLine(item) : null
+  const mapped = item ? mapBudgetLine(item) : null
+  
+  if (mapped && mapped.pm_budgetlineid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_budgetlines',
+      recordId: mapped.pm_budgetlineid,
+      recordName: mapped.pm_budgetlinename || 'Budget Line',
+    })
+  }
+  
+  return mapped
 }
 
 export async function updateBudgetLine(id: string, changes: Partial<BudgetLineModel>): Promise<BudgetLineModel | null> {
   const result = await Pm_budgetlinesService.update(id, changes as any)
   const item = unwrapSingle<Pm_budgetlines>(result)
-  return item ? mapBudgetLine(item) : null
+  const mapped = item ? mapBudgetLine(item) : null
+  
+  if (mapped && mapped.pm_budgetlineid) {
+    Object.keys(changes).forEach((key) => {
+      const val = (changes as any)[key]
+      if (val !== undefined && key !== 'pm_budgetlineid') {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_budgetlines',
+          recordId: id,
+          recordName: mapped.pm_budgetlinename || 'Budget Line',
+          fieldName: key,
+          newValue: String(val),
+        })
+      }
+    })
+  }
+  
+  return mapped
 }
 
 export async function deleteBudgetLine(id: string): Promise<void> {
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_budgetlines',
+    recordId: id,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted',
+  })
   await Pm_budgetlinesService.delete(id)
 }
 
@@ -226,7 +264,18 @@ export async function createFundingSource(payload: Partial<FundingSourceModel>):
   const result = await Pm_fundingsourcesService.create({ ...defaults, ...cleanPayload } as any)
   try { console.debug('[dataverseService] createFundingSource payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_fundingsources>(result)
-  return item ? mapFundingSource(item) : null
+  const mapped = item ? mapFundingSource(item) : null
+  
+  if (mapped && mapped.pm_fundingsourceid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_fundingsources',
+      recordId: mapped.pm_fundingsourceid,
+      recordName: mapped.pm_fundingsourcename || 'Funding Source',
+    })
+  }
+  
+  return mapped
 }
 
 export async function updateFundingSource(id: string, changes: Partial<FundingSourceModel>): Promise<FundingSourceModel | null> {
@@ -239,11 +288,37 @@ export async function updateFundingSource(id: string, changes: Partial<FundingSo
   const result = await Pm_fundingsourcesService.update(id, cleanPayload as any)
   try { console.debug('[dataverseService] updateFundingSource id/changes/result:', id, cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_fundingsources>(result)
-  return item ? mapFundingSource(item) : null
+  const mapped = item ? mapFundingSource(item) : null
+  
+  if (mapped && mapped.pm_fundingsourceid) {
+    Object.keys(changes).forEach((key) => {
+      const val = (changes as any)[key]
+      if (val !== undefined && key !== 'pm_fundingsourceid') {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_fundingsources',
+          recordId: id,
+          recordName: mapped.pm_fundingsourcename || 'Funding Source',
+          fieldName: key,
+          newValue: String(val),
+        })
+      }
+    })
+  }
+  
+  return mapped
 }
 
 export async function deleteFundingSource(id: string): Promise<void> {
   try { console.debug('[dataverseService] deleteFundingSource id:', id) } catch (e) {}
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_fundingsources',
+    recordId: id,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted',
+  })
   await Pm_fundingsourcesService.delete(id)
 }
 
@@ -400,7 +475,18 @@ export async function createCashflowEntry(payload: Partial<CashflowEntryModel>):
   }
   const result = await Pm_cashflowentriesService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_cashflowentries>(result)
-  return item ? mapCashflowEntry(item) : null
+  const mapped = item ? mapCashflowEntry(item) : null
+  
+  if (mapped && mapped.pm_cashflowentryid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_cashflowentries',
+      recordId: mapped.pm_cashflowentryid,
+      recordName: mapped.pm_entryname || 'Cash Flow Entry',
+    })
+  }
+  
+  return mapped
 }
 
 export async function updateCashflowEntry(id: string, changes: Partial<CashflowEntryModel>): Promise<CashflowEntryModel | null> {
@@ -413,9 +499,35 @@ export async function updateCashflowEntry(id: string, changes: Partial<CashflowE
   }
   const result = await Pm_cashflowentriesService.update(id, cleanPayload as any)
   const item = unwrapSingle<Pm_cashflowentries>(result)
-  return item ? mapCashflowEntry(item) : null
+  const mapped = item ? mapCashflowEntry(item) : null
+  
+  if (mapped && mapped.pm_cashflowentryid) {
+    Object.keys(changes).forEach((key) => {
+      const val = (changes as any)[key]
+      if (val !== undefined && key !== 'pm_cashflowentryid') {
+        writeAuditLog({
+          actionType: 'Update',
+          entityName: 'pm_cashflowentries',
+          recordId: id,
+          recordName: mapped.pm_entryname || 'Cash Flow Entry',
+          fieldName: key,
+          newValue: String(val),
+        })
+      }
+    })
+  }
+  
+  return mapped
 }
 
 export async function deleteCashflowEntry(id: string): Promise<void> {
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_cashflowentries',
+    recordId: id,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted',
+  })
   await Pm_cashflowentriesService.delete(id)
 }

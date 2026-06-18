@@ -25,6 +25,7 @@ import StatusSnapshotsPage from '@/features/statussnapshots/pages/StatusSnapshot
 import TeamUserManagementPage from '@/features/teamadmin/pages/TeamUserManagementPage'
 import ConfigurationsPage from '@/features/configurations/pages/ConfigurationsPage'
 import CalendarPage from '@/features/calendar/pages/CalendarPage'
+import ActivityLogPage from '@/features/activitylog/pages/ActivityLogPage'
 
 export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, ReactNode> => ({
   dashboard: <DashboardPage />,
@@ -51,4 +52,5 @@ export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, Re
   statussnapshots: <StatusSnapshotsPage />,
   configurations: <ConfigurationsPage onNavigate={onNavigate} />,
   calendar: <CalendarPage />,
+  activitylog: <ActivityLogPage />,
 })

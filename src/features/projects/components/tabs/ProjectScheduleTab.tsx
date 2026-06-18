@@ -218,9 +218,9 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ mileston
                           <StatusChip status={(item as any).rag} type="rag" size="small" />
                         ) : (
                           <StatusTag
-                            label={String((item as any).status) === '2' ? 'Complete' : String((item as any).status) === '1' ? 'In Progress' : 'Not Started'}
+                            label={String((item as any).status) === '0' ? 'Complete' : String((item as any).status) === '1' ? 'In Progress' : 'Not Started'}
                             size="small"
-                            color={String((item as any).status) === '2' ? 'success' : String((item as any).status) === '1' ? 'info' : 'default'}
+                            color={String((item as any).status) === '0' ? 'success' : String((item as any).status) === '1' ? 'info' : 'default'}
                           />
                         )}
                       </TableCell>

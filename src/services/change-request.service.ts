@@ -3,6 +3,7 @@ import {
   Pm_programmesService,
   Pm_projectsService,
 } from '@/generated'
+import { writeAuditLog } from './changelog.service'
 import type { Pm_changerequests } from '@/generated/models/Pm_changerequestsModel'
 import {
   Pm_changerequestspm_changetype,
@@ -150,10 +151,24 @@ export async function createChangeRequest(payload: Partial<ChangeRequestModel>):
   }
   const result = await Pm_changerequestsService.create({ ...defaults, ...cleanPayload } as any)
   const item = unwrapSingle<Pm_changerequests>(result)
+  if (item && item.pm_changerequestid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_changerequests',
+      recordId: item.pm_changerequestid,
+      recordName: item.pm_changerequesttitle || '',
+      newValue: `Change Request created: ${item.pm_changerequesttitle || ''}`
+    })
+  }
   return item ? mapChangeRequest(item) : null
 }
 
 export async function updateChangeRequest(id: string, changes: Partial<ChangeRequestModel>): Promise<ChangeRequestModel | null> {
+  let original: ChangeRequestModel | null = null
+  try {
+    original = await fetchChangeRequestById(id)
+  } catch (e) {}
+
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null &&
@@ -175,11 +190,54 @@ export async function updateChangeRequest(id: string, changes: Partial<ChangeReq
   }
   const result = await Pm_changerequestsService.update(id, cleanPayload as any)
   const item = unwrapSingle<Pm_changerequests>(result)
+
+  // Log audit entries for changed fields
+  if (original) {
+    const formatVal = (val: any): string => {
+      if (val === undefined || val === null) return ''
+      if (typeof val === 'object') return JSON.stringify(val)
+      return String(val)
+    }
+
+    for (const [key, value] of Object.entries(changes)) {
+      if (key === 'pm_changerequestid') continue
+      const oldVal = (original as any)[key]
+      if (formatVal(oldVal) !== formatVal(value)) {
+        const isStatus = key === 'pm_status' || key === 'statecode'
+        writeAuditLog({
+          actionType: isStatus ? 'StatusChange' : 'Update',
+          entityName: 'pm_changerequests',
+          recordId: id,
+          recordName: original.pm_changerequesttitle || '',
+          fieldName: key,
+          oldValue: formatVal(oldVal),
+          newValue: formatVal(value)
+        })
+      }
+    }
+  }
+
   return item ? mapChangeRequest(item) : null
 }
 
 export async function deleteChangeRequest(id: string): Promise<void> {
+  let recordName = id
+  try {
+    const details = await fetchChangeRequestById(id)
+    if (details?.pm_changerequesttitle) recordName = details.pm_changerequesttitle
+  } catch (e) {}
+
   await Pm_changerequestsService.delete(id)
+
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_changerequests',
+    recordId: id,
+    recordName: recordName,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted'
+  })
 }
 
 export async function fetchChangeRequestById(id: string): Promise<ChangeRequestModel | null> {

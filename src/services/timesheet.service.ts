@@ -1,9 +1,10 @@
-﻿import {
+import {
   Pm_timesheetsService,
   Pm_timesheetentriesService,
   Pm_resourcesService,
   Pm_projectsService,
 } from '@/generated'
+import { writeAuditLog } from './changelog.service'
 import type { Pm_timesheets } from '@/generated/models/Pm_timesheetsModel'
 import type { Pm_timesheetentries } from '@/generated/models/Pm_timesheetentriesModel'
 import type {
@@ -168,6 +169,15 @@ export async function createTimesheet(payload: Partial<TimesheetModel>): Promise
   console.log('[dataverseService] createTimesheet raw result:', result)
   try { console.debug('[dataverseService] createTimesheet payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_timesheets>(result)
+  if (item && item.pm_timesheetid) {
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_timesheets',
+      recordId: item.pm_timesheetid,
+      recordName: item.pm_timesheetname || '',
+      newValue: `Timesheet created: ${item.pm_timesheetname || ''}`
+    })
+  }
   return item ? mapTimesheet(item) : null
 }
 
@@ -191,7 +201,28 @@ export async function updateTimesheetStatus(
     changes.pm_rejectionreason = extra.pm_rejectionreason
   }
   try { console.debug('[dataverseService] updateTimesheetStatus:', { timesheetId, changes }) } catch (e) {}
+
+  let recordName = timesheetId
+  let oldStatusStr = ''
+  try {
+    const details = await fetchTimesheetDetails(timesheetId)
+    if (details) {
+      if (details.pm_timesheetname) recordName = details.pm_timesheetname
+      oldStatusStr = String(details.pm_timesheetstatus ?? '')
+    }
+  } catch (e) {}
+
   await Pm_timesheetsService.update(timesheetId, changes as any)
+
+  writeAuditLog({
+    actionType: 'StatusChange',
+    entityName: 'pm_timesheets',
+    recordId: timesheetId,
+    recordName: recordName,
+    fieldName: 'pm_timesheetstatus',
+    oldValue: oldStatusStr,
+    newValue: String(status)
+  })
 }
 
 export async function recalculateTimesheetHours(timesheetId: string): Promise<void> {
@@ -339,8 +370,24 @@ export async function checkTimesheetOverlap(
 }
 
 export async function deleteTimesheet(timesheetId: string): Promise<void> {
+  let recordName = timesheetId
+  try {
+    const details = await fetchTimesheetDetails(timesheetId)
+    if (details?.pm_timesheetname) recordName = details.pm_timesheetname
+  } catch (e) {}
+
   try { console.debug('[dataverseService] deleteTimesheet id:', timesheetId) } catch (e) {}
   await Pm_timesheetsService.delete(timesheetId)
+
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_timesheets',
+    recordId: timesheetId,
+    recordName: recordName,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted'
+  })
 }
 
 export async function deleteTimesheetEntry(entryId: string): Promise<void> {
