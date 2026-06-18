@@ -252,13 +252,30 @@
           "x-ms-schema-name": "pm_actiontypeName",
           "x-ms-read-only": true
         },
-        "pm_changedby": {
+        "pm_changeby": {
           "type": "string",
-          "title": "Changed By",
-          "x-ms-dataverse-attribute": "pm_changedby",
+          "title": "Change By",
+          "x-ms-dataverse-attribute": "pm_changeby",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_ChangeBy"
+        },
+        "pm_changebyname": {
+          "type": "string",
+          "title": "pm_changebyname",
+          "x-ms-dataverse-attribute": "pm_changebyname",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_changedby",
-          "maxLength": 100
+          "x-ms-schema-name": "pm_ChangeByName",
+          "x-ms-read-only": true,
+          "maxLength": 200
+        },
+        "pm_changebyyominame": {
+          "type": "string",
+          "title": "pm_changebyyominame",
+          "x-ms-dataverse-attribute": "pm_changebyyominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_ChangeByYomiName",
+          "x-ms-read-only": true,
+          "maxLength": 200
         },
         "pm_changelogentryid": {
           "type": "string",

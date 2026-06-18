@@ -25,7 +25,7 @@ export interface Pm_changelogentriesBase {
   ownerid: string;
   owneridtype: string;
   pm_actiontype?: Pm_changelogentriespm_actiontype;
-  pm_changedby?: string;
+  "pm_ChangeBy@odata.bind"?: string;
   pm_changelogentryid: string;
   pm_changetimestamp?: string;
   pm_entityname?: string;
@@ -58,6 +58,8 @@ export interface Pm_changelogentries extends Pm_changelogentriesBase {
   owneridyominame: string;
   owningbusinessunitname: string;
   pm_actiontypename?: string;
+  pm_changebyname?: string;
+  pm_changebyyominame?: string;
   statecodename?: string;
   statuscodename?: string;
   versionnumber?: number;
@@ -75,4 +77,6 @@ export interface Pm_changelogentries extends Pm_changelogentriesBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
+  pm_changeby?: object;
+  _pm_changeby_value?: string;
 }

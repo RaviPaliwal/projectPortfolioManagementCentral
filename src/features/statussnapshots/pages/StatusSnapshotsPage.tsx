@@ -441,12 +441,15 @@ export default function StatusSnapshotsPage() {
         setSuccessMsg('Status snapshot updated successfully.')
       } else {
         payload.statuscode = 1
-        if (formData.pm_entitytype === 'Project' && selectedEntityId) {
-          payload['pm_project@odata.bind'] = `/pm_projects(${selectedEntityId})`
-        } else if (formData.pm_entitytype === 'Programme' && selectedEntityId) {
-          payload['pm_programmeName@odata.bind'] = `/pm_programmes(${selectedEntityId})`
-        } else if (formData.pm_entitytype === 'Portfolio' && selectedEntityId) {
-          payload['pm_portfolioLookup@odata.bind'] = `/pm_portfolios(${selectedEntityId})`
+        if (selectedEntityId) {
+          const cleanEntityId = selectedEntityId.replace(/[{}]/g, '').trim().toLowerCase()
+          if (formData.pm_entitytype === 'Project') {
+            payload['pm_project@odata.bind'] = `/pm_projects(${cleanEntityId})`
+          } else if (formData.pm_entitytype === 'Programme') {
+            payload['pm_programmeName@odata.bind'] = `/pm_programmes(${cleanEntityId})`
+          } else if (formData.pm_entitytype === 'Portfolio') {
+            payload['pm_portfolioLookup@odata.bind'] = `/pm_portfolios(${cleanEntityId})`
+          }
         }
         await Pm_projectstatussnapshotsService.create(payload)
         setSuccessMsg('Status snapshot created successfully.')
@@ -454,7 +457,8 @@ export default function StatusSnapshotsPage() {
       setShowForm(false)
       setTimeout(() => setSuccessMsg(null), 3000)
       await loadData()
-    } catch {
+    } catch (err: any) {
+      console.error('[StatusSnapshotsPage] handleSave failed:', err)
       setError(editingSnapshot ? 'Unable to update snapshot.' : 'Unable to create snapshot.')
     } finally {
       setActionLoading(false)
