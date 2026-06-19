@@ -3,6 +3,7 @@ import {
   Pm_fundingsourcesService,
   Pm_cashflowentriesService,
   Pm_fiscalperiodsService,
+  Pm_portfoliosService,
   Pm_programmesService,
   Pm_projectsService,
 } from '@/generated'
@@ -10,6 +11,7 @@ import type { Pm_budgetlines } from '@/generated/models/Pm_budgetlinesModel'
 import type { Pm_fundingsources } from '@/generated/models/Pm_fundingsourcesModel'
 import type { Pm_cashflowentries } from '@/generated/models/Pm_cashflowentriesModel'
 import type { Pm_fiscalperiods } from '@/generated/models/Pm_fiscalperiodsModel'
+import type { Pm_portfolios } from '@/generated/models/Pm_portfoliosModel'
 import type { Pm_programmes } from '@/generated/models/Pm_programmesModel'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
 import type {
@@ -33,6 +35,11 @@ export const mapBudgetLine = (item: Pm_budgetlines): BudgetLineModel => ({
   pm_estimateatcompletioneur: item.pm_estimateatcompletioneur,
   pm_estimatetocompleteeur: item.pm_estimatetocompleteeur,
   pm_costcategory: item.pm_costcategory,
+  pm_costinglevelcode: (item as any).pm_costinglevelcode,
+  pm_unitcosteur: (item as any).pm_unitcosteur,
+  pm_quantity: (item as any).pm_quantity,
+  pm_totalamounteur: (item as any).pm_totalamounteur,
+  pm_jsonrawcalculation: (item as any).pm_jsonrawcalculation,
   pm_notes: item.pm_notes,
   pm_portfolio: item.pm_portfolio,
   pm_programme: item.pm_programme,
@@ -59,11 +66,10 @@ export const mapFundingSource = (item: Pm_fundingsources): FundingSourceModel =>
   pm_allocatedamounteur: item.pm_allocatedamounteur,
   pm_availableamounteur: item.pm_availableamounteur,
   pm_fundingbody: item.pm_fundingbody,
-  pm_referencecode: item.pm_referencecode,
   pm_effectivefromdate: item.pm_effectivefromdate,
   pm_effectivetodate: item.pm_effectivetodate,
   pm_portfolioname: item.pm_portfolioname,
-  pm_programmename: item.pm_programmename,
+  pm_programmelookupname: item.pm_programmelookupname,
   _pm_portfolio_value: item._pm_portfolio_value,
   _pm_programmelookup_value: item._pm_programmelookup_value,
   statecode: item.statecode,
@@ -110,6 +116,8 @@ export async function fetchBudgetLines(): Promise<BudgetLineModel[]> {
     'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory',
     'pm_notes',
     'pm_estimateatcompletioneur', 'pm_estimatetocompleteeur',
+    'pm_jsonrawcalculation',
+    '_pm_portfoliolookup_value', '_pm_programmelookup_value', '_pm_project_value',
   ]
   const options = {
     select: selectFields,
@@ -134,9 +142,10 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
       'pm_revisedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur',
       'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory',
       'pm_estimateatcompletioneur', 'pm_estimatetocompleteeur',
+      'pm_jsonrawcalculation',
       'pm_fundingsourcename',
       'pm_fiscalperiodname', 'pm_portfolio', 'pm_programme', 'pm_projectcode',
-      'pm_projectname', 'pm_portfoliolookupname', 'pm_programmelookupname',
+      '_pm_portfoliolookup_value', '_pm_programmelookup_value', '_pm_project_value',
       'pm_notes',
     ],
   })
@@ -147,6 +156,8 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
   const SKIP_VIRTUAL = new Set([
     'pm_fiscalperiodname', 'pm_fundingsourcename',
     'pm_portfoliolookupname', 'pm_programmelookupname', 'pm_projectname',
+    'pm_portfolio', 'pm_programme', 'pm_projectcode',
+    'pm_costinglevelcode', 'pm_unitcosteur', 'pm_quantity', 'pm_totalamounteur',
     '_pm_fiscalperiod_value', '_pm_fundingsource_value',
     '_pm_portfoliolookup_value', '_pm_programmelookup_value', '_pm_project_value',
   ])
@@ -155,6 +166,22 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
     if (value !== undefined && value !== null && value !== '' && !SKIP_VIRTUAL.has(key)) {
       cleanPayload[key] = value
     }
+  }
+  if (payload._pm_portfoliolookup_value) {
+    const id = payload._pm_portfoliolookup_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (id) cleanPayload['pm_portfolioLookup@odata.bind'] = `/pm_portfolios(${id})`
+  }
+  if (payload._pm_programmelookup_value) {
+    const id = payload._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (id) cleanPayload['pm_programmeLookup@odata.bind'] = `/pm_programmes(${id})`
+  }
+  if (payload._pm_project_value) {
+    const id = payload._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (id) cleanPayload['pm_project@odata.bind'] = `/pm_projects(${id})`
+  }
+  if (payload._pm_fundingsource_value) {
+    const id = payload._pm_fundingsource_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (id) cleanPayload['pm_fundingsource@odata.bind'] = `/pm_fundingsources(${id})`
   }
   const defaults: Record<string, any> = {
     statecode: 0,
@@ -179,6 +206,8 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
     'pm_budgetlineid',
     'pm_fiscalperiodname', 'pm_fundingsourcename',
     'pm_portfoliolookupname', 'pm_programmelookupname', 'pm_projectname',
+    'pm_portfolio', 'pm_programme', 'pm_projectcode',
+    'pm_costinglevelcode', 'pm_unitcosteur', 'pm_quantity', 'pm_totalamounteur',
     '_pm_fiscalperiod_value', '_pm_fundingsource_value',
     '_pm_portfoliolookup_value', '_pm_programmelookup_value', '_pm_project_value',
   ])
@@ -187,6 +216,22 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
     if (value !== undefined && value !== null && !SKIP_VIRTUAL.has(key)) {
       cleanPayload[key] = value
     }
+  }
+  if (changes._pm_portfoliolookup_value) {
+    const id = changes._pm_portfoliolookup_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (id) cleanPayload['pm_portfolioLookup@odata.bind'] = `/pm_portfolios(${id})`
+  }
+  if (changes._pm_programmelookup_value) {
+    const id = changes._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (id) cleanPayload['pm_programmeLookup@odata.bind'] = `/pm_programmes(${id})`
+  }
+  if (changes._pm_project_value) {
+    const id = changes._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (id) cleanPayload['pm_project@odata.bind'] = `/pm_projects(${id})`
+  }
+  if (changes._pm_fundingsource_value) {
+    const id = changes._pm_fundingsource_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (id) cleanPayload['pm_fundingsource@odata.bind'] = `/pm_fundingsources(${id})`
   }
   const result = await Pm_budgetlinesService.update(id, cleanPayload as any)
   const item = unwrapSingle<Pm_budgetlines>(result)
@@ -227,8 +272,9 @@ export async function fetchFundingSources(): Promise<FundingSourceModel[]> {
   const selectFields = [
     'pm_fundingsourceid', 'pm_fundingsourcename', 'pm_fundingtype',
     'pm_fundingstatus', 'pm_totalamounteur', 'pm_allocatedamounteur',
-    'pm_availableamounteur', 'pm_fundingbody', 'pm_referencecode',
+    'pm_availableamounteur', 'pm_fundingbody',
     'pm_effectivefromdate', 'pm_effectivetodate',
+    '_pm_portfolio_value', '_pm_programmelookup_value',
   ]
   const options = {
     select: selectFields,
@@ -251,9 +297,9 @@ export async function fetchFundingSourceById(fundingSourceId: string): Promise<F
     select: [
       'pm_fundingsourceid', 'pm_fundingsourcename', 'pm_fundingtype',
       'pm_fundingstatus', 'pm_totalamounteur', 'pm_allocatedamounteur',
-      'pm_availableamounteur', 'pm_fundingbody', 'pm_referencecode',
+      'pm_availableamounteur', 'pm_fundingbody',
       'pm_effectivefromdate', 'pm_effectivetodate',
-      'pm_portfolioname', 'pm_programmename',
+      '_pm_portfolio_value', '_pm_programmelookup_value',
     ],
   })
   try { console.debug('[dataverseService] fetchFundingSourceById result:', result) } catch (e) { }
@@ -262,9 +308,13 @@ export async function fetchFundingSourceById(fundingSourceId: string): Promise<F
 }
 
 export async function createFundingSource(payload: Partial<FundingSourceModel>): Promise<FundingSourceModel | null> {
+  const SKIP_VIRTUAL = new Set([
+    'pm_referencecode', 'pm_programmename',
+    'pm_portfolioname', 'pm_programmelookupname',
+  ])
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && value !== '' && !SKIP_VIRTUAL.has(key)) {
       cleanPayload[key] = value
     }
   }
@@ -290,9 +340,14 @@ export async function createFundingSource(payload: Partial<FundingSourceModel>):
 }
 
 export async function updateFundingSource(id: string, changes: Partial<FundingSourceModel>): Promise<FundingSourceModel | null> {
+  const SKIP_VIRTUAL = new Set([
+    'pm_fundingsourceid',
+    'pm_referencecode', 'pm_programmename',
+    'pm_portfolioname', 'pm_programmelookupname',
+  ])
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null && key !== 'pm_fundingsourceid') {
+    if (value !== undefined && value !== null && !SKIP_VIRTUAL.has(key)) {
       cleanPayload[key] = value
     }
   }
@@ -414,9 +469,15 @@ export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
   return list
 }
 
+export interface PortfolioLookupItem {
+  pm_portfolioid: string
+  pm_portfolioname: string
+}
+
 export interface ProgrammeLookupItem {
   pm_programmeid: string
   pm_programmename: string
+  _pm_portfolio_value?: string
 }
 
 export interface ProjectLookupItem {
@@ -426,16 +487,30 @@ export interface ProjectLookupItem {
   _pm_programme_value?: string
 }
 
+export async function fetchPortfoliosForLookup(): Promise<PortfolioLookupItem[]> {
+  const result = await Pm_portfoliosService.getAll({
+    filter: 'statecode eq 0',
+    select: ['pm_portfolioid', 'pm_portfolioname'],
+    orderBy: ['pm_portfolioname asc'],
+    top: 500,
+  })
+  return unwrapList<Pm_portfolios>(result).map((item) => ({
+    pm_portfolioid: item.pm_portfolioid,
+    pm_portfolioname: item.pm_portfolioname || '',
+  }))
+}
+
 export async function fetchProgrammesForLookup(): Promise<ProgrammeLookupItem[]> {
   const result = await Pm_programmesService.getAll({
     filter: 'statecode eq 0',
-    select: ['pm_programmeid', 'pm_programmename'],
+    select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value'],
     orderBy: ['pm_programmename asc'],
     top: 500,
   })
   return unwrapList<Pm_programmes>(result).map((item) => ({
     pm_programmeid: item.pm_programmeid,
     pm_programmename: item.pm_programmename || '',
+    _pm_portfolio_value: item._pm_portfolio_value,
   }))
 }
 

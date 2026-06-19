@@ -96,7 +96,7 @@ const fundingExportColumns: ExportColumn[] = [
   { key: 'pm_allocatedamounteur', label: 'Allocated (EUR)' },
   { key: 'pm_availableamounteur', label: 'Available (EUR)' },
   { key: 'pm_fundingbody', label: 'Funding Body' },
-  { key: 'pm_referencecode', label: 'Reference' },
+  { key: 'pm_portfolioname', label: 'Portfolio' },
   { key: 'pm_effectivefromdate', label: 'Effective From' },
   { key: 'pm_effectivetodate', label: 'Effective To' },
 ]
@@ -154,7 +154,7 @@ export default function FundingSourcesPage() {
     pm_fundingtype: 0,
     pm_fundingstatus: 0,
     pm_fundingbody: '',
-    pm_referencecode: '',
+    pm_fundingbody: '',
     pm_totalamounteur: 0,
     pm_allocatedamounteur: 0,
     pm_availableamounteur: 0,
@@ -232,9 +232,8 @@ export default function FundingSourcesPage() {
         (s) =>
           s.pm_fundingsourcename?.toLowerCase().includes(q) ||
           s.pm_fundingbody?.toLowerCase().includes(q) ||
-          s.pm_referencecode?.toLowerCase().includes(q) ||
           s.pm_portfolioname?.toLowerCase().includes(q) ||
-          s.pm_programmename?.toLowerCase().includes(q)
+          s.pm_programmelookupname?.toLowerCase().includes(q)
       )
     }
 
@@ -319,7 +318,7 @@ export default function FundingSourcesPage() {
       pm_fundingtype: 0,
       pm_fundingstatus: 0,
       pm_fundingbody: '',
-      pm_referencecode: '',
+      pm_fundingbody: '',
       pm_totalamounteur: 0,
       pm_allocatedamounteur: 0,
       pm_availableamounteur: 0,
@@ -336,7 +335,7 @@ export default function FundingSourcesPage() {
       pm_fundingtype: Number(source.pm_fundingtype) || 0,
       pm_fundingstatus: Number(source.pm_fundingstatus) || 0,
       pm_fundingbody: source.pm_fundingbody ?? '',
-      pm_referencecode: source.pm_referencecode ?? '',
+      pm_fundingbody: source.pm_fundingbody ?? '',
       pm_totalamounteur: source.pm_totalamounteur ?? 0,
       pm_allocatedamounteur: source.pm_allocatedamounteur ?? 0,
       pm_availableamounteur: source.pm_availableamounteur ?? 0,
@@ -360,7 +359,7 @@ export default function FundingSourcesPage() {
         pm_fundingtype: formData.pm_fundingtype,
         pm_fundingstatus: formData.pm_fundingstatus,
         pm_fundingbody: formData.pm_fundingbody || undefined,
-        pm_referencecode: formData.pm_referencecode || undefined,
+        pm_fundingbody: formData.pm_fundingbody || undefined,
         pm_totalamounteur: formData.pm_totalamounteur || 0,
         pm_allocatedamounteur: formData.pm_allocatedamounteur || 0,
         pm_availableamounteur: formData.pm_availableamounteur || 0,
@@ -553,9 +552,9 @@ export default function FundingSourcesPage() {
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {source.pm_fundingsourcename ?? 'Unnamed Source'}
                           </Typography>
-                          {source.pm_referencecode && (
+                          {source.pm_fundingbody && (
                             <Typography variant="caption" color="text.secondary">
-                              {source.pm_referencecode}
+                              {source.pm_fundingbody}
                             </Typography>
                           )}
                         </Box>
@@ -673,9 +672,9 @@ export default function FundingSourcesPage() {
               label={STATUS_LABELS[String(selectedSource.pm_fundingstatus ?? '')]}
               color={STATUS_COLORS[String(selectedSource.pm_fundingstatus ?? '')] ?? 'default'}
             />
-            {selectedSource.pm_referencecode && (
+            {selectedSource.pm_fundingbody && (
               <Typography variant="body2" color="text.secondary">
-                {selectedSource.pm_referencecode}
+                {selectedSource.pm_fundingbody}
               </Typography>
             )}
           </Box>
@@ -786,7 +785,7 @@ export default function FundingSourcesPage() {
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Reference Code</Typography>
-                      <Typography variant="body2">{selectedSource.pm_referencecode || '—'}</Typography>
+                      <Typography variant="body2">{selectedSource.pm_fundingbody || '—'}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Effective From</Typography>
@@ -810,10 +809,10 @@ export default function FundingSourcesPage() {
                         <Typography variant="body2">{selectedSource.pm_portfolioname}</Typography>
                       </Box>
                     )}
-                    {selectedSource.pm_programmename && (
+                    {selectedSource.pm_programmelookupname && (
                       <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme</Typography>
-                        <Typography variant="body2">{selectedSource.pm_programmename}</Typography>
+                        <Typography variant="body2">{selectedSource.pm_programmelookupname}</Typography>
                       </Box>
                     )}
                   </Box>
@@ -834,7 +833,7 @@ export default function FundingSourcesPage() {
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
                     {selectedSource.pm_totalamounteur != null ? currencyFormatter.format(selectedSource.pm_totalamounteur) : ''}
-                    {selectedSource.pm_referencecode ? ` · ${selectedSource.pm_referencecode}` : ''}
+                    {selectedSource.pm_fundingbody ? ` · ${selectedSource.pm_fundingbody}` : ''}
                   </Typography>
                   <WorkflowMilestone
                     moduleName={MODULE_NAMES.FUNDING_SOURCES.value}
@@ -939,8 +938,8 @@ export default function FundingSourcesPage() {
                 label="Reference Code"
                 fullWidth
                 size="small"
-                value={formData.pm_referencecode}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_referencecode: e.target.value }))}
+                value={formData.pm_fundingbody}
+                onChange={(e) => setFormData((f) => ({ ...f, pm_fundingbody: e.target.value }))}
                 placeholder="e.g., FS-2026-001"
                 slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />

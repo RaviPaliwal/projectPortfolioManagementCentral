@@ -101,9 +101,9 @@ export const FundingSourceApprovalTaskModal: React.FC<FundingSourceApprovalTaskM
               <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>
                 {source?.pm_fundingsourcename || 'Loading...'}
               </Typography>
-              {source?.pm_referencecode && (
+              {source?.pm_fundingbody && (
                 <Typography variant="caption" color="text.secondary" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
-                  {source.pm_referencecode}
+                  {source.pm_fundingbody}
                 </Typography>
               )}
               <Divider sx={{ my: 2 }} />
@@ -152,10 +152,10 @@ export const FundingSourceApprovalTaskModal: React.FC<FundingSourceApprovalTaskM
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>{source.pm_portfolioname}</Typography>
                   </Box>
                 )}
-                {source?.pm_programmename && (
+                {source?.pm_programmelookupname && (
                   <Box>
                     <Typography variant="caption" color="text.secondary">Programme</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{source.pm_programmename}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{source.pm_programmelookupname}</Typography>
                   </Box>
                 )}
               </Box>
@@ -239,7 +239,7 @@ export const FundingSourceApprovalTaskModal: React.FC<FundingSourceApprovalTaskM
                   </Grid>
                   <Grid size={{ xs: 6 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Reference Code</Typography>
-                    <Typography variant="body2">{source?.pm_referencecode || '—'}</Typography>
+                    <Typography variant="body2">{source?.pm_fundingbody || '—'}</Typography>
                   </Grid>
                 </Grid>
               </Paper>
