@@ -23,9 +23,9 @@ import { currencyFormatter } from '@/utils/formatters'
 import { normalizeLookupId } from '@/services'
 
 const RAG_LABELS: Record<string, string> = {
-  '0': 'Green',
-  '1': 'Amber',
-  '2': 'Red',
+  '0': 'Low',
+  '1': 'Medium',
+  '2': 'High',
 }
 
 const RAG_COLORS: Record<string, string> = {

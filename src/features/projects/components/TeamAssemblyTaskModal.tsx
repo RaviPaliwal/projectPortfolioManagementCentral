@@ -9,6 +9,7 @@ import GroupIcon from '@mui/icons-material/Group'
 import PersonIcon from '@mui/icons-material/Person'
 import BadgeIcon from '@mui/icons-material/Badge'
 import { fetchProjectDetails, fetchResources, assignResource } from '@/services'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ProjectModel, ResourceModel } from '@/types/dataverse'
 import { Button } from '@/components/common'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
@@ -155,9 +156,19 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
                 {project?.pm_projectcode}
               </Typography>
               <Divider sx={{ my: 2 }} />
-              <Box>
-                <Typography variant="caption" color="text.secondary">Project Manager</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_projectmanagername || 'Unassigned'}</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Project Manager</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_projectmanagername || 'Unassigned'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Portfolio</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_portfolioname || '-'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Programme</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_programmename || '-'}</Typography>
+                </Box>
               </Box>
               <Box sx={{ mt: 4, p: 2, bgcolor: isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.04)', border: '1px solid', borderColor: 'secondary.light' }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -247,7 +258,10 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
           <DecisionBoxProp
             approvalStepId={approvalStepId}
             onBeforeDecision={saveTaskData}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'team_assembly', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />

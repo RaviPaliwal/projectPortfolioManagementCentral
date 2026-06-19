@@ -17,6 +17,7 @@ import { Button } from '@/components/common'
 import { fontSizes } from '@/styles/fontSizes'
 import { GovernanceReadinessService, fetchProjectDetails, updateGateReview, fetchGateReviewById } from '@/services'
 import { submitWorkflowDecision } from '@/services/workflow.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ProjectReadinessReport } from '@/services/governance-readiness.service'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 
@@ -738,6 +739,9 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
             setSaving(false)
             return
           }
+          dispatchFormDialogDecision({ formKey: 'pmo_readiness', decision: workflowDecision })
+        } else {
+          dispatchFormDialogDecision({ formKey: 'pmo_readiness', decision: 2 }) // Defer or other outcome
         }
 
         // In workflow mode, close immediately with success message (no success screen)

@@ -78,9 +78,9 @@ const ISSUE_CATEGORY_LABELS: Record<string, string> = {
 }
 
 const RAG_LABELS: Record<string, string> = {
-  '2': 'Red',
-  '0': 'Amber',
-  '1': 'Green',
+  '2': 'High',
+  '0': 'Medium',
+  '1': 'Low',
 }
 
 const PRIORITY_LABELS: Record<string, string> = {

@@ -9,6 +9,11 @@ export const Pm_budgetlinespm_costcategory = {
   3: 'Infrastructure'
 } as const;
 export type Pm_budgetlinespm_costcategory = keyof typeof Pm_budgetlinespm_costcategory;
+export const Pm_budgetlinespm_expencecatagory = {
+  0: 'CapEx',
+  1: 'OpEx'
+} as const;
+export type Pm_budgetlinespm_expencecatagory = keyof typeof Pm_budgetlinespm_expencecatagory;
 export const Pm_budgetlinesstatecode = {
   0: 'Active',
   1: 'Inactive'
@@ -33,6 +38,7 @@ export interface Pm_budgetlinesBase {
   pm_costcategory?: Pm_budgetlinespm_costcategory;
   pm_estimateatcompletioneur?: number;
   pm_estimatetocompleteeur?: number;
+  pm_expencecatagory?: Pm_budgetlinespm_expencecatagory;
   "pm_fiscalperiod@odata.bind"?: string;
   pm_forecastspendeur?: number;
   "pm_fundingsource@odata.bind"?: string;
@@ -71,6 +77,7 @@ export interface Pm_budgetlines extends Pm_budgetlinesBase {
   pm_costcategoryname?: string;
   pm_estimateatcompletioneur_base?: number;
   pm_estimatetocompleteeur_base?: number;
+  pm_expencecatagoryname?: string;
   pm_fiscalperiodname?: string;
   pm_forecastspendeur_base?: number;
   pm_fundingsourcename?: string;

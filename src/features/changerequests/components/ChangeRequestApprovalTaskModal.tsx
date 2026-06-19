@@ -9,6 +9,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import ScheduleIcon from '@mui/icons-material/Schedule'
 import { fetchChangeRequestById, updateChangeRequest } from '@/services/change-request.service'
 import { fetchProjectDetails, updateProject } from '@/services/project.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ChangeRequestModel, ProjectModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
@@ -123,6 +124,7 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
     } else {
       onSuccess('Change request rejected.')
     }
+    dispatchFormDialogDecision({ formKey: 'change_request_approval', decision })
     onClose()
   }, [onSuccess, onClose])
 

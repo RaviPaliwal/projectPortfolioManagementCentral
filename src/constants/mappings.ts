@@ -5,9 +5,9 @@ export const RAG_COLORS = {
 } as const
 
 export const RAG_LABELS = {
-  '0': 'Amber',
-  '1': 'Green',
-  '2': 'Red',
+  '0': 'Medium',
+  '1': 'Low',
+  '2': 'High',
 } as const
 
 export const STATUS_COLORS_SEMANTIC = {

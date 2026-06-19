@@ -16,8 +16,9 @@ import {
 import {
   fetchProgrammesForLookup,
   fetchProjectsForLookup,
+  fetchFinancialPeriods,
 } from '@/services'
-import type { CashflowEntryModel } from '@/types/dataverse'
+import type { CashflowEntryModel, FinancialPeriodModel } from '@/types/dataverse'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { 
   PageHeader, 
@@ -72,6 +73,7 @@ export default function CashflowPage() {
   // Lookup data state
   const [programmes, setProgrammes] = useState<ProgrammeLookupItem[]>([])
   const [projects, setProjects] = useState<ProjectLookupItem[]>([])
+  const [fiscalPeriods, setFiscalPeriods] = useState<FinancialPeriodModel[]>([])
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
@@ -79,9 +81,11 @@ export default function CashflowPage() {
     Promise.all([
       fetchProgrammesForLookup(),
       fetchProjectsForLookup(),
-    ]).then(([progs, projs]) => {
+      fetchFinancialPeriods(),
+    ]).then(([progs, projs, periods]) => {
       setProgrammes(progs)
       setProjects(projs)
+      setFiscalPeriods(periods)
     })
   }, [])
 
@@ -210,6 +214,7 @@ export default function CashflowPage() {
         loading={actionState.loading}
         programmes={programmes}
         projects={projects}
+        fiscalPeriods={fiscalPeriods}
         onSave={handleSave}
       />
 

@@ -14,6 +14,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import { fetchPortfolioHierarchy, updatePortfolioStatus } from '@/services/portfolio.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { PortfolioModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
@@ -254,7 +255,10 @@ export const PortfolioApprovalTaskModal: React.FC<PortfolioApprovalTaskModalProp
           <DecisionBoxProp
             approvalStepId={approvalStepId}
             onBeforeDecision={saveTaskData}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'portfolio_approval', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />

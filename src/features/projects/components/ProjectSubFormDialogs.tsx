@@ -40,6 +40,7 @@ import { DynamicFormDialog } from '@/components/common'
 import type { FormField } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import { BudgetLineFormDialog } from '@/features/budgets/components'
+import type { BudgetLineModel } from '@/types/dataverse'
 
 interface SubDialogProps {
   open: boolean
@@ -58,7 +59,7 @@ export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, proje
       { value: '0', label: 'Delivery' }, { value: '1', label: 'Governance' }
     ]},
     { name: 'pm_ragstatus', label: 'RAG Status', type: 'select', defaultValue: '1', options: [
-      { value: '1', label: 'Green' }, { value: '0', label: 'Amber' }, { value: '2', label: 'Red' }
+      { value: '1', label: 'Low' }, { value: '0', label: 'Medium' }, { value: '2', label: 'High' }
     ]},
     { name: 'pm_status', label: 'Status', type: 'select', defaultValue: '1', options: [
       { value: '1', label: 'Active / Planned' }, { value: '2', label: 'Completed' }
@@ -108,7 +109,7 @@ export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
       { value: '0', label: 'Strategic' }, { value: '1', label: 'Operational' }, { value: '2', label: 'Financial' }, { value: '3', label: 'Compliance' }, { value: '4', label: 'Technology' }
     ]},
     { name: 'pm_ragstatus', label: 'RAG Status', type: 'select', gridSize: 4, options: [
-      { value: '1', label: 'Green — Low Risk' }, { value: '0', label: 'Amber — Medium Risk' }, { value: '2', label: 'Red — High Risk' }
+      { value: '1', label: 'Low' }, { value: '0', label: 'Medium' }, { value: '2', label: 'High' }
     ]},
     { name: '_pm_riskowner_value', label: 'Risk owner', type: 'user-select-id', gridSize: 4 },
     { name: 'pm_identifieddate', label: 'Identified Date', type: 'date', gridSize: 6 },
@@ -534,14 +535,15 @@ export const ResourceDialog: React.FC<SubDialogProps> = ({ open, onClose, projec
   )
 }
 
-export const BudgetDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
+export const BudgetDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
   return (
     <BudgetLineFormDialog
       open={open}
       onClose={onClose}
       prefillProjectId={projectId}
-      onSaved={(saved) => {
-        if (saved?.pm_budgetlineid) {
+      editBudget={initialData as BudgetLineModel | null}
+      onSaved={(saved, isEdit) => {
+        if (saved?.pm_budgetlineid && !isEdit) {
           try {
             startWorkflowForEntity('default-template', saved.pm_budgetlineid, MODULE_NAMES.BUDGETS.value, 'System')
           } catch (wfErr) {
@@ -549,9 +551,9 @@ export const BudgetDialog: React.FC<SubDialogProps> = ({ open, onClose, projectI
           }
         }
         if (saved) {
-          onSuccess('Budget line added successfully and workflow initiated.')
+          onSuccess(isEdit ? 'Budget line updated successfully.' : 'Budget line added successfully and workflow initiated.')
         } else {
-          onError('Unable to add budget line.')
+          onError(isEdit ? 'Unable to update budget line.' : 'Unable to add budget line.')
         }
       }}
     />

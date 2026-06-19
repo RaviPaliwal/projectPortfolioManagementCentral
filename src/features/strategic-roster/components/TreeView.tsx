@@ -114,7 +114,7 @@ const TreeItemRow: React.FC<{
             </Typography>
           </Tooltip>
         )}
-        <Tooltip title={`RAG: ${ragStatus === '0' ? 'Green' : ragStatus === '1' ? 'Amber' : ragStatus === '2' ? 'Red' : 'Unknown'}`}>
+        <Tooltip title={`RAG: ${ragStatus === '0' ? 'Low' : ragStatus === '1' ? 'Medium' : ragStatus === '2' ? 'High' : 'Unknown'}`}>
           <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: ragColor, boxShadow: `0 0 6px ${ragColor}`, flexShrink: 0, cursor: 'help' }} />
         </Tooltip>
       </Box>

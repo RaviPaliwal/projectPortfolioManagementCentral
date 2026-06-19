@@ -7,9 +7,9 @@ export const RAG_COLORS: Record<string, string> = {
 }
 
 export const RAG_LABELS: Record<string, string> = {
-  '2': 'Red',
-  '1': 'Green',
-  '0': 'Amber',
+  '2': 'High',
+  '1': 'Low',
+  '0': 'Medium',
 }
 
 export const PHASE_COLORS: Record<string, "primary" | "secondary" | "success" | "warning" | "error" | "info" | "default"> = {
@@ -43,7 +43,7 @@ export const projectExportColumns: ExportColumn[] = [
   { key: 'pm_projectsponsor', label: 'Sponsor' },
   { key: 'pm_businessunit', label: 'Business Unit' },
   { key: 'pm_projectphase', label: 'Phase', format: (v) => phaseLabel(v) },
-  { key: 'pm_ragstatus', label: 'RAG', format: (v) => ['Amber', 'Green', 'Red'][Number(v)] ?? '' },
+  { key: 'pm_ragstatus', label: 'RAG', format: (v) => ['Medium', 'Low', 'High'][Number(v)] ?? '' },
   { key: 'pm_approvedbudgeteur', label: 'Budget', format: (v) => v?.toLocaleString() ?? '' },
   { key: 'pm_actualcosteur', label: 'Actual Cost', format: (v) => v?.toLocaleString() ?? '' },
   { key: 'pm_percentcomplete', label: '% Complete', format: (v) => `${v ?? 0}%` },

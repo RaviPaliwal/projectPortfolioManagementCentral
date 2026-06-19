@@ -11,6 +11,7 @@ import FactCheckIcon from '@mui/icons-material/FactCheck'
 import DescriptionIcon from '@mui/icons-material/Description'
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import { fetchInitiativeById } from '@/services/initiative.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { InitiativeModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
@@ -232,7 +233,10 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
           <DecisionBoxProp
             approvalStepId={approvalStepId}
             onBeforeDecision={saveTaskData}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'pipeline_review', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />

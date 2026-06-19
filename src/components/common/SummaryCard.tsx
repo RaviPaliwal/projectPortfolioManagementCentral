@@ -15,9 +15,9 @@ export interface StatusChipProps {
 }
 
 const RAG_CONFIG: Record<string, { color: string; icon: React.ReactElement; label: string }> = {
-  '1': { color: 'success', icon: <CheckCircleIcon />, label: 'Green' },
-  '0': { color: 'warning', icon: <WarningAmberIcon />, label: 'Amber' },
-  '2': { color: 'error', icon: <ErrorIcon />, label: 'Red' },
+  '1': { color: 'success', icon: <CheckCircleIcon />, label: 'Low' },
+  '0': { color: 'warning', icon: <WarningAmberIcon />, label: 'Medium' },
+  '2': { color: 'error', icon: <ErrorIcon />, label: 'High' },
 }
 
 const PHASE_LABELS: Record<string, { label: string; color: string }> = {

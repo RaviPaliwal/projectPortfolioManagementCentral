@@ -13,6 +13,7 @@ import HistoryIcon from '@mui/icons-material/History'
 
 import { fetchProjectDetails, updateGateReview, fetchGateReviewById } from '@/services'
 import { submitWorkflowDecision } from '@/services/workflow.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import { StatusTag, Button } from '@/components/common'
 import { fontSizes } from '@/styles/fontSizes'
@@ -204,11 +205,13 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
           return
         }
 
+        dispatchFormDialogDecision({ formKey: 'board_decision', decision: workflowDecision })
         const outcomeLabel = outcome === 0 ? 'Approved' : outcome === 1 ? 'Conditional Approval' : 'Not Approved'
         onSuccess(`Final Decision recorded. Outcome: ${outcomeLabel}`)
         onClose()
       } else {
         // Standalone mode: notify parent to refresh data
+        dispatchFormDialogDecision({ formKey: 'board_decision', decision: outcome === 0 || outcome === 1 ? 0 : 3 })
         const outcomeLabel = outcome === 0 ? 'Approved' : outcome === 1 ? 'Conditional Approval' : 'Not Approved'
         onSuccess(`Final Decision recorded. Outcome: ${outcomeLabel}`)
         onClose()

@@ -9,9 +9,12 @@ import {
   TableBody,
   Paper,
   TableContainer,
+  IconButton,
+  Tooltip,
 } from '@mui/material'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import PieChartIcon from '@mui/icons-material/PieChart'
+import EditIcon from '@mui/icons-material/Edit'
 
 import { StatusTag, VarianceDisplay } from '@/components/common'
 import type { BudgetLineModel } from '@/types/dataverse'
@@ -20,9 +23,15 @@ import { fontSizes } from '@/styles'
 
 interface ProjectFinancialsTabProps {
   budgetLines: BudgetLineModel[]
+  onEditBudgetLine?: (budget: BudgetLineModel) => void
+  canEdit?: boolean
 }
 
-export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ budgetLines }) => {
+export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ 
+  budgetLines,
+  onEditBudgetLine,
+  canEdit = false,
+}) => {
   const totalBudget = budgetLines.reduce((s, b) => s + (b.pm_approvedbudgeteur ?? 0), 0)
   const totalSpent = budgetLines.reduce((s, b) => s + (b.pm_actualspendeur ?? 0), 0)
   const variance = totalBudget - totalSpent
@@ -62,6 +71,7 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ budg
                   <TableCell sx={{ fontWeight: 700 }} align="right">Budget</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="right">Actual</TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="right">Variance</TableCell>
+                  {canEdit && <TableCell sx={{ fontWeight: 700, pr: 3 }} align="right">Actions</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -78,6 +88,23 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ budg
                           <VarianceDisplay budget={b.pm_approvedbudgeteur} consumed={b.pm_actualspendeur} />
                         </Box>
                       </TableCell>
+                      {canEdit && (
+                        <TableCell align="right" sx={{ pr: 3 }}>
+                          <Tooltip title="Edit Budget Line">
+                            <IconButton
+                              size="small"
+                              onClick={() => onEditBudgetLine?.(b)}
+                              sx={{
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                '&:hover': { bgcolor: 'action.hover' }
+                              }}
+                            >
+                              <EditIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      )}
                     </TableRow>
                   )
                 })}

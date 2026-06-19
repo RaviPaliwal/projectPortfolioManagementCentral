@@ -297,7 +297,7 @@
           "x-ms-dataverse-attribute": "pm_description",
           "x-ms-dataverse-type": "StringType",
           "x-ms-schema-name": "pm_description",
-          "maxLength": 100
+          "maxLength": 2000
         },
         "pm_entryname": {
           "type": "string",
@@ -307,14 +307,6 @@
           "x-ms-schema-name": "pm_entryname",
           "x-ms-dataverse-primary-name": true,
           "maxLength": 850
-        },
-        "pm_financialperiod": {
-          "type": "string",
-          "title": "Period",
-          "x-ms-dataverse-attribute": "pm_financialperiod",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_financialperiod",
-          "maxLength": 100
         },
         "pm_fiscalperiod": {
           "type": "string",
@@ -340,14 +332,6 @@
           "x-ms-schema-name": "pm_invoicenumber",
           "maxLength": 100
         },
-        "pm_programme": {
-          "type": "string",
-          "title": "Programme",
-          "x-ms-dataverse-attribute": "pm_programme",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_programme",
-          "maxLength": 100
-        },
         "pm_programmelookup": {
           "type": "string",
           "title": "Programme",
@@ -370,14 +354,6 @@
           "x-ms-dataverse-attribute": "pm_project",
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_project"
-        },
-        "pm_projectcode": {
-          "type": "string",
-          "title": "Project",
-          "x-ms-dataverse-attribute": "pm_projectcode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projectcode",
-          "maxLength": 100
         },
         "pm_projectname": {
           "type": "string",

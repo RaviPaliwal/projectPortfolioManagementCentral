@@ -17,7 +17,7 @@ export const RiskDialog: React.FC<RiskDialogProps> = ({ open, onClose, onSave, i
       { value: '0', label: 'Strategic' }, { value: '1', label: 'Operational' }, { value: '2', label: 'Financial' }, { value: '3', label: 'Compliance' }, { value: '4', label: 'Technology' }
     ]},
     { name: 'pm_ragstatus', label: 'RAG Status', type: 'select', gridSize: 4, options: [
-      { value: '1', label: 'Green — Low Risk' }, { value: '0', label: 'Amber — Medium Risk' }, { value: '2', label: 'Red — High Risk' }
+      { value: '1', label: 'Low — Low Risk' }, { value: '0', label: 'Medium — Medium Risk' }, { value: '2', label: 'High — High Risk' }
     ]},
     { name: '_pm_riskowner_value', label: 'Risk Owner', type: 'user-select-id', gridSize: 4 },
     { name: 'pm_identifieddate', label: 'Identified Date', type: 'date', gridSize: 6 },

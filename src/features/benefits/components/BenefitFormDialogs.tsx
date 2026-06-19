@@ -37,7 +37,7 @@ export const BenefitDialog: React.FC<BenefitDialogProps> = ({ open, onClose, onS
       { value: '0', label: 'On Track' }, { value: '1', label: 'Planned' }, { value: '2', label: 'At Risk' }
     ]},
     { name: 'pm_ragstatus', label: 'Assessment (RAG)', type: 'select', defaultValue: 1, gridSize: 6, options: [
-      { value: '1', label: 'Green — On Track' }, { value: '0', label: 'Amber — At Risk' }, { value: '2', label: 'Red — Off Track' }
+      { value: '1', label: 'Low — On Track' }, { value: '0', label: 'Medium — At Risk' }, { value: '2', label: 'High — Off Track' }
     ]},
     { name: 'pm_benefittype', label: 'Benefit Type', type: 'select', defaultValue: 0, gridSize: 6, options: [
       { value: '0', label: 'Cashable' }, { value: '1', label: 'Non Cashable' }, { value: '2', label: 'Avoided Cost' }

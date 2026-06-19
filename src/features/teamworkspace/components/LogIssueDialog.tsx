@@ -51,9 +51,9 @@ const IMPACT_LEVELS = [
 ]
 
 const RAG_OPTIONS = [
-  { value: '1', label: 'Green — On Track' },
-  { value: '0', label: 'Amber — At Risk' },
-  { value: '2', label: 'Red — Critical' },
+  { value: '1', label: 'Low — On Track' },
+  { value: '0', label: 'Medium — At Risk' },
+  { value: '2', label: 'High — Critical' },
 ]
 
 // ─── Types ─────────────────────────────────────────────────────────────────

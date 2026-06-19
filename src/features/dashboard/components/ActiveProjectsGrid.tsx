@@ -51,7 +51,7 @@ export const ActiveProjectsGrid = ({ projects, loading, onViewAll, onProjectClic
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                     {project.pm_projectname ?? 'Untitled project'}
                   </Typography>
-                  <StatusChip label={['Amber', 'Green', 'Red'][Number(project.pm_ragstatus)] ?? '—'} color={(['warning', 'success', 'error'] as const)[Number(project.pm_ragstatus)] ?? 'default'} />
+                  <StatusChip label={['Medium', 'Low', 'High'][Number(project.pm_ragstatus)] ?? '—'} color={(['warning', 'success', 'error'] as const)[Number(project.pm_ragstatus)] ?? 'default'} />
                 </Box>
                 <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                   {project.pm_projectcode ?? '—'}

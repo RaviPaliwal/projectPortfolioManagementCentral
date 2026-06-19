@@ -75,6 +75,7 @@ interface Project360ViewProps {
   onEditMilestone?: (milestone: ProjectMilestoneModel) => void
   onEditTask?: (task: ProjectTaskModel) => void
   onUpdateTaskStatus?: (taskId: string, status: string, percent: number) => Promise<void>
+  onEditBudgetLine?: (budget: BudgetLineModel) => void
 }
 
 export const Project360View: React.FC<Project360ViewProps> = ({
@@ -104,7 +105,8 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onMarkTaskAsDone,
   onEditMilestone,
   onEditTask,
-  onUpdateTaskStatus
+  onUpdateTaskStatus,
+  onEditBudgetLine,
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -224,7 +226,13 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   canEdit={canEdit}
                 />
               )}
-              {activeTab === 2 && <ProjectFinancialsTab budgetLines={budgetLines} />}
+              {activeTab === 2 && (
+                <ProjectFinancialsTab 
+                  budgetLines={budgetLines} 
+                  onEditBudgetLine={onEditBudgetLine}
+                  canEdit={canEdit}
+                />
+              )}
               {activeTab === 3 && <ProjectRisksIssuesTab risks={risks} issues={issues} />}
               {activeTab === 4 && (
                 <ProjectTeamTab 

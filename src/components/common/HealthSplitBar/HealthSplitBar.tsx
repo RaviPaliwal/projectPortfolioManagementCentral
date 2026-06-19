@@ -71,7 +71,7 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
 
   const metricBlocks = [
     {
-      label: 'Green',
+      label: 'Low',
       count: green,
       pct: gPct,
       color: '#22c55e',
@@ -80,7 +80,7 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
       icon: <CheckCircleIcon sx={{ fontSize: 20 }} />,
     },
     {
-      label: 'Amber',
+      label: 'Medium',
       count: amber,
       pct: aPct,
       color: '#f59e0b',
@@ -89,7 +89,7 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
       icon: <WarningAmberIcon sx={{ fontSize: 20 }} />,
     },
     {
-      label: 'Red',
+      label: 'High',
       count: red,
       pct: rPct,
       color: '#ef4444',

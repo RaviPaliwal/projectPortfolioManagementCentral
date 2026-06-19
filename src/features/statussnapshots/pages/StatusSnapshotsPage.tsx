@@ -91,17 +91,17 @@ const getRagLabel = (field: string, status: number | string | undefined | null):
   const v = Number(status)
   const isRev = field === 'pm_costragstatus' || field === 'pm_resourceragstatus'
   if (isRev) {
-    if (v === 0) return 'Green'
-    if (v === 1) return 'Amber'
+    if (v === 0) return 'Low'
+    if (v === 1) return 'Medium'
     return 'Not Set'
   }
   if (field === 'pm_benefitsragstatus') {
-    if (v === 0) return 'Green'
+    if (v === 0) return 'Low'
     return 'Not Set'
   }
-  if (v === 1) return 'Green'
-  if (v === 0) return 'Amber'
-  if (v === 2) return 'Red'
+  if (v === 1) return 'Low'
+  if (v === 0) return 'Medium'
+  if (v === 2) return 'High'
   return 'Not Set'
 }
 
@@ -209,14 +209,14 @@ function RagChip({ field, value }: { field: string; value?: number | string | nu
   let label = 'Not Set'
 
   if (isRev) {
-    if (v === 0) { color = 'success'; IconComponent = CheckCircleIcon; label = 'Green' }
-    else if (v === 1) { color = 'warning'; IconComponent = WarningAmberIcon; label = 'Amber' }
+    if (v === 0) { color = 'success'; IconComponent = CheckCircleIcon; label = 'Low' }
+    else if (v === 1) { color = 'warning'; IconComponent = WarningAmberIcon; label = 'Medium' }
   } else if (field === 'pm_benefitsragstatus') {
-    if (v === 0) { color = 'success'; IconComponent = CheckCircleIcon; label = 'Green' }
+    if (v === 0) { color = 'success'; IconComponent = CheckCircleIcon; label = 'Low' }
   } else {
-    if (v === 1) { color = 'success'; IconComponent = CheckCircleIcon; label = 'Green' }
-    else if (v === 0) { color = 'warning'; IconComponent = WarningAmberIcon; label = 'Amber' }
-    else if (v === 2) { color = 'error'; IconComponent = ErrorIcon; label = 'Red' }
+    if (v === 1) { color = 'success'; IconComponent = CheckCircleIcon; label = 'Low' }
+    else if (v === 0) { color = 'warning'; IconComponent = WarningAmberIcon; label = 'Medium' }
+    else if (v === 2) { color = 'error'; IconComponent = ErrorIcon; label = 'High' }
   }
 
   return (
@@ -354,21 +354,21 @@ export default function StatusSnapshotsPage() {
         color: 'primary.main',
       },
       {
-        label: 'Green (On Track)',
+        label: 'Low (On Track)',
         value: green.length,
         subtitle: green.length > 0 ? ((green.length / (total || 1)) * 100).toFixed(0) + '% of total' : '0% of total',
         icon: <CheckCircleIcon />,
         color: RAG_COLORS.green,
       },
       {
-        label: 'Amber (Watch)',
+        label: 'Medium (Watch)',
         value: amber.length,
         subtitle: amber.length > 0 ? ((amber.length / (total || 1)) * 100).toFixed(0) + '% of total' : '0% of total',
         icon: <WarningAmberIcon />,
         color: RAG_COLORS.amber,
       },
       {
-        label: 'Red (Critical)',
+        label: 'High (Critical)',
         value: red.length,
         subtitle: red.length > 0 ? ((red.length / (total || 1)) * 100).toFixed(0) + '% of total' : '0% of total',
         icon: <ErrorIcon />,

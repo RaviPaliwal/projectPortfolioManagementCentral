@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, Component, type ReactNode, type ErrorInfo } from 'react'
+import { useState, useMemo, Component, type ReactNode, type ErrorInfo } from 'react'
 import { ThemeProvider, CssBaseline, Box, Paper, Typography, Button, Alert } from '@mui/material'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import type { PaletteMode } from '@mui/material'

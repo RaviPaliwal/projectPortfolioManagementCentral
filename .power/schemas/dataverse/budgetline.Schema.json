@@ -357,6 +357,37 @@
           "x-ms-schema-name": "pm_estimatetocompleteeur_Base",
           "x-ms-read-only": true
         },
+        "pm_expencecatagory": {
+          "type": "string",
+          "title": "Expence Catagory",
+          "x-ms-dataverse-attribute": "pm_expencecatagory",
+          "x-ms-dataverse-type": "PicklistType",
+          "x-ms-schema-name": "pm_ExpenceCatagory",
+          "enum": [
+            "CapEx",
+            "OpEx"
+          ],
+          "x-ms-enum-values": [
+            0,
+            1
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "bfa6bfcd-c16b-f111-ab0d-6045bd56f0ba",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Expence Catagory",
+          "x-ms-optionSetType": "Picklist"
+        },
+        "pm_expencecatagoryname": {
+          "type": "string",
+          "title": "pm_expencecatagoryname",
+          "x-ms-dataverse-attribute": "pm_expencecatagoryname",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pm_expencecatagoryName",
+          "x-ms-read-only": true
+        },
         "pm_fiscalperiod": {
           "type": "string",
           "title": "Financial Period",

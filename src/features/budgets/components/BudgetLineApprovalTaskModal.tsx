@@ -15,6 +15,7 @@ import VerifiedIcon from '@mui/icons-material/Verified'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import ChecklistRtlIcon from '@mui/icons-material/ChecklistRtl'
 import { fetchBudgetLineById } from '@/services/finance.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { BudgetLineModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
@@ -273,7 +274,10 @@ export const BudgetLineApprovalTaskModal: React.FC<BudgetLineApprovalTaskModalPr
                 return false
               } finally { setSaving(false) }
             }}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'budget_approval', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />

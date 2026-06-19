@@ -14,6 +14,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import GroupsIcon from '@mui/icons-material/Groups'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import { fetchProgrammeDetails, updateProgrammePhase } from '@/services/programme.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ProgrammeModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
@@ -37,9 +38,9 @@ const PHASE_LABELS: Record<number, { label: string; color: 'success' | 'warning'
 }
 
 const RAG_LABELS: Record<number, { label: string; color: 'success' | 'warning' | 'error' | 'default' }> = {
-  0: { label: 'Amber', color: 'warning' },
-  1: { label: 'Green', color: 'success' },
-  2: { label: 'Red', color: 'error' },
+  0: { label: 'Medium', color: 'warning' },
+  1: { label: 'Low', color: 'success' },
+  2: { label: 'High', color: 'error' },
 }
 
 export const ProgrammeApprovalTaskModal: React.FC<ProgrammeApprovalTaskModalProps> = ({
@@ -271,7 +272,10 @@ export const ProgrammeApprovalTaskModal: React.FC<ProgrammeApprovalTaskModalProp
           <DecisionBoxProp
             approvalStepId={approvalStepId}
             onBeforeDecision={saveTaskData}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'programme_approval', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />

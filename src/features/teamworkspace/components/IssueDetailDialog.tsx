@@ -45,9 +45,9 @@ const ISSUE_CATEGORY_COLORS: Record<string, 'info' | 'secondary' | 'success' | '
 }
 
 const RAG_LABELS: Record<string, string> = {
-  '0': 'Amber',
-  '1': 'Green',
-  '2': 'Red',
+  '0': 'Medium',
+  '1': 'Low',
+  '2': 'High',
 }
 
 const RAG_COLORS: Record<string, 'warning' | 'success' | 'error'> = {

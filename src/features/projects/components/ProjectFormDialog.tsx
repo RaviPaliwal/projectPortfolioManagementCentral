@@ -292,9 +292,9 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField select fullWidth label="Overall RAG" size="small" value={form.pm_ragstatus ?? '1'}
               onChange={(e) => setForm((p) => ({ ...p, pm_ragstatus: e.target.value }))}>
-              <MenuItem value="1">Green — On Track</MenuItem>
-              <MenuItem value="0">Amber — At Risk</MenuItem>
-              <MenuItem value="2">Red — Critical</MenuItem>
+              <MenuItem value="1">Low — On Track</MenuItem>
+              <MenuItem value="0">Medium — At Risk</MenuItem>
+              <MenuItem value="2">High — Critical</MenuItem>
             </TextField>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -308,23 +308,23 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField select fullWidth label="Cost RAG" size="small" value={form.pm_costragstatus ?? '0'}
               onChange={(e) => setForm((p) => ({ ...p, pm_costragstatus: e.target.value }))}>
-              <MenuItem value="0">Green</MenuItem>
-              <MenuItem value="1">Amber</MenuItem>
+              <MenuItem value="0">Low</MenuItem>
+              <MenuItem value="1">Medium</MenuItem>
             </TextField>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField select fullWidth label="Schedule RAG" size="small" value={form.pm_scheduleragstatus ?? '1'}
               onChange={(e) => setForm((p) => ({ ...p, pm_scheduleragstatus: e.target.value }))}>
-              <MenuItem value="1">Green</MenuItem>
-              <MenuItem value="0">Amber</MenuItem>
-              <MenuItem value="2">Red</MenuItem>
+              <MenuItem value="1">Low</MenuItem>
+              <MenuItem value="0">Medium</MenuItem>
+              <MenuItem value="2">High</MenuItem>
             </TextField>
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
             <TextField select fullWidth label="Benefits RAG" size="small" value={form.pm_benefitsragstatus ?? '0'}
               onChange={(e) => setForm((p) => ({ ...p, pm_benefitsragstatus: e.target.value }))}>
-              <MenuItem value="0">Green</MenuItem>
-              <MenuItem value="1">Amber</MenuItem>
+              <MenuItem value="0">Low</MenuItem>
+              <MenuItem value="1">Medium</MenuItem>
               <MenuItem value="2">Not Set</MenuItem>
             </TextField>
           </Grid>

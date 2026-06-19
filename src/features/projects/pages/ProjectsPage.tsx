@@ -75,6 +75,7 @@ export default function ProjectsPage() {
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false)
   const [editingResource, setEditingResource] = useState<any>(null)
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false)
+  const [editingBudget, setEditingBudget] = useState<BudgetLineModel | null>(null)
   const [benefitDialogOpen, setBenefitDialogOpen] = useState(false)
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<ProjectTaskModel | null>(null)
@@ -457,7 +458,7 @@ export default function ProjectsPage() {
     {
       label: 'At Risk',
       value: projects.filter((p) => String(p.pm_ragstatus) === '0').length,
-      subtitle: 'Amber status',
+      subtitle: 'Medium status',
       icon: <GppMaybeIcon />,
       color: 'warning.main',
     },
@@ -511,7 +512,14 @@ export default function ProjectsPage() {
           }}
           onEditResource={handleEditResource}
           onCompleteResource={handleCompleteResource}
-          onAddBudgetLine={() => setBudgetDialogOpen(true)}
+          onAddBudgetLine={() => {
+            setEditingBudget(null)
+            setBudgetDialogOpen(true)
+          }}
+          onEditBudgetLine={(b) => {
+            setEditingBudget(b)
+            setBudgetDialogOpen(true)
+          }}
           onAddBenefit={() => setBenefitDialogOpen(true)}
           onAddTask={() => {
             setEditingTask(null)
@@ -609,8 +617,12 @@ export default function ProjectsPage() {
           />
           <BudgetDialog
             open={budgetDialogOpen}
-            onClose={() => setBudgetDialogOpen(false)}
+            onClose={() => {
+              setBudgetDialogOpen(false)
+              setEditingBudget(null)
+            }}
             projectId={selectedProject.pm_projectid!}
+            initialData={editingBudget ? editingBudget as any : undefined}
             onSuccess={async (msg) => { 
               setSuccessMsg(msg); 
               await recalculateProjectFinancials(selectedProject.pm_projectid!);

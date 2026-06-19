@@ -17,7 +17,7 @@ import {
 import CategoryIcon from '@mui/icons-material/Category'
 import DescriptionIcon from '@mui/icons-material/Description'
 import BusinessIcon from '@mui/icons-material/Business'
-import type { CashflowEntryModel } from '@/types/dataverse'
+import type { CashflowEntryModel, FinancialPeriodModel } from '@/types/dataverse'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { DIRECTION_FILTERS, TXN_TYPE_FILTERS, CATEGORY_FILTERS } from '../constants'
 
@@ -31,6 +31,7 @@ interface CashflowEntryFormProps {
   loading: boolean
   programmes: ProgrammeLookupItem[]
   projects: ProjectLookupItem[]
+  fiscalPeriods: FinancialPeriodModel[]
   onSave: () => void
 }
 
@@ -44,6 +45,7 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
   loading,
   programmes,
   projects,
+  fiscalPeriods,
   onSave,
 }) => {
   return (
@@ -182,15 +184,22 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
             />
           </Grid>
           <Grid size={{ xs: 6 }}>
-            <TextField
-              label="Financial Period"
-              fullWidth
-              size="small"
-              value={formData.pm_financialperiod || ''}
-              onChange={(e) => onFieldChange('pm_financialperiod', e.target.value)}
-              placeholder="e.g. FY2026-Q1"
-              slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-            />
+            <FormControl fullWidth size="small">
+              <InputLabel>Financial Period</InputLabel>
+              <Select
+                value={formData._pm_fiscalperiod_value || ''}
+                label="Financial Period"
+                onChange={(e) => onFieldChange('_pm_fiscalperiod_value', e.target.value)}
+                sx={{ borderRadius: 1.5 }}
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                {fiscalPeriods.map((period) => (
+                  <MenuItem key={period.pm_fiscalperiodid} value={period.pm_fiscalperiodid}>
+                    {period.pm_periodname}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
 
           {/* Linked Entities Section */}

@@ -11,6 +11,7 @@ import GavelIcon from '@mui/icons-material/Gavel'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import { fetchInitiativeById, updateInitiativeStatus } from '@/services/initiative.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { InitiativeModel } from '@/types/dataverse'
 import { StatusTag, Button } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
@@ -309,7 +310,10 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
           <DecisionBoxProp
             approvalStepId={approvalStepId}
             onBeforeDecision={saveTaskData}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'pipeline_decision', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />

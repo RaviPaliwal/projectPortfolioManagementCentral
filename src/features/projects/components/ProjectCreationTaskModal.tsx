@@ -9,6 +9,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import FlagIcon from '@mui/icons-material/Flag'
 import { fetchProjectDetails } from '@/services/project.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ProjectModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
@@ -74,7 +75,7 @@ export const ProjectCreationTaskModal: React.FC<ProjectCreationTaskModalProps> =
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'success.main', color: 'success.contrastText', py: 1.5, pr: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <ChecklistRtlIcon />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>Project Creation Review</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, py: 0.5 }}>Project Creation Review</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Chip label="Pending Review" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
@@ -107,6 +108,10 @@ export const ProjectCreationTaskModal: React.FC<ProjectCreationTaskModalProps> =
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_portfolioname || '-'}</Typography>
                 </Box>
                 <Box>
+                  <Typography variant="caption" color="text.secondary">Programme</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_programmename || '-'}</Typography>
+                </Box>
+                <Box>
                   <Typography variant="caption" color="text.secondary">Phase</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{phaseLabel}</Typography>
                 </Box>
@@ -115,8 +120,8 @@ export const ProjectCreationTaskModal: React.FC<ProjectCreationTaskModalProps> =
                   <Box sx={{ mt: 0.5 }}>
                     {project?.pm_ragstatus != null ? (
                       <StatusTag
-                        label={project.pm_ragstatus === 0 ? 'Green' : project.pm_ragstatus === 1 ? 'Amber' : 'Red'}
-                        color={project.pm_ragstatus === 0 ? 'success' : project.pm_ragstatus === 1 ? 'warning' : 'error'}
+                        label={project.pm_ragstatus === 1 ? 'Low' : project.pm_ragstatus === 0 ? 'Medium' : 'High'}
+                        color={project.pm_ragstatus === 1 ? 'success' : project.pm_ragstatus === 0 ? 'warning' : 'error'}
                         size="small"
                         sx={{ fontWeight: 600 }}
                       />
@@ -183,8 +188,8 @@ export const ProjectCreationTaskModal: React.FC<ProjectCreationTaskModalProps> =
                         <Typography variant="caption" color="text.secondary">Overall</Typography>
                         <Box sx={{ mt: 0.5 }}>
                           <StatusTag
-                            label={project.pm_ragstatus === 0 ? 'Green' : project.pm_ragstatus === 1 ? 'Amber' : 'Red'}
-                            color={project.pm_ragstatus === 0 ? 'success' : project.pm_ragstatus === 1 ? 'warning' : 'error'}
+                            label={project.pm_ragstatus === 1 ? 'Low' : project.pm_ragstatus === 0 ? 'Medium' : 'High'}
+                            color={project.pm_ragstatus === 1 ? 'success' : project.pm_ragstatus === 0 ? 'warning' : 'error'}
                             size="small"
                             sx={{ fontWeight: 600 }}
                           />
@@ -196,7 +201,7 @@ export const ProjectCreationTaskModal: React.FC<ProjectCreationTaskModalProps> =
                         <Typography variant="caption" color="text.secondary">Cost</Typography>
                         <Box sx={{ mt: 0.5 }}>
                           <StatusTag
-                            label={project.pm_costragstatus === 0 ? 'Green' : project.pm_costragstatus === 1 ? 'Amber' : 'Red'}
+                            label={project.pm_costragstatus === 0 ? 'Low' : project.pm_costragstatus === 1 ? 'Medium' : 'High'}
                             color={project.pm_costragstatus === 0 ? 'success' : project.pm_costragstatus === 1 ? 'warning' : 'error'}
                             size="small"
                             sx={{ fontWeight: 600 }}
@@ -209,8 +214,8 @@ export const ProjectCreationTaskModal: React.FC<ProjectCreationTaskModalProps> =
                         <Typography variant="caption" color="text.secondary">Schedule</Typography>
                         <Box sx={{ mt: 0.5 }}>
                           <StatusTag
-                            label={project.pm_scheduleragstatus === 0 ? 'Green' : project.pm_scheduleragstatus === 1 ? 'Amber' : 'Red'}
-                            color={project.pm_scheduleragstatus === 0 ? 'success' : project.pm_scheduleragstatus === 1 ? 'warning' : 'error'}
+                            label={project.pm_scheduleragstatus === 1 ? 'Low' : project.pm_scheduleragstatus === 0 ? 'Medium' : 'High'}
+                            color={project.pm_scheduleragstatus === 1 ? 'success' : project.pm_scheduleragstatus === 0 ? 'warning' : 'error'}
                             size="small"
                             sx={{ fontWeight: 600 }}
                           />
@@ -229,7 +234,10 @@ export const ProjectCreationTaskModal: React.FC<ProjectCreationTaskModalProps> =
           <DecisionBoxProp
             approvalStepId={approvalStepId}
             onBeforeDecision={saveTaskData}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'project_creation', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />

@@ -13,6 +13,7 @@ import DescriptionIcon from '@mui/icons-material/Description'
 import ChecklistRtlIcon from '@mui/icons-material/ChecklistRtl'
 import EuroIcon from '@mui/icons-material/Euro'
 import { fetchFundingSourceById } from '@/services/finance.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { FundingSourceModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
@@ -272,7 +273,10 @@ export const FundingSourceApprovalTaskModal: React.FC<FundingSourceApprovalTaskM
                 return false
               } finally { setSaving(false) }
             }}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'funding_source_approval', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />

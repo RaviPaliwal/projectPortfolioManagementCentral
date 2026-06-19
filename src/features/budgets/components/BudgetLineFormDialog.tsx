@@ -37,7 +37,7 @@ import {
   fetchProjectsForLookup,
   fetchFundingSources,
 } from '@/services'
-import { Pm_projectsService } from '@/generated'
+import { fetchProjectDetails } from '@/services/project.service'
 import type { BudgetLineModel, FundingSourceModel } from '@/types/dataverse'
 
 interface BudgetLineFormDialogProps {
@@ -53,6 +53,7 @@ interface BudgetLineFormDialogProps {
 interface FormData {
   pm_budgetlinename: string
   pm_costcategory: number
+  pm_expencecatagory: number
   pm_costinglevelcode: number
   pm_unitcosteur: number
   pm_quantity: number
@@ -73,6 +74,7 @@ interface FormData {
 const DEFAULT_FORM_DATA: FormData = {
   pm_budgetlinename: '',
   pm_costcategory: 0,
+  pm_expencecatagory: 0,
   pm_costinglevelcode: 0,
   pm_unitcosteur: 0,
   pm_quantity: 1,
@@ -92,8 +94,7 @@ const DEFAULT_FORM_DATA: FormData = {
 
 const normalizeGuid = (id: string | undefined | null): string => {
   if (!id) return ''
-  const cleaned = id.replace(/[{}]/g, '').trim().toLowerCase()
-  return cleaned ? `{${cleaned}}` : ''
+  return id.replace(/[{}]/g, '').trim().toLowerCase()
 }
 
 const computeTotalAmount = (data: FormData): number => {
@@ -129,17 +130,17 @@ export default function BudgetLineFormDialog({
   const [fundingSources, setFundingSources] = useState<FundingSourceModel[]>([])
 
   const filteredProgrammes = programmeLookups.filter(
-    (p) => !formData._pm_portfoliolookup_value || p.portfolioId === formData._pm_portfoliolookup_value
+    (p) => !formData._pm_portfoliolookup_value || normalizeGuid(p._pm_portfolio_value) === formData._pm_portfoliolookup_value
   )
   const filteredProjects = projectLookups.filter(
-    (p) => !formData._pm_programmelookup_value || p.programmeId === formData._pm_programmelookup_value
+    (p) => !formData._pm_programmelookup_value || normalizeGuid(p._pm_programme_value) === formData._pm_programmelookup_value
   )
   const filteredFundingSources = fundingSources.filter(
     (s) => {
       const portVal = formData._pm_portfoliolookup_value
       const progVal = formData._pm_programmelookup_value
-      const portOk = !portVal || s._pm_portfolio_value === portVal
-      const progOk = !progVal || s._pm_programmelookup_value === progVal
+      const portOk = !portVal || normalizeGuid(s._pm_portfolio_value) === portVal
+      const progOk = !progVal || normalizeGuid(s._pm_programmelookup_value) === progVal
       return portOk && progOk
     }
   )
@@ -175,6 +176,7 @@ export default function BudgetLineFormDialog({
         ...DEFAULT_FORM_DATA,
         pm_budgetlinename: editBudget.pm_budgetlinename ?? '',
         pm_costcategory: Number(editBudget.pm_costcategory) || 0,
+        pm_expencecatagory: Number(editBudget.pm_expencecatagory) || 0,
         pm_costinglevelcode: calcCode,
         pm_unitcosteur: unitCost,
         pm_quantity: qty,
@@ -195,14 +197,12 @@ export default function BudgetLineFormDialog({
 
         if (projectId && (!portfolioId || !programmeId)) {
           try {
-            const proj = await Pm_projectsService.get(projectId, {
-              select: ['pm_projectid', '_pm_portfolio_value', '_pm_programme_value'],
-            })
-            if (!portfolioId && (proj as any)._pm_portfolio_value) {
-              portfolioId = normalizeGuid((proj as any)._pm_portfolio_value)
+            const proj = await fetchProjectDetails(projectId)
+            if (!portfolioId && proj?._pm_portfolio_value) {
+              portfolioId = normalizeGuid(proj._pm_portfolio_value)
             }
-            if (!programmeId && (proj as any)._pm_programme_value) {
-              programmeId = normalizeGuid((proj as any)._pm_programme_value)
+            if (!programmeId && proj?._pm_programme_value) {
+              programmeId = normalizeGuid(proj._pm_programme_value)
             }
           } catch { /* ignore */ }
         }
@@ -317,6 +317,20 @@ export default function BudgetLineFormDialog({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
+              <InputLabel>Expense Category</InputLabel>
+              <Select
+                value={formData.pm_expencecatagory}
+                label="Expense Category"
+                onChange={(e) => setFormData((f) => ({ ...f, pm_expencecatagory: e.target.value as number }))}
+                sx={{ borderRadius: 1.5 }}
+              >
+                <MenuItem value={0}>CapEx</MenuItem>
+                <MenuItem value={1}>OpEx</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormControl fullWidth size="small">
               <InputLabel>Portfolio</InputLabel>
               <Select
                 value={formData._pm_portfoliolookup_value}
@@ -325,10 +339,11 @@ export default function BudgetLineFormDialog({
                   ...f, _pm_portfoliolookup_value: e.target.value, _pm_programmelookup_value: '', _pm_project_value: '',
                 }))}
                 sx={{ borderRadius: 1.5 }}
+                inputProps={{ readOnly: !!prefillProjectId }}
               >
                 <MenuItem value=""><em>None</em></MenuItem>
                 {portfolioLookups.map((p) => (
-                  <MenuItem key={p.pm_portfolioid} value={p.pm_portfolioid}>{p.pm_portfolioname}</MenuItem>
+                  <MenuItem key={p.pm_portfolioid} value={normalizeGuid(p.pm_portfolioid)}>{p.pm_portfolioname}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -343,10 +358,11 @@ export default function BudgetLineFormDialog({
                   ...f, _pm_programmelookup_value: e.target.value, _pm_project_value: '',
                 }))}
                 sx={{ borderRadius: 1.5 }}
+                inputProps={{ readOnly: !!prefillProjectId }}
               >
                 <MenuItem value=""><em>None</em></MenuItem>
                 {filteredProgrammes.map((p) => (
-                  <MenuItem key={p.pm_programmeid} value={p.pm_programmeid}>{p.pm_programmename}</MenuItem>
+                  <MenuItem key={p.pm_programmeid} value={normalizeGuid(p.pm_programmeid)}>{p.pm_programmename}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -359,10 +375,11 @@ export default function BudgetLineFormDialog({
                 label="Project"
                 onChange={(e) => setFormData((f) => ({ ...f, _pm_project_value: e.target.value }))}
                 sx={{ borderRadius: 1.5 }}
+                inputProps={{ readOnly: !!prefillProjectId }}
               >
                 <MenuItem value=""><em>None</em></MenuItem>
                 {filteredProjects.map((p) => (
-                  <MenuItem key={p.pm_projectid} value={p.pm_projectid}>{p.pm_projectname}</MenuItem>
+                  <MenuItem key={p.pm_projectid} value={normalizeGuid(p.pm_projectid)}>{p.pm_projectname}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -378,7 +395,7 @@ export default function BudgetLineFormDialog({
               >
                 <MenuItem value=""><em>None</em></MenuItem>
                 {filteredFundingSources.map((s) => (
-                  <MenuItem key={s.pm_fundingsourceid} value={s.pm_fundingsourceid}>{s.pm_fundingsourcename}</MenuItem>
+                  <MenuItem key={s.pm_fundingsourceid} value={normalizeGuid(s.pm_fundingsourceid)}>{s.pm_fundingsourcename}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -393,7 +410,20 @@ export default function BudgetLineFormDialog({
           </Typography>
           <Divider sx={{ flex: 1 }} />
         </Box>
-        <Paper variant="outlined" sx={{ p: 2.5, mb: 3, borderRadius: 1.5, overflow: 'hidden', position: 'relative' }}>
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2.5,
+            mb: 3,
+            borderRadius: 1.5,
+            overflow: 'hidden',
+            position: 'relative',
+            background: isDark ? 'rgba(30, 41, 59, 0.4)' : 'rgba(248, 250, 252, 0.6)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid',
+            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5, flexWrap: 'wrap' }}>
             <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', minWidth: 110 }}>Method</Typography>
             <ToggleButtonGroup
@@ -404,13 +434,19 @@ export default function BudgetLineFormDialog({
                 if (val !== null) setFormData((f) => ({ ...f, pm_costinglevelcode: val, pm_quantity: val === 0 ? 1 : f.pm_quantity }))
               }}
               sx={{
+                gap: 1.5,
+                '& .MuiToggleButtonGroup-grouped': {
+                  border: '1px solid !important',
+                  borderColor: 'divider !important',
+                  borderRadius: '12px !important',
+                },
                 '& .MuiToggleButton-root': {
-                  px: 3, py: 0.75, borderRadius: 1.5, border: '1px solid', borderColor: 'divider',
+                  px: 3, py: 0.75,
                   fontWeight: 600, fontSize: fontSizes.sm, textTransform: 'none', color: 'text.secondary',
                   transition: 'all 0.2s ease',
                   '&.Mui-selected': {
                     bgcolor: isDark ? alpha(theme.palette.primary.main, 0.15) : alpha(theme.palette.primary.main, 0.08),
-                    borderColor: 'primary.main', color: 'primary.main',
+                    borderColor: 'primary.main !important', color: 'primary.main',
                     '&:hover': { bgcolor: isDark ? alpha(theme.palette.primary.main, 0.25) : alpha(theme.palette.primary.main, 0.12) },
                   },
                   '&:not(.Mui-selected):hover': {
@@ -440,111 +476,117 @@ export default function BudgetLineFormDialog({
             </Box>
           </Box>
 
-          <Box sx={{ mb: isRateBased ? 2.5 : 0 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>Unit Cost</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: fontSizes.lg, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>
-                €{Number(formData.pm_unitcosteur || 0).toLocaleString()}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Typography variant="caption" sx={{ color: 'text.disabled', minWidth: 30, textAlign: 'right' }}>€0</Typography>
-              <Slider
-                value={formData.pm_unitcosteur || 0}
-                onChange={(_, v) => setFormData((f) => ({ ...f, pm_unitcosteur: v as number }))}
-                min={0} max={1000000} step={1000}
-                sx={{
-                  color: 'primary.main',
-                  '& .MuiSlider-rail': { opacity: isDark ? 0.25 : 0.2, bgcolor: isDark ? '#334155' : '#cbd5e1' },
-                  '& .MuiSlider-track': { border: 'none' },
-                  '& .MuiSlider-thumb': {
-                    width: 18, height: 18, bgcolor: '#fff', border: '2px solid', borderColor: 'primary.main',
-                    transition: 'box-shadow 0.15s ease',
-                    '&:hover, &.Mui-focusVisible': { boxShadow: `0 0 0 8px ${alpha(theme.palette.primary.main, 0.16)}` },
-                    '&.Mui-active': { boxShadow: `0 0 0 12px ${alpha(theme.palette.primary.main, 0.12)}` },
-                  },
-                  '& .MuiSlider-valueLabel': { borderRadius: 1, bgcolor: 'primary.main', px: 1, py: 0.25, fontSize: fontSizes.xs },
-                }}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(v) => `€${v.toLocaleString()}`}
-              />
-              <Typography variant="caption" sx={{ color: 'text.disabled', minWidth: 50 }}>€1M</Typography>
-            </Box>
-            <TextField
-              fullWidth size="small" type="number"
-              value={formData.pm_unitcosteur || 0}
-              onChange={(e) => setFormData((f) => ({ ...f, pm_unitcosteur: Math.max(0, Number(e.target.value)) }))}
-              sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
-              slotProps={{ input: { startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary' }}>€</Typography>, sx: { fontSize: fontSizes.sm } } }}
-            />
-          </Box>
+          <Grid container spacing={3} sx={{ mb: 2 }}>
+            {/* Unit Cost / Fixed Amount Column */}
+            <Grid size={{ xs: 12, md: isRateBased ? 6 : 12 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                  {isRateBased ? 'Unit Cost' : 'Fixed Cost Amount'}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography variant="caption" sx={{ color: 'text.disabled', minWidth: 20 }}>€0</Typography>
+                  <Slider
+                    value={formData.pm_unitcosteur || 0}
+                    onChange={(_, v) => setFormData((f) => ({ ...f, pm_unitcosteur: v as number }))}
+                    min={0} max={1000000} step={1000}
+                    sx={{
+                      flex: 1,
+                      py: 1,
+                      color: 'primary.main',
+                      '& .MuiSlider-rail': { opacity: isDark ? 0.25 : 0.2, bgcolor: isDark ? '#334155' : '#cbd5e1' },
+                      '& .MuiSlider-track': { border: 'none' },
+                      '& .MuiSlider-thumb': {
+                        width: 14, height: 14, bgcolor: '#fff', border: '2px solid', borderColor: 'primary.main',
+                      },
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ color: 'text.disabled', minWidth: 28, mr: 1 }}>€1M</Typography>
+                  <TextField
+                    size="small"
+                    type="number"
+                    placeholder="0"
+                    value={formData.pm_unitcosteur || 0}
+                    onChange={(e) => setFormData((f) => ({ ...f, pm_unitcosteur: Math.max(0, Number(e.target.value)) }))}
+                    sx={{ width: 130 }}
+                    slotProps={{
+                      input: {
+                        startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary', fontWeight: 600 }}>€</Typography>,
+                        sx: { fontSize: fontSizes.sm, borderRadius: 1.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }
+                      }
+                    }}
+                  />
+                </Box>
+              </Box>
+            </Grid>
+
+            {/* Quantity Column */}
+            {isRateBased && (
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>Quantity</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', minWidth: 10 }}>1</Typography>
+                    <Slider
+                      value={formData.pm_quantity || 1}
+                      onChange={(_, v) => setFormData((f) => ({ ...f, pm_quantity: v as number }))}
+                      min={1} max={1000} step={1}
+                      sx={{
+                        flex: 1,
+                        py: 1,
+                        color: 'secondary.main',
+                        '& .MuiSlider-rail': { opacity: isDark ? 0.25 : 0.2, bgcolor: isDark ? '#334155' : '#cbd5e1' },
+                        '& .MuiSlider-track': { border: 'none' },
+                        '& .MuiSlider-thumb': {
+                          width: 14, height: 14, bgcolor: '#fff', border: '2px solid', borderColor: 'secondary.main',
+                        },
+                      }}
+                    />
+                    <Typography variant="caption" sx={{ color: 'text.disabled', minWidth: 20, mr: 1 }}>1K</Typography>
+                    <TextField
+                      size="small"
+                      type="number"
+                      placeholder="1"
+                      value={formData.pm_quantity || 1}
+                      onChange={(e) => setFormData((f) => ({ ...f, pm_quantity: Math.max(1, Number(e.target.value)) }))}
+                      sx={{ width: 130 }}
+                      slotProps={{
+                        input: {
+                          sx: { fontSize: fontSizes.sm, borderRadius: 1.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }
+                        }
+                      }}
+                    />
+                  </Box>
+                </Box>
+              </Grid>
+            )}
+          </Grid>
 
           <Box sx={{
-            overflow: 'hidden',
-            maxHeight: isRateBased ? 120 : 0,
-            transition: 'max-height 0.3s ease, opacity 0.25s ease',
-            opacity: isRateBased ? 1 : 0,
-          }}>
-            <Divider sx={{ mb: 2 }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>Quantity</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: fontSizes.lg, color: 'secondary.main', fontFamily: '"JetBrains Mono", monospace' }}>
-                {formData.pm_quantity || 1}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Typography variant="caption" sx={{ color: 'text.disabled', minWidth: 18, textAlign: 'right' }}>1</Typography>
-              <Slider
-                value={formData.pm_quantity || 1}
-                onChange={(_, v) => setFormData((f) => ({ ...f, pm_quantity: v as number }))}
-                min={1} max={1000} step={1}
-                sx={{
-                  color: 'secondary.main',
-                  '& .MuiSlider-rail': { opacity: isDark ? 0.25 : 0.2, bgcolor: isDark ? '#334155' : '#cbd5e1' },
-                  '& .MuiSlider-track': { border: 'none' },
-                  '& .MuiSlider-thumb': {
-                    width: 18, height: 18, bgcolor: '#fff', border: '2px solid', borderColor: 'secondary.main',
-                    transition: 'box-shadow 0.15s ease',
-                    '&:hover, &.Mui-focusVisible': { boxShadow: `0 0 0 8px ${alpha(theme.palette.secondary.main, 0.16)}` },
-                    '&.Mui-active': { boxShadow: `0 0 0 12px ${alpha(theme.palette.secondary.main, 0.12)}` },
-                  },
-                  '& .MuiSlider-valueLabel': { borderRadius: 1, bgcolor: 'secondary.main', px: 1, py: 0.25, fontSize: fontSizes.xs },
-                }}
-                valueLabelDisplay="auto"
-              />
-              <Typography variant="caption" sx={{ color: 'text.disabled', minWidth: 35 }}>1K</Typography>
-            </Box>
-            <TextField
-              fullWidth size="small" type="number"
-              value={formData.pm_quantity || 1}
-              onChange={(e) => setFormData((f) => ({ ...f, pm_quantity: Math.max(1, Number(e.target.value)) }))}
-              sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
-              slotProps={{ input: { sx: { fontSize: fontSizes.sm } } }}
-            />
-          </Box>
-
-          <Box sx={{
-            height: 1, my: 2.5,
-            background: isDark ? 'linear-gradient(90deg, transparent, rgba(148,163,184,0.3), transparent)' : 'linear-gradient(90deg, transparent, rgba(100,116,139,0.2), transparent)',
+            height: 1, my: 2,
+            background: isDark ? 'linear-gradient(90deg, transparent, rgba(148,163,184,0.15), transparent)' : 'linear-gradient(90deg, transparent, rgba(100,116,139,0.1), transparent)',
           }} />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
             <Box>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: fontSizes.sm }}>
                 {isRateBased
-                  ? `€${Number(formData.pm_unitcosteur || 0).toLocaleString()} × ${formData.pm_quantity || 1}`
-                  : `Fixed amount of €${Number(formData.pm_unitcosteur || 0).toLocaleString()}`}
+                  ? `Formula: €${Number(formData.pm_unitcosteur || 0).toLocaleString()} × ${formData.pm_quantity || 1}`
+                  : `Fixed amount: €${Number(formData.pm_unitcosteur || 0).toLocaleString()}`}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5 }}>
-              <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 500 }}>Total</Typography>
-              <Paper elevation={0} sx={{
-                px: 2.5, py: 0.75, borderRadius: 1.5,
-                bgcolor: isDark ? alpha(theme.palette.primary.main, 0.12) : alpha(theme.palette.primary.main, 0.08),
-                border: '1px solid',
-                borderColor: isDark ? alpha(theme.palette.primary.main, 0.25) : alpha(theme.palette.primary.main, 0.15),
-              }}>
-                <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main', fontSize: fontSizes['2xl'] }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Calculated Total</Typography>
+              <Paper
+                elevation={0}
+                sx={{
+                  px: 2.5,
+                  py: 0.75,
+                  borderRadius: 1.5,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                  boxShadow: `0 4px 10px ${alpha(theme.palette.primary.main, 0.25)}`,
+                }}
+              >
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: '#fff', fontSize: fontSizes.md }}>
                   €{computeTotalAmount(formData).toLocaleString()}
                 </Typography>
               </Paper>

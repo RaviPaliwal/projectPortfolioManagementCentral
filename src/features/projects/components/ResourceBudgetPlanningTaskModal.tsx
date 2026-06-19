@@ -7,6 +7,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import PeopleIcon from '@mui/icons-material/People'
 import { fetchProjectDetails } from '@/services/project.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ProjectModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
@@ -101,6 +102,14 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_projectmanagername || 'Unassigned'}</Typography>
                 </Box>
                 <Box>
+                  <Typography variant="caption" color="text.secondary">Portfolio</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_portfolioname || '-'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Programme</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_programmename || '-'}</Typography>
+                </Box>
+                <Box>
                   <Typography variant="caption" color="text.secondary">Phase</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{phaseLabel}</Typography>
                 </Box>
@@ -161,7 +170,10 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
           <DecisionBoxProp
             approvalStepId={approvalStepId}
             onBeforeDecision={saveTaskData}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'resource_budget_planning', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />

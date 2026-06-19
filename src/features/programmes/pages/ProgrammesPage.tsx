@@ -85,7 +85,7 @@ const programmeExportColumns: ExportColumn[] = [
   { key: 'pm_portfolioname', label: 'Portfolio' },
   { key: 'pm_businessunit', label: 'Business Unit' },
   { key: 'pm_programmephase', label: 'Phase', format: (v) => ['Delivery', 'Planning', 'Initiation'][Number(v)] ?? '' },
-  { key: 'pm_ragstatus', label: 'RAG', format: (v) => ['Amber', 'Green', 'Red'][Number(v)] ?? '' },
+  { key: 'pm_ragstatus', label: 'RAG', format: (v) => ['Medium', 'Low', 'High'][Number(v)] ?? '' },
   { key: 'pm_budgeteur', label: 'Budget', format: (v) => v?.toLocaleString() ?? '' },
   { key: 'pm_actualspendeur', label: 'Actual Spend', format: (v) => v?.toLocaleString() ?? '' },
   { key: 'pm_startdate', label: 'Start Date', format: (v) => v ? new Date(v).toLocaleDateString() : '' },
@@ -688,9 +688,9 @@ export default function ProgrammesPage() {
                   sx={{ borderRadius: 1.15, fontSize: fontSizes.base }}
                 >
                   <MenuItem value="">All RAG</MenuItem>
-                  <MenuItem value="1">Green</MenuItem>
-                  <MenuItem value="0">Amber</MenuItem>
-                  <MenuItem value="2">Red</MenuItem>
+                  <MenuItem value="1">Low</MenuItem>
+                  <MenuItem value="0">Medium</MenuItem>
+                  <MenuItem value="2">High</MenuItem>
                 </Select>
               </FormControl>
               <TextField

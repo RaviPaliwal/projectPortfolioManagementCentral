@@ -42,13 +42,10 @@ export interface Pm_cashflowentriesBase {
   pm_category?: Pm_cashflowentriespm_category;
   pm_description?: string;
   pm_entryname?: string;
-  pm_financialperiod?: string;
   "pm_fiscalperiod@odata.bind"?: string;
   pm_invoicenumber?: string;
-  pm_programme?: string;
   "pm_programmeLookup@odata.bind"?: string;
   "pm_project@odata.bind"?: string;
-  pm_projectcode?: string;
   pm_transactiondate?: string;
   pm_transactiondirection?: Pm_cashflowentriespm_transactiondirection;
   pm_transactiontype?: Pm_cashflowentriespm_transactiontype;

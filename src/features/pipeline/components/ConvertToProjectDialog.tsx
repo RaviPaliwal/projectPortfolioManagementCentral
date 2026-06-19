@@ -385,9 +385,9 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               value={form.pm_ragstatus}
               onChange={handleChange('pm_ragstatus')}
             >
-              <MenuItem value="1">Green — On Track</MenuItem>
-              <MenuItem value="0">Amber — At Risk</MenuItem>
-              <MenuItem value="2">Red — Critical</MenuItem>
+              <MenuItem value="1">Low — On Track</MenuItem>
+              <MenuItem value="0">Medium — At Risk</MenuItem>
+              <MenuItem value="2">High — Critical</MenuItem>
             </TextField>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>

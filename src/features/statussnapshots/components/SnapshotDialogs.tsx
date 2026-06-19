@@ -301,9 +301,9 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
               <FormControl fullWidth size="small">
                 <InputLabel>Overall RAG</InputLabel>
                 <Select value={formData.pm_overallragstatus} label="Overall RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_overallragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
-                  <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Green</Box></MenuItem>
-                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Amber</Box></MenuItem>
-                  <MenuItem value={2}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} /> Red</Box></MenuItem>
+                  <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
+                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Medium</Box></MenuItem>
+                  <MenuItem value={2}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} /> High</Box></MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -311,8 +311,8 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
               <FormControl fullWidth size="small">
                 <InputLabel>Cost RAG</InputLabel>
                 <Select value={formData.pm_costragstatus} label="Cost RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_costragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
-                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Green</Box></MenuItem>
-                  <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Amber</Box></MenuItem>
+                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
+                  <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Medium</Box></MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -320,9 +320,9 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
               <FormControl fullWidth size="small">
                 <InputLabel>Schedule RAG</InputLabel>
                 <Select value={formData.pm_scheduleragstatus} label="Schedule RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_scheduleragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
-                  <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Green</Box></MenuItem>
-                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Amber</Box></MenuItem>
-                  <MenuItem value={2}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} /> Red</Box></MenuItem>
+                  <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
+                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Medium</Box></MenuItem>
+                  <MenuItem value={2}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} /> High</Box></MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -330,9 +330,9 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
               <FormControl fullWidth size="small">
                 <InputLabel>Risk RAG</InputLabel>
                 <Select value={formData.pm_riskragstatus} label="Risk RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_riskragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
-                  <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Green</Box></MenuItem>
-                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Amber</Box></MenuItem>
-                  <MenuItem value={2}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} /> Red</Box></MenuItem>
+                  <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
+                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Medium</Box></MenuItem>
+                  <MenuItem value={2}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} /> High</Box></MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -340,8 +340,8 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
               <FormControl fullWidth size="small">
                 <InputLabel>Resource RAG</InputLabel>
                 <Select value={formData.pm_resourceragstatus} label="Resource RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_resourceragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
-                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Green</Box></MenuItem>
-                  <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Amber</Box></MenuItem>
+                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
+                  <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Medium</Box></MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -349,7 +349,7 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
               <FormControl fullWidth size="small">
                 <InputLabel>Benefits RAG</InputLabel>
                 <Select value={formData.pm_benefitsragstatus} label="Benefits RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_benefitsragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
-                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Green</Box></MenuItem>
+                  <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
                   <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ChecklistIcon sx={{ fontSize: 16, color: 'text.disabled' }} /> Not Set</Box></MenuItem>
                 </Select>
               </FormControl>

@@ -16,6 +16,7 @@ import InfoIcon from '@mui/icons-material/Info'
 import GavelIcon from '@mui/icons-material/Gavel'
 import BuildCircleIcon from '@mui/icons-material/BuildCircle'
 import { fetchProjectDetails, fetchProjectMilestones, createProjectMilestone, deleteProjectMilestone } from '@/services/project.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ProjectModel, ProjectMilestoneModel } from '@/types/dataverse'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 
@@ -190,6 +191,18 @@ export const MilestoneDefinitionTaskModal: React.FC<MilestoneDefinitionTaskModal
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Project Manager</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.3 }}>
                     {project?.pm_projectmanagername || 'Unassigned'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Portfolio</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.3 }}>
+                    {project?.pm_portfolioname || '—'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Programme</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.3 }}>
+                    {project?.pm_programmename || '—'}
                   </Typography>
                 </Box>
                 <Box>
@@ -376,7 +389,10 @@ export const MilestoneDefinitionTaskModal: React.FC<MilestoneDefinitionTaskModal
           <DecisionBoxProp
             approvalStepId={approvalStepId}
             onBeforeDecision={saveTaskData}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'milestone_definition', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />

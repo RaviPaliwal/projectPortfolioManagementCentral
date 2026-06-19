@@ -86,9 +86,9 @@ export const parseDataverseError = (result: IOperationResult<unknown>): string =
 }
 
 export const ragLabel = (code?: string | number): string => {
-  if (code === '2' || code === 2) return 'Red'
-  if (code === '1' || code === 1) return 'Green'
-  if (code === '0' || code === 0) return 'Amber'
+  if (code === '2' || code === 2) return 'High'
+  if (code === '1' || code === 1) return 'Low'
+  if (code === '0' || code === 0) return 'Medium'
   return 'NotSet'
 }
 

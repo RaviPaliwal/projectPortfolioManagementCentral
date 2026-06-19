@@ -17,6 +17,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
 import { fetchResourceAllocationById, fetchResourceById } from '@/services/resource.service'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import { Pm_projectsService } from '@/generated'
 import { unwrapSingle } from '@/services/common'
 import type { ResourceAllocationModel } from '@/types/dataverse'
@@ -662,6 +663,7 @@ export const ResourceAllocationApprovalTaskModal: React.FC<ResourceAllocationApp
             onDecisionComplete={(decision) => {
               const label = decision === 0 ? 'Approved' : 'Rejected'
               onSuccess(`Resource allocation review completed. Decision: ${label}.`)
+              dispatchFormDialogDecision({ formKey: 'resource_allocation', decision })
               setSaving(false)
               onClose()
             }}

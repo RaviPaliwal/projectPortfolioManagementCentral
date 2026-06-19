@@ -339,7 +339,11 @@ export default function BudgetsPage() {
 
   const resolveFundingSourceName = useCallback((id?: string) => {
     if (!id) return ''
-    const match = fundingSources.find((s) => s.pm_fundingsourceid.replace(/[{}]/g, '').trim().toLowerCase() === id.replace(/[{}]/g, '').trim().toLowerCase())
+    const match = fundingSources.find((s) => {
+      const fsId = s.pm_fundingsourceid
+      if (!fsId) return false
+      return fsId.replace(/[{}]/g, '').trim().toLowerCase() === id.replace(/[{}]/g, '').trim().toLowerCase()
+    })
     return match?.pm_fundingsourcename ?? ''
   }, [fundingSources])
 
@@ -576,6 +580,10 @@ export default function BudgetsPage() {
                         <Typography variant="body2">{selectedBudget.pm_costcategory || CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] || '—'}</Typography>
                       </Box>
                       <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Expense Category</Typography>
+                        <Typography variant="body2">{selectedBudget.pm_expencecatagory != null ? (Number(selectedBudget.pm_expencecatagory) === 0 ? 'CapEx' : 'OpEx') : '—'}</Typography>
+                      </Box>
+                      <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Funding Source</Typography>
                         <Typography variant="body2">{resolveFundingSourceName(selectedBudget._pm_fundingsource_value) || selectedBudget.pm_fundingsourcename || '—'}</Typography>
                       </Box>
@@ -653,7 +661,7 @@ export default function BudgetsPage() {
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <ExportButton filename="budgets.csv" columns={budgetExportColumns} data={filteredBudgetLines} />
                 {canCreate && (
-                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => setBudgetFormEditRecord(undefined)}>
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => setBudgetFormEditRecord(null)}>
                     Add Budget Line
                   </Button>
                 )}
@@ -686,7 +694,7 @@ export default function BudgetsPage() {
               emptyIcon={<AccountBalanceWalletIcon />}
               emptyTitle={searchQuery || categoryFilter ? 'No budget lines match your criteria.' : 'No budget lines found.'}
               emptyAction={!searchQuery && !categoryFilter ? (
-                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setBudgetFormEditRecord(undefined)}>
+                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setBudgetFormEditRecord(null)}>
                   Add your first budget line
                 </Button>
               ) : undefined}

@@ -179,7 +179,7 @@ const TimelineItem = ({
             {name}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mt: 0.5 }}>
-            <Tooltip title={`RAG: ${ragStatus === '1' ? 'Green' : ragStatus === '0' ? 'Amber' : 'Red'}`}>
+            <Tooltip title={`RAG: ${ragStatus === '1' ? 'Low' : ragStatus === '0' ? 'Medium' : 'High'}`}>
               <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: ragColor, boxShadow: `0 0 6px ${ragColor}` }} />
             </Tooltip>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -573,9 +573,9 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                 sx={{ borderRadius: 1.15, fontSize: fontSizes.base }}
               >
                 <MenuItem value="">All RAG</MenuItem>
-                <MenuItem value="1">Green</MenuItem>
-                <MenuItem value="0">Amber</MenuItem>
-                <MenuItem value="2">Red</MenuItem>
+                <MenuItem value="1">Low</MenuItem>
+                <MenuItem value="0">Medium</MenuItem>
+                <MenuItem value="2">High</MenuItem>
               </Select>
             </FormControl>
 

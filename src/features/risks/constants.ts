@@ -18,9 +18,9 @@ export const RISK_CATEGORY_COLORS: Record<string, string> = {
 }
 
 export const RAG_LABELS: Record<string, string> = {
-  '0': 'Amber',
-  '1': 'Green',
-  '2': 'Red',
+  '0': 'Medium',
+  '1': 'Low',
+  '2': 'High',
 }
 
 export const RAG_COLORS: Record<string, 'warning' | 'success' | 'error'> = {

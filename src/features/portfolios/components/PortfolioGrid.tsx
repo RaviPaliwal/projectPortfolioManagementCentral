@@ -60,9 +60,9 @@ const STATUS_FILTER_OPTIONS: FilterOption[] = [
 
 const RAG_FILTER_OPTIONS: FilterOption[] = [
   { value: '', label: 'All RAG' },
-  { value: '1', label: 'Green' },
-  { value: '0', label: 'Amber' },
-  { value: '2', label: 'Red' },
+  { value: '1', label: 'Low' },
+  { value: '0', label: 'Medium' },
+  { value: '2', label: 'High' },
 ]
 
 export const PortfolioGrid: React.FC<PortfolioGridProps> = ({

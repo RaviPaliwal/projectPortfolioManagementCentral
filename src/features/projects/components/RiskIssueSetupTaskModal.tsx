@@ -9,6 +9,7 @@ import WarningIcon from '@mui/icons-material/Warning'
 import BugReportIcon from '@mui/icons-material/BugReport'
 import AddIcon from '@mui/icons-material/Add'
 import { fetchProjectDetails, createRisk, createIssue, fetchAllocatedResourcesByProject } from '@/services'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ProjectModel, ResourceModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
@@ -50,9 +51,9 @@ const RISK_CATEGORIES = [
   { value: 4, label: 'External' },
 ]
 const RAG_OPTIONS = [
-  { value: 0, label: 'Amber' },
-  { value: 1, label: 'Green' },
-  { value: 2, label: 'Red' },
+  { value: 0, label: 'Medium' },
+  { value: 1, label: 'Low' },
+  { value: 2, label: 'High' },
 ]
 const ISSUE_CATEGORIES = [
   { value: 0, label: 'Scope' },
@@ -181,9 +182,19 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
                 {project?.pm_projectcode}
               </Typography>
               <Divider sx={{ my: 2 }} />
-              <Box>
-                <Typography variant="caption" color="text.secondary">Project Manager</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_projectmanagername || 'Unassigned'}</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Project Manager</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_projectmanagername || 'Unassigned'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Portfolio</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_portfolioname || '-'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Programme</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{project?.pm_programmename || '-'}</Typography>
+                </Box>
               </Box>
               <Box sx={{ mt: 4, p: 2, bgcolor: '#fef2f2', borderRadius: 1.5, border: '1px solid', borderColor: '#fecaca' }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -363,7 +374,10 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
           <DecisionBoxProp
             approvalStepId={approvalStepId}
             onBeforeDecision={saveTaskData}
-            onDecisionComplete={() => onClose()}
+            onDecisionComplete={(decision) => {
+              dispatchFormDialogDecision({ formKey: 'risk_issue_setup', decision })
+              onClose()
+            }}
             onDecisionError={(msg) => onError(msg)}
             disabled={loading}
           />

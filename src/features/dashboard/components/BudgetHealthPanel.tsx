@@ -1,10 +1,20 @@
-import { Box, Paper, Typography, Skeleton, FormControl, Select, MenuItem, InputLabel } from '@mui/material'
+import { Box, Paper, Typography, Skeleton, FormControl, Select, MenuItem, InputLabel, useTheme, alpha } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import GppBadIcon from '@mui/icons-material/GppBad'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import { VarianceDisplay, StatusProgressBar, StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts'
 
 interface BudgetHealthPanelProps {
   totalApprovedBudget: number
@@ -13,6 +23,7 @@ interface BudgetHealthPanelProps {
   selectedYear?: number | 'all'
   availableYears?: number[]
   onYearChange?: (year: number | 'all') => void
+  portfolios?: any[]
   sx?: SxProps<Theme>
 }
 
@@ -23,9 +34,31 @@ export const BudgetHealthPanel = ({
   selectedYear,
   availableYears = [],
   onYearChange,
+  portfolios = [],
   sx
 }: BudgetHealthPanelProps) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+  const textColor = isDark ? '#f8fafc' : '#0f172a'
+  const gridColor = isDark ? '#334155' : '#e6eef7'
+  
   const budgetVariance = totalApprovedBudget - totalActualSpend
+
+  const tooltipStyle = {
+    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+    border: `1px solid ${gridColor}`,
+    color: textColor,
+    borderRadius: '6px',
+    fontSize: 12,
+  }
+
+  const chartData = portfolios
+    .filter((p) => (p.pm_approvedbudgeteur ?? 0) > 0 || (p.pm_actualspendeur ?? 0) > 0)
+    .map((p) => ({
+      name: p.pm_portfolioname || 'Unnamed',
+      Budget: p.pm_approvedbudgeteur ?? 0,
+      Actual: p.pm_actualspendeur ?? 0,
+    }))
 
   return (
     <Paper
@@ -132,6 +165,26 @@ export const BudgetHealthPanel = ({
               )}
             </Box>
           </Box>
+
+          {/* Portfolio Financial Breakdown Chart */}
+          {chartData.length > 0 && (
+            <Box sx={{ mt: 3, pt: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
+                Portfolio Financial Breakdown
+              </Typography>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                  <XAxis type="number" tickFormatter={(v) => `€${(v / 1e6).toFixed(0)}M`} stroke={textColor} tick={{ fontSize: 9 }} />
+                  <YAxis type="category" dataKey="name" width={140} stroke={textColor} tick={{ fontSize: 9 }} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`€${Number(v).toLocaleString()}`, '']} />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                  <Bar dataKey="Budget" fill="#0ea5e9" radius={[0, 4, 4, 0]} barSize={10} />
+                  <Bar dataKey="Actual" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={10} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          )}
         </>
       )}
     </Paper>

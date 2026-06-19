@@ -252,6 +252,7 @@ export interface BudgetLineModel {
   pm_estimateatcompletioneur?: number
   pm_estimatetocompleteeur?: number
   pm_costcategory?: number | string
+  pm_expencecatagory?: number | string
   pm_costinglevelcode?: number | string
   pm_unitcosteur?: number
   pm_quantity?: number
@@ -302,9 +303,6 @@ export interface CashflowEntryModel {
   pm_category?: number | string
   pm_description?: string
   pm_invoicenumber?: string
-  pm_financialperiod?: string
-  pm_programme?: string
-  pm_projectcode?: string
   pm_fiscalperiodname?: string
   pm_programmelookupname?: string
   pm_projectname?: string

@@ -78,7 +78,7 @@ export const CashflowDetail: React.FC<CashflowDetailProps> = ({ entry }) => {
         </Grid>
         <Grid size={{ xs: 6 }}>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Financial Period</Typography>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>{entry.pm_financialperiod || '—'}</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>{entry.pm_fiscalperiodname || '—'}</Typography>
         </Grid>
       </Grid>
     </Box>

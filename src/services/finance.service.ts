@@ -6,6 +6,7 @@ import {
   Pm_portfoliosService,
   Pm_programmesService,
   Pm_projectsService,
+  Pm_timesheetentriesService,
 } from '@/generated'
 import type { Pm_budgetlines } from '@/generated/models/Pm_budgetlinesModel'
 import type { Pm_fundingsources } from '@/generated/models/Pm_fundingsourcesModel'
@@ -35,15 +36,16 @@ export const mapBudgetLine = (item: Pm_budgetlines): BudgetLineModel => ({
   pm_estimateatcompletioneur: item.pm_estimateatcompletioneur,
   pm_estimatetocompleteeur: item.pm_estimatetocompleteeur,
   pm_costcategory: item.pm_costcategory,
+  pm_expencecatagory: item.pm_expencecatagory,
   pm_costinglevelcode: (item as any).pm_costinglevelcode,
   pm_unitcosteur: (item as any).pm_unitcosteur,
   pm_quantity: (item as any).pm_quantity,
   pm_totalamounteur: (item as any).pm_totalamounteur,
   pm_jsonrawcalculation: (item as any).pm_jsonrawcalculation,
   pm_notes: item.pm_notes,
-  pm_portfolio: item.pm_portfolio,
-  pm_programme: item.pm_programme,
-  pm_projectcode: item.pm_projectcode,
+  pm_portfolio: (item as any).pm_portfolio,
+  pm_programme: (item as any).pm_programme,
+  pm_projectcode: (item as any).pm_projectcode,
   pm_fiscalperiodname: item.pm_fiscalperiodname,
   pm_fundingsourcename: item.pm_fundingsourcename,
   pm_portfoliolookupname: item.pm_portfoliolookupname,
@@ -85,9 +87,6 @@ export const mapCashflowEntry = (item: Pm_cashflowentries): CashflowEntryModel =
   pm_category: item.pm_category,
   pm_description: item.pm_description,
   pm_invoicenumber: item.pm_invoicenumber,
-  pm_financialperiod: item.pm_financialperiod,
-  pm_programme: item.pm_programme,
-  pm_projectcode: item.pm_projectcode,
   pm_fiscalperiodname: item.pm_fiscalperiodname,
   pm_programmelookupname: item.pm_programmelookupname,
   pm_projectname: item.pm_projectname,
@@ -113,7 +112,7 @@ export async function fetchBudgetLines(): Promise<BudgetLineModel[]> {
   const selectFields = [
     'pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur',
     'pm_revisedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur',
-    'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory',
+    'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory', 'pm_expencecatagory',
     'pm_notes',
     'pm_estimateatcompletioneur', 'pm_estimatetocompleteeur',
     'pm_jsonrawcalculation',
@@ -140,7 +139,7 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
     select: [
       'pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur',
       'pm_revisedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur',
-      'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory',
+      'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory', 'pm_expencecatagory',
       'pm_estimateatcompletioneur', 'pm_estimatetocompleteeur',
       'pm_jsonrawcalculation',
       'pm_fundingsourcename',
@@ -198,6 +197,9 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
       recordId: mapped.pm_budgetlineid,
       recordName: mapped.pm_budgetlinename || 'Budget Line',
     })
+    if (mapped._pm_project_value) {
+      await recalculateRealFinancialsForProject(mapped._pm_project_value)
+    }
   }
 
   return mapped
@@ -251,12 +253,21 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
         })
       }
     })
+    if (mapped._pm_project_value) {
+      await recalculateRealFinancialsForProject(mapped._pm_project_value)
+    }
   }
 
   return mapped
 }
 
 export async function deleteBudgetLine(id: string): Promise<void> {
+  let projectId: string | undefined
+  try {
+    const details = await fetchBudgetLineById(id)
+    if (details?._pm_project_value) projectId = details._pm_project_value
+  } catch (e) {}
+
   writeAuditLog({
     actionType: 'Update',
     entityName: 'pm_budgetlines',
@@ -266,6 +277,10 @@ export async function deleteBudgetLine(id: string): Promise<void> {
     newValue: 'Deleted',
   })
   await Pm_budgetlinesService.delete(id)
+
+  if (projectId) {
+    await recalculateRealFinancialsForProject(projectId)
+  }
 }
 
 export async function fetchFundingSources(): Promise<FundingSourceModel[]> {
@@ -405,7 +420,6 @@ export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
       'pm_cashflowentryid', 'pm_entryname', 'pm_amounteur',
       'pm_transactiondate', 'pm_transactiondirection', 'pm_transactiontype',
       'pm_category', 'pm_description', 'pm_invoicenumber',
-      'pm_financialperiod', 'pm_programme', 'pm_projectcode',
       '_pm_fiscalperiod_value', '_pm_programmelookup_value', '_pm_project_value',
     ],
     orderBy: ['pm_transactiondate desc'],
@@ -570,6 +584,9 @@ export async function createCashflowEntry(payload: Partial<CashflowEntryModel>):
       recordId: mapped.pm_cashflowentryid,
       recordName: mapped.pm_entryname || 'Cash Flow Entry',
     })
+    if (mapped._pm_project_value) {
+      await recalculateRealFinancialsForProject(mapped._pm_project_value)
+    }
   }
 
   return mapped
@@ -581,6 +598,24 @@ export async function updateCashflowEntry(id: string, changes: Partial<CashflowE
     if (value !== undefined && value !== null &&
       key !== 'pm_cashflowentryid' && key !== '_pm_fiscalperiod_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
       cleanPayload[key] = value
+    }
+  }
+  if (changes._pm_fiscalperiod_value) {
+    const fiscalPeriodId = changes._pm_fiscalperiod_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (fiscalPeriodId) {
+      cleanPayload['pm_fiscalperiod@odata.bind'] = `/pm_fiscalperiods(${fiscalPeriodId})`
+    }
+  }
+  if (changes._pm_programmelookup_value) {
+    const programmeId = changes._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (programmeId) {
+      cleanPayload['pm_programmeLookup@odata.bind'] = `/pm_programmes(${programmeId})`
+    }
+  }
+  if (changes._pm_project_value) {
+    const projectId = changes._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (projectId) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
     }
   }
   const result = await Pm_cashflowentriesService.update(id, cleanPayload as any)
@@ -601,12 +636,22 @@ export async function updateCashflowEntry(id: string, changes: Partial<CashflowE
         })
       }
     })
+    if (mapped._pm_project_value) {
+      await recalculateRealFinancialsForProject(mapped._pm_project_value)
+    }
   }
 
   return mapped
 }
 
 export async function deleteCashflowEntry(id: string): Promise<void> {
+  let projectId: string | undefined
+  try {
+    const details = await Pm_cashflowentriesService.get(id, { select: ['_pm_project_value'] })
+    const item = unwrapSingle<Pm_cashflowentries>(details)
+    if (item?._pm_project_value) projectId = item._pm_project_value
+  } catch (e) {}
+
   writeAuditLog({
     actionType: 'Update',
     entityName: 'pm_cashflowentries',
@@ -616,4 +661,146 @@ export async function deleteCashflowEntry(id: string): Promise<void> {
     newValue: 'Deleted',
   })
   await Pm_cashflowentriesService.delete(id)
+
+  if (projectId) {
+    await recalculateRealFinancialsForProject(projectId)
+  }
+}
+
+export async function recalculateRealFinancialsForProject(projectId: string | null | undefined): Promise<void> {
+  const normProjId = normalizeLookupId(projectId || undefined)
+  if (!normProjId) return
+
+  try {
+    // 1. Fetch active budget lines for this project
+    const budgetResult = await Pm_budgetlinesService.getAll({
+      filter: `_pm_project_value eq '${normProjId}' and statecode eq 0`,
+      select: ['pm_budgetlineid', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_estimatetocompleteeur', 'pm_costcategory'],
+      top: 500,
+    })
+    const projectLines = unwrapList<any>(budgetResult)
+
+    if (projectLines.length === 0) {
+      console.warn(`[recalculateRealFinancialsForProject] No budget lines found for project ${normProjId}`)
+      return
+    }
+
+    // 2. Fetch active cashflow outflow actual entries for this project
+    const cashflowResult = await Pm_cashflowentriesService.getAll({
+      filter: `_pm_project_value eq '${normProjId}' and statecode eq 0 and pm_transactiondirection eq 0 and pm_transactiontype eq 0`,
+      select: ['pm_cashflowentryid', 'pm_amounteur', 'pm_category'],
+      top: 500,
+    })
+    const projectCashflows = unwrapList<any>(cashflowResult)
+
+    // 3. Fetch approved/chargeable timesheet entries for this project
+    let projectTimesheets: any[] = []
+    try {
+      const tsResult = await Pm_timesheetentriesService.getAll({
+        filter: `_pm_project_value eq '${normProjId}' and statecode eq 0`,
+        select: ['pm_timesheetentryid', 'pm_hoursworked', 'pm_workdate', 'pm_ischargeable', 'pm_isapproved', '_pm_project_value'],
+        top: 1000,
+      })
+      projectTimesheets = unwrapList<any>(tsResult).filter((e) => e.pm_isapproved || e.pm_ischargeable)
+    } catch (err) {
+      console.warn('[recalculateRealFinancialsForProject] Failed to fetch timesheet entries:', err)
+    }
+
+    // 4. Recalculate each budget line
+    let totalProjectBudget = 0
+    let totalProjectActuals = 0
+
+    for (const bl of projectLines) {
+      if (!bl.pm_budgetlineid) continue
+
+      const category = String(bl.pm_costcategory ?? '')
+      
+      // Calculate cashflow sum for this category
+      const blCashflows = projectCashflows.filter((cf) => {
+        const cfCategory = String(cf.pm_category ?? '')
+        return cfCategory === category
+      })
+      const cashflowsSum = blCashflows.reduce((sum, cf) => sum + (cf.pm_amounteur || 0), 0)
+
+      // Calculate timesheet sum for this category
+      const blTimesheets = projectTimesheets.filter((e) => {
+        const expectedCat = e.pm_ischargeable ? '0' : '1'
+        return expectedCat === category
+      })
+      const timesheetsSum = blTimesheets.reduce((sum, e) => sum + (e.pm_hoursworked || 0) * 50, 0)
+
+      const lineActuals = cashflowsSum + timesheetsSum
+      const approvedBudget = bl.pm_approvedbudgeteur || 0
+      const variance = approvedBudget - lineActuals
+      const etc = bl.pm_estimatetocompleteeur || 0
+      const eac = lineActuals + etc
+
+      totalProjectBudget += approvedBudget
+      totalProjectActuals += lineActuals
+
+      // Update the budget line record directly in Dataverse (bypass recalculation recursion)
+      await Pm_budgetlinesService.update(bl.pm_budgetlineid, {
+        pm_actualspendeur: lineActuals,
+        pm_varianceeur: variance,
+        pm_estimateatcompletioneur: eac,
+      } as any)
+    }
+
+    // 5. Update the project record
+    const projectDetailsResult = await Pm_projectsService.get(normProjId, {
+      select: ['pm_projectid', '_pm_portfolio_value', '_pm_programme_value'],
+    })
+    const projectDetails = unwrapSingle<Pm_projects>(projectDetailsResult)
+
+    await Pm_projectsService.update(normProjId, {
+      pm_approvedbudgeteur: totalProjectBudget,
+      pm_actualcosteur: totalProjectActuals,
+    } as any)
+
+    // 6. Recalculate Programme actual spend
+    const programmeId = normalizeLookupId(projectDetails?._pm_programme_value)
+    if (programmeId) {
+      try {
+        const progProjectsResult = await Pm_projectsService.getAll({
+          filter: `_pm_programme_value eq '${programmeId}' and statecode eq 0`,
+          select: ['pm_projectid', 'pm_actualcosteur'],
+          top: 500,
+        })
+        const progProjects = unwrapList<any>(progProjectsResult)
+        const totalProgActuals = progProjects.reduce((sum, p) => sum + (p.pm_actualcosteur || 0), 0)
+        
+        await Pm_programmesService.update(programmeId, {
+          pm_actualspendeur: totalProgActuals,
+        } as any)
+      } catch (err) {
+        console.warn(`[recalculateRealFinancialsForProject] Failed to update programme ${programmeId}:`, err)
+      }
+    }
+
+    // 7. Recalculate Portfolio budget & actual spend
+    const portfolioId = normalizeLookupId(projectDetails?._pm_portfolio_value)
+    if (portfolioId) {
+      try {
+        const portProjectsResult = await Pm_projectsService.getAll({
+          filter: `_pm_portfolio_value eq '${portfolioId}' and statecode eq 0`,
+          select: ['pm_projectid', 'pm_approvedbudgeteur', 'pm_actualcosteur'],
+          top: 500,
+        })
+        const portProjects = unwrapList<any>(portProjectsResult)
+        const totalPortBudget = portProjects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur || 0), 0)
+        const totalPortActuals = portProjects.reduce((sum, p) => sum + (p.pm_actualcosteur || 0), 0)
+
+        await Pm_portfoliosService.update(portfolioId, {
+          pm_approvedbudgeteur: totalPortBudget,
+          pm_actualspendeur: totalPortActuals,
+        } as any)
+      } catch (err) {
+        console.warn(`[recalculateRealFinancialsForProject] Failed to update portfolio ${portfolioId}:`, err)
+      }
+    }
+
+    console.log(`[recalculateRealFinancialsForProject] Successfully completed rollup for project ${normProjId}`)
+  } catch (err) {
+    console.error(`[recalculateRealFinancialsForProject] Error rollup for project ${normProjId}:`, err)
+  }
 }

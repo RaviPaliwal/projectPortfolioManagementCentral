@@ -38,11 +38,11 @@ const getRagDetails = (ragVal?: string | number | null) => {
   const statusStr = ragVal?.toString() ?? ''
   switch (statusStr) {
     case '1':
-      return { label: 'Green', color: 'success.main', bg: 'rgba(34, 197, 94, 0.08)', border: 'rgba(34, 197, 94, 0.3)' }
+      return { label: 'Low', color: 'success.main', bg: 'rgba(34, 197, 94, 0.08)', border: 'rgba(34, 197, 94, 0.3)' }
     case '0':
-      return { label: 'Amber', color: 'warning.main', bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.3)' }
+      return { label: 'Medium', color: 'warning.main', bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.3)' }
     case '2':
-      return { label: 'Red', color: 'error.main', bg: 'rgba(239, 68, 68, 0.08)', border: 'rgba(239, 68, 68, 0.3)' }
+      return { label: 'High', color: 'error.main', bg: 'rgba(239, 68, 68, 0.08)', border: 'rgba(239, 68, 68, 0.3)' }
     default:
       return { label: 'Not Set', color: 'text.disabled', bg: 'action.hover', border: 'divider' }
   }
@@ -52,9 +52,9 @@ const getBenefitsRagDetails = (ragVal?: string | number | null) => {
   const statusStr = ragVal?.toString() ?? ''
   switch (statusStr) {
     case '0':
-      return { label: 'Green', color: 'success.main', bg: 'rgba(34, 197, 94, 0.08)', border: 'rgba(34, 197, 94, 0.3)' }
+      return { label: 'Low', color: 'success.main', bg: 'rgba(34, 197, 94, 0.08)', border: 'rgba(34, 197, 94, 0.3)' }
     case '1':
-      return { label: 'Amber', color: 'warning.main', bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.3)' }
+      return { label: 'Medium', color: 'warning.main', bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.3)' }
     default:
       return { label: 'Not Set', color: 'text.disabled', bg: 'action.hover', border: 'divider' }
   }

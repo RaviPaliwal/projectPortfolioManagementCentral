@@ -69,6 +69,7 @@ export default function DashboardPage() {
   const [budgetMetrics, setBudgetMetrics] = useState({ approved: 0, actual: 0 })
   const [projects, setProjects] = useState<ProjectModel[]>([])
   const [portfolioSnapshot, setPortfolioSnapshot] = useState<PortfolioModel[]>([])
+  const [allPortfolios, setAllPortfolios] = useState<PortfolioModel[]>([])
   const [programmeSnapshot, setProgrammeSnapshot] = useState<ProgrammeModel[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -144,6 +145,7 @@ export default function DashboardPage() {
       setDepartmentDemandData(deptDemand)
       setPortfolioTrendData(portfolioTrend)
       setPortfolioSnapshot(hierarchy.portfolios.slice().sort(sortByRag).slice(0, 4))
+      setAllPortfolios(hierarchy.portfolios)
       setProgrammeSnapshot(hierarchy.programmes.slice().sort(sortByRag).slice(0, 4))
       setPipelineKpis(pipeline)
       setInitiatives(initiativesData)
@@ -187,9 +189,9 @@ export default function DashboardPage() {
 
   // Build chart data from real metrics
   const projectStatusData = useMemo(() => [
-    { name: 'Green', value: metrics.projectsInGreen },
-    { name: 'Amber', value: metrics.projectsInAmber },
-    { name: 'Red', value: metrics.projectsInRed },
+    { name: 'Low', value: metrics.projectsInGreen },
+    { name: 'Medium', value: metrics.projectsInAmber },
+    { name: 'High', value: metrics.projectsInRed },
   ], [metrics])
 
   // Budget health
@@ -260,6 +262,7 @@ export default function DashboardPage() {
             selectedYear={budgetYear}
             availableYears={availableYears}
             onYearChange={handleBudgetYearChange}
+            portfolios={allPortfolios}
             sx={{ flex: 1, height: '100%' }}
           />
         </Grid>

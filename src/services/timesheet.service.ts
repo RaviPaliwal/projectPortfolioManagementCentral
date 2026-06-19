@@ -214,6 +214,32 @@ export async function updateTimesheetStatus(
 
   await Pm_timesheetsService.update(timesheetId, changes as any)
 
+  if (status === 0) {
+    try {
+      const entries = await fetchTimesheetEntries(timesheetId)
+      const projectIds = new Set<string>()
+      for (const entry of entries) {
+        if (entry.pm_timesheetentryid) {
+          await Pm_timesheetentriesService.update(entry.pm_timesheetentryid, {
+            pm_isapproved: true,
+          } as any)
+        }
+        const projId = normalizeLookupId(entry._pm_project_value)
+        if (projId) {
+          projectIds.add(projId)
+        }
+      }
+      if (projectIds.size > 0) {
+        const { recalculateRealFinancialsForProject } = await import('./finance.service')
+        for (const projId of projectIds) {
+          await recalculateRealFinancialsForProject(projId)
+        }
+      }
+    } catch (err) {
+      console.error('[updateTimesheetStatus] Failed to approve entries and recalculate financials:', err)
+    }
+  }
+
   writeAuditLog({
     actionType: 'StatusChange',
     entityName: 'pm_timesheets',
