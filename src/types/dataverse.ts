@@ -252,6 +252,11 @@ export interface BudgetLineModel {
   pm_estimateatcompletioneur?: number
   pm_estimatetocompleteeur?: number
   pm_costcategory?: number | string
+  pm_costinglevelcode?: number | string
+  pm_unitcosteur?: number
+  pm_quantity?: number
+  pm_totalamounteur?: number
+  pm_jsonrawcalculation?: string
   pm_notes?: string
   pm_portfolio?: string
   pm_programme?: string
@@ -278,11 +283,10 @@ export interface FundingSourceModel {
   pm_allocatedamounteur?: number
   pm_availableamounteur?: number
   pm_fundingbody?: string
-  pm_referencecode?: string
   pm_effectivefromdate?: string
   pm_effectivetodate?: string
   pm_portfolioname?: string
-  pm_programmename?: string
+  pm_programmelookupname?: string
   _pm_portfolio_value?: string
   _pm_programmelookup_value?: string
   statecode?: number

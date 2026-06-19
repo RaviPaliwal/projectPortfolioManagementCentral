@@ -35,15 +35,12 @@ export interface Pm_budgetlinesBase {
   pm_estimatetocompleteeur?: number;
   "pm_fiscalperiod@odata.bind"?: string;
   pm_forecastspendeur?: number;
-  pm_fundingperiod?: string;
   "pm_fundingsource@odata.bind"?: string;
+  pm_jsonrawcalculation?: string;
   pm_notes?: string;
-  pm_portfolio?: string;
   "pm_portfolioLookup@odata.bind"?: string;
-  pm_programme?: string;
   "pm_programmeLookup@odata.bind"?: string;
   "pm_project@odata.bind"?: string;
-  pm_projectcode?: string;
   pm_revisedbudgeteur?: number;
   pm_varianceeur?: number;
   statecode: Pm_budgetlinesstatecode;
@@ -71,6 +68,7 @@ export interface Pm_budgetlines extends Pm_budgetlinesBase {
   pm_actualspendeur_base?: number;
   pm_approvedbudgeteur_base?: number;
   pm_committedspendeur_base?: number;
+  pm_costcategoryname?: string;
   pm_estimateatcompletioneur_base?: number;
   pm_estimatetocompleteeur_base?: number;
   pm_fiscalperiodname?: string;

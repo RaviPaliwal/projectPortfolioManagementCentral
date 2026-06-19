@@ -39,6 +39,7 @@ import {
 import { DynamicFormDialog } from '@/components/common'
 import type { FormField } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
+import { BudgetLineFormDialog } from '@/features/budgets/components'
 
 interface SubDialogProps {
   open: boolean
@@ -534,34 +535,27 @@ export const ResourceDialog: React.FC<SubDialogProps> = ({ open, onClose, projec
 }
 
 export const BudgetDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
-  const fields: FormField[] = [
-    { name: 'pm_budgetlinename', label: 'Budget line name', type: 'text', required: true },
-    { name: 'pm_approvedbudgeteur', label: 'Approved budget (EUR)', type: 'number', defaultValue: 0, gridSize: 6 },
-    { name: 'pm_actualspendeur', label: 'Actual spend (EUR)', type: 'number', defaultValue: 0, gridSize: 6 },
-    { name: 'pm_costcategory', label: 'Cost category', type: 'select', options: [
-      { value: '0', label: 'Staff' }, { value: '1', label: 'Contractors' }, { value: '2', label: 'Licences' }, { value: '3', label: 'Infrastructure' }
-    ]}
-  ]
-
-  const handleSubmit = async (data: Record<string, any>) => {
-    try {
-      const payload = { ...data, _pm_project_value: projectId, pm_costcategory: data.pm_costcategory !== '' ? Number(data.pm_costcategory) : undefined }
-      const created = await createBudgetLine(payload as any)
-      if (created?.pm_budgetlineid) {
-        try {
-          await startWorkflowForEntity('default-template', created.pm_budgetlineid, MODULE_NAMES.BUDGETS.value, 'System')
-        } catch (wfErr) {
-          console.error('[BudgetDialog] Failed to initiate workflow:', wfErr)
+  return (
+    <BudgetLineFormDialog
+      open={open}
+      onClose={onClose}
+      prefillProjectId={projectId}
+      onSaved={(saved) => {
+        if (saved?.pm_budgetlineid) {
+          try {
+            startWorkflowForEntity('default-template', saved.pm_budgetlineid, MODULE_NAMES.BUDGETS.value, 'System')
+          } catch (wfErr) {
+            console.error('[BudgetDialog] Failed to initiate workflow:', wfErr)
+          }
         }
-      }
-      onSuccess('Budget line added successfully and workflow initiated.')
-      onClose()
-    } catch {
-      onError('Unable to add budget line.')
-    }
-  }
-
-  return <DynamicFormDialog open={open} title="Add Budget Line" fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText="Add Budget Line" />
+        if (saved) {
+          onSuccess('Budget line added successfully and workflow initiated.')
+        } else {
+          onError('Unable to add budget line.')
+        }
+      }}
+    />
+  )
 }
 
 export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
