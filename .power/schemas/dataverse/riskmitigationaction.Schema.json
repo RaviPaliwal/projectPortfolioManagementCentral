@@ -226,14 +226,6 @@
           "x-ms-schema-name": "pm_actiondescription",
           "maxLength": 100
         },
-        "pm_actionowner": {
-          "type": "string",
-          "title": "Action Owner",
-          "x-ms-dataverse-attribute": "pm_actionowner",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_actionowner",
-          "maxLength": 100
-        },
         "pm_actiontitle": {
           "type": "string",
           "title": "Action Title",
@@ -305,14 +297,6 @@
           "x-ms-dataverse-attribute": "pm_risk",
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_risk"
-        },
-        "pm_riskidentifier": {
-          "type": "string",
-          "title": "Risk",
-          "x-ms-dataverse-attribute": "pm_riskidentifier",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_riskidentifier",
-          "maxLength": 100
         },
         "pm_riskmitigationactionid": {
           "type": "string",

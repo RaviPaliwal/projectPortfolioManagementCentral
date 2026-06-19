@@ -40,13 +40,11 @@ export interface Pm_projectmilestonesBase {
   pm_description?: string;
   pm_milestonename?: string;
   pm_milestonetype?: Pm_projectmilestonespm_milestonetype;
-  pm_owner?: string;
   pm_planneddate?: string;
-  pm_programme?: string;
   "pm_project@odata.bind"?: string;
-  pm_projectcode?: string;
   pm_projectmilestoneid: string;
   pm_ragstatus?: Pm_projectmilestonespm_ragstatus;
+  "pm_Responsible@odata.bind"?: string;
   pm_status?: Pm_projectmilestonespm_status;
   statecode: Pm_projectmilestonesstatecode;
   statuscode?: Pm_projectmilestonesstatuscode;
@@ -71,6 +69,7 @@ export interface Pm_projectmilestones extends Pm_projectmilestonesBase {
   pm_milestonetypename?: string;
   pm_projectname?: string;
   pm_ragstatusname?: string;
+  pm_responsiblename?: string;
   pm_statusname?: string;
   statecodename?: string;
   statuscodename?: string;
@@ -91,4 +90,6 @@ export interface Pm_projectmilestones extends Pm_projectmilestonesBase {
   _owninguser_value?: string;
   pm_project?: object;
   _pm_project_value?: string;
+  pm_responsible?: object;
+  _pm_responsible_value?: string;
 }

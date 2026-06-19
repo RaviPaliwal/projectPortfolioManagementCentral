@@ -52,12 +52,40 @@ interface SubDialogProps {
 }
 
 export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
+  const [resources, setResources] = useState<{ value: string, label: string }[]>([])
+  const [resourcesLoaded, setResourcesLoaded] = useState(false)
+
+  useEffect(() => {
+    if (open && projectId) {
+      setResourcesLoaded(false)
+      import('@/services').then(({ fetchAllocatedResourcesByProject }) => {
+        fetchAllocatedResourcesByProject(projectId).then((resList) => {
+          const options = [
+            { value: '', label: 'Unassigned' },
+            ...resList.map(r => ({ value: r.pm_resourceid || '', label: r.pm_fullname || '' })).filter(r => r.value !== '')
+          ]
+          setResources(options)
+          setResourcesLoaded(true)
+        }).catch(err => {
+          console.error("[MilestoneDialog] Failed to load project resources:", err)
+          setResourcesLoaded(true)
+        })
+      })
+    }
+  }, [open, projectId])
+
   const fields: FormField[] = [
     { name: 'pm_milestonename', label: 'Milestone name', type: 'text', required: true },
     { name: 'pm_planneddate', label: 'Planned date', type: 'date' },
     { name: 'pm_milestonetype', label: 'Type', type: 'select', options: [
       { value: '0', label: 'Delivery' }, { value: '1', label: 'Governance' }
     ]},
+    { 
+      name: 'pm_responsible', 
+      label: 'Responsible', 
+      type: 'select', 
+      options: resources 
+    },
     { name: 'pm_ragstatus', label: 'RAG Status', type: 'select', defaultValue: '1', options: [
       { value: '1', label: 'Low' }, { value: '0', label: 'Medium' }, { value: '2', label: 'High' }
     ]},
@@ -65,6 +93,14 @@ export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, proje
       { value: '1', label: 'Active / Planned' }, { value: '2', label: 'Completed' }
     ]}
   ]
+
+  const mappedInitialData = useMemo(() => {
+    if (!initialData) return undefined
+    return {
+      ...initialData,
+      pm_responsible: initialData._pm_responsible_value || ''
+    }
+  }, [initialData])
 
   const handleSubmit = async (data: Record<string, any>) => {
     try {
@@ -84,17 +120,20 @@ export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, proje
         onSuccess('Milestone added successfully.')
       }
       onClose()
-    } catch {
+    } catch (err) {
+      console.error('[MilestoneDialog] handleSubmit failed:', err)
       onError(initialData?.pm_projectmilestoneid ? 'Unable to update milestone.' : 'Unable to add milestone.')
     }
   }
+
+  if (open && !resourcesLoaded) return null
 
   return (
     <DynamicFormDialog 
       open={open} 
       title={initialData ? "Edit Milestone" : "Add Milestone"} 
       fields={fields} 
-      initialData={initialData} 
+      initialData={mappedInitialData} 
       onClose={onClose} 
       onSubmit={handleSubmit} 
       submitText={initialData ? "Save Changes" : "Add"} 
@@ -103,34 +142,62 @@ export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, proje
 }
 
 export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
+  const [resources, setResources] = useState<{ value: string, label: string }[]>([])
+  const [resourcesLoaded, setResourcesLoaded] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setResourcesLoaded(false)
+      import('@/services').then(({ fetchResources }) => {
+        fetchResources().then((resList) => {
+          const options = [
+            { value: '', label: 'Unassigned' },
+            ...resList.map(r => ({ value: r.pm_resourceid || '', label: r.pm_fullname || '' })).filter(r => r.value !== '')
+          ]
+          setResources(options)
+          setResourcesLoaded(true)
+        }).catch(err => {
+          console.error("[RiskDialog] Failed to load resources:", err)
+          setResourcesLoaded(true)
+        })
+      })
+    }
+  }, [open])
+
   const fields: FormField[] = [
     { name: 'pm_risktitle', label: 'Risk title', type: 'text', required: true, gridSize: 8 },
     { name: 'pm_riskcategory', label: 'Category', type: 'select', gridSize: 4, options: [
-      { value: '0', label: 'Strategic' }, { value: '1', label: 'Operational' }, { value: '2', label: 'Financial' }, { value: '3', label: 'Compliance' }, { value: '4', label: 'Technology' }
+      { value: '0', label: 'Resource' }, { value: '1', label: 'Financial' }, { value: '2', label: 'Legal' }, { value: '3', label: 'Technical' }, { value: '4', label: 'External' }
     ]},
     { name: 'pm_ragstatus', label: 'RAG Status', type: 'select', gridSize: 4, options: [
       { value: '1', label: 'Low' }, { value: '0', label: 'Medium' }, { value: '2', label: 'High' }
     ]},
-    { name: '_pm_riskowner_value', label: 'Risk owner', type: 'user-select-id', gridSize: 4 },
+    { 
+      name: '_pm_riskowner_value', 
+      label: 'Risk owner', 
+      type: 'select', 
+      gridSize: 4,
+      options: resources 
+    },
     { name: 'pm_identifieddate', label: 'Identified Date', type: 'date', gridSize: 6 },
     { name: 'pm_targetclosedate', label: 'Target close date', type: 'date', gridSize: 6 },
     { name: 'pm_riskcause', label: 'Cause', type: 'text', gridSize: 6 },
     { name: 'pm_riskeffect', label: 'Effect', type: 'text', gridSize: 6 },
     { name: 'pm_riskdescription', label: 'Description', type: 'multiline', rows: 2 },
     { name: 'pm_inherentprobability', label: 'Inherent Probability', type: 'select', gridSize: 4, options: [
-      { value: '0', label: 'Very Low (1)' }, { value: '1', label: 'Low (2)' }, { value: '2', label: 'Medium (3)' }, { value: '3', label: 'High (4)' }, { value: '4', label: 'Very High (5)' }
+      { value: '3', label: 'Rare' }, { value: '2', label: 'Unlikely' }, { value: '0', label: 'Possible' }, { value: '1', label: 'Likely' }
     ]},
     { name: 'pm_inherentimpact', label: 'Inherent Impact', type: 'select', gridSize: 4, options: [
-      { value: '0', label: 'Negligible (1)' }, { value: '1', label: 'Minor (2)' }, { value: '2', label: 'Moderate (3)' }, { value: '3', label: 'Major (4)' }, { value: '4', label: 'Catastrophic (5)' }
+      { value: '1', label: 'Moderate' }, { value: '0', label: 'Major' }, { value: '2', label: 'Catastrophic' }
     ]},
     { name: 'pm_residualprobability', label: 'Residual Probability', type: 'select', gridSize: 4, options: [
-      { value: '0', label: 'Very Low (1)' }, { value: '1', label: 'Low (2)' }, { value: '2', label: 'Medium (3)' }, { value: '3', label: 'High (4)' }, { value: '4', label: 'Very High (5)' }
+      { value: '0', label: 'Unlikely' }, { value: '1', label: 'Possible' }, { value: '2', label: 'Rare' }
     ]},
     { name: 'pm_residualimpact', label: 'Residual Impact', type: 'select', gridSize: 4, options: [
-      { value: '0', label: 'Negligible (1)' }, { value: '1', label: 'Minor (2)' }, { value: '2', label: 'Moderate (3)' }, { value: '3', label: 'Major (4)' }, { value: '4', label: 'Catastrophic (5)' }
+      { value: '0', label: 'Moderate' }, { value: '1', label: 'Minor' }, { value: '2', label: 'Major' }
     ]},
     { name: 'pm_responsestrategy', label: 'Response Strategy', type: 'select', gridSize: 4, options: [
-      { value: '0', label: 'Accept' }, { value: '1', label: 'Avoid' }, { value: '2', label: 'Transfer' }, { value: '3', label: 'Mitigate' }
+      { value: '0', label: 'Mitigate' }, { value: '1', label: 'Accept' }
     ]},
   ]
 
@@ -143,6 +210,8 @@ export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
       onError('Unable to log risk.')
     }
   }
+
+  if (open && !resourcesLoaded) return null
 
   return <DynamicFormDialog open={open} title="Log Risk" fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText="Log Risk" />
 }
@@ -588,15 +657,83 @@ export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, project
 }
 
 export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
+  const [resources, setResources] = useState<{ value: string, label: string }[]>([])
+  const [resourcesLoaded, setResourcesLoaded] = useState(false)
+
+  useEffect(() => {
+    if (open && projectId) {
+      setResourcesLoaded(false)
+      import('@/services').then(({ fetchAllocatedResourcesByProject }) => {
+        fetchAllocatedResourcesByProject(projectId).then((resList) => {
+          const options = [
+            { value: '', label: 'Unassigned' },
+            ...resList.map(r => ({ value: r.pm_resourceid || '', label: r.pm_fullname || '' })).filter(r => r.value !== '')
+          ]
+          setResources(options)
+          setResourcesLoaded(true)
+        }).catch(err => {
+          console.error("[TaskDialog] Failed to load project resources:", err)
+          setResourcesLoaded(true)
+        })
+      })
+    }
+  }, [open, projectId])
+
   const fields: FormField[] = [
     { name: 'pm_taskname', label: 'Task name', type: 'text', required: true },
     { name: 'pm_taskdescription', label: 'Description', type: 'multiline', rows: 2 },
-    { name: 'pm_assignedresource', label: 'Assigned resource', type: 'text', gridSize: 6 },
-    { name: 'pm_durationdays', label: 'Duration (days)', type: 'number', defaultValue: 0, gridSize: 6 },
+    { 
+      name: 'pm_assignedresource', 
+      label: 'Assigned resource', 
+      type: 'select', 
+      gridSize: 6,
+      options: resources 
+    },
+    { name: 'pm_durationdays', label: 'Duration (days)', type: 'number', defaultValue: 0, gridSize: 6, disabled: true },
     { name: 'pm_plannedstartdate', label: 'Planned start date', type: 'date', gridSize: 6 },
     { name: 'pm_plannedenddate', label: 'Planned end date', type: 'date', gridSize: 6 },
     { name: 'pm_percentcomplete', label: '% Complete', type: 'number', defaultValue: 0, min: 0, max: 100 }
   ]
+
+  const mappedInitialData = useMemo(() => {
+    if (!initialData) return undefined
+    return {
+      ...initialData,
+      pm_assignedresource: initialData._pm_assignedtoresource_value || ''
+    }
+  }, [initialData])
+
+  const handleFieldChange = useCallback((name: string, value: any, currentData: Record<string, any>): Record<string, any> => {
+    const updated = { ...currentData }
+
+    if (name === 'pm_plannedstartdate' || name === 'pm_plannedenddate') {
+      const start = updated.pm_plannedstartdate
+      const end = updated.pm_plannedenddate
+      if (start && end) {
+        const startDate = new Date(start)
+        const endDate = new Date(end)
+        if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+          const diff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+          updated.pm_durationdays = Math.max(0, diff)
+        }
+      }
+    } else if (name === 'pm_durationdays') {
+      const duration = Number(value)
+      const start = updated.pm_plannedstartdate
+      if (start && !isNaN(duration) && duration > 0) {
+        const startDate = new Date(start)
+        if (!isNaN(startDate.getTime())) {
+          const endDate = new Date(startDate)
+          endDate.setDate(startDate.getDate() + (duration - 1))
+          const yyyy = endDate.getFullYear()
+          const mm = String(endDate.getMonth() + 1).padStart(2, '0')
+          const dd = String(endDate.getDate()).padStart(2, '0')
+          updated.pm_plannedenddate = `${yyyy}-${mm}-${dd}`
+        }
+      }
+    }
+    return updated
+  }, [])
 
   const handleSubmit = async (data: Record<string, any>) => {
     try {
@@ -619,20 +756,24 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
         onSuccess('Task added successfully.')
       }
       onClose()
-    } catch {
+    } catch (err) {
+      console.error('[TaskDialog] handleSubmit failed:', err)
       onError(initialData?.pm_projecttaskid ? 'Unable to update task.' : 'Unable to add task.')
     }
   }
+
+  if (open && !resourcesLoaded) return null
 
   return (
     <DynamicFormDialog 
       open={open} 
       title={initialData ? "Edit Task" : "Add Task"} 
       fields={fields} 
-      initialData={initialData} 
+      initialData={mappedInitialData} 
       onClose={onClose} 
       onSubmit={handleSubmit} 
       submitText={initialData ? "Save Changes" : "Add Task"} 
+      onFieldChange={handleFieldChange}
     />
   )
 }

@@ -24,7 +24,6 @@ import {
   updateRiskFull,
   deleteRisk,
   fetchMitigationActions,
-  fetchResourceById,
 } from '@/services'
 import type { RiskModel, RiskMitigationActionModel } from '@/types/dataverse'
 import { PageHeader, DetailDrawer, KpiCardRow } from '@/components/common'
@@ -143,27 +142,8 @@ export default function RisksPage() {
     setDialogOpen(true)
   }
 
-  const openEdit = async (risk: RiskModel) => {
+  const openEdit = (risk: RiskModel) => {
     console.log('[RisksPage] openEdit called, risk._pm_riskowner_value:', risk._pm_riskowner_value)
-    // Resolve resource GUID (_pm_riskowner_value) to systemuser GUID
-    // so the user-select-id dropdown can display the current owner
-    if (risk._pm_riskowner_value) {
-      try {
-        const resource = await fetchResourceById(risk._pm_riskowner_value)
-        console.log('[RisksPage] openEdit - fetched resource:', resource ? { id: resource.pm_resourceid, name: resource.pm_fullname, sysUser: resource._pm_systemuser_value } : 'null')
-        if (resource?._pm_systemuser_value) {
-          console.log('[RisksPage] openEdit - resolved to systemuser GUID:', resource._pm_systemuser_value)
-          setEditingRisk({ ...risk, _pm_riskowner_value: resource._pm_systemuser_value })
-          setDialogOpen(true)
-          return
-        }
-        console.log('[RisksPage] openEdit - resource has no _pm_systemuser_value, using original value')
-      } catch (err) {
-        console.warn('[RisksPage] openEdit - fetchResourceById threw:', err)
-      }
-    } else {
-      console.log('[RisksPage] openEdit - risk has no _pm_riskowner_value (unassigned)')
-    }
     setEditingRisk(risk)
     setDialogOpen(true)
   }
@@ -232,10 +212,18 @@ export default function RisksPage() {
     setError(null)
     try {
       const { Pm_riskmitigationactionsService } = await import('@/generated')
-      const payload = {
-        ...data,
+      const payload: Record<string, any> = {
+        pm_actiontitle: data.pm_actiontitle,
+        pm_actiondescription: data.pm_actiondescription,
+        pm_notes: data.pm_notes,
         pm_status: Number(data.pm_actionstatus),
-        _pm_risk_value: selectedRisk.pm_riskid,
+        'pm_risk@odata.bind': `/pm_risks(${selectedRisk.pm_riskid})`,
+      }
+      if (data.pm_duedate) {
+        payload.pm_duedate = data.pm_duedate
+      }
+      if (data.ownerid) {
+        payload['ownerid@odata.bind'] = `/systemusers(${data.ownerid})`
       }
       await Pm_riskmitigationactionsService.create(payload as any)
       setSuccessMsg('Action saved.')
@@ -246,7 +234,8 @@ export default function RisksPage() {
         .then((actions) => setMitigationActions(actions))
         .catch(() => setMitigationActions([]))
         .finally(() => setMitigationLoading(false))
-    } catch {
+    } catch (err) {
+      console.error('[RisksPage] handleSaveAction error:', err)
       setError('Unable to save mitigation action.')
     }
   }
@@ -397,6 +386,7 @@ export default function RisksPage() {
         open={actionDialogOpen}
         onClose={() => setActionDialogOpen(false)}
         onSave={handleSaveAction}
+        projectId={selectedRisk?._pm_project_value}
       />
 
       {/* Delete Confirmation */}

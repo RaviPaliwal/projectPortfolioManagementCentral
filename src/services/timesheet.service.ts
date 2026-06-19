@@ -12,6 +12,7 @@ import type {
   TimesheetEntryModel,
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
+import { recalculateRealFinancialsForProject } from './finance.service'
 
 export const mapTimesheet = (item: Pm_timesheets): TimesheetModel => ({
   pm_timesheetid: item.pm_timesheetid,
@@ -230,7 +231,6 @@ export async function updateTimesheetStatus(
         }
       }
       if (projectIds.size > 0) {
-        const { recalculateRealFinancialsForProject } = await import('./finance.service')
         for (const projId of projectIds) {
           await recalculateRealFinancialsForProject(projId)
         }

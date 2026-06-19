@@ -46,6 +46,7 @@ export interface DynamicFormDialogProps {
   onSubmit: (data: Record<string, any>) => Promise<void>
   submitText?: string
   cancelText?: string
+  onFieldChange?: (name: string, value: any, currentData: Record<string, any>) => Record<string, any>
 }
 
 const DEFAULT_INITIAL_DATA = {}
@@ -59,13 +60,14 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
   onSubmit,
   submitText = 'Save',
   cancelText = 'Cancel',
+  onFieldChange,
 }) => {
   const { users } = useUser()
   const [formData, setFormData] = useState<Record<string, any>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [projects, setProjects] = useState<Array<{ pm_projectid: string; pm_projectname: string }>>([])
   const [projectsLoading, setProjectsLoading] = useState(false)
-  const prevOpenRef = useRef(open)
+  const prevOpenRef = useRef(false)
 
   // Fetch projects when dialog opens (for project-select fields)
   const hasProjectSelect = useMemo(() => fields.some((f) => f.type === 'project-select'), [fields])
@@ -98,7 +100,13 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
   }, [open, fields, initialData, fetchProjects])
 
   const handleChange = (name: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value }
+      if (onFieldChange) {
+        return onFieldChange(name, value, next)
+      }
+      return next
+    })
   }
 
   const isFormValid = useMemo(() => {

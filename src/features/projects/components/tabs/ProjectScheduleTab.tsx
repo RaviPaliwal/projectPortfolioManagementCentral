@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import {
   Box,
   Typography,
@@ -32,6 +32,7 @@ interface ProjectScheduleTabProps {
   milestones: ProjectMilestoneModel[]
   tasks: ProjectTaskModel[]
   onEditMilestone?: (milestone: ProjectMilestoneModel) => void
+  onEditTask?: (task: ProjectTaskModel) => void
   canEdit?: boolean
 }
 
@@ -39,11 +40,13 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
   milestones, 
   tasks, 
   onEditMilestone, 
+  onEditTask,
   canEdit = false 
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const [activeView, setActiveView] = useState(0)
+
 
   // Map to Gantt formats
   const ganttTasks = useMemo(() => tasks.map(t => ({
@@ -87,6 +90,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
         rag: m.pm_ragstatus,
         mType: m.pm_milestonetype,
         status: m.pm_status,
+        resource: m.pm_responsible,
       })),
       ...tasks.map(t => ({
         id: t.pm_projecttaskid,
@@ -195,8 +199,8 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                       </TableCell>
                       
                       <TableCell>
-                        <Typography variant="body2" sx={{ color: item.type === 'task' && (item as any).resource ? 'text.primary' : 'text.disabled' }}>
-                          {item.type === 'task' ? ((item as any).resource || 'Unassigned') : '—'}
+                        <Typography variant="body2" sx={{ color: item.resource ? 'text.primary' : 'text.disabled' }}>
+                          {item.resource || 'Unassigned'}
                         </Typography>
                       </TableCell>
 
@@ -251,7 +255,21 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                                 <EditIcon sx={{ fontSize: 14 }} />
                               </IconButton>
                             </Tooltip>
-                          ) : '—'}
+                          ) : (
+                            <Tooltip title="Edit Task">
+                              <IconButton
+                                size="small"
+                                onClick={() => onEditTask?.(tasks.find(t => t.pm_projecttaskid === item.id)!)}
+                                sx={{
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                  '&:hover': { bgcolor: 'action.hover' }
+                                }}
+                              >
+                                <EditIcon sx={{ fontSize: 14 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </TableCell>
                       )}
                     </TableRow>

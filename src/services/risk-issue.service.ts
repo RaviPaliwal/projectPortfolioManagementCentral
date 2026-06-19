@@ -111,14 +111,14 @@ export const mapMitigationAction = (item: Pm_riskmitigationactions): RiskMitigat
   pm_riskmitigationactionid: item.pm_riskmitigationactionid,
   pm_actiontitle: item.pm_actiontitle,
   pm_actiondescription: item.pm_actiondescription,
-  pm_actionowner: item.pm_actionowner,
+  pm_actionowner: item.owneridname,
   pm_status: item.pm_status,
   pm_duedate: item.pm_duedate,
   pm_completiondate: item.pm_completiondate,
   pm_effectiveness: item.pm_effectiveness,
   pm_notes: item.pm_notes,
   _pm_risk_value: item._pm_risk_value,
-  pm_riskidentifier: item.pm_riskidentifier,
+  pm_riskidentifier: item.pm_riskname,
   statecode: item.statecode,
 })
 
@@ -215,8 +215,8 @@ export async function fetchMitigationActions(riskId: string): Promise<RiskMitiga
     filter: `_pm_risk_value eq '${riskId}' and statecode eq 0`,
     select: [
       'pm_riskmitigationactionid', 'pm_actiontitle', 'pm_actiondescription',
-      'pm_actionowner', 'pm_status', 'pm_duedate', 'pm_completiondate',
-      'pm_effectiveness', 'pm_notes', '_pm_risk_value', 'pm_riskidentifier',
+      'ownerid', 'pm_status', 'pm_duedate', 'pm_completiondate',
+      'pm_effectiveness', 'pm_notes', '_pm_risk_value',
     ],
     orderBy: ['pm_duedate asc'],
     top: 100,
@@ -228,8 +228,8 @@ export async function fetchMitigationActions(riskId: string): Promise<RiskMitiga
     const fallbackResult = await Pm_riskmitigationactionsService.getAll({
       select: [
         'pm_riskmitigationactionid', 'pm_actiontitle', 'pm_actiondescription',
-        'pm_actionowner', 'pm_status', 'pm_duedate', 'pm_completiondate',
-        'pm_effectiveness', 'pm_notes', '_pm_risk_value', 'pm_riskidentifier',
+        'ownerid', 'pm_status', 'pm_duedate', 'pm_completiondate',
+        'pm_effectiveness', 'pm_notes', '_pm_risk_value',
       ],
       orderBy: ['pm_duedate asc'],
       top: 100,

@@ -280,14 +280,6 @@
           "x-ms-schema-name": "pm_milestonetypeName",
           "x-ms-read-only": true
         },
-        "pm_owner": {
-          "type": "string",
-          "title": "Owner",
-          "x-ms-dataverse-attribute": "pm_owner",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_owner",
-          "maxLength": 100
-        },
         "pm_planneddate": {
           "type": "string",
           "title": "Planned Date",
@@ -295,28 +287,12 @@
           "x-ms-dataverse-type": "DateTimeType",
           "x-ms-schema-name": "pm_planneddate"
         },
-        "pm_programme": {
-          "type": "string",
-          "title": "Programme",
-          "x-ms-dataverse-attribute": "pm_programme",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_programme",
-          "maxLength": 100
-        },
         "pm_project": {
           "type": "string",
           "title": "Project",
           "x-ms-dataverse-attribute": "pm_project",
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_project"
-        },
-        "pm_projectcode": {
-          "type": "string",
-          "title": "Project",
-          "x-ms-dataverse-attribute": "pm_projectcode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projectcode",
-          "maxLength": 100
         },
         "pm_projectmilestoneid": {
           "type": "string",
@@ -370,6 +346,22 @@
           "x-ms-dataverse-type": "VirtualType",
           "x-ms-schema-name": "pm_ragstatusName",
           "x-ms-read-only": true
+        },
+        "pm_responsible": {
+          "type": "string",
+          "title": "Responsible",
+          "x-ms-dataverse-attribute": "pm_responsible",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_Responsible"
+        },
+        "pm_responsiblename": {
+          "type": "string",
+          "title": "pm_responsiblename",
+          "x-ms-dataverse-attribute": "pm_responsiblename",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_ResponsibleName",
+          "x-ms-read-only": true,
+          "maxLength": 850
         },
         "pm_status": {
           "type": "string",

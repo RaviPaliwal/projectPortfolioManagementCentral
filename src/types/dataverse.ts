@@ -157,6 +157,7 @@ export interface ProjectTaskModel {
   pm_predecessortaskid?: string
   _pm_predecessortask_value?: string
   _pm_project_value?: string
+  _pm_assignedtoresource_value?: string
 }
 
 export interface ProjectMilestoneModel {
@@ -170,6 +171,8 @@ export interface ProjectMilestoneModel {
   pm_owner?: string
   pm_description?: string
   _pm_project_value?: string
+  _pm_responsible_value?: string
+  pm_responsible?: string
 }
 
 export interface ResourceModel {

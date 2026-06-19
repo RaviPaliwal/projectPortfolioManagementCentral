@@ -43,7 +43,7 @@ import {
   TaskDialog,
   GateReviewDialog,
 } from '../components/ProjectSubFormDialogs'
-import { recalculateProjectFinancials, normalizeLookupId } from '@/services'
+import { recalculateProjectFinancials, normalizeLookupId, mapProjectTask, mapProjectMilestone } from '@/services'
 
 export default function ProjectsPage() {
   const { currentUser } = useUser()
@@ -164,13 +164,13 @@ export default function ProjectsPage() {
         Pm_projectgatereviewsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 50, orderBy: ['pm_plannedreviewdate desc'] }),
       ])
 
-      setDetailMilestones(unwrap(msResult))
+      setDetailMilestones(unwrap(msResult).map(mapProjectMilestone))
       setDetailRisks(unwrap(riskResult))
       setDetailIssues(unwrap(issueResult))
       setDetailResources(unwrap(allocResult))
       setDetailBudgetLines(unwrap(budgetResult))
       setDetailBenefits(unwrap(benefitResult))
-      setDetailTasks(unwrap(taskResult))
+      setDetailTasks(unwrap(taskResult).map(mapProjectTask))
       setDetailGateReviews(unwrap(gateResult))
     } catch (err) {
       setError('Failed to load project detail data.')
@@ -318,7 +318,7 @@ export default function ProjectsPage() {
 
       if (type === 'milestone') {
         const r = await Pm_projectmilestonesService.getAll({ filter: `_pm_project_value eq '${projectId}'`, top: 100, orderBy: ['pm_planneddate asc'] })
-        setDetailMilestones(unwrap(r))
+        setDetailMilestones(unwrap(r).map(mapProjectMilestone))
       } else if (type === 'risk') {
         const r = await Pm_risksService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 })
         setDetailRisks(unwrap(r))
@@ -336,7 +336,7 @@ export default function ProjectsPage() {
         setDetailBenefits(unwrap(r))
       } else if (type === 'task') {
         const r = await Pm_projecttasksService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 200, orderBy: ['pm_plannedstartdate asc'] })
-        setDetailTasks(unwrap(r))
+        setDetailTasks(unwrap(r).map(mapProjectTask))
       } else if (type === 'gatereview') {
         const r = await Pm_projectgatereviewsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 50, orderBy: ['pm_plannedreviewdate desc'] })
         setDetailGateReviews(unwrap(r))

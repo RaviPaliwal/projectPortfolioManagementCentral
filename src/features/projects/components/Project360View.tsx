@@ -223,6 +223,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   milestones={milestones} 
                   tasks={tasks} 
                   onEditMilestone={onEditMilestone}
+                  onEditTask={onEditTask}
                   canEdit={canEdit}
                 />
               )}

@@ -47,41 +47,51 @@ export const mapProject = (item: Pm_projects): ProjectModel => ({
   pm_benefitsragstatus: item.pm_benefitsragstatus,
 })
 
-export const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => ({
-  pm_projecttaskid: item.pm_projecttaskid,
-  pm_taskname: item.pm_taskname,
-  pm_taskdescription: item.pm_taskname ?? item.pm_projecttaskname,
-  pm_tasklevel: item.pm_tasklevel,
-  pm_parenttaskid: (item as any).pm_parenttaskid,
-  pm_wbsnumber: item.pm_wbsnumber,
-  pm_durationdays: item.pm_durationdays,
-  pm_lagdays: item.pm_lagdays,
-  pm_plannedstartdate: item.pm_plannedstartdate,
-  pm_plannedenddate: item.pm_plannedenddate,
-  pm_actualstartdate: item.pm_actualstartdate,
-  pm_actualenddate: item.pm_actualenddate,
-  pm_percentcomplete: item.pm_percentcomplete,
-  pm_taskstatus: item.pm_taskstatus,
-  pm_assignedresource: (item as any).pm_assignedresource,
-  pm_ismilestone: (item as any).pm_ismilestone,
-  pm_oncriticalpath: item.pm_oncriticalpath,
-  pm_predecessortaskid: (item as any).pm_predecessortaskid,
-  _pm_predecessortask_value: item._pm_predecessortask_value,
-  _pm_project_value: item._pm_project_value,
-})
+export const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => {
+  console.log('[mapProjectTask] raw item:', item)
+  return {
+    pm_projecttaskid: item.pm_projecttaskid,
+    pm_taskname: item.pm_taskname,
+    pm_taskdescription: item.pm_taskname ?? item.pm_projecttaskname,
+    pm_tasklevel: item.pm_tasklevel,
+    pm_parenttaskid: (item as any).pm_parenttaskid,
+    pm_wbsnumber: item.pm_wbsnumber,
+    pm_durationdays: item.pm_durationdays,
+    pm_lagdays: item.pm_lagdays,
+    pm_plannedstartdate: item.pm_plannedstartdate,
+    pm_plannedenddate: item.pm_plannedenddate,
+    pm_actualstartdate: item.pm_actualstartdate,
+    pm_actualenddate: item.pm_actualenddate,
+    pm_percentcomplete: item.pm_percentcomplete,
+    pm_taskstatus: item.pm_taskstatus,
+    pm_assignedresource: item.pm_assignedtoresourcename || (item as any)['_pm_assignedtoresource_value@OData.Community.Display.V1.FormattedValue'] || (item as any).pm_assignedresource,
+    pm_ismilestone: (item as any).pm_ismilestone,
+    pm_oncriticalpath: item.pm_oncriticalpath,
+    pm_predecessortaskid: (item as any).pm_predecessortaskid,
+    _pm_predecessortask_value: item._pm_predecessortask_value,
+    _pm_project_value: item._pm_project_value,
+    _pm_assignedtoresource_value: item._pm_assignedtoresource_value,
+  }
+}
 
-export const mapProjectMilestone = (item: Pm_projectmilestones): ProjectMilestoneModel => ({
-  pm_projectmilestoneid: item.pm_projectmilestoneid,
-  pm_milestonename: item.pm_milestonename,
-  pm_milestonetype: item.pm_milestonetype,
-  pm_planneddate: item.pm_planneddate,
-  pm_actualdate: item.pm_actualdate,
-  pm_ragstatus: item.pm_ragstatus,
-  pm_status: item.pm_status,
-  pm_owner: item.pm_owner,
-  pm_description: item.pm_description,
-  _pm_project_value: item._pm_project_value,
-})
+export const mapProjectMilestone = (item: Pm_projectmilestones): ProjectMilestoneModel => {
+  console.log('[mapProjectMilestone] raw item:', item)
+  console.log('[mapProjectMilestone] raw item keys:', Object.keys(item))
+  return {
+    pm_projectmilestoneid: item.pm_projectmilestoneid,
+    pm_milestonename: item.pm_milestonename,
+    pm_milestonetype: item.pm_milestonetype,
+    pm_planneddate: item.pm_planneddate,
+    pm_actualdate: item.pm_actualdate,
+    pm_ragstatus: item.pm_ragstatus,
+    pm_status: item.pm_status,
+    pm_owner: (item as any).pm_owner,
+    pm_description: item.pm_description,
+    _pm_project_value: item._pm_project_value,
+    _pm_responsible_value: item._pm_responsible_value,
+    pm_responsible: item.pm_responsiblename || (item as any)['_pm_responsible_value@OData.Community.Display.V1.FormattedValue'] || (item as any).pm_responsible,
+  }
+}
 
 export async function fetchMyActiveProjects(): Promise<ProjectModel[]> {
   const selectFields = [
@@ -452,7 +462,7 @@ export async function fetchProjectTasks(projectId: string): Promise<ProjectTaskM
       'pm_plannedstartdate', 'pm_plannedenddate',
       'pm_actualstartdate', 'pm_actualenddate',
       'pm_percentcomplete', 'pm_taskstatus',
-      'pm_assignedresource', 'pm_ismilestone', 'pm_oncriticalpath',
+      '_pm_assignedtoresource_value', 'pm_ismilestone', 'pm_oncriticalpath',
       'pm_predecessortaskid', '_pm_predecessortask_value',
     ],
     orderBy: ['pm_tasklevel asc', 'pm_wbsnumber asc', 'pm_taskname asc'],
@@ -478,7 +488,7 @@ export async function fetchScheduleData(projectId: string): Promise<ScheduleData
         'pm_plannedstartdate', 'pm_plannedenddate',
         'pm_actualstartdate', 'pm_actualenddate',
         'pm_percentcomplete', 'pm_taskstatus',
-        'pm_assignedresource', 'pm_ismilestone', 'pm_oncriticalpath',
+        '_pm_assignedtoresource_value', 'pm_ismilestone', 'pm_oncriticalpath',
         'pm_predecessortaskid', '_pm_predecessortask_value',
       ],
       orderBy: ['pm_tasklevel asc', 'pm_wbsnumber asc', 'pm_taskname asc'],
@@ -489,7 +499,7 @@ export async function fetchScheduleData(projectId: string): Promise<ScheduleData
       select: [
         'pm_projectmilestoneid', 'pm_milestonename', 'pm_milestonetype',
         'pm_planneddate', 'pm_actualdate', 'pm_ragstatus', 'pm_status',
-        'pm_owner', 'pm_description',
+        'pm_description', '_pm_responsible_value',
       ],
       orderBy: ['pm_planneddate asc'],
       top: 200,
@@ -547,7 +557,8 @@ export async function fetchProjectMilestones(projectId: string): Promise<Project
     select: [
       'pm_projectmilestoneid', 'pm_milestonename', 'pm_milestonetype',
       'pm_planneddate', 'pm_actualdate', 'pm_description',
-      'pm_status', 'pm_ragstatus', 'pm_owner', '_pm_project_value',
+      'pm_status', 'pm_ragstatus', '_pm_project_value',
+      '_pm_responsible_value',
     ],
     orderBy: ['pm_planneddate asc'],
     top: 200,
@@ -555,51 +566,191 @@ export async function fetchProjectMilestones(projectId: string): Promise<Project
   return unwrapList<Pm_projectmilestones>(result).map(mapProjectMilestone)
 }
 
+const WRITABLE_TASK_KEYS = [
+  'pm_taskname',
+  'pm_tasklevel',
+  'pm_parenttaskid',
+  'pm_wbsnumber',
+  'pm_durationdays',
+  'pm_lagdays',
+  'pm_plannedstartdate',
+  'pm_plannedenddate',
+  'pm_actualstartdate',
+  'pm_actualenddate',
+  'pm_percentcomplete',
+  'pm_taskstatus',
+  'pm_ismilestone',
+  'pm_oncriticalpath',
+]
+
+const WRITABLE_MILESTONE_KEYS = [
+  'pm_milestonename',
+  'pm_planneddate',
+  'pm_actualdate',
+  'pm_milestonetype',
+  'pm_ragstatus',
+  'pm_status',
+  'pm_description',
+]
+
+
 export async function createProjectTask(payload: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
-  const result = await Pm_projecttasksService.create(payload as any)
-  const item = unwrapSingle<Pm_projecttasks>(result)
-  return item ? mapProjectTask(item) : null
+  console.log('[createProjectTask] input payload:', payload)
+  try {
+    const cleanPayload: Record<string, any> = {}
+    for (const [key, value] of Object.entries(payload)) {
+      if (
+        value !== undefined && 
+        value !== null && 
+        value !== '' && 
+        WRITABLE_TASK_KEYS.includes(key)
+      ) {
+        cleanPayload[key] = value
+      }
+    }
+    if (payload._pm_project_value) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${normalizeLookupId(payload._pm_project_value)})`
+    }
+    if (payload._pm_predecessortask_value) {
+      cleanPayload['pm_PredecessorTask@odata.bind'] = `/pm_projecttasks(${normalizeLookupId(payload._pm_predecessortask_value)})`
+    }
+    if (payload.pm_assignedresource) {
+      cleanPayload['pm_AssignedToResource@odata.bind'] = `/pm_resources(${normalizeLookupId(payload.pm_assignedresource)})`
+    }
+    console.log('[createProjectTask] final cleanPayload for API:', cleanPayload)
+    const result = await Pm_projecttasksService.create({ statecode: 0, statuscode: 1, ...cleanPayload } as any)
+    console.log('[createProjectTask] API result:', result)
+    const item = unwrapSingle<Pm_projecttasks>(result)
+    console.log('[createProjectTask] unwrapped item:', item)
+    return item ? mapProjectTask(item) : null
+  } catch (err) {
+    console.error('[createProjectTask] error caught:', err)
+    throw err
+  }
 }
 
 export async function updateProjectTask(id: string, changes: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
-  const result = await Pm_projecttasksService.update(id, changes as any)
-  const item = unwrapSingle<Pm_projecttasks>(result)
-  return item ? mapProjectTask(item) : null
+  console.log('[updateProjectTask] ID:', id, 'input changes:', changes)
+  try {
+    const cleanPayload: Record<string, any> = {}
+    for (const [key, value] of Object.entries(changes)) {
+      if (
+        value !== undefined && 
+        value !== null && 
+        WRITABLE_TASK_KEYS.includes(key)
+      ) {
+        cleanPayload[key] = value
+      }
+    }
+    
+    if (changes._pm_project_value !== undefined) {
+      cleanPayload['pm_project@odata.bind'] = changes._pm_project_value 
+        ? `/pm_projects(${normalizeLookupId(changes._pm_project_value)})`
+        : null
+    }
+    if (changes._pm_predecessortask_value !== undefined) {
+      cleanPayload['pm_PredecessorTask@odata.bind'] = changes._pm_predecessortask_value
+        ? `/pm_projecttasks(${normalizeLookupId(changes._pm_predecessortask_value)})`
+        : null
+    }
+    if (changes.pm_assignedresource !== undefined) {
+      cleanPayload['pm_AssignedToResource@odata.bind'] = changes.pm_assignedresource
+        ? `/pm_resources(${normalizeLookupId(changes.pm_assignedresource)})`
+        : null
+    }
+    
+    console.log('[updateProjectTask] final cleanPayload for API:', cleanPayload)
+    const result = await Pm_projecttasksService.update(id, cleanPayload as any)
+    console.log('[updateProjectTask] API result:', result)
+    const item = unwrapSingle<Pm_projecttasks>(result)
+    console.log('[updateProjectTask] unwrapped item:', item)
+    return item ? mapProjectTask(item) : null
+  } catch (err) {
+    console.error('[updateProjectTask] error caught:', err)
+    throw err
+  }
 }
 
 export async function deleteProjectTask(id: string): Promise<void> {
   await Pm_projecttasksService.delete(id)
 }
 
-export async function createProjectMilestone(payload: Partial<ProjectMilestoneModel>): Promise<ProjectMilestoneModel | null> {
-  const cleanPayload: Record<string, any> = {}
-  for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '' && key !== '_pm_project_value') {
-      cleanPayload[key] = value
-    }
-  }
-  if (payload._pm_project_value) {
-    cleanPayload['pm_project@odata.bind'] = `/pm_projects(${normalizeLookupId(payload._pm_project_value)})`
-  }
-  const result = await Pm_projectmilestonesService.create({ statecode: 0, statuscode: 1, ...cleanPayload } as any)
-  const item = unwrapSingle<Pm_projectmilestones>(result)
-  return item ? mapProjectMilestone(item) : null
-}
-
 export async function deleteProjectMilestone(id: string): Promise<void> {
   await Pm_projectmilestonesService.delete(id)
 }
 
-export async function updateProjectMilestone(id: string, changes: Partial<ProjectMilestoneModel>): Promise<ProjectMilestoneModel | null> {
-  const cleanPayload: Record<string, any> = {}
-  for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null && key !== 'pm_projectmilestoneid' && key !== '_pm_project_value') {
-      cleanPayload[key] = value
+export async function createProjectMilestone(payload: Partial<ProjectMilestoneModel>): Promise<ProjectMilestoneModel | null> {
+  console.log('[createProjectMilestone] input payload:', payload)
+  try {
+    const cleanPayload: Record<string, any> = {}
+    for (const [key, value] of Object.entries(payload)) {
+      if (
+        value !== undefined && 
+        value !== null && 
+        value !== '' && 
+        WRITABLE_MILESTONE_KEYS.includes(key)
+      ) {
+        cleanPayload[key] = value
+      }
     }
+    if (payload._pm_project_value) {
+      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${normalizeLookupId(payload._pm_project_value)})`
+    }
+    if (payload.pm_responsible) {
+      cleanPayload['pm_Responsible@odata.bind'] = `/pm_resources(${normalizeLookupId(payload.pm_responsible)})`
+    }
+
+    console.log('[createProjectMilestone] final cleanPayload for API:', cleanPayload)
+    const result = await Pm_projectmilestonesService.create({ statecode: 0, statuscode: 1, ...cleanPayload } as any)
+    if (result && !result.success) {
+      console.error('[createProjectMilestone] API Error:', result.error || result)
+      throw new Error(result.error?.message || 'API request failed')
+    }
+    const item = unwrapSingle<Pm_projectmilestones>(result)
+    console.log('[createProjectMilestone] unwrapped item:', item)
+    return item ? mapProjectMilestone(item) : null
+  } catch (err) {
+    console.error('[createProjectMilestone] error caught:', err)
+    throw err
   }
-  const result = await Pm_projectmilestonesService.update(id, cleanPayload as any)
-  const item = unwrapSingle<Pm_projectmilestones>(result)
-  return item ? mapProjectMilestone(item) : null
+}
+
+export async function updateProjectMilestone(id: string, changes: Partial<ProjectMilestoneModel>): Promise<ProjectMilestoneModel | null> {
+  console.log('[updateProjectMilestone] ID:', id, 'input changes:', changes)
+  try {
+    const cleanPayload: Record<string, any> = {}
+    for (const [key, value] of Object.entries(changes)) {
+      if (
+        value !== undefined && 
+        value !== null && 
+        WRITABLE_MILESTONE_KEYS.includes(key)
+      ) {
+        cleanPayload[key] = value
+      }
+    }
+
+    let result: any = null;
+    if (changes.pm_responsible !== undefined) {
+      const payloadToTry = { ...cleanPayload };
+      payloadToTry['pm_Responsible@odata.bind'] = changes.pm_responsible
+        ? `/pm_resources(${normalizeLookupId(changes.pm_responsible)})`
+        : null;
+      result = await Pm_projectmilestonesService.update(id, payloadToTry as any);
+    } else {
+      result = await Pm_projectmilestonesService.update(id, cleanPayload as any);
+    }
+
+    if (result && !result.success) {
+      console.error('[updateProjectMilestone] API Error:', result.error || result)
+      throw new Error(result.error?.message || 'API request failed')
+    }
+    const item = unwrapSingle<Pm_projectmilestones>(result)
+    console.log('[updateProjectMilestone] unwrapped item:', item)
+    return item ? mapProjectMilestone(item) : null
+  } catch (err) {
+    console.error('[updateProjectMilestone] error caught:', err)
+    throw err
+  }
 }
 
 export async function recalculateProjectFinancials(projectId: string): Promise<ProjectModel | null> {

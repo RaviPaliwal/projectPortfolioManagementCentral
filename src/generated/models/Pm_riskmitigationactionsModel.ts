@@ -30,14 +30,12 @@ export interface Pm_riskmitigationactionsBase {
   ownerid: string;
   owneridtype: string;
   pm_actiondescription?: string;
-  pm_actionowner?: string;
   pm_actiontitle?: string;
   pm_completiondate?: string;
   pm_duedate?: string;
   pm_effectiveness?: Pm_riskmitigationactionspm_effectiveness;
   pm_notes?: string;
   "pm_risk@odata.bind"?: string;
-  pm_riskidentifier?: string;
   pm_riskmitigationactionid: string;
   pm_status?: Pm_riskmitigationactionspm_status;
   statecode: Pm_riskmitigationactionsstatecode;
