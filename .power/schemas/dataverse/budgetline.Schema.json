@@ -319,6 +319,14 @@
           "x-ms-optionsetdisplayname": "Cost Category",
           "x-ms-optionSetType": "Picklist"
         },
+        "pm_costcategoryname": {
+          "type": "string",
+          "title": "pm_costcategoryname",
+          "x-ms-dataverse-attribute": "pm_costcategoryname",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pm_costcategoryName",
+          "x-ms-read-only": true
+        },
         "pm_estimateatcompletioneur": {
           "type": "string",
           "title": "EAC (EUR)",
@@ -396,20 +404,20 @@
           "x-ms-read-only": true,
           "maxLength": 850
         },
+        "pm_jsonrawcalculation": {
+          "type": "string",
+          "title": "Json Raw Calculation",
+          "x-ms-dataverse-attribute": "pm_jsonrawcalculation",
+          "x-ms-dataverse-type": "MemoType",
+          "x-ms-schema-name": "pm_JsonRawCalculation",
+          "maxLength": 2000
+        },
         "pm_notes": {
           "type": "string",
           "title": "Notes",
           "x-ms-dataverse-attribute": "pm_notes",
           "x-ms-dataverse-type": "StringType",
           "x-ms-schema-name": "pm_notes",
-          "maxLength": 100
-        },
-        "pm_portfolio": {
-          "type": "string",
-          "title": "Portfolio",
-          "x-ms-dataverse-attribute": "pm_portfolio",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_portfolio",
           "maxLength": 100
         },
         "pm_portfoliolookup": {
@@ -427,14 +435,6 @@
           "x-ms-schema-name": "pm_portfolioLookupName",
           "x-ms-read-only": true,
           "maxLength": 850
-        },
-        "pm_programme": {
-          "type": "string",
-          "title": "Programme",
-          "x-ms-dataverse-attribute": "pm_programme",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_programme",
-          "maxLength": 100
         },
         "pm_programmelookup": {
           "type": "string",
@@ -458,14 +458,6 @@
           "x-ms-dataverse-attribute": "pm_project",
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_project"
-        },
-        "pm_projectcode": {
-          "type": "string",
-          "title": "Project",
-          "x-ms-dataverse-attribute": "pm_projectcode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projectcode",
-          "maxLength": 100
         },
         "pm_projectname": {
           "type": "string",

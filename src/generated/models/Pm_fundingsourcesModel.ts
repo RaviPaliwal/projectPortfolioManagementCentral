@@ -40,10 +40,7 @@ export interface Pm_fundingsourcesBase {
   pm_fundingstatus?: Pm_fundingsourcespm_fundingstatus;
   pm_fundingtype?: Pm_fundingsourcespm_fundingtype;
   "pm_portfolio@odata.bind"?: string;
-  pm_portfoliocode?: string;
   "pm_ProgrammeLookup@odata.bind"?: string;
-  pm_programmename?: string;
-  pm_referencecode?: string;
   pm_totalamounteur?: number;
   statecode: Pm_fundingsourcesstatecode;
   statuscode?: Pm_fundingsourcesstatuscode;

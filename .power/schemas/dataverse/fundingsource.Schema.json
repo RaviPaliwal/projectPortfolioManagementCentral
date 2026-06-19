@@ -372,14 +372,6 @@
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_portfolio"
         },
-        "pm_portfoliocode": {
-          "type": "string",
-          "title": "Portfolio",
-          "x-ms-dataverse-attribute": "pm_portfoliocode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_portfoliocode",
-          "maxLength": 100
-        },
         "pm_portfolioname": {
           "type": "string",
           "title": "pm_portfolioname",
@@ -404,22 +396,6 @@
           "x-ms-schema-name": "pm_ProgrammeLookupName",
           "x-ms-read-only": true,
           "maxLength": 850
-        },
-        "pm_programmename": {
-          "type": "string",
-          "title": "Programme",
-          "x-ms-dataverse-attribute": "pm_programmename",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_programmename",
-          "maxLength": 100
-        },
-        "pm_referencecode": {
-          "type": "string",
-          "title": "Reference",
-          "x-ms-dataverse-attribute": "pm_referencecode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_referencecode",
-          "maxLength": 100
         },
         "pm_totalamounteur": {
           "type": "string",
