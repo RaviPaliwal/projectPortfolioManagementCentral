@@ -312,7 +312,6 @@ export default function StatusSnapshotsPage() {
         return
       }
       const list = unwrapSnapshotList(result).map(mapSnapshot)
-      console.log('[StatusSnapshotsPage] loadData loaded', list.length, 'snapshots')
       setSnapshots(list)
     } catch (err: any) {
       console.error('[StatusSnapshotsPage] loadData exception:', err)
@@ -828,11 +827,11 @@ export default function StatusSnapshotsPage() {
                   </TableRow>
                 ))}
               </TableBody>
-           </Table>
- 
-      </TableShell>
-    </Paper>
-  </TabPanel>
+            </Table>
+
+          </TableShell>
+        </Paper>
+      </TabPanel>
 
       {/* Detail Drawer */}
       <DetailDrawer

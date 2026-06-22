@@ -93,7 +93,6 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
       setAllocatedResources(res || [])
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load project details.'
-      console.error('[RiskIssueSetupTaskModal] load error:', err)
       onError(msg)
     } finally { setLoading(false) }
   }, [projectId, onError])
@@ -104,25 +103,18 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
 
   const handleAddRisk = () => {
     if (!newRisk.pm_risktitle.trim()) return
-    console.log('[RiskIssueSetupTaskModal] adding risk:', JSON.stringify(newRisk))
-    setRisks(prev => { const next = [...prev, { ...newRisk }]; console.log('[RiskIssueSetupTaskModal] risks now:', JSON.stringify(next)); return next })
+    setRisks(prev => [...prev, { ...newRisk }])
     setNewRisk({ pm_risktitle: '', pm_riskdescription: '', pm_riskcategory: 3, pm_ragstatus: 1, pm_riskowner: '', pm_targetclosedate: '' })
   }
 
   const handleAddIssue = () => {
     if (!newIssue.pm_issuetitle.trim()) return
-    console.log('[RiskIssueSetupTaskModal] adding issue:', JSON.stringify(newIssue))
-    setIssues(prev => { const next = [...prev, { ...newIssue }]; console.log('[RiskIssueSetupTaskModal] issues now:', JSON.stringify(next)); return next })
+    setIssues(prev => [...prev, { ...newIssue }])
     setNewIssue({ pm_issuetitle: '', pm_issuedescription: '', pm_issuecategory: 0, pm_ragstatus: 1, pm_prioritylevel: 0, pm_issueowner: '', pm_issueownerid: '', pm_targetresolutiondate: '' })
   }
 
   const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
-    console.log('[RiskIssueSetupTaskModal] saveTaskData called with decision:', workflowDecision)
-    console.log('[RiskIssueSetupTaskModal] risks in state:', JSON.stringify(risks))
-    console.log('[RiskIssueSetupTaskModal] issues in state:', JSON.stringify(issues))
-    console.log('[RiskIssueSetupTaskModal] projectId:', projectId)
     if (workflowDecision !== 0) {
-      console.log('[RiskIssueSetupTaskModal] Decision is not Approve (0), skipping creation')
       onSuccess('Risk & Issue Register Setup rejected.')
       return true
     }
@@ -130,23 +122,16 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
     try {
       for (let i = 0; i < risks.length; i++) {
         const payload = { ...risks[i], pm_projectid: projectId }
-        console.log('[RiskIssueSetupTaskModal] creating risk', i, 'payload:', JSON.stringify(payload))
-        const result = await createRisk(payload as any)
-        console.log('[RiskIssueSetupTaskModal] createRisk result:', JSON.stringify(result))
+        await createRisk(payload as any)
       }
       for (let i = 0; i < issues.length; i++) {
         const payload = { ...issues[i], pm_projectid: projectId }
-        console.log('[RiskIssueSetupTaskModal] creating issue', i, 'payload:', JSON.stringify(payload))
-        const result = await createIssue(payload as any)
-        console.log('[RiskIssueSetupTaskModal] createIssue result:', JSON.stringify(result))
+        await createIssue(payload as any)
       }
-      console.log('[RiskIssueSetupTaskModal] All creates completed')
       onSuccess(`Risk & Issue Register Setup completed. ${risks.length} risk(s) and ${issues.length} issue(s) logged.`)
       return true
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save one or more risks or issues.'
-      console.error('[RiskIssueSetupTaskModal] save error:', err)
-      if (err instanceof Error) console.error('[RiskIssueSetupTaskModal] stack:', err.stack)
       onError(msg)
       return false
     } finally { setSaving(false) }

@@ -316,7 +316,6 @@ export async function fetchWorkflowInstances(): Promise<WorkflowInstanceModel[]>
     orderBy: ['pm_startdate desc'],
     top: 500,
   })
-
   return unwrapList<Pm_workflowinstances>(result).map(mapWorkflowInstance)
 }
 

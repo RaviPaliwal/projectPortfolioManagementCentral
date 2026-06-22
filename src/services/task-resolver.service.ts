@@ -286,6 +286,7 @@ export interface EntityInfo {
 export async function resolveEntityInfoFromApprovalStep(stepId: string): Promise<EntityInfo> {
   try {
     const step = await fetchApprovalStepById(stepId)
+
     if (!step?._pm_workflowinstancelookup_value) {
       console.warn('[resolveEntityInfoFromApprovalStep] ❌ No workflow instance lookup on step')
       return { entityId: null, entityType: undefined, entityName: undefined }

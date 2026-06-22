@@ -469,7 +469,6 @@ export default function CalendarPage() {
 
           if (outlookResult && outlookResult.success && outlookResult.data?.event_json) {
             const parsed = JSON.parse(outlookResult.data.event_json)
-            console.log('[CalendarPage] Raw Outlook Events from flow:', parsed)
 
             const eventObjects: any[] = []
 
@@ -608,7 +607,6 @@ export default function CalendarPage() {
                 ...(meetingUrl ? { meetingUrl } : {}),
               }
             })
-            console.log('[CalendarPage] Mapped Outlook Events:', outlookEvents)
           } else {
             console.warn('[CalendarPage] Flow returned unsuccessful result or empty event_json:', outlookResult)
             throw new Error('Flow result unsuccessful')

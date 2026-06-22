@@ -37,7 +37,6 @@ export const mapAgentInsight = (item: Pm_agentinsights): AgentInsightModel => ({
 
 export async function fetchAgentInsights(): Promise<AgentInsightModel[]> {
   try {
-    console.log('[agent-insights] Fetching agent insights...')
     const result = await Pm_agentinsightsService.getAll({
       select: [
         'pm_agentinsightid', 'pm_insighttitle', 'pm_insightdescription',
@@ -48,17 +47,12 @@ export async function fetchAgentInsights(): Promise<AgentInsightModel[]> {
       orderBy: ['createdon desc'],
       top: 100,
     })
-    console.log('[agent-insights] Raw API result:', result)
     const items = unwrapList<Pm_agentinsights>(result)
-    console.log('[agent-insights] Unwrapped items count:', items.length)
-    console.log('[agent-insights] Unwrapped items:', items)
     const unreviewed = items.filter(
       (i) => i.pm_actionstatus === undefined || i.pm_actionstatus === null || String(i.pm_actionstatus) === '125570000'
     )
-    console.log('[agent-insights] Unreviewed count:', unreviewed.length, '| Filtered out:', items.length - unreviewed.length, '| Pm_actionstatus values:', [...new Set(items.map(i => `${i.pm_actionstatus} (${typeof i.pm_actionstatus})`))])
     return unreviewed.map(mapAgentInsight)
   } catch (err) {
-    console.error('[agent-insights] Failed to fetch agent insights:', err)
     return []
   }
 }

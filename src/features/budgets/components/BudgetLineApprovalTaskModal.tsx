@@ -267,22 +267,18 @@ export const BudgetLineApprovalTaskModal: React.FC<BudgetLineApprovalTaskModalPr
               setSaving(true)
               try {
                 const decisionLabel = decision === 0 ? 'Approved' : 'Rejected'
-                console.log('[BudgetLineApproval] onBeforeDecision triggered:', { decision, decisionLabel, budgetLineId, totalAmount: budgetLine?.pm_totalamounteur })
                 if (decision === 0 && budgetLineId && budgetLine) {
                   const total = budgetLine.pm_totalamounteur || 0
-                  console.log('[BudgetLineApproval] Approving budget line. Updating approved & revised budget to:', total)
                   await updateBudgetLine(budgetLineId, {
                     pm_approvedbudgeteur: total,
                     pm_revisedbudgeteur: total,
                   })
-                  console.log('[BudgetLineApproval] updateBudgetLine call completed successfully.')
                 } else {
                   console.log('[BudgetLineApproval] Decision is not approval or budgetLine is missing', { decision, budgetLine })
                 }
                 onSuccess('Budget line review completed. Decision: ' + decisionLabel + '.')
                 return true
               } catch (err) {
-                console.error('[BudgetLineApproval] Error in onBeforeDecision:', err)
                 onError('Failed to save review decision.')
                 return false
               } finally { setSaving(false) }
