@@ -33,7 +33,6 @@ async function resolveRiskOwnerResourceId(id: string): Promise<string | null> {
       return direct.pm_resourceid
     }
   } catch (err) {
-    console.log('[resolveRiskOwnerResourceId] Try 1 - GET threw (expected for systemuser GUID):', err)
   }
 
   // Try 2: resolve systemuser → resource
@@ -42,9 +41,7 @@ async function resolveRiskOwnerResourceId(id: string): Promise<string | null> {
     if (resource?.pm_resourceid) {
       return resource.pm_resourceid
     }
-    console.log('[resolveRiskOwnerResourceId] Try 2 - no resource found for system user ID')
   } catch (err) {
-    console.log('[resolveRiskOwnerResourceId] Try 2 - fetchResourceBySystemUserId threw:', err)
   }
 
   console.warn('[resolveRiskOwnerResourceId] ✗ FAILED - Could not resolve risk owner ID to a resource:', id)
@@ -179,7 +176,7 @@ export async function createIssue(payload: Partial<IssueModel> & { pm_projectid:
     statecode: 0,
     statuscode: 1,
   } as any)
-  try { console.log('[dataverseService] createIssue RAW result:', JSON.stringify(result), 'isArray:', Array.isArray(result), 'dataIsArray:', Array.isArray((result as any)?.data)) } catch (e) { }
+
   const item = unwrapSingle<Pm_issues>(result)
   if (item && item.pm_issueid) {
     writeAuditLog({

@@ -347,7 +347,6 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
   }
 
   if (Object.keys(cleanPayload).length === 0) {
-    console.log('[updateProject] ℹ️ No changes detected. Skipping API update and auditing.')
     return original
   }
 

@@ -273,8 +273,6 @@ export const BudgetLineApprovalTaskModal: React.FC<BudgetLineApprovalTaskModalPr
                     pm_approvedbudgeteur: total,
                     pm_revisedbudgeteur: total,
                   })
-                } else {
-                  console.log('[BudgetLineApproval] Decision is not approval or budgetLine is missing', { decision, budgetLine })
                 }
                 onSuccess('Budget line review completed. Decision: ' + decisionLabel + '.')
                 return true
