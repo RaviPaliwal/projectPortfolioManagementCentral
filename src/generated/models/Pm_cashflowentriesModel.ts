@@ -38,6 +38,7 @@ export interface Pm_cashflowentriesBase {
   ownerid: string;
   owneridtype: string;
   pm_amounteur?: number;
+  "pm_budgetline@odata.bind"?: string;
   pm_cashflowentryid: string;
   pm_category?: Pm_cashflowentriespm_category;
   pm_description?: string;
@@ -72,6 +73,7 @@ export interface Pm_cashflowentries extends Pm_cashflowentriesBase {
   owneridyominame: string;
   owningbusinessunitname: string;
   pm_amounteur_base?: number;
+  pm_budgetlinename?: string;
   pm_categoryname?: string;
   pm_fiscalperiodname?: string;
   pm_programmelookupname?: string;
@@ -96,6 +98,8 @@ export interface Pm_cashflowentries extends Pm_cashflowentriesBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
+  pm_budgetline?: object;
+  _pm_budgetline_value?: string;
   pm_fiscalperiod?: object;
   _pm_fiscalperiod_value?: string;
   pm_programmelookup?: object;

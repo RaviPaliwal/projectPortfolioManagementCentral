@@ -241,6 +241,22 @@
           "x-ms-schema-name": "pm_amounteur_Base",
           "x-ms-read-only": true
         },
+        "pm_budgetline": {
+          "type": "string",
+          "title": "budgetline",
+          "x-ms-dataverse-attribute": "pm_budgetline",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_budgetline"
+        },
+        "pm_budgetlinename": {
+          "type": "string",
+          "title": "pm_budgetlinename",
+          "x-ms-dataverse-attribute": "pm_budgetlinename",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_budgetlineName",
+          "x-ms-read-only": true,
+          "maxLength": 850
+        },
         "pm_cashflowentryid": {
           "type": "string",
           "title": "Cashflow Entry",

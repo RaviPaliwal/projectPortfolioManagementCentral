@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react'
 import {
   Box,
   Typography,
@@ -17,7 +18,7 @@ import {
 import CategoryIcon from '@mui/icons-material/Category'
 import DescriptionIcon from '@mui/icons-material/Description'
 import BusinessIcon from '@mui/icons-material/Business'
-import type { CashflowEntryModel, FinancialPeriodModel } from '@/types/dataverse'
+import type { CashflowEntryModel, FinancialPeriodModel, BudgetLineModel } from '@/types/dataverse'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { DIRECTION_FILTERS, TXN_TYPE_FILTERS, CATEGORY_FILTERS } from '../constants'
 
@@ -32,6 +33,7 @@ interface CashflowEntryFormProps {
   programmes: ProgrammeLookupItem[]
   projects: ProjectLookupItem[]
   fiscalPeriods: FinancialPeriodModel[]
+  budgetLines: BudgetLineModel[]
   onSave: () => void
 }
 
@@ -46,8 +48,108 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
   programmes,
   projects,
   fiscalPeriods,
+  budgetLines,
   onSave,
 }) => {
+  const filteredProjects = useMemo(() => {
+    let list = projects
+    if (formData._pm_programmelookup_value) {
+      const normalizedProgId = formData._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
+      list = projects.filter((proj) => proj._pm_programme_value?.replace(/[{}]/g, '').trim().toLowerCase() === normalizedProgId)
+    }
+    // Always include the currently selected project if it exists
+    if (formData._pm_project_value) {
+      const currentProjId = formData._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
+      if (!list.some(p => p.pm_projectid.replace(/[{}]/g, '').trim().toLowerCase() === currentProjId)) {
+        const found = projects.find(p => p.pm_projectid.replace(/[{}]/g, '').trim().toLowerCase() === currentProjId)
+        if (found) {
+          list = [...list, found]
+        } else {
+          list = [...list, {
+            pm_projectid: currentProjId,
+            pm_projectname: formData.pm_projectname || 'Inactive Project',
+            _pm_programme_value: formData._pm_programmelookup_value
+          }]
+        }
+      }
+    }
+    return list
+  }, [projects, formData._pm_programmelookup_value, formData._pm_project_value, formData.pm_projectname])
+
+  const filteredBudgetLines = useMemo(() => {
+    let list = budgetLines
+    if (formData._pm_project_value) {
+      const normalizedProjId = formData._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
+      list = budgetLines.filter((bl) => bl._pm_project_value?.replace(/[{}]/g, '').trim().toLowerCase() === normalizedProjId)
+    }
+    // Always include the currently selected budget line if it exists
+    if (formData._pm_budgetline_value) {
+      const currentBLId = formData._pm_budgetline_value.replace(/[{}]/g, '').trim().toLowerCase()
+      if (!list.some(bl => bl.pm_budgetlineid?.replace(/[{}]/g, '').trim().toLowerCase() === currentBLId)) {
+        const found = budgetLines.find(bl => bl.pm_budgetlineid?.replace(/[{}]/g, '').trim().toLowerCase() === currentBLId)
+        if (found) {
+          list = [...list, found]
+        } else {
+          list = [...list, {
+            pm_budgetlineid: currentBLId,
+            pm_budgetlinename: formData.pm_budgetlinename || 'Inactive Budget Line',
+            _pm_project_value: formData._pm_project_value
+          } as any]
+        }
+      }
+    }
+    return list
+  }, [budgetLines, formData._pm_project_value, formData._pm_budgetline_value, formData.pm_budgetlinename])
+
+  const resolvedProgrammes = useMemo(() => {
+    let list = programmes
+    if (formData._pm_programmelookup_value) {
+      const currentProgId = formData._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
+      if (!list.some(p => p.pm_programmeid.replace(/[{}]/g, '').trim().toLowerCase() === currentProgId)) {
+        const found = programmes.find(p => p.pm_programmeid.replace(/[{}]/g, '').trim().toLowerCase() === currentProgId)
+        if (found) {
+          list = [...list, found]
+        } else {
+          list = [...list, {
+            pm_programmeid: currentProgId,
+            pm_programmename: formData.pm_programmelookupname || 'Inactive Programme'
+          }]
+        }
+      }
+    }
+    return list
+  }, [programmes, formData._pm_programmelookup_value, formData.pm_programmelookupname])
+
+  const resolvedFiscalPeriods = useMemo(() => {
+    let list = fiscalPeriods
+    if (formData._pm_fiscalperiod_value) {
+      const currentFpId = formData._pm_fiscalperiod_value.replace(/[{}]/g, '').trim().toLowerCase()
+      if (!list.some(fp => fp.pm_fiscalperiodid?.replace(/[{}]/g, '').trim().toLowerCase() === currentFpId)) {
+        const found = fiscalPeriods.find(fp => fp.pm_fiscalperiodid?.replace(/[{}]/g, '').trim().toLowerCase() === currentFpId)
+        if (found) {
+          list = [...list, found]
+        } else {
+          list = [...list, {
+            pm_fiscalperiodid: currentFpId,
+            pm_periodname: formData.pm_fiscalperiodname || 'Inactive Period'
+          } as any]
+        }
+      }
+    }
+    return list
+  }, [fiscalPeriods, formData._pm_fiscalperiod_value, formData.pm_fiscalperiodname])
+
+  React.useEffect(() => {
+    if (open) {
+      console.log('[CashflowEntryForm] open=true. Mode:', mode)
+      console.log('[CashflowEntryForm] formData input:', formData)
+      console.log('[CashflowEntryForm] projects count:', projects.length, 'sample project programme:', projects[0]?._pm_programme_value)
+      console.log('[CashflowEntryForm] filteredProjects count:', filteredProjects.length)
+      console.log('[CashflowEntryForm] budgetLines count:', budgetLines.length, 'sample bl project:', budgetLines[0]?._pm_project_value)
+      console.log('[CashflowEntryForm] filteredBudgetLines count:', filteredBudgetLines.length)
+    }
+  }, [open, mode, formData, projects, filteredProjects, budgetLines, filteredBudgetLines])
+
   return (
     <Dialog
       open={open}
@@ -193,7 +295,7 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
                 sx={{ borderRadius: 1.5 }}
               >
                 <MenuItem value=""><em>None</em></MenuItem>
-                {fiscalPeriods.map((period) => (
+                {resolvedFiscalPeriods.map((period) => (
                   <MenuItem key={period.pm_fiscalperiodid} value={period.pm_fiscalperiodid}>
                     {period.pm_periodname}
                   </MenuItem>
@@ -220,7 +322,7 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
                 sx={{ borderRadius: 1.5 }}
               >
                 <MenuItem value=""><em>None</em></MenuItem>
-                {programmes.map((prog) => (
+                {resolvedProgrammes.map((prog) => (
                   <MenuItem key={prog.pm_programmeid} value={prog.pm_programmeid}>
                     {prog.pm_programmename}
                   </MenuItem>
@@ -234,13 +336,50 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
               <Select
                 value={formData._pm_project_value || ''}
                 label="Project"
-                onChange={(e) => onFieldChange('_pm_project_value', e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value
+                  onFieldChange('_pm_project_value', val)
+                  onFieldChange('_pm_budgetline_value', '')
+                }}
                 sx={{ borderRadius: 1.5 }}
               >
                 <MenuItem value=""><em>None</em></MenuItem>
-                {projects.map((proj) => (
+                {filteredProjects.map((proj) => (
                   <MenuItem key={proj.pm_projectid} value={proj.pm_projectid}>
                     {proj.pm_projectname}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid size={{ xs: 6 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Budget Line</InputLabel>
+              <Select
+                value={formData._pm_budgetline_value || ''}
+                label="Budget Line"
+                onChange={(e) => {
+                  const val = e.target.value
+                  onFieldChange('_pm_budgetline_value', val)
+                  if (val) {
+                    const selectedBL = budgetLines.find((bl) => bl.pm_budgetlineid === val)
+                    if (selectedBL) {
+                      const blCat = Number(selectedBL.pm_costcategory)
+                      let cashflowCat: string | number = '0'
+                      if (blCat === 0) cashflowCat = '0' // Staff -> Staff
+                      else if (blCat === 1) cashflowCat = '1' // Contractors -> Contractors
+                      else if (blCat === 2) cashflowCat = '2' // Licences -> Licences
+                      else if (blCat === 3) cashflowCat = '4' // Infrastructure -> Infrastructure
+                      onFieldChange('pm_category', cashflowCat)
+                    }
+                  }
+                }}
+                sx={{ borderRadius: 1.5 }}
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                {filteredBudgetLines.map((bl) => (
+                  <MenuItem key={bl.pm_budgetlineid} value={bl.pm_budgetlineid}>
+                    {bl.pm_budgetlinename}
                   </MenuItem>
                 ))}
               </Select>

@@ -309,9 +309,11 @@ export interface CashflowEntryModel {
   pm_fiscalperiodname?: string
   pm_programmelookupname?: string
   pm_projectname?: string
+  pm_budgetlinename?: string
   _pm_fiscalperiod_value?: string
   _pm_programmelookup_value?: string
   _pm_project_value?: string
+  _pm_budgetline_value?: string
   statecode?: number
 }
 

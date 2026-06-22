@@ -11,14 +11,16 @@ import ReceiptIcon from '@mui/icons-material/Receipt'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 import {
-  Pm_cashflowentriesService,
-} from '@/generated'
-import {
   fetchProgrammesForLookup,
   fetchProjectsForLookup,
   fetchFinancialPeriods,
+  fetchCashflowEntries,
+  createCashflowEntry,
+  updateCashflowEntry,
+  deleteCashflowEntry,
+  fetchBudgetLines,
 } from '@/services'
-import type { CashflowEntryModel, FinancialPeriodModel } from '@/types/dataverse'
+import type { CashflowEntryModel, FinancialPeriodModel, BudgetLineModel } from '@/types/dataverse'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { 
   PageHeader, 
@@ -36,26 +38,14 @@ import { CashflowTable } from '../components/CashflowTable'
 import { CashflowEntryForm } from '../components/CashflowEntryForm'
 import { CashflowDetail } from '../components/CashflowDetail'
 import { DIRECTION_LABELS, DIRECTION_COLORS, TXN_TYPE_LABELS } from '../constants'
-import { useDataverseCrud } from '@/hooks/useDataverseCrud'
-import { useDataverseAsync } from '@/hooks/useDataverseAsync'
-
 export default function CashflowPage() {
   const { allowed: canCreate } = useAuthorization('CASHFLOW', 'create')
   const { allowed: canEdit } = useAuthorization('CASHFLOW', 'update')
   const { allowed: canDelete } = useAuthorization('CASHFLOW', 'delete')
 
-  // Standardized CRUD Hook
-  const {
-    items: entries,
-    loading,
-    error: crudError,
-    fetchAll,
-    create,
-    update,
-    remove,
-  } = useDataverseCrud<CashflowEntryModel>(Pm_cashflowentriesService)
-
-  const actionState = useDataverseAsync<any>()
+  const [entries, setEntries] = useState<CashflowEntryModel[]>([])
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
@@ -74,18 +64,38 @@ export default function CashflowPage() {
   const [programmes, setProgrammes] = useState<ProgrammeLookupItem[]>([])
   const [projects, setProjects] = useState<ProjectLookupItem[]>([])
   const [fiscalPeriods, setFiscalPeriods] = useState<FinancialPeriodModel[]>([])
+  const [budgetLines, setBudgetLines] = useState<BudgetLineModel[]>([])
 
-  useEffect(() => { fetchAll() }, [fetchAll])
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchCashflowEntries()
+      setEntries(data)
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch cashflow entries')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAll()
+  }, [fetchAll])
 
   useEffect(() => {
     Promise.all([
       fetchProgrammesForLookup(),
       fetchProjectsForLookup(),
       fetchFinancialPeriods(),
-    ]).then(([progs, projs, periods]) => {
+      fetchBudgetLines(),
+    ]).then(([progs, projs, periods, bls]) => {
       setProgrammes(progs)
       setProjects(projs)
       setFiscalPeriods(periods)
+      setBudgetLines(bls)
+    }).catch((err) => {
+      setError('Failed to load lookup resources')
     })
   }, [])
 
@@ -111,31 +121,54 @@ export default function CashflowPage() {
   const handleSave = async () => {
     if (!formData.pm_entryname) return
     
-    const result = await actionState.execute(
-      dialogMode === 'create' 
-        ? create(formData) 
-        : update(formData.pm_cashflowentryid!, formData)
-    )
-
-    if (result.success) {
-      setSuccessMsg(`Entry ${dialogMode === 'create' ? 'created' : 'updated'} successfully`)
-      setDialogMode(null)
+    setSaving(true)
+    setError(null)
+    try {
+      if (dialogMode === 'create') {
+        const data = await createCashflowEntry(formData)
+        if (data) {
+          setEntries(prev => [data, ...prev])
+          setSuccessMsg('Entry created successfully')
+          setDialogMode(null)
+        } else {
+          setError('Failed to create entry')
+        }
+      } else {
+        const data = await updateCashflowEntry(formData.pm_cashflowentryid!, formData)
+        if (data) {
+          setEntries(prev => prev.map(item => item.pm_cashflowentryid === formData.pm_cashflowentryid ? data : item))
+          if (selectedEntry?.pm_cashflowentryid === formData.pm_cashflowentryid) {
+            setSelectedEntry(data)
+          }
+          setSuccessMsg('Entry updated successfully')
+          setDialogMode(null)
+        } else {
+          setError('Failed to update entry')
+        }
+      }
       setTimeout(() => setSuccessMsg(null), 3000)
-    } else {
-      setError(result.error)
+    } catch (err: any) {
+      setError(err.message || 'Failed to save entry')
+    } finally {
+      setSaving(false)
     }
   }
 
   const handleDelete = async () => {
     if (!deleteTarget) return
-    const result = await remove(deleteTarget.pm_cashflowentryid!)
-    if (result.success) {
+    setSaving(true)
+    setError(null)
+    try {
+      await deleteCashflowEntry(deleteTarget.pm_cashflowentryid!)
+      setEntries(prev => prev.filter(item => item.pm_cashflowentryid !== deleteTarget.pm_cashflowentryid))
       setSuccessMsg('Entry deleted successfully')
       if (selectedEntry?.pm_cashflowentryid === deleteTarget.pm_cashflowentryid) setSelectedEntry(null)
       setDeleteTarget(null)
       setTimeout(() => setSuccessMsg(null), 3000)
-    } else {
-      setError(result.error || 'Failed to delete entry')
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete entry')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -153,9 +186,9 @@ export default function CashflowPage() {
         }
       />
 
-      {(error || crudError || actionState.error) && (
+      {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error || crudError || actionState.error}
+          {error}
         </Alert>
       )}
       {successMsg && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
@@ -211,10 +244,11 @@ export default function CashflowPage() {
         formData={formData}
         formErrors={{}}
         onFieldChange={(field, val) => setFormData(f => ({ ...f, [field]: val }))}
-        loading={actionState.loading}
+        loading={saving}
         programmes={programmes}
         projects={projects}
         fiscalPeriods={fiscalPeriods}
+        budgetLines={budgetLines}
         onSave={handleSave}
       />
 
@@ -224,7 +258,7 @@ export default function CashflowPage() {
         message={`Are you sure you want to remove "${deleteTarget?.pm_entryname}"? This action cannot be undone.`}
         confirmLabel="Remove"
         confirmColor="error"
-        loading={actionState.loading}
+        loading={saving}
         onConfirm={handleDelete}
         onClose={() => setDeleteTarget(null)}
       />

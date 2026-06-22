@@ -30,11 +30,11 @@ export const mapBudgetLine = (item: Pm_budgetlines): BudgetLineModel => {
     try {
       const parsed = JSON.parse(item.pm_jsonrawcalculation)
       calculatedTotal = parsed.totalAmount || 0
-    } catch (e) {}
+    } catch (e) { }
   }
 
   return {
-    pm_budgetlineid: item.pm_budgetlineid,
+    pm_budgetlineid: item.pm_budgetlineid ? item.pm_budgetlineid.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
     pm_budgetlinename: item.pm_budgetlinename,
     pm_approvedbudgeteur: item.pm_approvedbudgeteur,
     pm_revisedbudgeteur: item.pm_revisedbudgeteur,
@@ -60,11 +60,11 @@ export const mapBudgetLine = (item: Pm_budgetlines): BudgetLineModel => {
     pm_portfoliolookupname: item.pm_portfoliolookupname,
     pm_programmelookupname: item.pm_programmelookupname,
     pm_projectname: item.pm_projectname,
-    _pm_fiscalperiod_value: item._pm_fiscalperiod_value,
-    _pm_fundingsource_value: item._pm_fundingsource_value,
-    _pm_portfoliolookup_value: item._pm_portfoliolookup_value,
-    _pm_programmelookup_value: item._pm_programmelookup_value,
-    _pm_project_value: item._pm_project_value,
+    _pm_fiscalperiod_value: item._pm_fiscalperiod_value ? item._pm_fiscalperiod_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
+    _pm_fundingsource_value: item._pm_fundingsource_value ? item._pm_fundingsource_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
+    _pm_portfoliolookup_value: item._pm_portfoliolookup_value ? item._pm_portfoliolookup_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
+    _pm_programmelookup_value: item._pm_programmelookup_value ? item._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
+    _pm_project_value: item._pm_project_value ? item._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
     statecode: item.statecode,
   }
 }
@@ -100,9 +100,11 @@ export const mapCashflowEntry = (item: Pm_cashflowentries): CashflowEntryModel =
   pm_fiscalperiodname: item.pm_fiscalperiodname,
   pm_programmelookupname: item.pm_programmelookupname,
   pm_projectname: item.pm_projectname,
-  _pm_fiscalperiod_value: item._pm_fiscalperiod_value,
-  _pm_programmelookup_value: item._pm_programmelookup_value,
-  _pm_project_value: item._pm_project_value,
+  pm_budgetlinename: item.pm_budgetlinename,
+  _pm_fiscalperiod_value: item._pm_fiscalperiod_value ? item._pm_fiscalperiod_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
+  _pm_programmelookup_value: item._pm_programmelookup_value ? item._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
+  _pm_project_value: item._pm_project_value ? item._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
+  _pm_budgetline_value: item._pm_budgetline_value ? item._pm_budgetline_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
   statecode: item.statecode,
 })
 
@@ -363,7 +365,7 @@ export async function deleteBudgetLine(id: string): Promise<void> {
   try {
     const details = await fetchBudgetLineById(id)
     if (details?._pm_project_value) projectId = details._pm_project_value
-  } catch (e) {}
+  } catch (e) { }
 
   writeAuditLog({
     actionType: 'Update',
@@ -509,26 +511,14 @@ export async function fetchFinancialPeriods(): Promise<FinancialPeriodModel[]> {
   return unwrapList<Pm_fiscalperiods>(result).map(mapFinancialPeriod)
 }
 
-export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
-  const result = await Pm_cashflowentriesService.getAll({
-    filter: 'statecode eq 0',
-    select: [
-      'pm_cashflowentryid', 'pm_entryname', 'pm_amounteur',
-      'pm_transactiondate', 'pm_transactiondirection', 'pm_transactiontype',
-      'pm_category', 'pm_description', 'pm_invoicenumber',
-      '_pm_fiscalperiod_value', '_pm_programmelookup_value', '_pm_project_value',
-    ],
-    orderBy: ['pm_transactiondate desc'],
-    top: 500,
-  })
-  const list = unwrapList<Pm_cashflowentries>(result).map(mapCashflowEntry)
-
+export async function resolveCashflowLookupNames(list: CashflowEntryModel[]): Promise<void> {
   try {
     const programmeIds = Array.from(new Set(list.map((e) => e._pm_programmelookup_value).filter(Boolean))) as string[]
     const projectIds = Array.from(new Set(list.map((e) => e._pm_project_value).filter(Boolean))) as string[]
     const fiscalPeriodIds = Array.from(new Set(list.map((e) => e._pm_fiscalperiod_value).filter(Boolean))) as string[]
+    const budgetLineIds = Array.from(new Set(list.map((e) => e._pm_budgetline_value).filter(Boolean))) as string[]
 
-    const [programmesResult, projectsResult, fiscalPeriodsResult] = await Promise.all([
+    const [programmesResult, projectsResult, fiscalPeriodsResult, budgetLinesResult] = await Promise.all([
       programmeIds.length > 0
         ? Pm_programmesService.getAll({ filter: programmeIds.map((id) => `pm_programmeid eq '${id}'`).join(' or '), select: ['pm_programmeid', 'pm_programmename'], top: 500 })
         : Promise.resolve(null),
@@ -537,6 +527,9 @@ export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
         : Promise.resolve(null),
       fiscalPeriodIds.length > 0
         ? Pm_fiscalperiodsService.getAll({ filter: fiscalPeriodIds.map((id) => `pm_fiscalperiodid eq '${id}'`).join(' or '), select: ['pm_fiscalperiodid', 'pm_periodname'], top: 500 })
+        : Promise.resolve(null),
+      budgetLineIds.length > 0
+        ? Pm_budgetlinesService.getAll({ filter: budgetLineIds.map((id) => `pm_budgetlineid eq '${id}'`).join(' or '), select: ['pm_budgetlineid', 'pm_budgetlinename'], top: 500 })
         : Promise.resolve(null),
     ])
 
@@ -564,18 +557,44 @@ export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
       }
     }
 
+    const budgetLineNameById = new Map<string, string>()
+    if (budgetLinesResult) {
+      const budgetLines = unwrapList<Pm_budgetlines>(budgetLinesResult)
+      for (const bl of budgetLines) {
+        if (bl.pm_budgetlineid && bl.pm_budgetlinename) budgetLineNameById.set(bl.pm_budgetlineid.replace(/[{}]/g, '').trim().toLowerCase(), bl.pm_budgetlinename)
+      }
+    }
+
     for (const entry of list) {
       const normProgId = entry._pm_programmelookup_value?.replace(/[{}]/g, '').trim().toLowerCase()
       const normProjId = entry._pm_project_value?.replace(/[{}]/g, '').trim().toLowerCase()
       const normFiscId = entry._pm_fiscalperiod_value?.replace(/[{}]/g, '').trim().toLowerCase()
+      const normBudgetLineId = entry._pm_budgetline_value?.replace(/[{}]/g, '').trim().toLowerCase()
       if (normProgId && programmeNameById.has(normProgId)) entry.pm_programmelookupname = programmeNameById.get(normProgId)
       if (normProjId && projectNameById.has(normProjId)) entry.pm_projectname = projectNameById.get(normProjId)
       if (normFiscId && fiscalPeriodNameById.has(normFiscId)) entry.pm_fiscalperiodname = fiscalPeriodNameById.get(normFiscId)
+      if (normBudgetLineId && budgetLineNameById.has(normBudgetLineId)) entry.pm_budgetlinename = budgetLineNameById.get(normBudgetLineId)
     }
   } catch (err) {
-    try { console.warn('[dataverseService] fetchCashflowEntries: failed to resolve lookup names', err) } catch (e) { }
+    try { console.warn('[dataverseService] resolveCashflowLookupNames: failed to resolve lookup names', err) } catch (e) { }
   }
+}
 
+export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
+  const result = await Pm_cashflowentriesService.getAll({
+    filter: 'statecode eq 0',
+    select: [
+      'pm_cashflowentryid', 'pm_entryname', 'pm_amounteur',
+      'pm_transactiondate', 'pm_transactiondirection', 'pm_transactiontype',
+      'pm_category', 'pm_description', 'pm_invoicenumber',
+      '_pm_fiscalperiod_value', '_pm_programmelookup_value', '_pm_project_value',
+      '_pm_budgetline_value',
+    ],
+    orderBy: ['pm_transactiondate desc'],
+    top: 500,
+  })
+  const list = unwrapList<Pm_cashflowentries>(result).map(mapCashflowEntry)
+  await resolveCashflowLookupNames(list)
   return list
 }
 
@@ -605,7 +624,7 @@ export async function fetchPortfoliosForLookup(): Promise<PortfolioLookupItem[]>
     top: 500,
   })
   return unwrapList<Pm_portfolios>(result).map((item) => ({
-    pm_portfolioid: item.pm_portfolioid,
+    pm_portfolioid: item.pm_portfolioid ? item.pm_portfolioid.replace(/[{}]/g, '').trim().toLowerCase() : '',
     pm_portfolioname: item.pm_portfolioname || '',
   }))
 }
@@ -618,9 +637,9 @@ export async function fetchProgrammesForLookup(): Promise<ProgrammeLookupItem[]>
     top: 500,
   })
   return unwrapList<Pm_programmes>(result).map((item) => ({
-    pm_programmeid: item.pm_programmeid,
+    pm_programmeid: item.pm_programmeid ? item.pm_programmeid.replace(/[{}]/g, '').trim().toLowerCase() : '',
     pm_programmename: item.pm_programmename || '',
-    _pm_portfolio_value: item._pm_portfolio_value,
+    _pm_portfolio_value: item._pm_portfolio_value ? item._pm_portfolio_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
   }))
 }
 
@@ -632,18 +651,29 @@ export async function fetchProjectsForLookup(): Promise<ProjectLookupItem[]> {
     top: 500,
   })
   return unwrapList<Pm_projects>(result).map((item) => ({
-    pm_projectid: item.pm_projectid,
+    pm_projectid: item.pm_projectid ? item.pm_projectid.replace(/[{}]/g, '').trim().toLowerCase() : '',
     pm_projectname: item.pm_projectname || '',
     pm_projectcode: item.pm_projectcode || '',
-    _pm_programme_value: item._pm_programme_value,
+    _pm_programme_value: item._pm_programme_value ? item._pm_programme_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
   }))
 }
 
 export async function createCashflowEntry(payload: Partial<CashflowEntryModel>): Promise<CashflowEntryModel | null> {
+  const SKIP_FIELDS = new Set([
+    'pm_cashflowentryid',
+    'pm_fiscalperiodname',
+    'pm_programmelookupname',
+    'pm_projectname',
+    'pm_budgetlinename',
+    '_pm_fiscalperiod_value',
+    '_pm_programmelookup_value',
+    '_pm_project_value',
+    '_pm_budgetline_value',
+    'statecode'
+  ])
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '' &&
-      key !== '_pm_fiscalperiod_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+    if (value !== undefined && value !== null && value !== '' && !SKIP_FIELDS.has(key)) {
       cleanPayload[key] = value
     }
   }
@@ -669,11 +699,22 @@ export async function createCashflowEntry(payload: Partial<CashflowEntryModel>):
       cleanPayload['pm_project@odata.bind'] = '/pm_projects(' + projectId + ')'
     }
   }
+  if (payload._pm_budgetline_value) {
+    const budgetLineId = payload._pm_budgetline_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (budgetLineId) {
+      cleanPayload['pm_budgetline@odata.bind'] = '/pm_budgetlines(' + budgetLineId + ')'
+    }
+  }
   const result = await Pm_cashflowentriesService.create({ ...defaults, ...cleanPayload } as any)
+  if (!result.success) {
+    console.error('[finance.service] createCashflowEntry: OData create failed! Errors:', result.error)
+    throw new Error(result.error ? JSON.stringify(result.error) : 'Failed to create cashflow entry in Dataverse')
+  }
   const item = unwrapSingle<Pm_cashflowentries>(result)
   const mapped = item ? mapCashflowEntry(item) : null
 
   if (mapped && mapped.pm_cashflowentryid) {
+    await resolveCashflowLookupNames([mapped])
     writeAuditLog({
       actionType: 'Create',
       entityName: 'pm_cashflowentries',
@@ -689,10 +730,46 @@ export async function createCashflowEntry(payload: Partial<CashflowEntryModel>):
 }
 
 export async function updateCashflowEntry(id: string, changes: Partial<CashflowEntryModel>): Promise<CashflowEntryModel | null> {
+  console.log('[finance.service] updateCashflowEntry: editing entry id:', id)
+  try {
+    console.log('[finance.service] updateCashflowEntry: raw changes payload:', JSON.stringify(changes))
+  } catch (e) {
+    console.log('[finance.service] updateCashflowEntry: raw changes payload (fallback):', changes)
+  }
+
+  // Fetch old record for audit log comparison before we perform update
+  let oldRecord: CashflowEntryModel | null = null
+  try {
+    const details = await Pm_cashflowentriesService.get(id, {
+      select: [
+        'pm_cashflowentryid', 'pm_entryname', 'pm_amounteur',
+        'pm_transactiondate', 'pm_transactiondirection', 'pm_transactiontype',
+        'pm_category', 'pm_description', 'pm_invoicenumber',
+        '_pm_fiscalperiod_value', '_pm_programmelookup_value', '_pm_project_value',
+        '_pm_budgetline_value',
+      ]
+    })
+    const item = unwrapSingle<Pm_cashflowentries>(details)
+    oldRecord = item ? mapCashflowEntry(item) : null
+  } catch (e) {
+    console.warn('[finance.service] updateCashflowEntry: failed to fetch old record for audit logging', e)
+  }
+
+  const SKIP_FIELDS = new Set([
+    'pm_cashflowentryid',
+    'pm_fiscalperiodname',
+    'pm_programmelookupname',
+    'pm_projectname',
+    'pm_budgetlinename',
+    '_pm_fiscalperiod_value',
+    '_pm_programmelookup_value',
+    '_pm_project_value',
+    '_pm_budgetline_value',
+    'statecode'
+  ])
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null &&
-      key !== 'pm_cashflowentryid' && key !== '_pm_fiscalperiod_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+    if (value !== undefined && value !== null && !SKIP_FIELDS.has(key)) {
       cleanPayload[key] = value
     }
   }
@@ -714,28 +791,56 @@ export async function updateCashflowEntry(id: string, changes: Partial<CashflowE
       cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
     }
   }
-  await Pm_cashflowentriesService.update(id, cleanPayload as any)
+  if (changes._pm_budgetline_value) {
+    const budgetLineId = changes._pm_budgetline_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (budgetLineId) {
+      cleanPayload['pm_budgetline@odata.bind'] = `/pm_budgetlines(${budgetLineId})`
+    }
+  }
+  console.log('[finance.service] updateCashflowEntry: final cleanPayload for OData:', cleanPayload)
+  try {
+    const result = await Pm_cashflowentriesService.update(id, cleanPayload as any)
+    if (!result.success) {
+      console.error('[finance.service] updateCashflowEntry: OData update failed! Errors:', result.error)
+      throw new Error(result.error ? JSON.stringify(result.error) : 'Failed to update cashflow entry in Dataverse')
+    }
+    console.log('[finance.service] updateCashflowEntry: OData update successful')
+  } catch (error) {
+    console.error('[finance.service] updateCashflowEntry: OData update failed with exception!', error)
+    throw error
+  }
   const details = await Pm_cashflowentriesService.get(id, {
     select: [
       'pm_cashflowentryid', 'pm_entryname', 'pm_amounteur',
       'pm_transactiondate', 'pm_transactiondirection', 'pm_transactiontype',
       'pm_category', 'pm_description', 'pm_invoicenumber',
       '_pm_fiscalperiod_value', '_pm_programmelookup_value', '_pm_project_value',
+      '_pm_budgetline_value',
     ]
   })
   const item = unwrapSingle<Pm_cashflowentries>(details)
   const mapped = item ? mapCashflowEntry(item) : null
 
   if (mapped && mapped.pm_cashflowentryid) {
+    await resolveCashflowLookupNames([mapped])
     Object.keys(changes).forEach((key) => {
       const val = (changes as any)[key]
       if (val !== undefined && key !== 'pm_cashflowentryid') {
+        const rawOldVal = oldRecord ? (oldRecord as any)[key] : undefined
+        // Skip logging if value hasn't changed (compare as strings case-insensitively/trimmed)
+        const strOld = rawOldVal !== undefined && rawOldVal !== null ? String(rawOldVal).trim().toLowerCase() : ''
+        const strNew = val !== null ? String(val).trim().toLowerCase() : ''
+        if (strOld === strNew) {
+          return
+        }
+
         writeAuditLog({
           actionType: 'Update',
           entityName: 'pm_cashflowentries',
           recordId: id,
           recordName: mapped.pm_entryname || 'Cash Flow Entry',
           fieldName: key,
+          oldValue: rawOldVal !== undefined && rawOldVal !== null ? String(rawOldVal) : '',
           newValue: String(val),
         })
       }
@@ -754,7 +859,7 @@ export async function deleteCashflowEntry(id: string): Promise<void> {
     const details = await Pm_cashflowentriesService.get(id, { select: ['_pm_project_value'] })
     const item = unwrapSingle<Pm_cashflowentries>(details)
     if (item?._pm_project_value) projectId = item._pm_project_value
-  } catch (e) {}
+  } catch (e) { }
 
   writeAuditLog({
     actionType: 'Update',
@@ -828,7 +933,7 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
       if (!bl.pm_budgetlineid) continue
 
       const category = String(bl.pm_costcategory ?? '')
-      
+
       // Calculate cashflow sum for this category
       const blCashflows = projectCashflows.filter((cf) => {
         const cfCategory = String(cf.pm_category ?? '')
@@ -907,7 +1012,7 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
         })
         const progProjects = unwrapList<any>(progProjectsResult)
         const totalProgActuals = progProjects.reduce((sum, p) => sum + (p.pm_actualcosteur || 0), 0)
-        
+
         console.log('[recalculateRealFinancialsForProject] Updating Programme ID:', programmeId, 'actual spend:', totalProgActuals)
         await Pm_programmesService.update(programmeId, {
           pm_actualspendeur: totalProgActuals,

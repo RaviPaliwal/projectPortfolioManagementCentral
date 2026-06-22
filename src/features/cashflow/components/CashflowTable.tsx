@@ -7,14 +7,14 @@ import { DataverseTable, StatusTag, ActionIcon, SearchFilterBar, type Column } f
 import { currencyFormatter, formatDate } from '@/utils/formatters'
 import { fontSizes } from '@/styles'
 import type { CashflowEntryModel } from '@/types/dataverse'
-import { 
-  DIRECTION_LABELS, 
-  DIRECTION_COLORS, 
-  TXN_TYPE_LABELS, 
-  CATEGORY_LABELS, 
-  DIRECTION_FILTERS, 
-  TXN_TYPE_FILTERS, 
-  CATEGORY_FILTERS 
+import {
+  DIRECTION_LABELS,
+  DIRECTION_COLORS,
+  TXN_TYPE_LABELS,
+  CATEGORY_LABELS,
+  DIRECTION_FILTERS,
+  TXN_TYPE_FILTERS,
+  CATEGORY_FILTERS
 } from '../constants'
 
 interface CashflowTableProps {
@@ -48,13 +48,13 @@ export const CashflowTable: React.FC<CashflowTableProps> = ({
   canEdit = true,
   canDelete = true,
 }) => {
-  
+
   const columns: Column<CashflowEntryModel>[] = [
     { key: 'pm_entryname', label: 'Entry Name', format: (val) => <Typography variant="body2" sx={{ fontWeight: 600 }}>{val}</Typography> },
-    { 
-      key: 'pm_amounteur', 
-      label: 'Amount', 
-      align: 'right', 
+    {
+      key: 'pm_amounteur',
+      label: 'Amount',
+      align: 'right',
       format: (val) => (
         <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
           {currencyFormatter.format(val ?? 0)}
@@ -74,6 +74,9 @@ export const CashflowTable: React.FC<CashflowTableProps> = ({
     },
     { key: 'pm_transactiontype', label: 'Type', format: (val) => TXN_TYPE_LABELS[String(val ?? '')] || '—' },
     { key: 'pm_category', label: 'Category', format: (val) => CATEGORY_LABELS[String(val ?? '')] || '—' },
+    { key: 'pm_programmelookupname', label: 'Programme', format: (val) => val || '—' },
+    { key: 'pm_projectname', label: 'Project', format: (val) => val || '—' },
+    { key: 'pm_budgetlinename', label: 'Budget Line', format: (val) => val || '—' },
     { key: 'pm_transactiondate', label: 'Date', format: (val) => formatDate(val as string) },
   ]
 
