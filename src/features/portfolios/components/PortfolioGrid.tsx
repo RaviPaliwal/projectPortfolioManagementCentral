@@ -20,6 +20,7 @@ import {
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import {
   StatusChip,
@@ -41,8 +42,10 @@ interface PortfolioGridProps {
   onRowClick: (portfolio: PortfolioModel) => void
   onCreateClick: () => void
   onEditClick: (portfolio: PortfolioModel) => void
+  onDeleteClick?: (portfolio: PortfolioModel) => void
   onFilteredDataChange?: (data: PortfolioModel[]) => void
   canEdit?: boolean
+  canDelete?: boolean
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -71,8 +74,10 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
   onRowClick,
   onCreateClick,
   onEditClick,
+  onDeleteClick,
   onFilteredDataChange,
   canEdit = true,
+  canDelete = false,
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -292,20 +297,36 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
-                    {canEdit && (
-                      <Tooltip title="Edit Portfolio">
-                        <IconButton 
-                          size="small" 
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onEditClick(portfolio)
-                          }}
-                          sx={{ color: 'primary.main' }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
+                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                      {canEdit && (
+                        <Tooltip title="Edit Portfolio">
+                          <IconButton 
+                            size="small" 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onEditClick(portfolio)
+                            }}
+                            sx={{ color: 'primary.main' }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {canDelete && (
+                        <Tooltip title="Delete Portfolio">
+                          <IconButton 
+                            size="small" 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onDeleteClick?.(portfolio)
+                            }}
+                            sx={{ color: 'error.main' }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               )

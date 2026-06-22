@@ -26,6 +26,7 @@ import {
   checkTimesheetOverlap
 } from "@/services";
 import { useUser } from "@/context/UserContext";
+import { useAuthorization } from "@/hooks/useAuthorization";
 import type { TimesheetModel, TimesheetEntryModel, ResourceModel } from "@/types/dataverse";
 import { MODULE_NAMES } from "@/constants/moduleNames";
 import { PageHeader, Button, StatusTag, LedgerCalendar } from "@/components/common";
@@ -252,6 +253,9 @@ function AddEntryDialog({
 const TeamMemberTimesheetPage = () => {
   const { currentUser } = useUser();
   const theme = useTheme();
+  const { allowed: canCreate } = useAuthorization('TIMESHEETS', 'create');
+  const { allowed: canEdit } = useAuthorization('TIMESHEETS', 'update');
+  const { allowed: canDelete } = useAuthorization('TIMESHEETS', 'delete');
   /* ---- state ---- */
   const [timesheets, setTimesheets] = useState<TimesheetModel[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -419,13 +423,14 @@ const TeamMemberTimesheetPage = () => {
           )
         );
       }
-      await recalculateTimesheetHours(selectedId);
-      const [newEntries, newTsList] = await Promise.all([
-        fetchTimesheetEntries(selectedId),
-        fetchResourceTimesheets(resource.pm_resourceid),
-      ]);
+      const totals = await recalculateTimesheetHours(selectedId);
+      const newEntries = await fetchTimesheetEntries(selectedId);
       setEntries(newEntries);
-      setTimesheets(newTsList);
+      if (totals) {
+        setTimesheets((prev) => prev.map((ts) =>
+          ts.pm_timesheetid === selectedId ? { ...ts, ...totals } : ts
+        ));
+      }
       setDialogOpen(false);
       setEditingEntry(null);
       setSelectedDates([]);
@@ -458,13 +463,14 @@ const TeamMemberTimesheetPage = () => {
     setActionLoading(true);
     try {
       await deleteTimesheetEntry(id);
-      await recalculateTimesheetHours(selectedId);
-      const [newEntries, newTsList] = await Promise.all([
-        fetchTimesheetEntries(selectedId),
-        fetchResourceTimesheets(resource.pm_resourceid),
-      ]);
+      const totals = await recalculateTimesheetHours(selectedId);
+      const newEntries = await fetchTimesheetEntries(selectedId);
       setEntries(newEntries);
-      setTimesheets(newTsList);
+      if (totals) {
+        setTimesheets((prev) => prev.map((ts) =>
+          ts.pm_timesheetid === selectedId ? { ...ts, ...totals } : ts
+        ));
+      }
     } finally {
       setActionLoading(false);
     }
@@ -493,7 +499,7 @@ const TeamMemberTimesheetPage = () => {
     if (!selectedId || !resource?.pm_resourceid) return;
     setActionLoading(true);
     try {
-      await updateTimesheetStatus(selectedId, 1);
+      await updateTimesheetStatus(selectedId, 1, undefined, currentUser?.fullname ?? 'System');
       await startWorkflowForEntity('default-template', selectedId, MODULE_NAMES.TIMESHEETS.value, currentUser?.fullname ?? 'System');
       const tsList = await fetchResourceTimesheets(resource.pm_resourceid);
       setTimesheets(tsList);
@@ -522,12 +528,12 @@ const TeamMemberTimesheetPage = () => {
       <PageHeader
         title="My Timesheets"
         subtitle={resource.pm_positiontitle || "Team Member"}
-        action={{
+        action={canCreate ? {
           label: 'New Timesheet',
           icon: <AddIcon />,
           onClick: handleOpenCreate,
           disabled: creating,
-        }}
+        } : undefined}
       />
       <div className="ts-shell">
         {timesheets.length > 0 && (
@@ -557,7 +563,7 @@ const TeamMemberTimesheetPage = () => {
                 <h1>{getTimesheetPeriodLabel(selectedTimesheet)}</h1>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {editable && (
+                {canDelete && editable && (
                   <IconButton
                     color="error"
                     size="small"
@@ -636,7 +642,7 @@ const TeamMemberTimesheetPage = () => {
                     </span>
                   )}
                 </div>
-                {editable && (
+                {editable && canEdit && (
                   <Button
                     variant="outlined"
                     size="small"
@@ -659,14 +665,14 @@ const TeamMemberTimesheetPage = () => {
                     : <span />}
                   {editable && !e.isReadOnly ? (
                     <div style={{ display: 'flex', gap: '4px' }}>
-                      <button className="ts-iconbtn" onClick={() => handleOpenEdit(e)}><EditIcon sx={{ fontSize: 14 }} /></button>
-                      <button className="ts-iconbtn" onClick={() => handleRemoveEntry(e.id)}><DeleteIcon sx={{ fontSize: 14 }} /></button>
+                      {canEdit && <button className="ts-iconbtn" onClick={() => handleOpenEdit(e)}><EditIcon sx={{ fontSize: 14 }} /></button>}
+                      {canDelete && <button className="ts-iconbtn" onClick={() => handleRemoveEntry(e.id)}><DeleteIcon sx={{ fontSize: 14 }} /></button>}
                     </div>
                   ) : <span />}
                 </div>
               ))}
             </div>
-            {editable && (
+            {editable && canEdit && (
               <div className="ts-submit-row">
                 <Button
                   variant="contained"
@@ -705,22 +711,24 @@ const TeamMemberTimesheetPage = () => {
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360, mb: 3.5, lineHeight: 1.6, mx: 'auto', textAlign: 'center' }}>
               It looks like you haven't created any timesheet periods. Start tracking your working hours by creating a new timesheet.
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleOpenCreate}
-                startIcon={<AddIcon />}
-                sx={{
-                  px: 3,
-                  py: 1,
-                  fontWeight: 600,
-                  boxShadow: '0 4px 12px rgba(59,130,246,0.25)',
-                }}
-              >
-                Start First Timesheet
-              </Button>
-            </Box>
+            {canCreate && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleOpenCreate}
+                  startIcon={<AddIcon />}
+                  sx={{
+                    px: 3,
+                    py: 1,
+                    fontWeight: 600,
+                    boxShadow: '0 4px 12px rgba(59,130,246,0.25)',
+                  }}
+                >
+                  Start First Timesheet
+                </Button>
+              </Box>
+            )}
           </div>
         ) : (
           <div className="ts-detail" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

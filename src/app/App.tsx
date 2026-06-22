@@ -1,4 +1,4 @@
-import { useState, useMemo, Component, type ReactNode, type ErrorInfo } from 'react'
+import { useState, useMemo, useEffect, Component, type ReactNode, type ErrorInfo } from 'react'
 import { ThemeProvider, CssBaseline, Box, Paper, Typography, Button, Alert } from '@mui/material'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import type { PaletteMode } from '@mui/material'
@@ -56,8 +56,31 @@ export function guardActiveTab(tab: TabKey, allowedTabs: TabKey[]): TabKey {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<TabKey>('dashboard')
+  // Read initial tab from URL query param (?tab=xxx) for deep-link support
+  const getInitialTab = (): TabKey => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const tabParam = params.get('tab') as TabKey | null
+      if (tabParam && tabs.some(t => t.key === tabParam)) return tabParam
+    } catch { /* ignore */ }
+    return 'dashboard'
+  }
+
+  const [activeTab, setActiveTab] = useState<TabKey>(getInitialTab)
   const [themeMode, setThemeMode] = useState<PaletteMode>('light')
+
+  // Sync activeTab to URL query params for shareable deep-links
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href)
+      if (activeTab === 'dashboard') {
+        url.searchParams.delete('tab')
+      } else {
+        url.searchParams.set('tab', activeTab)
+      }
+      window.history.replaceState(null, '', url.toString())
+    } catch { /* ignore */ }
+  }, [activeTab])
 
   const theme = useMemo(() => getTheme(themeMode), [themeMode])
   const pageMap = useMemo(() => getPageMap(setActiveTab), [setActiveTab])

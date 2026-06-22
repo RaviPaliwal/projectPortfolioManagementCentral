@@ -49,7 +49,7 @@ The codebase implements a **feature-rich Project Portfolio Management** front-en
 | Area | Assessment |
 |------|-----------|
 | **Code Quality (Linting)** | **1389 ESLint errors** — dominated by `@typescript-eslint/no-explicit-any` (~95% of errors) |
-| **Security/Auth** | CRUD-level enforcement exists in hooks but is NOT fully adopted across all pages |
+| **Security/Auth** | CRUD-level enforcement is now adopted across all CRUD-capable pages (21/21); 8 read-only pages exempt |
 | **Integrations** | **0 of 19 integration requirements implemented** — SAP, P6, SharePoint, Teams, Power BI all missing |
 | **Testing** | **Zero tests** — no unit, integration, or E2E tests configured |
 | **Accessibility** | WCAG 2.1 AA **not addressed** |
@@ -93,9 +93,9 @@ The codebase implements a **feature-rich Project Portfolio Management** front-en
 | Metric | Count |
 |--------|-------|
 | **Total source files** | 269 |
-| **Feature modules** | 27 (24 registered + 3 orphaned) |
-| **Feature pages** | 29 |
-| **Feature components** | 73 |
+| **Feature modules** | 24 (all registered) |
+| **Feature pages** | 27 |
+| **Feature components** | 65 |
 | **Common components** | 33 + 2 layout |
 | **Custom hooks** | 4 |
 | **Hand-written services** | 25 |
@@ -270,13 +270,13 @@ User Action (click, form submit)
 
 | # | Module | Registered? | Tab Visible? | Lines | Has CRUD? | Has Loading/Error/Empty? | Auth Checks? | Assessment |
 |---|--------|------------|-------------|-------|-----------|------------------------|-------------|------------|
-| 1 | Dashboard | ✅ | ✅ | 336 | Read-only | ✅ Full | ❌ None | **Complete** |
-| 2 | Portfolios | ✅ | ✅ | 636 | C,R,U (no D) | ✅ Full | ✅ create/update | **Missing Delete** |
-| 3 | Programmes | ✅ | ✅ | 879 | C,R,U (no D) | ✅ Full | ✅ create/update | **Missing Delete** |
-| 4 | Projects | ✅ | ✅ | 663 | C,R,U (no D) | ✅ Full | ✅ create/update | **Missing Delete** |
-| 5 | Pipeline | ✅ | ✅ | 1311 | C,R,U (no D) | ✅ Full | ✅ create | **Missing Delete** |
+| 1 | Dashboard | ✅ | ✅ | 336 | Read-only | ✅ Full | ❌ None (read-only) | **Complete** |
+| 2 | Portfolios | ✅ | ✅ | 636 | Full CRUD | ✅ Full | ✅ C/U/D | **Complete** |
+| 3 | Programmes | ✅ | ✅ | 879 | Full CRUD | ✅ Full | ✅ C/U/D | **Complete** |
+| 4 | Projects | ✅ | ✅ | 663 | Full CRUD | ✅ Full | ✅ C/U/D | **Complete** |
+| 5 | Pipeline | ✅ | ✅ | 1311 | Full CRUD | ✅ Full | ✅ C/U/D | **Complete** |
 | 6 | Resources | ✅ | Hidden | 1690 | Full CRUD | ✅ Full | ✅ C/U/D | **Complete** |
-| 7 | Timesheets | ✅ | ✅ | 599/839 | Full CRUD | ✅ Full | ✅ create | **Complete** |
+| 7 | Timesheets | ✅ | ✅ | 599/839 | Full CRUD | ✅ Full | ✅ C/U/D | **Complete** |
 | 8 | Budgets | ✅ | ✅ | 908 | Full CRUD | ✅ Full | ✅ C/U/D | **Complete** |
 | 9 | Gate Reviews | ✅ | ✅ | 479 | Full CRUD | ✅ Full | ✅ C/U/D | **Complete** |
 | 10 | Benefits | ✅ | ✅ | 510 | Full CRUD | 🟡 Partial | ✅ C/U/D | **Good** |
@@ -284,26 +284,24 @@ User Action (click, form submit)
 | 12 | Issues | ✅ | ✅ | 777 | Full CRUD | ✅ Full | ✅ C/U/D | **Complete** |
 | 13 | Change Requests | ✅ | ✅ | 1072 | Full CRUD | ✅ Full | ✅ C/U/D | **Large file** |
 | 14 | Cashflow | ✅ | ✅ | 267 | Full CRUD | 🟡 Partial (no loading) | ✅ C/U/D | **Minor gaps** |
-| 15 | Tasks | ✅ | ✅ | 391 | Read-only | ✅ Full | ✅ indirect | **Good** |
+| 15 | Tasks | ✅ | ✅ | 391 | Read-only | ✅ Full | ❌ None (read-only) | **Good** |
 | 16 | Funding Sources | ✅ | ✅ | 1062 | Full CRUD | ✅ Full | ✅ C/U/D | **Large file** |
 | 17 | Skills | ✅ | Hidden | 902 | Full CRUD | ✅ Full | ✅ C/U/D | **Complete** |
 | 18 | Workflows | ✅ | Hidden | 457 | Full CRUD | ✅ Full | ✅ | **Complete** |
 | 19 | Status Snapshots | ✅ | ✅ | 1001 | Full CRUD | ✅ Full | ✅ | **Complete** |
-| 20 | Strategic Roster | ✅ | ✅ | 923 | Read-only | ✅ Full | ❌ None | **Visual tool** |
+| 20 | Strategic Roster | ✅ | ✅ | 923 | Read-only | ✅ Full | ❌ None (read-only) | **Visual tool** |
 | 21 | Holidays | ✅ | Hidden | 334 | Full CRUD | ✅ Full | ✅ | **Complete** |
 | 22 | Team Admin | ✅ | Hidden | 359 | C,R,U,D (team members) | ✅ Full | ✅ C/D | **Good** |
-| 23 | Configurations | ✅ | ✅ | 169 | None (launcher) | N/A | ❌ None | **Hub page** |
-| 24 | Calendar | ✅ | ✅ | 1602 | Read + Create events | 🟡 Partial | ❌ None | **Monolithic** |
-| 25 | Activity Log | ✅ | ✅ | 761 | Read-only | ✅ Full | ❌ None | **Good** |
-| 26 | Approval Requests | ❌ **ORPHANED** | N/A | 342 | Full CRUD | ✅ Full | ✅ | **Inaccessible** |
-| 27 | Team Workspace | ❌ **ORPHANED** | N/A | 440 | C,R (issues/risks) | 🟡 Partial | ✅ indirect | **Inaccessible** |
+| 23 | Configurations | ✅ | ✅ | 169 | None (launcher) | N/A | ❌ None (hub page) | **Hub page** |
+| 24 | Calendar | ✅ | ✅ | 1602 | Read + Create events | 🟡 Partial | ❌ None (local/Outlook only) | **Monolithic** |
+| 25 | Activity Log | ✅ | ✅ | 761 | Read-only | ✅ Full | ❌ None (read-only) | **Good** |
 
 ### 5.2 Page Size Distribution
 
 | Size Range | Files | Modules |
 |-----------|-------|---------|
 | < 300 lines | 3 | Cashflow, Configurations |
-| 300-500 lines | 7 | Dashboard, Gate Reviews, Tasks, TeamAdmin, TeamWorkspace, ApprovalRequests, Risks |
+| 300-500 lines | 5 | Dashboard, Gate Reviews, Tasks, TeamAdmin, Risks |
 | 500-800 lines | 7 | Portfolios, Projects, Benefits, Timesheets, ActivityLog, Issues, Workflows |
 | 800-1100 lines | 5 | Programmes, Budgets, Skills, StatusSnapshots, StrategicRoster |
 | 1000+ lines | 4 | Pipeline (1311), ChangeRequests (1072), FundingSources (1062), Calendar (1602) |
@@ -317,7 +315,7 @@ User Action (click, form submit)
 - ✅ `TableShell` with loading/empty states
 - ✅ `DetailDrawer` for drill-down
 - ✅ `ConfirmDialog` for destructive actions
-- ✅ `useAuthorization` for button visibility
+- ✅ `useAuthorization` for button visibility (all 21 CRUD-capable pages)
 - ✅ `FORM_DIALOG_DECISION_EVENT` for cross-module refresh
 - ✅ Deep-link navigation via `sessionStorage` (projects, risks, issues)
 
@@ -326,23 +324,6 @@ User Action (click, form submit)
 - ⚠️ Some pages check `result.success`; others rely on try/catch
 - ⚠️ Delete confirmations vary (some use ConfirmDialog, others Alert dialogs)
 - ⚠️ Benefits, Cashflow lack `DetailDrawer` drill-down
-
-### 5.4 Orphaned Modules Detail
-
-#### 5.4.1 Approval Requests (`src/features/approvalrequests/`)
-- **Files**: `ApprovalRequestsPage.tsx` (342 lines), `ApprovalDialogs.tsx`
-- **CRUD**: Full CRUD implemented with `useDataverseCrud`
-- **Auth**: Uses `useAuthorization`
-- **Status**: Fully functional but **inaccessible** — not registered in `routes.tsx`
-- **Likely purpose**: Separate management of approval requests outside the workflow engine
-
-#### 5.4.2 Team Workspace (`src/features/teamworkspace/`)
-- **Files**: `TeamWorkspacePage.tsx` (440 lines), `WorkspaceKPIs.tsx`, `AssignedIssuesList.tsx`, `LogIssueDialog.tsx`, `ReportRiskDialog.tsx`, `MitigationActionsList.tsx`, `UpdateActionDialog.tsx`, `IssueDetailDialog.tsx`
-- **CRUD**: Issue/risk logging, mitigation action tracking
-- **Auth**: User-scoped via `currentUser`
-- **Status**: Fully functional but **inaccessible** — not registered in `routes.tsx`
-- **Likely purpose**: Team member self-service dashboard (log issues, report risks)
-
 ---
 
 ## 6. SERVICES LAYER AUDIT
@@ -465,27 +446,31 @@ User Action (click, form submit)
 
 | # | Gap | Impact | ITT Reference |
 |---|-----|--------|---------------|
-| **S1** | No CRUD action-level enforcement at page level — `useAuthorization` hook exists but many pages don't use it fully | Users can perform unauthorized operations | FR-UAS-01 |
-| **S2** | No route-level guard — URL deep-links bypass tab filtering | Users can access unauthorized pages by URL | FR-UAS-01 |
-| **S3** | Fragile persona resolution via keyword matching | Misclassification of users | FR-UAS-01 |
-| **S4** | No admin UI for persona assignment | Cannot manually assign users to roles | FR-UAS-01 |
+| **S1** | ~~No CRUD action-level enforcement at page level — `useAuthorization` hook exists but many pages don't use it fully~~ | ✅ **RESOLVED** — All 21 CRUD-capable pages now enforce useAuthorization for create/update/delete | FR-UAS-01 |
+| **S2** | ~~No route-level guard — URL deep-links bypass tab filtering~~ | ✅ **RESOLVED** — URL params synced to activeTab; navigate events validated against persona permissions; RouteGuard secures all tabs | FR-UAS-01 |
+| **S3** | ~~Fragile persona resolution via keyword matching~~ | ✅ **RESOLVED** — Keyword priority reordered (Executive before PMO); manual persona overrides via `localStorage` | FR-UAS-01 |
+| **S4** | ~~No admin UI for persona assignment~~ | ✅ **RESOLVED** — Persona override via UserSelector popover (Edit icon per user, cycles through personas); overrides stored in localStorage with `ppm_persona_override:` prefix | FR-UAS-01 |
 | **S5** | No row-level data filtering (except IssuesPage) | Users see data they shouldn't | NFR-DM-03 |
 | **S6** | No column-level security for sensitive financial fields | Financial data visible to all | NFR-DM-03 |
 | **S7** | No API-level RBAC — all service calls return full data | Data leakage via API | NFR-DM-06 |
 | **S8** | No audit trail viewer UI | Auditors cannot review changes | FR-UAS-04 |
 | **S9** | No Entra ID group integration | Dynamic role assignment absent | NFR-INT-16 |
 
-### 7.4 Persona Resolution Weaknesses
+### 7.4 Persona Resolution (FIXED)
 
-**Priority conflicts example:**
+**Resolution order (refined):**
 ```
-Resolution order: Admin > PMO > Executive > PM > Finance > Planner > TeamMember
+Admin > Executive > PMO > PM > Finance > Planner > TeamMember
+```
 
-Scenario: A user titled "PMO Director"
-→ Matches "pmo" in job title → resolved as PMO
-→ Should match "director" → should be PortfolioExecutive
-→ No manual override possible
-```
+**Fix for "PMO Director" conflict:**
+- ✅ Keyword priority ORDER changed: `director`, `executive`, `sponsor`, `vp`, `chief`, `president` checked BEFORE `pmo`, `governance`, `compliance`, `audit`
+- ✅ Manual persona overrides via `localStorage` (key: `ppm_persona_override:<userId>`) — accessible from the UserSelector popover's Edit icon on each user row
+
+**Override resolution order:**
+1. ❓ Manual override exists? → Use override
+2. 🔍 Keyword match by priority → Resolve persona
+3. 🔁 Fallback → TeamMember
 
 ---
 
@@ -779,14 +764,13 @@ These are Power Automate flows triggered from the app, not custom integrations.
 |---|---------|----------|--------|--------|
 | C1 | **1389 ESLint errors** — massive `any` usage, empty catch blocks, React hook violations | Code Quality | Maintainability, bugs | 2-3 weeks |
 | C2 | **Zero test coverage** — no unit, integration, or E2E tests | Quality Assurance | Regression risk | 4-6 weeks |
-| C3 | **No CRUD-level security enforcement** — most pages have action buttons visible to all | Security | Data integrity | 1-2 weeks |
+| C3 | ~~No CRUD-level security enforcement — most pages have action buttons visible to all~~ | ✅ **RESOLVED** — All 21 CRUD-capable pages now enforce useAuthorization | Security | 1-2 weeks |
 | C4 | **No row-level data filtering** — users see all data (except IssuesPage) | Security | Data leakage | 1 week |
 | C5 | **No column-level security** — financial fields visible to all users | Security | Confidentiality | 2-3 days |
 | C6 | **No API-level RBAC** — service calls return full datasets | Security | Data leakage | 1-2 weeks |
-| C7 | **Fragile persona resolution** — keyword-based, conflicts, no admin override | Security | Misclassification | 1 week |
+| C7 | ~~Fragile persona resolution — keyword-based, conflicts, no admin override~~ | ✅ **RESOLVED** — Keyword priority fixed (Executive before PMO); admin override via UserSelector popover | Security | 1 week |
 | C8 | **Missing delete on core entities** — Portfolios, Programmes, Projects, Pipeline | Functional Gap | Cannot remove data | 2-3 days |
-| C9 | **Orphaned modules** — TeamWorkspace and ApprovalRequests inaccessible | Functional Gap | Wasted code | 1 day |
-| C10 | **No audit trail viewer UI** — changelog entries written but no UI to review | Compliance | Audit failure | 1 week |
+| C9 | **No audit trail viewer UI** — changelog entries written but no UI to review | Compliance | Audit failure | 1 week |
 
 ### 🟡 HIGH (Should Fix for MVP)
 
@@ -847,8 +831,8 @@ These are Power Automate flows triggered from the app, not custom integrations.
 |-------|--------|--------|-----------|
 | 1 | Fix `noImplicitAny` in tsconfig + refactor all `any` types | Codebase-wide | Eliminates >1300 lint errors instantly |
 | 2 | Add delete functionality to Portfolios, Programmes, Projects, Pipeline | 4 feature modules | Completes CRUD for all core entities |
-| 3 | Wire TeamWorkspace and ApprovalRequests into routes | routes.tsx | Unlocks existing code |
-| 4 | Implement `useAuthorization` CRUD checks on ALL pages | 24 feature modules | Closes FR-UAS-01 gap |
+| 3 | ~~Implement `useAuthorization` CRUD checks on ALL pages~~ | ✅ **COMPLETED** — All 21 CRUD-capable pages now enforce useAuthorization | Closes FR-UAS-01 gap |
+| 4 | ~~Fix fragile persona resolution + add manual override (S3+S4)~~ | ✅ **COMPLETED** — Keyword priority fixed; localStorage-based overrides via UserSelector popover | Closes FR-UAS-01 |
 | 5 | Add row-level filtering to Resources, Projects, Timesheets, Risks, Tasks | 5 feature modules | Closes NFR-DM-03 partially |
 | 6 | Fix `useDataGrid` React ref violation | hooks/ | Prevents potential render bugs |
 | 7 | Add centralized form validation (zod or similar) | Common utility | Improves data quality |
@@ -857,21 +841,21 @@ These are Power Automate flows triggered from the app, not custom integrations.
 
 | Order | Action | Target | Rationale |
 |-------|--------|--------|-----------|
-| 8 | Implement audit trail viewer UI | ActivityLog enhancement | Closes FR-UAS-04 |
-| 9 | Add route-level guard in App.tsx | App shell | Closes URL bypass gap |
-| 10 | Add column-level field hiding for sensitive data | Service layer | Closes NFR-DM-03 |
-| 11 | Set up Jest/Vitest + write unit tests for services | Testing | Minimum testing baseline |
-| 12 | Configure accessibility audit + fix WCAG violations | All components | Legal compliance |
+| 7 | Implement audit trail viewer UI | ActivityLog enhancement | Closes FR-UAS-04 |
+| 8 | Add route-level guard in App.tsx | App shell | Closes URL bypass gap |
+| 9 | Add column-level field hiding for sensitive data | Service layer | Closes NFR-DM-03 |
+| 10 | Set up Jest/Vitest + write unit tests for services | Testing | Minimum testing baseline |
+| 11 | Configure accessibility audit + fix WCAG violations | All components | Legal compliance |
 
 ### 15.3 MVP Enhancement Recommendations
 
 | Order | Action | Target | Rationale |
 |-------|--------|--------|-----------|
-| 13 | Implement Excel upload for financial data | finance.service | Closes NFR-INT-07 |
-| 14 | Implement Excel upload for schedule data | project.service | Closes NFR-INT-12 |
-| 15 | Provide baseline Power BI dataset | New deliverable | Closes NFR-INT-18 |
-| 16 | Add contextual help/tooltips | Common component | Closes NFR-USE-03 |
-| 17 | Implement configurable reports (financial/schedule/risk) | New reporting module | Closes FR-RA-03/04/05 |
+| 12 | Implement Excel upload for financial data | finance.service | Closes NFR-INT-07 |
+| 13 | Implement Excel upload for schedule data | project.service | Closes NFR-INT-12 |
+| 14 | Provide baseline Power BI dataset | New deliverable | Closes NFR-INT-18 |
+| 15 | Add contextual help/tooltips | Common component | Closes NFR-USE-03 |
+| 16 | Implement configurable reports (financial/schedule/risk) | New reporting module | Closes FR-RA-03/04/05 |
 
 ### 15.4 Long-Term Roadmap
 

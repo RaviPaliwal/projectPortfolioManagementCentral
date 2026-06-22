@@ -14,8 +14,10 @@ import {
   Avatar,
   Box,
   Alert,
+  FormHelperText,
 } from '@mui/material'
 import EventNoteIcon from '@mui/icons-material/EventNote'
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import type { ResourceModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
 import { Button } from '@/components/common'
@@ -75,9 +77,38 @@ export function TimesheetFormDialog({
       .map((r) => ({ value: r.pm_resourceid ?? '', label: r.pm_fullname! }))
   }, [resources])
 
-  const handleSubmit = async () => {
+  const periodDurationDays = useMemo(() => {
+    if (!form.pm_periodstartdate || !form.pm_periodenddate) return 0
+    const start = new Date(form.pm_periodstartdate)
+    const end = new Date(form.pm_periodenddate)
+    return Math.max(0, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+  }, [form.pm_periodstartdate, form.pm_periodenddate])
+
+  const periodValidationError = useMemo(() => {
+    if (!form.pm_periodstartdate || !form.pm_periodenddate) return null
     if (form.pm_periodenddate < form.pm_periodstartdate) {
-      setPeriodError('Period End must be on or after Period Start.')
+      return 'Period End must be on or after Period Start.'
+    }
+    if (periodDurationDays > 370) {
+      return 'Period cannot exceed 370 days. Please select a shorter range.'
+    }
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    const start = new Date(form.pm_periodstartdate + 'T00:00:00')
+    const futureLimit = new Date(now.getFullYear() + 1, now.getMonth(), 1)
+    if (start > futureLimit) {
+      return 'Start date cannot be more than 12 months in the future.'
+    }
+    return null
+  }, [form.pm_periodstartdate, form.pm_periodenddate, periodDurationDays])
+
+  const handleSubmit = async () => {
+    if (periodValidationError) {
+      setPeriodError(periodValidationError)
+      return
+    }
+    if (!form._pm_resource_value && !form.ownerid) {
+      setPeriodError('Please select a resource.')
       return
     }
     setPeriodError(null)
@@ -115,18 +146,20 @@ export function TimesheetFormDialog({
 
         <Grid container spacing={2.5}>
           <Grid size={{ xs: 12 }}>
-            <FormControl fullWidth size="small">
+            <FormControl fullWidth size="small" required>
               <InputLabel>Resource</InputLabel>
               <Select
                 value={form._pm_resource_value}
                 label="Resource"
                 onChange={(e) => setForm((f) => ({ ...f, _pm_resource_value: e.target.value }))}
               >
-                <MenuItem value="">None (enter name manually)</MenuItem>
                 {resourceOptions.map((r) => (
                   <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>
                 ))}
               </Select>
+              {!form._pm_resource_value && (
+                <FormHelperText>Resource is required</FormHelperText>
+              )}
             </FormControl>
           </Grid>
 
@@ -154,6 +187,18 @@ export function TimesheetFormDialog({
               slotProps={{ inputLabel: { shrink: true } }}
             />
           </Grid>
+
+          {periodDurationDays > 0 && (
+            <Grid size={{ xs: 12 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+                <CalendarMonthIcon sx={{ fontSize: 16 }} />
+                <Typography variant="caption">
+                  Period duration: <strong>{periodDurationDays} day{periodDurationDays !== 1 ? 's' : ''}</strong>
+                </Typography>
+              </Box>
+            </Grid>
+          )}
+
           {periodError && (
             <Grid size={{ xs: 12 }}>
               <Alert severity="error" onClose={() => setPeriodError(null)}>
@@ -177,7 +222,7 @@ export function TimesheetFormDialog({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={!form.pm_periodstartdate || !form.pm_periodenddate || (!form._pm_resource_value && !form.ownerid) || loading}
+          disabled={!form.pm_periodstartdate || !form.pm_periodenddate || !form._pm_resource_value || !!periodValidationError || loading}
         >
           {loading ? 'Creating...' : draftMode ? 'Create Entry' : 'Create Timesheet'}
         </Button>

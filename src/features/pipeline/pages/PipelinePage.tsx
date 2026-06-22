@@ -32,10 +32,13 @@ import {
   ListItemButton,
   ListItemAvatar,
   ListItemText,
+  IconButton,
+  Tooltip,
   alpha,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
@@ -70,6 +73,7 @@ import {
   createInitiative,
   updateInitiative,
   updateInitiativeStatus,
+  deleteInitiative,
   fetchPipelineKpis,
   fetchPortfolioHierarchy,
   startWorkflowForEntity,
@@ -94,6 +98,7 @@ import {
   EntityDocumentsTab,
   DocumentPreviewDialog,
   Button,
+  ConfirmDialog,
 } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
@@ -224,6 +229,10 @@ export default function PipelinePage() {
   // ── Confirmation Dialog State ─────────────────────────────────────────────
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; name: string }>({ open: false, name: '' })
 
+  // ── Delete State ─────────────────────────────────────────────────────────
+  const [deleteTarget, setDeleteTarget] = useState<InitiativeModel | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
   // ── Score Edit State ───────────────────────────────────────────────────────
   const [editScoreMode, setEditScoreMode] = useState(false)
   const [editScore, setEditScore] = useState(0)
@@ -232,6 +241,7 @@ export default function PipelinePage() {
 
   const { allowed: canCreate } = useAuthorization('PIPELINE', 'create')
   const { allowed: canEdit } = useAuthorization('PIPELINE', 'update')
+  const { allowed: canDelete } = useAuthorization('PIPELINE', 'delete')
 
   // ── Portfolio options for create modal ──────────────────────────────────
   const [portfolios, setPortfolios] = useState<PortfolioModel[]>([])
@@ -584,6 +594,26 @@ export default function PipelinePage() {
     }
   }
 
+  const handleDeleteInitiative = async () => {
+    if (!deleteTarget?.pm_initiativeid) return
+    setDeleteLoading(true)
+    setError(null)
+    try {
+      await deleteInitiative(deleteTarget.pm_initiativeid)
+      setInitiatives(prev => prev.filter(i => i.pm_initiativeid !== deleteTarget.pm_initiativeid))
+      setSuccessMsg('Initiative deleted.')
+      setDeleteTarget(null)
+      if (selectedInitiative?.pm_initiativeid === deleteTarget.pm_initiativeid) {
+        setSelectedInitiative(null)
+      }
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Unable to delete initiative.')
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
   // ── Detail Drawer subtitle ────────────────────────────────────────────────
   const drawerSubtitle = selectedInitiative && (
     <>
@@ -674,6 +704,7 @@ export default function PipelinePage() {
               { label: 'Strategic Alignment', sortable: true, active: sort.field === 'strategicScore', dir: sort.dir, onClick: () => handleSort('strategicScore') },
               { label: 'Estimated Cost', align: 'right', sortable: true, active: sort.field === 'estimatedCost', dir: sort.dir, onClick: () => handleSort('estimatedCost') },
               { label: 'Status', sortable: true, active: sort.field === 'status', dir: sort.dir, onClick: () => handleSort('status') },
+              { label: 'Actions', align: 'center' },
             ]} />
             <TableBody>
               {paginatedInitiatives.map((initiative, idx) => {
@@ -730,6 +761,21 @@ export default function PipelinePage() {
                         variant="outlined"
                         sx={{ fontWeight: 600 }}
                       />
+                    </TableCell>
+                    <TableCell align="center" onClick={(e) => e.stopPropagation()}>
+                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                        {canDelete && (
+                          <Tooltip title="Delete Initiative">
+                            <IconButton
+                              size="small"
+                              onClick={() => setDeleteTarget(initiative)}
+                              sx={{ color: 'error.main' }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 )
@@ -1306,6 +1352,18 @@ export default function PipelinePage() {
           fileUrl={previewFile.url}
         />
       )}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Initiative"
+        message={`Are you sure you want to delete ${deleteTarget?.pm_name || 'this initiative'}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        confirmColor="error"
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteInitiative}
+        loading={deleteLoading}
+      />
     </Box>
   )
 }

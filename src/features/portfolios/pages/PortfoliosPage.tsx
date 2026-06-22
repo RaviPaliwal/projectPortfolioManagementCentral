@@ -12,6 +12,7 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
@@ -28,7 +29,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 
-import { fetchPortfolioHierarchy } from '@/services'
+import { fetchPortfolioHierarchy, deletePortfolio } from '@/services'
 
 import {
   PageHeader,
@@ -44,6 +45,7 @@ import {
   VarianceDisplay,
   StatusProgressBar,
   DataverseTable,
+  ConfirmDialog,
 } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
@@ -70,11 +72,13 @@ const portfolioExportColumns: ExportColumn[] = [
 export default function PortfoliosPage() {
   const { allowed: canCreate } = useAuthorization('PORTFOLIOS', 'create')
   const { allowed: canEdit } = useAuthorization('PORTFOLIOS', 'update')
+  const { allowed: canDelete } = useAuthorization('PORTFOLIOS', 'delete')
 
   // Data state
   const [hierarchy, setHierarchy] = useState<{ portfolios: PortfolioModel[]; programmes: ProgrammeModel[]; projects: ProjectModel[] }>({ portfolios: [], programmes: [], projects: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   // Grid state
   const [filteredPortfolios, setFilteredPortfolios] = useState<PortfolioModel[]>([])
@@ -87,6 +91,10 @@ export default function PortfoliosPage() {
   // Create/Edit modal state
   const [showFormModal, setShowFormModal] = useState(false)
   const [editingPortfolio, setEditingPortfolio] = useState<PortfolioModel | null>(null)
+
+  // Delete state
+  const [deleteTarget, setDeleteTarget] = useState<PortfolioModel | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -176,6 +184,26 @@ export default function PortfoliosPage() {
   const openEditForm = (portfolio: PortfolioModel) => {
     setEditingPortfolio(portfolio)
     setShowFormModal(true)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget?.pm_portfolioid) return
+    setDeleteLoading(true)
+    setError(null)
+    try {
+      await deletePortfolio(deleteTarget.pm_portfolioid)
+      setHierarchy(prev => ({ ...prev, portfolios: prev.portfolios.filter(p => p.pm_portfolioid !== deleteTarget.pm_portfolioid) }))
+      setSuccessMsg('Portfolio deleted.')
+      setDeleteTarget(null)
+      if (selectedPortfolio?.pm_portfolioid === deleteTarget.pm_portfolioid) {
+        setSelectedPortfolio(null)
+      }
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Unable to delete portfolio.')
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -305,6 +333,17 @@ export default function PortfoliosPage() {
                   sx={{ borderRadius: 1.5 }}
                 >
                   Edit Portfolio
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => setDeleteTarget(selectedPortfolio)}
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  Delete Portfolio
                 </Button>
               )}
             </Box>
@@ -556,7 +595,8 @@ export default function PortfoliosPage() {
         }
       />
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
       {/* ── 1. Executive Roll-Up KPI Ribbon ──────────────────────────── */}
       {!loading && (
@@ -619,17 +659,31 @@ export default function PortfoliosPage() {
         onRowClick={handleRowClick}
         onCreateClick={openCreateForm}
         onEditClick={openEditForm}
+        onDeleteClick={setDeleteTarget}
         onFilteredDataChange={setFilteredPortfolios}
         canEdit={canEdit}
+        canDelete={canDelete}
       />
 
-      {/* ── 4. Create/Edit Portfolio Modal & Confirmation ──────────────── */}
+      {/* ── 4. Create/Edit Portfolio Modal ──────────────── */}
       <PortfolioFormDialog
         open={showFormModal}
         onClose={() => setShowFormModal(false)}
         onSuccess={handleSuccess}
         onError={(msg) => setError(msg)}
         initialData={editingPortfolio}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Portfolio"
+        message={`Are you sure you want to delete ${deleteTarget?.pm_portfolioname || 'this portfolio'}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        confirmColor="error"
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        loading={deleteLoading}
       />
     </Box>
   )

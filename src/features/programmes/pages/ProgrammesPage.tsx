@@ -38,6 +38,7 @@ import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
@@ -45,7 +46,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 
-import { fetchProgrammeDetails, fetchPortfolioHierarchy } from '@/services'
+import { fetchProgrammeDetails, fetchPortfolioHierarchy, deleteProgramme } from '@/services'
 import {
   StatusChip,
   StatusTag,
@@ -62,6 +63,7 @@ import {
   ActionIcon,
   EntityDocumentsTab,
   DataverseTable,
+  ConfirmDialog,
 } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { fontSizes } from '@/styles'
@@ -111,6 +113,7 @@ const ISSUE_PRIORITY_LABELS: Record<string, string> = {
 export default function ProgrammesPage() {
   const { allowed: canCreate } = useAuthorization('PROGRAMMES', 'create')
   const { allowed: canEdit } = useAuthorization('PROGRAMMES', 'update')
+  const { allowed: canDelete } = useAuthorization('PROGRAMMES', 'delete')
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
@@ -119,6 +122,7 @@ export default function ProgrammesPage() {
   const [portfolios, setPortfolios] = useState<{ id: string; name: string; budget: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   // ── List View State ────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('')
@@ -147,6 +151,10 @@ export default function ProgrammesPage() {
   // ── Create/Edit Modal State ────────────────────────────────────────────────
   const [showFormModal, setShowFormModal] = useState(false)
   const [editingProgramme, setEditingProgramme] = useState<ProgrammeModel | null>(null)
+
+  // ── Delete State ──────────────────────────────────────────────────────────
+  const [deleteTarget, setDeleteTarget] = useState<ProgrammeModel | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -224,6 +232,26 @@ export default function ProgrammesPage() {
   const openEditForm = (programme: ProgrammeModel) => {
     setEditingProgramme(programme)
     setShowFormModal(true)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget?.pm_programmeid) return
+    setDeleteLoading(true)
+    setError(null)
+    try {
+      await deleteProgramme(deleteTarget.pm_programmeid)
+      setProgrammes(prev => prev.filter(p => p.pm_programmeid !== deleteTarget.pm_programmeid))
+      setSuccessMsg('Programme deleted.')
+      if (selectedProgrammeId === deleteTarget.pm_programmeid) {
+        closeDetail()
+      }
+      setDeleteTarget(null)
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Unable to delete programme.')
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const handleSort = (field: SortField) => {
@@ -390,6 +418,17 @@ export default function ProgrammesPage() {
                   sx={{ borderRadius: 1.5 }}
                 >
                   Edit Programme
+                </Button>
+              )}
+              {canDelete && prog && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => setDeleteTarget(prog)}
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  Delete Programme
                 </Button>
               )}
             </Box>
@@ -655,6 +694,7 @@ export default function ProgrammesPage() {
           </Box>
         }
       />
+      {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {!loading && <KpiCardRow items={kpiItems} />}
       {!loading && <HealthSplitBar green={kpiData.green} amber={kpiData.amber} red={kpiData.red} sx={{ mb: 3 }} />}
@@ -839,11 +879,20 @@ export default function ProgrammesPage() {
                     <TableCell align="right"><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{currencyFormatter.format(p.pm_budgeteur ?? 0)}</Typography></TableCell>
                     <TableCell align="right"><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{currencyFormatter.format(p.pm_actualspendeur ?? 0)}</Typography></TableCell>
                     <TableCell align="center" onClick={(e) => e.stopPropagation()}>
-                      <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => openEditForm(p)} sx={{ color: 'primary.main' }}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => openEditForm(p)} sx={{ color: 'primary.main' }}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        {canDelete && (
+                          <Tooltip title="Delete Programme">
+                            <IconButton size="small" onClick={() => setDeleteTarget(p)} sx={{ color: 'error.main' }}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -873,6 +922,18 @@ export default function ProgrammesPage() {
         initialData={editingProgramme}
         portfolios={portfolios}
         allProgrammes={programmes}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Programme"
+        message={`Are you sure you want to delete ${deleteTarget?.pm_programmename || 'this programme'}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        confirmColor="error"
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        loading={deleteLoading}
       />
     </Box>
   )

@@ -14,6 +14,7 @@ import CancelIcon from '@mui/icons-material/Cancel'
 import { fetchTimesheetDetails, fetchTimesheetEntries, updateTimesheetStatus } from '@/services/timesheet.service'
 import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { TimesheetModel, TimesheetEntryModel } from '@/types/dataverse'
+import { useUser } from '@/context/UserContext'
 import { LedgerCalendar } from '@/components/common'
 import type { CalendarEntry } from '@/components/common/LedgerCalendar/LedgerCalendar'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
@@ -53,6 +54,7 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
   const [timesheet, setTimesheet] = useState<TimesheetModel | null>(null)
   const [entries, setEntries] = useState<TimesheetEntryModel[]>([])
   const mountedRef = useRef(true)
+  const { currentUser } = useUser()
 
   useEffect(() => {
     mountedRef.current = true
@@ -221,11 +223,12 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
         {DecisionBoxProp && approvalStepId ? (
           <DecisionBoxProp
             approvalStepId={approvalStepId}
-            onBeforeDecision={async (decision) => {
+              onBeforeDecision={async (decision) => {
               setSaving(true)
               try {
                 const newStatus = decision === 0 ? 0 : 2
-                await updateTimesheetStatus(timesheetId, newStatus, undefined, undefined)
+                const approverName = currentUser?.fullname ?? 'System'
+                await updateTimesheetStatus(timesheetId, newStatus, undefined, approverName)
                 const decisionLabel = decision === 0 ? 'Approved' : 'Rejected'
                 onSuccess('Timesheet review completed. Decision: ' + decisionLabel + '.')
                 return true

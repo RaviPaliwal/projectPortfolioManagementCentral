@@ -29,6 +29,7 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import PersonIcon from '@mui/icons-material/Person'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 
 import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader, ActionIcon, EntityDocumentsTab } from '@/components/common'
@@ -69,8 +70,10 @@ interface Project360ViewProps {
   onAddBenefit: () => void
   onAddTask: () => void
   onNavigateToGateReview?: (gateReview?: GateReviewModel) => void
+  onDeleteProject?: (project: ProjectModel) => void
   onEditProject: (project: ProjectModel) => void
   canEdit?: boolean
+  canDelete?: boolean
   onMarkTaskAsDone?: (taskId: string) => Promise<void>
   onEditMilestone?: (milestone: ProjectMilestoneModel) => void
   onEditTask?: (task: ProjectTaskModel) => void
@@ -100,8 +103,10 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onAddBenefit,
   onAddTask,
   onNavigateToGateReview,
+  onDeleteProject,
   onEditProject,
   canEdit = false,
+  canDelete = false,
   onMarkTaskAsDone,
   onEditMilestone,
   onEditTask,
@@ -149,6 +154,14 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                 onClick={() => onEditProject(project)}
                 label="Edit Project"
                 color="primary"
+              />
+            )}
+            {canDelete && (
+              <ActionIcon
+                icon={<DeleteIcon />}
+                onClick={() => onDeleteProject?.(project)}
+                label="Delete Project"
+                color="error"
               />
             )}
             <StatusChip status={project.pm_ragstatus} type="rag" size="small" />

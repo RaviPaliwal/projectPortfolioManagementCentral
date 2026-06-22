@@ -54,7 +54,8 @@ export async function fetchTimesheets(resourceId?: string): Promise<TimesheetMod
     'pm_timesheetid', 'pm_timesheetname',
     'pm_periodstartdate', 'pm_periodenddate', 'pm_timesheetstatus',
     'pm_totalhours', 'pm_totalchargeablehours', 'pm_totalnonchargeablehours',
-    'pm_submissiondate', 'pm_approvaldate',
+    'pm_submissiondate', 'pm_submittedby',
+    'pm_approvaldate', 'pm_approvedby',
     'pm_rejectionreason', '_pm_resource_value',
   ]
   const options = {
@@ -243,19 +244,25 @@ export async function updateTimesheetStatus(
   })
 }
 
-export async function recalculateTimesheetHours(timesheetId: string): Promise<void> {
+export async function recalculateTimesheetHours(timesheetId: string): Promise<{
+  pm_totalhours: number
+  pm_totalchargeablehours: number
+  pm_totalnonchargeablehours: number
+} | null> {
   try {
     const entries = await fetchTimesheetEntries(timesheetId)
-    const totalHours = entries.reduce((s, e) => s + (e.pm_hoursworked ?? 0), 0)
-    const chargeable = entries.filter((e) => e.pm_ischargeable).reduce((s, e) => s + (e.pm_hoursworked ?? 0), 0)
-    const nonChargeable = entries.filter((e) => !e.pm_ischargeable).reduce((s, e) => s + (e.pm_hoursworked ?? 0), 0)
+    const pm_totalhours = entries.reduce((s, e) => s + (e.pm_hoursworked ?? 0), 0)
+    const pm_totalchargeablehours = entries.filter((e) => e.pm_ischargeable).reduce((s, e) => s + (e.pm_hoursworked ?? 0), 0)
+    const pm_totalnonchargeablehours = entries.filter((e) => !e.pm_ischargeable).reduce((s, e) => s + (e.pm_hoursworked ?? 0), 0)
     await Pm_timesheetsService.update(timesheetId, {
-      pm_totalhours: totalHours,
-      pm_totalchargeablehours: chargeable,
-      pm_totalnonchargeablehours: nonChargeable,
+      pm_totalhours,
+      pm_totalchargeablehours,
+      pm_totalnonchargeablehours,
     } as any)
+    return { pm_totalhours, pm_totalchargeablehours, pm_totalnonchargeablehours }
   } catch (err) {
     console.error('[dataverseService] recalculateTimesheetHours failed:', err)
+    return null
   }
 }
 

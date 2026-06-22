@@ -17,6 +17,7 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import { SearchFilterBar, TableFooter, TableShell, ExportButton, StatusTag, StatusChip, Button } from '@/components/common'
 import type { ProjectModel } from '@/types/dataverse'
@@ -33,7 +34,9 @@ interface ProjectGridsProps {
   onRowClick: (project: ProjectModel) => void
   onAddProject: () => void
   onEditProject: (project: ProjectModel) => void
+  onDeleteProject?: (project: ProjectModel) => void
   canEdit?: boolean
+  canDelete?: boolean
 }
 
 export const ProjectGrids: React.FC<ProjectGridsProps> = ({
@@ -42,7 +45,9 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
   onRowClick,
   onAddProject,
   onEditProject,
-  canEdit = false
+  onDeleteProject,
+  canEdit = false,
+  canDelete = false
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -244,20 +249,36 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                   </Typography>
                 </TableCell>
                 <TableCell align="center">
-                  {canEdit && (
-                    <Tooltip title="Edit Project">
-                      <IconButton 
-                        size="small" 
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onEditProject(project)
-                        }}
-                        sx={{ color: 'primary.main' }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
+                  <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                    {canEdit && (
+                      <Tooltip title="Edit Project">
+                        <IconButton 
+                          size="small" 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onEditProject(project)
+                          }}
+                          sx={{ color: 'primary.main' }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {canDelete && (
+                      <Tooltip title="Delete Project">
+                        <IconButton 
+                          size="small" 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onDeleteProject?.(project)
+                          }}
+                          sx={{ color: 'error.main' }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}

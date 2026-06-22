@@ -6,7 +6,7 @@ import {
 } from '@mui/material'
 import { SystemusersService, TeamsService, TeammembershipsService } from '@/generated'
 import { StatusTag } from '@/components/common'
-import { getPersonaFromUser } from '@/constants/permissions'
+import { getPersonaFromUser, setPersonaOverride, getAllPersonaOverrides, getPersonaFromTeamName, formatPersonaName } from '@/constants/permissions'
 import type { Persona } from '@/constants/permissions'
 
 
@@ -31,6 +31,8 @@ interface UserContextValue {
   refreshUsers: () => Promise<void>
   userRolesMap: Record<string, string[]>
   userTeams: Map<string, string[]>
+  personaOverrides: Record<string, Persona>
+  setPersonaOverride: (userId: string, persona: Persona | null) => void
 }
 
 const UserContext = createContext<UserContextValue>({
@@ -43,6 +45,8 @@ const UserContext = createContext<UserContextValue>({
   refreshUsers: async () => {},
   userRolesMap: {},
   userTeams: new Map(),
+  personaOverrides: {},
+  setPersonaOverride: () => {},
 })
 
 export function useUser() {
@@ -232,7 +236,7 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Resolve personas for all users
+      // Resolve personas for all users (overrides applied inside getPersonaFromUser)
       const personas: Record<string, Persona> = {}
       for (const u of list) {
         const uId = u.systemuserid
@@ -263,6 +267,12 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         
         const resolvedPersona = getPersonaFromUser(u, userTeamNames, userRoleNames)
         personas[cleanUserId] = resolvedPersona
+      }
+      
+      // Apply any stored overrides (in case they were set while this list was cached)
+      const storedOverrides = getAllPersonaOverrides()
+      for (const [userId, persona] of Object.entries(storedOverrides)) {
+        personas[userId] = persona
       }
 
       setUserPersonas(personas)
@@ -320,6 +330,14 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
     return userPersonas[normalizeGuid(currentUser.systemuserid)] || 'TeamMember'
   }, [currentUser, userPersonas])
 
+  const handleSetPersonaOverride = useCallback((userId: string, persona: Persona | null) => {
+    setPersonaOverride(userId, persona)
+    // Re-fetch user data to recalculate personas
+    fetchUsers()
+  }, [fetchUsers])
+
+  const personaOverrides = useMemo(() => getAllPersonaOverrides(), [userPersonas])
+
   return (
     <UserContext.Provider value={{
       currentUser,
@@ -330,7 +348,9 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
       loading,
       refreshUsers: fetchUsers,
       userRolesMap,
-      userTeams: userTeamsState
+      userTeams: userTeamsState,
+      personaOverrides,
+      setPersonaOverride: handleSetPersonaOverride,
     }}>
       {children}
     </UserContext.Provider>
@@ -360,7 +380,7 @@ interface UserSelectorProps {
 }
 
 export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
-  const { currentUser, setCurrentUser, users, userPersonas, userRolesMap, userTeams, currentUserPersona } = useUser()
+  const { currentUser, setCurrentUser, users, userPersonas, userRolesMap, userTeams, currentUserPersona, personaOverrides, setPersonaOverride: setOverride } = useUser()
 
   if (variant === 'full') {
     return (
@@ -468,16 +488,66 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
                   </Badge>
                 </ListItemAvatar>
                 <ListItemText
-                  primary={user.fullname}
-                  secondary={user.jobtitle ? `${user.jobtitle} • (${persona})` : `${user.domainname || ''} • (${persona})`}
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {user.fullname}
+                    </Box>
+                  }
+                  secondary={user.jobtitle ? user.jobtitle : (user.domainname || '')}
                   slotProps={{
                     primary: { sx: { fontWeight: isActive ? 700 : 500, fontSize: '0.875rem' } },
                     secondary: { sx: { fontSize: '0.75rem' } },
                   }}
                 />
-                {isActive && (
-                  <StatusTag label="Active" color="success" variant="outlined" />
-                )}
+                <Box sx={{ display: 'flex', gap: 0.25, ml: 1, flexShrink: 0, alignItems: 'center' }}>
+                  {user.systemuserid && userTeams.has(cleanId) && userTeams.get(cleanId)!.length > 1 && (() => {
+                    const teamNames = userTeams.get(cleanId)!
+                    const currentOverride = personaOverrides[cleanId]
+                    return (
+                      <FormControl size="small" sx={{ minWidth: 140 }}>
+                        <Select
+                          value={currentOverride || persona}
+                          displayEmpty
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setOverride(user.systemuserid!, (val as Persona) || null)
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          renderValue={(selected) => (
+                            <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1 }}>
+                              {formatPersonaName(selected as Persona)}
+                            </Typography>
+                          )}
+                          sx={{
+                            fontSize: '0.7rem',
+                            height: 22,
+                            '& .MuiSelect-select': { py: 0, pr: '16px !important', pl: 0.5 },
+                            '& .MuiOutlinedInput-notchedOutline': { borderColor: currentOverride ? 'warning.main' : 'divider' },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'warning.main' },
+                          }}
+                        >
+                          {currentOverride && (
+                            <MenuItem value="">
+                              <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                Clear override
+                              </Typography>
+                            </MenuItem>
+                          )}
+                          {Array.from(new Set(teamNames.map(getPersonaFromTeamName))).map((p) => (
+                            <MenuItem key={p} value={p}>
+                              <Typography variant="caption" sx={{ fontWeight: currentOverride === p ? 700 : 400 }}>
+                                {formatPersonaName(p)}
+                              </Typography>
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )
+                  })()}
+                  {isActive && (
+                    <StatusTag label="Active" color="success" variant="outlined" />
+                  )}
+                </Box>
               </ListItemButton>
             )
           })}

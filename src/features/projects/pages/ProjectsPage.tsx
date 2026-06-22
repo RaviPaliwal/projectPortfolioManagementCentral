@@ -4,6 +4,7 @@ import {
   Alert,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import GppGoodIcon from '@mui/icons-material/GppGood'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
@@ -17,6 +18,7 @@ import type { CrudModule } from '@/constants/permissions'
 import {
   createProject,
   updateProject,
+  deleteProject,
   fetchProjectsFull,
   fetchMilestonesDueThisMonth,
   fetchPortfolioHierarchy,
@@ -25,7 +27,7 @@ import {
 } from '@/services'
 import { useUser } from '@/context/UserContext'
 import { MODULE_NAMES } from '@/constants/moduleNames'
-import { PageHeader, KpiCardRow, ExportButton, Button } from '@/components/common'
+import { PageHeader, KpiCardRow, ExportButton, Button, ConfirmDialog } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 
@@ -49,6 +51,7 @@ export default function ProjectsPage() {
   const { currentUser } = useUser()
   const { allowed: canCreate } = useAuthorization('PROJECTS', 'create')
   const { allowed: canEdit } = useAuthorization('PROJECTS', 'update')
+  const { allowed: canDelete } = useAuthorization('PROJECTS', 'delete')
 
   // Navigation state
   const [selectedProject, setSelectedProject] = useState<ProjectModel | null>(null)
@@ -80,6 +83,10 @@ export default function ProjectsPage() {
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<ProjectTaskModel | null>(null)
   const [gateReviewDialogOpen, setGateReviewDialogOpen] = useState(false)
+
+  // Delete state
+  const [deleteTarget, setDeleteTarget] = useState<ProjectModel | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   // Detail sub-data
   const [detailMilestones, setDetailMilestones] = useState<ProjectMilestoneModel[]>([])
@@ -196,6 +203,26 @@ export default function ProjectsPage() {
   const handleBack = () => {
     setSelectedProject(null)
     setError(null)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget?.pm_projectid) return
+    setDeleteLoading(true)
+    setError(null)
+    try {
+      await deleteProject(deleteTarget.pm_projectid)
+      setProjects(prev => prev.filter(p => p.pm_projectid !== deleteTarget.pm_projectid))
+      setSuccessMsg('Project deleted.')
+      setDeleteTarget(null)
+      if (selectedProject?.pm_projectid === deleteTarget.pm_projectid) {
+        setSelectedProject(null)
+      }
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch {
+      setError('Unable to delete project.')
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const openCreateForm = () => {
@@ -498,6 +525,8 @@ export default function ProjectsPage() {
           tasks={detailTasks}
           gateReviews={detailGateReviews}
           onBack={handleBack}
+          onDeleteProject={handleDelete}
+          canDelete={canDelete}
           onAddMilestone={() => {
             setEditingMilestone(null)
             setMilestoneDialogOpen(true)
@@ -527,6 +556,7 @@ export default function ProjectsPage() {
           onEditTask={handleEditTask}
           onNavigateToGateReview={() => setGateReviewDialogOpen(true)}
           canEdit={canEdit}
+          canDelete={canDelete}
           onEditProject={openEditForm}
           onMarkTaskAsDone={handleMarkTaskAsDone}
           onUpdateTaskStatus={handleUpdateTaskStatus}
@@ -563,7 +593,9 @@ export default function ProjectsPage() {
             onRowClick={handleRowClick}
             onAddProject={openCreateForm}
             onEditProject={openEditForm}
+            onDeleteProject={setDeleteTarget}
             canEdit={canEdit}
+            canDelete={canDelete}
           />
         </>
       )}
@@ -658,6 +690,18 @@ export default function ProjectsPage() {
           />
         </>
       )}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Project"
+        message={`Are you sure you want to delete ${deleteTarget?.pm_projectname || 'this project'}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        confirmColor="error"
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        loading={deleteLoading}
+      />
     </Box>
   )
 }

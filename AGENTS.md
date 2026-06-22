@@ -51,6 +51,20 @@
   - Shows a **Resource Availability** paper card with breakdown; **Insufficient Availability** `Alert` when `pm_allocatedhours > availableHours`; submit button disabled until valid.
 - **File**: `ProjectSubFormDialogs.tsx:147-387`
 
+### 10. Timesheet Grid Hours vs Entry Sum Mismatch (J2-133)
+- **Root Cause**: `recalculateTimesheetHours` wrote updated totals to Dataverse, but subsequent `fetchTimesheets()` read stale data due to Dataverse write-read propagation delay, causing the grid to display incorrect `pm_totalhours`.
+- **Fix**: `recalculateTimesheetHours` now returns the computed `{ pm_totalhours, pm_totalchargeablehours, pm_totalnonchargeablehours }`. Callers (`TimesheetsPage.handleAddEntry`, `handleDeleteEntry`, `TeamMemberTimesheetPage.handleSaveEntry`, `handleRemoveEntry`) apply these values directly to local state via `setSelectedTimesheet`/`setTimesheets` instead of re-fetching from Dataverse, eliminating the race condition.
+
+### 11. Submitted By / Approved By Fields (J2-134)
+- **Root Cause 1**: `TimesheetApprovalTaskModal.onBeforeDecision` passed `undefined` as `currentUserName`, causing `pm_approvedby` to always be `"System"`.
+- **Fix 1**: Imported `useUser` in `TimesheetApprovalTaskModal`; passes `currentUser?.fullname ?? 'System'` to `updateTimesheetStatus`. Also fixed `TeamMemberTimesheetPage.handleSubmit` to pass `currentUser?.fullname`.
+- **Root Cause 2**: `fetchTimesheets()` in `timesheet.service.ts` did not select `pm_submittedby` or `pm_approvedby` fields, so the list/detail views never displayed them.
+- **Fix 2**: Added `pm_submittedby` and `pm_approvedby` to the `$select` fields in `fetchTimesheets()`.
+
+### 12. New Timesheet Dialog Validation (J2-136)
+- **Root Cause**: `TimesheetFormDialog` allowed timesheet creation without a resource selected ("None (enter name manually)" option), had no period duration validation, and no feedback on period length.
+- **Fix**: Removed the "None" option; resource selection is now required. Added `periodDurationDays` computation with display (`CalendarMonthIcon` + day count). Added validation: max 370-day period limit, start date no more than 12 months in the future. All validation errors block the submit button.
+
 
 ## Work Log (Jira J2-14 � Power Platform PPM Solution)
 
@@ -102,7 +116,10 @@
 - **Agent Insights Service**: Agent-based analytics service layer
 - Code cleanup: Removed console logging from RiskIssueSetupTaskModal, removed unused AI-generated helper files, removed unused module files, unnecessary logs
 - Comprehensive Codebase Audit generated (COMPREHENSIVE_CODEBASE_AUDIT.md) � 269 source files, 26 routes, 24 modules, 25 services, 42 generated SDK models, 33+ common components, 1389 lint errors identified, 75 ITT requirements mapped (44% coverage)
-- **Jira sync**: Updated J2-65/66/67/74/75/76/77/157 from IN PROGRESS � DONE (tickets had code complete but status not updated)
+- **Jira sync**: Updated J2-65/66/67/74/75/76/77/157 from IN PROGRESS -> DONE (tickets had code complete but status not updated). Also updated backlog tickets J2-81, J2-83, J2-158, J2-159, J2-160 from TO DO -> DONE.
+- **J2-133**: Timesheet Grid Hours vs Entry Sum Mismatch — Fixed read-after-write race condition by returning computed totals from `recalculateTimesheetHours` and applying locally
+- **J2-134**: Timesheet Submitted By / Approved By Fields — Fixed "System" as approver name by passing `currentUser?.fullname` in modals; added missing `$select` fields for list/detail display
+- **J2-136**: Timesheet New Timesheet Dialog Validation — Made resource selection required, added period duration display, max 370-day limit, future date validation
 
 ## Key Architecture Facts
 - `pm_timesheetstatus` option set: `0=Approved`, `1=Submitted`, `2=Rejected`, `3=Draft`.

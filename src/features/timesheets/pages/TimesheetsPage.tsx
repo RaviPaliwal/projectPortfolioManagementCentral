@@ -86,6 +86,8 @@ export default function TimesheetsPage() {
   const isDark = theme.palette.mode === 'dark'
 
   const { allowed: canCreate } = useAuthorization('TIMESHEETS', 'create')
+  const { allowed: canEdit } = useAuthorization('TIMESHEETS', 'update')
+  const { allowed: canDelete } = useAuthorization('TIMESHEETS', 'delete')
 
   // Data state
   const [timesheets, setTimesheets] = useState<TimesheetModel[]>([])
@@ -310,13 +312,15 @@ export default function TimesheetsPage() {
       })
       setSuccessMsg('Entry added.')
       setShowAddEntry(false)
-      await recalculateTimesheetHours(selectedTimesheet.pm_timesheetid)
+      const totals = await recalculateTimesheetHours(selectedTimesheet.pm_timesheetid)
       const entryList = await fetchTimesheetEntries(selectedTimesheet.pm_timesheetid)
       setEntries(entryList)
-      const updated = await fetchTimesheets()
-      setTimesheets(updated)
-      const refreshed = updated.find((t) => t.pm_timesheetid === selectedTimesheet.pm_timesheetid)
-      if (refreshed) setSelectedTimesheet(refreshed)
+      if (totals && selectedTimesheet.pm_timesheetid) {
+        setSelectedTimesheet((prev) => prev ? { ...prev, ...totals } : null)
+        setTimesheets((prev) => prev.map((ts) =>
+          ts.pm_timesheetid === selectedTimesheet.pm_timesheetid ? { ...ts, ...totals } : ts
+        ))
+      }
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch {
       setError('Unable to add entry.')
@@ -332,11 +336,13 @@ export default function TimesheetsPage() {
       setSuccessMsg('Entry removed.')
       setEntries((prev) => prev.filter((e) => e.pm_timesheetentryid !== entryId))
       if (selectedTimesheet?.pm_timesheetid) {
-        await recalculateTimesheetHours(selectedTimesheet.pm_timesheetid)
-        const updated = await fetchTimesheets()
-        setTimesheets(updated)
-        const refreshed = updated.find((t) => t.pm_timesheetid === selectedTimesheet.pm_timesheetid)
-        if (refreshed) setSelectedTimesheet(refreshed)
+        const totals = await recalculateTimesheetHours(selectedTimesheet.pm_timesheetid)
+        if (totals) {
+          setSelectedTimesheet((prev) => prev ? { ...prev, ...totals } : null)
+          setTimesheets((prev) => prev.map((ts) =>
+            ts.pm_timesheetid === selectedTimesheet.pm_timesheetid ? { ...ts, ...totals } : ts
+          ))
+        }
       }
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch {
@@ -477,16 +483,18 @@ export default function TimesheetsPage() {
                 rejectionReason={selectedTimesheet.pm_rejectionreason}
                 loading={actionLoading}
               />
-              <Button
-                size="small"
-                color="error"
-                variant="outlined"
-                onClick={() => setDeleteConfirmOpen(true)}
-                disabled={actionLoading || deleteLoading}
-                sx={{ minWidth: 0, px: 1.5 }}
-              >
-                Delete
-              </Button>
+              {canDelete && (
+                <Button
+                  size="small"
+                  color="error"
+                  variant="outlined"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={actionLoading || deleteLoading}
+                  sx={{ minWidth: 0, px: 1.5 }}
+                >
+                  Delete
+                </Button>
+              )}
             </Box>
           )
         }

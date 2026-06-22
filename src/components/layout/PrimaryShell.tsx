@@ -89,23 +89,27 @@ const DRAWER_WIDTH = 260
 export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, themeMode, children }: PrimaryShellProps) {
   const theme = useTheme()
   const { currentUserPersona } = useUser()
+// RouteGuard in App.tsx handles persona-based redirect on mount/navigation
+  const allowedTabs = PERSONA_PERMISSIONS[currentUserPersona] || []
+  const sidebarTabs = tabs.filter(t => !t.hidden && allowedTabs.includes(t.key))
 
   // Listen for custom navigation events (e.g. from MyTasksWidget)
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail
-      if (detail?.tab && detail.tab !== activeTab) {
-        onChangeTab(detail.tab as TabKey)
+      const requestedTab = detail?.tab as TabKey | undefined
+      if (requestedTab && requestedTab !== activeTab) {
+        // Validate the requested tab against persona permissions before switching
+        if (allowedTabs.includes(requestedTab)) {
+          onChangeTab(requestedTab)
+        }
       }
     }
     window.addEventListener('navigate', handler)
     return () => window.removeEventListener('navigate', handler)
-  }, [activeTab, onChangeTab])
+  }, [activeTab, onChangeTab, allowedTabs])
 
-  // RouteGuard in App.tsx handles persona-based redirect on mount/navigation
-  const allowedTabs = PERSONA_PERMISSIONS[currentUserPersona] || []
-  const sidebarTabs = tabs.filter(t => !t.hidden && allowedTabs.includes(t.key))
-
+  
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Sidebar */}
