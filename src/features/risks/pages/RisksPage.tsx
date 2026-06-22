@@ -96,7 +96,6 @@ export default function RisksPage() {
       const data = await fetchAllRisks()
       setRisks(data || [])
     } catch (err) {
-      console.error('[RisksPage] loadRisks error:', err)
       setError('Unable to load risks.')
     } finally {
       setLoading(false)
@@ -143,37 +142,24 @@ export default function RisksPage() {
   }
 
   const openEdit = (risk: RiskModel) => {
-    console.log('[RisksPage] openEdit called, risk._pm_riskowner_value:', risk._pm_riskowner_value)
     setEditingRisk(risk)
     setDialogOpen(true)
   }
 
   const handleSave = async (data: Record<string, any>) => {
     if (!data.pm_risktitle?.trim()) return
-    console.log('[RisksPage] handleSave called')
-    console.log('[RisksPage] handleSave - editingRisk?.pm_riskid:', editingRisk?.pm_riskid)
-    console.log('[RisksPage] handleSave - data._pm_riskowner_value:', data._pm_riskowner_value)
-    console.log('[RisksPage] handleSave - full data keys:', Object.keys(data))
     
     setSaving(true)
     setError(null)
     try {
       if (editingRisk?.pm_riskid) {
-        console.log('[RisksPage] Calling updateRiskFull with id:', editingRisk.pm_riskid)
         const updated = await updateRiskFull(editingRisk.pm_riskid, data)
-        console.log('[RisksPage] updateRiskFull returned:', updated ? 'risk object' : 'null')
         if (updated) {
-          console.log('[RisksPage] Updated risk _pm_riskowner_value:', updated._pm_riskowner_value)
-          console.log('[RisksPage] Updated risk pm_riskownername:', updated.pm_riskownername)
           setRisks((prev) => prev.map((r) => (r.pm_riskid === updated.pm_riskid ? updated : r)))
           setSuccessMsg('Risk updated.')
-        } else {
-          console.warn('[RisksPage] updateRiskFull returned null - update may not have applied')
         }
       } else {
-        console.log('[RisksPage] Calling createRiskFull')
         const created = await createRiskFull(data)
-        console.log('[RisksPage] createRiskFull returned:', created ? 'risk object' : 'null')
         if (created) {
           setRisks((prev) => [...prev, created])
           setSuccessMsg('Risk created.')
@@ -182,7 +168,6 @@ export default function RisksPage() {
       setDialogOpen(false)
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch (err) {
-      console.error('[RisksPage] handleSave caught error:', err)
       setError('Unable to save risk.')
     } finally {
       setSaving(false)
@@ -235,7 +220,6 @@ export default function RisksPage() {
         .catch(() => setMitigationActions([]))
         .finally(() => setMitigationLoading(false))
     } catch (err) {
-      console.error('[RisksPage] handleSaveAction error:', err)
       setError('Unable to save mitigation action.')
     }
   }

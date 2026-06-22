@@ -80,7 +80,6 @@ export const ProgrammeApprovalTaskModal: React.FC<ProgrammeApprovalTaskModalProp
     try {
       // DecisionBox values: 0 = Approve, 3 = Reject
       const targetPhase = workflowDecision === 0 ? 2 : 1
-      console.log('[ProgrammeApprovalTaskModal] saveTaskData', { workflowDecision, targetPhase, entityId })
       await updateProgrammePhase(entityId, targetPhase)
       const outcomeLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'
       onSuccess('Programme Approval completed. Outcome: ' + outcomeLabel + '.')

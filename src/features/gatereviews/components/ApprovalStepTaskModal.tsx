@@ -39,18 +39,14 @@ function ApprovalStepResolver({ approvalStepId, onClose, onSuccess, onError, chi
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    console.log('[ApprovalStepResolver] ΓÅ│ Resolving entity for approvalStepId:', approvalStepId)
     setLoading(true)
     setError(null)
     try {
       const info = await resolveEntityInfoFromApprovalStep(approvalStepId)
-      console.log('[ApprovalStepResolver] ≡ƒöì resolveEntityInfoFromApprovalStep returned:', info)
       if (info.entityId) {
-        console.log('[ApprovalStepResolver] Γ£à Entity resolved:', info)
         setEntityId(info.entityId)
         setEntityType(info.entityType)
       } else {
-        console.warn('[ApprovalStepResolver] Γ¥î No entityId resolved from approval step')
         setError('Could not resolve target entity from approval step.')
         onError?.('Could not resolve target entity from approval step.')
       }
@@ -126,8 +122,8 @@ export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapper
           open={open}
           onClose={handleClose}
           gateReviewId={gateReviewId}
-          onSuccess={onSuccess || (() => {})}
-          onError={onError || (() => {})}
+          onSuccess={onSuccess || (() => { })}
+          onError={onError || (() => { })}
           approvalStepId={approvalStepId}
         />
       )}
@@ -170,8 +166,8 @@ export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalW
           onClose={handleClose}
           gateReviewId={gateReviewId}
           entityType={entityType}
-          onSuccess={onSuccess || (() => {})}
-          onError={onError || (() => {})}
+          onSuccess={onSuccess || (() => { })}
+          onError={onError || (() => { })}
           approvalStepId={approvalStepId}
         />
       )}
@@ -212,8 +208,8 @@ export const BoardDecisionTaskModalWrapper: React.FC<BoardDecisionTaskModalWrapp
           open={open}
           onClose={handleClose}
           gateReviewId={gateReviewId}
-          onSuccess={onSuccess || (() => {})}
-          onError={onError || (() => {})}
+          onSuccess={onSuccess || (() => { })}
+          onError={onError || (() => { })}
           approvalStepId={approvalStepId}
         />
       )}

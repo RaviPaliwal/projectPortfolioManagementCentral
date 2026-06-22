@@ -308,15 +308,14 @@ export async function fetchWorkflowInstances(): Promise<WorkflowInstanceModel[]>
     select: [
       'pm_workflowinstanceid', 'pm_instancename',
       'pm_entityid', 'pm_entitytype', 'pm_entityname',
-      'pm_status', 
+      'pm_status',
       'pm_startdate', 'pm_completeddate',
-      'pm_currentstep', 
+      'pm_currentstep',
       '_pm_workflowlookup_value', '_pm_initiatedbylookup_value',
     ],
     orderBy: ['pm_startdate desc'],
     top: 500,
   })
-  console.log('fetchWorkflowInstances - raw result:', result)
   return unwrapList<Pm_workflowinstances>(result).map(mapWorkflowInstance)
 }
 
@@ -347,7 +346,6 @@ export async function fetchWorkflowInstancesForEntity(
     orderBy: ['pm_startdate desc'],
     top: 50,
   })
-  console.log('fetchWorkflowInstancesForEntity - raw result:', result)
   return unwrapList<Pm_workflowinstances>(result).map(mapWorkflowInstance)
 }
 
@@ -368,7 +366,6 @@ export async function fetchWorkflowApprovalSteps(instanceId: string): Promise<Wo
     orderBy: ['pm_steporder asc'],
     top: 200,
   })
-  console.log('fetchWorkflowApprovalSteps - raw result:', result)
   const steps = unwrapList<Pm_workflowapprovalsteps>(result)
   const mapped = steps.map(mapWorkflowApprovalStep)
 
@@ -392,7 +389,7 @@ async function enrichApprovalSteps(steps: WorkflowApprovalStepModel[]): Promise<
         const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
         if (instance) {
           const workflowTemplateName = (instance as any)['_pm_workflowlookup_value@OData.Community.Display.V1.FormattedValue']
-          ; (step as any).pm_workflowname = workflowTemplateName || instance.pm_instancename
+            ; (step as any).pm_workflowname = workflowTemplateName || instance.pm_instancename
         }
       } catch { }
     }
@@ -407,13 +404,13 @@ async function enrichApprovalSteps(steps: WorkflowApprovalStepModel[]): Promise<
             select: ['systemuserid', 'fullname'],
           })
           const user = unwrapSingle<Systemusers>(userResult)
-          ; (step as any).pm_assigneename = user?.fullname || assigneeDisplayName
+            ; (step as any).pm_assigneename = user?.fullname || assigneeDisplayName
         } else if (assigneeType === 1) {
           const teamResult = await TeamsService.get(assigneeDisplayName, {
             select: ['teamid', 'name'],
           })
           const team = unwrapSingle<Teams>(teamResult)
-          ; (step as any).pm_assigneename = team?.name || assigneeDisplayName
+            ; (step as any).pm_assigneename = team?.name || assigneeDisplayName
         } else {
           ; (step as any).pm_assigneename = assigneeDisplayName
         }
@@ -585,7 +582,6 @@ export async function fetchPendingWorkflowApprovals(
       orderBy: ['pm_duedate asc'],
       top: 500,
     })
-    console.log('fetchPendingWorkflowApprovals - raw allPendingResult:', allPendingResult)
     const allPending = unwrapList<Pm_workflowapprovalsteps>(allPendingResult)
 
     const filtered = allPending.filter((step) => {
@@ -616,11 +612,11 @@ export async function fetchPendingWorkflowApprovals(
           if (instance) {
             // Workflow template name (formatted value of the lookup to pm_workflows)
             const workflowTemplateName = (instance as any)['_pm_workflowlookup_value@OData.Community.Display.V1.FormattedValue']
-            ; (step as any).pm_workflowinstancelookupname = instance.pm_instancename
-            ; (step as any).pm_workflowname = workflowTemplateName || instance.pm_instancename
-            ; (step as any).pm_entityid = instance.pm_entityid
-            ; (step as any).pm_entitytype = instance.pm_entitytype
-            ; (step as any).pm_initiatedby = instance.pm_initiatedbylookupname || instance._pm_initiatedbylookup_value
+              ; (step as any).pm_workflowinstancelookupname = instance.pm_instancename
+              ; (step as any).pm_workflowname = workflowTemplateName || instance.pm_instancename
+              ; (step as any).pm_entityid = instance.pm_entityid
+              ; (step as any).pm_entitytype = instance.pm_entitytype
+              ; (step as any).pm_initiatedby = instance.pm_initiatedbylookupname || instance._pm_initiatedbylookup_value
           }
         } catch { }
       }
@@ -636,14 +632,14 @@ export async function fetchPendingWorkflowApprovals(
               select: ['systemuserid', 'fullname'],
             })
             const user = unwrapSingle<Systemusers>(userResult)
-            ; (step as any).pm_assigneename = user?.fullname || assigneeDisplayName
+              ; (step as any).pm_assigneename = user?.fullname || assigneeDisplayName
           } else if (assigneeType === 1) {
             // Team type — lookup from Team
             const teamResult = await TeamsService.get(assigneeDisplayName, {
               select: ['teamid', 'name'],
             })
             const team = unwrapSingle<Teams>(teamResult)
-            ; (step as any).pm_assigneename = team?.name || assigneeDisplayName
+              ; (step as any).pm_assigneename = team?.name || assigneeDisplayName
           } else {
             ; (step as any).pm_assigneename = assigneeDisplayName
           }

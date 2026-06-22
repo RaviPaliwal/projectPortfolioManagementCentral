@@ -60,16 +60,16 @@ export async function fetchTimesheets(resourceId?: string): Promise<TimesheetMod
   const options = {
     select: selectFields,
     orderBy: ['pm_periodenddate desc', 'pm_timesheetname asc'],
-    top: 500      
+    top: 500
   }
   const filters = ["statecode eq 0"]
   if (resourceId) {
     filters.push(`_pm_resource_value eq '${normalizeLookupId(resourceId)}'`)
   }
   const result = await Pm_timesheetsService.getAll({ ...options, filter: filters.join(" and ") })
-  try { console.debug('[dataverseService] fetchTimesheets result:', result) } catch (e) {}
+  try { console.debug('[dataverseService] fetchTimesheets result:', result) } catch (e) { }
   let list = unwrapList<Pm_timesheets>(result).map(mapTimesheet)
- 
+
   try {
     const resourceIds = Array.from(new Set(list.map((ts) => normalizeLookupId(ts._pm_resource_value)).filter(Boolean))) as string[]
     if (resourceIds.length > 0) {
@@ -96,9 +96,9 @@ export async function fetchTimesheets(resourceId?: string): Promise<TimesheetMod
       }
     }
   } catch (err) {
-    try { console.warn('[dataverseService] fetchTimesheets: failed to resolve resource names', err) } catch (e) {}
+    try { console.warn('[dataverseService] fetchTimesheets: failed to resolve resource names', err) } catch (e) { }
   }
- 
+
   return list
 }
 
@@ -130,7 +130,7 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
         }
       }
     } catch (err) {
-      try { console.warn('[dataverseService] fetchTimesheetDetails: failed to resolve resource name', err) } catch (e) {}
+      try { console.warn('[dataverseService] fetchTimesheetDetails: failed to resolve resource name', err) } catch (e) { }
     }
     return mapped
   } catch (err) {
@@ -167,8 +167,7 @@ export async function createTimesheet(payload: Partial<TimesheetModel>): Promise
     }
   }
   const result = await Pm_timesheetsService.create({ ...defaults, ...cleanPayload } as any)
-  console.log('[dataverseService] createTimesheet raw result:', result)
-  try { console.debug('[dataverseService] createTimesheet payload/result:', cleanPayload, result) } catch (e) {}
+  try { console.debug('[dataverseService] createTimesheet payload/result:', cleanPayload, result) } catch (e) { }
   const item = unwrapSingle<Pm_timesheets>(result)
   if (item && item.pm_timesheetid) {
     writeAuditLog({
@@ -201,7 +200,7 @@ export async function updateTimesheetStatus(
   if (status === 2 && extra?.pm_rejectionreason) {
     changes.pm_rejectionreason = extra.pm_rejectionreason
   }
-  try { console.debug('[dataverseService] updateTimesheetStatus:', { timesheetId, changes }) } catch (e) {}
+  try { console.debug('[dataverseService] updateTimesheetStatus:', { timesheetId, changes }) } catch (e) { }
 
   let recordName = timesheetId
   let oldStatusStr = ''
@@ -211,7 +210,7 @@ export async function updateTimesheetStatus(
       if (details.pm_timesheetname) recordName = details.pm_timesheetname
       oldStatusStr = String(details.pm_timesheetstatus ?? '')
     }
-  } catch (e) {}
+  } catch (e) { }
 
   await Pm_timesheetsService.update(timesheetId, changes as any)
 
@@ -281,10 +280,10 @@ export async function fetchTimesheetEntries(timesheetId: string): Promise<Timesh
     top: 200,
   }
   const result = await Pm_timesheetentriesService.getAll({ ...options, filter: `_pm_timesheet_value eq '${timesheetId}' and statecode eq 0` })
-  try { console.debug('[dataverseService] fetchTimesheetEntries result:', result) } catch (e) {}
+  try { console.debug('[dataverseService] fetchTimesheetEntries result:', result) } catch (e) { }
   let list = unwrapList<Pm_timesheetentries>(result).map(mapTimesheetEntry)
   if (list.length === 0) {
-    try { console.warn('[dataverseService] fetchTimesheetEntries: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
+    try { console.warn('[dataverseService] fetchTimesheetEntries: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) { }
     const fallbackResult = await Pm_timesheetentriesService.getAll({ ...options, filter: `_pm_timesheet_value eq '${timesheetId}'` })
     list = unwrapList<Pm_timesheetentries>(fallbackResult).map(mapTimesheetEntry)
   }
@@ -313,7 +312,7 @@ export async function fetchTimesheetEntries(timesheetId: string): Promise<Timesh
       }
     }
   } catch (err) {
-    try { console.warn('[dataverseService] fetchTimesheetEntries: failed to resolve project names', err) } catch (e) {}
+    try { console.warn('[dataverseService] fetchTimesheetEntries: failed to resolve project names', err) } catch (e) { }
   }
 
   return list
@@ -323,7 +322,7 @@ export async function createTimesheetEntry(payload: Partial<TimesheetEntryModel>
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null && value !== '' &&
-        key !== '_pm_project_value' && key !== '_pm_projecttask_value') {
+      key !== '_pm_project_value' && key !== '_pm_projecttask_value') {
       cleanPayload[key] = value
     }
   }
@@ -348,7 +347,7 @@ export async function createTimesheetEntry(payload: Partial<TimesheetEntryModel>
     }
   }
   const result = await Pm_timesheetentriesService.create({ ...defaults, ...cleanPayload } as any)
-  try { console.debug('[dataverseService] createTimesheetEntry payload/result:', cleanPayload, result) } catch (e) {}
+  try { console.debug('[dataverseService] createTimesheetEntry payload/result:', cleanPayload, result) } catch (e) { }
   const item = unwrapSingle<Pm_timesheetentries>(result)
   return item ? mapTimesheetEntry(item) : null
 }
@@ -400,9 +399,9 @@ export async function deleteTimesheet(timesheetId: string): Promise<void> {
   try {
     const details = await fetchTimesheetDetails(timesheetId)
     if (details?.pm_timesheetname) recordName = details.pm_timesheetname
-  } catch (e) {}
+  } catch (e) { }
 
-  try { console.debug('[dataverseService] deleteTimesheet id:', timesheetId) } catch (e) {}
+  try { console.debug('[dataverseService] deleteTimesheet id:', timesheetId) } catch (e) { }
   await Pm_timesheetsService.delete(timesheetId)
 
   writeAuditLog({
@@ -417,6 +416,6 @@ export async function deleteTimesheet(timesheetId: string): Promise<void> {
 }
 
 export async function deleteTimesheetEntry(entryId: string): Promise<void> {
-  try { console.debug('[dataverseService] deleteTimesheetEntry id:', entryId) } catch (e) {}
+  try { console.debug('[dataverseService] deleteTimesheetEntry id:', entryId) } catch (e) { }
   await Pm_timesheetentriesService.delete(entryId)
 }

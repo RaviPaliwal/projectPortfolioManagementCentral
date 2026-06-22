@@ -221,17 +221,14 @@ export default function TeamWorkspacePage() {
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleLogIssue = async (data: IssueFormData) => {
-    console.log('[TeamWorkspacePage] handleLogIssue received data:', JSON.stringify(data, null, 2))
     const payload = {
       ...data,
       pm_issueowner: data.pm_issueowner || currentUserName,
       pm_dateraised: data.pm_dateraised || new Date().toISOString().split('T')[0],
       pm_issuestatus: '0', // Open
     }
-    console.log('[TeamWorkspacePage] handleLogIssue final payload:', JSON.stringify(payload, null, 2))
     try {
       const created = await createIssueFull(payload)
-      console.log('[TeamWorkspacePage] createIssueFull result:', created)
       if (created) {
         setIssues(prev => [...prev, created])
         showToast('Issue logged successfully')

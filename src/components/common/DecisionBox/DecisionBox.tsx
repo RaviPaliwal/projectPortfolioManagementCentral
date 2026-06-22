@@ -53,16 +53,13 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
   const [lastError, setLastError] = useState<string | null>(null)
 
   const handleDecision = useCallback(async (decision: number) => {
-    console.log('[DecisionBox] 🖱️ handleDecision called with decision:', decision, '| approvalStepId:', approvalStepId)
     setSubmitting(true)
     setLastError(null)
 
     try {
       // Step 1: Allow the parent (task modal) to save its data first
       if (onBeforeDecision) {
-        console.log('[DecisionBox] ⏳ Calling onBeforeDecision...')
         const shouldContinue = await onBeforeDecision(decision)
-        console.log('[DecisionBox] ✅ onBeforeDecision returned:', shouldContinue)
         if (shouldContinue === false) {
           console.warn('[DecisionBox] ⛔ onBeforeDecision returned false — cancelling workflow submission')
           setSubmitting(false)
@@ -71,9 +68,7 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
       }
 
       // Step 2: Submit the workflow decision (updates step status + triggers routing handler)
-      console.log('[DecisionBox] 🚀 Calling submitWorkflowDecision...')
       const success = await submitWorkflowDecision(approvalStepId, decision, notes)
-      console.log('[DecisionBox] ✅ submitWorkflowDecision result:', success)
       if (success) {
         onDecisionComplete?.(decision)
       } else {

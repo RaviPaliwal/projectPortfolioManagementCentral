@@ -66,9 +66,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
   const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
     setSaving(true)
     try {
-      console.log('[PipelineDecisionTaskModal] saveTaskData called', { workflowDecision, selectedOutcome, initiativeIdProp: initiativeId })
       await updateInitiativeStatus(initiativeId, selectedOutcome)
-      console.log('[PipelineDecisionTaskModal] updateInitiativeStatus succeeded')
       const outcomeLabel = OUTCOME_OPTIONS.find(o => o.value === selectedOutcome)?.label ?? 'Unknown'
       onSuccess(`Pipeline Decision recorded. Outcome: ${outcomeLabel}.`)
       return true

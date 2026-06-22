@@ -47,16 +47,6 @@ export async function writeAuditLog({
   description,
 }: AuditLogOptions): Promise<void> {
   try {
-    console.log('[writeAuditLog] ⏳ Attempting to write audit log:', {
-      actionType,
-      entityName,
-      recordId,
-      recordName: recordName || recordId,
-      fieldName,
-      oldValue,
-      newValue,
-    })
-
     const rawUserId = localStorage.getItem('ppm_selected_user_id')
     const normalizedUserId = rawUserId ? normalizeLookupId(rawUserId) : undefined
 
@@ -85,7 +75,7 @@ export async function writeAuditLog({
       if (typeof window !== 'undefined' && window.location) {
         ipAddress = window.location.hostname || '127.0.0.1'
       }
-    } catch (e) {}
+    } catch (e) { }
 
     let sessionId = ''
 
@@ -99,28 +89,28 @@ export async function writeAuditLog({
             return value
           }
         }
-      } catch (e) {}
+      } catch (e) { }
       return null
     }
 
     // 1. Try url parameters on window.location
     try {
       if (typeof window !== 'undefined' && window.location) {
-        sessionId = getSessionParam(window.location.search) || 
-                    getSessionParam(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '') || 
-                    ''
+        sessionId = getSessionParam(window.location.search) ||
+          getSessionParam(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '') ||
+          ''
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // 2. Try url parameters on parent window (safely caught in case of cross-origin)
     if (!sessionId) {
       try {
         if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
-          sessionId = getSessionParam(window.parent.location.search) || 
-                      getSessionParam(window.parent.location.hash.includes('?') ? window.parent.location.hash.split('?')[1] : '') || 
-                      ''
+          sessionId = getSessionParam(window.parent.location.search) ||
+            getSessionParam(window.parent.location.hash.includes('?') ? window.parent.location.hash.split('?')[1] : '') ||
+            ''
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 3. Try to get it from Xrm context correlation ID or sessionInfo
@@ -132,15 +122,15 @@ export async function writeAuditLog({
           if (!xrm) {
             try {
               xrm = (window.parent as any).Xrm
-            } catch (e) {}
+            } catch (e) { }
           }
         }
         if (xrm?.Utility?.getGlobalContext) {
           const context = xrm.Utility.getGlobalContext()
-          sessionId = context.correlationId || 
-                      context.sessionInfo?.sessionId || 
-                      context.organizationSettings?.organizationId || 
-                      ''
+          sessionId = context.correlationId ||
+            context.sessionInfo?.sessionId ||
+            context.organizationSettings?.organizationId ||
+            ''
         }
       } catch (e) {
         console.warn('[writeAuditLog] Error checking Xrm context:', e)
@@ -157,7 +147,7 @@ export async function writeAuditLog({
           if (typeof sessionStorage !== 'undefined') {
             sessionId = sessionStorage.getItem('ppm_audit_session_id') || ''
           }
-        } catch (e) {}
+        } catch (e) { }
 
         if (!sessionId) {
           try {
@@ -172,7 +162,7 @@ export async function writeAuditLog({
             if (typeof sessionStorage !== 'undefined') {
               sessionStorage.setItem('ppm_audit_session_id', sessionId)
             }
-          } catch (e) {}
+          } catch (e) { }
         }
         win.__ppm_audit_session_id = sessionId
       }
@@ -182,7 +172,6 @@ export async function writeAuditLog({
       sessionId = 'unknown-session'
     }
 
-    console.log('[writeAuditLog] Resolved Session ID:', sessionId)
 
     const payload: any = {
       pm_actiontype: mappedAction,
@@ -205,15 +194,8 @@ export async function writeAuditLog({
       payload['pm_ChangeBy@odata.bind'] = `/systemusers(${normalizedUserId})`
       payload['ownerid@odata.bind'] = `/systemusers(${normalizedUserId})`
     }
+    await Pm_changelogentriesService.create(payload as any)
 
-    const result = await Pm_changelogentriesService.create(payload as any)
-    console.log("raw Output Of Pm_changelogentriesService.Create ", result)
-    
-    if (result && result.success === false) {
-      console.error('[writeAuditLog] ❌ Failed to create audit log entry in Dataverse:', result.error)
-    } else {
-      console.log('[writeAuditLog] ✅ Audit log entry written successfully for record:', recordId)
-    }
   } catch (error: any) {
     console.error('[writeAuditLog] ❌ Exception failed to create audit log entry:', error)
   }

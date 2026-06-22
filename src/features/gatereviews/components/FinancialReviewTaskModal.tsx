@@ -79,32 +79,17 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
 
   const [financeNotes, setFinanceNotes] = useState('')
 
-  console.log('[FinancialReviewTaskModal] ≡ƒƒ¬ Component mounted/rendered with props:', {
-    open,
-    gateReviewId,
-    entityType,
-    approvalStepId,
-    hasDecisionBox: !!DecisionBoxProp,
-  })
 
   const isInitiative = entityType === 'Pipeline'
 
-  console.log('[FinancialReviewTaskModal] ≡ƒƒ¬ isInitiative resolved to:', isInitiative, '| entityType:', entityType)
 
   const loadData = useCallback(async () => {
-    console.log('[FinancialReviewTaskModal] ΓÅ│ loadData started for ID:', gateReviewId, 'entityType:', entityType, 'isInitiative:', isInitiative)
     setLoading(true)
     try {
       if (isInitiative) {
         // ΓöÇΓöÇ Initiative (Pipeline) mode ΓöÇΓöÇ
-        console.log('[FinancialReviewTaskModal] ≡ƒöì Initiative mode: fetching initiative by ID...')
         const init = await fetchInitiativeById(gateReviewId)
-        console.log('[FinancialReviewTaskModal] Γ£à Initiative result:', init ? {
-          pm_initiativeid: init.pm_initiativeid,
-          pm_name: init.pm_name,
-          pm_estimatedcost: init.pm_estimatedcost,
-          pm_estimatedbenefits: init.pm_estimatedbenefits,
-        } : 'null')
+
 
         if (!init) {
           console.warn('[FinancialReviewTaskModal] Γ¥î Initiative not found for ID:', gateReviewId)
@@ -113,15 +98,9 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
           return
         }
         setInitiative(init)
-        console.log('[FinancialReviewTaskModal] Γ£à loadData (initiative) completed')
       } else {
-        // ΓöÇΓöÇ Gate Review mode ΓöÇΓöÇ
-        console.log('[FinancialReviewTaskModal] ≡ƒöì Gate review mode: fetching gate review by ID...')
         const gr = await fetchGateReviewById(gateReviewId)
-        console.log('[FinancialReviewTaskModal] Γ£à Gate review result:', gr ? { pm_projectgatereviewid: gr.pm_projectgatereviewid, _pm_project_value: gr._pm_project_value, pm_gatename: gr.pm_gatename } : 'null')
-
         if (!gr) {
-          console.warn('[FinancialReviewTaskModal] Γ¥î Gate review not found for ID:', gateReviewId)
           onError('Gate review not found.')
           setLoading(false)
           return
@@ -129,11 +108,10 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
         setGateReview(gr)
 
         const projectId = gr._pm_project_value ||
-                          (gr as any)._pm_projectlookup_value ||
-                          (gr as any).pm_project ||
-                          gr.pm_projectcode
+          (gr as any)._pm_projectlookup_value ||
+          (gr as any).pm_project ||
+          gr.pm_projectcode
 
-        console.log('[FinancialReviewTaskModal] Γ£à Resolved projectId:', projectId)
 
         if (!projectId) {
           console.warn('[FinancialReviewTaskModal] Γ¥î No project ID found on gate review.')
@@ -141,22 +119,14 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
           return
         }
 
-        console.log('[FinancialReviewTaskModal] ≡ƒöì Fetching project details for projectId:', projectId)
         const proj = await fetchProjectDetails(projectId)
-        console.log('[FinancialReviewTaskModal] Γ£à Project result:', proj ? {
-          pm_projectid: proj.pm_projectid,
-          pm_projectname: proj.pm_projectname,
-          pm_approvedbudgeteur: proj.pm_approvedbudgeteur,
-          pm_actualcosteur: proj.pm_actualcosteur,
-          pm_costragstatus: proj.pm_costragstatus,
-        } : 'null')
+
 
         if (!proj) {
           console.warn('[FinancialReviewTaskModal] Γ¥î Project not found for projectId:', projectId)
         }
         setProject(proj)
 
-        console.log('[FinancialReviewTaskModal] Γ£à loadData (gate review) completed')
       }
     } catch (err) {
       console.error('[FinancialReviewTaskModal] Γ¥î loadData failed:', err)
@@ -168,11 +138,10 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
 
   useEffect(() => {
     if (open) {
-      console.log('[FinancialReviewTaskModal] ≡ƒƒó Dialog opened, triggering loadData')
       loadData()
       setFinanceNotes('')
     } else {
-      console.log('[FinancialReviewTaskModal] ≡ƒö┤ Dialog closed')
+
     }
   }, [open, loadData])
 
@@ -182,12 +151,10 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
    * For initiatives: save notes is skipped (no notes field on initiative).
    */
   const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
-    console.log('[FinancialReviewTaskModal] saveTaskData: workflowDecision=' + workflowDecision + ', notes length=' + financeNotes.length + ', isInitiative=' + isInitiative)
     setSaving(true)
     try {
       if (isInitiative) {
         // Initiative mode: no entity-level persistence for notes; workflow decision is enough
-        console.log('[FinancialReviewTaskModal] saveTaskData: initiative mode ΓÇö no notes persistence needed')
         const decisionLabel = workflowDecision === 0 ? 'Endorsed' : 'Rejected'
         onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
         return true
@@ -201,16 +168,13 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
       const existingNotes = gateReview.pm_reviewnotes || ''
       const newEntry = `\n\n--- Financial Review Task ---\nDecision: ${decisionLabel}\nDate: ${new Date().toLocaleDateString()}\nNotes:\n${financeNotes || 'No additional notes provided.'}`
 
-      console.log('[FinancialReviewTaskModal] saveTaskData: updating gate review with decision')
       await updateGateReview(gateReview.pm_projectgatereviewid, {
         pm_reviewnotes: existingNotes + newEntry,
       } as any)
 
-      console.log('[FinancialReviewTaskModal] saveTaskData: update succeeded')
       onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
       return true
     } catch (err) {
-      console.error('[FinancialReviewTaskModal] saveTaskData: failed', err)
       onError('Failed to save Financial decision.')
       return false
     } finally {
@@ -221,7 +185,6 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
   /** Legacy decision handler for direct usage (not via FormDialog/workflow). */
   const handleLegacyDecision = useCallback(async (decision: 'Endorsed' | 'Rejected') => {
     if (!isInitiative && !gateReview?.pm_projectgatereviewid) return
-    console.log('[FinancialReviewTaskModal] handleLegacyDecision: decision=' + decision)
     setSaving(true)
     try {
       if (!isInitiative && gateReview?.pm_projectgatereviewid) {
@@ -456,8 +419,8 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                   <>Initiative: <strong>{initiative?.pm_name || '—'}</strong></>
                 ) : (
                   <>Gate: <strong>{gateReview?.pm_gatename || '—'}</strong>
-                  {gateReview?.pm_gatestage ? ` | Stage: ${gateReview.pm_gatestage}` : ''}
-                  {gateReview?.pm_reviewstatus ? ` | Status: ${gateReview.pm_reviewstatus}` : ''}</>
+                    {gateReview?.pm_gatestage ? ` | Stage: ${gateReview.pm_gatestage}` : ''}
+                    {gateReview?.pm_reviewstatus ? ` | Status: ${gateReview.pm_reviewstatus}` : ''}</>
                 )}
               </Typography>
 
@@ -478,7 +441,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
               />
 
               <Box sx={{ mt: 2.5, p: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.warning.main, 0.1) : alpha(theme.palette.warning.light, 0.2), border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.warning.main, 0.2) : alpha(theme.palette.warning.light, 0.4), borderRadius: 1 }}>
-                 <Typography variant="body2" color="warning.main" sx={{ fontSize: fontSizes.xs }}>
+                <Typography variant="body2" color="warning.main" sx={{ fontSize: fontSizes.xs }}>
                   <strong>Note:</strong> Endorsing the financials does not approve the gate review. It provides clearance for the Governance Board to make the final decision.
                 </Typography>
               </Box>

@@ -212,11 +212,11 @@ export default function IssuesPage() {
       const rawProjects = isTeamMember
         ? await fetchProjectsForSystemUser(currentUser.systemuserid)
         : await Pm_projectsService.getAll({
-            filter: 'statecode eq 0',
-            select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_programme_value', '_pm_portfolio_value'],
-            orderBy: ['pm_projectname asc'],
-            top: 500,
-          }).then(result => unwrapList<any>(result))
+          filter: 'statecode eq 0',
+          select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_programme_value', '_pm_portfolio_value'],
+          orderBy: ['pm_projectname asc'],
+          top: 500,
+        }).then(result => unwrapList<any>(result))
 
       const progResult = await Pm_programmesService.getAll({
         select: ['pm_programmeid', 'pm_programmename'],
@@ -317,15 +317,11 @@ export default function IssuesPage() {
 
   const handleSave = async (data: Record<string, any>) => {
     if (!data.pm_issuetitle?.trim()) return
-    console.log('[IssuesPage] handleSave called | mode:', editingIssue?.pm_issueid ? 'UPDATE' : 'CREATE', 'issueId:', editingIssue?.pm_issueid)
-    console.log('[IssuesPage] handleSave raw data:', JSON.stringify(data, null, 2))
     setSaving(true)
     setError(null)
     try {
       if (editingIssue?.pm_issueid) {
-        console.log('[IssuesPage] calling updateIssueFull with id:', editingIssue.pm_issueid)
         const updated = await updateIssueFull(editingIssue.pm_issueid, data)
-        console.log('[IssuesPage] updateIssueFull result:', updated)
         if (updated) {
           setIssues(prev => prev.map(i => i.pm_issueid === updated.pm_issueid ? updated : i))
           setSuccessMsg('Issue updated.')
@@ -333,9 +329,7 @@ export default function IssuesPage() {
           console.warn('[IssuesPage] updateIssueFull returned null - no update applied')
         }
       } else {
-        console.log('[IssuesPage] calling createIssueFull')
         const created = await createIssueFull(data)
-        console.log('[IssuesPage] createIssueFull result:', created)
         if (created) {
           setIssues(prev => [...prev, created])
           setSuccessMsg('Issue created.')
@@ -424,7 +418,7 @@ export default function IssuesPage() {
         cmp = String(a.pm_ragstatus ?? '').localeCompare(String(b.pm_ragstatus ?? ''))
       } else if (field === 'pm_prioritylevel') {
         cmp = (PRIORITY_ORDER[String(a.pm_prioritylevel ?? '')] ?? 99) -
-              (PRIORITY_ORDER[String(b.pm_prioritylevel ?? '')] ?? 99)
+          (PRIORITY_ORDER[String(b.pm_prioritylevel ?? '')] ?? 99)
       } else if (field === 'pm_dateraised') {
         cmp = (a.pm_dateraised ?? '').localeCompare(b.pm_dateraised ?? '')
       } else if (field === 'pm_targetresolutiondate') {
@@ -507,7 +501,7 @@ export default function IssuesPage() {
 
     return [
       { label: 'Total Issues', value: total, color: 'primary.main', icon: <BugReportIcon /> },
-      { label: 'Open Issues', value: open, color: 'warning.main', icon: <ErrorIcon />, subtitle: total > 0 ? `${Math.round((open/total)*100)}% of total` : 'None open' },
+      { label: 'Open Issues', value: open, color: 'warning.main', icon: <ErrorIcon />, subtitle: total > 0 ? `${Math.round((open / total) * 100)}% of total` : 'None open' },
       { label: 'Critical Priority', value: critical, color: 'error.main', icon: <NewReleasesIcon /> },
       { label: 'Overdue', value: overdue, color: 'error.main', icon: <AccessTimeIcon />, subtitle: 'Target date passed' },
       { label: 'Escalated', value: escalated, color: 'error.main', icon: <FlagIcon /> },
@@ -734,22 +728,22 @@ export default function IssuesPage() {
           <>
             <TabPanel value={drawerTab} index={0}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                 <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Details</Typography>
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
-                       {selectedIssue.pm_issuedescription || 'No description provided.'}
-                    </Typography>
-                 </Paper>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Details</Typography>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
+                    {selectedIssue.pm_issuedescription || 'No description provided.'}
+                  </Typography>
+                </Paper>
               </Box>
             </TabPanel>
             <TabPanel value={drawerTab} index={1}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                 <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Resolution details</Typography>
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
-                       {selectedIssue.pm_resolutiondetails || 'No resolution details yet.'}
-                    </Typography>
-                 </Paper>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Resolution details</Typography>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
+                    {selectedIssue.pm_resolutiondetails || 'No resolution details yet.'}
+                  </Typography>
+                </Paper>
               </Box>
             </TabPanel>
           </>

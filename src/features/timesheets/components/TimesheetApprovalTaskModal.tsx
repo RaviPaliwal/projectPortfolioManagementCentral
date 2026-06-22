@@ -62,13 +62,11 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
   useEffect(() => {
     if (!open || !timesheetId) return
     setLoading(true) // eslint-disable-line react-hooks/set-state-in-effect
-    console.log('[TimesheetApprovalTaskModal] Loading data for timesheetId:', timesheetId)
     Promise.all([
       fetchTimesheetDetails(timesheetId),
       fetchTimesheetEntries(timesheetId),
     ]).then(([ts, entryList]) => {
       if (!mountedRef.current) return
-      console.log('[TimesheetApprovalTaskModal] Data loaded:', { details: ts?.pm_timesheetid, entryCount: entryList.length })
       if (!ts) { onError('Timesheet not found.'); setLoading(false); return }
       setTimesheet(ts)
       setEntries(entryList)

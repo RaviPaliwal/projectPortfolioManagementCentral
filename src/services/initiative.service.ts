@@ -35,7 +35,7 @@ export async function fetchInitiatives(status?: number): Promise<InitiativeModel
   const options: any = { select, orderBy: ['pm_initiativename asc'], top: 200 }
   if (typeof status === 'number') options.filter = `pm_pipelinestatus eq ${status}`
   const result = await Pm_initiativesService.getAll(options)
-  try { console.debug('[dataverseService] fetchInitiatives result raw:', result, 'select:', select, 'filter:', options.filter) } catch (e) {}
+  try { console.debug('[dataverseService] fetchInitiatives result raw:', result, 'select:', select, 'filter:', options.filter) } catch (e) { }
   const list = unwrapList<Pm_initiatives>(result).map(mapInitiative)
 
   if (list.length === 0) {
@@ -50,7 +50,7 @@ export async function fetchInitiatives(status?: number): Promise<InitiativeModel
     const portfolioIds = Array.from(new Set(list.map((i) => (i as any)._pm_portfolio_value).filter(Boolean))) as string[]
     if (portfolioIds.length > 0) {
       const portfolios = await Promise.all(portfolioIds.map((id) => Pm_portfoliosService.get(id, { select: ['pm_portfolioid', 'pm_portfolioname'] })))
-      try { console.debug('[dataverseService] fetchInitiatives portfolio fetch raw:', portfolios) } catch (e) {}
+      try { console.debug('[dataverseService] fetchInitiatives portfolio fetch raw:', portfolios) } catch (e) { }
       const pMap: Record<string, string> = {}
       portfolios.forEach((res) => {
         const item = unwrapSingle<Pm_portfolios>(res)
@@ -69,21 +69,11 @@ export async function fetchInitiatives(status?: number): Promise<InitiativeModel
 }
 
 export async function fetchInitiativeById(id: string): Promise<InitiativeModel | null> {
-  console.log('[fetchInitiativeById] ⏳ Fetching initiative with ID:', id)
   try {
     const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', 'pm_requestorname', 'pm_submissiondate', 'pm_initiativetype', 'pm_decisiondate', '_pm_portfolio_value', '_createdby_value']
-    console.log('[fetchInitiativeById] ⏳ Select fields:', select)
     const result = await Pm_initiativesService.get(id, { select })
-    console.log('[fetchInitiativeById] ⏳ Raw API result:', result)
     const item = unwrapSingle<Pm_initiatives>(result)
-    console.log('[fetchInitiativeById] ⏳ Unwrapped item:', item ? {
-      id: item.pm_initiativeid,
-      name: item.pm_initiativename,
-      hasCost: item.pm_estimatedcosteur,
-      hasBenefits: item.pm_estimatedbenefitseur,
-      requester: item.pm_requestorname,
-      createdByValue: (item as any)._createdby_value,
-    } : 'null')
+
     if (!item) {
       console.warn('[fetchInitiativeById] ❌ Initiative not found for ID:', id)
       return null
@@ -118,16 +108,7 @@ export async function fetchInitiativeById(id: string): Promise<InitiativeModel |
       }
     }
 
-    console.log('[fetchInitiativeById] ✅ Successfully mapped initiative:', {
-      id: mapped.pm_initiativeid,
-      name: mapped.pm_name,
-      cost: mapped.pm_estimatedcost,
-      benefits: mapped.pm_estimatedbenefits,
-      priorityScore: mapped.pm_priorityscore,
-      strategicAlignment: mapped.pm_strategicalignmentscore,
-      requester: mapped.pm_requestorname,
-      createdBy: mapped.pm_createdbyname,
-    })
+
     return mapped
   } catch (err) {
     console.warn('[fetchInitiativeById] ❌ Exception caught:', err)
@@ -143,15 +124,15 @@ export async function fetchPendingApprovalRequests(): Promise<InitiativeModel[]>
     orderBy: ['pm_submissiondate desc'],
     top: 100,
   })
-  try { console.debug('[dataverseService] fetchPendingApprovalRequests result raw:', result) } catch (e) {}
+  try { console.debug('[dataverseService] fetchPendingApprovalRequests result raw:', result) } catch (e) { }
   return unwrapList<Pm_initiatives>(result).map(mapInitiative)
 }
 
 export async function updateInitiativeStatus(initiativeId: string, status: number): Promise<void> {
-  try { console.debug('[dataverseService] updateInitiativeStatus updating:', { initiativeId, status }) } catch (e) {}
+  try { console.debug('[dataverseService] updateInitiativeStatus updating:', { initiativeId, status }) } catch (e) { }
   const res = await Pm_initiativesService.update(initiativeId, { pm_pipelinestatus: status } as any)
-  try { console.debug('[dataverseService] updateInitiativeStatus result raw:', res) } catch (e) {}
-  
+  try { console.debug('[dataverseService] updateInitiativeStatus result raw:', res) } catch (e) { }
+
   writeAuditLog({
     actionType: 'StatusChange',
     entityName: 'pm_initiatives',
@@ -169,16 +150,16 @@ export async function convertInitiativeToProject(initiative: InitiativeModel): P
       payload['pm_portfolio@odata.bind'] = `/pm_portfolios(${(initiative as any)._pm_portfolio_value})`
     }
     const created = await Pm_projectsService.create(payload as any)
-    try { console.debug('[dataverseService] convertInitiativeToProject create result raw:', created) } catch (e) {}
+    try { console.debug('[dataverseService] convertInitiativeToProject create result raw:', created) } catch (e) { }
     const createdItem = unwrapSingle<Pm_projects>(created)
     if (createdItem && createdItem.pm_projectid) {
       try {
         const updateRes = await Pm_initiativesService.update(initiative.pm_initiativeid!, { pm_convertedtoreference: createdItem.pm_projectid } as any)
-        try { console.debug('[dataverseService] convertInitiativeToProject update initiative result raw:', updateRes) } catch (e) {}
+        try { console.debug('[dataverseService] convertInitiativeToProject update initiative result raw:', updateRes) } catch (e) { }
       } catch (e) {
         console.warn('[dataverseService] convertInitiativeToProject: failed to update initiative conversion reference', e)
       }
-      
+
       // Log project creation audit
       writeAuditLog({
         actionType: 'Create',
@@ -224,10 +205,10 @@ export async function createInitiative(payload: Partial<InitiativeModel> & { _pm
     statuscode: 1,
   }
   const result = await Pm_initiativesService.create({ ...defaults, ...cleanPayload } as any)
-  try { console.debug('[dataverseService] createInitiative payload/result:', payload, result) } catch (e) {}
+  try { console.debug('[dataverseService] createInitiative payload/result:', payload, result) } catch (e) { }
   const item = unwrapSingle<Pm_initiatives>(result)
   const mapped = item ? mapInitiative(item) : null
-  
+
   if (mapped && mapped.pm_initiativeid) {
     writeAuditLog({
       actionType: 'Create',
@@ -236,16 +217,16 @@ export async function createInitiative(payload: Partial<InitiativeModel> & { _pm
       recordName: mapped.pm_name,
     })
   }
-  
+
   return mapped
 }
 
 export async function updateInitiative(id: string, changes: Partial<InitiativeModel>): Promise<InitiativeModel | null> {
   const result = await Pm_initiativesService.update(id, changes as any)
-  try { console.debug('[dataverseService] updateInitiative id/changes/result:', id, changes, result) } catch (e) {}
+  try { console.debug('[dataverseService] updateInitiative id/changes/result:', id, changes, result) } catch (e) { }
   const item = unwrapSingle<Pm_initiatives>(result)
   const mapped = item ? mapInitiative(item) : null
-  
+
   if (mapped && mapped.pm_initiativeid) {
     Object.keys(changes).forEach((key) => {
       const val = (changes as any)[key]
@@ -261,7 +242,7 @@ export async function updateInitiative(id: string, changes: Partial<InitiativeMo
       }
     })
   }
-  
+
   return mapped
 }
 

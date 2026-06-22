@@ -283,7 +283,6 @@ export const IssueDialog: React.FC<IssueDialogProps> = ({
         _pm_issueowner_value: selectedOwner?.id || '',
       }
       if (actualDate) payload.pm_actualresolutiondate = fmt(actualDate)
-      console.log('[IssueDialog] handleSubmit payload:', JSON.stringify(payload, null, 2))
       await onSave(payload)
       onClose()
     } catch (err) {

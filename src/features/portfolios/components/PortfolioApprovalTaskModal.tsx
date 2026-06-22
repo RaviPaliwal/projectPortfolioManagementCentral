@@ -72,7 +72,6 @@ export const PortfolioApprovalTaskModal: React.FC<PortfolioApprovalTaskModalProp
     try {
       // DecisionBox values: 0 = Approve, 3 = Reject
       const targetStatus = workflowDecision === 0 ? 0 : 2
-      console.log('[PortfolioApprovalTaskModal] saveTaskData', { workflowDecision, targetStatus, entityId })
       await updatePortfolioStatus(entityId, targetStatus)
       const outcomeLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'
       onSuccess('Portfolio Approval completed. Outcome: ' + outcomeLabel + '.')
@@ -143,8 +142,8 @@ export const PortfolioApprovalTaskModal: React.FC<PortfolioApprovalTaskModalProp
                     {portfolio?.pm_prioritylevel != null
                       ? portfolio.pm_prioritylevel === 1 ? 'High'
                         : portfolio.pm_prioritylevel === 2 ? 'Medium'
-                        : portfolio.pm_prioritylevel === 3 ? 'Low'
-                        : 'Very Low'
+                          : portfolio.pm_prioritylevel === 3 ? 'Low'
+                            : 'Very Low'
                       : '-'}
                   </Typography>
                 </Box>

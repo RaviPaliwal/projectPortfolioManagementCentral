@@ -86,7 +86,6 @@ export function FormDialog() {
         return
       }
 
-      console.log('[FormDialog] 📩 Received event:', data.formDisplayName, '| formKey:', data.formKey, '| stepId:', data.approvalStepId, '| entityId:', data.entityId, '| entityType:', data.entityType)
       setDetail(data)
       setOpen(true)
     }
