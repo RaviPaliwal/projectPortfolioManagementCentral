@@ -45,9 +45,9 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ outcome, projectName, gat
   const isDark = theme.palette.mode === 'dark'
 
   const map: Record<number, { color: string; label: string; emoji: string }> = {
-    0: { color: theme.palette.success.main, label: 'Gate Approved',       emoji: '🎉' },
+    0: { color: theme.palette.success.main, label: 'Gate Approved', emoji: '🎉' },
     1: { color: theme.palette.warning.main, label: 'Conditional Approval', emoji: '📋' },
-    2: { color: theme.palette.error.main, label: 'Not Approved',          emoji: '🚫' },
+    2: { color: theme.palette.error.main, label: 'Not Approved', emoji: '🚫' },
   }
   const d = map[outcome] || map[0]
 
@@ -114,9 +114,9 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
   const isDark = theme.palette.mode === 'dark'
 
   const OUTCOME_OPTIONS = [
-    { value: 0, label: 'Approved',          color: theme.palette.success.main, desc: 'Project proceeds to the next gate stage.' },
+    { value: 0, label: 'Approved', color: theme.palette.success.main, desc: 'Project proceeds to the next gate stage.' },
     { value: 1, label: 'Conditional Approval', color: theme.palette.warning.main, desc: 'Approve subject to mandatory conditions.' },
-    { value: 4, label: 'Not Approved',       color: theme.palette.error.main, desc: 'Project does not proceed; returns to planning.' },
+    { value: 4, label: 'Not Approved', color: theme.palette.error.main, desc: 'Project does not proceed; returns to planning.' },
   ]
 
   // ── Data State ─────────────────────────────────────────────────────
@@ -141,9 +141,9 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
       setGateReview(gr)
 
       const projectId = gr._pm_project_value ||
-                        (gr as any)._pm_projectlookup_value ||
-                        (gr as any).pm_project ||
-                        gr.pm_projectcode
+        (gr as any)._pm_projectlookup_value ||
+        (gr as any).pm_project ||
+        gr.pm_projectcode
 
       if (projectId) {
         const proj = await fetchProjectDetails(projectId)
@@ -154,7 +154,6 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
       setReviewDate(gr.pm_actualreviewdate || new Date().toISOString().split('T')[0])
       setConditions(gr.pm_reviewconditions || '')
     } catch (err) {
-      console.error('Failed to load Board task data', err)
       onError('Failed to load project details for board decision.')
     } finally { setLoading(false) }
   }, [gateReviewId, onError])
@@ -246,7 +245,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
           {/* Submitted state header */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-               <Box sx={{ width: 36, height: 36, bgcolor: outcome === 4 ? theme.palette.error.main : outcome === 1 ? theme.palette.warning.main : theme.palette.success.main, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', borderRadius: '50%' }}>
+              <Box sx={{ width: 36, height: 36, bgcolor: outcome === 4 ? theme.palette.error.main : outcome === 1 ? theme.palette.warning.main : theme.palette.success.main, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', borderRadius: '50%' }}>
                 <GavelIcon sx={{ fontSize: 18 }} />
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>Governance Board Decision</Typography>

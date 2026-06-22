@@ -71,7 +71,7 @@ export default function ActivityLogPage() {
   const [logs, setLogs] = useState<Pm_changelogentries[]>([])
   const [selectedLog, setSelectedLog] = useState<Pm_changelogentries | null>(null)
   const [copiedField, setCopiedField] = useState<string | null>(null)
-  
+
   // Dropdown Filtering States
   const [entityFilter, setEntityFilter] = useState<string>('all')
   const [actionFilter, setActionFilter] = useState<string>('all')
@@ -95,7 +95,7 @@ export default function ActivityLogPage() {
         orderBy: ['pm_changetimestamp desc'],
         top: 500,
       })
-      
+
       if (result && 'value' in result) {
         setLogs(result.value as Pm_changelogentries[])
       } else if (result && 'data' in result) {
@@ -106,7 +106,6 @@ export default function ActivityLogPage() {
         setLogs([])
       }
     } catch (err) {
-      console.error('[ActivityLogPage] Failed to fetch change log entries:', err)
       setLogs([])
     } finally {
       setLoading(false)
@@ -159,7 +158,7 @@ export default function ActivityLogPage() {
     const creates = logs.filter(l => Number(l.pm_actiontype) === 2).length
     const updates = logs.filter(l => Number(l.pm_actiontype) === 1).length
     const statusChanges = logs.filter(l => Number(l.pm_actiontype) === 0).length
-    
+
     const uniqueUsers = new Set()
     logs.forEach(l => {
       if (l._pm_changeby_value) uniqueUsers.add(l._pm_changeby_value.toLowerCase())
@@ -221,7 +220,7 @@ export default function ActivityLogPage() {
 
   const getActionChip = (action: any) => {
     const act = action !== undefined ? Number(action) : -1
-    
+
     let label = 'UPDATE'
     let color: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'default' = 'info'
 
@@ -273,7 +272,7 @@ export default function ActivityLogPage() {
     if (!entityName) return <Chip label="SYSTEM" size="small" variant="outlined" sx={{ fontWeight: 700 }} />
     const label = getEntityLabel(entityName).toUpperCase()
     const color = getEntityColor(entityName)
-    
+
     return (
       <Chip
         label={label}
@@ -314,13 +313,13 @@ export default function ActivityLogPage() {
 
     return (
       <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-        <Avatar 
-          sx={{ 
-            width: 28, 
-            height: 28, 
-            bgcolor: color, 
-            color: '#fff', 
-            fontSize: fontSizes.sm, 
+        <Avatar
+          sx={{
+            width: 28,
+            height: 28,
+            bgcolor: color,
+            color: '#fff',
+            fontSize: fontSizes.sm,
             fontWeight: 700,
             boxShadow: 'none'
           }}
@@ -482,10 +481,10 @@ export default function ActivityLogPage() {
         extraFilters={extraFilters}
         onClearFilters={handleClearFilters}
         actions={(log) => (
-          <IconButton 
-            size="small" 
+          <IconButton
+            size="small"
             onClick={(e) => { e.stopPropagation(); setSelectedLog(log) }}
-            sx={{ 
+            sx={{
               color: 'text.secondary',
               '&:hover': { bgcolor: 'action.hover', color: 'primary.main' }
             }}
@@ -504,12 +503,12 @@ export default function ActivityLogPage() {
       >
         {selectedLog && (
           <>
-            <DialogTitle 
-              sx={{ 
-                px: 3.5, 
-                py: 2.5, 
-                borderBottom: '1px solid', 
-                borderColor: 'divider', 
+            <DialogTitle
+              sx={{
+                px: 3.5,
+                py: 2.5,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
                 bgcolor: 'background.paper',
                 display: 'flex',
                 alignItems: 'center',
@@ -649,7 +648,7 @@ export default function ActivityLogPage() {
                           </Typography>
                         </Card>
                       </Grid>
-                      
+
                       <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                         <Card variant="outlined" sx={{ p: 2, height: '100%', borderColor: 'error.light', bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2' }}>
                           <Typography variant="caption" color="error.main" sx={{ fontWeight: 800, display: 'block', mb: 0.5 }}>BEFORE (OLD VALUE)</Typography>
@@ -730,15 +729,15 @@ export default function ActivityLogPage() {
                             </IconButton>
                           )}
                         </Typography>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            fontFamily: 'monospace', 
-                            fontSize: fontSizes.sm, 
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontFamily: 'monospace',
+                            fontSize: fontSizes.sm,
                             wordBreak: 'break-all',
                             color: 'text.primary',
                             fontWeight: 600
-                          }} 
+                          }}
                           title={selectedLog.pm_sessionid}
                         >
                           {selectedLog.pm_sessionid || 'N/A'}

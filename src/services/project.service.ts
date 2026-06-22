@@ -144,10 +144,7 @@ export async function fetchProjectDetails(projectId: string): Promise<ProjectMod
 
     const item = unwrapSingle<Pm_projects>(result)
     
-    if (!item || !item.pm_projectid) {
-      try { console.warn('[dataverseService] fetchProjectDetails: record not found or invalid response for ID:', normalizedId, result) } catch (e) {}
-      return null
-    }
+    if (!item || !item.pm_projectid) return null
     
     const mapped = mapProject(item)
     
@@ -169,7 +166,7 @@ export async function fetchProjectDetails(projectId: string): Promise<ProjectMod
     
     return mapped
   } catch (err) {
-    try { console.error('[dataverseService] fetchProjectDetails exception for ID:', normalizedId, err) } catch (e) {}
+    console.error('[dataverseService] fetchProjectDetails exception for ID:', normalizedId, err)
     return null
   }
 }
@@ -246,9 +243,7 @@ export async function fetchProjectsFull(): Promise<ProjectModel[]> {
         proj.pm_programmename = programmeNameById.get(proj._pm_programme_value)
       }
     }
-  } catch (err) {
-    try { console.warn('[dataverseService] fetchProjectsFull: failed to resolve lookup names', err) } catch (e) {}
-  }
+  } catch (err) { }
 
   return projects
 }
@@ -411,9 +406,7 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
           newValue: changes.pm_projectmanager || ''
         })
       }
-    } else {
-      console.warn('[updateProject] Cannot write audit logs because original project details could not be retrieved.')
-    }
+    } else { }
 
     // Dataverse update often returns empty. We ALWAYS fetch fresh full details 
     // to ensure the UI gets the complete record with all computed/lookup fields.
@@ -507,8 +500,6 @@ export async function fetchScheduleData(projectId: string): Promise<ScheduleData
       predecessorMap.set(task.pm_projecttaskid!, task._pm_predecessortask_value)
     }
   }
-
-  try { console.debug('[dataverseService] fetchScheduleData:', { projectId, taskCount: tasks.length, milestoneCount: milestones.length }) } catch (e) {}
 
   return { tasks, milestones, predecessorMap }
 }

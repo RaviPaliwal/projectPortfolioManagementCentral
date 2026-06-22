@@ -55,7 +55,6 @@ export const BudgetLineApprovalTaskModal: React.FC<BudgetLineApprovalTaskModalPr
       if (!bl) { onError('Budget line not found.'); setLoading(false); return }
       setBudgetLine(bl)
     } catch (err) {
-      console.error('Failed to load budget line', err)
       onError('Failed to load budget line details.')
     } finally { setLoading(false) }
   }, [budgetLineId, onError])

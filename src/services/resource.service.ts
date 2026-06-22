@@ -49,7 +49,6 @@ export async function fetchResources(): Promise<ResourceModel[]> {
     orderBy: ['pm_fullname asc'],
     top: 500,
   })
-  try { console.debug('[dataverseService] fetchResources result:', result) } catch (e) {}
   return unwrapList<Pm_resources>(result).map(mapResource)
 }
 
@@ -80,7 +79,6 @@ export async function createResource(payload: Partial<ResourceModel>): Promise<R
     }
   }
   const result = await Pm_resourcesService.create({ ...defaults, ...cleanPayload } as any)
-  try { console.debug('[dataverseService] createResource payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_resources>(result)
   if (!item) {
     console.error('[dataverseService] createResource: unwrapSingle returned null, raw result:', JSON.stringify(result).slice(0, 1000))
@@ -116,7 +114,6 @@ export async function updateResource(id: string, changes: Partial<ResourceModel>
     }
   }
   const result = await Pm_resourcesService.update(id, cleanChanges as any)
-  try { console.debug('[dataverseService] updateResource id/changes/result:', id, cleanChanges, result) } catch (e) {}
   const item = unwrapSingle<Pm_resources>(result)
   
   if (item && original) {
@@ -154,7 +151,6 @@ export async function deleteResource(id: string): Promise<void> {
     }
   } catch (e) {}
 
-  try { console.debug('[dataverseService] deleteResource id:', id) } catch (e) {}
   await Pm_resourcesService.delete(id)
 
   writeAuditLog({
@@ -186,7 +182,6 @@ export async function fetchResourceAllocations(resourceId: string): Promise<Reso
     orderBy: ['pm_startdate desc'],
     top: 200,
   })
-  try { console.debug('[dataverseService] fetchResourceAllocations result:', result) } catch (e) {}
   return unwrapList<Pm_resourceallocations>(result).map(mapResourceAllocation)
 }
 
@@ -198,7 +193,6 @@ export async function fetchResourceAllocationById(allocationId: string): Promise
       '_pm_resource_value', '_pm_project_value',
     ],
   })
-  try { console.debug('[dataverseService] fetchResourceAllocationById result:', result) } catch (e) {}
   const item = unwrapSingle<Pm_resourceallocations>(result)
   return item ? mapResourceAllocation(item) : null
 }
@@ -301,7 +295,6 @@ export async function assignResource(payload: {
     statecode: 0,
     statuscode: 1,
   } as any)
-  try { console.debug('[dataverseService] assignResource payload/result:', payload, result) } catch (e) {}
   const item = unwrapSingle<any>(result)
   if (item && item.pm_resourceallocationid) {
     writeAuditLog({

@@ -77,7 +77,6 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to submit workflow decision.'
-      console.error('[DecisionBox] ❌ Error:', msg, err)
       setLastError(msg)
       onDecisionError?.(msg)
     } finally {

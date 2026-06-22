@@ -22,7 +22,7 @@ export async function fetchSystemUsers(): Promise<Systemusers[]> {
 
     return Array.isArray(users) ? users : [];
   } catch (err) {
-    console.warn('fetchSystemUsers failed:', err);
+    console.error('fetchSystemUsers failed:', err);
     return [];
   }
 }
@@ -51,7 +51,7 @@ export async function fetchOwnerTeams(): Promise<TeamOption[]> {
       type: 'team',
     }))
   } catch (err) {
-    console.warn('[dataverseService] fetchOwnerTeams failed:', err)
+    console.error('[dataverseService] fetchOwnerTeams failed:', err)
     return []
   }
 }
@@ -89,7 +89,7 @@ export async function fetchTeamMembers(teamId: string): Promise<Systemusers[]> {
         });
         return unwrapList<Systemusers>(result);
       } catch (chunkErr) {
-        console.warn(`[dataverseService] Chunk ${index + 1} failed:`, chunkErr);
+        console.error(`[dataverseService] Chunk ${index + 1} failed:`, chunkErr);
         return [];
       }
     });
@@ -98,7 +98,7 @@ export async function fetchTeamMembers(teamId: string): Promise<Systemusers[]> {
     return resolvedChunks.flat();
 
   } catch (err) {
-    console.warn(`[dataverseService] fetchTeamMembers failed for team ${teamId}:`, err);
+    console.error(`[dataverseService] fetchTeamMembers failed for team ${teamId}:`, err);
     return [];
   }
 }
@@ -124,11 +124,11 @@ export async function manageTeamMember(teamId: string, userId: string, action: '
       })
       return true;
     } else {
-      console.warn(`[dataverseService] manageTeamMember Flow returned a failure status:`, result?.error);
+      console.error(`[dataverseService] manageTeamMember Flow returned a failure status:`, result?.error);
       return false;
     }
   } catch (err) {
-    console.warn(`[dataverseService] manageTeamMember service execution failed:`, err);
+    console.error(`[dataverseService] manageTeamMember service execution failed:`, err);
     return false;
   }
 }

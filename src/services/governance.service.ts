@@ -100,9 +100,7 @@ export async function fetchGateReviewById(id: string): Promise<GateReviewModel |
         review.pm_portfolioname = proj.pm_portfolioname
       }
     }
-  } catch (err) {
-    console.warn('[governanceService] fetchGateReviewById project resolution failed:', err)
-  }
+  } catch (err) { }
 
   return review
 }
@@ -140,9 +138,7 @@ export async function fetchGateReviews(): Promise<GateReviewModel[]> {
         r.pm_portfolioname = p.pm_portfolioname
       }
     }
-  } catch (err) {
-    console.warn('[governanceService] fetchGateReviews project resolution failed:', err)
-  }
+  } catch (err) { }
 
   return list
 }
@@ -238,10 +234,8 @@ export async function fetchBenefits(): Promise<BenefitModel[]> {
     top: 500,
   }
   const result = await Pm_benefitsService.getAll({ ...options, filter: 'statecode eq 0' })
-  try { console.debug('[dataverseService] fetchBenefits result:', result) } catch (e) {}
   let list = unwrapList<Pm_benefits>(result).map(mapBenefit)
   if (list.length === 0) {
-    try { console.warn('[dataverseService] fetchBenefits: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) {}
     const fallbackResult = await Pm_benefitsService.getAll(options)
     list = unwrapList<Pm_benefits>(fallbackResult).map(mapBenefit)
   }

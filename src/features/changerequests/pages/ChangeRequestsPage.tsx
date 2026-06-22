@@ -186,7 +186,6 @@ export default function ChangeRequestsPage() {
       const result = await fetchChangeRequests()
       setChangeRequests(result ?? [])
     } catch (err) {
-      console.error('[ChangeRequestsPage] loadData error:', err)
       setError('Unable to load change requests.')
     } finally {
       setLoading(false)
@@ -721,7 +720,6 @@ export default function ChangeRequestsPage() {
                       setError('Failed to start workflow. Check that the workflow has step templates configured.')
                     }
                   } catch (err) {
-                    console.error('[ChangeRequestsPage] Submit for approval error:', err)
                     setError('Unable to submit for approval.')
                   } finally {
                     setApprovalLoading(false)

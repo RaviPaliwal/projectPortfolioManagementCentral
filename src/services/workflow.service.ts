@@ -104,7 +104,6 @@ export async function fetchWorkflows(): Promise<WorkflowModel[]> {
     orderBy: ['pm_workflowname asc'],
     top: 500,
   })
-  try { console.debug('[dataverseService] fetchWorkflows result:', result) } catch (e) { }
   return unwrapList<Pm_workflows>(result).map(mapWorkflow)
 }
 
@@ -132,7 +131,6 @@ export async function createWorkflow(payload: Partial<WorkflowModel>): Promise<W
     delete cleanPayload[removed]
   }
   const result = await Pm_workflowsService.create({ ...defaults, ...cleanPayload } as any)
-  try { console.debug('[dataverseService] createWorkflow payload/result:', cleanPayload, result) } catch (e) { }
   const item = unwrapSingle<Pm_workflows>(result)
   return item ? mapWorkflow(item) : null
 }
@@ -152,13 +150,11 @@ export async function updateWorkflow(id: string, changes: Partial<WorkflowModel>
     delete payload[removed]
   }
   const result = await Pm_workflowsService.update(id, payload as any)
-  try { console.debug('[dataverseService] updateWorkflow id/changes/result:', id, changes, result) } catch (e) { }
   const item = unwrapSingle<Pm_workflows>(result)
   return item ? mapWorkflow(item) : null
 }
 
 export async function deleteWorkflow(id: string): Promise<void> {
-  try { console.debug('[dataverseService] deleteWorkflow id:', id) } catch (e) { }
   await Pm_workflowsService.delete(id)
 }
 
@@ -229,19 +225,15 @@ export async function updateWorkflowStepTemplate(id: string, changes: Partial<Wo
 }
 
 export async function deleteWorkflowStepTemplate(id: string): Promise<void> {
-  try { console.debug('[dataverseService] deleteWorkflowStepTemplate id:', id) } catch (e) { }
   await Pm_workflowsteptemplatesService.delete(id)
 }
 
 export async function fetchStepTemplateById(id: string): Promise<WorkflowStepTemplateModel | null> {
   try {
-    console.debug('[dataverseService] fetchStepTemplateById — template ID:', id)
     const result = await Pm_workflowsteptemplatesService.get(id, {
       select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assigneeid', 'pm_description', 'pm_sladays', 'new_formkey', '_pm_workflowlookup_value'],
     })
-    console.debug('[dataverseService] fetchStepTemplateById — raw result:', JSON.stringify(result))
     const item = unwrapSingle<Pm_workflowsteptemplates>(result)
-    console.debug('[dataverseService] fetchStepTemplateById — unwrapped:', item ? 'found' : 'null')
     return item ? mapWorkflowStepTemplate(item) : null
   } catch (err) {
     console.error('[dataverseService] fetchStepTemplateById failed:', err)
@@ -293,7 +285,6 @@ export async function submitWorkflowDecision(
       }))
     }
 
-    console.debug('[WorkflowEngine] workflowrouter triggered:', { stepId, decision, result })
     return success
   } catch (err) {
     console.error('[WorkflowEngine] submitWorkflowDecision failed:', err)
@@ -320,7 +311,6 @@ export async function fetchWorkflowInstances(): Promise<WorkflowInstanceModel[]>
 }
 
 export async function deleteWorkflowInstance(id: string): Promise<void> {
-  try { console.debug('[dataverseService] deleteWorkflowInstance id:', id) } catch (e) { }
   await Pm_workflowinstancesService.delete(id)
 }
 
@@ -442,7 +432,6 @@ export async function createWorkflowApprovalStep(payload: Partial<WorkflowApprov
     }
   }
   const result = await Pm_workflowapprovalstepsService.create({ ...defaults, ...cleanPayload } as any)
-  try { console.debug('[dataverseService] createWorkflowApprovalStep payload/result:', cleanPayload, result) } catch (e) { }
   const item = unwrapSingle<Pm_workflowapprovalsteps>(result)
   return item ? mapWorkflowApprovalStep(item) : null
 }
@@ -471,7 +460,6 @@ export async function startWorkflowForEntity(
       text_1: entityId,
     })
 
-    console.debug('[WorkflowEngine] initiateworkflow triggered:', { module, entityId, result })
     return result?.success !== false
   } catch (err) {
     console.error('[WorkflowEngine] Failed to trigger initiateworkflow:', err)
@@ -516,7 +504,6 @@ export async function approveWorkflowStep(
       text: notes || '',
     })
 
-    console.debug('[WorkflowEngine] workflowrouter triggered for approve:', { stepId, result })
     return result?.success !== false
   } catch (err) {
     console.error('[WorkflowEngine] approveWorkflowStep failed:', err)
@@ -549,7 +536,6 @@ export async function rejectWorkflowStep(
       text: reason || '',
     })
 
-    console.debug('[WorkflowEngine] workflowrouter triggered for reject:', { stepId, result })
     return result?.success !== false
   } catch (err) {
     console.error('[WorkflowEngine] rejectWorkflowStep failed:', err)

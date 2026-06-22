@@ -184,7 +184,6 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
       }
       setStepsByInstance(stepsMap)
     } catch (err) {
-      console.error('[WorkflowMilestone] Failed to load workflow data:', err)
       setError('Unable to load workflow milestone data.')
     } finally {
       setLoading(false)

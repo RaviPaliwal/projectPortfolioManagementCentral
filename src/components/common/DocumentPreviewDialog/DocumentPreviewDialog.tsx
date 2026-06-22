@@ -97,7 +97,6 @@ export const DocumentPreviewDialog: React.FC<DocumentPreviewDialogProps> = ({
           setLoading(false)
         }
       } catch (err) {
-        console.error('Failed to create preview url:', err)
         setError('Unable to load document preview.')
         setLoading(false)
       }

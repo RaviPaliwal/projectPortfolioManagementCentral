@@ -108,7 +108,6 @@ export async function updateProgramme(id: string, changes: Partial<ProgrammeMode
 
   try {
     const result = await Pm_programmesService.update(normalizedId, cleanPayload as any)
-    try { console.debug('[dataverseService] updateProgramme result:', result) } catch (e) { }
 
     // Log audit entries for changed fields
     if (original) {
@@ -143,13 +142,12 @@ export async function updateProgramme(id: string, changes: Partial<ProgrammeMode
     const item = unwrapSingle<Pm_programmes>(fresh)
     return item ? mapProgramme(item) : null
   } catch (err) {
-    try { console.error('[dataverseService] updateProgramme failed:', err) } catch (e) { }
+    console.error('[dataverseService] updateProgramme failed:', err)
     throw err
   }
 }
 
 export async function updateProgrammePhase(id: string, phase: number): Promise<void> {
-  try { console.debug('[dataverseService] updateProgrammePhase:', { id, phase }) } catch (e) { }
 
   let recordName = id
   let oldPhaseStr = ''
@@ -259,9 +257,7 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
           programme.pm_portfolioname = portfolio.pm_portfolioname
         }
       }
-    } catch (e) {
-      console.warn('[dataverseService] fetchProgrammeDetails: failed to resolve portfolio name', e)
-    }
+    } catch (e) { }
   }
 
   const projectsResult = await Pm_projectsService.getAll({

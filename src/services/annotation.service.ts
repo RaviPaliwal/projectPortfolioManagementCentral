@@ -71,7 +71,6 @@ export async function fetchIssueComments(issueId: string): Promise<IssueComment[
     const response = await fetch(url)
 
     if (!response.ok) {
-      console.warn('[AnnotationService] fetchIssueComments failed:', response.status, response.statusText)
       return []
     }
 
@@ -117,9 +116,6 @@ export async function createIssueComment(
     })
 
     if (!response.ok) {
-      console.warn('[AnnotationService] createIssueComment failed:', response.status, response.statusText)
-      const errorBody = await response.text().catch(() => '')
-      console.warn('[AnnotationService] error body:', errorBody)
       return null
     }
 

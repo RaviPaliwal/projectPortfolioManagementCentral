@@ -117,7 +117,6 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
       const docs = await fetchDocumentsForEntity(moduleName, entityId)
       setDocuments(docs)
     } catch (err) {
-      console.error('[EntityDocumentsTab] Failed to load documents:', err)
       setError('Unable to load documents.')
     } finally {
       setLoading(false)
@@ -156,7 +155,6 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
       await loadDocuments()
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
-      console.error('[EntityDocumentsTab] Upload error:', err)
       setError('An error occurred during file upload.')
     } finally {
       setUploading(false)
@@ -214,7 +212,6 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
       document.body.removeChild(a)
       window.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('[EntityDocumentsTab] Download error:', err)
       setError(`Unable to download file "${docName}".`)
     } finally {
       setDownloadingId(null)
@@ -236,7 +233,6 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
         docData: data,
       })
     } catch (err) {
-      console.error('[EntityDocumentsTab] Preview error:', err)
       setError(`Unable to preview file "${docName}".`)
     } finally {
       setDownloadingId(null)
@@ -264,7 +260,6 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
         setError(`Failed to delete file "${docName}".`)
       }
     } catch (err) {
-      console.error('[EntityDocumentsTab] Delete error:', err)
       setError(`An error occurred while deleting file "${docName}".`)
     } finally {
       setLoading(false)
@@ -428,10 +423,10 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
                         <span>
                           {doc.createdon
                             ? new Date(doc.createdon).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })
                             : '—'}
                         </span>
                       </Typography>

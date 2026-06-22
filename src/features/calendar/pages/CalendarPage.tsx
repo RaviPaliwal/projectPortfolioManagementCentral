@@ -618,7 +618,6 @@ export default function CalendarPage() {
 
         // Focused on actual system date (currentDate is initialized to new Date() and does not auto-shift)
       } catch (err: any) {
-        console.error('[CalendarPage] load error:', err)
         setRemoteError(err.message || 'Unable to retrieve allocations and tasks.')
       } finally {
         setLoadingRemote(false)
@@ -787,7 +786,6 @@ export default function CalendarPage() {
         throw new Error(errMsg)
       }
     } catch (err: any) {
-      console.error('[CalendarPage] Error creating Outlook event:', err)
       setCreateError(err.message || 'Failed to create event in Outlook.')
     } finally {
       setCreatingEvent(false)

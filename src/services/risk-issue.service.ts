@@ -44,7 +44,6 @@ async function resolveRiskOwnerResourceId(id: string): Promise<string | null> {
   } catch (err) {
   }
 
-  console.warn('[resolveRiskOwnerResourceId] ✗ FAILED - Could not resolve risk owner ID to a resource:', id)
   return null
 }
 
@@ -136,7 +135,6 @@ export async function createRisk(payload: Partial<RiskModel> & { pm_projectid: s
     }
   }
   const result = await Pm_risksService.create(createPayload as any)
-  try { console.debug('[dataverseService] createRisk payload/result:', payload, result) } catch (e) { }
   const item = unwrapSingle<Pm_risks>(result)
   if (item && item.pm_riskid) {
     writeAuditLog({
@@ -212,10 +210,8 @@ export async function fetchMitigationActions(riskId: string): Promise<RiskMitiga
     orderBy: ['pm_duedate asc'],
     top: 100,
   })
-  try { console.debug('[dataverseService] fetchMitigationActions result:', result, 'riskId:', riskId) } catch (e) { }
   let list = unwrapList<Pm_riskmitigationactions>(result).map(mapMitigationAction)
   if (list.length === 0) {
-    try { console.warn('[dataverseService] fetchMitigationActions: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) { }
     const fallbackResult = await Pm_riskmitigationactionsService.getAll({
       select: [
         'pm_riskmitigationactionid', 'pm_actiontitle', 'pm_actiondescription',
@@ -246,10 +242,8 @@ export async function fetchAllRisks(): Promise<RiskModel[]> {
     top: 500,
   }
   const result = await Pm_risksService.getAll({ ...options, filter: 'statecode eq 0' })
-  try { console.debug('[dataverseService] fetchAllRisks result:', result) } catch (e) { }
   let list = unwrapList<Pm_risks>(result).map(mapRisk)
   if (list.length === 0) {
-    try { console.warn('[dataverseService] fetchAllRisks: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) { }
     const fallbackResult = await Pm_risksService.getAll(options)
     list = unwrapList<Pm_risks>(fallbackResult).map(mapRisk)
   }
@@ -332,8 +326,6 @@ export async function updateRiskFull(id: string, changes: Partial<RiskModel>): P
       if (resolvedId) {
         // Use navigation property — Dataverse rejects direct _pm_riskowner_value updates
         cleanPayload['pm_RiskOwner@odata.bind'] = `/pm_resources(${resolvedId})`
-      } else {
-        console.warn('[updateRiskFull] ✗ resolveRiskOwnerResourceId returned null - risk owner will NOT be in payload!')
       }
     }
   } else {
@@ -407,10 +399,7 @@ export async function fetchIssuesForSystemUser(systemUserId: string): Promise<Is
       top: 1,
     })
     const resources = unwrapList<any>(resourcesResult)
-    if (resources.length === 0) {
-      console.warn('[risk-issue.service] fetchIssuesForSystemUser: no resource found for system user', systemUserId)
-      return []
-    }
+    if (resources.length === 0) return []
     const resourceId = resources[0].pm_resourceid
     if (!resourceId) return []
 
@@ -431,7 +420,6 @@ export async function fetchIssuesForSystemUser(systemUserId: string): Promise<Is
       orderBy: ['pm_dateraised desc'],
       top: 500,
     })
-    try { console.debug('[dataverseService] fetchIssuesForSystemUser result:', result, 'resourceId:', resourceId) } catch (e) { }
     return unwrapList<Pm_issues>(result).map(mapIssue)
   } catch (err) {
     console.error('[risk-issue.service] fetchIssuesForSystemUser failed:', err)
@@ -455,10 +443,8 @@ export async function fetchAllIssues(): Promise<IssueModel[]> {
     top: 500,
   }
   const result = await Pm_issuesService.getAll({ ...options, filter: 'statecode eq 0' })
-  try { console.debug('[dataverseService] fetchAllIssues result:', result) } catch (e) { }
   let list = unwrapList<Pm_issues>(result).map(mapIssue)
   if (list.length === 0) {
-    try { console.warn('[dataverseService] fetchAllIssues: empty result, raw:', JSON.stringify(result).slice(0, 1000)) } catch (e) { }
     const fallbackResult = await Pm_issuesService.getAll(options)
     list = unwrapList<Pm_issues>(fallbackResult).map(mapIssue)
   }
@@ -502,7 +488,6 @@ export async function createIssueFull(payload: Partial<IssueModel>): Promise<Iss
     }
   }
   const result = await Pm_issuesService.create({ ...defaults, ...cleanPayload } as any)
-  try { console.debug('[dataverseService] createIssueFull payload/result:', cleanPayload, result) } catch (e) { }
   const item = unwrapSingle<Pm_issues>(result)
   if (item && item.pm_issueid) {
     writeAuditLog({
@@ -558,7 +543,6 @@ export async function updateIssueFull(id: string, changes: Partial<IssueModel>):
     }
   }
   const result = await Pm_issuesService.update(id, cleanPayload as any)
-  try { console.debug('[dataverseService] updateIssueFull id/changes/result:', id, cleanPayload, result) } catch (e) { }
   const item = unwrapSingle<Pm_issues>(result)
 
   // Log audit entries for changed fields
@@ -598,7 +582,6 @@ export async function deleteIssue(id: string): Promise<void> {
     if (uItem?.pm_issuetitle) recordName = uItem.pm_issuetitle
   } catch (e) { }
 
-  try { console.debug('[dataverseService] deleteIssue id:', id) } catch (e) { }
   await Pm_issuesService.delete(id)
 
   writeAuditLog({

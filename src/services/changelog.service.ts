@@ -132,9 +132,7 @@ export async function writeAuditLog({
             context.organizationSettings?.organizationId ||
             ''
         }
-      } catch (e) {
-        console.warn('[writeAuditLog] Error checking Xrm context:', e)
-      }
+      } catch (e) { }
     }
 
     // 4. Fallback to in-memory window global or sessionStorage or new UUID

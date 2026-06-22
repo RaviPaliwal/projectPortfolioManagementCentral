@@ -44,7 +44,6 @@ export async function fetchSkills(): Promise<SkillModel[]> {
     orderBy: ['pm_skillname asc'],
     top: 500,
   })
-  try { console.debug('[dataverseService] fetchSkills result:', result) } catch (e) {}
   return unwrapList<Pm_skills>(result).map(mapSkill)
 }
 
@@ -60,7 +59,6 @@ export async function createSkill(payload: Partial<SkillModel>): Promise<SkillMo
     statuscode: 1,
   }
   const result = await Pm_skillsService.create({ ...defaults, ...cleanPayload } as any)
-  try { console.debug('[dataverseService] createSkill payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_skills>(result)
   if (item && item.pm_skillid) {
     writeAuditLog({
@@ -89,7 +87,6 @@ export async function updateSkill(id: string, changes: Partial<SkillModel>): Pro
     }
   }
   const result = await Pm_skillsService.update(id, cleanPayload as any)
-  try { console.debug('[dataverseService] updateSkill id/changes/result:', id, cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_skills>(result)
 
   if (item && original) {
@@ -126,7 +123,6 @@ export async function deleteSkill(id: string): Promise<void> {
     if (uItem?.pm_skillname) recordName = uItem.pm_skillname
   } catch (e) {}
 
-  try { console.debug('[dataverseService] deleteSkill id:', id) } catch (e) {}
   await Pm_skillsService.delete(id)
 
   writeAuditLog({
@@ -146,7 +142,6 @@ export async function fetchResourceSkills(): Promise<ResourceSkillModel[]> {
     orderBy: ['pm_skillid asc', 'pm_resourceid asc'],
     top: 500,
   })
-  try { console.debug('[dataverseService] fetchResourceSkills result:', result) } catch (e) {}
   let list = unwrapList<Pm_resourceskills>(result).map(mapResourceSkill)
 
   try {
@@ -174,9 +169,7 @@ export async function fetchResourceSkills(): Promise<ResourceSkillModel[]> {
         }
       }
     }
-  } catch (err) {
-    try { console.warn('[dataverseService] fetchResourceSkills: failed to resolve resource names', err) } catch (e) {}
-  }
+  } catch (err) { }
 
   try {
     const skillIds = Array.from(new Set(list.map((rs) => normalizeLookupId(rs._pm_skill_value)).filter(Boolean))) as string[]
@@ -203,9 +196,7 @@ export async function fetchResourceSkills(): Promise<ResourceSkillModel[]> {
         }
       }
     }
-  } catch (err) {
-    try { console.warn('[dataverseService] fetchResourceSkills: failed to resolve skill names', err) } catch (e) {}
-  }
+  } catch (err) { }
 
   return list
 }
@@ -235,7 +226,6 @@ export async function createResourceSkill(payload: Partial<ResourceSkillModel>):
     }
   }
   const result = await Pm_resourceskillsService.create({ ...defaults, ...cleanPayload } as any)
-  try { console.debug('[dataverseService] createResourceSkill payload/result:', cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_resourceskills>(result)
   if (item && item.pm_resourceskillid) {
     writeAuditLog({
@@ -267,7 +257,6 @@ export async function updateResourceSkill(id: string, changes: Partial<ResourceS
     }
   }
   const result = await Pm_resourceskillsService.update(id, cleanPayload as any)
-  try { console.debug('[dataverseService] updateResourceSkill id/changes/result:', id, cleanPayload, result) } catch (e) {}
   const item = unwrapSingle<Pm_resourceskills>(result)
 
   if (item && original) {
@@ -297,7 +286,6 @@ export async function updateResourceSkill(id: string, changes: Partial<ResourceS
 }
 
 export async function deleteResourceSkill(id: string): Promise<void> {
-  try { console.debug('[dataverseService] deleteResourceSkill id:', id) } catch (e) {}
   await Pm_resourceskillsService.delete(id)
 
   writeAuditLog({

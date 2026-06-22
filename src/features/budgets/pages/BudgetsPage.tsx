@@ -190,7 +190,6 @@ export default function BudgetsPage() {
       setProgrammeLookups(programmes)
       setProjectLookups(projects)
     } catch (err) {
-      console.error('[BudgetsPage] loadData error:', err)
       setError('Unable to load budget data.')
     } finally {
       setLoading(false)

@@ -76,14 +76,14 @@ export default function DashboardPage() {
   const [budgetLoading, setBudgetLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
-  
+
   // Chart data
   const [capacityAllocationData, setCapacityAllocationData] = useState<{ resource: string; capacity: number; allocated: number; percentage: number }[]>([])
   const [plannedVsActualData, setPlannedVsActualData] = useState<{ month: string; planned: number; actual: number }[]>([])
   const [utilizationByProjectData, setUtilizationByProjectData] = useState<{ name: string; hours: number }[]>([])
   const [departmentDemandData, setDepartmentDemandData] = useState<{ month: string; role: string; hours: number }[]>([])
   const [portfolioTrendData, setPortfolioTrendData] = useState<{ month: string; active: number; completed: number; delayed: number }[]>([])
-  
+
   // New data
   const [pipelineKpis, setPipelineKpis] = useState<PipelineKpis>({ totalActiveInitiatives: 0, pendingApprovals: 0, totalEstimatedCost: 0, approvedThisMonth: 0 })
   const [initiatives, setInitiatives] = useState<InitiativeModel[]>([])
@@ -107,7 +107,7 @@ export default function DashboardPage() {
     try {
       // Global metrics for the whole dashboard (non-filtered)
       const [dashboard, activeProjects, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData, periods, portfolioTrend] = await Promise.all([
-        fetchDashboardMetrics({}), 
+        fetchDashboardMetrics({}),
         fetchProjectsFull(),
         fetchPortfolioHierarchy(),
         fetchCapacityAllocationData(),
@@ -129,15 +129,15 @@ export default function DashboardPage() {
       const yearRange = Array.from({ length: 6 }, (_, i) => currentYear - i)
       const dataYears = periods.map(p => p.pm_fiscalyear).filter(Boolean) as number[]
       const combinedYears = Array.from(new Set([...yearRange, ...dataYears])).sort((a, b) => b - a)
-      
+
       setAvailableYears(combinedYears)
       setMetrics(dashboard)
-      
+
       // Initialize budget metrics with global data if no year selected
       if (budgetYear === 'all') {
         setBudgetMetrics({ approved: dashboard.totalApprovedBudget, actual: dashboard.totalActualSpend })
       }
-      
+
       setProjects(activeProjects.slice(0, 6))
       setCapacityAllocationData(capacityAlloc)
       setPlannedVsActualData(plannedActual)
@@ -156,7 +156,6 @@ export default function DashboardPage() {
       setLastRefreshed(new Date())
       setError(null)
     } catch (error) {
-      console.error('[DashboardPage] load data failed', error)
       setError('Unable to load dashboard data.')
     } finally {
       setLoading(false)
@@ -169,12 +168,12 @@ export default function DashboardPage() {
     setBudgetYear(year)
     setBudgetLoading(true)
     try {
-      const budgetData = await fetchDashboardMetrics({ 
-        fiscalYear: year === 'all' ? undefined : year 
+      const budgetData = await fetchDashboardMetrics({
+        fiscalYear: year === 'all' ? undefined : year
       })
-      setBudgetMetrics({ 
-        approved: budgetData.totalApprovedBudget, 
-        actual: budgetData.totalActualSpend 
+      setBudgetMetrics({
+        approved: budgetData.totalApprovedBudget,
+        actual: budgetData.totalActualSpend
       })
     } catch (e) {
       console.error('[DashboardPage] budget update failed', e)
@@ -223,7 +222,7 @@ export default function DashboardPage() {
                 </Typography>
               </Box>
             )}
-            
+
             <Tooltip title="Refresh dashboard data">
               <IconButton size="small" onClick={() => loadData(true)} disabled={refreshing} sx={{ color: 'text.secondary' }}>
                 <RefreshIcon sx={{ opacity: refreshing ? 0.5 : 1 }} />

@@ -103,7 +103,7 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
   const updatedPortfolios = rawPortfolios.map(port => {
     const portId = normalizeLookupId(port.pm_portfolioid)
     const childProjects = projects.filter(p => normalizeLookupId(p._pm_portfolio_value) === portId)
-    
+
     if (childProjects.length > 0) {
       const aggregates = aggregateFinancials(childProjects, 'pm_approvedbudgeteur', 'pm_actualcosteur')
       // Only override if the original record has 0/null to avoid confusing manual entries, 
@@ -119,10 +119,6 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
   })
 
   const updatedProgrammes = rawProgrammes.map(prog => prog)
-
-  try {
-    console.debug('[dataverseService] fetchPortfolioHierarchy rollup complete:', { portfolios: updatedPortfolios.length, programmes: updatedProgrammes.length, projects: projects.length })
-  } catch (e) {}
 
   return {
     portfolios: updatedPortfolios,
@@ -153,11 +149,10 @@ export async function updatePortfolio(id: string, changes: Partial<PortfolioMode
     })
     const uItem = unwrapSingle<Pm_portfolios>(details)
     if (uItem) original = mapPortfolio(uItem)
-  } catch (e) {}
+  } catch (e) { }
 
   try {
     const result = await Pm_portfoliosService.update(normalizedId, cleanPayload as any)
-    try { console.debug('[dataverseService] updatePortfolio result:', result) } catch (e) {}
 
     // Log audit entries for changed fields
     if (original) {
@@ -192,13 +187,12 @@ export async function updatePortfolio(id: string, changes: Partial<PortfolioMode
     const item = unwrapSingle<Pm_portfolios>(fresh)
     return item ? mapPortfolio(item) : null
   } catch (err) {
-    try { console.error('[dataverseService] updatePortfolio failed:', err) } catch (e) {}
+    try { console.error('[dataverseService] updatePortfolio failed:', err) } catch (e) { }
     throw err
   }
 }
 export async function updatePortfolioStatus(id: string, status: number): Promise<void> {
-  try { console.debug('[dataverseService] updatePortfolioStatus:', { id, status }) } catch (e) {}
-  
+
   let recordName = id
   let oldStatusStr = ''
   try {
@@ -208,7 +202,7 @@ export async function updatePortfolioStatus(id: string, status: number): Promise
       if (item.pm_portfolioname) recordName = item.pm_portfolioname
       oldStatusStr = String(item.pm_portfoliostatus ?? '')
     }
-  } catch (e) {}
+  } catch (e) { }
 
   await Pm_portfoliosService.update(id, { pm_portfoliostatus: status } as any)
 
@@ -240,7 +234,6 @@ export async function createPortfolio(payload: Partial<PortfolioModel>): Promise
   }
   try {
     const result = await Pm_portfoliosService.create({ ...defaults, ...cleanPayload } as any)
-    try { console.debug('[dataverseService] createPortfolio payload/result:', cleanPayload, result) } catch (e) {}
     const item = unwrapSingle<Pm_portfolios>(result)
     if (item) {
       if (item.pm_portfolioid) {
@@ -253,11 +246,6 @@ export async function createPortfolio(payload: Partial<PortfolioModel>): Promise
         })
       }
       return mapPortfolio(item)
-    }
-    try {
-      console.warn('[dataverseService] createPortfolio: unwrapSingle returned null. Raw result:', JSON.stringify(result, null, 2))
-    } catch (e) {
-      console.warn('[dataverseService] createPortfolio: unwrapSingle returned null. Raw result (non-serializable):', result)
     }
     return null
   } catch (err: any) {

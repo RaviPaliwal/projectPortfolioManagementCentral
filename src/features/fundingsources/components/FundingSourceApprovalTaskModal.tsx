@@ -61,7 +61,6 @@ export const FundingSourceApprovalTaskModal: React.FC<FundingSourceApprovalTaskM
       if (!fs) { onError('Funding source not found.'); setLoading(false); return }
       setSource(fs)
     } catch (err) {
-      console.error('Failed to load funding source', err)
       onError('Failed to load funding source details.')
     } finally { setLoading(false) }
   }, [fundingSourceId, onError])

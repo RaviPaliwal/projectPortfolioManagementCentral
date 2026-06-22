@@ -51,7 +51,6 @@ function ApprovalStepResolver({ approvalStepId, onClose, onSuccess, onError, chi
         onError?.('Could not resolve target entity from approval step.')
       }
     } catch (err) {
-      console.error('[ApprovalStepResolver] Γ¥î Exception resolving entity:', err)
       const msg = 'Failed to resolve approval step.'
       setError(msg)
       onError?.(msg)

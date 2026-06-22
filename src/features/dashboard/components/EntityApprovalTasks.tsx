@@ -116,7 +116,6 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
       setAllCompletedSteps(completedSteps)
       detectCompletion(pendingSteps, completedSteps)
     } catch (err) {
-      console.error('[EntityApprovalTasks] load error:', err)
       setError('Unable to load approval tasks.')
     } finally {
       setLoading(false)
@@ -189,88 +188,89 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                 if (id) workflowMap[id] = inst.pm_workflowlookupname || inst.pm_instancename || ''
               }
               return steps.map((step) => {
-              const isOverdue = step.pm_duedate && new Date(step.pm_duedate) < new Date()
-              const workflowName = step._pm_workflowinstancelookup_value
-                ? workflowMap[step._pm_workflowinstancelookup_value] || null
-                : null
-              const userId = currentUser?.systemuserid || ''
-              const userName = currentUser?.fullname || ''
-              const isAssignedToMe = isStepAssignedToUser(step, userId, userName)
-              return (
-                <Paper
-                  key={step.pm_workflowapprovalstepid}
-                  variant="outlined"
-                  sx={{
-                    p: 1.5,
-                    borderLeft: '3px solid',
-                    borderLeftColor: isOverdue ? 'error.main' : 'warning.main',
-                    transition: 'all 0.15s ease',
-                    '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
-                  }}
-                >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, minWidth: 0 }}>
-                      <Box sx={{ mt: 0.25 }}>
-                        <AssignmentIcon sx={{ fontSize: 16, color: isOverdue ? 'error.main' : 'warning.main' }} />
-                      </Box>
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {step.pm_stepname || 'Approval Step'}
-                        </Typography>
-                        {workflowName && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.3, fontSize: fontSizes.xs }}>
-                            {workflowName}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                      <Typography variant="caption" color={isOverdue ? 'error' : 'text.secondary'} sx={{ fontWeight: 600 }}>
-                        {step.pm_duedate ? (isOverdue ? 'Overdue' : `Due ${formatDate(step.pm_duedate)}`) : 'No due date'}
-                      </Typography>
-                      <Tooltip title={!isAssignedToMe ? "Only the assignee can review this task" : ""}>
-                        <Box component="span" sx={{ display: 'inline-flex' }}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="primary"
-                            disabled={openingStep === step.pm_workflowapprovalstepid || !isAssignedToMe}
-                            onClick={async () => {
-                              const sid = step.pm_workflowapprovalstepid!
-                              setOpeningStep(sid)
-                              try {
-                                await openApprovalStepTask(sid)
-                                loadData()
-                              } finally {
-                                setOpeningStep(null)
-                              }
-                            }}
-                            sx={{ fontWeight: 600, fontSize: fontSizes.xs, py: 0.5, minWidth: 90 }}
-                          >
-                            {openingStep === step.pm_workflowapprovalstepid ? 'Opening...' : 'Review'}
-                          </Button>
+                const isOverdue = step.pm_duedate && new Date(step.pm_duedate) < new Date()
+                const workflowName = step._pm_workflowinstancelookup_value
+                  ? workflowMap[step._pm_workflowinstancelookup_value] || null
+                  : null
+                const userId = currentUser?.systemuserid || ''
+                const userName = currentUser?.fullname || ''
+                const isAssignedToMe = isStepAssignedToUser(step, userId, userName)
+                return (
+                  <Paper
+                    key={step.pm_workflowapprovalstepid}
+                    variant="outlined"
+                    sx={{
+                      p: 1.5,
+                      borderLeft: '3px solid',
+                      borderLeftColor: isOverdue ? 'error.main' : 'warning.main',
+                      transition: 'all 0.15s ease',
+                      '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, minWidth: 0 }}>
+                        <Box sx={{ mt: 0.25 }}>
+                          <AssignmentIcon sx={{ fontSize: 16, color: isOverdue ? 'error.main' : 'warning.main' }} />
                         </Box>
-                      </Tooltip>
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    {((step as any).pm_assigneename || step.pm_approvername) && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <PersonIcon sx={{ fontSize: fontSizes.sm, color: 'text.secondary' }} />
-                        <Typography variant="caption" color="text.secondary">
-                          {(step as any).pm_assigneename || step.pm_approvername}
-                        </Typography>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {step.pm_stepname || 'Approval Step'}
+                          </Typography>
+                          {workflowName && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.3, fontSize: fontSizes.xs }}>
+                              {workflowName}
+                            </Typography>
+                          )}
+                        </Box>
                       </Box>
-                    )}
-                    {step.pm_steporder && (
-                      <Typography variant="caption" color="text.disabled">
-                        Step {step.pm_steporder}
-                      </Typography>
-                    )}
-                  </Box>
-                </Paper>
-              )
-            })})()}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                        <Typography variant="caption" color={isOverdue ? 'error' : 'text.secondary'} sx={{ fontWeight: 600 }}>
+                          {step.pm_duedate ? (isOverdue ? 'Overdue' : `Due ${formatDate(step.pm_duedate)}`) : 'No due date'}
+                        </Typography>
+                        <Tooltip title={!isAssignedToMe ? "Only the assignee can review this task" : ""}>
+                          <Box component="span" sx={{ display: 'inline-flex' }}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                              disabled={openingStep === step.pm_workflowapprovalstepid || !isAssignedToMe}
+                              onClick={async () => {
+                                const sid = step.pm_workflowapprovalstepid!
+                                setOpeningStep(sid)
+                                try {
+                                  await openApprovalStepTask(sid)
+                                  loadData()
+                                } finally {
+                                  setOpeningStep(null)
+                                }
+                              }}
+                              sx={{ fontWeight: 600, fontSize: fontSizes.xs, py: 0.5, minWidth: 90 }}
+                            >
+                              {openingStep === step.pm_workflowapprovalstepid ? 'Opening...' : 'Review'}
+                            </Button>
+                          </Box>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      {((step as any).pm_assigneename || step.pm_approvername) && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <PersonIcon sx={{ fontSize: fontSizes.sm, color: 'text.secondary' }} />
+                          <Typography variant="caption" color="text.secondary">
+                            {(step as any).pm_assigneename || step.pm_approvername}
+                          </Typography>
+                        </Box>
+                      )}
+                      {step.pm_steporder && (
+                        <Typography variant="caption" color="text.disabled">
+                          Step {step.pm_steporder}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Paper>
+                )
+              })
+            })()}
           </Box>
 
         </Box>

@@ -112,7 +112,6 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
       if (shouldFetchTasks) setSteps(workflowSteps)
       if (shouldFetchInsights) setInsights(agentInsights)
     } catch (err) {
-      console.error('[DashboardTasksWidget] load error:', err)
       setError('Unable to load data.')
     } finally {
       setLoading(false)

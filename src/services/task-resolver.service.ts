@@ -61,7 +61,6 @@ export interface ResolvedTaskInfo {
  */
 export async function fetchApprovalStepById(stepId: string): Promise<Pm_workflowapprovalsteps | null> {
   try {
-    console.debug('[TaskResolver] fetchApprovalStepById — stepId:', stepId)
     const result = await Pm_workflowapprovalstepsService.get(stepId, {
       select: [
         'pm_workflowapprovalstepid',
@@ -80,10 +79,7 @@ export async function fetchApprovalStepById(stepId: string): Promise<Pm_workflow
         '_pm_workflowtemplate_value',
       ],
     })
-    console.debug('[TaskResolver] fetchApprovalStepById — raw result:', result)
-    const unwrapped = unwrapSingle<Pm_workflowapprovalsteps>(result)
-    console.debug('[TaskResolver] fetchApprovalStepById — unwrapped:', unwrapped)
-    return unwrapped
+    return unwrapSingle<Pm_workflowapprovalsteps>(result)
   } catch (err) {
     console.error('[TaskResolver] fetchApprovalStepById failed:', err)
     return null
@@ -101,28 +97,15 @@ export async function fetchApprovalStepById(stepId: string): Promise<Pm_workflow
  * 5. Returns all the resolved information including a navigate() shortcut
  */
 export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedTaskInfo | null> {
-  console.debug('[TaskResolver] ===== resolveApprovalStepTask START ===== stepId:', stepId)
-
   try {
     // Step 1: Fetch the approval step
-    console.debug('[TaskResolver] Step 1: Fetching approval step...')
     const step = await fetchApprovalStepById(stepId)
-    if (!step) {
-      console.warn('[TaskResolver] ⛔ Step 1 FAILED — step not found for ID:', stepId)
-      return null
-    }
-    if (!step._pm_workflowinstancelookup_value) {
-      console.warn('[TaskResolver] ⛔ Step 1 FAILED — step has no _pm_workflowinstancelookup_value:', step)
-      return null
-    }
-    console.debug('[TaskResolver] ✅ Step 1 OK — step ID:', step.pm_workflowapprovalstepid,
-      '| instance lookup:', step._pm_workflowinstancelookup_value,
-      '| template lookup:', step._pm_workflowtemplate_value)
+    if (!step) return null
+    if (!step._pm_workflowinstancelookup_value) return null
 
     const workflowInstanceId = step._pm_workflowinstancelookup_value
 
     // Step 2: Fetch the workflow instance to get business entity context
-    console.debug('[TaskResolver] Step 2: Fetching workflow instance:', workflowInstanceId)
     let entityId: string | null = null
     let entityType: string | null = null
     let workflowName: string | null = null
@@ -138,7 +121,6 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
           '_pm_workflowlookup_value',
         ],
       })
-      console.debug('[TaskResolver] Step 2 — raw instance result:', instanceResult)
       const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
       if (instance) {
         entityId = instance.pm_entityid || null
@@ -146,63 +128,34 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
         workflowName = instance.pm_instancename ||
           (instance as any).pm_workflowlookupname ||
           null
-        console.debug('[TaskResolver] ✅ Step 2 OK — entityId:', entityId, '| entityType:', entityType, '| name:', workflowName)
-      } else {
-        console.warn('[TaskResolver] ⚠️ Step 2 — instance not unwrapped (entity context lost)')
       }
-    } catch (err) {
-      console.warn('[TaskResolver] ⚠️ Step 2 FAILED — Cannot fetch workflow instance:', err)
-    }
+    } catch (err) { }
 
     // Step 3: Resolve formKey — try step's own new_formkey first, then fall back to template
-    console.debug('[TaskResolver] Step 3: Resolving formKey...')
     let formKey: string | null = null
     let formEntry: FormRegistryEntry | null = null
 
     // Primary source: new_formkey on the approval step itself
     if (step.new_formkey) {
       formKey = step.new_formkey
-      console.debug('[TaskResolver] ✅ Step 3 — formKey found directly on step:', formKey)
     }
     // Fallback: fetch from the step template
     else if (step._pm_workflowtemplate_value) {
-      console.debug('[TaskResolver] Step 3 — no formKey on step, trying template:', step._pm_workflowtemplate_value)
       try {
         const template = await fetchStepTemplateById(step._pm_workflowtemplate_value)
-        if (!template) {
-          console.warn('[TaskResolver] ⛔ Step 3 — template not found for ID:', step._pm_workflowtemplate_value)
-        } else if (!template.new_formkey) {
-          console.warn('[TaskResolver] ⛔ Step 3 — template found but new_formkey is empty/null:', template)
-        } else {
+        if (template?.new_formkey) {
           formKey = template.new_formkey
-          console.debug('[TaskResolver] ✅ Step 3 — formKey resolved from template:', formKey)
         }
-      } catch (err) {
-        console.warn('[TaskResolver] ⛔ Step 3 FAILED — fetchStepTemplateById threw:', err)
-      }
-    } else {
-      console.warn('[TaskResolver] ⛔ Step 3 FAILED — no formKey on step and no template reference (_pm_workflowtemplate_value)')
+      } catch (err) { }
     }
 
     // Step 4: Look up the form registry entry
     if (formKey) {
-      console.debug('[TaskResolver] Step 4: Looking up formKey in FORM_REGISTRY:', formKey)
       formEntry = getFormByKey(formKey) ?? null
-      if (formEntry) {
-        console.debug('[TaskResolver] ✅ Step 4 OK — form found:', formEntry.key, '| display:', formEntry.displayName)
-      } else {
-        console.warn('[TaskResolver] ⛔ Step 4 FAILED — no form entry found for formKey:', formKey,
-          '| Available keys:', FORM_REGISTRY.map(e => e.key))
-      }
     }
 
     // If no formEntry found, return null — no form to navigate to
-    if (!formEntry) {
-      console.warn('[TaskResolver] ⛔ Cannot navigate — no formEntry resolved.',
-        'formKey:', formKey,
-        '| templateRef:', step._pm_workflowtemplate_value)
-      return null
-    }
+    if (!formEntry) return null
 
     // Build the navigate function — dispatches the form dialog (task modals)
     const navigate = () => {
@@ -219,11 +172,6 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
         navigate: () => { }, // No-op — modalComponent handles the UI
       })
     }
-
-    console.debug('[TaskResolver] ===== resolveApprovalStepTask SUCCESS =====',
-      '| form:', formEntry.displayName,
-      '| entityId:', entityId,
-      '| entityType:', entityType)
 
     return {
       formEntry,
@@ -288,7 +236,6 @@ export async function resolveEntityInfoFromApprovalStep(stepId: string): Promise
     const step = await fetchApprovalStepById(stepId)
 
     if (!step?._pm_workflowinstancelookup_value) {
-      console.warn('[resolveEntityInfoFromApprovalStep] ❌ No workflow instance lookup on step')
       return { entityId: null, entityType: undefined, entityName: undefined }
     }
 
@@ -318,11 +265,8 @@ export async function resolveEntityInfoFromApprovalStep(stepId: string): Promise
  * Returns true if the dialog was triggered.
  */
 export async function openApprovalStepTask(stepId: string): Promise<boolean> {
-  console.debug('[TaskResolver] openApprovalStepTask — stepId:', stepId)
   const task = await resolveApprovalStepTask(stepId)
   if (task) {
-    console.debug('[TaskResolver] openApprovalStepTask — resolved OK, dispatching form dialog...')
-    // Dispatch a dialog popup event instead of navigating directly
     dispatchOpenFormDialog({
       formDisplayName: task.formDisplayName,
       formDescription: task.formEntry?.description,
@@ -337,6 +281,5 @@ export async function openApprovalStepTask(stepId: string): Promise<boolean> {
     })
     return true
   }
-  console.warn('[TaskResolver] openApprovalStepTask — could not resolve task, no dialog shown')
   return false
 }
