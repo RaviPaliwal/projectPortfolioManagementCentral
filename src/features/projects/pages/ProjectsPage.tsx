@@ -223,7 +223,6 @@ export default function ProjectsPage() {
           // updateProject can throw even when the Dataverse update itself succeeded
           // (e.g. the follow-up fetchProjectDetails fails). We still update the UI
           // optimistically and let the background loadData() reconcile with the server.
-          console.warn('[ProjectSave] updateProject threw (likely fetch-after-save failed), proceeding with optimistic update:', err)
         }
         
         setSuccessMsg('Project updated successfully.')

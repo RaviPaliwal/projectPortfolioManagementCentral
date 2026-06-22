@@ -325,16 +325,12 @@ export default function IssuesPage() {
         if (updated) {
           setIssues(prev => prev.map(i => i.pm_issueid === updated.pm_issueid ? updated : i))
           setSuccessMsg('Issue updated.')
-        } else {
-          console.warn('[IssuesPage] updateIssueFull returned null - no update applied')
         }
       } else {
         const created = await createIssueFull(data)
         if (created) {
           setIssues(prev => [...prev, created])
           setSuccessMsg('Issue created.')
-        } else {
-          console.warn('[IssuesPage] createIssueFull returned null - no record created')
         }
       }
       setTimeout(() => setSuccessMsg(null), 3000)

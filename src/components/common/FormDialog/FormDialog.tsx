@@ -82,7 +82,6 @@ export function FormDialog() {
 
       // Ignore events with unknown formKey — all task entries must have modalComponent
       if (data.formKey && !getFormByKey(data.formKey)) {
-        console.warn('[FormDialog] ⚠️ Unknown formKey:', data.formKey, '- no modal registered')
         return
       }
 

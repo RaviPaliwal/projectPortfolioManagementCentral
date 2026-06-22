@@ -78,7 +78,7 @@ export const DynamicFormDialog: React.FC<DynamicFormDialogProps> = ({
       const list = await fetchProjectsFull()
       setProjects(list.map((p) => ({ pm_projectid: p.pm_projectid ?? '', pm_projectname: p.pm_projectname ?? '' })).filter(p => p.pm_projectid))
     } catch {
-      console.warn('[DynamicFormDialog] Failed to fetch projects')
+      // Failed to fetch projects
     }
     setProjectsLoading(false)
   }, [hasProjectSelect, projects.length])

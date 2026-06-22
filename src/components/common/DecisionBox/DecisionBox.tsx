@@ -61,7 +61,6 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
       if (onBeforeDecision) {
         const shouldContinue = await onBeforeDecision(decision)
         if (shouldContinue === false) {
-          console.warn('[DecisionBox] ⛔ onBeforeDecision returned false — cancelling workflow submission')
           setSubmitting(false)
           return // Parent cancelled the decision
         }

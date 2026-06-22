@@ -232,8 +232,6 @@ export default function TeamWorkspacePage() {
       if (created) {
         setIssues(prev => [...prev, created])
         showToast('Issue logged successfully')
-      } else {
-        console.warn('[TeamWorkspacePage] createIssueFull returned null')
       }
     } catch (err) {
       console.error('[TeamWorkspacePage] handleLogIssue error:', err)

@@ -92,7 +92,6 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
 
 
         if (!init) {
-          console.warn('[FinancialReviewTaskModal] Γ¥î Initiative not found for ID:', gateReviewId)
           onError('Initiative not found.')
           setLoading(false)
           return
@@ -114,17 +113,11 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
 
 
         if (!projectId) {
-          console.warn('[FinancialReviewTaskModal] Γ¥î No project ID found on gate review.')
           setLoading(false)
           return
         }
 
         const proj = await fetchProjectDetails(projectId)
-
-
-        if (!proj) {
-          console.warn('[FinancialReviewTaskModal] Γ¥î Project not found for projectId:', projectId)
-        }
         setProject(proj)
 
       }
@@ -161,7 +154,6 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
       }
 
       if (!gateReview?.pm_projectgatereviewid) {
-        console.warn('[FinancialReviewTaskModal] saveTaskData: no gate review ID')
         return false
       }
       const decisionLabel = workflowDecision === 0 ? 'Endorsed' : 'Rejected'

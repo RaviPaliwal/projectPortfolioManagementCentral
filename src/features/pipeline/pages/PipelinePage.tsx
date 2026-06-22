@@ -532,7 +532,7 @@ export default function PipelinePage() {
           } as any)
           await updateInitiativeStatus(selectedInitiative.pm_initiativeid!, 4)
         } catch (e) {
-          console.warn('[PipelinePage] Failed to update initiative conversion reference:', e)
+          // Ignore initiative conversion reference update failure
         }
         setShowConvertDialog(false)
         setSuccessMsg(`Project "${created.pm_projectname}" created successfully.`)

@@ -61,7 +61,6 @@ function getLoggedInUserId(): string | null {
       return normalizeGuid(xrmContext.userSettings.userId)
     }
   } catch (e) {
-    console.debug('[UserContext] Could not access Xrm context:', e)
   }
   return null
 }
@@ -74,7 +73,6 @@ async function fetchUserRolesFromDataverse(): Promise<Record<string, string[]>> 
   try {
     const xrmContext = (window as any).Xrm || (window.parent as any).Xrm
     if (xrmContext?.webApi?.retrieveMultipleRecords) {
-      console.info('[UserContext] Fetching user roles via Xrm.webApi...')
       const result = await xrmContext.webApi.retrieveMultipleRecords("systemuser", query)
       const entities = result?.entities || []
       for (const u of entities) {
@@ -82,16 +80,13 @@ async function fetchUserRolesFromDataverse(): Promise<Record<string, string[]>> 
           userRolesMap[normalizeGuid(u.systemuserid)] = u.systemuserroles_association.map((r: any) => (r && r.name) || '')
         }
       }
-      console.info('[UserContext] Successfully fetched user roles via Xrm.webApi:', Object.keys(userRolesMap).length)
       return userRolesMap
     }
   } catch (e) {
-    console.warn('[UserContext] Xrm.webApi failed to fetch user roles:', e)
   }
 
   // 2. Fall back to fetch (for local development proxy)
   try {
-    console.info('[UserContext] Fetching user roles via relative Web API fetch...')
     const response = await fetch('/api/data/v9.2/systemusers' + query)
     if (response.ok) {
       const data = await response.json()
@@ -101,13 +96,9 @@ async function fetchUserRolesFromDataverse(): Promise<Record<string, string[]>> 
           userRolesMap[normalizeGuid(u.systemuserid)] = u.systemuserroles_association.map((r: any) => (r && r.name) || '')
         }
       }
-      console.info('[UserContext] Successfully fetched user roles via fetch:', Object.keys(userRolesMap).length)
       return userRolesMap
-    } else {
-      console.warn('[UserContext] Failed to fetch user roles from Web API fetch, status:', response.status)
     }
   } catch (err) {
-    console.warn('[UserContext] Error fetching user roles from Web API fetch:', err)
   }
 
   return userRolesMap
@@ -121,7 +112,6 @@ async function fetchTeamRolesFromDataverse(): Promise<Record<string, string[]>> 
   try {
     const xrmContext = (window as any).Xrm || (window.parent as any).Xrm
     if (xrmContext?.webApi?.retrieveMultipleRecords) {
-      console.info('[UserContext] Fetching team roles via Xrm.webApi...')
       const result = await xrmContext.webApi.retrieveMultipleRecords("team", query)
       const entities = result?.entities || []
       for (const t of entities) {
@@ -129,16 +119,13 @@ async function fetchTeamRolesFromDataverse(): Promise<Record<string, string[]>> 
           teamRolesMap[normalizeGuid(t.teamid)] = t.teamroles_association.map((r: any) => (r && r.name) || '')
         }
       }
-      console.info('[UserContext] Successfully fetched team roles via Xrm.webApi:', Object.keys(teamRolesMap).length)
       return teamRolesMap
     }
   } catch (e) {
-    console.warn('[UserContext] Xrm.webApi failed to fetch team roles:', e)
   }
 
   // 2. Fall back to fetch (for local development proxy)
   try {
-    console.info('[UserContext] Fetching team roles via relative Web API fetch...')
     const response = await fetch('/api/data/v9.2/teams' + query)
     if (response.ok) {
       const data = await response.json()
@@ -148,13 +135,9 @@ async function fetchTeamRolesFromDataverse(): Promise<Record<string, string[]>> 
           teamRolesMap[normalizeGuid(t.teamid)] = t.teamroles_association.map((r: any) => (r && r.name) || '')
         }
       }
-      console.info('[UserContext] Successfully fetched team roles via fetch:', Object.keys(teamRolesMap).length)
       return teamRolesMap
-    } else {
-      console.warn('[UserContext] Failed to fetch team roles from Web API fetch, status:', response.status)
     }
   } catch (err) {
-    console.warn('[UserContext] Error fetching team roles from Web API fetch:', err)
   }
 
   return teamRolesMap
@@ -175,7 +158,6 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('ppm_selected_user_id', user.systemuserid)
         localStorage.setItem('ppm_selected_user_fullname', user.fullname || '')
       } catch (e) {
-        console.debug('[UserContext] Failed to write to localStorage:', e)
       }
     }
   }, [])
@@ -245,16 +227,13 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
           const roleNames = xrmContext?.userSettings?.securityRoleNames
           if (roleNames && roleNames.length > 0) {
             userRolesMap[loggedInId] = roleNames
-            console.info('[UserContext] Seeded logged-in user roles from Xrm userSettings:', roleNames)
           }
         } catch (e) {
-          console.debug('[UserContext] Failed to get securityRoleNames from Xrm context:', e)
         }
       }
 
       // Resolve personas for all users
       const personas: Record<string, Persona> = {}
-      console.info('[UserContext] --- Resolving Personas Diagnostic ---')
       for (const u of list) {
         const uId = u.systemuserid
         if (!uId) continue
@@ -284,9 +263,7 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         
         const resolvedPersona = getPersonaFromUser(u, userTeamNames, userRoleNames)
         personas[cleanUserId] = resolvedPersona
-        console.info(`User: "${u.fullname}", ID: "${cleanUserId}", JobTitle: "${u.jobtitle || ''}", Teams: [${userTeamNames.join(', ')}], Roles: [${userRoleNames.join(', ')}], Persona: "${resolvedPersona}"`)
       }
-      console.info('[UserContext] -------------------------------------')
 
       setUserPersonas(personas)
       setUsers(list)
@@ -298,7 +275,6 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         try {
           storedUserId = localStorage.getItem('ppm_selected_user_id')
         } catch (e) {
-          console.debug('[UserContext] Stored user ID not available from localStorage:', e)
         }
         
         let startingUser: SystemUser | null = null
@@ -325,13 +301,11 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
               localStorage.setItem('ppm_selected_user_id', startingUser.systemuserid)
               localStorage.setItem('ppm_selected_user_fullname', startingUser.fullname || '')
             } catch (e) {
-              console.debug('[UserContext] Failed to write to localStorage:', e)
             }
           }
         }
       }
     } catch (err) {
-      console.warn('[UserContext] Failed to fetch system users and roles:', err)
     } finally {
       setLoading(false)
     }

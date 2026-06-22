@@ -15,7 +15,6 @@ export function navigateToTab(tab: TabKey): void {
 export function navigateToModule(moduleValue: string, entityId?: string): void {
   const mod = resolveModule(moduleValue)
   if (!mod) {
-    console.warn(`[Navigation] Unknown module: ${moduleValue}`)
     return
   }
 

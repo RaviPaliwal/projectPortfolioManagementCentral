@@ -214,7 +214,7 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
     // Directly navigate to the configured form for this approval step
     const opened = await openApprovalStepTask(step.pm_workflowapprovalstepid)
     if (!opened) {
-      console.warn('[WorkflowMilestone] Could not open form for step:', step.pm_workflowapprovalstepid)
+      // Failed to open form
     }
   }, [])
 

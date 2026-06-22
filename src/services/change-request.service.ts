@@ -119,7 +119,6 @@ export async function fetchChangeRequests(): Promise<ChangeRequestModel[]> {
       }
     }
   } catch (err) {
-    try { console.warn('[dataverseService] fetchChangeRequests: failed to resolve lookup names', err) } catch (e) {}
   }
 
   return list
@@ -288,7 +287,6 @@ export async function fetchChangeRequestById(id: string): Promise<ChangeRequestM
         }
       }
     } catch (e) {
-      try { console.warn('[dataverseService] fetchChangeRequestById: lookup resolution failed', e) } catch (ex) {}
     }
 
     return mapped

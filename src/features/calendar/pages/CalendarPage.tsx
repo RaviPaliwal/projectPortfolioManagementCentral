@@ -259,8 +259,6 @@ export default function CalendarPage() {
         let resourceId: string | null = null
         if (currentResource) {
           resourceId = currentResource.pm_resourceid || null
-        } else {
-          console.warn('[CalendarPage] No resource record found for system user:', currentUser.fullname)
         }
 
         // 2. Fetch allocations, tasks, and projects in parallel (all active)
@@ -608,11 +606,9 @@ export default function CalendarPage() {
               }
             })
           } else {
-            console.warn('[CalendarPage] Flow returned unsuccessful result or empty event_json:', outlookResult)
             throw new Error('Flow result unsuccessful')
           }
         } catch (flowErr) {
-          console.warn('[CalendarPage] Could not load Outlook events from flow:', flowErr)
           outlookEvents = []
         }
 

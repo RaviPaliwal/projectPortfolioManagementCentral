@@ -452,7 +452,7 @@ export default function ChangeRequestsPage() {
               )
             }
           } catch (wfErr) {
-            console.warn('[ChangeRequestsPage] Auto-trigger workflow failed:', wfErr)
+            // Ignore auto-trigger workflow failure
           }
         }
       }
