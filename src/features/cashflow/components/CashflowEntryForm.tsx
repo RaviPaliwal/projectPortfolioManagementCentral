@@ -139,16 +139,6 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
     return list
   }, [fiscalPeriods, formData._pm_fiscalperiod_value, formData.pm_fiscalperiodname])
 
-  React.useEffect(() => {
-    if (open) {
-      console.log('[CashflowEntryForm] open=true. Mode:', mode)
-      console.log('[CashflowEntryForm] formData input:', formData)
-      console.log('[CashflowEntryForm] projects count:', projects.length, 'sample project programme:', projects[0]?._pm_programme_value)
-      console.log('[CashflowEntryForm] filteredProjects count:', filteredProjects.length)
-      console.log('[CashflowEntryForm] budgetLines count:', budgetLines.length, 'sample bl project:', budgetLines[0]?._pm_project_value)
-      console.log('[CashflowEntryForm] filteredBudgetLines count:', filteredBudgetLines.length)
-    }
-  }, [open, mode, formData, projects, filteredProjects, budgetLines, filteredBudgetLines])
 
   return (
     <Dialog

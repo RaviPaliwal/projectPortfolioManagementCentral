@@ -79,20 +79,13 @@ const holidayExportColumns: ExportColumn[] = [
 ]
 
 export default function HolidaysPage() {
-  const {
-    items: holidays,
-    loading,
-    error: crudError,
-    fetchAll,
-    create,
-    update,
-    remove,
-  } = useDataverseCrud<HolidayModel>(Pm_holidaiesService as any)
-
-  const actionState = useDataverseAsync<any>()
   const { allowed: canCreate } = useAuthorization('HOLIDAYS', 'create')
   const { allowed: canEdit } = useAuthorization('HOLIDAYS', 'update')
   const { allowed: canDelete } = useAuthorization('HOLIDAYS', 'delete')
+
+  const [holidays, setHolidays] = useState<HolidayModel[]>([])
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
@@ -108,7 +101,30 @@ export default function HolidaysPage() {
   const [showSeedConfirm, setShowSeedConfirm] = useState(false)
   const [seeding, setSeeding] = useState(false)
 
-  useEffect(() => { fetchAll() }, [fetchAll])
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await Pm_holidaiesService.getAll({
+        filter: 'statecode eq 0',
+        orderBy: ['pm_holidaydate asc'],
+        top: 500,
+      })
+      if (result.success && result.data) {
+        setHolidays(result.data)
+      } else {
+        setError(result.error ? String(result.error) : 'Failed to fetch holidays')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch holidays')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAll()
+  }, [fetchAll])
 
   const kpiItems = useMemo((): KpiCardItem[] => {
     const total = holidays.length
@@ -139,37 +155,67 @@ export default function HolidaysPage() {
   }, [holidays, calendarYear])
 
   const handleSave = async (data: Record<string, any>) => {
-    if (!data.pm_holidayname?.trim() || !data.pm_holidaydate) return
-    const result = await actionState.execute(
-      editingHoliday?.pm_holidayid 
-        ? update(editingHoliday.pm_holidayid, { ...data, statecode: 0 })
-        : create({ ...data, statecode: 0, statuscode: 1 })
-    )
+    if (!data.pm_holidayname?.trim() || !data.pm_holidaydate) {
+      return
+    }
 
-    if (result.success) {
-      setSuccessMsg(`Holiday ${editingHoliday ? 'updated' : 'created'} successfully.`)
-      setShowForm(false)
+    // Convert pm_isfixeddate to boolean if it is a number or string
+    const cleanData = { ...data }
+    if (cleanData.pm_isfixeddate !== undefined) {
+      cleanData.pm_isfixeddate = cleanData.pm_isfixeddate === 1 || cleanData.pm_isfixeddate === '1' || cleanData.pm_isfixeddate === true
+    }
+
+    setSaving(true)
+    setError(null)
+    try {
+      if (editingHoliday?.pm_holidayid) {
+        const result = await Pm_holidaiesService.update(editingHoliday.pm_holidayid, { ...cleanData, statecode: 0 } as any)
+        if (result.success && result.data) {
+          setHolidays(prev => prev.map(h => h.pm_holidayid === editingHoliday.pm_holidayid ? result.data! : h))
+          setSuccessMsg('Holiday updated successfully.')
+          setShowForm(false)
+        } else {
+          setError(result.error ? String(result.error) : 'Failed to update holiday')
+        }
+      } else {
+        const result = await Pm_holidaiesService.create({ ...cleanData, statecode: 0, statuscode: 1 } as any)
+        if (result.success && result.data) {
+          setHolidays(prev => [result.data!, ...prev])
+          setSuccessMsg('Holiday created successfully.')
+          setShowForm(false)
+        } else {
+          setError(result.error ? String(result.error) : 'Failed to create holiday')
+        }
+      }
       setTimeout(() => setSuccessMsg(null), 3000)
-    } else {
-      setError(result.error)
+    } catch (err: any) {
+      setError(err.message || 'Failed to save holiday')
+    } finally {
+      setSaving(false)
     }
   }
 
   const handleDelete = async () => {
     if (!deleteConfirm) return
-    const result = await remove(deleteConfirm)
-    if (result.success) {
+    setSaving(true)
+    setError(null)
+    try {
+      const result = await Pm_holidaiesService.delete(deleteConfirm)
+      setHolidays(prev => prev.filter(h => h.pm_holidayid !== deleteConfirm))
       setSuccessMsg('Holiday removed successfully.')
       setDeleteConfirm(null)
       if (selectedHoliday?.pm_holidayid === deleteConfirm) setSelectedHoliday(null)
       setTimeout(() => setSuccessMsg(null), 3000)
-    } else {
-      setError(result.error || 'Unable to delete holiday.')
+    } catch (err: any) {
+      setError(err.message || 'Unable to delete holiday.')
+    } finally {
+      setSaving(false)
     }
   }
 
   const handleSeedIrishHolidays = async () => {
     setSeeding(true)
+    setError(null)
     let created = 0
     try {
       for (const template of IRISH_PUBLIC_HOLIDAYS) {
@@ -185,8 +231,11 @@ export default function HolidaysPage() {
           dateStr = calendarYear + (variableDates[name] || '')
         }
         if (!dateStr) continue
-        await create({ ...template, pm_holidaydate: dateStr, pm_year: calendarYear, statecode: 0, statuscode: 1 })
-        created++
+        const result = await Pm_holidaiesService.create({ ...template, pm_holidaydate: dateStr, pm_year: calendarYear, statecode: 0, statuscode: 1 } as any)
+        if (result.success && result.data) {
+          setHolidays(prev => [result.data!, ...prev])
+          created++
+        }
       }
       setSuccessMsg(`${created} Irish public holidays added for ${calendarYear}.`)
       setShowSeedConfirm(false)
@@ -218,9 +267,9 @@ export default function HolidaysPage() {
         }
       />
 
-      {(error || crudError || actionState.error) && (
+      {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error || crudError || actionState.error}
+          {error}
         </Alert>
       )}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
@@ -274,7 +323,7 @@ export default function HolidaysPage() {
         message="Are you sure you want to remove this holiday? This action cannot be undone."
         confirmLabel="Remove"
         confirmColor="error"
-        loading={actionState.loading}
+        loading={saving}
         onConfirm={handleDelete}
         onClose={() => setDeleteConfirm(null)}
       />

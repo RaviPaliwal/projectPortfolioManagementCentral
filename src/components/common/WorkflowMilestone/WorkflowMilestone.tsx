@@ -199,7 +199,6 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
   // Refresh whenever a workflow decision is submitted (any task modal completes)
   useEffect(() => {
     const handler = () => {
-      console.debug('[WorkflowMilestone] 📡 Workflow decision detected — refreshing...')
       loadData()
     }
     window.addEventListener(WORKFLOW_DECISION_EVENT, handler)

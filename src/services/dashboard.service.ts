@@ -9,8 +9,8 @@ import {
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
 import type { Pm_portfolios } from '@/generated/models/Pm_portfoliosModel'
 import type { Pm_initiatives } from '@/generated/models/Pm_initiativesModel'
-import  { unwrapList } from '@/services/common'
-import type { DashboardMetrics } from  '@/services/common'
+import { unwrapList } from '@/services/common'
+import type { DashboardMetrics } from '@/services/common'
 
 export interface DashboardFilterOptions {
   fiscalYear?: number
@@ -25,7 +25,7 @@ export async function fetchDashboardMetrics(options: DashboardFilterOptions = {}
   // Build filters
   let projectFilter = "statecode eq 0"
   let portfolioFilter = "statecode eq 0"
-  
+
   if (portfolioId && portfolioId !== 'all') {
     projectFilter += ` and _pm_portfolio_value eq '${portfolioId}'`
     portfolioFilter += ` and pm_portfolioid eq '${portfolioId}'`
@@ -67,7 +67,7 @@ export async function fetchDashboardMetrics(options: DashboardFilterOptions = {}
   if (fiscalYear || startDate || endDate) {
     try {
       let budgetLineFilter = "statecode eq 0"
-      
+
       if (portfolioId && portfolioId !== 'all') {
         budgetLineFilter += ` and _pm_portfolio_value eq '${portfolioId}'`
       }
@@ -109,21 +109,7 @@ export async function fetchDashboardMetrics(options: DashboardFilterOptions = {}
     actualSpend = portfolios.reduce((sum, portfolio) => sum + (portfolio.pm_actualspendeur ?? 0), 0)
   }
 
-  try {
-    console.debug('[dataverseService] fetchDashboardMetrics raw results:', {
-      activeProjectResult,
-      redProjectResult,
-      amberProjectResult,
-      greenProjectResult,
-      portfolioResult,
-      initiativeResult,
-      fiscalYear,
-      calculatedBudget: approvedBudget,
-      calculatedSpend: actualSpend,
-    })
-  } catch (e) {
-    console.debug('[dataverseService] fetchDashboardMetrics: unable to log raw results')
-  }
+
 
   const activeProjects = unwrapList<Pm_projects>(activeProjectResult)
   const redProjects = unwrapList<Pm_projects>(redProjectResult)
@@ -157,6 +143,5 @@ export async function fetchMilestonesDueThisMonth(): Promise<number> {
     select: ['pm_projectmilestoneid'],
     top: 1000,
   })
-  try { console.debug('[dataverseService] fetchMilestonesDueThisMonth result raw:', result) } catch (e) {}
   return unwrapList<any>(result).length
 }

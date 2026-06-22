@@ -323,12 +323,9 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
     const id = changes._pm_fundingsource_value.replace(/[{}]/g, '').trim().toLowerCase()
     if (id) cleanPayload['pm_fundingsource@odata.bind'] = `/pm_fundingsources(${id})`
   }
-  console.log('[updateBudgetLine] Updating budget line ID:', id, 'with changes:', changes)
   try {
     await Pm_budgetlinesService.update(id, cleanPayload as any)
-    console.log('[updateBudgetLine] API Update successful. Fetching updated budget line record...')
     const mapped = await fetchBudgetLineById(id)
-    console.log('[updateBudgetLine] Fetched updated budget line record:', mapped)
 
     if (mapped && mapped.pm_budgetlineid) {
       Object.keys(changes).forEach((key) => {
@@ -345,10 +342,7 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
         }
       })
       if (mapped._pm_project_value) {
-        console.log('[updateBudgetLine] Recalculating financials for project ID:', mapped._pm_project_value)
         await recalculateRealFinancialsForProject(mapped._pm_project_value)
-      } else {
-        console.log('[updateBudgetLine] No project lookup ID (_pm_project_value) present on budget line. Recalculation skipped.')
       }
     } else {
       console.warn('[updateBudgetLine] Mapped record is null or missing ID after refresh fetch.')
@@ -730,12 +724,6 @@ export async function createCashflowEntry(payload: Partial<CashflowEntryModel>):
 }
 
 export async function updateCashflowEntry(id: string, changes: Partial<CashflowEntryModel>): Promise<CashflowEntryModel | null> {
-  console.log('[finance.service] updateCashflowEntry: editing entry id:', id)
-  try {
-    console.log('[finance.service] updateCashflowEntry: raw changes payload:', JSON.stringify(changes))
-  } catch (e) {
-    console.log('[finance.service] updateCashflowEntry: raw changes payload (fallback):', changes)
-  }
 
   // Fetch old record for audit log comparison before we perform update
   let oldRecord: CashflowEntryModel | null = null
@@ -797,16 +785,12 @@ export async function updateCashflowEntry(id: string, changes: Partial<CashflowE
       cleanPayload['pm_budgetline@odata.bind'] = `/pm_budgetlines(${budgetLineId})`
     }
   }
-  console.log('[finance.service] updateCashflowEntry: final cleanPayload for OData:', cleanPayload)
   try {
     const result = await Pm_cashflowentriesService.update(id, cleanPayload as any)
     if (!result.success) {
-      console.error('[finance.service] updateCashflowEntry: OData update failed! Errors:', result.error)
       throw new Error(result.error ? JSON.stringify(result.error) : 'Failed to update cashflow entry in Dataverse')
     }
-    console.log('[finance.service] updateCashflowEntry: OData update successful')
   } catch (error) {
-    console.error('[finance.service] updateCashflowEntry: OData update failed with exception!', error)
     throw error
   }
   const details = await Pm_cashflowentriesService.get(id, {
@@ -878,7 +862,6 @@ export async function deleteCashflowEntry(id: string): Promise<void> {
 
 export async function recalculateRealFinancialsForProject(projectId: string | null | undefined): Promise<void> {
   const normProjId = normalizeLookupId(projectId || undefined)
-  console.log('[recalculateRealFinancialsForProject] Triggered for project ID:', projectId, 'normalized:', normProjId)
   if (!normProjId) {
     console.warn('[recalculateRealFinancialsForProject] Normalized project ID is empty, aborting rollup.')
     return
@@ -886,14 +869,12 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
 
   try {
     // 1. Fetch active budget lines for this project
-    console.log('[recalculateRealFinancialsForProject] Fetching active budget lines for project...')
     const budgetResult = await Pm_budgetlinesService.getAll({
       filter: `_pm_project_value eq '${normProjId}' and statecode eq 0`,
       select: ['pm_budgetlineid', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_estimatetocompleteeur', 'pm_costcategory'],
       top: 500,
     })
     const projectLines = unwrapList<any>(budgetResult)
-    console.log('[recalculateRealFinancialsForProject] Found budget lines count:', projectLines.length, 'Lines details:', projectLines)
 
     if (projectLines.length === 0) {
       console.warn(`[recalculateRealFinancialsForProject] No budget lines found for project ${normProjId}`)
@@ -901,17 +882,14 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
     }
 
     // 2. Fetch active cashflow outflow actual entries for this project
-    console.log('[recalculateRealFinancialsForProject] Fetching cash flow outflows for project...')
     const cashflowResult = await Pm_cashflowentriesService.getAll({
       filter: `_pm_project_value eq '${normProjId}' and statecode eq 0 and pm_transactiondirection eq 0 and pm_transactiontype eq 0`,
       select: ['pm_cashflowentryid', 'pm_amounteur', 'pm_category'],
       top: 500,
     })
     const projectCashflows = unwrapList<any>(cashflowResult)
-    console.log('[recalculateRealFinancialsForProject] Cash flows count:', projectCashflows.length, 'details:', projectCashflows)
 
     // 3. Fetch approved/chargeable timesheet entries for this project
-    console.log('[recalculateRealFinancialsForProject] Fetching timesheet entries for project...')
     let projectTimesheets: any[] = []
     try {
       const tsResult = await Pm_timesheetentriesService.getAll({
@@ -920,7 +898,6 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
         top: 1000,
       })
       projectTimesheets = unwrapList<any>(tsResult).filter((e) => e.pm_isapproved || e.pm_ischargeable)
-      console.log('[recalculateRealFinancialsForProject] Timesheet entries count (approved/chargeable):', projectTimesheets.length)
     } catch (err) {
       console.warn('[recalculateRealFinancialsForProject] Failed to fetch timesheet entries:', err)
     }
@@ -954,25 +931,10 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
       const etc = bl.pm_estimatetocompleteeur || 0
       const eac = lineActuals + etc
 
-      console.log(`[recalculateRealFinancialsForProject] Line ${bl.pm_budgetlineid} recalculation result:`, {
-        approvedBudget,
-        lineActuals,
-        variance,
-        etc,
-        eac,
-        cashflowsSum,
-        timesheetsSum
-      })
-
       totalProjectBudget += approvedBudget
       totalProjectActuals += lineActuals
 
       // Update the budget line record directly in Dataverse (bypass recalculation recursion)
-      console.log(`[recalculateRealFinancialsForProject] Direct update on budget line ${bl.pm_budgetlineid} to Dataverse:`, {
-        pm_actualspendeur: lineActuals,
-        pm_varianceeur: variance,
-        pm_estimateatcompletioneur: eac
-      })
       await Pm_budgetlinesService.update(bl.pm_budgetlineid, {
         pm_actualspendeur: lineActuals,
         pm_varianceeur: variance,
@@ -980,31 +942,21 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
       } as any)
     }
 
-    console.log('[recalculateRealFinancialsForProject] Aggregated project totals calculated:', { totalProjectBudget, totalProjectActuals })
-
     // 5. Update the project record
-    console.log('[recalculateRealFinancialsForProject] Fetching project info to resolve parents...')
     const projectDetailsResult = await Pm_projectsService.get(normProjId, {
       select: ['pm_projectid', '_pm_portfolio_value', '_pm_programme_value'],
     })
     const projectDetails = unwrapSingle<Pm_projects>(projectDetailsResult)
-    console.log('[recalculateRealFinancialsForProject] Project details fetched:', projectDetails)
 
-    console.log('[recalculateRealFinancialsForProject] Updating project ID:', normProjId, 'with totals:', {
-      pm_approvedbudgeteur: totalProjectBudget,
-      pm_actualcosteur: totalProjectActuals
-    })
     await Pm_projectsService.update(normProjId, {
       pm_approvedbudgeteur: totalProjectBudget,
       pm_actualcosteur: totalProjectActuals,
     } as any)
-    console.log('[recalculateRealFinancialsForProject] Project record updated successfully.')
 
     // 6. Recalculate Programme actual spend
     const programmeId = normalizeLookupId(projectDetails?._pm_programme_value)
     if (programmeId) {
       try {
-        console.log('[recalculateRealFinancialsForProject] Fetching projects of parent programme:', programmeId)
         const progProjectsResult = await Pm_projectsService.getAll({
           filter: `_pm_programme_value eq '${programmeId}' and statecode eq 0`,
           select: ['pm_projectid', 'pm_actualcosteur'],
@@ -1013,11 +965,9 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
         const progProjects = unwrapList<any>(progProjectsResult)
         const totalProgActuals = progProjects.reduce((sum, p) => sum + (p.pm_actualcosteur || 0), 0)
 
-        console.log('[recalculateRealFinancialsForProject] Updating Programme ID:', programmeId, 'actual spend:', totalProgActuals)
         await Pm_programmesService.update(programmeId, {
           pm_actualspendeur: totalProgActuals,
         } as any)
-        console.log('[recalculateRealFinancialsForProject] Programme updated successfully.')
       } catch (err) {
         console.warn(`[recalculateRealFinancialsForProject] Failed to update programme ${programmeId}:`, err)
       }
@@ -1027,7 +977,6 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
     const portfolioId = normalizeLookupId(projectDetails?._pm_portfolio_value)
     if (portfolioId) {
       try {
-        console.log('[recalculateRealFinancialsForProject] Fetching projects of parent portfolio:', portfolioId)
         const portProjectsResult = await Pm_projectsService.getAll({
           filter: `_pm_portfolio_value eq '${portfolioId}' and statecode eq 0`,
           select: ['pm_projectid', 'pm_approvedbudgeteur', 'pm_actualcosteur'],
@@ -1037,21 +986,14 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
         const totalPortBudget = portProjects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur || 0), 0)
         const totalPortActuals = portProjects.reduce((sum, p) => sum + (p.pm_actualcosteur || 0), 0)
 
-        console.log('[recalculateRealFinancialsForProject] Updating Portfolio ID:', portfolioId, {
-          pm_approvedbudgeteur: totalPortBudget,
-          pm_actualspendeur: totalPortActuals
-        })
         await Pm_portfoliosService.update(portfolioId, {
           pm_approvedbudgeteur: totalPortBudget,
           pm_actualspendeur: totalPortActuals,
         } as any)
-        console.log('[recalculateRealFinancialsForProject] Portfolio updated successfully.')
       } catch (err) {
         console.warn(`[recalculateRealFinancialsForProject] Failed to update portfolio ${portfolioId}:`, err)
       }
     }
-
-    console.log(`[recalculateRealFinancialsForProject] Successfully completed rollup for project ${normProjId}`)
   } catch (err) {
     console.error(`[recalculateRealFinancialsForProject] Error rollup for project ${normProjId}:`, err)
   }
