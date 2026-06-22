@@ -104,23 +104,18 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
 
   const handleAddRisk = () => {
     if (!newRisk.pm_risktitle.trim()) return
-    console.log('[RiskIssueSetupTaskModal] adding risk:', JSON.stringify(newRisk))
     setRisks(prev => { const next = [...prev, { ...newRisk }]; console.log('[RiskIssueSetupTaskModal] risks now:', JSON.stringify(next)); return next })
     setNewRisk({ pm_risktitle: '', pm_riskdescription: '', pm_riskcategory: 3, pm_ragstatus: 1, pm_riskowner: '', pm_targetclosedate: '' })
   }
 
   const handleAddIssue = () => {
     if (!newIssue.pm_issuetitle.trim()) return
-    console.log('[RiskIssueSetupTaskModal] adding issue:', JSON.stringify(newIssue))
     setIssues(prev => { const next = [...prev, { ...newIssue }]; console.log('[RiskIssueSetupTaskModal] issues now:', JSON.stringify(next)); return next })
     setNewIssue({ pm_issuetitle: '', pm_issuedescription: '', pm_issuecategory: 0, pm_ragstatus: 1, pm_prioritylevel: 0, pm_issueowner: '', pm_issueownerid: '', pm_targetresolutiondate: '' })
   }
 
   const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
-    console.log('[RiskIssueSetupTaskModal] saveTaskData called with decision:', workflowDecision)
-    console.log('[RiskIssueSetupTaskModal] risks in state:', JSON.stringify(risks))
-    console.log('[RiskIssueSetupTaskModal] issues in state:', JSON.stringify(issues))
-    console.log('[RiskIssueSetupTaskModal] projectId:', projectId)
+
     if (workflowDecision !== 0) {
       console.log('[RiskIssueSetupTaskModal] Decision is not Approve (0), skipping creation')
       onSuccess('Risk & Issue Register Setup rejected.')
