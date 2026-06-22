@@ -1,0 +1,2675 @@
+--- PAGE 1 ---
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Power Platform - Portfolio Project 
+Management Solution 
+ 
+ 
+ 
+Invitation to Tender 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Date  20/05/2026 
+Version  1.0 
+Status Final Version 
+ 
+
+
+--- PAGE 2 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 2 
+ 
+Table of Contents 
+1 Introduction ..................................................................................................................................... 3 
+2 Background and Solution Requirements ......................................................................................... 5 
+Appendix 1 – Requirements and Specifications ....................................................................................11 
+Appendix 2 – Detailed Functional Requirements Specs ........................................................................24 
+Appendix 3 – Non-Functional Requirements Rational ..........................................................................38 
+Appendix 4 – Change Management Policy ............................................................................................43 
+ 
+ 
+
+--- PAGE 3 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 3 
+ 
+1 Introduction 
+1.1 Company Background 
+Iarnród Éireann (IÉ) is the national railway operator in the Republic of Ireland which operates a 
+mix of Intercity and Commuter services, servicing 146 stations and employing circa 5,000 staff 
+nationwide. 
+Intercity services mainly operate from Dublin and link the main cities of Ireland including Cork, 
+Limerick, Tralee, Waterford, Galway, Westport, Sligo, Belfast and Rosslare Europort. An 
+extensive Commuter service operates within the Dublin region and surro unding counties, while 
+Cork and Limerick also have commuter services on a smaller scale.  
+IÉ is also responsible for the maintenance and development of the rail infrastructure including 
+the track, overhead lines, stations and the rail fleet required to operate the service. IÉ also 
+operates Port services at Rosslare Europort.  
+With safety as our number one corporate goal, IÉ’s corporate identify and corporate objectives is 
+critically dependant on its people, with their skills, training, professionalism, adaptability, 
+organisation and efficiency all considered central to our success.  
+IÉ is largely separated into Railway Undertaking (IERU) which manage the operations of the rolling 
+stock, Infrastructure Management ( IEIM) which operate and maintain and Capital Investments 
+(CI) which design and build railway assets and associated infrastructure (Buildings and Stations).  
+CI is the division within IÉ which plans and delivers infrastructure and fleet investment on the IÉ 
+rail network. CI undertakes the construction of large-scale multi-year infrastructure projects and 
+can vary from small bridge and rail upgrades, up to multi-year programmes. These projects entail 
+the design and tendering early phases of construction through to the building and commissioning 
+aspects associated with safety critical infrastructure projects. 
+1.2 Invitation to Tender (ITT) 
+IÉ CI invites qualified and experienced service providers to submit tenders for the provision of a 
+Project, Programme, and Portfolio Management (PPM) Solution built utilising IÉs Microsoft Power 
+Platform. The objective of the PPM solution is the following: 
+ 
+• Provide a centralised platform for project, programme, and portfolio oversight, providing 
+a single source of the truth for portfolio performance. 
+• Standardise governance, assurance, and reporting across teams. 
+• Standardise data collection by introducing consistent data -entry forms, workflows, and 
+structures across project and portfolio reporting. 
+• Improve visibility of delivery performance, risks, financials etc.  
+• Support data-driven decision making through dashboards and other reporting metrics. 
+• Enable scalable functionality aligned with future organisational needs. 
+ 
+The successful supplier will provide and configure predeveloped Power Platform templates 
+and/or components to rapidly establish a digital PPM data capture and reporting solution. The 
+core requirement is the quick delivery of a Minimum Viable Product (MVP) with the ability to scale 
+the solution. The PPM MVP solution must provide an option to expand licensing, functionality, 
+and integrations in future deployments. 
+ 
+
+--- PAGE 4 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 4 
+ 
+The predeveloped Power Platform templates and/or components must support a future full PPM 
+solution deployment with the following core capabilities: 
+ 
+• Centralised Project, Programme & Portfolio Management 
+• Governance, Assurance & Compliance 
+• Schedule & Programme Management 
+• Financial & Funding Management 
+• Risk & Issue Management 
+• Change Management 
+• Benefits Management 
+• Capacity & Resource Management 
+• Timesheet Management 
+• Reporting & Analytics 
+• Configurable Workflows 
+• User Access & Security 
+ 
+Additionally, the PPM solution will require integrations with existing I É ICT software / 
+infrastructure. A breakdown of these integration requirements as provided within the detailed 
+requirements of this document. 
+
+--- PAGE 5 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 5 
+ 
+2 Background and Solution Requirements 
+2.1 About Iarnród Éireann Capital Investments 
+IÉ CI manages a large portfolio of projects ranging in size, scale and complexity. CI have 
+experienced a significant increase in the volume of large capital projects, programmes and 
+increased value of contracts. CI are taking appropriate steps to transition fro m a static, 
+fragmented and manual ways of working to an integrated, centralised, scalable and intelligent 
+best-practice digital environment. 
+CI’s vision is to develop a best -in-class Project Management Office (PMO) Project Controls & 
+Reporting function, ensuring accurate reporting and integrated project, programme and portfolio 
+management. To create a digitally enabled ecosystem that delivers c onsistent project controls, 
+improved process and system integration, real -time metrics, trends and insights, improved 
+information management and robust governance and assurance . The objective of these 
+initiatives is to  provide the  CI leadership with a single source of truth and confidence in the 
+reporting and data being generated. The transition to a digital ecosystem will enable automated 
+reporting, streamlined workflows, improved performance tracking, dynamic risk integration and  
+schedule optimisation.  
+2.2 Users 
+CI have a requirement to categorise users of the solution into three broad classifications, System 
+Administrator, Standard User and Team Member User. 
+ 
+• System Administrator – to manage all system settings, security roles, data structures, 
+and overall PPM platform configuration. 
+• Standard - access and update programmes and/or projects relevant to their role, with 
+permissions to view and interact with core PPM capabilities. 
+• Team Member – limited access to certain PPM capabilities  but allows the user input for 
+collaboration purposes. e.g. providing updates to project tasks or issues. 
+ 
+The expected number of users is listed below, with the expected increase over the life of the 
+contract.  
+Note: the user numbers provided are indicative only and are intended to illustrate the 
+anticipated scale of system usage. Actual user volumes may vary and will be adjusted in 
+line with evolving business requirements 
+User Type Pilot 2026 2029 
+System 
+Administrator 
+2 5 5 
+Standard 18 100 150 
+Tean Member 0 100 150 
+ 
+
+--- PAGE 6 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 6 
+ 
+2.3 Scope of Work 
+This Scope of Works defines the phased delivery of a PPM solution built on Microsoft Power 
+Platform using pre‑developed templates and/or components. The delivery model is designed to 
+provide flexibility, scalability, and full cost transparency. It shall allow CI to evaluate the solution 
+before committing to full deployment and long‑term support. 
+The project will be delivered in three phases: 
+• MVP Pilot Deployment 
+• Solution Enhancements (Optional) 
+• Full Deployment + Post Deployment Support (Optional) 
+System Enhancements, Full Deployment and Post Deployment Support elements of this tender 
+will only be triggered upon successful completion and evaluation of the MVP Pliot. 
+The objectives of this approach are as follows: 
+• Deploy a scalable and user ‑friendly PPM system built on IÉs own Microsoft Power 
+Platform. 
+• Allow CI to validate suitability through a controlled MVP Pilot. 
+• Provide flexibility for CI to adopt the solution in its ‘vanilla’ configuration or proceed with 
+enhancements based on pilot findings. 
+• Establish an optional long‑term support framework. 
+MVP Pilot Deployment 
+The provision of an MVP using pre‑built Power Platform PPM templates and/or components with 
+minimal “vanilla” configuration. The objective is to validate core functionality and assess 
+whether further development is required. 
+The MVP will be deployed to a pilot group of up to 20 users, supporting up to 10 live projects over 
+approx. 3 reporting cycles (4 weekly periods). 
+As part of this pilot the vender is required to provide the following: 
+• Licencing 
+▪ Provision of licences for 20 users (templates and/or components licencing). 
+▪ Licences shall cover the full functionality of the vanilla ‘out of box’ solution.  
+▪ The solution shall be deployed into an IÉ managed Microsoft Power Platform 
+environment. All platform hosting, infrastructure, and Microsoft licensing 
+requirements are the responsibility of IÉ and are expressly excluded from the 
+scope of this tender. This includes, but is not limited to, the provision of a  
+Dev/Test and Production Power Platform environments , Microsoft Power Apps 
+Premium licensing and Power BI Premium/Pro licensing. The supplier is required 
+to deliver and configure the solution within the IÉ environment only and will not 
+be responsible for providing, managing, or procuring any underlying platform 
+licences or hosting services. 
+
+--- PAGE 7 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 7 
+ 
+ 
+• MVP Pilot Deployment & Technical Services 
+▪ Implementation Approach & Plan 
+▪ Provide IÉ their solutions Power Platform requirements ( Environment Specs, 
+Licences etc.) 
+▪ Support d eployment of pre -developed PPM components to IÉ Power Platform 
+environments (Dev/Test + Prod) 
+▪ Data model configuration. 
+▪ Workflow configuration using out‑of‑box logic. 
+▪ Core security setup, role-based access, and Azure AD integration. 
+▪ Deployment of standard dashboards, views, and reports. 
+▪ Applying IÉ branding to the user experience. 
+▪ Basic Microsoft 365 integrations as required. 
+▪ Support with any data migration activities. 
+▪ Pre Deployment Testing 
+ 
+• MVP Pilot Documentation 
+▪ Solution Design Document 
+▪ Security Model 
+▪ Data Dictionary 
+▪ Role‑Based User Guides 
+▪ Deployment Guide 
+▪ Administrator Guide / Runbook / Operations Manual 
+▪ Configuration & Customisation Log 
+▪ Audit Logs 
+▪ Training Material Pack (for internal and system admin training) 
+▪ Support & Troubleshooting Guide 
+ 
+• Training 
+▪ End‑user and pilot group training sessions 
+▪ System administrator training 
+▪ Delivery of materials, walkthroughs, and Q&A sessions 
+ 
+• MVP Pilot Support 
+After completion of the MVP Pilot  CI will conduct a n e valuation to determine its success . The 
+purpose of this evaluation is to: 
+• Collate user feedback 
+• Assess system performance and usability 
+• Provide recommendations for: 
+▪ proceeding with vanilla deployment, 
+▪ enhancements and integration requirements, 
+▪ change management and adoption needs. 
+ 
+
+--- PAGE 8 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 8 
+ 
+Solution Enhancements and/or Full Deployment & Post Deployment Support (Optional) 
+The MVP Pilot evaluation will conclude if CI wish to proceed System Enhancements and/or Full 
+Deployment & Post Deployment Support. The scope, scale, and specific deliverables within this 
+phase will be determined by the findings, recommendations, and prioritised requirements 
+identified as part of the MVP Pilot evaluation. 
+Thus, this phase consists of several independent optional components, each of which CI may 
+trigger individually, in combination, or not at all. 
+CI will only activate the options that best address: 
+• The functional gaps identified during the pilot. 
+• Adoption challenges or feedback from end‑users. 
+• Any technical limitations or enhancements needed to support full organisational use. 
+• Integration, reporting, or automation requirements not supported by the vanilla product. 
+Option A – Licencing and full Vanilla Deployment 
+• Licencing 
+▪ Provision of licences to cover the full functionality of the vanilla ‘ out of box’ 
+solution for the full deployment as per the user numbers identified in section 2.2 
+Users. 
+▪ The solution shall be deployed into an IÉ managed Microsoft Power Platform 
+environment. All platform hosting, infrastructure, and Microsoft licensing 
+requirements are the responsibility of IÉ and are expressly excluded from the 
+scope of this tender. This i ncludes, but is not limited to, the provision of a 
+Dev/Test and Production Power Platform environments, Microsoft Power Apps 
+Premium licensing and Power BI Premium/Pro licensing. The supplier is required 
+to deliver and configure the solution within the IÉ environment only and will not 
+be responsible for providing, managing, or procuring any underlying platform 
+licences or hosting services. 
+ 
+• Support full deployment of all CI portfolio, programmes and projects to the PPM system. 
+ 
+• Provision of Full Deployment Technical Services 
+▪ Implementation Approach & Plan 
+▪ Provide IÉ Power Platform Requirements (Environment Specs, Licences etc.) 
+▪ Support deployment of pre -developed PPM components to IÉ Power Platform 
+environments (Dev/Test + Prod) 
+▪ Data model configuration. 
+▪ Workflow configuration using out‑of‑box logic. 
+▪ Core security setup, role-based access, and Azure AD integration. 
+▪ Deployment of standard dashboards, views, and reports. 
+▪ Applying IÉ branding to the user experience. 
+▪ Basic Microsoft 365 integrations as required. 
+▪ Support with any data migration activities. 
+
+--- PAGE 9 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 9 
+ 
+▪ Pre Deployment Testing 
+ 
+• Provision of the following documentation 
+▪ Solution Design Document 
+▪ Security Model 
+▪ Data Dictionary 
+▪ Role‑Based User Guides 
+▪ Deployment Guide 
+▪ Administrator Guide / Runbook / Operations Manual 
+▪ Configuration & Customisation Log 
+▪ Audit Logs 
+▪ Training Material Pack (for internal and system admin training) 
+▪ Support & Troubleshooting Guide 
+ 
+• Provision of the following Training 
+▪ End‑user training sessions 
+▪ System administrator training 
+▪ Train the trainer type trainer to a select number of superusers 
+▪ Delivery of materials, walkthroughs, and Q&A sessions 
+Option B - Configurations & Customisations to Vanilla ‘Out of box’ solution 
+• The provision of time-and-materials development resources to deliver enhancements to 
+the vanilla ‘out of box’ solution. These enhancements may include but not limited to the 
+following: 
+ 
+▪ Additional workflows or automation 
+▪ Data model extensions 
+▪ Custom UI elements (forms, fields, business rules) 
+▪ Custom dashboard/report development 
+▪ Security model refinement 
+▪ Project template changes 
+▪ Additional user roles or permissions 
+▪ Data migration services for wider rollout 
+ 
+• As part of this option the vender shall provide: 
+▪ Delivery Plan for each enhancement. 
+▪ Pre Deployment Testing. 
+▪ Update ‘vanilla’ documentation as required.  
+ 
+Option C - Integration with corporate systems 
+• The provision of time-and-materials development  resources and required licencing to 
+deliver Integrations with IÉ corporate systems. 
+• Provide an integration between the PPM solution and IÉs SAP ERP system. This includes 
+providing a secure, scalable integration platform capable of supporting current SAP ECC 
+
+--- PAGE 10 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 10 
+ 
+operations and future migration to SAP S/4HANA. The solution must handle high volumes 
+of financial data, use modular and reusable integration components, and ensure 
+accurate mapping between SAP cost objects and PPM project structures. 
+• Provide an integration between the PPM solution and IÉs scheduling tools (OPC, P6 and 
+MS Project). This includes support for importing common scheduling file formats (such 
+as P6, MS Project, Excel, XER, XML, XLSX and MPP) to create or update project schedules. 
+• Provide a Delivery Plan for each integration 
+• Provide documentation related to integration which may include but not limited to: 
+ 
+▪ Integration Architecture Document 
+▪ Solution Design Document 
+▪ Data Mapping Specification 
+▪ API / Interface Specifications 
+▪ Security Design 
+▪ SIT / UAT Test Packs 
+▪ Deployment Guide 
+▪ Support & Troubleshooting Guide 
+▪ Configuration Log 
+▪ Runbook / Operations Manual 
+ 
+Option D + Post Deployment Support 
+The prov ision of ongoing post ‑implementation assistance to ensure the long ‑term stability, 
+performance, and adoption of the PPM solution . Under this phase, the supplier will deliver 
+technical support, issue resolution, maintenance, minor configuration updates, release 
+management, and general operational assistance to both end‑users and system administrators. 
+Support may also include onboarding assistance, periodic health checks, performance reviews, 
+and user adoption guidance. 
+Support is required for both the standard out ‑of‑the‑box solution and any configurations, 
+customisations, or integrations added as part of the solution rollout. 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 11 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 11 
+ 
+Appendix 1 – Requirements and Specifications 
+1. Solution Overview 
+The Tenderer should plan to provide a demonstration (limited to one hour) of their capabilities 
+and the proposed solution for IÉ. This should: 
+• Demonstrate their general understanding of IÉ goals and objectives, the challenges it faces 
+and the purpose of this Tender. 
+• Provide a brief description of the proposed solution, the overall architecture, and the 
+technologies, products and services user. 
+• Confirm that the proposed solution can meet the requirements in this ITT (any significant 
+gaps or issues must be described) 
+• Highlight the key strengths of the proposed solution. 
+• Describe the proposed solution’s integration capabilities. Specificity reference should be 
+made to the solutions capability to integrate with SAP ERP and common scheduling tools (P6 
++ Microsoft Projects) as per section 2.2 ‘Non-Functional Requirements’. 
+• Provide the future Product Road Map, product automation and artificial intelligence 
+2. Detailed Specification of Requirements 
+2.1 Functional Requirements  
+2.1.1 Centralised Project, Programme & Portfolio Management 
+The solution shall provide a centralised location for managing all projects, programmes, and 
+portfolios. 
+ID Requirement Description 
+FR-PPM-
+01 
+The solution shall allow for the creation and management of Projects, Programmes, and 
+Portfolios. 
+FR-PPM-
+02 
+The solution shall allow for the creation and management of Project, Programme, and 
+Portfolio metadata. 
+FR-PPM-
+03 
+The solution shall allow for the capture of the full lifecycle of pipeline projects and 
+opportunities, enabling their assessment and prioritisation 
+2.1.2 Governance, Assurance and Compliance 
+The solution shall ensure all projects follow the organisation’s rules, standards, and legal 
+requirements. It should make oversight and quality checks easy, so decisions are clear and 
+properly documented. 
+ID Requirement Description 
+FR-Gov-
+01 
+The solution shall provide a structured workflow that guides users through the initiation, 
+submission, review, and approval of new projects. 
+FR-Gov-
+02 
+The solution shall provide structured gate reviews that enable the governance, assessment, 
+approval, and controlled progression of projects through defined lifecycle stages. 
+FR-Gov-
+03 
+The solution shall provide comprehensive audit logs that capture all key user actions, data 
+changes, and system events to support governance, compliance, and traceability. 
+2.1.3 Schedule & Programme Management 
+The solution shall support schedule and programme management by planning, tracking, and 
+coordinating project timelines, and by consolidating data from other planning tools in use. 
+ 
+
+--- PAGE 12 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 12 
+ 
+ID Requirement Description 
+FR-SP-01 The solution shall allow users to create and manage project schedules of differing complexity 
+natively within the application. 
+FR-SP-02 The solution shall allow users to monitor project schedules. 
+FR-SP-03 The solution shall allow for effective schedule management at the programme and portfolio 
+levels. 
+2.1.4 Financial & Funding Management 
+The solution shall manage project finances and funding by planning, tracking, and controlling 
+costs. 
+ID Requirement Description 
+FR-FF-01 The solution shall provide an out of box configurable financial calendar. 
+FR-FF-02 The solution shall allow for the capture, management, and modification of project funding 
+sources across the project lifecycle. 
+FR-FF-03 The solution shall allow for the creation, management, and modification of Project Budgets 
+across the project lifecycle. 
+FR-FF-04 The solution shall allow for the creation, management, and modification of Project Forecasts 
+across the project lifecycle. 
+FR-FF-05 The solution shall allow for the creation, management, and modification of Project Cashflows. 
+The solution shall plan, monitor, and control the timing and magnitude of cash inflows and 
+outflows throughout the project lifecycle. 
+FR-FF-06 The solution shall allow for the monitoring of project financial metrics and/or KPIs across the 
+project lifecycle. 
+2.1.5 Risk & Issue Management 
+The solution shall support risk and issue management by identifying, tracking, and coordinating 
+responses to risks and issues. 
+ID Requirement Description 
+FR-RI-01 The solution shall enable users to identify, document, categorise, and assign ownership for 
+risks across Projects, Programmes, and Portfolios. 
+FR-RI-02 The solution shall provide structured tools for assessing likelihood, impact, scoring, and 
+financial exposure of risks at all levels. 
+FR-RI-03 The solution shall support effective management of risks through responses, mitigations, 
+actions, timeline tracking, and governance controls. 
+FR-RI-04 The solution shall provide dashboards, filtering, search, and reporting capabilities to support 
+effective monitoring of risks across all levels. 
+FR-RI-05 The solution shall provide comprehensive issue identification, tracking, and resolution 
+functionality at Project, Programme, and Portfolio levels, ensuring consistent logging, 
+categorisation, ownership, and management. 
+2.1.6 Change Management 
+The solution shall support change management by capturing, assessing, and tracking change 
+requests to ensure impacts are understood and decisions are properly controlled. 
+ID Requirement Description 
+FR-CM-
+01 
+The solution shall support the controlled capture, categorisation, impact assessment, and 
+documentation of change requests across Projects, Programmes, and Portfolios. 
+
+--- PAGE 13 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 13 
+ 
+FR-CM-
+02 
+The solution shall support the tracking, decision recording, and oversight of change requests 
+as they progress through configurable approval steps, ensuring transparent and controlled 
+baseline updates 
+2.1.7 Benefits Management 
+The solution shall support benefits management by enabling clear definition, tracking, and 
+governance of benefits to ensure strategic value delivery. 
+ID Requirement Description 
+FR-BM-01 The solution shall support the structured identification, planning, classification, and 
+documentation of benefits at Project, Programme, and Portfolio levels. 
+FR-BM-02 The solution shall track the performance and progress of benefits over time, comparing 
+planned versus actual realisation across all levels. 
+2.1.8 Timesheet Management 
+The solution shall support timesheet management by capturing, tracking, and reporting time 
+spent on project & non-chargeable activities to enable accurate monitoring and cost control. 
+ID Requirement Description 
+FR-TM-01 
+The solution shall enable users to accurately record chargeable and non ‑chargeable time 
+against authorised activities using a configurable Irish calendar that incorporates official 
+public holidays. 
+FR-TM-02 
+The solution shall enable authorised managers to review and approve recorded time against 
+Projects, Programmes, Portfolios, or resource assignments before it is committed to tracking 
+and reporting. 
+2.1.9 Resource Management 
+The solution shall support resource management by planning, allocating, and tracking 
+resources to ensure the right people are assigned to the right work at the right time. 
+ID Requirement Description 
+FR-RM-01 
+The solution shall provide comprehensive resource configuration and setup capabilities to 
+support the full Capital Investments organisation, including internal staff, external suppliers, 
+project teams, specialist resources, and non ‑labour assets. The system shall support 
+consistent, scalable, and permission‑controlled management of all resource classes. 
+FR-RM-02 
+The solution shall enable skill ‑based resource searching so users can define the skills 
+required for Projects, Programmes, and Portfolios, and quickly identify suitable resources. 
+The system shall allow searching the resource database by skill and availability to support 
+efficient assignment. 
+FR-RM-03 
+The solution shall support assignment of resources to Projects.  It shall enable flexible 
+allocation, approval, notification, tracking, and history management to ensure structured and 
+auditable resourcing. 
+2.1.10 Reporting & Analytics 
+The solution shall support reporting and analytics across portfolio, programme, and project 
+levels by consolidating data and providing clear, timely insights to support decision‑making. 
+ID Requirement Description 
+FR-RA-01 
+The solution shall support periodic project status capture aligned to 13 four -week periods, 
+with snapshot history and RAG/KPI monitoring to provide consistent visibility of project 
+performance over time. 
+FR-RA-02 
+The solution shall deliver out ‑of‑the‑box dashboards that provide clear, real ‑time visibility 
+across Projects, Programmes, and Portfolios, with configurable views that require no custom 
+development. These dashboards shall support aggregated roll ‑up reporting and drill ‑down 
+
+--- PAGE 14 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 14 
+ 
+navigation, enabling users to move effortlessly from high ‑level strategic insight to detailed 
+project data. 
+FR-RA-03 
+The solution shall include ready‑made, configurable financial reports that require no custom 
+development and can be tailored to different organisational, project, and funding needs. 
+These reports shall support rapid, accurate financial insight across Projects, Programmes, 
+and Portfolios. 
+FR-RA-04 
+The solution shall include ready‑made, configurable schedule reports that require no custom 
+development and support visual, portfolio ‑level insights into project timelines, milestones, 
+critical paths, and performance. These reports  shall be adaptable to organisation, 
+programme, and stakeholder needs while leveraging real‑time schedule data. 
+FR-RA-05 
+The solution shall provide out‑of‑the‑box configurable reporting for Risks and Issues, enabling 
+users at all levels to monitor exposure, status, trends, and escalation points across Projects, 
+Programmes, and Portfolios. Reports shall be easily tailored without custom development 
+and support decision‑making, governance, and assurance. 
+FR-RA-06 
+The solution shall allow users to seamlessly extract structured data into external analytics 
+tools such as Power BI  so that Framework Clients can build their own bespoke reports, 
+dashboards, and visualisations without relying on the vendor. This ensures flexibility, 
+self‑service reporting, and the ability to meet evolving organisational and government 
+reporting needs. 
+2.1.11 Workflows 
+The solution shall support workflows across portfolio, programme, and project levels by 
+automating approval steps, standardising processes, and ensuring consistent control and 
+governance. 
+ID Requirement Description 
+FR-WF-
+01 
+The solution shall provide fully configurable workflows that support governance, approvals, 
+routing, and process automation across Projects, Programmes, Portfolios. These workflows 
+shall be adaptable without custom development and support individual, group, role ‑based, 
+and document‑related approvals with full auditability. 
+FR-WF-
+01 
+The solution shall provide workflow governance capabilities that allow the PMO to monitor, 
+track, and audit all approvals across Projects, Programmes, and Portfolios. This ensures 
+compliance with organisational governance frameworks, approval rules, and au dit 
+requirements. 
+2.1.12 User Access & Security 
+The solution shall support user access and security across portfolio, programme, and project 
+levels by controlling permissions, ensuring appropriate data access, and protecting information 
+in line with organisational policies. 
+ID Requirement Description 
+FR-UAS-
+01 
+The solution shall allow administrators to define and manage security roles that control what 
+users can create, view, edit, or delete. Access must be governed through configurable role 
+structures that support organisational governance and least‑privilege principles. 
+FR-UAS-
+02 
+The solution shall provide workflow governance capabilities that allow the PMO to monitor, 
+track, and audit all approvals across Projects, Programmes, and Portfolios. This ensures 
+compliance with organisational governance frameworks, approval rules, and au dit 
+requirements. 
+FR-UAS-
+03 
+The solution shall integrate with Entra ID (Azure Active Directory) to enable single sign ‑on, 
+identity governance, and strong authentication. This ensures secure login, centralised 
+account control, and public‑sector‑compliant access management. 
+FR-UAS-
+04 
+The solution shall maintain comprehensive audit trails covering user activity, approvals, 
+changes, and access events. This is essential for governance, compliance, assurance, and 
+security monitoring. 
+ 
+
+--- PAGE 15 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 15 
+ 
+2.2 Non-Functional Requirements  
+2.2.1 System Performance  
+The following requirements govern the performance expectations of the solution under expected 
+operational conditions. Given the Power Platform delivery model, tenderers must address 
+Dataverse throughput, Power Automate execution latency, and capacity plann ing in their 
+response. 
+ 
+ID Requirement Description 
+NFR-
+PERF-01 
+The solution shall load primary dashboards and portfolio views within 3 seconds under normal load 
+conditions. 
+NFR-
+PERF-02 
+The solution shall support concurrent user access without degradation, supporting the full projected 
+user base as defined in section 2.2. 
+NFR-
+PERF-03 
+Power Automate workflows shall complete non -interactive background processes within a defined 
+SLA, with approval notifications triggered within 2 minutes of a qualifying event. 
+NFR-
+PERF-04 
+The solution shall handle Dataverse API call limits in line with Microsoft -published service protection 
+limits without service interruption, implementing throttling and retry logic where required. 
+ 
+2.2.2 Data Management 
+The following requirements govern how project, programme, and portfolio data is stored, 
+protected, managed, and accessed within the Power Platform environment. Data residency, 
+sovereignty, and GDPR compliance are primary considerations for IÉ as a public-sector entity. 
+ 
+ID Requirement Description 
+NFR-DM-
+01 
+All project, programme, and portfolio data shall be stored within Dataverse in IÉ's managed Power 
+Platform environment, with no data residing on supplier-managed infrastructure. 
+NFR-DM-
+02 
+The solution shall support Dataverse data retention policies aligned with IÉ's records management 
+obligations and GDPR requirements. 
+NFR-DM-
+03 
+The solution shall implement Dataverse column -level security where sensitive financial or personal 
+data fields are present, in addition to row-level security. 
+NFR-DM-
+04 
+The supplier shall provide a complete data dictionary and entity relationship model for all Dataverse 
+tables introduced or modified as part of the solution. 
+NFR-DM-
+05 
+The solution shall support data archiving and purging strategies, including configuration guidance, 
+without impacting live system performance. 
+NFR-DM-
+06 
+All data extracts and API connections to external tools such as Power BI shall enforce role -based 
+access controls consistent with the PPM security model. 
+NFR-DM-
+07 
+The solution shall not introduce custom connectors that bypass IÉ's Data Loss Prevention (DLP) 
+policies as configured in the Power Platform Admin Centre. 
+NFR-DM-
+08 
+The supplier shall provide a data migration strategy, tooling, and validation plan to support the 
+transition of any existing project data into the new solution. 
+ 
+2.2.3 Usability and Accessibility 
+The following requirements govern the usability and accessibility of the solution across the full 
+user population, including office-based, site-based, and mobile users. Compliance with WCAG 
+2.1 Level AA is a mandatory expectation for IÉ as a public-sector body. 
+ 
+
+--- PAGE 16 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 16 
+ 
+ID Requirement Description 
+NFR-
+USE-01 
+The solution shall conform to WCAG 2.1 Level AA accessibility standards across all Power Apps 
+interfaces. 
+NFR-
+USE-02 
+The solution shall be functional on Microsoft -supported browsers (Edge, Chrome) and shall support 
+access via the Power Apps mobile application on iOS and Android. 
+NFR-
+USE-03 
+The solution shall provide contextual help, tooltips, and in -application guidance to support user 
+adoption without requiring reference to external documentation. 
+NFR-
+USE-04 
+All data entry forms shall provide inline validation and meaningful error messages to guide users 
+through correct data entry prior to submission. 
+NFR-
+USE-05 
+The user interface shall be configurable to reflect IÉ branding including colours, logos, and terminology, 
+without requiring custom development. 
+NFR-
+USE-06 
+The solution shall provide a consistent navigation structure across Projects, Programmes, and 
+Portfolios, minimising the number of interactions required to complete common tasks. 
+ 
+2.2.4 Power Platform 
+The following requirements are specific to the Microsoft Power Platform delivery model and address 
+application lifecycle management (ALM), solution architecture, environment strategy, and platform 
+governance. These requirements are critical to ensure the long-term supportability, upgradeability, 
+and governance of the solution within IÉ's managed environment. 
+ID Requirement Description 
+NFR-PP-
+01 
+The solution shall be delivered as a managed solution within Dataverse, enabling controlled 
+deployment across Dev/Test and Production environments via standard ALM pipelines. 
+NFR-PP-
+02 
+The solution shall comply with Microsoft Power Platform best practices for solution layering, avoiding 
+hard-coded environment URLs, connection references, and environment variables. 
+NFR-PP-
+03 
+All Power Automate flows shall use connection references and environment variables rather than hard-
+coded connections to support ALM and multi-environment deployment. 
+NFR-PP-
+04 
+The solution shall be compatible with the current generally available release of Power Platform, and 
+the supplier shall define a process for managing Microsoft release wave updates (April and October 
+cycles). 
+NFR-PP-
+05 
+The supplier shall document all Dataverse customisations, custom connectors, PCF controls, and 
+Power Automate flows within the Configuration and Customisation Log, as a required deliverable. 
+NFR-PP-
+06 
+The solution shall not exceed IÉ's allocated Dataverse storage capacity, and the supplier shall provide 
+tooling or guidance to monitor and manage storage consumption over the contract lifetime. 
+NFR-PP-
+07 
+The solution shall implement a Power Platform environment strategy aligned with Microsoft's 
+recommended ALM framework, including use of Power Platform Pipelines or Azure DevOps for 
+controlled deployment. 
+NFR-PP-
+08 
+All canvas Power Apps shall be built using the responsive layout engine and shall not rely on fixed pixel 
+positioning. 
+ 
+2.2.5 SAP ERP Integration 
+IÉ operates SAP ECC for financial accounting and controlling. The PPM solution must receive actual 
+cost data from SAP to support financial monitoring, budget variance, and cashflow management 
+within the PPM platform. 
+ID Requirement Description 
+NFR-INT-
+01 
+The integration shall support extraction of actual costs, commitments, and purchase orders from SAP 
+FI/CO modules on both a scheduled and on-demand basis. 
+
+--- PAGE 17 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 17 
+ 
+NFR-INT-
+02 
+The integration shall support mapping between SAP WBS elements, cost centres, and internal orders 
+and the corresponding PPM project structures. 
+NFR-INT-
+03 
+The integration shall be implemented via a middleware or integration platform (e.g., Azure Integration 
+Services, Azure Logic Apps, or SAP BTP Integration Suite) rather than direct point-to-point connection. 
+NFR-INT-
+04 
+The integration shall include error handling, retry logic, and alerting mechanisms for failed or 
+incomplete data transfers. 
+NFR-INT-
+05 
+The supplier shall deliver an Integration Architecture Document, Data Mapping Specification, and 
+API/Interface Specification as named deliverables. 
+NFR-INT-
+06 
+The integration architecture shall be designed to accommodate IÉ's planned migration from SAP ECC 
+to SAP S/4HANA without requiring a full redesign of the integration layer. 
+NFR-INT-
+07 
+The system shall enable authorised users to upload finalised financial data for each 4-week reporting 
+period into the solution using a standardised Excel template, prior to integration with SAP ERP  is 
+complete. 
+The system shall perform data validation upon upload and ensure controlled access in accordance 
+with financial governance requirements. 
+ 
+2.2.6 Scheduling Tool Integration (P6, OPC, MS Project) 
+Capital Investments currently utilises Oracle Primavera P6, OPC, and Microsoft Project as scheduling 
+tools. The PPM solution must support integration with these platforms to consolidate schedule data 
+within the portfolio management layer. 
+ID Requirement Description 
+NFR-INT-
+08 
+The solution shall support import and export of schedules in XER (Primavera P6), MPP (MS Project), and 
+XML formats as a minimum. 
+NFR-INT-
+09 
+On import, the solution shall validate schedule data for integrity, including missing predecessor links 
+and constraint conflicts, and surface warnings to the user prior to committing the import. 
+NFR-INT-
+10 
+The integration shall preserve WBS hierarchy, milestone designations, and baseline data on import 
+from external scheduling tools. 
+NFR-INT-
+11 
+The solution shall support scheduled or event-triggered synchronisation with external scheduling tools, 
+in addition to manual file upload, where technically feasible. 
+NFR-INT-
+12 
+The system shall enable authorised users to upload finalised schedule data for each 4-week reporting 
+period into the solution using a standardised Excel template, prior to integration with scheduling tools 
+is complete. 
+The system shall perform data validation upon upload and ensure controlled access in accordance 
+with schedule governance requirements. 
+ 
+2.2.7 Microsoft 365 Integration 
+IÉ operates a Microsoft 365 environment including Teams, SharePoint Online, Outlook, and Entra ID 
+(Azure Active Directory). The PPM solution shall leverage the existing M365 estate to support 
+collaboration, document management, and identity governance. 
+ID Requirement Description 
+NFR-INT-
+13 
+The solution shall integrate with Microsoft Teams to support approval notifications, project status 
+updates, and workflow alerts via Teams channels or adaptive cards. 
+NFR-INT-
+14 
+The solution shall integrate with SharePoint Online for document management, enabling documents to 
+be linked or stored against projects within a managed IÉ document library structure. 
+NFR-INT-
+15 
+The solution shall integrate with Outlook for approval notifications and, where applicable, calendar -
+based milestone visibility. 
+
+--- PAGE 18 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 18 
+ 
+NFR-INT-
+16 
+The solution shall leverage Entra ID (Azure AD) group membership for dynamic security role assignment 
+within the PPM solution where appropriate. 
+ 
+2.2.8 Power BI Integration 
+The PPM solution shall support self-service reporting and analytics via Power BI, enabling IÉ's 
+analytics team to build bespoke reports and dashboards from PPM data without vendor 
+dependency. This aligns with the mandatory requirement FR-Man-05 (Data Extraction) as set out in 
+the ITT. 
+ID Requirement Description 
+NFR-INT-
+17 
+The solution shall expose Dataverse data via the Power BI Dataverse connector or a dedicated 
+semantic layer to enable self-service reporting by IÉ's analytics team. 
+NFR-INT-
+18 
+The supplier shall provide a baseline Power BI dataset model aligned to the PPM data structure as a 
+named deliverable within the MVP pilot. 
+NFR-INT-
+19 
+Embedded Power BI reports within the PPM solution shall respect the PPM role -based access control 
+model using Power BI row-level security, consistent with the Dataverse security model. 
+ 
+2.2.9 Cyber Security 
+The tendered solution must conform with the Cybersecurity requirements . The tenderer must 
+complete the associated document, IÉ Cybersecurity Requirements, and submit as part of the 
+tender submission. Non-conformance will result in exclusion from this tender process.  
+3. Solution Delivery 
+The delivery of the solution the tenderer is proposing shall include services to ensure a smooth 
+transition and adoption within IÉ CI. 
+The Tenderer shall describe their solution delivery approach and capabilities as below: 
+3.1 Project Plan, Deliverables, Dependencies and Governance 
+Approach 
+The tenderer will be responsible for developing and testing all business functionality for the new 
+solution as well as the solutions that support transitional processes, such as data migration and 
+deployment of the solution into the IÉ’s technology estate. This will include, and not limited to: 
+ID Requirement Description Included 
+Y/N Details 
+SDP-01 
+The tenderer shall provide a detailed project plan for 
+their proposed implementation approach  for both the 
+MVP P ilot and Full deployment. These shall include 
+timelines, budgets, milestones, assumptions, 
+dependencies, roles and responsibilities, resource 
+allocation, and a phased deployment schedule showing 
+the planned date on which the system will be available. 
+  
+SDP-02 
+The tenderer shall provide details of their deliverables, 
+acceptance criteria, phases of the roll out programme 
+and review and approval processes.  
+  
+SDP-03 
+The tenderer shall describe their proposal for the 
+implementation and system commissioning of the 
+solution, including configuration and setup, provision of 
+standard reports, training, data migration and 
+  
+
+--- PAGE 19 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 19 
+ 
+conversion, system testing, user acceptance testing and 
+quality assurance. 
+SDP-04 
+The tenderer shall describe their governance framework, 
+including project oversight, decision making processes, 
+compliance and reporting, stakeholder engagement, 
+risk and risk mitigation and the monitoring of 
+performance. 
+  
+SDP-05 
+The tenderer shall set out their approach to delivery of 
+user training for IÉ staff during the implementation and 
+installation phases to ensure the most cost -effective 
+training program. 
+  
+ 
+3.2 Change Management Approach 
+The tenderer must demonstrate a structured and coherent approach to change management 
+and solution maintenance during the implementation and over the lifetime of the agreement.  
+ID Requirement Description Included 
+Y/N Details 
+SDC-01 
+The tenderer must comply with IÉ change management 
+policy, as available in Appendix 4 – Change Management 
+Policy. 
+  
+SDC-02 
+The tenderer shall describe their method of change 
+management, including information management and 
+requirements, identification of change, change 
+implementation, communication and collaboration, 
+change monitoring and auditing, and feedback and 
+continuous improvement. This change manageme nt 
+should be as part of the tender’s enablement of ISO 
+19650. 
+  
+SDC-03 
+The solution will have significant functional fit to the 
+requirements using out of the box (or standard) 
+functionality. 
+  
+ 
+3.3 Implementation Team and Service Manager 
+ The implementation team and service manager are the team responsible for the successfully 
+execution, management and support of the project and the relationship with IÉ over the longer 
+term. The tenderer should demonstrate the capability, experience and str ucture that will drive 
+the successful implementation and delivery of the solution.  
+The tenderer must include the following: 
+• An organisation chart which identifies the key resources with responsibility for the 
+delivery of each of the key components of this Project. 
+• The participants of the implementation team, CVs for each resource and relevant Rail 
+and Document Management solutions experience. Resources should include: 
+▪ Implementation Project Manager 
+▪ Technical Lead Architect 
+▪ Service Manager  
+• An estimate of the resource requirements within IÉ, and their roles, to deliver the project. 
+The tenderer must ensure that these resources identified are available for delivery on this 
+implementation project. All staff engaged by the tenderer in the project implementation, 
+including subcontracted staff, must be vetted by IÉ. 
+
+--- PAGE 20 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 20 
+ 
+ 
+Tenderer Response to Requirement 
+Please Describe: 
+ 
+ 
+ 
+ 
+Attach CVs. 
+ 
+ 
+ 
+3.4 Technical Implementation 
+The technical implementation will be hosted within IÉs Power Platform.  
+• The Tenderer should provide a description of the technical implementation of their 
+solution within IÉs Power Platform, including: 
+▪ The process in which the Tenders solution is hosted within IÉs Power Platform 
+environments. 
+▪ Data Security (confirm how the data will be held in EU) and protection from 
+malware 
+▪ Backups and Disaster Recovery provision 
+▪ Methodology for updates, testing and deployment 
+• A security questionnaire will need to be satisfactorily completed. The supplier should 
+confirm they accept this condition of contract.  
+ 
+Tenderer Response to Requirement 
+Please Describe: 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+4 Post Implementation, Support and Maintenance 
+IÉ requires a high -quality post implementation support and maintenance service, including 
+service level agreements, knowledge transfer, exit strategy, change and release management 
+and reporting system. It is expected that this support will be provided for both the standard ‘Out 
+of Box’ functionality as well as any changes made to the vanilla product by the vendor.  
+ 
+
+--- PAGE 21 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 21 
+ 
+The tenderer will provide help desk support relating to the specific configuration that has been 
+installed within the IÉ Power platform environment. The tenderers will agree with IÉ the 
+appropriate communications methods and customer support contacts.  
+ 
+The tenderer shall describe their post implementation, support and maintenance capabilities as 
+below: 
+ 
+ID Requirement Description Included 
+Y/N Details 
+PS-01 
+It is expected the Tenderer will provide a warranty period 
+for defect resolution, following the go live period. This 
+period will be for a minimum agreed period, or until all 
+defects that are identified during the go live period or 
+materialise during the wa rranty period are resolved. 
+Describe the warranty that will be provided.  
+  
+PS-02 
+The Tenderer must demonstrate a structured and 
+coherent approach to upgrades and maintenance 
+requirements over the lifetime of the agreement.  
+  
+PS-03 
+The Tender ensure the solution provided Power Platform 
+solution shall be regularly reviewed and updated to 
+ensure continued compatibility and alignment with IÉ’s 
+Power Platform version and standards. 
+  
+PS-04 
+Support service desk shall be available on telephone 
+support, email support and web-based ticketing system 
+and support the required service levels.  The tender can 
+provide details on their help desk service escalation and 
+response levels. 
+  
+PS-05 
+The tenderer shall have a robust incident management 
+process, including incident logging, categorisation, 
+escalation and resolution. All incidents shall be tracked 
+and documented in the tenderer’s ticketing system, with 
+regular status updates provided to IÉ. 
+  
+PS-06 
+The tenderer shall conduct regular reviews of tickets 
+logged and identify problems that may exist, perform 
+root cause analysis and proactively manage problems 
+through to resolutions.  
+  
+PS-07 
+The tenderer shall comply with the documented service 
+level objectives and will be reviewed every 12 months or 
+as needed. 
+  
+PS-8 
+The Tenderer is required to perform penetration tests to 
+identify any potential security vulnerabilities. The 
+tenderer must correct any confirmed vulnerabilities.  
+Provide details of containment and eradication of any 
+threats. 
+  
+PS-9 
+The Tenderer must outline a robust Exit Management 
+Plan for any planned/un -planned migration off the 
+solution. This must include a detailed project plan and 
+supporting methodology.  
+An Exit Management plan is intended to support an 
+orderly transition of the Services from the Contractor to 
+IÉ and/or other Incoming Tenderer in the event of 
+termination of all or part of this Agreement or its expiry.  
+  
+
+--- PAGE 22 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 22 
+ 
+It is required that the Tenderer detail an exit 
+management plan which will, as a minimum:  
+• Contain separate mechanisms for dealing with 
+Ordinary Exit and Emergency Exit;  
+• Set out the management structure to be employed 
+during both transfer and cessation of the Services in 
+an Ordinary Exit and an Emergency Exit; and  
+• Contain a detailed description of both the transfer and 
+cessation processes, including a timetable applicable 
+in the case of an Ordinary Exit and an Emergency Exit. 
+At the request of IÉ the Exit Plan shall anticipate a 
+phased migration of the Services from the Tenderer to 
+IÉ and/or other Incoming Supplier in such manner as 
+IÉ shall require.  
+• Document how the Services will transfer to IÉ and/or 
+other Incoming Tenderer, including details of the 
+processes, documentation, data transfer, systems 
+migration, security and integration with legacy 
+systems;  
+• Address any other issues in the transition of the 
+Services from the Tenderer to IÉ and/or other Incoming 
+Tenderer’s with the aim of ensuring that there is no 
+disruption to or degradation of the Services during the 
+Termination Assistance Period  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 23 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 23 
+ 
+5 Environmental, Social and Governance 
+1. IÉ is committed to sustainability and operating responsibly. The organisation is aware 
+that ICT operations, including hosted applications, can potentially have a significant 
+environmental and climatic impact. 
+2. The Tenderer should: 
+a. Provide a proposal outlining the specific measures to be adopted to address the 
+environmental, social and economic impacts throughout the project delivery. 
+b. Highlight any innovations or unique solutions within their technical approach that 
+set their proposal apart from others, explaining how these innovations will 
+enhance the project’s cost efficiency, performance or sustainability. 
+c. Indicate what measures it utilises to reduce its carbon footprint, for example the 
+use of data centres utilising only renewable energy.  
+Responses in this section will be used to evaluate item 5 - Sustainability, CSR, and Environmental 
+Responsibility as part of the award criteria. 
+Tenderer Response to Requirement 
+Please Describe: 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 24 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 24 
+ 
+Appendix 2 – Detailed Functional Requirements Specs 
+This section contains d etailed specifications for each functional requirement. These 
+specifications are intended as guidance  to the vendor when responding to the functional 
+requirements. Thus, these specifications are for information only. They should not be interpreted 
+as additional or standalone requirements. 
+ 
+Centralised Project, Programme & Portfolio Management 
+Requirement Spec 
+FR-PPM-01 Capture Projects, 
+Programmes & Portfolios 
+The solution shall allow for the 
+creation and management of 
+Projects, Programmes, and 
+Portfolios. 
+ 
+• Allow for the creation of new Projects within an existing 
+Programme and/or Portfolio. Or if required as a standalone 
+project not associated with an existing Programme and/or 
+Portfolio. 
+• Allow for the creation of new Programmes as required. 
+• Allow for the creation of new Portfolios as required. 
+• The creation of Projects, Programmes or Portfolios are done 
+using a standardised input form. Input forms should be 
+configurable to have required and non-required fields. 
+• Allow for the creation of relationships between Projects, 
+Programmes and/or Portfolios. 
+FR-PPM-02 Capture Projects, 
+Programmes and Portfolios 
+Metadata 
+The solution shall allow for the 
+creation and management of 
+Project, Programme, and Portfolio 
+metadata. 
+ 
+• Provide standard and/or configurable metadata fields for 
+Projects, Programmes, and Portfolios. 
+• Support mandatory, optional, and conditional metadata 
+fields. 
+• Allow different metadata sets per entity type (e.g., Project vs 
+Programme). 
+• Allow metadata to be entered / edited based on user 
+permissions and workflow stage. 
+• Support metadata changes through configurable workflows 
+(e.g., approval required for certain fields). 
+• Provide field-level validation, lookup lists, and dropdowns. 
+• Ensure metadata is accessible for reporting. 
+FR-PPM-03 Capture Project / 
+Opportunity Identification 
+The solution shall allow for the 
+capture of the full lifecycle of 
+pipeline projects and 
+opportunities, enabling their 
+assessment and prioritisation 
+• Standardised Capture of Opportunities via a digital input 
+form. 
+• Classify and score opportunities based on configurable 
+criteria. 
+• Assign opportunities standard and/or configurable metadata 
+fields e.g. opportunity classification. 
+• Support configurable review, assessment, and approval 
+workflows. 
+• Provide prioritisation tools. 
+• Offer reporting dashboards showing pipeline volume, status, 
+prioritisation etc. 
+
+--- PAGE 25 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 25 
+ 
+Governance, Assurance and Compliance 
+Requirement Spec 
+FR-Gov-01 Project Creation 
+Workflow 
+The solution shall provide a 
+structured workflow that guides 
+users through the initiation, 
+submission, review, and approval 
+of new projects. 
+• Enable creation of new project requests using configurable 
+templates. 
+• Allow for linking or attachment of supporting documents. 
+• Provide automated routing of project requests through 
+configurable predefined review and approval workflows. 
+• Allow reviewers to evaluate, comment on, approve, pause or 
+reject project requests with full audit trails. 
+• Ensure mandatory data validation prior to project approval 
+and creation in the system. 
+• Convert approved requests into active Projects with all 
+captured metadata transferred automatically. 
+FR-Gov-02 Gate Review Workflows 
+The solution shall provide 
+structured gate reviews that enable 
+the governance, assessment, 
+approval, and controlled 
+progression of projects through 
+defined lifecycle stages. 
+• Support configurable stage gate models tailored to different 
+projects (e.g. Project Size, Project Type etc.) 
+• Capture required documentation, metadata, and evidence 
+needed for each gate. 
+• Configurable workflows for gate submission, review, 
+approval, pause, rejection, or rework. 
+• Configurable scoring, commentary, and decision logging by 
+reviewers and governance boards. 
+• Maintain audit trails of gate decisions, approvers, dates, and 
+justification. 
+• Display gate status and progression within dashboards and 
+project lifecycle views. 
+FR-Gov-03 Audit Logs 
+The solution shall provide 
+comprehensive audit logs that 
+capture all key user actions, data 
+changes, and system events to 
+support governance, compliance, 
+and traceability. 
+• Record changes to Projects, Programmes, Portfolios, 
+financials, metadata, workflows, and permissions. 
+• Capture user identity, timestamp, old value, new value, and 
+the nature of the change. 
+• Log key system events such as approvals, submissions, 
+deletions, status changes, and role updates. 
+• Support role‑based access to audit logs, ensuring only 
+authorised users (e.g., Admin/PMO) can view or manage 
+them. 
+ 
+ 
+Schedule & Programme Management 
+Requirement Spec 
+FR-SP-01 Create and Manage 
+Project Schedules 
+The solution shall allow users to 
+create and manage project 
+• Provide a schedule configurable to a standardised Irish 
+Calendar including Irish bank holiday periods or other non-
+working days. 
+• Allow for the creation and modification of work breakdown 
+structures. 
+
+--- PAGE 26 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 26 
+ 
+schedules of differing complexity 
+natively within the application. 
+• Define and modify project deliverables, milestones, 
+activities, tasks and work packages 
+• Capture, manage and modify start, finish dates (planned, 
+forecasted & actual) for project deliverables, milestones, 
+activities, tasks and work packages. 
+• Capture, manage and modify floats for project deliverables, 
+milestones, activities, tasks and work packages when 
+required. 
+• Capture, manage and modify internal dependencies - 
+dependencies between two elements defined in the wbs 
+structure (project deliverables, milestones, activities, tasks 
+or work packages). 
+• Capture, manage and modify project dependency 
+constraints e.g. Finish-to-Start, Start-to-Start, Finish-to-
+Finish and Start-to-Finish 
+• Capture, manage and modify project date constraints e.g. 
+Start No earlier, Finish no later than, Must Start on and Must 
+Finish on 
+• Allow for the capture of multiple project schedule versions / 
+baselines 
+• Support multiyear schedules. 
+FR-SP-02 Project Schedule 
+Monitoring 
+The solution shall allow users to 
+monitor project schedules. 
+• Provide scheduling visualisation in real-time graphical 
+display (e.g. via Gantt charts, PERT charts) - which can be 
+used to modify the project schedule.  
+• Represent schedules in Days, Weeks, Months or Quarters 
+• Allow for a captured baselined programme to be compared 
+against the current forecast and actual project schedule. 
+• Calculate and analyse project Critical Path 
+• Compare dates, such as calculated dates and forecasted 
+dates 
+• Copy calculated dates to forecasted dates 
+• Highlight when forecasts and actual completion dates 
+approach planned targets 
+• Allow a Rag status to be assigned to a milestone 
+• Allow a status (complete, delayed etc.) to be assigned to 
+project deliverables, milestones, activities, tasks and work 
+packages 
+• Allow comments / notes to be attached to project 
+deliverables, milestones, activities, tasks and work 
+packages 
+• Export project schedule / scheduling visualisation to PDF  
+• Allow for the export to external file types such as P6, MS 
+Project and Excel. Common file formats such as XER, XML. 
+XLSL and MPP etc. should be supported 
+
+--- PAGE 27 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 27 
+ 
+FR-SP-03 Portfolio & Programme 
+Schedule Management 
+The solution shall allow for 
+effective schedule management at 
+the programme and portfolio 
+levels. 
+• Allow for a rollup view of multiple projects schedules by 
+portfolio or programme - providing a Capital investments 
+master schedule. 
+• Allow for the drill down from portfolio or programme view to 
+associated child projects 
+• Support centralised integrated scheduling across multiple 
+projects and programmes - allowing for the creation and 
+modification of dependencies and interdependencies 
+between multiple projects. 
+• Define and modify portfolio and programme deliverables, 
+milestones, activities and tasks. 
+• Provide a summarised view of child projects and their 
+performance (Rag Status) of the related portfolio or 
+programme. 
+ 
+Financial & Funding Management 
+Requirement Spec 
+FR-FF-01 Configurable Period 
+Calendar 
+The solution shall provide an out of 
+box configurable financial 
+calendar. 
+• A configurable period calendar that supports 4-week 
+reporting periods. 
+• Allow fiscal year start date, period definitions to be 
+configurable. 
+• Allow adjustments for leap years. 
+FR-FF-02 Funding Source 
+Management 
+The solution shall allow for the 
+capture, management, and 
+modification of project funding 
+sources across the project 
+lifecycle. 
+• Capture, manage and modify a single or multiple funding 
+sources per project 
+• Allow metadata related to funding sources to be captured, 
+manged and modified. 
+• Metadata fields should be configurable. Examples for 
+metadata fields but not limited to are Funding Source Name, 
+Funding type (e.g., internal, external, grant, loan, capital, 
+operational), funding agency, validity period etc. 
+• Categorise expenditure i.e. capital, externally funded, 
+internally funded, additional revenue, existing revenue 
+• Allow funding to be reallocated between projects when 
+required - capturing original allocation, new allocation and 
+justification for the change 
+• Modifications of funding should allow for an approval 
+process (workflow) if required 
+• Ensure traceability and compliance by automatically logging 
+changes thus creating an audit trail 
+FR-FF-03 Budget Management • Capture project budgets based on estimates, funding, or 
+historical data. 
+
+--- PAGE 28 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 28 
+ 
+The solution shall allow for the 
+creation, management, and 
+modification of Project Budgets 
+across the project lifecycle. 
+• Allow for alignment of project budget with project work 
+breakdown structures (WBS), cost codes, and funding 
+sources.  
+• Allow for budget categories (e.g., labour, materials, 
+overhead) 
+• Allow for time-phased allocations (monthly, quarterly, 13-
+period) 
+• Manage and modify project budgets due to scope changes, 
+funding updates, or reforecasts etc. 
+• Shall support multiple budget versions and baselines. Allow 
+budgets to be modified due to scope changes, funding 
+updates, or reforecasts etc. 
+• Allow for updated budget version with change history / audit 
+trail 
+• Support multi-level budgets and hierarchical roll-ups 
+• Allow for configurable budget approval workflows 
+• Allow for hierarchical budgets 
+FR-FF-04 Forecast Management 
+The solution shall allow for the 
+creation, management, and 
+modification of Project Forecasts 
+across the project lifecycle. 
+• Capture project forecasts based on historical data, current 
+progress, and planned activities. 
+• Allow for configurable forecast modelling and parameters 
+e.g. Forecast intervals (monthly, quarterly, 13-period), 
+Forecast types (cost, revenue, resource) and Calculation 
+methods (manual, linear projection, earned value) 
+• Allow multiple forecasting models to be used per project 
+• Allow for both top-down and bottom-up forecasting 
+• Manage and modify project forecasts based on changes to 
+the project e.g. change requests, updated assumptions, 
+external factors etc. 
+• Allow for updated forecast versions with change history / 
+audit trail 
+• Allow the accuracy of forecasting to be tracked over time 
+• Allow for forecasting accuracy metrics, trend analysis, alerts 
+for deviations 
+• Allow multiple forecast scenarios to be modelled based on 
+different assumptions 
+• Provide a side-by-side comparison of forecast scenarios. 
+FR-FF-05 Cashflow Management 
+The solution shall allow for the 
+creation, management, and 
+modification of Project Cashflows. 
+The solution shall plan, monitor, 
+and control the timing and 
+magnitude of cash inflows and 
+• Capture planned project cash inflows e.g. expected cash 
+receipts from funding sources, clients, or grants 
+• Capture planned project cash outflows e.g. project activities 
+or procurement 
+• Allow the tracking of actual cash inflows and outflows from 
+integrated ERP systems 
+• Manage and modify project planned inflows and outflows 
+
+--- PAGE 29 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 29 
+ 
+outflows throughout the project 
+lifecycle. 
+• Provide future cashflows positions based on current trends 
+and project progress 
+• Allow for updated cashflow versions with change history / 
+audit trail 
+FR-FF-06 Financial / Cost 
+Monitoring 
+The solution shall allow for the 
+monitoring of project financial 
+metrics and/or KPIs across the 
+project lifecycle. 
+• Allow for configurable financial KPIs e.g. Cost Performance 
+Index (CPI), Budget at Completion (BAC), Estimate at 
+Completion (EAC), Return on Investment (ROI), Burn Rate 
+etc. 
+• Shall support scheduled and real-time data refresh 
+• Allow financial metrics to be viewed in an interactive 
+dashboard 
+• Compare budgeted amounts with actual costs from ERP  
+• Compare budgeted amounts with forecasted costs from ERP  
+• Compare funding with budgeted amounts from ERP  
+• Allow for variances between planned and actual cashflows 
+to be captured 
+• Provide Cashflow projections and liquidity curves 
+• Share budget data with forecasting and cash flow modules. 
+• Provide time-phased cash inflow projections 
+• Provide time-phased cash outflow projections 
+• Pull actuals from SAP Financial Accounting / Controlling ERP 
+modules 
+ 
+ 
+Risk & Issue Management 
+Requirement Spec 
+FR-RI-01 Risk Capture 
+The solution shall enable users to 
+identify, document, categorise, 
+and assign ownership for risks 
+across Projects, Programmes, and 
+Portfolios. 
+• Allow capture of risks at Project, Programme, and Portfolio 
+levels, including threats and opportunities. 
+• Enable risk entry at any phase of the lifecycle, from initiation 
+through closure. 
+• Automatically generate a unique identifier for every risk using 
+a standard naming convention. 
+• Support configurable risk categories aligned to 
+organisational taxonomy. 
+• Allow assignment of risk owners and contributors at all entity 
+levels. 
+• Allow risks to be linked to project workstreams, WBS 
+elements, or rolled up to parent entities (e.g., programme → 
+portfolio). 
+• Provide configurable templates for risk capture based on 
+project types, categories, or bands. 
+• Allow users to attach comments, notes, supporting 
+documents, and evidence. 
+ 
+
+--- PAGE 30 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 30 
+ 
+ 
+FR-RI-02 Risk Assessment 
+The solution shall provide 
+structured tools for assessing 
+likelihood, impact, scoring, and 
+financial exposure of risks at all 
+levels. 
+• Support a configurable probability × impact risk matrix 
+suitable for Projects, Programmes, and Portfolios. 
+• Allow capture of current risk score and target risk score. 
+• Capture estimated financial cost/exposure where 
+applicable. 
+• Support standardised risk assessment templates based on 
+project or programme type. 
+• Allow users to document assessment decisions, including 
+acceptance, escalation, or deferral. 
+• Maintain consistency in assessment scoring across all levels 
+of the organisation. 
+FR-RI-03 Risk Management 
+The solution shall provide 
+comprehensive issue 
+identification, tracking, and 
+resolution functionality at Project, 
+Programme, and Portfolio levels, 
+ensuring consistent logging, 
+categorisation, ownership, and 
+management. 
+• Support capture of risk responses (e.g., Reduce, Avoid, 
+Transfer, Accept). 
+• Enable users to record mitigation actions, contingency 
+plans, and progress updates. 
+• Maintain an automated audit history of all changes (scores, 
+mitigation updates, owner changes, dates). 
+• Provide pre‑mitigation and post‑mitigation risk scoring for 
+comparison. 
+• Allow risks to be time‑bound with tracking for creation date, 
+review cycles, closure dates, and follow‑ups. 
+• Support alerts or notifications for overdue reviews, threshold 
+breaches, or escalation conditions (with user ability to 
+disable). 
+• Allow risk owners to escalate risks upward or delegate 
+downward across project, programme, and portfolio levels. 
+• Enable linking or delegation of risks between 
+programme/portfolio and their associated projects. 
+• Allow addition of comments, notes, and file attachments as 
+part of ongoing management. 
+FR-RI-03 Risk Monitoring 
+The solution shall provide 
+dashboards, filtering, search, and 
+reporting capabilities to support 
+effective monitoring of risks across 
+all levels. 
+• Provide dashboards, lists, or matrices for viewing live risks at 
+Project, Programme, and Portfolio levels. 
+• Allow filtering by attributes such as top risks, high‑scoring 
+risks, overdue risks, category, or owner. 
+• Identify overdue risks or those breaching probability/impact 
+thresholds. 
+• Support configurable RAG status rules to visually flag 
+high‑priority or overdue risks. 
+• Allow exporting of risks into Excel, PDF, or other formats for 
+governance reporting. 
+• Enable visibility and filtering of child‑entity risks at portfolio 
+and programme levels (e.g., view programme + project risks 
+combined). 
+
+--- PAGE 31 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 31 
+ 
+• Support high‑level and drill‑down navigation between risk 
+layers (Portfolio > Programme > Project). 
+FR-RI-03 Issues Management 
+The solution shall provide 
+comprehensive issue 
+identification, tracking, and 
+resolution functionality at Project, 
+Programme, and Portfolio levels, 
+ensuring consistent logging, 
+categorisation, ownership, and 
+management. 
+• Provide an Issues Log at Project, Programme, and Portfolio 
+levels to record, track, and monitor issues throughout their 
+lifecycle. 
+• Assign each issue a unique system‑generated identifier to 
+ensure traceability and auditability. 
+• Support configurable issue categories (e.g., operational, 
+financial, vendor, technical) to enable structured 
+classification. 
+• Capture detailed issue information including description, 
+impact, owners, due dates, resolution plans, and final 
+decisions. 
+• Provide configurable issue templates aligned to project 
+types or categories to standardise issue capture. 
+• Maintain issue history and status updates to support 
+ongoing monitoring, reporting, and governance reviews. 
+ 
+Change Management 
+Requirement Spec 
+FR-CM-01 Change Capture and 
+Assessment 
+The solution shall support the 
+controlled capture, categorisation, 
+impact assessment, and 
+documentation of change requests 
+across Projects, Programmes, and 
+Portfolios. 
+• Enable users to identify and document change requests 
+affecting baseline elements such as scope, schedule, 
+finance, quality, and benefits. 
+• Assign each change request a unique system‑generated 
+identifier using a standard naming convention. 
+• Provide configurable change categories to classify and 
+organise different types of changes. 
+• Allow users to assess and record the impact of proposed 
+changes on KPIs, including time, cost, quality, and business 
+case benefits. 
+• Allow users to capture supporting context, rationale, 
+attachments, and commentary related to the change 
+request. 
+ 
+FR-CM-02 Change Management 
+Approval Workflow 
+The solution shall support the 
+tracking, decision recording, and 
+oversight of change requests as 
+they progress through configurable 
+• Track change requests as they move through defined, 
+configurable approval stages, including visibility of the 
+current status and next steps. 
+• Maintain a complete record of approval decisions, including 
+decision status (e.g., approved, rejected, cancelled) and any 
+associated comments. 
+• Enable configuration of decision statuses to align with 
+organisational governance and change control processes. 
+
+--- PAGE 32 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 32 
+ 
+approval steps, ensuring 
+transparent and controlled 
+baseline updates 
+• Provide alerts or notifications when approval actions, 
+reviews, or decisions are overdue or pending. 
+• Produce a detailed change approval report showing what 
+changes were made, who made them, who approved them, 
+and when decisions occurred. 
+• Associate approved changes with the relevant baseline 
+version and update baseline records accordingly once 
+approval is completed. 
+ 
+Benefits Management 
+Requirement Spec 
+FR-BM-01 Benefits Identification, 
+Planning & Classification  
+The solution shall support the 
+structured identification, planning, 
+classification, and documentation 
+of benefits at Project, Programme, 
+and Portfolio levels. 
+• Enable users to identify, document, and define benefits 
+including purpose, description, rationale, and expected 
+value. 
+• Support classification of benefits (e.g., financial, 
+operational, customer, compliance, strategic) to 
+standardise reporting. 
+• Allow alignment of benefits to organisational strategic 
+objectives, outcomes, and business case goals. 
+• Capture planned benefit metrics, baselines, and expected 
+timelines for realisation. 
+• Enable assignment of benefit owners responsible for 
+planning and delivery of each benefit. 
+• Allow supporting commentary, assumptions, dependencies, 
+and attachments to be recorded for each benefit. 
+ 
+FR-BM-02 Benefits Realisation 
+Tracking 
+The solution shall track the 
+performance and progress of 
+benefits over time, comparing 
+planned versus actual realisation 
+across all levels. 
+• Allow periodic capture of actual benefit values against 
+planned baselines and forecasts. 
+• Provide visibility of realised, forecasted, outstanding, and 
+at‑risk benefits through dashboards and reporting. 
+• Highlight deviations from planned targets, including overdue, 
+delayed, or under‑performing benefits using RAG or 
+threshold indicators. 
+• Maintain a full historical record of updates, including 
+changes to benefit forecasts, assumptions, and metrics. 
+• Support aggregation and roll‑up of benefit data from Projects 
+to Programmes and Portfolios for consolidated reporting. 
+• Allow export of benefit data for governance reviews, 
+business case validation, and performance reporting. 
+ 
+ 
+ 
+ 
+
+--- PAGE 33 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 33 
+ 
+Timesheet Management 
+Requirement Spec 
+FR-TM-01 Time Recording Input 
+The solution shall enable users to 
+accurately record chargeable and 
+non‑chargeable time against 
+authorised activities using a 
+configurable Irish calendar that 
+incorporates official public 
+holidays. 
+• Allow users to record time against chargeable activities such 
+as Projects, Programmes, Portfolios, and assigned 
+overheads. 
+• Support recording of non‑chargeable time including annual 
+leave, bank holidays, sickness, and other absence 
+categories. 
+• Use a configurable Irish calendar, including all official Irish 
+public/bank holidays, to ensure correct non‑working day 
+allocation. 
+• Ensure users can only enter time against activities they are 
+assigned to or authorised for. 
+• Provide configurable time entry periods (e.g., weekly, 
+monthly) aligned with organisational policy. 
+• Support validation rules including maximum daily hours, 
+total timesheet balancing, and mandatory field checks. 
+• Allow comments or notes to be added to individual time 
+entries where clarification is needed. 
+• Support coding or classification of time (e.g., 
+billable/non‑billable, internal/external) for reporting and 
+finance alignment. 
+• Provide visibility of planned absences (e.g., approved annual 
+leave) to prevent conflicting time entries. 
+• Allow timesheet data to be exported or accessed via 
+reporting for financial reconciliation, utilisation analysis, and 
+governance reviews. 
+ 
+FR-TM-02 Time Recording Approval 
+The solution shall enable 
+authorised managers to review and 
+approve recorded time against 
+Projects, Programmes, Portfolios, 
+or resource assignments before it 
+is committed to tracking and 
+reporting. 
+• Allow Project, Programme, Portfolio Managers or Resource 
+Managers (as defined by the client’s workflow rules) to 
+review time recorded against their assigned activities. 
+• Provide visibility of all submitted time entries for validation 
+before approval, including chargeable and non‑chargeable 
+categories. 
+• Enable approvers to validate accuracy, completeness, and 
+appropriateness of recorded hours prior to approval. 
+• Allow approvers to request clarification or corrections from 
+users before approving time entries. 
+• Flag discrepancies, missing entries, or time recorded against 
+unauthorised activities during the approval process. 
+• Once approved, update time entries into utilisation, 
+financial, and progress tracking reports. 
+ 
+ 
+
+--- PAGE 34 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 34 
+ 
+Resource Management 
+Requirement Spec 
+FR-RM-01 Resource Configuration 
+The solution shall provide 
+comprehensive resource 
+configuration and setup 
+capabilities to support the full 
+Capital Investments organisation, 
+including internal staff, external 
+suppliers, project teams, specialist 
+resources, and non‑labour assets. 
+The system Shall support 
+consistent, scalable, and 
+permission‑controlled 
+management of all resource 
+classes. 
+• The solution must allow configuration of all internal staff as 
+resources, including roles, availability, cost rates, and 
+organisational attributes. 
+• It shall support setup of external individuals, teams, and 
+organisations as resources, with full capability for 
+assignment, cost modelling, and contract alignment. 
+• It shall enable configuration of non‑labour resources, 
+including equipment, vehicles, IT assets, and other physical 
+resources, with calendars, rates, and utilisation rules. 
+• The solution shall support role‑based resource planning, 
+allowing planning by generic role before assigning named 
+individuals. 
+• It shall provide skill‑based resource configuration, enabling 
+skills catalogues, proficiency levels, and matching of skills to 
+project requirements. 
+FR-RM-02 Resource Search 
+The solution shall enable 
+skill‑based resource searching so 
+users can define the skills required 
+for Projects, Programmes, and 
+Portfolios, and quickly identify 
+suitable resources. The system 
+shall allow searching the resource 
+database by skill and availability to 
+support efficient assignment. 
+• Users shall be able to define the skills needed for Projects, 
+Programmes, and Portfolios and use these requirements to 
+drive resource planning. 
+• The solution shall enable searching the full resource 
+database by skill, including proficiency and qualifications. 
+• The system shall allow users to identify resources who 
+match required skills and are available, supporting effective 
+scheduling and allocation. 
+FR-RM-03 Resource Management 
+The solution shall support 
+assignment of resources to 
+Projects.  It shall enable flexible 
+allocation, approval, notification, 
+tracking, and history management 
+to ensure structured and auditable 
+resourcing. 
+• Enable resource assignment 
+• Allow resources to be allocated for defined time periods 
+• Support reassignment of resources while retaining full 
+historical audit trails, including previous assignees and 
+durations. 
+• Generate notifications to assigned team members and 
+resource managers when new assignments occur or change. 
+• Provide configurable multi‑level approval workflows for 
+resource assignments, 
+• Track actual hours spent on Projects, Programmes, 
+Portfolios, and individual tasks, while also tracking allocated 
+time and linking both to work breakdown structures. 
+• Allow resources to view their own allocations, and allow 
+resource managers to view commitments, capacity, 
+utilisation, and over‑allocation risks for all resources under 
+their responsibility. 
+
+--- PAGE 35 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 35 
+ 
+Reporting & Analytics 
+FR-RA-01 Project Status Capture 
+The solution shall support periodic 
+project status capture aligned to 
+13 four-week periods, with 
+snapshot history and RAG/KPI 
+monitoring to provide consistent 
+visibility of project performance 
+over time. 
+• Allow for the capture of a periodic update / snapshot at each 
+entity level (Projects, Programmes, and Portfolios) every 
+four‑week reporting period. 
+• Provide configurable non‑editable input fields that extract 
+system‑generated, for the period. 
+• Provide configurable user input fields for narrative 
+commentary related to the system data, including 
+explanations of variances or highlights. 
+• Provide configurable user input fields for summary 
+commentary text boxes for overall period-level updates at 
+each entity level. 
+• Allow configurable validation rules to user input fields (e.g., 
+maximum character limits, required fields). 
+• Maintain a historical record of all period snapshots for 
+comparison, governance, and reporting. 
+FR-RA-02 Out of Box Dashboard 
+Reporting 
+The solution shall deliver 
+out‑of‑the‑box dashboards that 
+provide clear, real‑time visibility 
+across Projects, Programmes, and 
+Portfolios, with configurable views 
+that require no custom 
+development. These dashboards 
+shall support aggregated roll‑up 
+reporting and drill‑down 
+navigation, enabling users to move 
+effortlessly from high‑level 
+strategic insight to detailed project 
+data. 
+• Provide pre‑configured dashboards for Projects, 
+Programmes, and Portfolios, displaying key performance 
+indicators (KPIs) such as schedule status, financial 
+performance, risks, issues, milestones, and benefits. 
+• Support roll‑up aggregation, enabling Programme 
+dashboards to automatically summarise underlying Project 
+data, and Portfolio dashboards to summarise all included 
+Programmes and Projects. 
+• Enable drill‑down navigation from Portfolio > Programme > 
+Project > Task/Work Package levels, ensuring users can 
+move from overview to detail in a single interface. 
+• Shall support filtering by project, program, portfolio 
+• Offer role‑based dashboard views, ensuring Executives, 
+Programme Managers, PMs, Planners, Finance, 
+Commercial, and PMO teams see information that matches 
+their responsibilities and access rights. 
+FR-RA-03 Portfolio & Programme 
+Financial / Cost Management 
+Reporting  
+The solution shall include 
+ready‑made, configurable financial 
+reports that require no custom 
+development and can be tailored 
+to different organisational, project, 
+and funding needs. These reports 
+shall support rapid, accurate 
+• Provide an out of box report that provides key project 
+financial metrics 
+• Support multi‑level reporting across Projects, Programmes, 
+Portfolios, including roll‑up and drill‑down capability. 
+• Enable export to PDF or Excel for further analysis or external 
+submission. 
+• Provide role‑based views so Project Managers, Finance, 
+Programme Managers, and Executives see financial 
+information appropriate to their responsibilities. 
+• Shall support filtering by project, program, portfolio 
+
+--- PAGE 36 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 36 
+ 
+financial insight across Projects, 
+Programmes, and Portfolios. 
+FR-RA-04 PPM Schedule Reporting 
+The solution shall include 
+ready‑made, configurable 
+schedule reports that require no 
+custom development and support 
+visual, portfolio‑level insights into 
+project timelines, milestones, 
+critical paths, and performance. 
+These reports shall be adaptable to 
+organisation, programme, and 
+stakeholder needs while leveraging 
+real‑time schedule data. 
+• Provide pre‑configured schedule reports covering key 
+metrics such as planned vs actual dates, milestone status, 
+critical path indicators, baseline variance, and schedule 
+health. 
+• Support multi‑level reporting across Projects, Programmes, 
+Portfolios, including roll‑up and drill‑down capability. 
+• Enable export to PDF or Excel for further analysis or external 
+submission. 
+• Offer role‑based reporting views, giving Planners, Project 
+Managers, Programme Managers, PMO, and Executives 
+visibility appropriate to their oversight level. 
+FR-RA-05 Risk & Issues Reporting 
+The solution shall provide 
+out‑of‑the‑box configurable 
+reporting for Risks and Issues, 
+enabling users at all levels to 
+monitor exposure, status, trends, 
+and escalation points across 
+Projects, Programmes, and 
+Portfolios. Reports shall be easily 
+tailored without custom 
+development and support 
+decision‑making, governance, and 
+assurance. 
+• Provide pre‑configured risk and issue reports, including top 
+risks, overdue items, RAG indicators, exposure scoring, 
+mitigation progress, and trend analysis across Projects, 
+Programmes, and Portfolios. 
+• Support roll‑up and drill‑down reporting, enabling 
+consolidated Portfolio/Programme-level views as well as 
+detailed Project-level insights. 
+• Enable export to PDF or Excel for further analysis or external 
+submission. 
+• Offer role‑specific reporting views for PMs, Programme 
+Managers, PMO, Safety, Finance, and Executives, ensuring 
+each stakeholder sees relevant risk and issue information 
+FR-RA-06 Data Extraction 
+The solution shall allow users to 
+seamlessly extract structured data 
+into external analytics tools—such 
+as Power BI allowing users to build 
+their own bespoke reports, 
+dashboards, and visualisations 
+without relying on the vendor. This 
+ensures flexibility, self‑service 
+reporting, and the ability to meet 
+evolving organisational and 
+government reporting needs. 
+• Provide standard connectors or APIs enabling secure 
+extraction of solution data into external reporting tools such 
+as Power BI, without requiring custom development. 
+• Provide role‑based controls ensuring only authorised users 
+can access or export data. 
+ 
+ 
+ 
+
+--- PAGE 37 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 37 
+ 
+Workflows 
+Requirement Spec 
+FR-WF-01 Configurable Workflows 
+The solution shall provide fully 
+configurable workflows that 
+support governance, approvals, 
+routing, and process automation 
+across Projects, Programmes, 
+Portfolios. These workflows shall 
+be adaptable without custom 
+development and support 
+individual, group, role‑based, and 
+document‑related approvals with 
+full auditability. 
+• Allow assignment of workflow steps for individual approvals, 
+enabling precise routing to named resources. 
+• Support multi‑user or group approval steps, including 
+sequential, parallel, or unanimous approval models. 
+• Enable role‑based workflow steps, where approvals are 
+routed automatically to users performing a defined role (e.g., 
+PM, Programme Manager, Commercial Lead). 
+• Provide workflow configuration for process steps with target 
+completion dates, supporting end‑to‑end process mapping 
+and overdue step escalation. 
+• Support configurable workflows for both process approvals 
+and document approvals, including version control and audit 
+trails. 
+• Allow delegation of approval authority to another resource or 
+role, with tracking of who delegated, to whom, and why. 
+• Enable custom configuration of routing logic, conditions, 
+branching, notifications, and escalation rules without 
+custom development. 
+• Allow Framework Clients to configure multi‑level approval 
+chains, including cross‑Client approval if resources are 
+shared across pan‑government programmes. 
+• Provide real‑time workflow visibility, enabling users to see 
+pending steps, approvers, status, and expected completion 
+dates. 
+• Generate automated notifications and reminders to 
+approvers, contributors, and managers when workflow steps 
+are triggered, assigned, overdue, or completed. 
+ 
+FR-WF-02 Workflow Governance 
+The solution shall provide workflow 
+governance capabilities that allow 
+the PMO to monitor, track, and 
+audit all approvals across Projects, 
+Programmes, and Portfolios. This 
+ensures compliance with 
+organisational governance 
+frameworks, approval rules, and 
+audit requirements. 
+• Provide PMO‑level visibility of all workflow steps, approvals, 
+pending actions, bottlenecks, and overdue items across the 
+entire Portfolio to ensure process compliance. 
+• Enable audit‑ready tracking and reporting of who approved 
+what, when, and in what sequence, with full version history 
+and justification where required. 
+• Support governance enforcement, allowing the PMO to 
+monitor adherence to mandatory workflows (e.g., gate 
+reviews, CR approvals, document approvals) and flag 
+deviations or non‑compliance. 
+
+--- PAGE 38 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 38 
+ 
+Appendix 3 – Non-Functional Requirements Rational 
+Non - Functional Requirements 
+Category ID Description Notes / Rationale 
+System 
+Performance 
+NFR-Pref-
+01 
+The solution shall load primary dashboards and 
+portfolio views within 3 seconds under normal 
+load conditions. 
+Applies to both model-
+driven and canvas 
+Power Apps. 
+NFR-Pref-
+02 
+The solution shall support concurrent user 
+access without degradation, supporting the full 
+projected user base as defined in section 2.2. 
+Dataverse API limits 
+apply per environment; 
+supplier to confirm 
+capacity approach. 
+NFR-Pref-
+03 
+Power Automate workflows shall complete non-
+interactive background processes within a 
+defined SLA, with approval notifications 
+triggered within 2 minutes of a qualifying event. 
+Cloud flow execution 
+latency must be 
+specified and tested 
+during pilot. 
+NFR-Pref-
+04 
+The solution shall handle Dataverse API call 
+limits in line with Microsoft-published service 
+protection limits without service interruption, 
+implementing throttling and retry logic where 
+required. 
+Relevant where bulk 
+operations, imports, or 
+integrations are 
+triggered. 
+NFR-Pref-
+05 
+Power BI reports embedded within the solution 
+shall refresh on a schedule no less frequent 
+than every 4 hours during business hours. 
+Relevant for financial 
+and portfolio 
+dashboard reporting. 
+NFR-Pref-
+06 
+The supplier shall define and document 
+expected performance baselines for peak usage 
+periods, including period-end reporting cycles 
+aligned to the 13 four-week reporting calendar. 
+Period-end load is a 
+foreseeable peak usage 
+scenario. 
+Data 
+Management 
+NFR-DM-
+01 
+All project, programme, and portfolio data shall 
+be stored within Dataverse in IÉ's managed 
+Power Platform environment, with no data 
+residing on supplier-managed infrastructure. 
+Data sovereignty and 
+residency requirement. 
+NFR-DM-
+02 The solution shall support Dataverse data 
+retention policies aligned with IÉ's records 
+management obligations and GDPR 
+requirements. 
+Retention policies 
+configurable per entity 
+type. 
+NFR-DM-
+03 
+The solution shall implement Dataverse 
+column-level security where sensitive financial 
+or personal data fields are present, in addition to 
+row-level security. 
+Extends beyond 
+standard row-level 
+security controls. 
+NFR-DM-
+04 The supplier shall provide a complete data 
+dictionary and entity relationship model for all 
+Dataverse tables introduced or modified as part 
+of the solution. 
+Required deliverable 
+for long-term 
+supportability and exit 
+strategy. 
+
+--- PAGE 39 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 39 
+ 
+NFR-DM-
+05 The solution shall support data archiving and 
+purging strategies, including configuration 
+guidance, without impacting live system 
+performance. 
+Critical given multi-year 
+project portfolio data 
+volumes. 
+NFR-DM-
+06 All data extracts and API connections to external 
+tools such as Power BI shall enforce role-based 
+access controls consistent with the PPM 
+security model. 
+Prevents data leakage 
+via the reporting and 
+analytics layer. 
+NFR-DM-
+07 The solution shall not introduce custom 
+connectors that bypass IÉ's Data Loss 
+Prevention (DLP) policies as configured in the 
+Power Platform Admin Centre. 
+Supplier must review 
+and comply with 
+existing DLP policy. 
+NFR-DM-
+08 The supplier shall provide a data migration 
+strategy, tooling, and validation plan to support 
+the transition of any existing project data into 
+the new solution. 
+Includes reconciliation 
+and sign-off 
+procedures. 
+Usability and 
+Accessibility 
+NFR-USE-
+01 
+The solution shall conform to WCAG 2.1 Level 
+AA accessibility standards across all Power 
+Apps interfaces. 
+Legal and public-sector 
+obligation; applies to 
+canvas and model-
+driven apps. 
+NFR-USE-
+02 The solution shall be functional on Microsoft-
+supported browsers (Edge, Chrome) and shall 
+support access via the Power Apps mobile 
+application on iOS and Android. 
+Supports site-based 
+and field-based users. 
+NFR-USE-
+03 The solution shall provide contextual help, 
+tooltips, and in-application guidance to support 
+user adoption without requiring reference to 
+external documentation. 
+Reduces reliance on 
+formal training for 
+routine tasks. 
+NFR-USE-
+04 All data entry forms shall provide inline 
+validation and meaningful error messages to 
+guide users through correct data entry prior to 
+submission. 
+Reduces data quality 
+issues and support 
+overhead. 
+NFR-USE-
+05 The user interface shall be configurable to 
+reflect IÉ branding including colours, logos, and 
+terminology, without requiring custom 
+development. 
+Out-of-box theming 
+capability. 
+NFR-USE-
+06 
+The solution shall provide a consistent 
+navigation structure across Projects, 
+Programmes, and Portfolios, minimising the 
+number of interactions required to complete 
+common tasks. 
+UX efficiency standard 
+relevant to daily users. 
+Power 
+Platform 
+NFR-PP-
+01 
+The solution shall be delivered as a managed 
+solution within Dataverse, enabling controlled 
+deployment across Dev/Test and Production 
+environments via standard ALM pipelines. 
+Prevents unmanaged 
+component sprawl 
+and supports 
+governance. 
+
+--- PAGE 40 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 40 
+ 
+NFR-PP-
+02 
+The solution shall comply with Microsoft 
+Power Platform best practices for solution 
+layering, avoiding hard-coded environment 
+URLs, connection references, and 
+environment variables. 
+Ensures portability 
+across environments 
+and upgrade 
+compatibility. 
+NFR-PP-
+03 
+All Power Automate flows shall use 
+connection references and environment 
+variables rather than hard-coded connections 
+to support ALM and multi-environment 
+deployment. 
+Standard Microsoft 
+ALM requirement. 
+NFR-PP-
+04 
+The solution shall be compatible with the 
+current generally available release of Power 
+Platform, and the supplier shall define a 
+process for managing Microsoft release wave 
+updates (April and October cycles). 
+Proactive 
+management of 
+platform updates. 
+NFR-PP-
+05 
+The supplier shall document all Dataverse 
+customisations, custom connectors, PCF 
+controls, and Power Automate flows within 
+the Configuration and Customisation Log, as a 
+required deliverable. 
+Supports 
+supportability, 
+handover, and exit 
+strategy. 
+NFR-PP-
+06 
+The solution shall not exceed IÉ's allocated 
+Dataverse storage capacity, and the supplier 
+shall provide tooling or guidance to monitor 
+and manage storage consumption over the 
+contract lifetime. 
+Dataverse storage is 
+capacity-limited by 
+licence tier. 
+NFR-PP-
+07 
+The solution shall implement a Power 
+Platform environment strategy aligned with 
+Microsoft's recommended ALM framework, 
+including use of Power Platform Pipelines or 
+Azure DevOps for controlled deployment. 
+Deployment 
+governance and 
+change control. 
+NFR-PP-
+08 
+All canvas Power Apps shall be built using the 
+responsive layout engine and shall not rely on 
+fixed pixel positioning. 
+Ensures cross-device 
+and cross-resolution 
+compatibility. 
+ 
+Integration Requirements 
+Category ID Description Notes / Rationale 
+SAP ERP 
+Integration 
+NFR-INT-
+01 
+The integration shall support extraction of actual 
+costs, commitments, and purchase orders from 
+SAP FI/CO modules on both a scheduled and 
+on-demand basis. 
+Core financial actuals 
+feed into PPM cost 
+monitoring. 
+
+--- PAGE 41 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 41 
+ 
+NFR-INT-
+02 
+The integration shall support mapping between 
+SAP WBS elements, cost centres, and internal 
+orders and the corresponding PPM project 
+structures. 
+Alignment of cost 
+objects between 
+systems. 
+NFR-INT-
+03 
+The integration shall be implemented via a 
+middleware or integration platform (e.g., Azure 
+Integration Services, Azure Logic Apps, or SAP 
+BTP Integration Suite) rather than direct point-
+to-point connection. 
+Supports future SAP 
+ECC to S/4HANA 
+migration without full 
+redesign. 
+NFR-INT-
+04 
+The integration shall include error handling, retry 
+logic, and alerting mechanisms for failed or 
+incomplete data transfers. 
+Operational resilience 
+requirement. 
+NFR-INT-
+05 
+The supplier shall deliver an Integration 
+Architecture Document, Data Mapping 
+Specification, and API/Interface Specification as 
+named deliverables. 
+Required 
+documentation for 
+governance and 
+supportability. 
+NFR-INT-
+06 
+The integration architecture shall be designed to 
+accommodate IÉ's planned migration from SAP 
+ECC to SAP S/4HANA without requiring a full 
+redesign of the integration layer. 
+Future-proofing 
+requirement. 
+NFR-INT-
+07 
+The system shall enable authorised users to 
+upload finalised financial data for each 4-week 
+reporting period into the solution using a 
+standardised Excel template, prior to integration 
+with SAP ERP is complete. 
+The system shall perform data validation upon 
+upload and ensure controlled access in 
+accordance with financial governance 
+requirements. 
+Allow financial data to 
+be mass uploaded at 
+the pilot stage. 
+Scheduling 
+Tool 
+Integration 
+(P6, OPC, MS 
+Project) 
+NFR-INT-
+08 
+The solution shall support import and export of 
+schedules in XER (Primavera P6), MPP (MS 
+Project), and XML formats as a minimum. 
+Aligns with scheduling 
+tools currently in use by 
+CI. 
+NFR-INT-
+09 
+On import, the solution shall validate schedule 
+data for integrity, including missing predecessor 
+links and constraint conflicts, and surface 
+warnings to the user prior to committing the 
+import. 
+Data quality control on 
+schedule import. 
+NFR-INT-
+10 
+The integration shall preserve WBS hierarchy, 
+milestone designations, and baseline data on 
+import from external scheduling tools. 
+Ensures schedule 
+fidelity across systems. 
+NFR-INT-
+11 
+The solution shall support scheduled or event-
+triggered synchronisation with external 
+scheduling tools, in addition to manual file 
+upload, where technically feasible. 
+Reduces manual effort 
+for schedule 
+maintenance. 
+NFR-INT-
+12 
+The system shall enable authorised users to 
+upload finalised schedule data for each 4 -week 
+reporting period into the solution using a 
+standardised Excel template, prior to integration 
+with scheduling tools is complete. 
+The system shall perform data validation upon 
+upload and ensure controlled access in 
+Allow schedule data to 
+be mass uploaded at 
+the pilot stage. 
+
+--- PAGE 42 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 42 
+ 
+accordance with schedule governance 
+requirements. 
+Microsoft 365 
+Integration 
+NFR-INT-
+13 
+The solution shall integrate with Microsoft 
+Teams to support approval notifications, project 
+status updates, and workflow alerts via Teams 
+channels or adaptive cards. 
+Meets users where they 
+already work. 
+NFR-INT-
+14 
+The solution shall integrate with SharePoint 
+Online for document management, enabling 
+documents to be linked or stored against 
+projects within a managed IÉ document library 
+structure. 
+Leverages existing 
+M365 investment. 
+NFR-INT-
+15 
+The solution shall integrate with Outlook for 
+approval notifications and, where applicable, 
+calendar-based milestone visibility. 
+Supports approvers 
+who manage actions 
+via email. 
+NFR-INT-
+16 
+The solution shall leverage Entra ID (Azure AD) 
+group membership for dynamic security role 
+assignment within the PPM solution where 
+appropriate. 
+Reduces manual role 
+management overhead. 
+Power BI 
+Integration 
+NFR-INT-
+17 
+The solution shall expose Dataverse data via the 
+Power BI Dataverse connector or a dedicated 
+semantic layer to enable self-service reporting 
+by IÉ's analytics team. 
+Aligns with FR-Man-05 
+Data Extraction 
+requirement. 
+NFR-INT-
+18 
+The supplier shall provide a baseline Power BI 
+dataset model aligned to the PPM data structure 
+as a named deliverable within the MVP pilot. 
+Enables IÉ to begin self-
+service reporting from 
+day one. 
+NFR-INT-
+19 
+Embedded Power BI reports within the PPM 
+solution shall respect the PPM role-based 
+access control model using Power BI row-level 
+security, consistent with the Dataverse security 
+model. 
+Prevents data leakage 
+via embedded 
+reporting. 
+ 
+ 
+ 
+ 
+
+--- PAGE 43 ---
+  
+Power Platform Portfolio Project Management Solution – Invitation to Tender 
+ 43 
+ 
+Appendix 4 – Change Management Policy 
+ 
+IE Info Sys Change 
+Management PolicyV1.3.pdf
+ 
+ 
+ 
+ 
+ 
+ 
+

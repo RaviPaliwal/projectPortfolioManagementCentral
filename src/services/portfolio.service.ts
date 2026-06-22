@@ -217,6 +217,27 @@ export async function updatePortfolioStatus(id: string, status: number): Promise
   })
 }
 
+
+export async function deletePortfolio(id: string): Promise<void> {
+  let recordName = id
+  try {
+    const details = await Pm_portfoliosService.get(id, { select: ['pm_portfolioname'] })
+    const item = unwrapSingle<Pm_portfolios>(details)
+    if (item?.pm_portfolioname) recordName = item.pm_portfolioname
+  } catch (e) { }
+
+  await Pm_portfoliosService.delete(id)
+
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_portfolios',
+    recordId: id,
+    recordName: recordName,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted'
+  })
+}
 export async function createPortfolio(payload: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
   const cleanPayload: Record<string, any> = {}
   for (const [key, value] of Object.entries(payload)) {

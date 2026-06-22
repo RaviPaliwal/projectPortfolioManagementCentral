@@ -221,6 +221,27 @@ export interface PipelineKpis {
   approvedThisMonth: number
 }
 
+
+export async function deleteInitiative(id: string): Promise<void> {
+  let recordName = id
+  try {
+    const details = await Pm_initiativesService.get(id, { select: ['pm_initiativename'] })
+    const item = unwrapSingle<Pm_initiatives>(details)
+    if (item?.pm_initiativename) recordName = item.pm_initiativename
+  } catch (e) { }
+
+  await Pm_initiativesService.delete(id)
+
+  writeAuditLog({
+    actionType: 'Update',
+    entityName: 'pm_initiatives',
+    recordId: id,
+    recordName: recordName,
+    fieldName: 'deleted',
+    oldValue: 'Active',
+    newValue: 'Deleted'
+  })
+}
 export async function fetchPipelineKpis(): Promise<PipelineKpis> {
   const [allResult, pendingResult, approvedThisMonthResult] = await Promise.all([
     Pm_initiativesService.getAll({
