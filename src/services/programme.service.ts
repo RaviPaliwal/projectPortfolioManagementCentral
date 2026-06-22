@@ -245,7 +245,6 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
   const progResult = await Pm_programmesService.get(normalizedId, {
     select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', '_pm_programmemanager_value', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'],
   })
-  console.log('fetchProgrammeDetails - raw programme result:', progResult)
   const programme = mapProgramme(unwrapSingle<Pm_programmes>(progResult) ?? ({} as Pm_programmes))
 
   if (!programme.pm_portfolioname && programme._pm_portfolio_value) {
@@ -270,7 +269,6 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
     select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_percentcomplete', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudgeteur', 'pm_actualcosteur'],
     top: 200,
   })
-  console.log('fetchProgrammeDetails - raw projects result:', projectsResult)
   const projects = unwrapList<Pm_projects>(projectsResult).map(mapProject)
   const projectIds = projects.map(p => p.pm_projectid).filter(Boolean) as string[]
 

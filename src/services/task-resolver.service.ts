@@ -206,7 +206,6 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
 
     // Build the navigate function — dispatches the form dialog (task modals)
     const navigate = () => {
-      console.log('[TaskResolver] 🚀 Opening task modal for:', formEntry.key, '| stepId:', stepId)
       dispatchOpenFormDialog({
         formDisplayName: formEntry.displayName,
         formDescription: formEntry.description,
@@ -217,7 +216,7 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
         workflowName,
         approvalStepId: stepId,
         stepOrder: undefined,
-        navigate: () => {}, // No-op — modalComponent handles the UI
+        navigate: () => { }, // No-op — modalComponent handles the UI
       })
     }
 
@@ -287,11 +286,6 @@ export interface EntityInfo {
 export async function resolveEntityInfoFromApprovalStep(stepId: string): Promise<EntityInfo> {
   try {
     const step = await fetchApprovalStepById(stepId)
-    console.log('[resolveEntityInfoFromApprovalStep] ⏳ Step fetched:', {
-      stepId: step?.pm_workflowapprovalstepid,
-      instanceLookup: step?._pm_workflowinstancelookup_value,
-      templateLookup: step?._pm_workflowtemplate_value,
-    })
     if (!step?._pm_workflowinstancelookup_value) {
       console.warn('[resolveEntityInfoFromApprovalStep] ❌ No workflow instance lookup on step')
       return { entityId: null, entityType: undefined, entityName: undefined }
@@ -300,21 +294,13 @@ export async function resolveEntityInfoFromApprovalStep(stepId: string): Promise
     const instanceResult = await Pm_workflowinstancesService.get(step._pm_workflowinstancelookup_value, {
       select: ['pm_workflowinstanceid', 'pm_entityid', 'pm_entitytype', 'pm_entityname', 'pm_instancename'],
     })
-    console.log('[resolveEntityInfoFromApprovalStep] ⏳ Instance raw result:', instanceResult)
     const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
-    console.log('[resolveEntityInfoFromApprovalStep] ✅ Instance unwrapped:', instance ? {
-      id: instance.pm_workflowinstanceid,
-      entityId: instance.pm_entityid,
-      entityType: instance.pm_entitytype,
-      entityName: instance.pm_entityname,
-    } : 'null')
 
     const result: EntityInfo = {
       entityId: instance?.pm_entityid ?? null,
       entityType: instance?.pm_entitytype,
       entityName: instance?.pm_entityname,
     }
-    console.log('[resolveEntityInfoFromApprovalStep] ✅ Returning:', result)
     return result
   } catch (err) {
     console.error('[resolveEntityInfoFromApprovalStep] ❌ Exception:', err)

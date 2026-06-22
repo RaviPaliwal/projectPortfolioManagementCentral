@@ -48,7 +48,6 @@ export const mapProject = (item: Pm_projects): ProjectModel => ({
 })
 
 export const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => {
-  console.log('[mapProjectTask] raw item:', item)
   return {
     pm_projecttaskid: item.pm_projecttaskid,
     pm_taskname: item.pm_taskname,
@@ -75,8 +74,6 @@ export const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => {
 }
 
 export const mapProjectMilestone = (item: Pm_projectmilestones): ProjectMilestoneModel => {
-  console.log('[mapProjectMilestone] raw item:', item)
-  console.log('[mapProjectMilestone] raw item keys:', Object.keys(item))
   return {
     pm_projectmilestoneid: item.pm_projectmilestoneid,
     pm_milestonename: item.pm_milestonename,
@@ -285,13 +282,11 @@ export async function createProject(payload: Partial<ProjectModel>): Promise<Pro
 
 export async function updateProject(id: string, changes: Partial<ProjectModel>): Promise<ProjectModel | null> {
   const normalizedId = normalizeLookupId(id)
-  console.log('[updateProject] ⏳ updateProject called for ID:', id, 'normalized:', normalizedId, 'changes:', changes)
   if (!normalizedId) return null
 
   let original: ProjectModel | null = null
   try {
     original = await fetchProjectDetails(normalizedId)
-    console.log('[updateProject] Original project details fetched:', original)
   } catch (e) {
     console.error('[updateProject] Failed to fetch original project details:', e)
   }
@@ -357,9 +352,7 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
   }
 
   try {
-    console.log('[updateProject] Sending update payload to Dataverse:', cleanPayload)
     const result = await Pm_projectsService.update(normalizedId, cleanPayload as any)
-    console.log('[updateProject] API update call completed. Response:', result)
     
     // Log audit entries for changed fields
     if (original) {
@@ -595,7 +588,6 @@ const WRITABLE_MILESTONE_KEYS = [
 
 
 export async function createProjectTask(payload: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
-  console.log('[createProjectTask] input payload:', payload)
   try {
     const cleanPayload: Record<string, any> = {}
     for (const [key, value] of Object.entries(payload)) {
@@ -617,11 +609,8 @@ export async function createProjectTask(payload: Partial<ProjectTaskModel>): Pro
     if (payload.pm_assignedresource) {
       cleanPayload['pm_AssignedToResource@odata.bind'] = `/pm_resources(${normalizeLookupId(payload.pm_assignedresource)})`
     }
-    console.log('[createProjectTask] final cleanPayload for API:', cleanPayload)
     const result = await Pm_projecttasksService.create({ statecode: 0, statuscode: 1, ...cleanPayload } as any)
-    console.log('[createProjectTask] API result:', result)
     const item = unwrapSingle<Pm_projecttasks>(result)
-    console.log('[createProjectTask] unwrapped item:', item)
     return item ? mapProjectTask(item) : null
   } catch (err) {
     console.error('[createProjectTask] error caught:', err)
@@ -630,7 +619,6 @@ export async function createProjectTask(payload: Partial<ProjectTaskModel>): Pro
 }
 
 export async function updateProjectTask(id: string, changes: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
-  console.log('[updateProjectTask] ID:', id, 'input changes:', changes)
   try {
     const cleanPayload: Record<string, any> = {}
     for (const [key, value] of Object.entries(changes)) {
@@ -658,12 +646,8 @@ export async function updateProjectTask(id: string, changes: Partial<ProjectTask
         ? `/pm_resources(${normalizeLookupId(changes.pm_assignedresource)})`
         : null
     }
-    
-    console.log('[updateProjectTask] final cleanPayload for API:', cleanPayload)
     const result = await Pm_projecttasksService.update(id, cleanPayload as any)
-    console.log('[updateProjectTask] API result:', result)
     const item = unwrapSingle<Pm_projecttasks>(result)
-    console.log('[updateProjectTask] unwrapped item:', item)
     return item ? mapProjectTask(item) : null
   } catch (err) {
     console.error('[updateProjectTask] error caught:', err)
@@ -680,7 +664,6 @@ export async function deleteProjectMilestone(id: string): Promise<void> {
 }
 
 export async function createProjectMilestone(payload: Partial<ProjectMilestoneModel>): Promise<ProjectMilestoneModel | null> {
-  console.log('[createProjectMilestone] input payload:', payload)
   try {
     const cleanPayload: Record<string, any> = {}
     for (const [key, value] of Object.entries(payload)) {
@@ -700,14 +683,12 @@ export async function createProjectMilestone(payload: Partial<ProjectMilestoneMo
       cleanPayload['pm_Responsible@odata.bind'] = `/pm_resources(${normalizeLookupId(payload.pm_responsible)})`
     }
 
-    console.log('[createProjectMilestone] final cleanPayload for API:', cleanPayload)
     const result = await Pm_projectmilestonesService.create({ statecode: 0, statuscode: 1, ...cleanPayload } as any)
     if (result && !result.success) {
       console.error('[createProjectMilestone] API Error:', result.error || result)
       throw new Error(result.error?.message || 'API request failed')
     }
     const item = unwrapSingle<Pm_projectmilestones>(result)
-    console.log('[createProjectMilestone] unwrapped item:', item)
     return item ? mapProjectMilestone(item) : null
   } catch (err) {
     console.error('[createProjectMilestone] error caught:', err)
@@ -716,7 +697,6 @@ export async function createProjectMilestone(payload: Partial<ProjectMilestoneMo
 }
 
 export async function updateProjectMilestone(id: string, changes: Partial<ProjectMilestoneModel>): Promise<ProjectMilestoneModel | null> {
-  console.log('[updateProjectMilestone] ID:', id, 'input changes:', changes)
   try {
     const cleanPayload: Record<string, any> = {}
     for (const [key, value] of Object.entries(changes)) {
@@ -745,7 +725,6 @@ export async function updateProjectMilestone(id: string, changes: Partial<Projec
       throw new Error(result.error?.message || 'API request failed')
     }
     const item = unwrapSingle<Pm_projectmilestones>(result)
-    console.log('[updateProjectMilestone] unwrapped item:', item)
     return item ? mapProjectMilestone(item) : null
   } catch (err) {
     console.error('[updateProjectMilestone] error caught:', err)

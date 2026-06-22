@@ -21,38 +21,32 @@ import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
  * or a pm_resourceid. This function ensures we always bind to the resources table.
  */
 async function resolveRiskOwnerResourceId(id: string): Promise<string | null> {
-  console.log('[resolveRiskOwnerResourceId] Attempting to resolve ID:', id)
-  
+
   // Try 1: see if it's already a resource ID
   try {
     const { Pm_resourcesService } = await import('@/generated')
     const byId = await Pm_resourcesService.get(id, {
       select: ['pm_resourceid'],
     })
-    console.log('[resolveRiskOwnerResourceId] Try 1 - direct GET result:', JSON.stringify(byId))
     const direct = unwrapSingle<any>(byId)
     if (direct?.pm_resourceid) {
-      console.log('[resolveRiskOwnerResourceId] ✓ Resolved directly as resource ID:', direct.pm_resourceid)
       return direct.pm_resourceid
     }
-    console.log('[resolveRiskOwnerResourceId] Try 1 - not a direct resource ID, falling through')
   } catch (err) {
     console.log('[resolveRiskOwnerResourceId] Try 1 - GET threw (expected for systemuser GUID):', err)
   }
-  
+
   // Try 2: resolve systemuser → resource
   try {
     const resource = await fetchResourceBySystemUserId(id)
-    console.log('[resolveRiskOwnerResourceId] Try 2 - fetchResourceBySystemUserId result:', resource ? JSON.stringify({ pm_resourceid: resource.pm_resourceid, pm_fullname: resource.pm_fullname }) : null)
     if (resource?.pm_resourceid) {
-      console.log('[resolveRiskOwnerResourceId] ✓ Resolved via systemuser → resource:', resource.pm_resourceid)
       return resource.pm_resourceid
     }
     console.log('[resolveRiskOwnerResourceId] Try 2 - no resource found for system user ID')
   } catch (err) {
     console.log('[resolveRiskOwnerResourceId] Try 2 - fetchResourceBySystemUserId threw:', err)
   }
-  
+
   console.warn('[resolveRiskOwnerResourceId] ✗ FAILED - Could not resolve risk owner ID to a resource:', id)
   return null
 }
@@ -333,31 +327,23 @@ export async function updateRiskFull(id: string, changes: Partial<RiskModel>): P
       cleanPayload[key] = value
     }
   }
-  console.log('[updateRiskFull] changes._pm_riskowner_value:', changes._pm_riskowner_value)
   if (changes._pm_riskowner_value) {
     const ownerId = normalizeLookupId(changes._pm_riskowner_value)
-    console.log('[updateRiskFull] normalized ownerId:', ownerId)
     if (ownerId) {
       // Resolve systemuserid → resourceid if needed
       const resolvedId = await resolveRiskOwnerResourceId(ownerId)
-      console.log('[updateRiskFull] resolvedId to use:', resolvedId)
       if (resolvedId) {
         // Use navigation property — Dataverse rejects direct _pm_riskowner_value updates
         cleanPayload['pm_RiskOwner@odata.bind'] = `/pm_resources(${resolvedId})`
-        console.log('[updateRiskFull] Added risk owner to cleanPayload via @odata.bind')
       } else {
         console.warn('[updateRiskFull] ✗ resolveRiskOwnerResourceId returned null - risk owner will NOT be in payload!')
       }
     }
   } else {
-    console.log('[updateRiskFull] No _pm_riskowner_value in changes, skipping owner resolution')
   }
-  
-  console.log('[updateRiskFull] Final cleanPayload being sent:', JSON.stringify(cleanPayload))
+
   const result = await Pm_risksService.update(id, cleanPayload as any)
-  console.log('[updateRiskFull] Pm_risksService.update result:', JSON.stringify(result))
   const item = unwrapSingle<Pm_risks>(result)
-  console.log('[updateRiskFull] unwrapped item:', item ? 'found' : 'null')
 
   // Log audit entries for changed fields
   if (original) {
