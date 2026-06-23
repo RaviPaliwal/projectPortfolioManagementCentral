@@ -26,6 +26,9 @@ export interface DataverseTableProps<T> {
   extraHeaderActions?: ReactNode;
   extraFilters?: ReactNode;
   onClearFilters?: () => void;
+  showExport?: boolean;
+  minHeight?: number | string;
+  maxHeight?: string;
 }
 
 export function DataverseTable<T extends Record<string, any>>({
@@ -42,6 +45,9 @@ export function DataverseTable<T extends Record<string, any>>({
   extraHeaderActions,
   extraFilters,
   onClearFilters,
+  showExport = true,
+  minHeight,
+  maxHeight,
 }: DataverseTableProps<T>) {
   const {
     searchQuery,
@@ -78,11 +84,13 @@ export function DataverseTable<T extends Record<string, any>>({
         />
         <Box sx={{ display: 'flex', gap: 1 }}>
           {extraHeaderActions}
-          <ExportButton
-            data={data}
-            columns={columns.map(c => ({ key: c.key as string, label: c.label }))}
-            filename={exportFileName}
-          />
+          {showExport && (
+            <ExportButton
+              data={data}
+              columns={columns.map(c => ({ key: c.key as string, label: c.label }))}
+              filename={exportFileName}
+            />
+          )}
         </Box>
       </Box>
 
@@ -91,6 +99,8 @@ export function DataverseTable<T extends Record<string, any>>({
         empty={data.length === 0}
         emptyIcon={emptyIcon}
         emptyTitle={emptyTitle}
+        minHeight={minHeight}
+        maxHeight={maxHeight}
       >
         <Table size="small">
           <TableHeader

@@ -70,30 +70,61 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
   const [saveProgress, setSaveProgress] = useState(0)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
-  // Load initial tasks sorted in WBS sequence
+  // Load initial tasks or merge updates without losing unsaved WBS layout structure
   useEffect(() => {
-    const sorted = [...tasks].sort((a, b) => {
-      // Put tasks without WBS numbers at the bottom
-      if (!a.pm_wbsnumber && b.pm_wbsnumber) return 1
-      if (a.pm_wbsnumber && !b.pm_wbsnumber) return -1
-      if (!a.pm_wbsnumber && !b.pm_wbsnumber) {
-        const dateA = a.pm_plannedstartdate ? new Date(a.pm_plannedstartdate).getTime() : 0
-        const dateB = b.pm_plannedstartdate ? new Date(b.pm_plannedstartdate).getTime() : 0
-        return dateA - dateB
-      }
+    if (localTasks.length === 0) {
+      const sorted = [...tasks].sort((a, b) => {
+        if (!a.pm_wbsnumber && b.pm_wbsnumber) return 1
+        if (a.pm_wbsnumber && !b.pm_wbsnumber) return -1
+        if (!a.pm_wbsnumber && !b.pm_wbsnumber) {
+          const dateA = a.pm_plannedstartdate ? new Date(a.pm_plannedstartdate).getTime() : 0
+          const dateB = b.pm_plannedstartdate ? new Date(b.pm_plannedstartdate).getTime() : 0
+          return dateA - dateB
+        }
+        const aParts = (a.pm_wbsnumber || '').split('.').map(Number)
+        const bParts = (b.pm_wbsnumber || '').split('.').map(Number)
+        const maxLen = Math.max(aParts.length, bParts.length)
+        for (let i = 0; i < maxLen; i++) {
+          const aVal = aParts[i] || 0
+          const bVal = bParts[i] || 0
+          if (aVal !== bVal) return aVal - bVal
+        }
+        return 0
+      })
+      setLocalTasks(sorted)
+    } else {
+      const taskMap = new Map<string, ProjectTaskModel>()
+      tasks.forEach(t => {
+        if (t.pm_projecttaskid) taskMap.set(t.pm_projecttaskid, t)
+      })
 
-      // Sort by WBS numbers naturally
-      const aParts = (a.pm_wbsnumber || '').split('.').map(Number)
-      const bParts = (b.pm_wbsnumber || '').split('.').map(Number)
-      const maxLen = Math.max(aParts.length, bParts.length)
-      for (let i = 0; i < maxLen; i++) {
-        const aVal = aParts[i] || 0
-        const bVal = bParts[i] || 0
-        if (aVal !== bVal) return aVal - bVal
+      const merged = localTasks.map(localTask => {
+        const fresh = localTask.pm_projecttaskid ? taskMap.get(localTask.pm_projecttaskid) : null
+        if (fresh) {
+          return {
+            ...localTask,
+            // Update non-WBS details from database
+            pm_taskname: fresh.pm_taskname,
+            pm_plannedstartdate: fresh.pm_plannedstartdate,
+            pm_plannedenddate: fresh.pm_plannedenddate,
+            pm_actualstartdate: fresh.pm_actualstartdate,
+            pm_actualenddate: fresh.pm_actualenddate,
+            pm_percentcomplete: fresh.pm_percentcomplete,
+            pm_taskstatus: fresh.pm_taskstatus,
+            pm_assignedresource: fresh.pm_assignedresource,
+          }
+        }
+        return localTask
+      })
+
+      const existingIds = new Set(localTasks.map(t => t.pm_projecttaskid).filter(Boolean))
+      const newTasks = tasks.filter(t => t.pm_projecttaskid && !existingIds.has(t.pm_projecttaskid))
+      if (newTasks.length > 0) {
+        setLocalTasks(recalculateWbs([...merged, ...newTasks]))
+      } else {
+        setLocalTasks(merged)
       }
-      return 0
-    })
-    setLocalTasks(sorted)
+    }
   }, [tasks])
 
   // HTML5 Drag and drop handlers
@@ -200,6 +231,56 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
     return changes
   }, [localTasks, tasks])
 
+  // Check if there are any conflicts in the local tasks list
+  const hasConflicts = useMemo(() => {
+    return localTasks.some((task, index) => {
+      const level = task.pm_tasklevel || 1
+      const start = task.pm_plannedstartdate ? new Date(task.pm_plannedstartdate) : null
+      const end = task.pm_plannedenddate ? new Date(task.pm_plannedenddate) : null
+
+      // 1. Parent task conflict
+      if (task.pm_parenttaskid) {
+        const parent = localTasks.find(t => t.pm_projecttaskid === task.pm_parenttaskid)
+        if (parent) {
+          const pStart = parent.pm_plannedstartdate ? new Date(parent.pm_plannedstartdate) : null
+          const pEnd = parent.pm_plannedenddate ? new Date(parent.pm_plannedenddate) : null
+          if ((start && pStart && start < pStart) || (end && pEnd && end > pEnd)) {
+            return true
+          }
+        }
+      }
+
+      // 2. Predecessor conflict
+      if (task._pm_predecessortask_value) {
+        const predecessor = localTasks.find(t => t.pm_projecttaskid === task._pm_predecessortask_value)
+        if (predecessor) {
+          const predEnd = predecessor.pm_plannedenddate ? new Date(predecessor.pm_plannedenddate) : null
+          if (start && predEnd && start < predEnd) {
+            return true
+          }
+        }
+      }
+
+      // 3. Same-level sibling conflict
+      let prevSibling: ProjectTaskModel | null = null
+      for (let i = index - 1; i >= 0; i--) {
+        const t = localTasks[i]
+        if (t.pm_tasklevel === level && t.pm_parenttaskid === task.pm_parenttaskid) {
+          prevSibling = t
+          break
+        }
+      }
+      if (prevSibling) {
+        const prevStart = prevSibling.pm_plannedstartdate ? new Date(prevSibling.pm_plannedstartdate) : null
+        if (start && prevStart && start < prevStart) {
+          return true
+        }
+      }
+
+      return false
+    })
+  }, [localTasks])
+
   // Save changes to Dataverse
   const handleSave = async () => {
     if (changedTasks.length === 0) {
@@ -246,9 +327,10 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-          {changedTasks.length > 0 && (
-            <Typography variant="caption" sx={{ fontWeight: 700, color: 'warning.main', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <WarningIcon sx={{ fontSize: 16 }} /> {changedTasks.length} unsaved changes
+          {(changedTasks.length > 0 || hasConflicts) && (
+            <Typography variant="caption" sx={{ fontWeight: 700, color: hasConflicts ? 'error.main' : 'warning.main', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <WarningIcon sx={{ fontSize: 16 }} />{' '}
+              {hasConflicts ? 'Fix validation errors before saving' : `${changedTasks.length} unsaved changes`}
             </Typography>
           )}
           <Button
@@ -301,11 +383,12 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
 
             // Find parent task date range conflict
             let dateConflictMessage: string | null = null
+            const start = task.pm_plannedstartdate ? new Date(task.pm_plannedstartdate) : null
+            const end = task.pm_plannedenddate ? new Date(task.pm_plannedenddate) : null
+
             if (task.pm_parenttaskid) {
               const parent = localTasks.find(t => t.pm_projecttaskid === task.pm_parenttaskid)
               if (parent) {
-                const start = task.pm_plannedstartdate ? new Date(task.pm_plannedstartdate) : null
-                const end = task.pm_plannedenddate ? new Date(task.pm_plannedenddate) : null
                 const pStart = parent.pm_plannedstartdate ? new Date(parent.pm_plannedstartdate) : null
                 const pEnd = parent.pm_plannedenddate ? new Date(parent.pm_plannedenddate) : null
 
@@ -313,6 +396,35 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
                   dateConflictMessage = `Start date (${start.toLocaleDateString()}) falls before parent task start date (${pStart.toLocaleDateString()}: ${parent.pm_taskname || 'Parent'})`
                 } else if (end && pEnd && end > pEnd) {
                   dateConflictMessage = `End date (${end.toLocaleDateString()}) falls after parent task end date (${pEnd.toLocaleDateString()}: ${parent.pm_taskname || 'Parent'})`
+                }
+              }
+            }
+
+            // Predecessor timeline validation
+            if (!dateConflictMessage && task._pm_predecessortask_value) {
+              const predecessor = localTasks.find(t => t.pm_projecttaskid === task._pm_predecessortask_value)
+              if (predecessor) {
+                const predEnd = predecessor.pm_plannedenddate ? new Date(predecessor.pm_plannedenddate) : null
+                if (start && predEnd && start < predEnd) {
+                  dateConflictMessage = `Dependency conflict: Starts (${start.toLocaleDateString()}) before predecessor finishes (${predEnd.toLocaleDateString()}: ${predecessor.pm_taskname || 'Predecessor'})`
+                }
+              }
+            }
+
+            // Same-level task sequencing timeline validation
+            if (!dateConflictMessage) {
+              let prevSibling: ProjectTaskModel | null = null
+              for (let i = index - 1; i >= 0; i--) {
+                const t = localTasks[i]
+                if (t.pm_tasklevel === level && t.pm_parenttaskid === task.pm_parenttaskid) {
+                  prevSibling = t
+                  break
+                }
+              }
+              if (prevSibling) {
+                const prevStart = prevSibling.pm_plannedstartdate ? new Date(prevSibling.pm_plannedstartdate) : null
+                if (start && prevStart && start < prevStart) {
+                  dateConflictMessage = `Sequence conflict: Scheduled to start (${start.toLocaleDateString()}) before previous sibling task starts (${prevStart.toLocaleDateString()}: ${prevSibling.pm_taskname || 'Sibling'})`
                 }
               }
             }

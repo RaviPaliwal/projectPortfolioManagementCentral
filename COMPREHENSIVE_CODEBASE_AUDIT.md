@@ -685,8 +685,8 @@ These are Power Automate flows triggered from the app, not custom integrations.
 | FR-Gov-01 | Project creation workflow | ✅ Full | 100% |
 | FR-Gov-02 | Gate review workflows | ✅ Full | 100% |
 | FR-Gov-03 | Audit logs | ✅ Full | 100% (ActivityLogPage provides viewer UI, changelog.service writes audit entries) |
-| FR-SP-01 | Create/manage project schedules | 🟡 Partial | 60% (GanttChart exists, no WBS, critical path, dependencies) |
-| FR-SP-02 | Monitor project schedules | 🟡 Partial | 50% (visualization exists, no PERT, critical path, PDF export) |
+| FR-SP-01 | Create/manage project schedules | ✅ Full | 100% (WBS Structure Builder implemented with tree-table editing, hierarchy outdent/indent, sequence ordering, critical path toggles, predecessor dependencies, and automated sequence/dependency timeline validations) |
+| FR-SP-02 | Monitor project schedules | 🟡 Partial | 90% (visualization via GanttChart, critical path highlighting, dependency arrows; missing PERT and PDF export) |
 | FR-SP-03 | Programme/portfolio schedule management | ✅ Full | 100% (MasterScheduleTab provides master schedule rollup at Programme and Portfolio levels) |
 | FR-FF-01 | Financial calendar | ✅ Full | 100% |
 | FR-FF-02 | Funding source management | ✅ Full | 100% |
@@ -777,7 +777,7 @@ These are Power Automate flows triggered from the app, not custom integrations.
 | # | Finding | Category | Impact | Effort |
 |---|---------|----------|--------|--------|
 | H1 | **No forecast management** — no multi-scenario, accuracy tracking, comparison | Functional Gap | ITT misses | 2-3 weeks |
-| H2 | ~~Limited schedule management — no WBS builder, critical path, dependencies~~ | ✅ **RESOLVED** — WBS Structure Builder implemented under Project Schedule tab with tree-table editing, WBS recalculation, predecessor selection, and critical path toggles | Functional Gap | Planning gaps | 3-4 weeks |
+| H2 | ~~Limited schedule management — no WBS builder, critical path, dependencies~~ | ✅ **RESOLVED** — WBS Structure Builder implemented under Project Schedule tab with tree-table editing, WBS recalculation, predecessor selection, critical path toggles, and automated sequence/dependency timeline validation checks | Functional Gap | Planning gaps | 3-4 weeks |
 | H3 | ~~No schedule/programme roll-up — no master schedule, cross-project deps~~ | ✅ **RESOLVED** — MasterScheduleTab provides master schedule rollup at Programme and Portfolio levels | Functional Gap | 2-3 weeks |
 | H4 | **No configurable financial reports** — basic display only | Functional Gap | Reporting | 2 weeks |
 | H5 | **No configurable reports of any kind** — schedule, risk, financial | Functional Gap | Reporting | 3-4 weeks |

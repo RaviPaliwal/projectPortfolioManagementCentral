@@ -306,7 +306,7 @@ export default function PortfoliosPage() {
         format: (val: any) => <StatusChip status={val} type="rag" size="small" />
       },
       {
-        key: 'pm_projectmanager',
+        key: 'pm_projectmanagername',
         label: 'Project Manager',
         format: (val: any) => val || '—'
       }
@@ -516,6 +516,8 @@ export default function PortfoliosPage() {
                     emptyTitle="No programmes linked to this portfolio."
                     searchPlaceholder="Search programmes..."
                     searchFields={['pm_programmename']}
+                    showExport={false}
+                    minHeight="auto"
                   />
                 </Box>
               </Paper>
@@ -545,6 +547,8 @@ export default function PortfoliosPage() {
                     emptyTitle="No projects linked to this portfolio."
                     searchPlaceholder="Search projects..."
                     searchFields={['pm_projectname', 'pm_projectcode']}
+                    showExport={false}
+                    minHeight="auto"
                   />
                 </Box>
               </Paper>
