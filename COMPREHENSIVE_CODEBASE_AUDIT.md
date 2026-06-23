@@ -686,7 +686,7 @@ These are Power Automate flows triggered from the app, not custom integrations.
 | FR-Gov-02 | Gate review workflows | ✅ Full | 100% |
 | FR-Gov-03 | Audit logs | ✅ Full | 100% (ActivityLogPage provides viewer UI, changelog.service writes audit entries) |
 | FR-SP-01 | Create/manage project schedules | ✅ Full | 100% (WBS Structure Builder implemented with tree-table editing, hierarchy outdent/indent, sequence ordering, critical path toggles, predecessor dependencies, and automated sequence/dependency timeline validations) |
-| FR-SP-02 | Monitor project schedules | 🟡 Partial | 90% (visualization via GanttChart, critical path highlighting, dependency arrows; missing PERT and PDF export) |
+| ✅ Full | FR-SP-02 | Monitor project schedules | ✅ Full | 100% (visualization via GanttChart with critical path highlighting, dependency arrows, overdue detection badge, progress bars in list view, critical path only filter, milestone type labels, Print/PDF export from master schedule toolbar; DependencyNetwork at project level provides PERT-equivalent network view with swimlanes, cycle detection, and blocked-task warnings) |
 | FR-SP-03 | Programme/portfolio schedule management | ✅ Full | 100% (MasterScheduleTab provides master schedule rollup at Programme and Portfolio levels) |
 | FR-FF-01 | Financial calendar | ✅ Full | 100% |
 | FR-FF-02 | Funding source management | ✅ Full | 100% |
@@ -869,3 +869,4 @@ These are Power Automate flows triggered from the app, not custom integrations.
 ---
 
 *End of Comprehensive Codebase Audit Report*
+

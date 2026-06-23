@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
 import {
   Box,
   Typography,
@@ -19,13 +19,18 @@ import {
   useTheme,
   Grid,
   FormControlLabel,
+  IconButton,
   Switch,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
 } from '@mui/material'
 import ViewWeekIcon from '@mui/icons-material/ViewWeek'
 import ListIcon from '@mui/icons-material/List'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import FlagIcon from '@mui/icons-material/Flag'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
+import PrintIcon from '@mui/icons-material/Print'
 
 import GanttChart from './GanttChart/GanttChart'
 import { StatusChip, StatusTag, MetricTile } from '@/components/common'
@@ -59,6 +64,14 @@ const getStatusColor = (status?: string | number | null): 'success' | 'info' | '
   return 'default'
 }
 
+const getRagLabel = (code?: string | number | null): string => {
+  const s = String(code ?? '')
+  if (s === '0') return 'Amber'
+  if (s === '1') return 'Green'
+  if (s === '2') return 'NotSet'
+  return 'N/A'
+}
+
 const isOverdue = (endDate: string | null | undefined): boolean => {
   if (!endDate) return false
   const d = new Date(endDate)
@@ -72,6 +85,8 @@ export const MasterScheduleTab: React.FC<MasterScheduleTabProps> = ({ projects }
   const [activeView, setActiveView] = useState(0)
   const [selectedProjectFilter, setSelectedProjectFilter] = useState<string>('all')
   const [showCriticalPathOnly, setShowCriticalPathOnly] = useState(false)
+  const printRef = useRef<HTMLDivElement>(null)
+  const [scheduleViewFilter, setScheduleViewFilter] = useState<'all' | 'tasks' | 'milestones'>('all')
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -145,7 +160,7 @@ export const MasterScheduleTab: React.FC<MasterScheduleTabProps> = ({ projects }
       let earliestStart: Date | null = null
       let latestEnd: Date | null = null
 
-      projectTasks.forEach(t => {
+      for (const t of projectTasks) {
         if (t.pm_plannedstartdate) {
           const d = new Date(t.pm_plannedstartdate)
           if (!earliestStart || d < earliestStart) earliestStart = d
@@ -154,13 +169,13 @@ export const MasterScheduleTab: React.FC<MasterScheduleTabProps> = ({ projects }
           const d = new Date(t.pm_plannedenddate)
           if (!latestEnd || d > latestEnd) latestEnd = d
         }
-      })
+      }
 
-      const projStartStr = earliestStart
-        ? earliestStart.toISOString().split('T')[0]
+      const projStartStr = (earliestStart as Date | null)
+        ? (earliestStart as Date).toISOString().split('T')[0]
         : (project.pm_plannedstartdate || new Date().toISOString().split('T')[0])
-      const projEndStr = latestEnd
-        ? latestEnd.toISOString().split('T')[0]
+      const projEndStr = (latestEnd as Date | null)
+        ? (latestEnd as Date).toISOString().split('T')[0]
         : (project.pm_plannedenddate || new Date().toISOString().split('T')[0])
 
       const projectGroupId = `proj-group-${pid}`
@@ -176,7 +191,8 @@ export const MasterScheduleTab: React.FC<MasterScheduleTabProps> = ({ projects }
         status: '1',
       })
 
-      const filteredTasks = showCriticalPathOnly
+      if (scheduleViewFilter !== 'milestones') {
+        const filteredTasks = showCriticalPathOnly
         ? projectTasks.filter(t => isCritical(t.pm_oncriticalpath))
         : projectTasks
 
@@ -214,7 +230,9 @@ export const MasterScheduleTab: React.FC<MasterScheduleTabProps> = ({ projects }
           onCriticalPath: isCritical(t.pm_oncriticalpath),
         })
       })
+      }
 
+      if (scheduleViewFilter !== 'tasks') {
       projectMilestones.forEach(m => {
         if (showCriticalPathOnly) return
         totalMilestonesCount++
@@ -240,6 +258,7 @@ export const MasterScheduleTab: React.FC<MasterScheduleTabProps> = ({ projects }
           onCriticalPath: false,
         })
       })
+      }
     }
 
     listItems.sort((a, b) => {
@@ -256,7 +275,29 @@ export const MasterScheduleTab: React.FC<MasterScheduleTabProps> = ({ projects }
       stats: { totalTasksCount, avgProgress, totalMilestonesCount, completedTasksCount },
       timelineItems: listItems,
     }
-  }, [filteredProjects, allTasksByProject, allMilestonesByProject, showCriticalPathOnly])
+  }, [filteredProjects, allTasksByProject, allMilestonesByProject, showCriticalPathOnly, scheduleViewFilter])
+
+  const handlePrintPDF = () => {
+    if (timelineItems.length === 0) return
+    const rows = timelineItems.map(item => {
+      const status = item.type === 'milestone' ? getRagLabel(item.rag) : getStatusLabel(item.status)
+      const date = item.date ? new Date(item.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'
+      const endDate = item.endDate && item.endDate !== item.date
+        ? ' - ' + new Date(item.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        : ''
+      const typeLabel = item.type === 'milestone'
+        ? (item.mType === '1' || item.mType === 1 ? 'Governance Checkpoint' : 'Delivery Milestone')
+        : 'Task'
+      return '<tr><td>' + item.projectName + '</td><td>' + item.name + '</td><td>' + typeLabel + '</td><td>' + (item.resource || 'Unassigned') + '</td><td>' + date + endDate + '</td><td>' + (item.type === 'task' ? (item.progress || 0) + '%' : '') + '</td><td>' + status + '</td></tr>'
+    }).join('')
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+    printWindow.document.write('<!DOCTYPE html><html><head><title>Master Schedule</title><style>body{font-family:Segoe UI,sans-serif;padding:20px}h1{font-size:18px;margin-bottom:16px;color:#1a1a2e}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#1a1a2e;color:#fff;padding:8px 10px;text-align:left;font-weight:600}td{padding:6px 10px;border-bottom:1px solid #e0e0e0}tr:nth-child(even){background:#f8f8f8}.print-footer{text-align:right;font-size:10px;color:#999;margin-top:12px}</style></head><body><h1>Master Schedule - PPM Central</h1><table><thead><tr><th>Project</th><th>Schedule Item</th><th>Type</th><th>Responsible</th><th>Date</th><th>Progress</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table><div class="print-footer">Generated ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + '</div></body></html>')
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+  }
 
   if (loading) {
     return (
@@ -323,6 +364,22 @@ export const MasterScheduleTab: React.FC<MasterScheduleTabProps> = ({ projects }
                 </Typography>
               }
             />
+            <ToggleButtonGroup
+              size="small"
+              value={scheduleViewFilter}
+              exclusive
+              onChange={(_, v) => v && setScheduleViewFilter(v)}
+              sx={{ '& .MuiToggleButton-root': { px: 1.5, py: 0.3, fontSize: 12, fontWeight: 700, textTransform: 'uppercase' } }}
+            >
+              <ToggleButton value="all">All</ToggleButton>
+              <ToggleButton value="tasks">Tasks</ToggleButton>
+              <ToggleButton value="milestones">Milestones</ToggleButton>
+            </ToggleButtonGroup>
+            <Tooltip title="Print / Export PDF">
+              <IconButton size="small" onClick={handlePrintPDF} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.15 }}>
+                <PrintIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
               {stats.totalTasksCount} tasks &middot; {stats.totalMilestonesCount} milestones
             </Typography>
@@ -343,7 +400,7 @@ export const MasterScheduleTab: React.FC<MasterScheduleTabProps> = ({ projects }
           </Box>
         </Box>
 
-        <Box sx={{ p: 2 }}>
+        <Box ref={printRef} sx={{ p: 2 }}>
           {activeView === 0 ? (
             <Box sx={{ mt: 1 }}>
               {ganttTasks.length === 0 ? (

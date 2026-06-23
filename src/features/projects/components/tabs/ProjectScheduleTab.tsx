@@ -26,6 +26,7 @@ import ViewWeekIcon from '@mui/icons-material/ViewWeek'
 import ListIcon from '@mui/icons-material/List'
 import EditIcon from '@mui/icons-material/Edit'
 import SchemaIcon from '@mui/icons-material/Schema'
+import PrintIcon from '@mui/icons-material/Print'
 import { StatusChip, StatusTag, MetricTile } from '@/components/common'
 import GanttChart from '@/components/common/GanttChart/GanttChart'
 import { WbsBuilder } from './WbsBuilder'
@@ -58,6 +59,21 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
   const isDark = theme.palette.mode === 'dark'
   const [activeView, setActiveView] = useState(0)
   const [showCriticalPathOnly, setShowCriticalPathOnly] = useState(false)
+
+  const getStatusLabel = (status?: string | number | null): string => {
+    const s = String(status ?? '')
+    if (s === '0') return 'Complete'
+    if (s === '1') return 'In Progress'
+    return 'Not Started'
+  }
+
+  const getRagLabel = (code?: string | number | null): string => {
+    const s = String(code ?? '')
+    if (s === '0') return 'Amber'
+    if (s === '1') return 'Green'
+    if (s === '2') return 'NotSet'
+    return 'N/A'
+  }
 
   // Robust boolean checker for Dataverse option/string formats
   const isCritical = (v: any): boolean => {
@@ -104,6 +120,28 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
 
     return { total, completed, avgProgress, upcomingMilestones }
   }, [tasks, milestones])
+
+  const handlePrintPDF = () => {
+    if (timelineItems.length === 0) return
+    const rows = timelineItems.map((item: any) => {
+      const status = item.type === 'milestone' ? getRagLabel(item.rag) : getStatusLabel(item.status)
+      const date = item.date ? new Date(item.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'
+      const endDate = item.endDate && item.endDate !== item.date
+        ? ' - ' + new Date(item.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        : ''
+      const typeLabel = item.type === 'milestone'
+        ? (item.mType === '1' || item.mType === 1 ? 'Governance Checkpoint' : 'Delivery Milestone')
+        : 'Task'
+      return '<tr><td>' + item.name + '</td><td>' + typeLabel + '</td><td>' + (item.resource || 'Unassigned') + '</td><td>' + date + endDate + '</td><td>' + (item.type === 'task' ? (item.progress || 0) + '%' : '') + '</td><td>' + status + '</td></tr>'
+    }).join('')
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+    printWindow.document.write('<!DOCTYPE html><html><head><title>Project Schedule</title><style>body{font-family:Segoe UI,sans-serif;padding:20px}h1{font-size:18px;margin-bottom:4px;color:#1a1a2e}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#1a1a2e;color:#fff;padding:8px 10px;text-align:left;font-weight:600}td{padding:6px 10px;border-bottom:1px solid #e0e0e0}tr:nth-child(even){background:#f8f8f8}.print-footer{text-align:right;font-size:10px;color:#999;margin-top:12px}</style></head><body><h1>Project Schedule</h1><table><thead><tr><th>Schedule Item</th><th>Type</th><th>Responsible</th><th>Date</th><th>Progress</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table><div class="print-footer">Generated ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + '</div></body></html>')
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+  }
 
   // Combine and sort by planned date for the list view
   const timelineItems = useMemo(() => {
@@ -188,6 +226,11 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                 </Typography>
               }
             />
+            <Tooltip title="Print / Export PDF">
+              <IconButton size="small" onClick={handlePrintPDF} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.15 }}>
+                <PrintIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mr: 2 }}>
               {tasks.length} tasks · {milestones.length} milestones
             </Typography>
