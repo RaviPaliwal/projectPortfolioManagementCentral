@@ -93,4 +93,6 @@ export type { LedgerCalendarProps, CalendarEntry } from './LedgerCalendar/Ledger
 export { EntityDocumentsTab } from './EntityDocumentsTab/EntityDocumentsTab'
 export { DocumentPreviewDialog } from './DocumentPreviewDialog/DocumentPreviewDialog'
 
+export { MasterScheduleTab } from './MasterScheduleTab'
+
 

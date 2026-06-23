@@ -17,14 +17,19 @@ import {
   Grid,
   IconButton,
   Tooltip,
+  FormControlLabel,
+  Switch,
 } from '@mui/material'
 import FlagIcon from '@mui/icons-material/Flag'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import ViewWeekIcon from '@mui/icons-material/ViewWeek'
 import ListIcon from '@mui/icons-material/List'
 import EditIcon from '@mui/icons-material/Edit'
+import SchemaIcon from '@mui/icons-material/Schema'
 import { StatusChip, StatusTag, MetricTile } from '@/components/common'
 import GanttChart from '@/components/common/GanttChart/GanttChart'
+import { WbsBuilder } from './WbsBuilder'
+import { DependencyNetwork } from './DependencyNetwork'
 import type { ProjectMilestoneModel, ProjectTaskModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 
@@ -34,6 +39,9 @@ interface ProjectScheduleTabProps {
   onEditMilestone?: (milestone: ProjectMilestoneModel) => void
   onEditTask?: (task: ProjectTaskModel) => void
   canEdit?: boolean
+  onRefresh?: () => void
+  onSuccess?: (msg: string) => void
+  onError?: (msg: string) => void
 }
 
 export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ 
@@ -41,26 +49,44 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
   tasks, 
   onEditMilestone, 
   onEditTask,
-  canEdit = false 
+  canEdit = false,
+  onRefresh,
+  onSuccess,
+  onError,
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const [activeView, setActiveView] = useState(0)
+  const [showCriticalPathOnly, setShowCriticalPathOnly] = useState(false)
 
+  // Robust boolean checker for Dataverse option/string formats
+  const isCritical = (v: any): boolean => {
+    if (v === undefined || v === null) return false
+    if (typeof v === 'boolean') return v
+    if (typeof v === 'number') return v === 1
+    const s = String(v).toLowerCase().trim()
+    return s === 'true' || s === '1' || s === 'yes'
+  }
 
   // Map to Gantt formats
-  const ganttTasks = useMemo(() => tasks.map(t => ({
-    id: t.pm_projecttaskid!,
-    name: t.pm_taskname!,
-    startDate: t.pm_plannedstartdate!,
-    endDate: t.pm_plannedenddate!,
-    percentComplete: t.pm_percentcomplete ?? 0,
-    status: String(t.pm_taskstatus),
-    level: t.pm_tasklevel ?? 1,
-    wbs: t.pm_wbsnumber,
-    onCriticalPath: !!t.pm_oncriticalpath,
-    predecessorId: t._pm_predecessortask_value,
-  })), [tasks])
+  const ganttTasks = useMemo(() => {
+    const raw = tasks.map(t => ({
+      id: t.pm_projecttaskid!,
+      name: t.pm_taskname!,
+      startDate: t.pm_plannedstartdate!,
+      endDate: t.pm_plannedenddate!,
+      percentComplete: t.pm_percentcomplete ?? 0,
+      status: String(t.pm_taskstatus),
+      level: t.pm_tasklevel ?? 1,
+      wbs: t.pm_wbsnumber,
+      onCriticalPath: isCritical(t.pm_oncriticalpath),
+      predecessorId: t._pm_predecessortask_value,
+    }))
+    if (showCriticalPathOnly) {
+      return raw.filter(t => t.onCriticalPath)
+    }
+    return raw
+  }, [tasks, showCriticalPathOnly])
 
   const ganttMilestones = useMemo(() => milestones.map(m => ({
     id: m.pm_projectmilestoneid!,
@@ -81,6 +107,10 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
 
   // Combine and sort by planned date for the list view
   const timelineItems = useMemo(() => {
+    const filteredTasks = showCriticalPathOnly
+      ? tasks.filter(t => isCritical(t.pm_oncriticalpath))
+      : tasks
+
     const items = [
       ...milestones.map(m => ({
         id: m.pm_projectmilestoneid,
@@ -91,8 +121,9 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
         mType: m.pm_milestonetype,
         status: m.pm_status,
         resource: m.pm_responsible,
+        onCriticalPath: false,
       })),
-      ...tasks.map(t => ({
+      ...filteredTasks.map(t => ({
         id: t.pm_projecttaskid,
         name: t.pm_taskname,
         date: t.pm_plannedstartdate,
@@ -101,6 +132,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
         status: t.pm_taskstatus,
         progress: t.pm_percentcomplete,
         resource: t.pm_assignedresource,
+        onCriticalPath: isCritical(t.pm_oncriticalpath),
       }))
     ]
     return items.sort((a, b) => {
@@ -108,7 +140,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
       const dateB = new Date(b.date || 0).getTime()
       return dateA - dateB
     })
-  }, [milestones, tasks])
+  }, [milestones, tasks, showCriticalPathOnly])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -130,22 +162,46 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
 
       {/* ── View Toggle ── */}
       <Paper sx={{ overflow: 'hidden' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
           <Tabs value={activeView} onChange={(_, v) => setActiveView(v)}>
             <Tab label="Gantt Chart" icon={<ViewWeekIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
             <Tab label="Detailed List" icon={<ListIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
+            <Tab label="Dependency Network" icon={<SchemaIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
+            {canEdit && (
+              <Tab label="WBS Structure Builder" icon={<ListIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
+            )}
           </Tabs>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mr: 2 }}>
-            {tasks.length} tasks · {milestones.length} milestones
-          </Typography>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  size="small"
+                  color="error"
+                  checked={showCriticalPathOnly}
+                  onChange={(e) => setShowCriticalPathOnly(e.target.checked)}
+                />
+              }
+              label={
+                <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Critical Path Only
+                </Typography>
+              }
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mr: 2 }}>
+              {tasks.length} tasks · {milestones.length} milestones
+            </Typography>
+          </Box>
         </Box>
 
         <Box sx={{ p: 2 }}>
-          {activeView === 0 ? (
+          {activeView === 0 && (
             <Box sx={{ mt: 1 }}>
               <GanttChart tasks={ganttTasks} milestones={ganttMilestones} height={500} />
             </Box>
-          ) : (
+          )}
+
+          {activeView === 1 && (
             <Table size="small">
               <TableHead sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'background.default' }}>
                 <TableRow>
@@ -166,7 +222,12 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                 ) : (
                   timelineItems.map((item) => (
                     <TableRow key={item.id} hover sx={{ 
-                      bgcolor: item.type === 'milestone' ? (isDark ? 'rgba(245, 158, 11, 0.03)' : 'rgba(245, 158, 11, 0.02)') : 'transparent',
+                      bgcolor: item.type === 'milestone' 
+                        ? (isDark ? 'rgba(245, 158, 11, 0.03)' : 'rgba(245, 158, 11, 0.02)') 
+                        : item.onCriticalPath
+                        ? (isDark ? 'rgba(239, 68, 68, 0.05)' : 'rgba(239, 68, 68, 0.02)')
+                        : 'transparent',
+                      borderLeft: item.onCriticalPath ? '3px solid #ef4444' : 'none',
                       '&:last-child td': { border: 0 } 
                     }}>
                       <TableCell sx={{ pl: 3 }}>
@@ -175,15 +236,20 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                             {item.type === 'milestone' ? (
                               <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'warning.main', mt: 0.5, border: '2px solid white', boxShadow: '0 0 0 2px ' + theme.palette.warning.main }} />
                             ) : (
-                              <Box sx={{ width: 8, height: 8, borderRadius: 0.5, bgcolor: 'primary.light', mt: 0.5, opacity: 0.6 }} />
+                              <Box sx={{ width: 8, height: 8, borderRadius: 0.5, bgcolor: item.onCriticalPath ? 'error.light' : 'primary.light', mt: 0.5, opacity: 0.6 }} />
                             )}
                           </Box>
                           <Box>
-                            <Typography variant="body2" sx={{ fontWeight: item.type === 'milestone' ? 800 : 600, color: item.type === 'milestone' ? 'warning.dark' : 'text.primary' }}>
+                            <Typography variant="body2" sx={{ fontWeight: item.type === 'milestone' ? 800 : 600, color: item.type === 'milestone' ? 'warning.dark' : item.onCriticalPath ? 'error.dark' : 'text.primary' }}>
                               {item.name}
                               {item.type === 'milestone' && (
                                 <Typography variant="caption" sx={{ ml: 1, px: 0.8, py: 0.2, bgcolor: 'rgba(245, 158, 11, 0.08)', color: 'warning.dark', fontWeight: 800, textTransform: 'uppercase', fontSize: fontSizes.xs }}>
                                   Milestone
+                                </Typography>
+                              )}
+                              {item.onCriticalPath && (
+                                <Typography variant="caption" sx={{ ml: 1, px: 0.8, py: 0.2, bgcolor: 'rgba(239, 68, 68, 0.08)', color: 'error.main', fontWeight: 800, textTransform: 'uppercase', fontSize: fontSizes.xs }}>
+                                  Critical Path
                                 </Typography>
                               )}
                             </Typography>
@@ -203,7 +269,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                           {item.resource || 'Unassigned'}
                         </Typography>
                       </TableCell>
-
+ 
                       <TableCell align="center">
                         {item.type === 'task' ? (
                           <Box sx={{ minWidth: 120, px: 2 }}>
@@ -227,7 +293,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                           </Typography>
                         )}
                       </TableCell>
-
+ 
                       <TableCell align="right" sx={{ pr: canEdit ? 1 : 3 }}>
                         {item.type === 'milestone' ? (
                           <StatusChip status={(item as any).rag} type="rag" size="small" />
@@ -277,6 +343,20 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                 )}
               </TableBody>
             </Table>
+          )}
+
+          {activeView === 2 && (
+            <DependencyNetwork tasks={tasks} milestones={milestones} />
+          )}
+
+          {activeView === 3 && (
+            <WbsBuilder
+              tasks={tasks}
+              onSuccess={onSuccess || (() => {})}
+              onError={onError || (() => {})}
+              onRefresh={onRefresh || (() => {})}
+              onEditTask={onEditTask}
+            />
           )}
         </Box>
       </Paper>

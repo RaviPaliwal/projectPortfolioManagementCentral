@@ -35,8 +35,9 @@ import {
   fetchResourceById,
   fetchResourceAllocations,
   fetchProjectsFull,
+  normalizeLookupId,
 } from '@/services'
-import { DynamicFormDialog } from '@/components/common'
+import { DynamicFormDialog, Dialog as CommonDialog } from '@/components/common'
 import type { FormField } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import { BudgetLineFormDialog } from '@/features/budgets/components'
@@ -659,15 +660,31 @@ export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, project
 export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
   const [resources, setResources] = useState<{ value: string, label: string }[]>([])
   const [resourcesLoaded, setResourcesLoaded] = useState(false)
+  const [projectTasks, setProjectTasks] = useState<{ value: string, label: string }[]>([])
+  const [rawTasks, setRawTasks] = useState<any[]>([])
+  const [tasksLoaded, setTasksLoaded] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
+  // Form State
+  const [taskName, setTaskName] = useState('')
+  const [description, setDescription] = useState('')
+  const [parentTaskId, setParentTaskId] = useState('')
+  const [assignedResource, setAssignedResource] = useState('')
+  const [plannedStartDate, setPlannedStartDate] = useState('')
+  const [plannedEndDate, setPlannedEndDate] = useState('')
+  const [percentComplete, setPercentComplete] = useState<number>(0)
+
+  // Load resource and task options
   useEffect(() => {
     if (open && projectId) {
       setResourcesLoaded(false)
+      setTasksLoaded(false)
+
       import('@/services').then(({ fetchAllocatedResourcesByProject }) => {
         fetchAllocatedResourcesByProject(projectId).then((resList) => {
           const options = [
             { value: '', label: 'Unassigned' },
-            ...resList.map(r => ({ value: r.pm_resourceid || '', label: r.pm_fullname || '' })).filter(r => r.value !== '')
+            ...resList.map(r => ({ value: normalizeLookupId(r.pm_resourceid) || '', label: r.pm_fullname || '' })).filter(r => r.value !== '')
           ]
           setResources(options)
           setResourcesLoaded(true)
@@ -676,82 +693,116 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
           setResourcesLoaded(true)
         })
       })
+
+      import('@/generated').then(({ Pm_projecttasksService }) => {
+        Pm_projecttasksService.getAll({ 
+          filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, 
+          top: 200 
+        }).then((res) => {
+          const list = res.success && Array.isArray(res.data) ? res.data : []
+          setRawTasks(list)
+          const options = [
+            { value: '', label: '— None (Root Task) —' },
+            ...list
+              .filter(t => !initialData || normalizeLookupId(t.pm_projecttaskid) !== normalizeLookupId(initialData.pm_projecttaskid))
+              .map(t => ({ value: normalizeLookupId(t.pm_projecttaskid) || '', label: `${t.pm_wbsnumber || ''} ${t.pm_taskname || ''}` }))
+          ]
+          setProjectTasks(options)
+          setTasksLoaded(true)
+        }).catch(err => {
+          console.error("[TaskDialog] Failed to load project tasks:", err)
+          setTasksLoaded(true)
+        })
+      })
     }
-  }, [open, projectId])
+  }, [open, projectId, initialData])
 
-  const fields: FormField[] = [
-    { name: 'pm_taskname', label: 'Task name', type: 'text', required: true },
-    { name: 'pm_taskdescription', label: 'Description', type: 'multiline', rows: 2 },
-    { 
-      name: 'pm_assignedresource', 
-      label: 'Assigned resource', 
-      type: 'select', 
-      gridSize: 6,
-      options: resources 
-    },
-    { name: 'pm_durationdays', label: 'Duration (days)', type: 'number', defaultValue: 0, gridSize: 6, disabled: true },
-    { name: 'pm_plannedstartdate', label: 'Planned start date', type: 'date', gridSize: 6 },
-    { name: 'pm_plannedenddate', label: 'Planned end date', type: 'date', gridSize: 6 },
-    { name: 'pm_percentcomplete', label: '% Complete', type: 'number', defaultValue: 0, min: 0, max: 100 }
-  ]
-
-  const mappedInitialData = useMemo(() => {
-    if (!initialData) return undefined
-    return {
-      ...initialData,
-      pm_assignedresource: initialData._pm_assignedtoresource_value || ''
-    }
-  }, [initialData])
-
-  const handleFieldChange = useCallback((name: string, value: any, currentData: Record<string, any>): Record<string, any> => {
-    const updated = { ...currentData }
-
-    if (name === 'pm_plannedstartdate' || name === 'pm_plannedenddate') {
-      const start = updated.pm_plannedstartdate
-      const end = updated.pm_plannedenddate
-      if (start && end) {
-        const startDate = new Date(start)
-        const endDate = new Date(end)
-        if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-          const diff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-          updated.pm_durationdays = Math.max(0, diff)
-        }
-      }
-    } else if (name === 'pm_durationdays') {
-      const duration = Number(value)
-      const start = updated.pm_plannedstartdate
-      if (start && !isNaN(duration) && duration > 0) {
-        const startDate = new Date(start)
-        if (!isNaN(startDate.getTime())) {
-          const endDate = new Date(startDate)
-          endDate.setDate(startDate.getDate() + (duration - 1))
-          const yyyy = endDate.getFullYear()
-          const mm = String(endDate.getMonth() + 1).padStart(2, '0')
-          const dd = String(endDate.getDate()).padStart(2, '0')
-          updated.pm_plannedenddate = `${yyyy}-${mm}-${dd}`
-        }
+  // Initialize form state from initialData
+  useEffect(() => {
+    if (open && tasksLoaded) {
+      if (initialData) {
+        setTaskName(initialData.pm_taskname || '')
+        setDescription(initialData.pm_taskdescription || '')
+        setParentTaskId(initialData.pm_parenttaskid ? normalizeLookupId(initialData.pm_parenttaskid) || '' : '')
+        setAssignedResource(initialData._pm_assignedtoresource_value ? normalizeLookupId(initialData._pm_assignedtoresource_value) || '' : '')
+        setPlannedStartDate(initialData.pm_plannedstartdate ? initialData.pm_plannedstartdate.split('T')[0] : '')
+        setPlannedEndDate(initialData.pm_plannedenddate ? initialData.pm_plannedenddate.split('T')[0] : '')
+        setPercentComplete(initialData.pm_percentcomplete !== undefined ? Number(initialData.pm_percentcomplete) : 0)
+      } else {
+        setTaskName('')
+        setDescription('')
+        setParentTaskId('')
+        setAssignedResource('')
+        setPlannedStartDate('')
+        setPlannedEndDate('')
+        setPercentComplete(0)
       }
     }
-    return updated
-  }, [])
+  }, [open, initialData, tasksLoaded])
 
-  const handleSubmit = async (data: Record<string, any>) => {
+  // Compute duration dynamically
+  const durationDays = useMemo(() => {
+    if (plannedStartDate && plannedEndDate) {
+      const start = new Date(plannedStartDate)
+      const end = new Date(plannedEndDate)
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        const diff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+        return Math.max(0, diff)
+      }
+    }
+    return 0
+  }, [plannedStartDate, plannedEndDate])
+
+  // Reactive inline validation checking
+  const validationError = useMemo(() => {
+    if (!parentTaskId) return null
+    const parentTask = rawTasks.find(t => t.pm_projecttaskid === parentTaskId)
+    if (!parentTask) return null
+
+    if (plannedStartDate && parentTask.pm_plannedstartdate) {
+      const taskStart = new Date(plannedStartDate)
+      const parentStart = new Date(parentTask.pm_plannedstartdate.split('T')[0])
+      if (taskStart < parentStart) {
+        return `Planned start date (${taskStart.toLocaleDateString('en-GB')}) cannot be before parent task start date (${parentStart.toLocaleDateString('en-GB')}: ${parentTask.pm_taskname || 'Parent'}).`
+      }
+    }
+    if (plannedEndDate && parentTask.pm_plannedenddate) {
+      const taskEnd = new Date(plannedEndDate)
+      const parentEnd = new Date(parentTask.pm_plannedenddate.split('T')[0])
+      if (taskEnd > parentEnd) {
+        return `Planned end date (${taskEnd.toLocaleDateString('en-GB')}) cannot be after parent task end date (${parentEnd.toLocaleDateString('en-GB')}: ${parentTask.pm_taskname || 'Parent'}).`
+      }
+    }
+    return null
+  }, [parentTaskId, plannedStartDate, plannedEndDate, rawTasks])
+
+  const isValid = taskName.trim() !== '' && !validationError
+
+  const handleSubmit = async () => {
+    if (!isValid) return
+    setSubmitting(true)
     try {
-      const statusVal = data.pm_percentcomplete === 100 ? '0' : '1'
+      const statusVal = percentComplete === 100 ? '0' : '1'
+      const payloadData = {
+        pm_taskname: taskName,
+        pm_taskdescription: description,
+        pm_parenttaskid: parentTaskId || undefined,
+        pm_assignedresource: assignedResource || undefined,
+        pm_plannedstartdate: plannedStartDate || undefined,
+        pm_plannedenddate: plannedEndDate || undefined,
+        pm_percentcomplete: percentComplete,
+        pm_taskstatus: statusVal,
+        pm_durationdays: durationDays || undefined
+      }
+
       if (initialData?.pm_projecttaskid) {
         const { updateProjectTask } = await import('@/services')
-        await updateProjectTask(initialData.pm_projecttaskid, { 
-          ...data, 
-          pm_taskstatus: statusVal,
-          pm_durationdays: data.pm_durationdays || undefined 
-        })
+        await updateProjectTask(initialData.pm_projecttaskid, payloadData)
         onSuccess('Task updated successfully.')
       } else {
-        await createProjectTask({ 
-          ...data, 
-          _pm_project_value: projectId, 
-          pm_taskstatus: statusVal,
-          pm_durationdays: data.pm_durationdays || undefined 
+        await createProjectTask({
+          ...payloadData,
+          _pm_project_value: projectId
         })
         onSuccess('Task added successfully.')
       }
@@ -759,21 +810,134 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
     } catch (err) {
       console.error('[TaskDialog] handleSubmit failed:', err)
       onError(initialData?.pm_projecttaskid ? 'Unable to update task.' : 'Unable to add task.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  if (open && !resourcesLoaded) return null
+  if (open && (!resourcesLoaded || !tasksLoaded)) return null
 
   return (
-    <DynamicFormDialog 
-      open={open} 
-      title={initialData ? "Edit Task" : "Add Task"} 
-      fields={fields} 
-      initialData={mappedInitialData} 
-      onClose={onClose} 
-      onSubmit={handleSubmit} 
-      submitText={initialData ? "Save Changes" : "Add Task"} 
-      onFieldChange={handleFieldChange}
+    <CommonDialog
+      open={open}
+      title={initialData ? "Edit Task" : "Add Task"}
+      onClose={onClose}
+      onConfirm={handleSubmit}
+      confirmText={submitting ? "Saving..." : initialData ? "Save Changes" : "Add Task"}
+      confirmDisabled={!isValid || submitting}
+      isLoading={submitting}
+      content={
+        <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          {validationError && (
+            <Alert severity="error" sx={{ borderRadius: 1.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, display: 'block' }}>
+                Scheduling Constraint Mismatch
+              </Typography>
+              <Typography variant="caption">{validationError}</Typography>
+            </Alert>
+          )}
+
+          <Grid container spacing={2.5}>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                label="Task name *"
+                value={taskName}
+                onChange={(e) => setTaskName(e.target.value)}
+                required
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                label="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                select
+                fullWidth
+                label="Parent Task"
+                value={parentTaskId}
+                onChange={(e) => setParentTaskId(e.target.value)}
+              >
+                {projectTasks.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                select
+                fullWidth
+                label="Assigned resource"
+                value={assignedResource}
+                onChange={(e) => setAssignedResource(e.target.value)}
+              >
+                {resources.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Duration (days)"
+                value={durationDays}
+                disabled
+              />
+            </Grid>
+
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                fullWidth
+                type="date"
+                slotProps={{ inputLabel: { shrink: true } }}
+                label="Planned start date"
+                value={plannedStartDate}
+                onChange={(e) => setPlannedStartDate(e.target.value)}
+                error={!!validationError && validationError.includes('start date')}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                fullWidth
+                type="date"
+                slotProps={{ inputLabel: { shrink: true } }}
+                label="Planned end date"
+                value={plannedEndDate}
+                onChange={(e) => setPlannedEndDate(e.target.value)}
+                error={!!validationError && validationError.includes('end date')}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                type="number"
+                label="% Complete"
+                value={percentComplete}
+                slotProps={{ htmlInput: { min: 0, max: 100 } }}
+                onChange={(e) => setPercentComplete(Number(e.target.value))}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+      }
     />
   )
 }

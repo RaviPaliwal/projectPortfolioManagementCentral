@@ -64,6 +64,7 @@ import {
   EntityDocumentsTab,
   DataverseTable,
   ConfirmDialog,
+  MasterScheduleTab,
 } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { fontSizes } from '@/styles'
@@ -443,230 +444,250 @@ export default function ProgrammesPage() {
           )}
         </Box>
 
-        {/* 1. Financials KPI Cards at the top */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Financials
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Total Budget</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
-                  {currencyFormatter.format(prog?.pm_budgeteur ?? 0)}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Actual Spend</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
-                  {currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Variance</Typography>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 700,
-                    mt: 0.5,
-                    color: ((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? 'error.main' : 'success.main'
-                  }}
-                >
-                  {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
+        <Tabs
+          value={detailTab}
+          onChange={(_, v) => setDetailTab(v)}
+          sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}
+        >
+          <Tab label="Overview & Projects" sx={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab label="Master Schedule" sx={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab label="Documents & Tasks" sx={{ textTransform: 'none', fontWeight: 600 }} />
+        </Tabs>
 
-        {/* 2. Overview Grouping: Details & Objectives */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Overview
-          </Typography>
+        {detailTab === 0 && (
+          <>
+            {/* 1. Financials KPI Cards at the top */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Financials
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Total Budget</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
+                      {currencyFormatter.format(prog?.pm_budgeteur ?? 0)}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Actual Spend</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
+                      {currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Variance</Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 700,
+                        mt: 0.5,
+                        color: ((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? 'error.main' : 'success.main'
+                      }}
+                    >
+                      {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+
+            {/* 2. Overview Grouping: Details & Objectives */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Overview
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Details
+                    </Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Phase</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                          {['Delivery', 'Planning', 'Initiation'][Number(prog?.pm_programmephase)] ?? '—'}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Manager</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                          {prog?.pm_programmemanagername || '—'}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Sponsor</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                          {prog?.pm_sponsorname || '—'}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Unit</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                          {prog?.pm_businessunit || '—'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Paper>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LightbulbIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Objectives
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                      {prog?.pm_programmedescription || 'No description provided.'}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+
+            {/* 3. Projects block using the generic DataverseTable */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Projects
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
+                <Box sx={{
+                  '& .MuiPaper-root': {
+                    boxShadow: 'none',
+                    border: 'none',
+                    bgcolor: 'transparent',
+                    backgroundImage: 'none',
+                    borderRadius: 0,
+                    mb: 0
+                  }
+                }}>
+                  <DataverseTable
+                    data={detailProjects}
+                    columns={projectColumns}
+                    loading={detailLoading}
+                    emptyIcon={<AccountTreeIcon />}
+                    emptyTitle="No projects linked to this programme."
+                    searchPlaceholder="Search projects..."
+                    searchFields={['pm_projectname', 'pm_projectcode']}
+                  />
+                </Box>
+              </Paper>
+            </Box>
+
+            {/* 4. Risks & Issues */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Escalated Risks & Issues
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'error.main' }}>
+                      Risks ({detailRisks.length})
+                    </Typography>
+                    {detailRisks.length > 0 ? (
+                      detailRisks.map(r => (
+                        <Paper
+                          key={r.pm_riskid}
+                          variant="outlined"
+                          sx={{
+                            p: 1.5,
+                            mb: 1,
+                            borderRadius: 1,
+                            borderLeft: '3px solid',
+                            borderLeftColor: 'error.main',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' }
+                          }}
+                          onClick={() => r.pm_riskid && navigateToRisk(r.pm_riskid)}
+                        >
+                          <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            {r.pm_risktitle}
+                            <OpenInNewIcon sx={{ fontSize: 12 }} />
+                          </Typography>
+                        </Paper>
+                      ))
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">No escalated risks.</Typography>
+                    )}
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'warning.main' }}>
+                      Issues ({detailIssues.length})
+                    </Typography>
+                    {detailIssues.length > 0 ? (
+                      detailIssues.map(i => (
+                        <Paper
+                          key={i.pm_issueid}
+                          variant="outlined"
+                          sx={{
+                            p: 1.5,
+                            mb: 1,
+                            borderRadius: 1,
+                            borderLeft: '3px solid',
+                            borderLeftColor: 'warning.main',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' }
+                          }}
+                          onClick={() => i.pm_issueid && navigateToIssue(i.pm_issueid)}
+                        >
+                          <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            {i.pm_issuetitle}
+                            <OpenInNewIcon sx={{ fontSize: 12 }} />
+                          </Typography>
+                        </Paper>
+                      ))
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">No escalated issues.</Typography>
+                    )}
+                  </Grid>
+                </Grid>
+              </Paper>
+            </Box>
+          </>
+        )}
+
+        {detailTab === 1 && (
+          <MasterScheduleTab projects={detailProjects} />
+        )}
+
+        {detailTab === 2 && (
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 6 }}>
               <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Details
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
+                  Approval Tasks
                 </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Phase</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                      {['Delivery', 'Planning', 'Initiation'][Number(prog?.pm_programmephase)] ?? '—'}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Manager</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                      {prog?.pm_programmemanagername || '—'}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Sponsor</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                      {prog?.pm_sponsorname || '—'}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Unit</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                      {prog?.pm_businessunit || '—'}
-                    </Typography>
-                  </Box>
-                </Box>
+                <EntityApprovalTasks
+                  entityId={selectedProgrammeId}
+                  moduleName={MODULE_NAMES.PROGRAMMES.value}
+                  entityLabel="Programme"
+                  tabValue={0}
+                  index={0}
+                />
               </Paper>
             </Grid>
+
             <Grid size={{ xs: 12, md: 6 }}>
               <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LightbulbIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Objectives
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
+                  Documents
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                  {prog?.pm_programmedescription || 'No description provided.'}
-                </Typography>
+                <EntityDocumentsTab
+                  entityId={selectedProgrammeId}
+                  moduleName={MODULE_NAMES.PROGRAMMES.value}
+                  canEdit={canEdit}
+                />
               </Paper>
             </Grid>
           </Grid>
-        </Box>
+        )}
 
-        {/* 3. Projects block using the generic DataverseTable */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Projects
-          </Typography>
-          <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
-            <Box sx={{
-              '& .MuiPaper-root': {
-                boxShadow: 'none',
-                border: 'none',
-                bgcolor: 'transparent',
-                backgroundImage: 'none',
-                borderRadius: 0,
-                mb: 0
-              }
-            }}>
-              <DataverseTable
-                data={detailProjects}
-                columns={projectColumns}
-                loading={detailLoading}
-                emptyIcon={<AccountTreeIcon />}
-                emptyTitle="No projects linked to this programme."
-                searchPlaceholder="Search projects..."
-                searchFields={['pm_projectname', 'pm_projectcode']}
-              />
-            </Box>
-          </Paper>
-        </Box>
-
-        {/* 4. Risks & Issues and Documents/Tasks */}
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                Escalated Risks & Issues
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'error.main' }}>
-                    Risks ({detailRisks.length})
-                  </Typography>
-                  {detailRisks.length > 0 ? (
-                    detailRisks.map(r => (
-                      <Paper
-                        key={r.pm_riskid}
-                        variant="outlined"
-                        sx={{
-                          p: 1.5,
-                          mb: 1,
-                          borderRadius: 1,
-                          borderLeft: '3px solid',
-                          borderLeftColor: 'error.main',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                          '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' }
-                        }}
-                        onClick={() => r.pm_riskid && navigateToRisk(r.pm_riskid)}
-                      >
-                        <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          {r.pm_risktitle}
-                          <OpenInNewIcon sx={{ fontSize: 12 }} />
-                        </Typography>
-                      </Paper>
-                    ))
-                  ) : (
-                    <Typography variant="caption" color="text.secondary">No risks.</Typography>
-                  )}
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'warning.main' }}>
-                    Issues ({detailIssues.length})
-                  </Typography>
-                  {detailIssues.length > 0 ? (
-                    detailIssues.map(i => (
-                      <Paper
-                        key={i.pm_issueid}
-                        variant="outlined"
-                        sx={{
-                          p: 1.5,
-                          mb: 1,
-                          borderRadius: 1,
-                          borderLeft: '3px solid',
-                          borderLeftColor: 'warning.main',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                          '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' }
-                        }}
-                        onClick={() => i.pm_issueid && navigateToIssue(i.pm_issueid)}
-                      >
-                        <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          {i.pm_issuetitle}
-                          <OpenInNewIcon sx={{ fontSize: 12 }} />
-                        </Typography>
-                      </Paper>
-                    ))
-                  ) : (
-                    <Typography variant="caption" color="text.secondary">No issues.</Typography>
-                  )}
-                </Grid>
-              </Grid>
-            </Paper>
-          </Grid>
-          
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                Approval Tasks
-              </Typography>
-              <EntityApprovalTasks
-                entityId={selectedProgrammeId}
-                moduleName={MODULE_NAMES.PROGRAMMES.value}
-                entityLabel="Programme"
-                tabValue={0}
-                index={0}
-              />
-            </Paper>
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                Documents
-              </Typography>
-              <EntityDocumentsTab
-                entityId={selectedProgrammeId}
-                moduleName={MODULE_NAMES.PROGRAMMES.value}
-                canEdit={canEdit}
-              />
-            </Paper>
-          </Grid>
-        </Grid>
-        
         <ProgrammeFormDialog
           open={showFormModal}
           onClose={() => setShowFormModal(false)}
@@ -678,6 +699,7 @@ export default function ProgrammesPage() {
         />
       </Box>
     )
+
   }
 
   return (

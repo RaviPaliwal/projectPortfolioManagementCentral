@@ -512,6 +512,9 @@ export default function ProjectsPage() {
 
   return (
     <Box>
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+      {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
+
       {selectedProject ? (
         <Project360View
           project={selectedProject}
@@ -526,7 +529,6 @@ export default function ProjectsPage() {
           gateReviews={detailGateReviews}
           onBack={handleBack}
           onDeleteProject={handleDelete}
-          canDelete={canDelete}
           onAddMilestone={() => {
             setEditingMilestone(null)
             setMilestoneDialogOpen(true)
@@ -560,6 +562,15 @@ export default function ProjectsPage() {
           onEditProject={openEditForm}
           onMarkTaskAsDone={handleMarkTaskAsDone}
           onUpdateTaskStatus={handleUpdateTaskStatus}
+          onRefresh={() => refreshDetailData('task')}
+          onSuccess={(msg) => {
+            setSuccessMsg(msg)
+            setTimeout(() => setSuccessMsg(null), 4000)
+          }}
+          onError={(msg) => {
+            setError(msg)
+            setTimeout(() => setError(null), 4000)
+          }}
         />
       ) : (
         <>
@@ -581,9 +592,6 @@ export default function ProjectsPage() {
               </Box>
             }
           />
-
-          {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-          {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
           <KpiCardRow items={kpiItems} loading={loading} />
 

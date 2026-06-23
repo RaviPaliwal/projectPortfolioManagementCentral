@@ -53,7 +53,7 @@ export const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => {
     pm_taskname: item.pm_taskname,
     pm_taskdescription: item.pm_taskname ?? item.pm_projecttaskname,
     pm_tasklevel: item.pm_tasklevel,
-    pm_parenttaskid: (item as any).pm_parenttaskid,
+    pm_parenttaskid: item._pm_projecttask_value || undefined,
     pm_wbsnumber: item.pm_wbsnumber,
     pm_durationdays: item.pm_durationdays,
     pm_lagdays: item.pm_lagdays,
@@ -552,7 +552,6 @@ export async function fetchProjectMilestones(projectId: string): Promise<Project
 const WRITABLE_TASK_KEYS = [
   'pm_taskname',
   'pm_tasklevel',
-  'pm_parenttaskid',
   'pm_wbsnumber',
   'pm_durationdays',
   'pm_lagdays',
@@ -599,6 +598,9 @@ export async function createProjectTask(payload: Partial<ProjectTaskModel>): Pro
     if (payload.pm_assignedresource) {
       cleanPayload['pm_AssignedToResource@odata.bind'] = `/pm_resources(${normalizeLookupId(payload.pm_assignedresource)})`
     }
+    if (payload.pm_parenttaskid) {
+      cleanPayload['pm_projecttask@odata.bind'] = `/pm_projecttasks(${normalizeLookupId(payload.pm_parenttaskid)})`
+    }
     const result = await Pm_projecttasksService.create({ statecode: 0, statuscode: 1, ...cleanPayload } as any)
     const item = unwrapSingle<Pm_projecttasks>(result)
     return item ? mapProjectTask(item) : null
@@ -634,6 +636,11 @@ export async function updateProjectTask(id: string, changes: Partial<ProjectTask
     if (changes.pm_assignedresource !== undefined) {
       cleanPayload['pm_AssignedToResource@odata.bind'] = changes.pm_assignedresource
         ? `/pm_resources(${normalizeLookupId(changes.pm_assignedresource)})`
+        : null
+    }
+    if (changes.pm_parenttaskid !== undefined) {
+      cleanPayload['pm_projecttask@odata.bind'] = changes.pm_parenttaskid
+        ? `/pm_projecttasks(${normalizeLookupId(changes.pm_parenttaskid)})`
         : null
     }
     const result = await Pm_projecttasksService.update(id, cleanPayload as any)

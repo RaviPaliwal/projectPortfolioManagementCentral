@@ -46,6 +46,7 @@ import {
   StatusProgressBar,
   DataverseTable,
   ConfirmDialog,
+  MasterScheduleTab,
 } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
@@ -373,199 +374,218 @@ export default function PortfoliosPage() {
           )}
         </Box>
 
-        {/* Block 1: Details & Overview Grouping */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Overview
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Details
-                </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Owner</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedPortfolio.pm_ownerlookupname || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Unit</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedPortfolio.pm_businessunit || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Programmes Linked</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{detailProgrammes.length}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Projects Linked</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{detailProjects.length}</Typography>
-                  </Box>
+        <Tabs
+          value={detailTab}
+          onChange={(_, v) => setDetailTab(v)}
+          sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}
+        >
+          <Tab label="Overview & Projects" sx={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab label="Master Schedule" sx={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab label="Documents & Tasks" sx={{ textTransform: 'none', fontWeight: 600 }} />
+        </Tabs>
+
+        {detailTab === 0 && (
+          <>
+            {/* Block 1: Details & Overview Grouping */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Overview
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Details
+                    </Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Owner</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedPortfolio.pm_ownerlookupname || '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Unit</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedPortfolio.pm_businessunit || '—'}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Programmes Linked</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{detailProgrammes.length}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Projects Linked</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{detailProjects.length}</Typography>
+                      </Box>
+                    </Box>
+                  </Paper>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {selectedPortfolio.pm_portfoliodescription && (
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                          <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                          {selectedPortfolio.pm_portfoliodescription}
+                        </Typography>
+                      </Box>
+                    )}
+                    {selectedPortfolio.pm_strategicobjective && (
+                      <Box sx={{ mt: 'auto' }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                          <LightbulbIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Strategic Objective
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', lineHeight: 1.6 }}>
+                          "{selectedPortfolio.pm_strategicobjective}"
+                        </Typography>
+                      </Box>
+                    )}
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+
+            {/* Block 2: Financials */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Financials
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
+                      Budget Overview
+                    </Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Approved Budget</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                          {currencyFormatter.format(selectedPortfolio.pm_approvedbudgeteur ?? 0)}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>
+                          {currencyFormatter.format(selectedPortfolio.pm_actualspendeur ?? 0)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <StatusProgressBar
+                      value={selectedPortfolio.pm_actualspendeur ?? 0}
+                      total={selectedPortfolio.pm_approvedbudgeteur ?? 0}
+                      label="Budget Utilization"
+                    />
+                  </Paper>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                      Budget Variance
+                    </Typography>
+                    <VarianceDisplay budget={selectedPortfolio.pm_approvedbudgeteur} consumed={selectedPortfolio.pm_actualspendeur} />
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
+                      {selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0
+                        ? `${((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100).toFixed(1)}% of budget consumed`
+                        : 'No budget data available'}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+
+            {/* Block 3: Linked Programmes Grid */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Programmes
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
+                <Box sx={{
+                  '& .MuiPaper-root': {
+                    boxShadow: 'none',
+                    border: 'none',
+                    bgcolor: 'transparent',
+                    backgroundImage: 'none',
+                    borderRadius: 0,
+                    mb: 0
+                  }
+                }}>
+                  <DataverseTable
+                    data={detailProgrammes}
+                    columns={programmeColumns}
+                    loading={loading}
+                    emptyIcon={<FolderIcon />}
+                    emptyTitle="No programmes linked to this portfolio."
+                    searchPlaceholder="Search programmes..."
+                    searchFields={['pm_programmename']}
+                  />
                 </Box>
               </Paper>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {selectedPortfolio.pm_portfoliodescription && (
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                      <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                      {selectedPortfolio.pm_portfoliodescription}
-                    </Typography>
-                  </Box>
-                )}
-                {selectedPortfolio.pm_strategicobjective && (
-                  <Box sx={{ mt: 'auto' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                      <LightbulbIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Strategic Objective
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', lineHeight: 1.6 }}>
-                      "{selectedPortfolio.pm_strategicobjective}"
-                    </Typography>
-                  </Box>
-                )}
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
+            </Box>
 
-        {/* Block 2: Financials */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Financials
-          </Typography>
+            {/* Block 4: Linked Projects Grid */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Projects
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
+                <Box sx={{
+                  '& .MuiPaper-root': {
+                    boxShadow: 'none',
+                    border: 'none',
+                    bgcolor: 'transparent',
+                    backgroundImage: 'none',
+                    borderRadius: 0,
+                    mb: 0
+                  }
+                }}>
+                  <DataverseTable
+                    data={detailProjects}
+                    columns={projectColumns}
+                    loading={loading}
+                    emptyIcon={<AccountTreeIcon />}
+                    emptyTitle="No projects linked to this portfolio."
+                    searchPlaceholder="Search projects..."
+                    searchFields={['pm_projectname', 'pm_projectcode']}
+                  />
+                </Box>
+              </Paper>
+            </Box>
+          </>
+        )}
+
+        {detailTab === 1 && (
+          <MasterScheduleTab projects={detailProjects} />
+        )}
+
+        {detailTab === 2 && (
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 6 }}>
               <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                  Budget Overview
+                  Approval Tasks
                 </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Approved Budget</Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                      {currencyFormatter.format(selectedPortfolio.pm_approvedbudgeteur ?? 0)}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>
-                      {currencyFormatter.format(selectedPortfolio.pm_actualspendeur ?? 0)}
-                    </Typography>
-                  </Box>
-                </Box>
-                <StatusProgressBar
-                  value={selectedPortfolio.pm_actualspendeur ?? 0}
-                  total={selectedPortfolio.pm_approvedbudgeteur ?? 0}
-                  label="Budget Utilization"
+                <EntityApprovalTasks
+                  entityId={selectedPortfolio.pm_portfolioid ?? ''}
+                  moduleName={MODULE_NAMES.PORTFOLIOS.value}
+                  entityLabel="Portfolio"
+                  tabValue={0}
+                  index={0}
                 />
               </Paper>
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
               <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                  Budget Variance
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
+                  Documents
                 </Typography>
-                <VarianceDisplay budget={selectedPortfolio.pm_approvedbudgeteur} consumed={selectedPortfolio.pm_actualspendeur} />
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
-                  {selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0
-                    ? `${((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100).toFixed(1)}% of budget consumed`
-                    : 'No budget data available'}
-                </Typography>
+                <EntityDocumentsTab
+                  entityId={selectedPortfolio.pm_portfolioid ?? ''}
+                  moduleName={MODULE_NAMES.PORTFOLIOS.value}
+                  canEdit={canEdit}
+                />
               </Paper>
             </Grid>
           </Grid>
-        </Box>
-
-        {/* Block 3: Linked Programmes Grid */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Programmes
-          </Typography>
-          <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
-            <Box sx={{
-              '& .MuiPaper-root': {
-                boxShadow: 'none',
-                border: 'none',
-                bgcolor: 'transparent',
-                backgroundImage: 'none',
-                borderRadius: 0,
-                mb: 0
-              }
-            }}>
-              <DataverseTable
-                data={detailProgrammes}
-                columns={programmeColumns}
-                loading={loading}
-                emptyIcon={<FolderIcon />}
-                emptyTitle="No programmes linked to this portfolio."
-                searchPlaceholder="Search programmes..."
-                searchFields={['pm_programmename']}
-              />
-            </Box>
-          </Paper>
-        </Box>
-
-        {/* Block 4: Linked Projects Grid */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Projects
-          </Typography>
-          <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
-            <Box sx={{
-              '& .MuiPaper-root': {
-                boxShadow: 'none',
-                border: 'none',
-                bgcolor: 'transparent',
-                backgroundImage: 'none',
-                borderRadius: 0,
-                mb: 0
-              }
-            }}>
-              <DataverseTable
-                data={detailProjects}
-                columns={projectColumns}
-                loading={loading}
-                emptyIcon={<AccountTreeIcon />}
-                emptyTitle="No projects linked to this portfolio."
-                searchPlaceholder="Search projects..."
-                searchFields={['pm_projectname', 'pm_projectcode']}
-              />
-            </Box>
-          </Paper>
-        </Box>
-
-        {/* Block 5: Tasks & Documents */}
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                Approval Tasks
-              </Typography>
-              <EntityApprovalTasks
-                entityId={selectedPortfolio.pm_portfolioid ?? ''}
-                moduleName={MODULE_NAMES.PORTFOLIOS.value}
-                entityLabel="Portfolio"
-                tabValue={0}
-                index={0}
-              />
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                Documents
-              </Typography>
-              <EntityDocumentsTab
-                entityId={selectedPortfolio.pm_portfolioid ?? ''}
-                moduleName={MODULE_NAMES.PORTFOLIOS.value}
-                canEdit={canEdit}
-              />
-            </Paper>
-          </Grid>
-        </Grid>
+        )}
 
         <PortfolioFormDialog
           open={showFormModal}

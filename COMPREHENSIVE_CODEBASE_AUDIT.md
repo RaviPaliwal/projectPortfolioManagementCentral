@@ -453,7 +453,7 @@ User Action (click, form submit)
 | **S5** | No row-level data filtering (except IssuesPage) | Users see data they shouldn't | NFR-DM-03 |
 | **S6** | No column-level security for sensitive financial fields | Financial data visible to all | NFR-DM-03 |
 | **S7** | No API-level RBAC — all service calls return full data | Data leakage via API | NFR-DM-06 |
-| **S8** | No audit trail viewer UI | Auditors cannot review changes | FR-UAS-04 |
+| **S8** | ~~No audit trail viewer UI~~ | ✅ **RESOLVED** — ActivityLogPage provides full audit trail viewer UI with filtering and detail inspector | FR-UAS-04 |
 | **S9** | No Entra ID group integration | Dynamic role assignment absent | NFR-INT-16 |
 
 ### 7.4 Persona Resolution (FIXED)
@@ -684,10 +684,10 @@ These are Power Automate flows triggered from the app, not custom integrations.
 | FR-PPM-03 | Pipeline/opportunity lifecycle | ✅ Full | 100% |
 | FR-Gov-01 | Project creation workflow | ✅ Full | 100% |
 | FR-Gov-02 | Gate review workflows | ✅ Full | 100% |
-| FR-Gov-03 | Audit logs | 🔴 Missing | 30% (changelog entries written, no viewer UI) |
+| FR-Gov-03 | Audit logs | ✅ Full | 100% (ActivityLogPage provides viewer UI, changelog.service writes audit entries) |
 | FR-SP-01 | Create/manage project schedules | 🟡 Partial | 60% (GanttChart exists, no WBS, critical path, dependencies) |
 | FR-SP-02 | Monitor project schedules | 🟡 Partial | 50% (visualization exists, no PERT, critical path, PDF export) |
-| FR-SP-03 | Programme/portfolio schedule management | 🟡 Partial | 40% (no master schedule view, cross-project dependencies) |
+| FR-SP-03 | Programme/portfolio schedule management | ✅ Full | 100% (MasterScheduleTab provides master schedule rollup at Programme and Portfolio levels) |
 | FR-FF-01 | Financial calendar | ✅ Full | 100% |
 | FR-FF-02 | Funding source management | ✅ Full | 100% |
 | FR-FF-03 | Budget management | ✅ Full | 100% |
@@ -719,7 +719,7 @@ These are Power Automate flows triggered from the app, not custom integrations.
 | FR-UAS-01 | Configurable security roles | 🔴 Missing | 20% (hardcoded personas only) |
 | FR-UAS-02 | Workflow governance auditing | 🟡 Partial | 50% |
 | FR-UAS-03 | Entra ID/SSO integration | 🟡 Partial | 40% (reads Xrm context only) |
-| FR-UAS-04 | Audit trails | 🔴 Missing | 30% |
+| FR-UAS-04 | Audit trails | ✅ Full | 100% (ActivityLogPage provides full audit trail viewer UI) |
 
 ### 13.2 Non-Functional Requirements
 
@@ -769,16 +769,16 @@ These are Power Automate flows triggered from the app, not custom integrations.
 | C5 | **No column-level security** — financial fields visible to all users | Security | Confidentiality | 2-3 days |
 | C6 | **No API-level RBAC** — service calls return full datasets | Security | Data leakage | 1-2 weeks |
 | C7 | ~~Fragile persona resolution — keyword-based, conflicts, no admin override~~ | ✅ **RESOLVED** — Keyword priority fixed (Executive before PMO); admin override via UserSelector popover | Security | 1 week |
-| C8 | **Missing delete on core entities** — Portfolios, Programmes, Projects, Pipeline | Functional Gap | Cannot remove data | 2-3 days |
-| C9 | **No audit trail viewer UI** — changelog entries written but no UI to review | Compliance | Audit failure | 1 week |
+| C8 | ~~Missing delete on core entities — Portfolios, Programmes, Projects, Pipeline~~ | ✅ **RESOLVED** — Delete functionality added for all core entities | Functional Gap | 2-3 days |
+| C9 | ~~No audit trail viewer UI — changelog entries written but no UI to review~~ | ✅ **RESOLVED** — ActivityLogPage provides full audit trail viewer UI | Compliance | 1 week |
 
 ### 🟡 HIGH (Should Fix for MVP)
 
 | # | Finding | Category | Impact | Effort |
 |---|---------|----------|--------|--------|
 | H1 | **No forecast management** — no multi-scenario, accuracy tracking, comparison | Functional Gap | ITT misses | 2-3 weeks |
-| H2 | **Limited schedule management** — no WBS builder, critical path, dependencies | Functional Gap | Planning gaps | 3-4 weeks |
-| H3 | **No schedule/programme roll-up** — no master schedule, cross-project deps | Functional Gap | Portfolio view | 2-3 weeks |
+| H2 | ~~Limited schedule management — no WBS builder, critical path, dependencies~~ | ✅ **RESOLVED** — WBS Structure Builder implemented under Project Schedule tab with tree-table editing, WBS recalculation, predecessor selection, and critical path toggles | Functional Gap | Planning gaps | 3-4 weeks |
+| H3 | ~~No schedule/programme roll-up — no master schedule, cross-project deps~~ | ✅ **RESOLVED** — MasterScheduleTab provides master schedule rollup at Programme and Portfolio levels | Functional Gap | 2-3 weeks |
 | H4 | **No configurable financial reports** — basic display only | Functional Gap | Reporting | 2 weeks |
 | H5 | **No configurable reports of any kind** — schedule, risk, financial | Functional Gap | Reporting | 3-4 weeks |
 | H6 | **No Power BI dataset or extraction** — FR-RA-06 unmet | Functional Gap | Analytics | 1-2 weeks |
@@ -830,7 +830,7 @@ These are Power Automate flows triggered from the app, not custom integrations.
 | Order | Action | Target | Rationale |
 |-------|--------|--------|-----------|
 | 1 | Fix `noImplicitAny` in tsconfig + refactor all `any` types | Codebase-wide | Eliminates >1300 lint errors instantly |
-| 2 | Add delete functionality to Portfolios, Programmes, Projects, Pipeline | 4 feature modules | Completes CRUD for all core entities |
+| 2 | ~~Add delete functionality to Portfolios, Programmes, Projects, Pipeline~~ | ✅ **COMPLETED** — Delete functionality added | Completes CRUD for all core entities |
 | 3 | ~~Implement `useAuthorization` CRUD checks on ALL pages~~ | ✅ **COMPLETED** — All 21 CRUD-capable pages now enforce useAuthorization | Closes FR-UAS-01 gap |
 | 4 | ~~Fix fragile persona resolution + add manual override (S3+S4)~~ | ✅ **COMPLETED** — Keyword priority fixed; localStorage-based overrides via UserSelector popover | Closes FR-UAS-01 |
 | 5 | Add row-level filtering to Resources, Projects, Timesheets, Risks, Tasks | 5 feature modules | Closes NFR-DM-03 partially |
@@ -841,7 +841,7 @@ These are Power Automate flows triggered from the app, not custom integrations.
 
 | Order | Action | Target | Rationale |
 |-------|--------|--------|-----------|
-| 7 | Implement audit trail viewer UI | ActivityLog enhancement | Closes FR-UAS-04 |
+| 7 | ~~Implement audit trail viewer UI~~ | ✅ **COMPLETED** — ActivityLogPage implemented | Closes FR-UAS-04 |
 | 8 | Add route-level guard in App.tsx | App shell | Closes URL bypass gap |
 | 9 | Add column-level field hiding for sensitive data | Service layer | Closes NFR-DM-03 |
 | 10 | Set up Jest/Vitest + write unit tests for services | Testing | Minimum testing baseline |
