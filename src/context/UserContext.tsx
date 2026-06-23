@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react'
 import {
   Box, Typography, Avatar, Select, MenuItem, FormControl,
   Tooltip, Popover, List, ListItemButton, ListItemAvatar,
@@ -155,6 +155,14 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
   const [userRolesMap, setUserRolesMap] = useState<Record<string, string[]>>({})
   const [userTeamsState, setUserTeamsState] = useState<Map<string, string[]>>(new Map())
 
+  // ── Refs to break circular deps and prevent stale closures ─────────────
+  const currentUserRef = useRef<SystemUser | null>(null)
+  const mountedRef = useRef(true)
+  const initialLoadDoneRef = useRef(false)
+
+  // Keep ref in sync with state
+  currentUserRef.current = currentUser
+
   const handleSetCurrentUser = useCallback((user: SystemUser) => {
     setCurrentUser(user)
     if (user.systemuserid) {
@@ -162,12 +170,16 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('ppm_selected_user_id', user.systemuserid)
         localStorage.setItem('ppm_selected_user_fullname', user.fullname || '')
       } catch (e) {
+        console.warn('[UserContext] Failed to persist user selection to localStorage', e)
       }
     }
   }, [])
 
   const fetchUsers = useCallback(async () => {
-    setLoading(true)
+    // Skip loading spinner on re-fetches after initial load (e.g. HMR re-mount)
+    if (!initialLoadDoneRef.current) {
+      setLoading(true)
+    }
     try {
       const [usersResult, teamsResult, membershipsResult] = await Promise.all([
         SystemusersService.getAll({
@@ -185,6 +197,8 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
           top: 5000,
         })
       ])
+
+      if (!mountedRef.current) return
 
       const list = unwrapUserList(usersResult).filter(u => !u.fullname?.startsWith('#'))
       const teams = unwrapList<any>(teamsResult)
@@ -223,6 +237,8 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         fetchTeamRolesFromDataverse()
       ])
 
+      if (!mountedRef.current) return
+
       // Seed the logged-in user's roles from the Xrm context if available (instant and includes team-inherited roles)
       const loggedInId = getLoggedInUserId()
       if (loggedInId) {
@@ -235,6 +251,8 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         } catch (e) {
         }
       }
+
+      if (!mountedRef.current) return
 
       // Resolve personas for all users (overrides applied inside getPersonaFromUser)
       const personas: Record<string, Persona> = {}
@@ -275,12 +293,15 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         personas[userId] = persona
       }
 
+      if (!mountedRef.current) return
+
       setUserPersonas(personas)
       setUsers(list)
       setUserRolesMap(userRolesMap)
       setUserTeamsState(userTeams)
       
-      if (!currentUser && list.length > 0) {
+      // Use ref value instead of state for the guard to avoid stale closure issues
+      if (!currentUserRef.current && list.length > 0) {
         let storedUserId: string | null = null
         try {
           storedUserId = localStorage.getItem('ppm_selected_user_id')
@@ -311,19 +332,28 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
               localStorage.setItem('ppm_selected_user_id', startingUser.systemuserid)
               localStorage.setItem('ppm_selected_user_fullname', startingUser.fullname || '')
             } catch (e) {
+              console.warn('[UserContext] Failed to persist user selection to localStorage', e)
             }
           }
         }
       }
+
+      initialLoadDoneRef.current = true
     } catch (err) {
+      console.error('[UserContext] Failed to fetch users/teams:', err)
     } finally {
       setLoading(false)
+      initialLoadDoneRef.current = true
     }
-  }, [currentUser])
+  }, []) // Stable — uses refs instead of state for guards
 
   useEffect(() => {
+    mountedRef.current = true
     fetchUsers()
-  }, [])
+    return () => {
+      mountedRef.current = false
+    }
+  }, [fetchUsers])
 
   const currentUserPersona = useMemo(() => {
     if (!currentUser || !currentUser.systemuserid) return 'TeamMember'
