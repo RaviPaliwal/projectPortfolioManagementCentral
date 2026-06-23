@@ -48,7 +48,7 @@ import {
 import { recalculateProjectFinancials, normalizeLookupId, mapProjectTask, mapProjectMilestone } from '@/services'
 
 export default function ProjectsPage() {
-  const { currentUser } = useUser()
+  const { currentUser, users } = useUser()
   const { allowed: canCreate } = useAuthorization('PROJECTS', 'create')
   const { allowed: canEdit } = useAuthorization('PROJECTS', 'update')
   const { allowed: canDelete } = useAuthorization('PROJECTS', 'delete')
@@ -256,17 +256,28 @@ export default function ProjectsPage() {
         
         // Immediately patch the local projects array from the form data so the grid
         // reflects changes right away, without waiting for any background refresh.
+        const selectedUser = users.find(u => u.systemuserid === form.pm_projectmanager)
         setProjects((prev) =>
           prev.map((p) =>
             normalizeLookupId(p.pm_projectid) === normalizeLookupId(targetId)
-              ? { ...p, ...form }
+              ? {
+                  ...p,
+                  ...form,
+                  pm_projectmanagername: selectedUser ? selectedUser.fullname : p.pm_projectmanagername,
+                  _pm_projectmanager_value: form.pm_projectmanager,
+                }
               : p
           )
         )
         
         // If we are currently viewing this specific project in the detail view, update it too
         if (selectedProject && normalizeLookupId(targetId) === normalizeLookupId(selectedProject.pm_projectid)) {
-           setSelectedProject((prev) => prev ? { ...prev, ...form } : prev)
+           setSelectedProject((prev) => prev ? {
+             ...prev,
+             ...form,
+             pm_projectmanagername: selectedUser ? selectedUser.fullname : prev.pm_projectmanagername,
+             _pm_projectmanager_value: form.pm_projectmanager,
+           } : prev)
         }
         
         // Background refresh for consistency with the server

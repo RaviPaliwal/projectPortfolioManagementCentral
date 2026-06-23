@@ -335,10 +335,14 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
       ? `/pm_programmes(${normalizeLookupId(changes._pm_programme_value)})`
       : null
   }
-  if (changes.pm_projectmanager !== undefined && hasChanged('_pm_projectmanager_value', changes.pm_projectmanager)) {
-    cleanPayload['pm_ProjectManager@odata.bind'] = changes.pm_projectmanager
-      ? `/systemusers(${normalizeLookupId(changes.pm_projectmanager)})`
-      : null
+  if (changes.pm_projectmanager !== undefined) {
+    const oldManager = normalizeLookupId(original?._pm_projectmanager_value)
+    const newManager = normalizeLookupId(changes.pm_projectmanager)
+    if (oldManager !== newManager) {
+      cleanPayload['pm_ProjectManager@odata.bind'] = newManager
+        ? `/systemusers(${newManager})`
+        : null
+    }
   }
 
   if (Object.keys(cleanPayload).length === 0) {

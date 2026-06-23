@@ -165,9 +165,9 @@ export default function ProgrammesPage() {
       setPortfolios(
         hierarchy.portfolios
           .filter((p) => p.pm_portfolioid && p.pm_portfolioname)
-          .map((p) => ({ 
-            id: p.pm_portfolioid!, 
-            name: p.pm_portfolioname!, 
+          .map((p) => ({
+            id: p.pm_portfolioid!,
+            name: p.pm_portfolioname!,
             budget: p.pm_approvedbudgeteur ?? 0,
             startDate: p.pm_startdate ?? '',
             endDate: p.pm_enddate ?? '',
@@ -405,7 +405,7 @@ export default function ProgrammesPage() {
           items={[{ label: 'Programmes', path: 'list' }, { label: prog?.pm_programmename ?? 'Detail' }]}
           onNavigate={() => closeDetail()}
         />
-        
+
         <PageHeader
           title={prog?.pm_programmename ?? 'Programme Detail'}
           subtitle={prog?.pm_programmemanagername ? `Manager: ${prog.pm_programmemanagername}` : undefined}
@@ -565,6 +565,8 @@ export default function ProgrammesPage() {
                   }
                 }}>
                   <DataverseTable
+                    showExport={false}
+                    minHeight={"auto"}
                     data={detailProjects}
                     columns={projectColumns}
                     loading={detailLoading}
@@ -881,11 +883,11 @@ export default function ProgrammesPage() {
               </TableHead>
               <TableBody>
                 {paginatedProgrammes.map((p, idx) => (
-                  <TableRow 
-                    key={p.pm_programmeid} 
-                    hover 
-                    onClick={() => p.pm_programmeid && openDetail(p.pm_programmeid)} 
-                    sx={{ 
+                  <TableRow
+                    key={p.pm_programmeid}
+                    hover
+                    onClick={() => p.pm_programmeid && openDetail(p.pm_programmeid)}
+                    sx={{
                       cursor: 'pointer',
                       bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
                       '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
