@@ -291,8 +291,8 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
           borderColor: 'divider', 
           borderRadius: 2,
           bgcolor: isDark ? '#0f172a' : '#ffffff',
-          height: height ?? 520,
-          boxShadow: 2,
+          height: (height ?? 0) || undefined,
+          // boxShadow removed - elevation handled by parent Paper
         }}
       >
         <Box sx={{ display: 'flex', minHeight: totalHeight, position: 'relative' }}>
@@ -566,3 +566,4 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
     </Box>
   )
 }
+
