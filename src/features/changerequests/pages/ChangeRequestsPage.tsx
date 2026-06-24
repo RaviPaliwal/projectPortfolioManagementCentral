@@ -48,7 +48,7 @@ import { useUser } from '@/context/UserContext'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
 import type { ExportColumn } from '@/utils/exportUtils'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, WorkflowMilestone, ConfirmDialog, EntityDocumentsTab } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, ConfirmDialog, EntityDocumentsTab } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { KpiCardItem, FilterOption } from '@/components/common'
@@ -185,6 +185,14 @@ export default function ChangeRequestsPage() {
   })
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
+  // Confirmation dialog state (shown after create + workflow trigger)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean
+    name: string
+    reference: string
+    changeType: string
+  }>({ open: false, name: '', reference: '', changeType: '' })
 
   // File upload state for create/edit form
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
@@ -420,6 +428,24 @@ export default function ChangeRequestsPage() {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
   }, [])
 
+  // ─── Shared file upload helper ────────────────────────────────────────────
+
+  const uploadSelectedFiles = useCallback(async (entityId: string): Promise<number> => {
+    if (!entityId || selectedFiles.length === 0) return 0
+    setUploadingFiles(true)
+    const ownerId = currentUser?.systemuserid || ''
+    let uploadErrors = 0
+    for (const file of selectedFiles) {
+      if (file.size > 32 * 1024 * 1024) { uploadErrors++; continue }
+      try {
+        await uploadDocument(MODULE_NAMES.CHANGE_REQUESTS.value, entityId, file, ownerId)
+      } catch { uploadErrors++ }
+    }
+    setUploadingFiles(false)
+    setSelectedFiles([])
+    return uploadErrors
+  }, [selectedFiles, currentUser?.systemuserid, uploadDocument])
+
   // ─── Auto-generate reference ───────────────────────────────────────────────
 
   const autoGenerateReference = useCallback((): string => {
@@ -463,6 +489,7 @@ export default function ChangeRequestsPage() {
         setSuccessMsg('Change request created successfully.')
 
         // Auto-trigger workflow after creation
+        const crReference = created?.pm_changerequestreference || payload.pm_changerequestreference || ''
         if (created?.pm_changerequestid) {
           try {
             const workflows = await fetchWorkflows()
@@ -485,35 +512,32 @@ export default function ChangeRequestsPage() {
             // Ignore auto-trigger workflow failure
           }
         }
+
+        // Upload files for new creates before showing confirmation
+        if (createdId) {
+          await uploadSelectedFiles(createdId)
+        }
+        setConfirmDialog({
+          open: true,
+          name: created?.pm_changerequesttitle || formData.pm_changerequesttitle || '',
+          reference: crReference,
+          changeType: CHANGE_TYPE_LABELS[String(formData.pm_changetype)] || 'CR',
+        })
+
+        setShowFormModal(false)
+        setSuccessMsg(null)
+        await loadData()
+        return // Skip remaining update-only logic
       }
 
-      // Upload any selected files after successful save
-      if (createdId && selectedFiles.length > 0) {
-        setUploadingFiles(true)
-        const ownerId = currentUser?.systemuserid || ''
-        let uploadErrors = 0
-        for (const file of selectedFiles) {
-          if (file.size > 32 * 1024 * 1024) {
-            uploadErrors++
-            continue
-          }
-          try {
-            await uploadDocument(MODULE_NAMES.CHANGE_REQUESTS.value, createdId, file, ownerId)
-          } catch {
-            uploadErrors++
-          }
-        }
-        setUploadingFiles(false)
-        if (uploadErrors > 0) {
-          setSuccessMsg(isUpdate
+      // Upload any selected files for updates
+      if (createdId) {
+        const uploadErrors = await uploadSelectedFiles(createdId)
+        if (selectedFiles.length > 0) {
+          setSuccessMsg(uploadErrors > 0
             ? 'Change request updated. Some files failed to upload.'
-            : 'Change request created. Some files failed to upload.')
-        } else if (selectedFiles.length > 0) {
-          setSuccessMsg(isUpdate
-            ? `Change request updated with ${selectedFiles.length} file(s).`
-            : `Change request created with ${selectedFiles.length} file(s).`)
+            : `Change request updated with ${selectedFiles.length} file(s).`)
         }
-        setSelectedFiles([])
       }
 
       setShowFormModal(false)
@@ -763,7 +787,7 @@ export default function ChangeRequestsPage() {
             )}
           </Box>
         }
-        tabs={[{ label: 'Overview' }, { label: 'Details' }, { label: 'Approval' }, { label: 'Tasks' }, { label: 'Documents' }]}
+        tabs={[{ label: 'Overview' }, { label: 'Details' }, { label: 'Tasks' }, { label: 'Documents' }]}
         tabValue={detailTab}
         onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
       >
@@ -884,15 +908,6 @@ export default function ChangeRequestsPage() {
 
             <TabPanel value={detailTab} index={2} pt={0}>
               {selectedCR.pm_changerequestid && (
-                <WorkflowMilestone
-                  moduleName="ChangeRequest"
-                  entityId={selectedCR.pm_changerequestid}
-                />
-              )}
-            </TabPanel>
-
-            <TabPanel value={detailTab} index={3} pt={0}>
-              {selectedCR.pm_changerequestid && (
                 <EntityApprovalTasks
                   entityId={selectedCR.pm_changerequestid}
                   moduleName={MODULE_NAMES.CHANGE_REQUESTS.value}
@@ -903,7 +918,7 @@ export default function ChangeRequestsPage() {
               )}
             </TabPanel>
 
-            <TabPanel value={detailTab} index={4} pt={0}>
+            <TabPanel value={detailTab} index={3} pt={0}>
               {selectedCR.pm_changerequestid && (
                 <Box sx={{ position: 'relative' }}>
                   <EntityDocumentsTab
@@ -1160,6 +1175,80 @@ export default function ChangeRequestsPage() {
             disabled={!String(formData.pm_changerequesttitle || '').trim() || actionLoading}
             sx={{ fontWeight: 600 }}>
             {uploadingFiles ? 'Uploading files...' : actionLoading ? 'Saving...' : editingCR ? 'Update Change Request' : 'Submit Change Request'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Success Confirmation Dialog ── */}
+      <Dialog
+        open={confirmDialog.open}
+        onClose={() => setConfirmDialog({ open: false, name: '', reference: '', changeType: '' })}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: { overflow: 'visible' },
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -28,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            bgcolor: 'primary.main',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+          }}
+        >
+          <CheckCircleIcon sx={{ fontSize: 32, color: '#fff' }} />
+        </Box>
+        <DialogTitle sx={{ textAlign: 'center', pt: 5, pb: 1, fontWeight: 700, fontSize: 20 }}>
+          Change Request Submitted
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', pb: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center', mb: 2 }}>
+            <Typography variant="body1" sx={{ fontWeight: 600, fontSize: 16 }}>
+              {confirmDialog.name}
+            </Typography>
+            {confirmDialog.reference && (
+              <Typography
+                variant="body2"
+                sx={{
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontWeight: 600,
+                  color: 'primary.main',
+                  fontSize: fontSizes.smMd,
+                }}
+              >
+                {confirmDialog.reference}
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 2 }}>
+            <StatusTag label={confirmDialog.changeType} color="primary" variant="outlined" />
+            <StatusTag label="Under Review" color="warning" variant="outlined" />
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            The change request has been submitted and sent for approval. You can track its approval status from the change request detail panel.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3, gap: 1.5 }}>
+          <Button
+            variant="contained"
+            onClick={() => setConfirmDialog({ open: false, name: '', reference: '', changeType: '' })}
+            sx={{
+              px: 4,
+              fontWeight: 600,
+            }}
+          >
+            Done
           </Button>
         </DialogActions>
       </Dialog>
