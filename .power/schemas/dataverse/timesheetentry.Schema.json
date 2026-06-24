@@ -333,14 +333,6 @@
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_project"
         },
-        "pm_projectcode": {
-          "type": "string",
-          "title": "Project",
-          "x-ms-dataverse-attribute": "pm_projectcode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projectcode",
-          "maxLength": 100
-        },
         "pm_projectname": {
           "type": "string",
           "title": "pm_projectname",
@@ -365,14 +357,6 @@
           "x-ms-schema-name": "pm_projecttaskName",
           "x-ms-read-only": true,
           "maxLength": 850
-        },
-        "pm_taskcode": {
-          "type": "string",
-          "title": "Task",
-          "x-ms-dataverse-attribute": "pm_taskcode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_taskcode",
-          "maxLength": 100
         },
         "pm_timesheet": {
           "type": "string",

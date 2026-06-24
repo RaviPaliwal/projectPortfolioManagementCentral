@@ -1,3 +1,13 @@
+// Self-hosted fonts (CSP-compliant, no external requests)
+import '@fontsource/plus-jakarta-sans/300.css'
+import '@fontsource/plus-jakarta-sans/400.css'
+import '@fontsource/plus-jakarta-sans/500.css'
+import '@fontsource/plus-jakarta-sans/600.css'
+import '@fontsource/plus-jakarta-sans/700.css'
+import '@fontsource/outfit/400.css'
+import '@fontsource/outfit/500.css'
+import '@fontsource/outfit/600.css'
+import '@fontsource/outfit/700.css'
 import { useState, useMemo, useEffect, Component, type ReactNode, type ErrorInfo } from 'react'
 import { ThemeProvider, CssBaseline, Box, Paper, Typography, Button, Alert } from '@mui/material'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined'

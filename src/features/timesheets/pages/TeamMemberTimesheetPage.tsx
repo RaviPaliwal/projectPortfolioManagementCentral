@@ -15,6 +15,7 @@ import {
   fetchTimesheetEntries,
   fetchHolidays,
   fetchAllocatedProjectsForResource,
+  fetchProjectTasksByResource,
   createTimesheetEntry,
   updateTimesheetEntry,
   deleteTimesheetEntry,
@@ -108,45 +109,61 @@ interface AddEntryDialogProps {
   period: TimesheetModel;
   entries: any[];
   projects: { id: string; name: string }[];
+  projectTasks: { id: string; name: string; wbs?: string }[];
+  tasksLoading: boolean;
   holidays: any[];
   initialData: any;
   dailyCapacity: number;
   onClose: () => void;
   onSave: (form: any) => Promise<void>;
+  onProjectChange: (projectId: string) => void;
 }
 function AddEntryDialog({
   period,
   entries,
   projects,
+  projectTasks,
+  tasksLoading,
   holidays,
   initialData,
   dailyCapacity,
   onClose,
   onSave,
+  onProjectChange,
 }: AddEntryDialogProps) {
   const [form, setForm] = useState({
     id: initialData?.id || null,
     dates: initialData?.dates || [],
     activity: initialData?.activity || 'chargeable',
     projectId: initialData?.projectId || '',
+    projectTaskId: initialData?.projectTaskId || '',
     hours: initialData?.hours || dailyCapacity,
+    isOvertime: initialData?.isOvertime || false,
+    overtimeHours: initialData?.overtimeHours || 0,
     comment: initialData?.comment || '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const isEdit = !!form.id;
+  const totalHours = form.isOvertime
+    ? (form.overtimeHours || 0)
+    : (form.hours || 0);
   const handleSubmit = async () => {
     if (form.dates.length === 0) { setError('Please select at least one date.'); return; }
-    if (!form.hours || form.hours <= 0) { setError('Please enter valid hours.'); return; }
+    if (!totalHours || totalHours <= 0) { setError('Please enter valid hours.'); return; }
     if (form.activity === 'chargeable' && !form.projectId) { setError('Please select a project for chargeable time.'); return; }
     setSaving(true);
     setError('');
     try {
-      await onSave(form);
+      await onSave({ ...form, totalHours });
     } catch {
       setError('Failed to save entry. Please try again.');
       setSaving(false);
     }
+  };
+  const handleProjectChange = (value: string) => {
+    setForm(f => ({ ...f, projectId: value, projectTaskId: '' }));
+    onProjectChange(value);
   };
   return (
     <div className="ts-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -193,7 +210,7 @@ function AddEntryDialog({
               <select
                 className="ts-select"
                 value={form.projectId}
-                onChange={e => setForm(f => ({ ...f, projectId: e.target.value }))}
+                onChange={e => handleProjectChange(e.target.value)}
               >
                 <option value="">— Select project —</option>
                 {projects.map(p => (
@@ -202,19 +219,70 @@ function AddEntryDialog({
               </select>
             </div>
           )}
-          {/* Hours */}
+          {/* Project Task selector — shown only for chargeable when a project is selected */}
+          {form.activity === 'chargeable' && form.projectId && (
+            <div className="ts-field">
+              <label>Project Task</label>
+              <select
+                className="ts-select"
+                value={form.projectTaskId}
+                onChange={e => setForm(f => ({ ...f, projectTaskId: e.target.value }))}
+                disabled={tasksLoading}
+              >
+                <option value="">— Select task —</option>
+                {projectTasks.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.wbs ? `${t.wbs} ` : ''}{t.name}
+                  </option>
+                ))}
+              </select>
+              {tasksLoading && <span className="ts-muted" style={{ fontSize: 11 }}>Loading tasks…</span>}
+              {!tasksLoading && projectTasks.length === 0 && (
+                <span className="ts-muted" style={{ fontSize: 11 }}>No tasks assigned to you for this project</span>
+              )}
+            </div>
+          )}
+          {/* Overtime toggle */}
           <div className="ts-field">
-            <label>Hours per day</label>
-            <input
-              type="number"
-              className="ts-input"
-              min={0.5}
-              max={24}
-              step={0.5}
-              value={form.hours}
-              onChange={e => setForm(f => ({ ...f, hours: parseFloat(e.target.value) || 0 }))}
-            />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={form.isOvertime}
+                onChange={e => setForm(f => ({ ...f, isOvertime: e.target.checked }))}
+                style={{ width: 16, height: 16, accentColor: 'var(--charge)' }}
+              />
+              <span>Overtime</span>
+            </label>
           </div>
+          {/* Hours — different label when overtime */}
+          {!form.isOvertime ? (
+            <div className="ts-field">
+              <label>Hours per day</label>
+              <input
+                type="number"
+                className="ts-input"
+                min={0.5}
+                max={24}
+                step={0.5}
+                value={form.hours}
+                onChange={e => setForm(f => ({ ...f, hours: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
+          ) : (
+            <div className="ts-field">
+              <label style={{ color: 'var(--charge)' }}>Overtime Hours</label>
+              <input
+                type="number"
+                className="ts-input"
+                min={0.5}
+                max={24}
+                step={0.5}
+                value={form.overtimeHours}
+                onChange={e => setForm(f => ({ ...f, overtimeHours: parseFloat(e.target.value) || 0 }))}
+                style={{ borderColor: 'var(--charge)' }}
+              />
+            </div>
+          )}
           {/* Comment */}
           <div className="ts-field">
             <label>Notes (optional)</label>
@@ -240,7 +308,7 @@ function AddEntryDialog({
               ? 'Saving…'
               : isEdit
                 ? 'Save Changes'
-                : `Log ${form.dates.length > 1 ? form.dates.length + ' entries' : 'Entry'}`}
+                : `Log ${form.dates.length > 1 ? form.dates.length + ' entries' : 'Entry'}${totalHours ? ` (${totalHours}h${form.isOvertime ? ' OT' : ''})` : ''}`}
           </button>
         </div>
       </div>
@@ -262,6 +330,8 @@ const TeamMemberTimesheetPage = () => {
   const [entries, setEntries] = useState<TimesheetEntryModel[]>([]);
   const [holidays, setHolidays] = useState<any[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [projectTasks, setProjectTasks] = useState<{ id: string; name: string; wbs?: string }[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [resource, setResource] = useState<ResourceModel | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -288,7 +358,9 @@ const TeamMemberTimesheetPage = () => {
         date: e.pm_workdate?.split('T')[0] || '',
         activity,
         projectName: project?.name || '',
+        projectTaskName: e.pm_projecttaskname || '',
         hours: e.pm_hoursworked || 0,
+        isOvertime: e.pm_isovertime || false,
         comment: e.pm_worknotes || '',
         isReadOnly: false,
         type: activity,
@@ -368,6 +440,29 @@ const TeamMemberTimesheetPage = () => {
     }
   }, [selectedId]);
   /* ---- handlers ---- */
+  const handleLoadProjectTasks = useCallback(async (projectId: string) => {
+    if (!projectId || !resource?.pm_resourceid) {
+      setProjectTasks([]);
+      return;
+    }
+    setTasksLoading(true);
+    try {
+      const tasks = await fetchProjectTasksByResource(projectId, resource.pm_resourceid);
+      setProjectTasks(
+        tasks.map(t => ({
+          id: t.pm_projecttaskid!,
+          name: t.pm_taskname || 'Unnamed Task',
+          wbs: t.pm_wbsnumber,
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to load project tasks:', err);
+      setProjectTasks([]);
+    } finally {
+      setTasksLoading(false);
+    }
+  }, [resource?.pm_resourceid]);
+
   const handleOpenCreate = () => {
     setCreateForm({ month: new Date().getMonth(), year: new Date().getFullYear() });
     setCreateDialogOpen(true);
@@ -406,11 +501,13 @@ const TeamMemberTimesheetPage = () => {
     try {
       const fields = mapActivityToEntryFields(form.activity);
       const payloadBase = {
-        pm_hoursworked: form.hours,
+        pm_hoursworked: form.totalHours || form.hours,
         pm_worknotes: form.comment,
         pm_ischargeable: fields.pm_ischargeable,
         pm_nonchargeablereason: fields.pm_nonchargeablereason || undefined,
+        pm_isovertime: form.isOvertime ? true : undefined,
         _pm_project_value: form.activity === 'chargeable' ? form.projectId : undefined,
+        _pm_projecttask_value: form.activity === 'chargeable' && form.projectTaskId ? form.projectTaskId : undefined,
       };
       if (form.id) {
         await updateTimesheetEntry(form.id, { ...payloadBase, pm_workdate: form.dates[0] });
@@ -447,15 +544,23 @@ const TeamMemberTimesheetPage = () => {
     setDialogOpen(true);
   };
   const handleOpenEdit = (entry: any) => {
+    const fullEntry = entries.find(e => e.pm_timesheetentryid === entry.id);
     setEditingEntry({
       id: entry.id,
       dates: [entry.date],
       activity: entry.activity,
-      projectId: entries.find(e => e.pm_timesheetentryid === entry.id)?._pm_project_value || "",
+      projectId: fullEntry?._pm_project_value || "",
+      projectTaskId: fullEntry?._pm_projecttask_value || "",
       hours: entry.hours,
+      isOvertime: fullEntry?.pm_isovertime || false,
+      overtimeHours: fullEntry?.pm_isovertime ? entry.hours : 0,
       comment: entry.comment,
     });
     setDialogOpen(true);
+    // Load project tasks for the project if chargeable with a project
+    if (fullEntry?._pm_project_value) {
+      handleLoadProjectTasks(fullEntry._pm_project_value);
+    }
   };
   const handleRemoveEntry = async (id: string) => {
     if (!selectedId || !resource?.pm_resourceid) return;
@@ -658,8 +763,27 @@ const TeamMemberTimesheetPage = () => {
                 <div key={e.id} className="ts-entry-row">
                   <span className="ts-mono ts-entry-date">{formatDateShort(e.date)}</span>
                   <ActivityChip id={e.activity} />
-                  <span className="ts-entry-project">{e.projectName || "—"}</span>
-                  <span className="ts-mono ts-entry-hours">{e.hours}h</span>
+                  <span className="ts-entry-project">
+                    {e.projectName || "—"}
+                    {e.projectTaskName && (
+                      <span className="ts-muted" style={{ fontSize: 11, display: 'block' }}>{e.projectTaskName}</span>
+                    )}
+                  </span>
+                  <span className="ts-mono ts-entry-hours">
+                    {e.hours}h
+                    {e.isOvertime && (
+                      <span style={{
+                        fontSize: 9,
+                        fontWeight: 700,
+                        color: '#fff',
+                        background: '#f59e0b',
+                        borderRadius: 3,
+                        padding: '1px 4px',
+                        marginLeft: 4,
+                        verticalAlign: 'middle',
+                      }}>OT</span>
+                    )}
+                  </span>
                   {e.comment
                     ? <span title={e.comment} className="ts-entry-comment" style={{ display: 'inline-flex', alignItems: 'center' }}><CommentIcon sx={{ fontSize: 14 }} /></span>
                     : <span />}
@@ -677,7 +801,7 @@ const TeamMemberTimesheetPage = () => {
                 <Button
                   variant="contained"
                   color="primary"
-                  disabled={actionLoading}
+                  disabled={actionLoading || entries.length === 0}
                   onClick={handleSubmit}
                   startIcon={<SendIcon />}
                 >
@@ -741,11 +865,17 @@ const TeamMemberTimesheetPage = () => {
           period={selectedTimesheet}
           entries={uiEntries}
           projects={projects}
+          projectTasks={projectTasks}
+          tasksLoading={tasksLoading}
           holidays={holidays}
           initialData={editingEntry}
           dailyCapacity={resource.pm_dailyworkcapacity || 8}
-          onClose={() => setDialogOpen(false)}
+          onClose={() => {
+            setDialogOpen(false);
+            setProjectTasks([]);
+          }}
           onSave={handleSaveEntry}
+          onProjectChange={handleLoadProjectTasks}
         />
       )}
       <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="xs" fullWidth>

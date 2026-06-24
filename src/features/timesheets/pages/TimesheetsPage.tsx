@@ -491,6 +491,7 @@ export default function TimesheetsPage() {
                 approvalDate={selectedTimesheet.pm_approvaldate}
                 rejectionReason={selectedTimesheet.pm_rejectionreason}
                 loading={actionLoading}
+                entriesCount={entries.length}
               />
               {canDelete && (
                 <Button

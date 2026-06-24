@@ -13,6 +13,7 @@ interface TimesheetStatusControlsProps {
   approvalDate?: string
   rejectionReason?: string
   loading?: boolean
+  entriesCount?: number
 }
 
 export function TimesheetStatusControls({
@@ -21,6 +22,7 @@ export function TimesheetStatusControls({
   approvalDate,
   rejectionReason,
   loading,
+  entriesCount,
 }: TimesheetStatusControlsProps) {
   const theme = useTheme()
 
@@ -29,15 +31,26 @@ export function TimesheetStatusControls({
   const isApproved = status === '0'
   const isRejected = status === '2'
 
+  const hasEntries = (entriesCount ?? 0) > 0
+
   return (
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-      {isDraft && (
+      {isDraft && hasEntries && (
         <ActionIcon
           icon={<SendIcon />}
           onClick={() => onStatusUpdate(1)}
           label="Submit Timesheet"
           color="primary"
         />
+      )}
+      {isDraft && !hasEntries && (
+        <Typography
+          variant="caption"
+          color="text.disabled"
+          sx={{ px: 1, py: 0.5, bgcolor: 'background.default', borderRadius: 1.5, border: '1px solid', borderColor: 'divider', opacity: 0.6 }}
+        >
+          Add entries before submitting
+        </Typography>
       )}
 
       {isSubmitted && (

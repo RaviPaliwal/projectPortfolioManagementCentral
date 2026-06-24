@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import {
   Box, Paper, Typography, Alert, useTheme,
   Table, TableBody, TableCell, TableHead, TableRow,
@@ -18,13 +18,17 @@ import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
-import SendIcon from '@mui/icons-material/Send'
+
 import DescriptionIcon from '@mui/icons-material/Description'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import PeopleIcon from '@mui/icons-material/People'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import TimerIcon from '@mui/icons-material/Timer'
 import CategoryIcon from '@mui/icons-material/Category'
+import CancelIcon from '@mui/icons-material/Cancel'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
+import CloseIcon from '@mui/icons-material/Close'
 
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
@@ -37,13 +41,14 @@ import {
   fetchProjectsForLookup,
   startWorkflowForEntity,
   fetchWorkflows,
+  uploadDocument,
 } from '@/services'
 import type { ChangeRequestModel } from '@/types/dataverse'
 import { useUser } from '@/context/UserContext'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
 import type { ExportColumn } from '@/utils/exportUtils'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, WorkflowMilestone, ConfirmDialog } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, WorkflowMilestone, ConfirmDialog, EntityDocumentsTab } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { KpiCardItem, FilterOption } from '@/components/common'
@@ -73,11 +78,13 @@ const PRIORITY_COLORS: Record<string, 'warning' | 'error'> = {
 const STATUS_LABELS: Record<string, string> = {
   '0': 'Approved',
   '1': 'Under Review',
+  '3': 'Rejected',
 }
 
-const STATUS_COLORS: Record<string, 'success' | 'warning'> = {
+const STATUS_COLORS: Record<string, 'success' | 'warning' | 'error'> = {
   '0': 'success',
   '1': 'warning',
+  '3': 'error',
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
@@ -116,6 +123,7 @@ const STATUS_FILTER_OPTIONS: FilterOption[] = [
   { value: '', label: 'All Statuses' },
   { value: '1', label: 'Under Review' },
   { value: '0', label: 'Approved' },
+  { value: '3', label: 'Rejected' },
 ]
 
 type SortField = 'title' | 'reference' | 'type' | 'priority' | 'status' | 'cost' | 'schedule' | 'requestor' | 'date'
@@ -177,7 +185,11 @@ export default function ChangeRequestsPage() {
   })
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [approvalLoading, setApprovalLoading] = useState(false)
+
+  // File upload state for create/edit form
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [uploadingFiles, setUploadingFiles] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -237,6 +249,12 @@ export default function ChangeRequestsPage() {
         subtitle: total > 0 ? Math.round((approved / total) * 100) + '% approval rate' : 'No approvals yet',
         icon: <CheckCircleIcon />,
         color: 'success.main',
+      },
+      {
+        label: 'Rejected',
+        value: String(changeRequests.filter((cr) => String(cr.pm_status) === '3').length),
+        icon: <CancelIcon sx={{ fontSize: 18 }} />,
+        color: 'error.main',
       },
       {
         label: 'Total Cost Impact',
@@ -371,6 +389,7 @@ export default function ChangeRequestsPage() {
       _pm_programmelookup_value: '',
       _pm_project_value: '',
     })
+    setSelectedFiles([])
     setShowFormModal(true)
   }, [])
 
@@ -393,7 +412,12 @@ export default function ChangeRequestsPage() {
       _pm_programmelookup_value: cr._pm_programmelookup_value ?? '',
       _pm_project_value: cr._pm_project_value ?? '',
     })
+    setSelectedFiles([])
     setShowFormModal(true)
+  }, [])
+
+  const handleRemoveFile = useCallback((index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
   }, [])
 
   // ─── Auto-generate reference ───────────────────────────────────────────────
@@ -420,15 +444,22 @@ export default function ChangeRequestsPage() {
     }
     setError(null)
     setActionLoading(true)
+
+    let createdId: string | null = null
+    let isUpdate = false
+
     try {
       const payload = { ...formData }
       if (editingCR?.pm_changerequestid) {
         await updateChangeRequest(editingCR.pm_changerequestid, payload)
+        createdId = editingCR.pm_changerequestid
+        isUpdate = true
         setSuccessMsg('Change request updated successfully.')
       } else {
         // Auto-generate reference for new change requests
         payload.pm_changerequestreference = autoGenerateReference()
         const created = await createChangeRequest(payload)
+        createdId = created?.pm_changerequestid ?? null
         setSuccessMsg('Change request created successfully.')
 
         // Auto-trigger workflow after creation
@@ -455,13 +486,44 @@ export default function ChangeRequestsPage() {
           }
         }
       }
+
+      // Upload any selected files after successful save
+      if (createdId && selectedFiles.length > 0) {
+        setUploadingFiles(true)
+        const ownerId = currentUser?.systemuserid || ''
+        let uploadErrors = 0
+        for (const file of selectedFiles) {
+          if (file.size > 32 * 1024 * 1024) {
+            uploadErrors++
+            continue
+          }
+          try {
+            await uploadDocument(MODULE_NAMES.CHANGE_REQUESTS.value, createdId, file, ownerId)
+          } catch {
+            uploadErrors++
+          }
+        }
+        setUploadingFiles(false)
+        if (uploadErrors > 0) {
+          setSuccessMsg(isUpdate
+            ? 'Change request updated. Some files failed to upload.'
+            : 'Change request created. Some files failed to upload.')
+        } else if (selectedFiles.length > 0) {
+          setSuccessMsg(isUpdate
+            ? `Change request updated with ${selectedFiles.length} file(s).`
+            : `Change request created with ${selectedFiles.length} file(s).`)
+        }
+        setSelectedFiles([])
+      }
+
       setShowFormModal(false)
-      setTimeout(() => setSuccessMsg(null), 3000)
+      setTimeout(() => setSuccessMsg(null), 5000)
       await loadData()
     } catch {
       setError(editingCR ? 'Unable to update change request.' : 'Unable to create change request.')
     } finally {
       setActionLoading(false)
+      setUploadingFiles(false)
     }
   }
 
@@ -683,56 +745,7 @@ export default function ChangeRequestsPage() {
         )}
         headerActions={
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {selectedCR && String(selectedCR.pm_status) === '1' && (
-              <Button
-                size="small"
-                variant="contained"
-                color="success"
-                disabled={approvalLoading}
-                onClick={async () => {
-                  if (!selectedCR?.pm_changerequestid) return
-                  setApprovalLoading(true)
-                  setError(null)
-                  try {
-                    // Find an active workflow for the ChangeRequests module
-                    const workflows = await fetchWorkflows()
-                    // Match by pm_module first, then fall back to workflow name containing 'change request'
-                    const crWorkflow = workflows.find(
-                      (wf) => (wf.pm_workflowstatus === 0 || wf.pm_workflowstatus === '0') && (
-                        wf.pm_module?.toLowerCase() === 'changerequest' ||
-                        wf.pm_module?.toLowerCase() === 'changerequests' ||
-                        (wf.pm_workflowname ?? '').toLowerCase().includes('change request')
-                      )
-                    )
-                    if (!crWorkflow?.pm_workflowid) {
-                      setError('No active workflow template found for Change Requests. Create one in Workflows first.')
-                      return
-                    }
-                    const result = await startWorkflowForEntity(
-                      crWorkflow.pm_workflowid,
-                      selectedCR.pm_changerequestid,
-                      MODULE_NAMES.CHANGE_REQUESTS.value,
-                      currentUser?.fullname ?? 'Unknown'
-                    )
-                    if (result) {
-                      setSuccessMsg('Change request submitted for approval!')
-                    } else {
-                      setError('Failed to start workflow. Check that the workflow has step templates configured.')
-                    }
-                  } catch (err) {
-                    setError('Unable to submit for approval.')
-                  } finally {
-                    setApprovalLoading(false)
-                    setTimeout(() => setSuccessMsg(null), 4000)
-                  }
-                }}
-                startIcon={<SendIcon sx={{ fontSize: 16 }} />}
-                sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: 12, py: 0.5 }}
-              >
-                {approvalLoading ? 'Submitting...' : 'Submit for Approval'}
-              </Button>
-            )}
-            {canDelete && (
+            {canDelete && selectedCR && String(selectedCR.pm_status) !== '1' && (
               <ActionIcon
                 label="Delete"
                 color="error"
@@ -740,7 +753,7 @@ export default function ChangeRequestsPage() {
                 icon={<DeleteIcon />}
               />
             )}
-            {canEdit && (
+            {canEdit && selectedCR && String(selectedCR.pm_status) !== '1' && (
               <ActionIcon
                 label="Edit"
                 color="primary"
@@ -750,7 +763,7 @@ export default function ChangeRequestsPage() {
             )}
           </Box>
         }
-        tabs={[{ label: 'Overview' }, { label: 'Details' }, { label: 'Approval' }, { label: 'Tasks' }]}
+        tabs={[{ label: 'Overview' }, { label: 'Details' }, { label: 'Approval' }, { label: 'Tasks' }, { label: 'Documents' }]}
         tabValue={detailTab}
         onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
       >
@@ -889,13 +902,25 @@ export default function ChangeRequestsPage() {
                 />
               )}
             </TabPanel>
+
+            <TabPanel value={detailTab} index={4} pt={0}>
+              {selectedCR.pm_changerequestid && (
+                <Box sx={{ position: 'relative' }}>
+                  <EntityDocumentsTab
+                    entityId={selectedCR.pm_changerequestid}
+                    moduleName={MODULE_NAMES.CHANGE_REQUESTS.value}
+                    canEdit={String(selectedCR.pm_status) !== '1'}
+                  />
+                </Box>
+              )}
+            </TabPanel>
           </>
         )}
       </DetailDrawer>
 
       <Dialog
         open={showFormModal}
-        onClose={() => !actionLoading && setShowFormModal(false)}
+        onClose={() => { if (!actionLoading) { setShowFormModal(false); setSelectedFiles([]) } }}
         maxWidth="md"
         fullWidth
       >
@@ -1046,13 +1071,95 @@ export default function ChangeRequestsPage() {
                 placeholder="How does this change affect expected benefits?" />
             </Grid>
           </Grid>
+
+          {/* ── Attachments ── */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <CloudUploadIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>Attachments</Typography>
+            <Divider sx={{ flex: 1 }} />
+          </Box>
+
+          <Paper
+            variant="outlined"
+            onClick={() => fileInputRef.current?.click()}
+            sx={{
+              p: 2.5,
+              borderRadius: 1.5,
+              borderStyle: 'dashed',
+              borderWidth: 1.5,
+              borderColor: 'divider',
+              cursor: 'pointer',
+              textAlign: 'center',
+              transition: 'all 0.2s ease',
+              '&:hover': { borderColor: 'primary.main', bgcolor: isDark ? 'rgba(59,130,246,0.04)' : 'rgba(59,130,246,0.02)' },
+              mb: selectedFiles.length > 0 ? 2 : 0,
+            }}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                if (e.target.files) {
+                  setSelectedFiles((prev) => [...prev, ...Array.from(e.target.files!)])
+                }
+                e.target.value = ''
+              }}
+            />
+            <CloudUploadIcon sx={{ fontSize: 28, color: 'text.secondary', mb: 1 }} />
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.25 }}>
+              Click to attach supporting documents
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              PDF, Word, Excel, images accepted (max 32MB per file)
+            </Typography>
+          </Paper>
+
+          {selectedFiles.length > 0 && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 1.5 }}>
+              {selectedFiles.map((file, idx) => (
+                <Paper
+                  key={idx}
+                  variant="outlined"
+                  sx={{
+                    px: 1.5, py: 1,
+                    borderRadius: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                    <InsertDriveFileIcon sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} />
+                    <Typography variant="body2" noWrap sx={{ minWidth: 0 }}>
+                      {file.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                      ({(file.size / 1024).toFixed(0)} KB)
+                    </Typography>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleRemoveFile(idx)}
+                    sx={{ flexShrink: 0 }}
+                  >
+                    <CloseIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Paper>
+              ))}
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25 }}>
+                {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''} selected — saved with the change request on submit.
+              </Typography>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
           <Button onClick={() => setShowFormModal(false)} variant="outlined" disabled={actionLoading}>Cancel</Button>
           <Button onClick={handleSave} variant="contained"
             disabled={!String(formData.pm_changerequesttitle || '').trim() || actionLoading}
             sx={{ fontWeight: 600 }}>
-            {actionLoading ? 'Saving...' : editingCR ? 'Update Change Request' : 'Submit Change Request'}
+            {uploadingFiles ? 'Uploading files...' : actionLoading ? 'Saving...' : editingCR ? 'Update Change Request' : 'Submit Change Request'}
           </Button>
         </DialogActions>
       </Dialog>

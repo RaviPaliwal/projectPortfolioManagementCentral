@@ -127,7 +127,7 @@ export async function fetchPendingApprovalRequests(): Promise<InitiativeModel[]>
   try {
     const options: IGetAllOptions = {
       filter: "pm_pipelinestatus eq 1",
-      select: ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_pipelinestatus', 'pm_requestorname', 'pm_submissiondate', 'pm_portfolioname'],
+      select: ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_pipelinestatus', 'pm_requestorname', 'pm_submissiondate', '_pm_portfolio_value'],
       orderBy: ['pm_submissiondate desc'],
       top: 100,
     }
@@ -136,7 +136,36 @@ export async function fetchPendingApprovalRequests(): Promise<InitiativeModel[]>
       console.error('[InitiativeService] fetchPendingApprovalRequests failed:', result.error)
       return []
     }
-    return unwrapList<Pm_initiatives>(result).map(mapInitiative)
+    const list = unwrapList<Pm_initiatives>(result).map(mapInitiative)
+
+    // Resolve portfolio names from the lookup
+    try {
+      const portfolioIds = Array.from(new Set(list.map((i) => (i as Record<string, any>)._pm_portfolio_value).filter(Boolean))) as string[]
+      if (portfolioIds.length > 0) {
+        const portfoliosResult = await Pm_portfoliosService.getAll({
+          filter: portfolioIds.map((id) => `pm_portfolioid eq '${id}'`).join(' or '),
+          select: ['pm_portfolioid', 'pm_portfolioname'],
+          top: 500,
+        })
+        if (portfoliosResult.success) {
+          const portfolios = unwrapList<Pm_portfolios>(portfoliosResult)
+          const pMap: Record<string, string> = {}
+          portfolios.forEach((item) => {
+            if (item.pm_portfolioid && item.pm_portfolioname) {
+              pMap[item.pm_portfolioid] = item.pm_portfolioname
+            }
+          })
+          for (const init of list) {
+            const pid = (init as Record<string, any>)._pm_portfolio_value as string | undefined
+            if (pid && pMap[pid]) init.pm_portfolioname = pMap[pid]
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[InitiativeService] fetchPendingApprovalRequests portfolio resolution failed:', err)
+    }
+
+    return list
   } catch (err) {
     console.error('[InitiativeService] fetchPendingApprovalRequests exception:', err)
     return []

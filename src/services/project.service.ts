@@ -441,6 +441,29 @@ export async function deleteProject(id: string): Promise<void> {
     })
 }
 
+export async function fetchProjectTasksByResource(projectId: string, resourceId?: string): Promise<ProjectTaskModel[]> {
+  let filter = `_pm_project_value eq '${projectId}'`
+  if (resourceId) {
+    filter += ` and _pm_assignedtoresource_value eq '${resourceId}'`
+  }
+  const result = await Pm_projecttasksService.getAll({
+    filter,
+    select: [
+      'pm_projecttaskid', 'pm_taskname',
+      'pm_tasklevel', 'pm_wbsnumber',
+      'pm_durationdays',
+      'pm_plannedstartdate', 'pm_plannedenddate',
+      'pm_actualstartdate', 'pm_actualenddate',
+      'pm_percentcomplete', 'pm_taskstatus',
+      '_pm_assignedtoresource_value',
+      '_pm_predecessortask_value',
+    ],
+    orderBy: ['pm_tasklevel asc', 'pm_wbsnumber asc', 'pm_taskname asc'],
+    top: 200,
+  })
+  return unwrapList<Pm_projecttasks>(result).map(mapProjectTask)
+}
+
 export async function fetchProjectTasks(projectId: string): Promise<ProjectTaskModel[]> {
     const result = await Pm_projecttasksService.getAll({
         filter: `_pm_project_value eq '${projectId}'`,

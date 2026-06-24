@@ -24,9 +24,7 @@ export interface Pm_timesheetentriesBase {
   pm_isovertime?: boolean;
   pm_nonchargeablereason?: string;
   "pm_project@odata.bind"?: string;
-  pm_projectcode?: string;
   "pm_projecttask@odata.bind"?: string;
-  pm_taskcode?: string;
   "pm_timesheet@odata.bind"?: string;
   pm_timesheetentryid: string;
   pm_timesheetid?: string;

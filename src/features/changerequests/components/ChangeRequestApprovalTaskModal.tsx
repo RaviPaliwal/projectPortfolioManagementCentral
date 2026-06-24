@@ -7,11 +7,15 @@ import CloseIcon from '@mui/icons-material/Close'
 import ChangeCircleIcon from '@mui/icons-material/ChangeCircle'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import ScheduleIcon from '@mui/icons-material/Schedule'
+import AccountTreeIcon from '@mui/icons-material/AccountTree'
+import FolderIcon from '@mui/icons-material/Folder'
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import { fetchChangeRequestById, updateChangeRequest } from '@/services/change-request.service'
 import { fetchProjectDetails, updateProject } from '@/services/project.service'
 import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ChangeRequestModel, ProjectModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
+import { useUser } from '@/context/UserContext'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 
 interface ChangeRequestApprovalTaskModalProps {
@@ -41,6 +45,7 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
   open, onClose, changeRequestId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
 }) => {
+  const { currentUser } = useUser()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [changeRequest, setChangeRequest] = useState<ChangeRequestModel | null>(null)
@@ -75,10 +80,12 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
     setSaving(true)
     try {
       const now = new Date().toISOString()
+      const decisionMaker = currentUser?.fullname || currentUser?.systemuserid || 'System'
       if (decision === 0) {
         const updates: Partial<ChangeRequestModel> = {
           pm_status: 0,
           pm_decisiondate: now,
+          pm_decisionmaker: decisionMaker,
         }
         await updateChangeRequest(changeRequest.pm_changerequestid!, updates)
         
@@ -108,6 +115,7 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
         await updateChangeRequest(changeRequest.pm_changerequestid!, {
           pm_status: 3 as any,
           pm_decisiondate: now,
+          pm_decisionmaker: decisionMaker,
         })
       }
       return true
@@ -170,6 +178,27 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
                     <Chip size="small" icon={<ScheduleIcon sx={{ fontSize: 14 }} />} label={`${changeRequest.pm_scheduleimpactdays ?? 0}d`} />
                   </Box>
                 </Box>
+                {/* Linked entities */}
+                {(changeRequest.pm_projectname || changeRequest.pm_programmename) && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Linked Entity</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      {changeRequest.pm_projectname && (
+                        <Chip size="small" icon={<FolderIcon sx={{ fontSize: 14 }} />} label={changeRequest.pm_projectname} variant="outlined" />
+                      )}
+                      {changeRequest.pm_programmename && (
+                        <Chip size="small" icon={<AccountTreeIcon sx={{ fontSize: 14 }} />} label={changeRequest.pm_programmename} variant="outlined" />
+                      )}
+                    </Box>
+                  </Box>
+                )}
+                {/* Baseline updated status */}
+                {changeRequest.pm_baselineupdated && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Baseline</Typography>
+                    <StatusTag label="Baseline Updated" color="warning" size="small" />
+                  </Box>
+                )}
               </Box>
             </Grid>
             <Grid size={{ xs: 12, md: 8 }} sx={{ p: 3 }}>
@@ -180,6 +209,15 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
               
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Justification</Typography>
               <Typography variant="body2" sx={{ mb: 3, whiteSpace: 'pre-wrap' }}>{changeRequest.pm_justification || 'No justification provided.'}</Typography>
+
+              {changeRequest.pm_benefitsimpact && (
+                <>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <EmojiEventsIcon sx={{ fontSize: 16 }} /> Benefits Impact
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 3, whiteSpace: 'pre-wrap' }}>{changeRequest.pm_benefitsimpact}</Typography>
+                </>
+              )}
 
               <Divider sx={{ my: 3 }} />
               

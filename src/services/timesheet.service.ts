@@ -427,7 +427,26 @@ export async function fetchResourceTimesheets(resourceId: string): Promise<Times
 
 export async function updateTimesheetEntry(entryId: string, payload: Partial<TimesheetEntryModel>): Promise<TimesheetEntryModel | null> {
   try {
-    const result = await Pm_timesheetentriesService.update(entryId, payload as Pm_timesheetentries)
+    const cleanPayload: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(payload)) {
+      if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_project_value' && key !== '_pm_projecttask_value') {
+        cleanPayload[key] = value
+      }
+    }
+    if (payload._pm_project_value) {
+      const projectId = normalizeLookupId(payload._pm_project_value)
+      if (projectId) {
+        cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+      }
+    }
+    if (payload._pm_projecttask_value) {
+      const taskId = normalizeLookupId(payload._pm_projecttask_value)
+      if (taskId) {
+        cleanPayload['pm_projecttask@odata.bind'] = `/pm_projecttasks(${taskId})`
+      }
+    }
+    const result = await Pm_timesheetentriesService.update(entryId, cleanPayload as unknown as Pm_timesheetentries)
     if (!result.success) {
       console.error('[TimesheetService] updateTimesheetEntry failed:', result.error)
       throw new Error(`Failed to update timesheet entry: ${result.error?.message || 'Unknown error'}`)
