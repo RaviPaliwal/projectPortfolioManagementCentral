@@ -155,7 +155,7 @@ const resourceExportColumns: ExportColumn[] = [
 export default function ResourcesPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
-  const { users } = useUser()
+  const { currentUser, currentUserPersona, users } = useUser()
 
   const { allowed: canCreate } = useAuthorization('RESOURCES', 'create')
   const { allowed: canEdit } = useAuthorization('RESOURCES', 'update')
@@ -241,14 +241,21 @@ export default function ResourcesPage() {
     setLoading(true)
     setError(null)
     try {
-      const list = await fetchResources()
+      const isTeamMember = currentUserPersona === 'TeamMember'
+      let list: ResourceModel[] = []
+      if (isTeamMember && currentUser?.systemuserid) {
+        const resource = await fetchResourceBySystemUserId(currentUser.systemuserid)
+        list = resource ? [resource] : []
+      } else {
+        list = await fetchResources()
+      }
       setResources(list)
     } catch {
       setError('Unable to load resource data.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentUser, currentUserPersona])
 
   const loadChartsData = useCallback(async () => {
     setChartsLoading(true)

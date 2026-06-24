@@ -1,6 +1,7 @@
 import { Pm_projectapprovalrequestsService } from '@/generated'
 import type { Pm_projectapprovalrequests } from '@/generated/models/Pm_projectapprovalrequestsModel'
 import type { ApprovalRequestModel } from '@/types/dataverse'
+import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import { unwrapList, unwrapSingle } from './common'
 
 export const mapApprovalRequest = (item: Pm_projectapprovalrequests): ApprovalRequestModel => ({
@@ -24,47 +25,81 @@ export const mapApprovalRequest = (item: Pm_projectapprovalrequests): ApprovalRe
 })
 
 export async function fetchApprovalRequests(): Promise<ApprovalRequestModel[]> {
-  const result = await Pm_projectapprovalrequestsService.getAll({
-    select: [
-      'pm_projectapprovalrequestid', 'pm_requesttitle',
-      'pm_approvalstage',
-      'pm_decisionstatus',
-      'pm_entitytype',
-      'pm_prioritylevel',
-      'pm_approvername',
-      'pm_decisiondate', 'pm_decisionnotes',
-      'pm_duedate',
-      'pm_entityid',
-      'pm_requestorname',
-    ],
-    orderBy: ['pm_requesttitle asc'],
-    top: 500,
-  })
-  return unwrapList<Pm_projectapprovalrequests>(result).map(mapApprovalRequest)
+  try {
+    const options: IGetAllOptions = {
+      select: [
+        'pm_projectapprovalrequestid', 'pm_requesttitle',
+        'pm_approvalstage',
+        'pm_decisionstatus',
+        'pm_entitytype',
+        'pm_prioritylevel',
+        'pm_approvername',
+        'pm_decisiondate', 'pm_decisionnotes',
+        'pm_duedate',
+        'pm_entityid',
+        'pm_requestorname',
+      ],
+      orderBy: ['pm_requesttitle asc'],
+      top: 500,
+    }
+    const result = await Pm_projectapprovalrequestsService.getAll(options)
+    if (!result.success) {
+      console.error('[ApprovalService] fetchApprovalRequests failed:', result.error)
+      return []
+    }
+    return unwrapList<Pm_projectapprovalrequests>(result).map(mapApprovalRequest)
+  } catch (err) {
+    console.error('[ApprovalService] fetchApprovalRequests exception:', err)
+    return []
+  }
 }
 
 export async function createApprovalRequest(payload: Partial<ApprovalRequestModel>): Promise<ApprovalRequestModel | null> {
-  const cleanPayload: Record<string, any> = {}
+  const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null && value !== '') {
       cleanPayload[key] = value
     }
   }
-  const defaults: Record<string, any> = {
+  const defaults: Record<string, unknown> = {
     statecode: 0,
     statuscode: 1,
   }
-  const result = await Pm_projectapprovalrequestsService.create({ ...defaults, ...cleanPayload } as any)
-  const item = unwrapSingle<Pm_projectapprovalrequests>(result)
-  return item ? mapApprovalRequest(item) : null
+  try {
+    const result = await Pm_projectapprovalrequestsService.create({ ...defaults, ...cleanPayload } as any)
+    if (!result.success) {
+      console.error('[ApprovalService] createApprovalRequest failed:', result.error)
+      return null
+    }
+    const item = unwrapSingle<Pm_projectapprovalrequests>(result)
+    return item ? mapApprovalRequest(item) : null
+  } catch (err) {
+    console.error('[ApprovalService] createApprovalRequest exception:', err)
+    return null
+  }
 }
 
 export async function updateApprovalRequest(id: string, changes: Partial<ApprovalRequestModel>): Promise<ApprovalRequestModel | null> {
-  const result = await Pm_projectapprovalrequestsService.update(id, changes as any)
-  const item = unwrapSingle<Pm_projectapprovalrequests>(result)
-  return item ? mapApprovalRequest(item) : null
+  try {
+    const result = await Pm_projectapprovalrequestsService.update(id, changes as any)
+    if (!result.success) {
+      console.error('[ApprovalService] updateApprovalRequest failed:', result.error)
+      return null
+    }
+    const item = unwrapSingle<Pm_projectapprovalrequests>(result)
+    return item ? mapApprovalRequest(item) : null
+  } catch (err) {
+    console.error('[ApprovalService] updateApprovalRequest exception:', err)
+    return null
+  }
 }
 
 export async function deleteApprovalRequest(id: string): Promise<void> {
-  await Pm_projectapprovalrequestsService.delete(id)
+  try {
+    await Pm_projectapprovalrequestsService.delete(id)
+  } catch (err) {
+    console.error('[ApprovalService] deleteApprovalRequest exception:', err)
+    throw err
+  }
 }
+

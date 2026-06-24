@@ -2,8 +2,13 @@ import { useEffect, type ReactNode } from 'react'
 import { Box, CircularProgress, Typography } from '@mui/material'
 import { useUser } from '@/context/UserContext'
 import { PERSONA_PERMISSIONS } from '@/constants/permissions'
-import { guardActiveTab } from '@/app/App'
 import type { TabKey } from '@/components/layout/PrimaryShell'
+
+function guardActiveTab(tab: TabKey, allowedTabs: TabKey[]): TabKey {
+  if (allowedTabs.length === 0) return tab
+  if (allowedTabs.includes(tab)) return tab
+  return allowedTabs.includes('dashboard' as TabKey) ? 'dashboard' as TabKey : allowedTabs[0]
+}
 
 interface RouteGuardProps {
   children: ReactNode
@@ -27,7 +32,7 @@ interface RouteGuardProps {
  * the previous approach (useEffect redirect after page mount).
  */
 export default function RouteGuard({ children, activeTab, onChangeTab }: RouteGuardProps) {
-  const { currentUserPersona, loading } = useUser()
+  const { currentUserPersona, loading, currentUser } = useUser()
 
   // Compute allowed tabs and guarded tab unconditionally (used by both effect and JSX)
   const allowedTabs = PERSONA_PERMISSIONS[currentUserPersona] || []
@@ -69,6 +74,10 @@ export default function RouteGuard({ children, activeTab, onChangeTab }: RouteGu
     return null
   }
 
-  // ── Allowed → render children ─────────────────────────────────────────
-  return <>{children}</>
+  // ── Allowed → render children (keyed to force unmount/remount on user change) ──
+  return (
+    <div key={currentUser?.systemuserid || 'none'} style={{ display: 'contents' }}>
+      {children}
+    </div>
+  )
 }

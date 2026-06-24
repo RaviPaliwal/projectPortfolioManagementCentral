@@ -8,12 +8,14 @@ import { fetchResourceBySystemUserId } from './resource.service'
 import type { Pm_risks } from '@/generated/models/Pm_risksModel'
 import type { Pm_issues } from '@/generated/models/Pm_issuesModel'
 import type { Pm_riskmitigationactions } from '@/generated/models/Pm_riskmitigationactionsModel'
+import type { Pm_resources } from '@/generated/models/Pm_resourcesModel'
 import type {
   RiskModel,
   IssueModel,
   RiskMitigationActionModel,
 } from '@/types/dataverse'
-import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
+import { unwrapList, unwrapSingle, normalizeLookupId, resolveResourceIdForSystemUser } from './common'
+import type { IGetAllOptions } from '@/generated/models/CommonModels'
 
 /**
  * Resolve a risk owner identifier to a resource GUID.
@@ -21,18 +23,20 @@ import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
  * or a pm_resourceid. This function ensures we always bind to the resources table.
  */
 async function resolveRiskOwnerResourceId(id: string): Promise<string | null> {
-
   // Try 1: see if it's already a resource ID
   try {
-    const { Pm_resourcesService } = await import('@/generated')
-    const byId = await Pm_resourcesService.get(id, {
+    const { Pm_resourcesService: LocalResourcesService } = await import('@/generated')
+    const byId = await LocalResourcesService.get(id, {
       select: ['pm_resourceid'],
     })
-    const direct = unwrapSingle<any>(byId)
-    if (direct?.pm_resourceid) {
-      return direct.pm_resourceid
+    if (byId.success) {
+      const direct = unwrapSingle<Pm_resources>(byId)
+      if (direct?.pm_resourceid) {
+        return direct.pm_resourceid
+      }
     }
   } catch (err) {
+    console.error('[RiskIssueService] resolveRiskOwnerResourceId Try 1 failed:', err)
   }
 
   // Try 2: resolve systemuser → resource
@@ -42,36 +46,40 @@ async function resolveRiskOwnerResourceId(id: string): Promise<string | null> {
       return resource.pm_resourceid
     }
   } catch (err) {
+    console.error('[RiskIssueService] resolveRiskOwnerResourceId Try 2 failed:', err)
   }
 
   return null
 }
 
-export const mapRisk = (item: Pm_risks): RiskModel => ({
-  pm_riskid: item.pm_riskid,
-  pm_risktitle: item.pm_risktitle,
-  pm_riskcategory: item.pm_riskcategory,
-  pm_riskdescription: item.pm_riskdescription,
-  pm_ragstatus: item.pm_ragstatus,
-  pm_riskownername: (item as any)['_pm_riskowner_value@OData.Community.Display.V1.FormattedValue'] ?? item.pm_riskownername,
-  pm_riskstatus: item.pm_riskstatus,
-  pm_escalated: item.pm_escalated,
-  pm_identifieddate: item.pm_identifieddate,
-  pm_targetclosedate: item.pm_targetclosedate,
-  pm_inherentprobability: item.pm_inherentprobability,
-  pm_inherentimpact: item.pm_inherentimpact,
-  pm_inherentscore: item.pm_inherentscore,
-  pm_residualprobability: item.pm_residualprobability,
-  pm_residualimpact: item.pm_residualimpact,
-  pm_residualscore: item.pm_residualscore,
-  pm_responsestrategy: item.pm_responsestrategy,
-  pm_riskcause: item.pm_riskcause,
-  pm_riskeffect: item.pm_riskeffect,
-  pm_projectname: (item as any)['_pm_project_value@OData.Community.Display.V1.FormattedValue'],
-  _pm_project_value: (item as any)._pm_project_value,
-  _pm_riskowner_value: item._pm_riskowner_value,
-  statecode: item.statecode,
-})
+export const mapRisk = (item: Pm_risks): RiskModel => {
+  const rawItem = item as unknown as Record<string, unknown>
+  return {
+    pm_riskid: item.pm_riskid,
+    pm_risktitle: item.pm_risktitle,
+    pm_riskcategory: item.pm_riskcategory,
+    pm_riskdescription: item.pm_riskdescription,
+    pm_ragstatus: item.pm_ragstatus,
+    pm_riskownername: (rawItem['_pm_riskowner_value@OData.Community.Display.V1.FormattedValue'] as string | undefined) ?? item.pm_riskownername,
+    pm_riskstatus: item.pm_riskstatus,
+    pm_escalated: item.pm_escalated,
+    pm_identifieddate: item.pm_identifieddate,
+    pm_targetclosedate: item.pm_targetclosedate,
+    pm_inherentprobability: item.pm_inherentprobability,
+    pm_inherentimpact: item.pm_inherentimpact,
+    pm_inherentscore: item.pm_inherentscore,
+    pm_residualprobability: item.pm_residualprobability,
+    pm_residualimpact: item.pm_residualimpact,
+    pm_residualscore: item.pm_residualscore,
+    pm_responsestrategy: item.pm_responsestrategy,
+    pm_riskcause: item.pm_riskcause,
+    pm_riskeffect: item.pm_riskeffect,
+    pm_projectname: rawItem['_pm_project_value@OData.Community.Display.V1.FormattedValue'] as string | undefined,
+    _pm_project_value: rawItem._pm_project_value as string | undefined,
+    _pm_riskowner_value: item._pm_riskowner_value,
+    statecode: item.statecode,
+  }
+}
 
 export const mapIssue = (item: Pm_issues): IssueModel => ({
   pm_issueid: item.pm_issueid,
@@ -113,106 +121,115 @@ export const mapMitigationAction = (item: Pm_riskmitigationactions): RiskMitigat
 })
 
 export async function createRisk(payload: Partial<RiskModel> & { pm_projectid: string }): Promise<RiskModel | null> {
-  const createPayload: Record<string, any> = {
-    pm_risktitle: payload.pm_risktitle,
-    pm_riskdescription: payload.pm_riskdescription,
-    pm_riskcategory: payload.pm_riskcategory as any,
-    pm_ragstatus: payload.pm_ragstatus as any,
-    pm_riskstatus: 1,
-    pm_identifieddate: new Date().toISOString().split('T')[0],
-    pm_targetclosedate: payload.pm_targetclosedate,
-    "pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
-    statecode: 0,
-    statuscode: 1,
-  }
-  if (payload._pm_riskowner_value) {
-    const ownerId = normalizeLookupId(payload._pm_riskowner_value)
-    if (ownerId) {
-      const resolvedId = await resolveRiskOwnerResourceId(ownerId)
-      if (resolvedId) {
-        createPayload['pm_RiskOwner@odata.bind'] = `/pm_resources(${resolvedId})`
+  try {
+    const createPayload: Record<string, unknown> = {
+      pm_risktitle: payload.pm_risktitle,
+      pm_riskdescription: payload.pm_riskdescription,
+      pm_riskcategory: payload.pm_riskcategory,
+      pm_ragstatus: payload.pm_ragstatus,
+      pm_riskstatus: 1,
+      pm_identifieddate: new Date().toISOString().split('T')[0],
+      pm_targetclosedate: payload.pm_targetclosedate,
+      "pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
+      statecode: 0,
+      statuscode: 1,
+    }
+    if (payload._pm_riskowner_value) {
+      const ownerId = normalizeLookupId(payload._pm_riskowner_value)
+      if (ownerId) {
+        const resolvedId = await resolveRiskOwnerResourceId(ownerId)
+        if (resolvedId) {
+          createPayload['pm_RiskOwner@odata.bind'] = `/pm_resources(${resolvedId})`
+        }
       }
     }
+    const result = await Pm_risksService.create(createPayload as unknown as Pm_risks)
+    if (!result.success) {
+      console.error('[RiskIssueService] createRisk failed:', result.error)
+      throw new Error(`Failed to create risk: ${result.error?.message || 'Unknown error'}`)
+    }
+    const item = unwrapSingle<Pm_risks>(result)
+    if (item && item.pm_riskid) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_risks',
+        recordId: item.pm_riskid,
+        recordName: item.pm_risktitle || '',
+        newValue: `Risk created: ${item.pm_risktitle || ''}`
+      })
+    }
+    return item ? {
+      pm_riskid: item.pm_riskid,
+      pm_risktitle: item.pm_risktitle,
+      pm_riskcategory: item.pm_riskcategory,
+      pm_riskdescription: item.pm_riskdescription,
+      pm_ragstatus: item.pm_ragstatus,
+      pm_riskownername: ((item as unknown as Record<string, unknown>)['_pm_riskowner_value@OData.Community.Display.V1.FormattedValue'] as string | undefined) ?? item.pm_riskownername,
+      pm_riskstatus: item.pm_riskstatus,
+      pm_identifieddate: item.pm_identifieddate,
+      pm_targetclosedate: item.pm_targetclosedate,
+      pm_escalated: item.pm_escalated,
+    } : null
+  } catch (err) {
+    console.error('[RiskIssueService] createRisk exception:', err)
+    throw err
   }
-  const result = await Pm_risksService.create(createPayload as any)
-  const item = unwrapSingle<Pm_risks>(result)
-  if (item && item.pm_riskid) {
-    writeAuditLog({
-      actionType: 'Create',
-      entityName: 'pm_risks',
-      recordId: item.pm_riskid,
-      recordName: item.pm_risktitle || '',
-      newValue: `Risk created: ${item.pm_risktitle || ''}`
-    })
-  }
-  return item ? {
-    pm_riskid: item.pm_riskid,
-    pm_risktitle: item.pm_risktitle,
-    pm_riskcategory: item.pm_riskcategory,
-    pm_riskdescription: item.pm_riskdescription,
-    pm_ragstatus: item.pm_ragstatus,
-    pm_riskownername: (item as any)['_pm_riskowner_value@OData.Community.Display.V1.FormattedValue'] ?? item.pm_riskownername,
-    pm_riskstatus: item.pm_riskstatus,
-    pm_identifieddate: item.pm_identifieddate,
-    pm_targetclosedate: item.pm_targetclosedate,
-    pm_escalated: item.pm_escalated,
-  } : null
 }
 
 export async function createIssue(payload: Partial<IssueModel> & { pm_projectid: string }): Promise<IssueModel | null> {
-  const result = await Pm_issuesService.create({
-    pm_issuetitle: payload.pm_issuetitle,
-    pm_issuedescription: payload.pm_issuedescription,
-    pm_issuecategory: payload.pm_issuecategory as any,
-    pm_prioritylevel: payload.pm_prioritylevel as any,
-    pm_ragstatus: payload.pm_ragstatus as any,
-    "pm_issueOwner@odata.bind": (payload as any).pm_issueownerid ? `/pm_resources(${(payload as any).pm_issueownerid})` : undefined,
-    pm_issuestatus: 0,
-    pm_dateraised: new Date().toISOString().split('T')[0],
-    pm_targetresolutiondate: payload.pm_targetresolutiondate,
-    "pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
-    statecode: 0,
-    statuscode: 1,
-  } as any)
+  try {
+    const rawPayload = payload as Record<string, unknown>
+    const result = await Pm_issuesService.create({
+      pm_issuetitle: payload.pm_issuetitle,
+      pm_issuedescription: payload.pm_issuedescription,
+      pm_issuecategory: payload.pm_issuecategory,
+      pm_prioritylevel: payload.pm_prioritylevel,
+      pm_ragstatus: payload.pm_ragstatus,
+      "pm_issueOwner@odata.bind": rawPayload.pm_issueownerid ? `/pm_resources(${rawPayload.pm_issueownerid})` : undefined,
+      pm_issuestatus: 0,
+      pm_dateraised: new Date().toISOString().split('T')[0],
+      pm_targetresolutiondate: payload.pm_targetresolutiondate,
+      "pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
+      statecode: 0,
+      statuscode: 1,
+    } as unknown as Pm_issues)
 
-  const item = unwrapSingle<Pm_issues>(result)
-  if (item && item.pm_issueid) {
-    writeAuditLog({
-      actionType: 'Create',
-      entityName: 'pm_issues',
-      recordId: item.pm_issueid,
-      recordName: item.pm_issuetitle || '',
-      newValue: `Issue created: ${item.pm_issuetitle || ''}`
-    })
+    if (!result.success) {
+      console.error('[RiskIssueService] createIssue failed:', result.error)
+      throw new Error(`Failed to create issue: ${result.error?.message || 'Unknown error'}`)
+    }
+
+    const item = unwrapSingle<Pm_issues>(result)
+    if (item && item.pm_issueid) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_issues',
+        recordId: item.pm_issueid,
+        recordName: item.pm_issuetitle || '',
+        newValue: `Issue created: ${item.pm_issuetitle || ''}`
+      })
+    }
+    return item ? {
+      pm_issueid: item.pm_issueid,
+      pm_issuetitle: item.pm_issuetitle,
+      pm_issuedescription: item.pm_issuedescription,
+      pm_issuecategory: item.pm_issuecategory,
+      pm_prioritylevel: item.pm_prioritylevel,
+      pm_ragstatus: item.pm_ragstatus,
+      pm_issueowner: item.pm_issueownername ?? (typeof item.pm_issueowner === 'string' ? item.pm_issueowner : undefined),
+      pm_issuestatus: item.pm_issuestatus,
+      pm_dateraised: item.pm_dateraised,
+      pm_targetresolutiondate: item.pm_targetresolutiondate,
+    } : null
+  } catch (err) {
+    console.error('[RiskIssueService] createIssue exception:', err)
+    throw err
   }
-  return item ? {
-    pm_issueid: item.pm_issueid,
-    pm_issuetitle: item.pm_issuetitle,
-    pm_issuedescription: item.pm_issuedescription,
-    pm_issuecategory: item.pm_issuecategory,
-    pm_prioritylevel: item.pm_prioritylevel,
-    pm_ragstatus: item.pm_ragstatus,
-    pm_issueowner: item.pm_issueownername ?? (typeof item.pm_issueowner === 'string' ? item.pm_issueowner : undefined),
-    pm_issuestatus: item.pm_issuestatus,
-    pm_dateraised: item.pm_dateraised,
-    pm_targetresolutiondate: item.pm_targetresolutiondate,
-  } : null
 }
 
 export async function fetchMitigationActions(riskId: string): Promise<RiskMitigationActionModel[]> {
-  const result = await Pm_riskmitigationactionsService.getAll({
-    filter: `_pm_risk_value eq '${riskId}' and statecode eq 0`,
-    select: [
-      'pm_riskmitigationactionid', 'pm_actiontitle', 'pm_actiondescription',
-      'ownerid', 'pm_status', 'pm_duedate', 'pm_completiondate',
-      'pm_effectiveness', 'pm_notes', '_pm_risk_value',
-    ],
-    orderBy: ['pm_duedate asc'],
-    top: 100,
-  })
-  let list = unwrapList<Pm_riskmitigationactions>(result).map(mapMitigationAction)
-  if (list.length === 0) {
-    const fallbackResult = await Pm_riskmitigationactionsService.getAll({
+  try {
+    const options: IGetAllOptions = {
       select: [
         'pm_riskmitigationactionid', 'pm_actiontitle', 'pm_actiondescription',
         'ownerid', 'pm_status', 'pm_duedate', 'pm_completiondate',
@@ -220,168 +237,280 @@ export async function fetchMitigationActions(riskId: string): Promise<RiskMitiga
       ],
       orderBy: ['pm_duedate asc'],
       top: 100,
+    }
+    const result = await Pm_riskmitigationactionsService.getAll({
+      ...options,
+      filter: `_pm_risk_value eq '${riskId}' and statecode eq 0`,
     })
-    list = unwrapList<Pm_riskmitigationactions>(fallbackResult).map(mapMitigationAction)
+    if (!result.success) {
+      console.error('[RiskIssueService] fetchMitigationActions failed:', result.error)
+      return []
+    }
+    let list = unwrapList<Pm_riskmitigationactions>(result).map(mapMitigationAction)
+    if (list.length === 0) {
+      const fallbackResult = await Pm_riskmitigationactionsService.getAll(options)
+      if (fallbackResult.success) {
+        list = unwrapList<Pm_riskmitigationactions>(fallbackResult).map(mapMitigationAction)
+      }
+    }
+    return list
+  } catch (err) {
+    console.error('[RiskIssueService] fetchMitigationActions exception:', err)
+    return []
   }
-  return list
 }
 
 export async function fetchAllRisks(): Promise<RiskModel[]> {
-  const selectFields = [
-    'pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription',
-    'pm_ragstatus', 'pm_riskstatus', 'pm_escalated',
-    'pm_identifieddate', 'pm_targetclosedate',
-    'pm_inherentprobability', 'pm_inherentimpact', 'pm_inherentscore',
-    'pm_residualprobability', 'pm_residualimpact', 'pm_residualscore',
-    'pm_responsestrategy', 'pm_riskcause', 'pm_riskeffect',
-    '_pm_project_value', '_pm_riskowner_value',
-  ]
-  const options = {
-    select: selectFields,
-    orderBy: ['pm_risktitle asc'],
-    top: 500,
+  try {
+    const selectFields = [
+      'pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription',
+      'pm_ragstatus', 'pm_riskstatus', 'pm_escalated',
+      'pm_identifieddate', 'pm_targetclosedate',
+      'pm_inherentprobability', 'pm_inherentimpact', 'pm_inherentscore',
+      'pm_residualprobability', 'pm_residualimpact', 'pm_residualscore',
+      'pm_responsestrategy', 'pm_riskcause', 'pm_riskeffect',
+      '_pm_project_value', '_pm_riskowner_value',
+    ]
+    const options: IGetAllOptions = {
+      select: selectFields,
+      orderBy: ['pm_risktitle asc'],
+      top: 500,
+    }
+    const result = await Pm_risksService.getAll({ ...options, filter: 'statecode eq 0' })
+    if (!result.success) {
+      console.error('[RiskIssueService] fetchAllRisks failed:', result.error)
+      return []
+    }
+    let list = unwrapList<Pm_risks>(result).map(mapRisk)
+    if (list.length === 0) {
+      const fallbackResult = await Pm_risksService.getAll(options)
+      if (fallbackResult.success) {
+        list = unwrapList<Pm_risks>(fallbackResult).map(mapRisk)
+      }
+    }
+    return list
+  } catch (err) {
+    console.error('[RiskIssueService] fetchAllRisks exception:', err)
+    return []
   }
-  const result = await Pm_risksService.getAll({ ...options, filter: 'statecode eq 0' })
-  let list = unwrapList<Pm_risks>(result).map(mapRisk)
-  if (list.length === 0) {
-    const fallbackResult = await Pm_risksService.getAll(options)
-    list = unwrapList<Pm_risks>(fallbackResult).map(mapRisk)
+}
+
+/**
+ * Fetch risks for a system user based on their own allocations or owned risks.
+ */
+export async function fetchRisksForSystemUser(systemUserId: string): Promise<RiskModel[]> {
+  try {
+    const resourceId = await resolveResourceIdForSystemUser(systemUserId)
+    if (!resourceId) return []
+
+    // 1. Fetch allocated project IDs
+    const { Pm_resourceallocationsService } = await import('@/generated')
+    const allocResult = await Pm_resourceallocationsService.getAll({
+      filter: `_pm_resource_value eq '${resourceId}' and statecode eq 0`,
+      select: ['_pm_project_value'],
+      top: 500,
+    })
+    const allocations = allocResult.success ? unwrapList<any>(allocResult) : []
+    const projectIds = Array.from(new Set(allocations.map(a => a._pm_project_value).filter(Boolean))) as string[]
+
+    // 2. Build filters: (projects allocated) OR (owned risks)
+    const conditions: string[] = [`_pm_riskowner_value eq '${resourceId}'`]
+    if (projectIds.length > 0) {
+      const projectConditions = projectIds.map(id => `_pm_project_value eq '${id}'`).join(' or ')
+      conditions.push(`(${projectConditions})`)
+    }
+    const filterStr = `statecode eq 0 and (${conditions.join(' or ')})`
+
+    const selectFields = [
+      'pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription',
+      'pm_ragstatus', 'pm_riskstatus', 'pm_escalated',
+      'pm_identifieddate', 'pm_targetclosedate',
+      'pm_inherentprobability', 'pm_inherentimpact', 'pm_inherentscore',
+      'pm_residualprobability', 'pm_residualimpact', 'pm_residualscore',
+      'pm_responsestrategy', 'pm_riskcause', 'pm_riskeffect',
+      '_pm_project_value', '_pm_riskowner_value',
+    ]
+
+    const result = await Pm_risksService.getAll({
+      filter: filterStr,
+      select: selectFields,
+      orderBy: ['pm_risktitle asc'],
+      top: 500,
+    })
+    if (!result.success) {
+      console.error('[RiskIssueService] fetchRisksForSystemUser failed:', result.error)
+      return []
+    }
+    return unwrapList<Pm_risks>(result).map(mapRisk)
+  } catch (err) {
+    console.error('[RiskIssueService] fetchRisksForSystemUser exception:', err)
+    return []
   }
-  return list
 }
 
 export async function createRiskFull(payload: Partial<RiskModel>): Promise<RiskModel | null> {
-  const cleanPayload: Record<string, any> = {}
-  for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '' &&
-      key !== '_pm_project_value' && key !== '_pm_riskowner_value' && key !== 'pm_riskowner') {
-      cleanPayload[key] = value
-    }
-  }
-  const defaults: Record<string, any> = {
-    statecode: 0,
-    statuscode: 1,
-    pm_riskstatus: 1,
-  }
-  if (payload._pm_project_value) {
-    const projectId = normalizeLookupId(payload._pm_project_value)
-    if (projectId) {
-      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
-    }
-  }
-  if (payload._pm_riskowner_value) {
-    const ownerId = normalizeLookupId(payload._pm_riskowner_value)
-    if (ownerId) {
-      // Resolve systemuserid → resourceid if needed
-      const resolvedId = await resolveRiskOwnerResourceId(ownerId)
-      if (resolvedId) {
-        // Use navigation property — Dataverse rejects direct _pm_riskowner_value updates
-        cleanPayload['pm_RiskOwner@odata.bind'] = `/pm_resources(${resolvedId})`
+  try {
+    const cleanPayload: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(payload)) {
+      if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_project_value' && key !== '_pm_riskowner_value' && key !== 'pm_riskowner') {
+        cleanPayload[key] = value
       }
     }
+    const defaults: Record<string, unknown> = {
+      statecode: 0,
+      statuscode: 1,
+      pm_riskstatus: 1,
+    }
+    if (payload._pm_project_value) {
+      const projectId = normalizeLookupId(payload._pm_project_value)
+      if (projectId) {
+        cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+      }
+    }
+    if (payload._pm_riskowner_value) {
+      const ownerId = normalizeLookupId(payload._pm_riskowner_value)
+      if (ownerId) {
+        // Resolve systemuserid → resourceid if needed
+        const resolvedId = await resolveRiskOwnerResourceId(ownerId)
+        if (resolvedId) {
+          // Use navigation property — Dataverse rejects direct _pm_riskowner_value updates
+          cleanPayload['pm_RiskOwner@odata.bind'] = `/pm_resources(${resolvedId})`
+        }
+      }
+    }
+    const result = await Pm_risksService.create({ ...defaults, ...cleanPayload } as unknown as Pm_risks)
+    if (!result.success) {
+      console.error('[RiskIssueService] createRiskFull failed:', result.error)
+      throw new Error(`Failed to create risk: ${result.error?.message || 'Unknown error'}`)
+    }
+    const item = unwrapSingle<Pm_risks>(result)
+    if (item && item.pm_riskid) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_risks',
+        recordId: item.pm_riskid,
+        recordName: item.pm_risktitle || '',
+        newValue: `Risk created: ${item.pm_risktitle || ''}`
+      })
+    }
+    return item ? mapRisk(item) : null
+  } catch (err) {
+    console.error('[RiskIssueService] createRiskFull exception:', err)
+    throw err
   }
-  const result = await Pm_risksService.create({ ...defaults, ...cleanPayload } as any)
-  const item = unwrapSingle<Pm_risks>(result)
-  if (item && item.pm_riskid) {
-    writeAuditLog({
-      actionType: 'Create',
-      entityName: 'pm_risks',
-      recordId: item.pm_riskid,
-      recordName: item.pm_risktitle || '',
-      newValue: `Risk created: ${item.pm_risktitle || ''}`
-    })
-  }
-  return item ? mapRisk(item) : null
 }
 
 export async function updateRiskFull(id: string, changes: Partial<RiskModel>): Promise<RiskModel | null> {
-  let original: RiskModel | null = null
   try {
-    const details = await Pm_risksService.get(id, {
-      select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskstatus', 'pm_escalated', 'pm_identifieddate', 'pm_targetclosedate', '_pm_riskowner_value']
-    })
-    const uItem = unwrapSingle<Pm_risks>(details)
-    if (uItem) original = mapRisk(uItem)
-  } catch (e) { }
-
-  const SKIP_READONLY = new Set([
-    'pm_riskid', '_pm_project_value', '_pm_riskowner_value', 'pm_riskowner',
-    // Read-only display names that Dataverse rejects on update
-    'pm_riskownername', 'pm_projectname', 'pm_riskcategoryname', 'pm_ragstatusname',
-    'pm_riskstatusname', 'pm_inherentprobabilityname', 'pm_inherentimpactname',
-    'pm_residualprobabilityname', 'pm_residualimpactname', 'pm_responsestrategyname',
-    'statecodename', 'statuscodename', 'pm_escalatedname',
-  ])
-  const cleanPayload: Record<string, any> = {}
-  for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null && !SKIP_READONLY.has(key)) {
-      cleanPayload[key] = value
-    }
-  }
-  if (changes._pm_riskowner_value) {
-    const ownerId = normalizeLookupId(changes._pm_riskowner_value)
-    if (ownerId) {
-      // Resolve systemuserid → resourceid if needed
-      const resolvedId = await resolveRiskOwnerResourceId(ownerId)
-      if (resolvedId) {
-        // Use navigation property — Dataverse rejects direct _pm_riskowner_value updates
-        cleanPayload['pm_RiskOwner@odata.bind'] = `/pm_resources(${resolvedId})`
+    let original: RiskModel | null = null
+    try {
+      const details = await Pm_risksService.get(id, {
+        select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskstatus', 'pm_escalated', 'pm_identifieddate', 'pm_targetclosedate', '_pm_riskowner_value']
+      })
+      if (details.success) {
+        const uItem = unwrapSingle<Pm_risks>(details)
+        if (uItem) original = mapRisk(uItem)
       }
-    }
-  } else {
-  }
-
-  const result = await Pm_risksService.update(id, cleanPayload as any)
-  const item = unwrapSingle<Pm_risks>(result)
-
-  // Log audit entries for changed fields
-  if (original) {
-    const formatVal = (val: any): string => {
-      if (val === undefined || val === null) return ''
-      if (typeof val === 'object') return JSON.stringify(val)
-      return String(val)
+    } catch (e) {
+      console.error('[RiskIssueService] updateRiskFull oldRecord fetch failed:', e)
     }
 
+    const SKIP_READONLY = new Set([
+      'pm_riskid', '_pm_project_value', '_pm_riskowner_value', 'pm_riskowner',
+      // Read-only display names that Dataverse rejects on update
+      'pm_riskownername', 'pm_projectname', 'pm_riskcategoryname', 'pm_ragstatusname',
+      'pm_riskstatusname', 'pm_inherentprobabilityname', 'pm_inherentimpactname',
+      'pm_residualprobabilityname', 'pm_residualimpactname', 'pm_responsestrategyname',
+      'statecodename', 'statuscodename', 'pm_escalatedname',
+    ])
+    const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(changes)) {
-      if (key === 'pm_riskid') continue
-      const oldVal = (original as any)[key]
-      if (formatVal(oldVal) !== formatVal(value)) {
-        const isStatus = key === 'pm_riskstatus' || key === 'statecode'
-        writeAuditLog({
-          actionType: isStatus ? 'StatusChange' : 'Update',
-          entityName: 'pm_risks',
-          recordId: id,
-          recordName: original.pm_risktitle || '',
-          fieldName: key,
-          oldValue: formatVal(oldVal),
-          newValue: formatVal(value)
-        })
+      if (value !== undefined && value !== null && !SKIP_READONLY.has(key)) {
+        cleanPayload[key] = value
       }
     }
-  }
+    if (changes._pm_riskowner_value) {
+      const ownerId = normalizeLookupId(changes._pm_riskowner_value)
+      if (ownerId) {
+        // Resolve systemuserid → resourceid if needed
+        const resolvedId = await resolveRiskOwnerResourceId(ownerId)
+        if (resolvedId) {
+          // Use navigation property — Dataverse rejects direct _pm_riskowner_value updates
+          cleanPayload['pm_RiskOwner@odata.bind'] = `/pm_resources(${resolvedId})`
+        }
+      }
+    }
 
-  return item ? mapRisk(item) : null
+    const result = await Pm_risksService.update(id, cleanPayload as unknown as Pm_risks)
+    if (!result.success) {
+      console.error('[RiskIssueService] updateRiskFull failed:', result.error)
+      throw new Error(`Failed to update risk: ${result.error?.message || 'Unknown error'}`)
+    }
+    const item = unwrapSingle<Pm_risks>(result)
+
+    // Log audit entries for changed fields
+    if (original) {
+      const formatVal = (val: unknown): string => {
+        if (val === undefined || val === null) return ''
+        if (typeof val === 'object') return JSON.stringify(val)
+        return String(val)
+      }
+
+
+      for (const [key, value] of Object.entries(changes)) {
+        if (key === 'pm_riskid') continue
+        const oldVal = (original as Record<string, unknown>)[key]
+        if (formatVal(oldVal) !== formatVal(value)) {
+          const isStatus = key === 'pm_riskstatus' || key === 'statecode'
+          writeAuditLog({
+            actionType: isStatus ? 'StatusChange' : 'Update',
+            entityName: 'pm_risks',
+            recordId: id,
+            recordName: original.pm_risktitle || '',
+            fieldName: key,
+            oldValue: formatVal(oldVal),
+            newValue: formatVal(value)
+          })
+        }
+      }
+    }
+
+    return item ? mapRisk(item) : null
+  } catch (err) {
+    console.error('[RiskIssueService] updateRiskFull exception:', err)
+    throw err
+  }
 }
 
 export async function deleteRisk(id: string): Promise<void> {
-  let recordName = id
   try {
-    const details = await Pm_risksService.get(id, { select: ['pm_risktitle'] })
-    const uItem = unwrapSingle<Pm_risks>(details)
-    if (uItem?.pm_risktitle) recordName = uItem.pm_risktitle
-  } catch (e) { }
+    let recordName = id
+    try {
+      const details = await Pm_risksService.get(id, { select: ['pm_risktitle'] })
+      if (details.success) {
+        const uItem = unwrapSingle<Pm_risks>(details)
+        if (uItem?.pm_risktitle) recordName = uItem.pm_risktitle
+      }
+    } catch (e) {
+      console.error('[RiskIssueService] deleteRisk details fetch exception:', e)
+    }
 
-  await Pm_risksService.delete(id)
+    await Pm_risksService.delete(id)
 
-  writeAuditLog({
-    actionType: 'Update',
-    entityName: 'pm_risks',
-    recordId: id,
-    recordName: recordName,
-    fieldName: 'deleted',
-    oldValue: 'Active',
-    newValue: 'Deleted'
-  })
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_risks',
+      recordId: id,
+      recordName: recordName,
+      fieldName: 'deleted',
+      oldValue: 'Active',
+      newValue: 'Deleted'
+    })
+  } catch (err) {
+    console.error('[RiskIssueService] deleteRisk exception:', err)
+    throw err
+  }
 }
 
 /**
@@ -392,13 +521,17 @@ export async function deleteRisk(id: string): Promise<void> {
 export async function fetchIssuesForSystemUser(systemUserId: string): Promise<IssueModel[]> {
   try {
     // Step 1: Find the resource linked to this system user
-    const { Pm_resourcesService } = await import('@/generated')
-    const resourcesResult = await Pm_resourcesService.getAll({
+    const { Pm_resourcesService: LocalResourcesService } = await import('@/generated')
+    const resourcesResult = await LocalResourcesService.getAll({
       filter: `_pm_systemuser_value eq '${systemUserId}' and statecode eq 0`,
       select: ['pm_resourceid', 'pm_fullname'],
       top: 1,
     })
-    const resources = unwrapList<any>(resourcesResult)
+    if (!resourcesResult.success) {
+      console.error('[RiskIssueService] fetchIssuesForSystemUser resources failed:', resourcesResult.error)
+      return []
+    }
+    const resources = unwrapList<Pm_resources>(resourcesResult)
     if (resources.length === 0) return []
     const resourceId = resources[0].pm_resourceid
     if (!resourceId) return []
@@ -420,6 +553,10 @@ export async function fetchIssuesForSystemUser(systemUserId: string): Promise<Is
       orderBy: ['pm_dateraised desc'],
       top: 500,
     })
+    if (!result.success) {
+      console.error('[RiskIssueService] fetchIssuesForSystemUser issues failed:', result.error)
+      return []
+    }
     return unwrapList<Pm_issues>(result).map(mapIssue)
   } catch (err) {
     console.error('[risk-issue.service] fetchIssuesForSystemUser failed:', err)
@@ -428,169 +565,212 @@ export async function fetchIssuesForSystemUser(systemUserId: string): Promise<Is
 }
 
 export async function fetchAllIssues(): Promise<IssueModel[]> {
-  const selectFields = [
-    'pm_issueid', 'pm_issuetitle', 'pm_issuedescription',
-    'pm_issuecategory', 'pm_ragstatus',
-    'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel',
-    'pm_impactlevel', 'pm_issuereference',
-    'pm_dateraised', 'pm_targetresolutiondate',
-    'pm_actualresolutiondate', 'pm_resolutiondetails', 'pm_linkedrisk', '_pm_project_value', '_pm_programmefk_value',
-    '_pm_issueowner_value',
-  ]
-  const options = {
-    select: selectFields,
-    orderBy: ['pm_dateraised desc'],
-    top: 500,
+  try {
+    const selectFields = [
+      'pm_issueid', 'pm_issuetitle', 'pm_issuedescription',
+      'pm_issuecategory', 'pm_ragstatus',
+      'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel',
+      'pm_impactlevel', 'pm_issuereference',
+      'pm_dateraised', 'pm_targetresolutiondate',
+      'pm_actualresolutiondate', 'pm_resolutiondetails', 'pm_linkedrisk', '_pm_project_value', '_pm_programmefk_value',
+      '_pm_issueowner_value',
+    ]
+    const options: IGetAllOptions = {
+      select: selectFields,
+      orderBy: ['pm_dateraised desc'],
+      top: 500,
+    }
+    const result = await Pm_issuesService.getAll({ ...options, filter: 'statecode eq 0' })
+    if (!result.success) {
+      console.error('[RiskIssueService] fetchAllIssues failed:', result.error)
+      return []
+    }
+    let list = unwrapList<Pm_issues>(result).map(mapIssue)
+    if (list.length === 0) {
+      const fallbackResult = await Pm_issuesService.getAll(options)
+      if (fallbackResult.success) {
+        list = unwrapList<Pm_issues>(fallbackResult).map(mapIssue)
+      }
+    }
+    return list
+  } catch (err) {
+    console.error('[RiskIssueService] fetchAllIssues exception:', err)
+    return []
   }
-  const result = await Pm_issuesService.getAll({ ...options, filter: 'statecode eq 0' })
-  let list = unwrapList<Pm_issues>(result).map(mapIssue)
-  if (list.length === 0) {
-    const fallbackResult = await Pm_issuesService.getAll(options)
-    list = unwrapList<Pm_issues>(fallbackResult).map(mapIssue)
-  }
-  return list
 }
 
 export async function createIssueFull(payload: Partial<IssueModel>): Promise<IssueModel | null> {
-  const cleanPayload: Record<string, any> = {}
-  for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '' &&
-      key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner') {
-      cleanPayload[key] = value
+  try {
+    const cleanPayload: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(payload)) {
+      if (value !== undefined && value !== null && value !== '' &&
+        key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner') {
+        cleanPayload[key] = value
+      }
     }
-  }
-  const defaults: Record<string, any> = {
-    statecode: 0,
-    statuscode: 1,
-  }
-  if (payload._pm_project_value) {
-    const projectId = normalizeLookupId(payload._pm_project_value)
-    if (projectId) {
-      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+    const defaults: Record<string, unknown> = {
+      statecode: 0,
+      statuscode: 1,
     }
-  }
-  if (payload._pm_programmefk_value) {
-    const programmeId = normalizeLookupId(payload._pm_programmefk_value)
-    if (programmeId) {
-      cleanPayload['pm_ProgrammeFK@odata.bind'] = `/pm_programmes(${programmeId})`
+    if (payload._pm_project_value) {
+      const projectId = normalizeLookupId(payload._pm_project_value)
+      if (projectId) {
+        cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+      }
     }
-  }
-  if (payload._pm_issueowner_value) {
-    const resourceId = normalizeLookupId(payload._pm_issueowner_value)
-    if (resourceId) {
-      cleanPayload['pm_issueOwner@odata.bind'] = `/pm_resources(${resourceId})`
+    if (payload._pm_programmefk_value) {
+      const programmeId = normalizeLookupId(payload._pm_programmefk_value)
+      if (programmeId) {
+        cleanPayload['pm_ProgrammeFK@odata.bind'] = `/pm_programmes(${programmeId})`
+      }
     }
-  }
-  if (payload._pm_risk_value) {
-    const riskId = normalizeLookupId(payload._pm_risk_value)
-    if (riskId) {
-      cleanPayload['pm_risk@odata.bind'] = `/pm_risks(${riskId})`
+    if (payload._pm_issueowner_value) {
+      const resourceId = normalizeLookupId(payload._pm_issueowner_value)
+      if (resourceId) {
+        cleanPayload['pm_issueOwner@odata.bind'] = `/pm_resources(${resourceId})`
+      }
     }
+    if (payload._pm_risk_value) {
+      const riskId = normalizeLookupId(payload._pm_risk_value)
+      if (riskId) {
+        cleanPayload['pm_risk@odata.bind'] = `/pm_risks(${riskId})`
+      }
+    }
+    const result = await Pm_issuesService.create({ ...defaults, ...cleanPayload } as unknown as Pm_issues)
+    if (!result.success) {
+      console.error('[RiskIssueService] createIssueFull failed:', result.error)
+      throw new Error(`Failed to create issue: ${result.error?.message || 'Unknown error'}`)
+    }
+    const item = unwrapSingle<Pm_issues>(result)
+    if (item && item.pm_issueid) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_issues',
+        recordId: item.pm_issueid,
+        recordName: item.pm_issuetitle || '',
+        newValue: `Issue created: ${item.pm_issuetitle || ''}`
+      })
+    }
+    return item ? mapIssue(item) : null
+  } catch (err) {
+    console.error('[RiskIssueService] createIssueFull exception:', err)
+    throw err
   }
-  const result = await Pm_issuesService.create({ ...defaults, ...cleanPayload } as any)
-  const item = unwrapSingle<Pm_issues>(result)
-  if (item && item.pm_issueid) {
-    writeAuditLog({
-      actionType: 'Create',
-      entityName: 'pm_issues',
-      recordId: item.pm_issueid,
-      recordName: item.pm_issuetitle || '',
-      newValue: `Issue created: ${item.pm_issuetitle || ''}`
-    })
-  }
-  return item ? mapIssue(item) : null
 }
 
 export async function updateIssueFull(id: string, changes: Partial<IssueModel>): Promise<IssueModel | null> {
-  let original: IssueModel | null = null
   try {
-    const details = await Pm_issuesService.get(id, {
-      select: ['pm_issueid', 'pm_issuetitle', 'pm_issuedescription', 'pm_issuecategory', 'pm_ragstatus', 'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel', 'pm_impactlevel', 'pm_issuereference', 'pm_dateraised', 'pm_targetresolutiondate']
-    })
-    const uItem = unwrapSingle<Pm_issues>(details)
-    if (uItem) original = mapIssue(uItem)
-  } catch (e) { }
-
-  const cleanPayload: Record<string, any> = {}
-  for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null &&
-      key !== 'pm_issueid' && key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner') {
-      cleanPayload[key] = value
-    }
-  }
-  if (changes._pm_project_value) {
-    const projectId = normalizeLookupId(changes._pm_project_value)
-    if (projectId) {
-      cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
-    }
-  }
-  if (changes._pm_programmefk_value) {
-    const programmeId = normalizeLookupId(changes._pm_programmefk_value)
-    if (programmeId) {
-      cleanPayload['pm_ProgrammeFK@odata.bind'] = `/pm_programmes(${programmeId})`
-    }
-  }
-  if (changes._pm_issueowner_value) {
-    const resourceId = normalizeLookupId(changes._pm_issueowner_value)
-    if (resourceId) {
-      cleanPayload['pm_issueOwner@odata.bind'] = `/pm_resources(${resourceId})`
-    }
-  }
-  if (changes._pm_risk_value) {
-    const riskId = normalizeLookupId(changes._pm_risk_value)
-    if (riskId) {
-      cleanPayload['pm_risk@odata.bind'] = `/pm_risks(${riskId})`
-    }
-  }
-  const result = await Pm_issuesService.update(id, cleanPayload as any)
-  const item = unwrapSingle<Pm_issues>(result)
-
-  // Log audit entries for changed fields
-  if (original) {
-    const formatVal = (val: any): string => {
-      if (val === undefined || val === null) return ''
-      if (typeof val === 'object') return JSON.stringify(val)
-      return String(val)
+    let original: IssueModel | null = null
+    try {
+      const details = await Pm_issuesService.get(id, {
+        select: ['pm_issueid', 'pm_issuetitle', 'pm_issuedescription', 'pm_issuecategory', 'pm_ragstatus', 'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel', 'pm_impactlevel', 'pm_issuereference', 'pm_dateraised', 'pm_targetresolutiondate']
+      })
+      if (details.success) {
+        const uItem = unwrapSingle<Pm_issues>(details)
+        if (uItem) original = mapIssue(uItem)
+      }
+    } catch (e) {
+      console.error('[RiskIssueService] updateIssueFull oldRecord fetch failed:', e)
     }
 
+    const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(changes)) {
-      if (key === 'pm_issueid') continue
-      const oldVal = (original as any)[key]
-      if (formatVal(oldVal) !== formatVal(value)) {
-        const isStatus = key === 'pm_issuestatus' || key === 'statecode'
-        writeAuditLog({
-          actionType: isStatus ? 'StatusChange' : 'Update',
-          entityName: 'pm_issues',
-          recordId: id,
-          recordName: original.pm_issuetitle || '',
-          fieldName: key,
-          oldValue: formatVal(oldVal),
-          newValue: formatVal(value)
-        })
+      if (value !== undefined && value !== null &&
+        key !== 'pm_issueid' && key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner') {
+        cleanPayload[key] = value
       }
     }
-  }
+    if (changes._pm_project_value) {
+      const projectId = normalizeLookupId(changes._pm_project_value)
+      if (projectId) {
+        cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+      }
+    }
+    if (changes._pm_programmefk_value) {
+      const programmeId = normalizeLookupId(changes._pm_programmefk_value)
+      if (programmeId) {
+        cleanPayload['pm_ProgrammeFK@odata.bind'] = `/pm_programmes(${programmeId})`
+      }
+    }
+    if (changes._pm_issueowner_value) {
+      const resourceId = normalizeLookupId(changes._pm_issueowner_value)
+      if (resourceId) {
+        cleanPayload['pm_issueOwner@odata.bind'] = `/pm_resources(${resourceId})`
+      }
+    }
+    if (changes._pm_risk_value) {
+      const riskId = normalizeLookupId(changes._pm_risk_value)
+      if (riskId) {
+        cleanPayload['pm_risk@odata.bind'] = `/pm_risks(${riskId})`
+      }
+    }
+    const result = await Pm_issuesService.update(id, cleanPayload as unknown as Pm_issues)
+    if (!result.success) {
+      console.error('[RiskIssueService] updateIssueFull failed:', result.error)
+      throw new Error(`Failed to update issue: ${result.error?.message || 'Unknown error'}`)
+    }
+    const item = unwrapSingle<Pm_issues>(result)
 
-  return item ? mapIssue(item) : null
+    // Log audit entries for changed fields
+    if (original) {
+      const formatVal = (val: unknown): string => {
+        if (val === undefined || val === null) return ''
+        if (typeof val === 'object') return JSON.stringify(val)
+        return String(val)
+      }
+
+
+      for (const [key, value] of Object.entries(changes)) {
+        if (key === 'pm_issueid') continue
+        const oldVal = (original as Record<string, unknown>)[key]
+        if (formatVal(oldVal) !== formatVal(value)) {
+          const isStatus = key === 'pm_issuestatus' || key === 'statecode'
+          writeAuditLog({
+            actionType: isStatus ? 'StatusChange' : 'Update',
+            entityName: 'pm_issues',
+            recordId: id,
+            recordName: original.pm_issuetitle || '',
+            fieldName: key,
+            oldValue: formatVal(oldVal),
+            newValue: formatVal(value)
+          })
+        }
+      }
+    }
+
+    return item ? mapIssue(item) : null
+  } catch (err) {
+    console.error('[RiskIssueService] updateIssueFull exception:', err)
+    throw err
+  }
 }
 
 export async function deleteIssue(id: string): Promise<void> {
-  let recordName = id
   try {
-    const details = await Pm_issuesService.get(id, { select: ['pm_issuetitle'] })
-    const uItem = unwrapSingle<Pm_issues>(details)
-    if (uItem?.pm_issuetitle) recordName = uItem.pm_issuetitle
-  } catch (e) { }
+    let recordName = id
+    try {
+      const details = await Pm_issuesService.get(id, { select: ['pm_issuetitle'] })
+      if (details.success) {
+        const uItem = unwrapSingle<Pm_issues>(details)
+        if (uItem?.pm_issuetitle) recordName = uItem.pm_issuetitle
+      }
+    } catch (e) {
+      console.error('[RiskIssueService] deleteIssue details fetch exception:', e)
+    }
 
-  await Pm_issuesService.delete(id)
+    await Pm_issuesService.delete(id)
 
-  writeAuditLog({
-    actionType: 'Update',
-    entityName: 'pm_issues',
-    recordId: id,
-    recordName: recordName,
-    fieldName: 'deleted',
-    oldValue: 'Active',
-    newValue: 'Deleted'
-  })
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_issues',
+      recordId: id,
+      recordName: recordName,
+      fieldName: 'deleted',
+      oldValue: 'Active',
+      newValue: 'Deleted'
+    })
+  } catch (err) {
+    console.error('[RiskIssueService] deleteIssue exception:', err)
+    throw err
+  }
 }

@@ -20,6 +20,7 @@ import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 import {
   fetchAllRisks,
+  fetchRisksForSystemUser,
   createRiskFull,
   updateRiskFull,
   deleteRisk,
@@ -49,9 +50,11 @@ import {
 import { ExportButton, Button, ConfirmDialog } from '@/components/common'
 import AddIcon from '@mui/icons-material/Add'
 import { normalizeLookupId } from '@/services'
+import { useUser } from '@/context/UserContext'
 
 export default function RisksPage() {
   const theme = useTheme()
+  const { currentUser, currentUserPersona } = useUser()
 
   const { allowed: canCreate } = useAuthorization('RISKS', 'create')
   const { allowed: canEdit } = useAuthorization('RISKS', 'update')
@@ -93,14 +96,17 @@ export default function RisksPage() {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchAllRisks()
+      const isTeamMember = currentUserPersona === 'TeamMember'
+      const data = isTeamMember && currentUser?.systemuserid
+        ? await fetchRisksForSystemUser(currentUser.systemuserid)
+        : await fetchAllRisks()
       setRisks(data || [])
     } catch (err) {
       setError('Unable to load risks.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentUser, currentUserPersona])
 
   useEffect(() => {
     loadRisks()

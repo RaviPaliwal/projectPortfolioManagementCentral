@@ -17,7 +17,7 @@ import { Pm_workflowapprovalstepsService, Pm_workflowinstancesService } from '@/
 import type { Pm_workflowapprovalsteps } from '@/generated/models/Pm_workflowapprovalstepsModel'
 import type { Pm_workflowinstances } from '@/generated/models/Pm_workflowinstancesModel'
 import { fetchStepTemplateById } from '@/services/workflow.service'
-import { getFormByKey, FORM_REGISTRY } from '@/constants/formRegistry'
+import { getFormByKey } from '@/constants/formRegistry'
 import type { FormRegistryEntry } from '@/constants/formRegistry'
 import { unwrapSingle } from '@/services/common'
 import { dispatchOpenFormDialog } from '@/utils/formDialogEvents'
@@ -79,9 +79,13 @@ export async function fetchApprovalStepById(stepId: string): Promise<Pm_workflow
         '_pm_workflowtemplate_value',
       ],
     })
+    if (!result.success) {
+      console.error('[TaskResolver] fetchApprovalStepById failed:', result.error)
+      return null
+    }
     return unwrapSingle<Pm_workflowapprovalsteps>(result)
   } catch (err) {
-    console.error('[TaskResolver] fetchApprovalStepById failed:', err)
+    console.error('[TaskResolver] fetchApprovalStepById exception:', err)
     return null
   }
 }
@@ -121,15 +125,21 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
           '_pm_workflowlookup_value',
         ],
       })
-      const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
-      if (instance) {
-        entityId = instance.pm_entityid || null
-        entityType = instance.pm_entitytype || null
-        workflowName = instance.pm_instancename ||
-          (instance as any).pm_workflowlookupname ||
-          null
+      if (!instanceResult.success) {
+        console.error('[TaskResolver] resolveApprovalStepTask - fetch workflow instance failed:', instanceResult.error)
+      } else {
+        const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
+        if (instance) {
+          entityId = instance.pm_entityid || null
+          entityType = instance.pm_entitytype || null
+          workflowName = instance.pm_instancename ||
+            (instance as unknown as Record<string, unknown>).pm_workflowlookupname as string ||
+            null
+        }
       }
-    } catch (err) { }
+    } catch (err) {
+      console.error('[TaskResolver] resolveApprovalStepTask - fetch workflow instance exception:', err)
+    }
 
     // Step 3: Resolve formKey — try step's own new_formkey first, then fall back to template
     let formKey: string | null = null
@@ -146,7 +156,9 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
         if (template?.new_formkey) {
           formKey = template.new_formkey
         }
-      } catch (err) { }
+      } catch (err) {
+        console.error('[TaskResolver] resolveApprovalStepTask - fetch step template exception:', err)
+      }
     }
 
     // Step 4: Look up the form registry entry
@@ -160,10 +172,10 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
     // Build the navigate function — dispatches the form dialog (task modals)
     const navigate = () => {
       dispatchOpenFormDialog({
-        formDisplayName: formEntry.displayName,
-        formDescription: formEntry.description,
-        moduleName: formEntry.moduleName,
-        formKey: formEntry.key,
+        formDisplayName: formEntry!.displayName,
+        formDescription: formEntry!.description,
+        moduleName: formEntry!.moduleName,
+        formKey: formEntry!.key,
         entityId,
         entityType,
         workflowName,
@@ -176,7 +188,7 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
     return {
       formEntry,
       step: {
-        pm_workflowapprovalstepid: step.pm_workflowapprovalstepid,
+        pm_workflowapprovalstepid: step.pm_workflowapprovalstepid!,
         pm_steporder: step.pm_steporder,
         pm_approvername: step.pm_approvername || step.pm_assigneedisplayname,
         pm_duedate: step.pm_duedate,
@@ -217,10 +229,15 @@ export async function resolveEntityIdFromApprovalStep(stepId: string): Promise<s
     const instanceResult = await Pm_workflowinstancesService.get(step._pm_workflowinstancelookup_value, {
       select: ['pm_workflowinstanceid', 'pm_entityid', 'pm_entitytype', 'pm_entityname', 'pm_instancename'],
     })
+    if (!instanceResult.success) {
+      console.error('[TaskResolver] resolveEntityIdFromApprovalStep failed to get instance:', instanceResult.error)
+      return null
+    }
     const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
     const result = instance?.pm_entityid ?? null
     return result
   } catch (err) {
+    console.error('[TaskResolver] resolveEntityIdFromApprovalStep exception:', err)
     return null
   }
 }
@@ -242,6 +259,10 @@ export async function resolveEntityInfoFromApprovalStep(stepId: string): Promise
     const instanceResult = await Pm_workflowinstancesService.get(step._pm_workflowinstancelookup_value, {
       select: ['pm_workflowinstanceid', 'pm_entityid', 'pm_entitytype', 'pm_entityname', 'pm_instancename'],
     })
+    if (!instanceResult.success) {
+      console.error('[TaskResolver] resolveEntityInfoFromApprovalStep failed to get instance:', instanceResult.error)
+      return { entityId: null, entityType: undefined, entityName: undefined }
+    }
     const instance = unwrapSingle<Pm_workflowinstances>(instanceResult)
 
     const result: EntityInfo = {
@@ -265,21 +286,27 @@ export async function resolveEntityInfoFromApprovalStep(stepId: string): Promise
  * Returns true if the dialog was triggered.
  */
 export async function openApprovalStepTask(stepId: string): Promise<boolean> {
-  const task = await resolveApprovalStepTask(stepId)
-  if (task) {
-    dispatchOpenFormDialog({
-      formDisplayName: task.formDisplayName,
-      formDescription: task.formEntry?.description,
-      moduleName: task.formEntry?.moduleName,
-      formKey: task.formKey || undefined,
-      entityId: task.entityId,
-      entityType: task.entityType,
-      workflowName: task.workflowName,
-      stepOrder: task.step.pm_steporder,
-      approvalStepId: stepId,
-      navigate: task.navigate,
-    })
-    return true
+  try {
+    const task = await resolveApprovalStepTask(stepId)
+    if (task) {
+      dispatchOpenFormDialog({
+        formDisplayName: task.formDisplayName,
+        formDescription: task.formEntry?.description,
+        moduleName: task.formEntry?.moduleName,
+        formKey: task.formKey || undefined,
+        entityId: task.entityId,
+        entityType: task.entityType,
+        workflowName: task.workflowName,
+        stepOrder: task.step.pm_steporder,
+        approvalStepId: stepId,
+        navigate: task.navigate,
+      })
+      return true
+    }
+    return false
+  } catch (err) {
+    console.error('[TaskResolver] openApprovalStepTask exception:', err)
+    return false
   }
-  return false
 }
+

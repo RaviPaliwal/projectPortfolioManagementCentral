@@ -93,14 +93,14 @@ export const ragLabel = (code?: string | number): string => {
 }
 
 export const projectPhaseLabel = (code?: string | number): string => {
-    if (code === '0' || code === 0) return 'Execution'
-    if (code === '1' || code === 1) return 'Planning'
-    if (code === '2' || code === 2) return 'Closure'
-    if (code === '3' || code === 3) return 'Initiation'
-    if (code === '4' || code === 4) return 'Rejected'
-    if (code === '5' || code === 5) return 'Completed'
-    return 'Unknown'
-  }
+  if (code === '0' || code === 0) return 'Execution'
+  if (code === '1' || code === 1) return 'Planning'
+  if (code === '2' || code === 2) return 'Closure'
+  if (code === '3' || code === 3) return 'Initiation'
+  if (code === '4' || code === 4) return 'Rejected'
+  if (code === '5' || code === 5) return 'Completed'
+  return 'Unknown'
+}
 
 export const programmePhaseLabel = (code?: string | number): string => {
   if (code === '0' || code === 0) return 'Delivery'
@@ -159,4 +159,45 @@ export interface ProjectHierarchy {
   portfolios: PortfolioModel[]
   programmes: ProgrammeModel[]
   projects: ProjectModel[]
+}
+
+/**
+ * Returns true if financial data (budgets, actuals, costs) should be visible
+ * based on the current user's persona stored in localStorage.
+ * PMO Admin, Portfolio Manager, Finance Controller, and Executive personas can see financials.
+ */
+export const isFinancialDataVisible = (): boolean => {
+  try {
+    const persona = localStorage.getItem('ppm_persona_override') ??
+      sessionStorage.getItem('ppm_user_persona') ?? ''
+    const financialPersonas = ['PMO Admin', 'Portfolio Manager', 'Finance Controller', 'Executive', 'Programme Manager', 'Project Manager']
+    if (!persona) return true // default to visible if no persona set
+    return financialPersonas.some(p => persona.toLowerCase().includes(p.toLowerCase()))
+  } catch {
+    return true
+  }
+}
+
+/**
+ * Resolves a Dataverse systemuserid (GUID) to the corresponding pm_resourceid
+ * by looking up the pm_resources table filtered by _pm_systemuser_value.
+ */
+export const resolveResourceIdForSystemUser = async (systemUserId: string): Promise<string | null> => {
+  if (!systemUserId) return null
+  try {
+    const { Pm_resourcesService } = await import('@/generated')
+    const result = await Pm_resourcesService.getAll({
+      filter: `_pm_systemuser_value eq '${systemUserId}' and statecode eq 0`,
+      select: ['pm_resourceid'],
+      top: 1,
+    })
+    if (!result.success) return null
+    const items = result as any
+    const list: any[] = Array.isArray(items?.data) ? items.data :
+                        Array.isArray(items?.value) ? items.value :
+                        Array.isArray(items) ? items : []
+    return list.length > 0 ? (list[0].pm_resourceid ?? null) : null
+  } catch {
+    return null
+  }
 }

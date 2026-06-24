@@ -252,6 +252,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
               {activeTab === 2 && (
                 <ProjectFinancialsTab 
                   budgetLines={budgetLines} 
+                  project={project}
                   onEditBudgetLine={onEditBudgetLine}
                   canEdit={canEdit}
                 />

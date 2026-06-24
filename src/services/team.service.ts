@@ -7,23 +7,24 @@ import {
 import type { Systemusers } from '@/generated/models/SystemusersModel'
 import type { Teams } from '@/generated/models/TeamsModel'
 import type { Teammemberships } from '@/generated/models/TeammembershipsModel'
+import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import { unwrapList, normalizeLookupId } from './common'
 import { writeAuditLog } from './changelog.service'
 
 export async function fetchSystemUsers(): Promise<Systemusers[]> {
   try {
-    const response = await SystemusersService.getAll({
+    const options: IGetAllOptions = {
       select: ['systemuserid', 'fullname', 'internalemailaddress'] 
-    } as any);
-
-    let users = response as any;
-    if (response && 'records' in response) users = response.records;
-    if (response && 'value' in response) users = response.value;
-
-    return Array.isArray(users) ? users : [];
+    }
+    const response = await SystemusersService.getAll(options)
+    if (!response.success) {
+      console.error('[TeamService] fetchSystemUsers failed:', response.error)
+      return []
+    }
+    return unwrapList<Systemusers>(response)
   } catch (err) {
-    console.error('fetchSystemUsers failed:', err);
-    return [];
+    console.error('[TeamService] fetchSystemUsers exception:', err)
+    return []
   }
 }
 
@@ -36,12 +37,17 @@ export type TeamOption = {
 
 export async function fetchOwnerTeams(): Promise<TeamOption[]> {
   try {
-    const result = await TeamsService.getAll({
+    const options: IGetAllOptions = {
       select: ['teamid', 'name', 'description', 'teamtype', 'systemmanaged'],
       orderBy: ['name asc'],
       filter: "_administratorid_value ne 9280b346-649b-4cb2-a9bc-2de1e4d66c48 and name ne 'org34d5ddb1'",
       top: 500,
-    })
+    }
+    const result = await TeamsService.getAll(options)
+    if (!result.success) {
+      console.error('[TeamService] fetchOwnerTeams failed:', result.error)
+      return []
+    }
     const list = unwrapList<Teams>(result)
     const filtered = list.filter((t) => t.teamtype === 0 && !t.systemmanaged)
     return filtered.map((team) => ({
@@ -51,55 +57,65 @@ export async function fetchOwnerTeams(): Promise<TeamOption[]> {
       type: 'team',
     }))
   } catch (err) {
-    console.error('[dataverseService] fetchOwnerTeams failed:', err)
+    console.error('[TeamService] fetchOwnerTeams exception:', err)
     return []
   }
 }
 
 export async function fetchTeamMembers(teamId: string): Promise<Systemusers[]> {
   try {
-    const membershipResult = await TeammembershipsService.getAll({
+    const options: IGetAllOptions = {
       select: ['systemuserid'],
       filter: `teamid eq '${teamId}'`,
-    });
-
-    const membershipList = unwrapList<Teammemberships>(membershipResult);
-    const userIds: string[] = membershipList
-      .map((m: Teammemberships) => m.systemuserid || '') 
-      .filter((id: string | undefined) => !!id);
-
-    if (userIds.length === 0) {
-      return [];
+    }
+    const membershipResult = await TeammembershipsService.getAll(options)
+    if (!membershipResult.success) {
+      console.error('[TeamService] fetchTeamMembers failed to get memberships:', membershipResult.error)
+      return []
     }
 
-    const chunkSize = 50;
-    const chunks: string[][] = [];
+    const membershipList = unwrapList<Teammemberships>(membershipResult)
+    const userIds: string[] = membershipList
+      .map((m: Teammemberships) => m.systemuserid || '') 
+      .filter((id: string | undefined) => !!id)
+
+    if (userIds.length === 0) {
+      return []
+    }
+
+    const chunkSize = 50
+    const chunks: string[][] = []
     for (let i = 0; i < userIds.length; i += chunkSize) {
-      chunks.push(userIds.slice(i, i + chunkSize));
+      chunks.push(userIds.slice(i, i + chunkSize))
     }
 
     const chunkPromises = chunks.map(async (chunkIds, index) => {
-      const joinedOrConditions = chunkIds.map((id) => `systemuserid eq '${id}'`).join(' or ');
-      const chunkFilter = `(${joinedOrConditions})`;
+      const joinedOrConditions = chunkIds.map((id) => `systemuserid eq '${id}'`).join(' or ')
+      const chunkFilter = `(${joinedOrConditions})`
 
       try {
-        const result = await SystemusersService.getAll({
+        const chunkOptions: IGetAllOptions = {
           select: ['systemuserid', 'fullname', 'internalemailaddress', 'domainname', 'windowsliveid'],
           filter: chunkFilter,
-        });
-        return unwrapList<Systemusers>(result);
+        }
+        const result = await SystemusersService.getAll(chunkOptions)
+        if (!result.success) {
+          console.error(`[TeamService] Chunk ${index + 1} failed:`, result.error)
+          return []
+        }
+        return unwrapList<Systemusers>(result)
       } catch (chunkErr) {
-        console.error(`[dataverseService] Chunk ${index + 1} failed:`, chunkErr);
-        return [];
+        console.error(`[TeamService] Chunk ${index + 1} exception:`, chunkErr)
+        return []
       }
-    });
+    })
 
-    const resolvedChunks = await Promise.all(chunkPromises);
-    return resolvedChunks.flat();
+    const resolvedChunks = await Promise.all(chunkPromises)
+    return resolvedChunks.flat()
 
   } catch (err) {
-    console.error(`[dataverseService] fetchTeamMembers failed for team ${teamId}:`, err);
-    return [];
+    console.error(`[TeamService] fetchTeamMembers exception for team ${teamId}:`, err)
+    return []
   }
 }
 
@@ -109,7 +125,7 @@ export async function manageTeamMember(teamId: string, userId: string, action: '
       text: teamId,
       text_1: userId,
       text_2: action
-    } as any);
+    })
  
     if (result && result.success) {
       writeAuditLog({
@@ -122,13 +138,13 @@ export async function manageTeamMember(teamId: string, userId: string, action: '
         newValue: action === 'Add' ? 'Member' : 'Not Member',
         description: `${action}ed user '${userId}' to/from team '${teamId}'`
       })
-      return true;
+      return true
     } else {
-      console.error(`[dataverseService] manageTeamMember Flow returned a failure status:`, result?.error);
-      return false;
+      console.error(`[TeamService] manageTeamMember Flow returned a failure status:`, result?.error)
+      return false
     }
   } catch (err) {
-    console.error(`[dataverseService] manageTeamMember service execution failed:`, err);
-    return false;
+    console.error(`[TeamService] manageTeamMember exception:`, err)
+    return false
   }
 }

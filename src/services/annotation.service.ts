@@ -71,6 +71,8 @@ export async function fetchIssueComments(issueId: string): Promise<IssueComment[
     const response = await fetch(url)
 
     if (!response.ok) {
+      const errorText = await response.text().catch(() => 'No body')
+      console.error(`[AnnotationService] fetchIssueComments HTTP error ${response.status}:`, errorText)
       return []
     }
 
@@ -116,6 +118,8 @@ export async function createIssueComment(
     })
 
     if (!response.ok) {
+      const errorText = await response.text().catch(() => 'No body')
+      console.error(`[AnnotationService] createIssueComment HTTP error ${response.status}:`, errorText)
       return null
     }
 
@@ -133,3 +137,4 @@ export async function createIssueComment(
     return null
   }
 }
+

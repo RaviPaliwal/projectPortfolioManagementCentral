@@ -20,18 +20,6 @@ export function useDataGrid<T>(data: T[], options: UseDataGridOptions<T> = {}) {
     filterFn,
   } = options
 
-  // Stabilize consumer-provided references to prevent infinite re-render loops
-  const stableSearchFieldsRef = useRef(searchFields)
-  const stableFilterFnRef = useRef(filterFn)
-  // Update refs when values actually change (by value, not reference)
-  if (searchFields.length !== stableSearchFieldsRef.current.length ||
-      searchFields.some((f, i) => f !== stableSearchFieldsRef.current[i])) {
-    stableSearchFieldsRef.current = searchFields
-  }
-  if (filterFn !== stableFilterFnRef.current) {
-    stableFilterFnRef.current = filterFn
-  }
-
   const [searchQuery, setSearchQuery] = useState('')
   const [sort, setSort] = useState<SortState<T>>(initialSort)
   const [page, setPage] = useState(0)
@@ -58,8 +46,10 @@ export function useDataGrid<T>(data: T[], options: UseDataGridOptions<T> = {}) {
     setPage(0)
   }, [])
 
-  const stableSearchFields = stableSearchFieldsRef.current
-  const stableFilterFn = stableFilterFnRef.current
+  // Stabilize searchFields using value-based serialization
+  const stableSearchFields = useMemo(() => {
+    return searchFields
+  }, [searchFields.join(',')])
 
   const filteredData = useMemo(() => {
     let result = [...data]
@@ -76,8 +66,8 @@ export function useDataGrid<T>(data: T[], options: UseDataGridOptions<T> = {}) {
     }
 
     // Custom Filter
-    if (stableFilterFn) {
-      result = result.filter(stableFilterFn)
+    if (filterFn) {
+      result = result.filter(filterFn)
     }
 
     // Sort
@@ -101,7 +91,7 @@ export function useDataGrid<T>(data: T[], options: UseDataGridOptions<T> = {}) {
     }
 
     return result
-  }, [data, searchQuery, stableSearchFields, stableFilterFn, sort])
+  }, [data, searchQuery, stableSearchFields, filterFn, sort])
 
   const paginatedData = useMemo(() => {
     const start = page * rowsPerPage

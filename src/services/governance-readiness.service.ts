@@ -6,6 +6,7 @@ import {
   Pm_projecttasksService,
   Pm_projectmilestonesService
 } from '@/generated'
+import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
 
 export interface ReadinessCheckItem {
@@ -40,7 +41,12 @@ export const GovernanceReadinessService = {
       const projRes = await Pm_projectsService.get(pid, {
         select: ['pm_projectid', '_pm_projectmanager_value', '_pm_portfolio_value', '_pm_programme_value', 'pm_percentcomplete']
       })
-      const project = unwrapSingle<any>(projRes)
+      if (!projRes.success) {
+        console.error('[GovernanceReadinessService] checkProjectReadiness - projRes failed:', projRes.error)
+        items.push({ id: 'error', label: 'System Check', status: 'failed', message: 'Unable to retrieve project details.' })
+        return { isReady: false, overallStatus: 'failed', items }
+      }
+      const project = unwrapSingle<Pm_projects>(projRes)
 
       // 2. Perform parallel checks for sub-entities
       const [risks, issues, budget, tasks, milestones] = await Promise.all([
@@ -50,6 +56,12 @@ export const GovernanceReadinessService = {
         Pm_projecttasksService.getAll({ filter: `_pm_project_value eq '${pid}' and statecode eq 0`, select: ['pm_projecttaskid'] }),
         Pm_projectmilestonesService.getAll({ filter: `_pm_project_value eq '${pid}' and statecode eq 0`, select: ['pm_projectmilestoneid'] })
       ])
+
+      if (!risks.success) console.error('[GovernanceReadinessService] risks query failed:', risks.error)
+      if (!issues.success) console.error('[GovernanceReadinessService] issues query failed:', issues.error)
+      if (!budget.success) console.error('[GovernanceReadinessService] budget query failed:', budget.error)
+      if (!tasks.success) console.error('[GovernanceReadinessService] tasks query failed:', tasks.error)
+      if (!milestones.success) console.error('[GovernanceReadinessService] milestones query failed:', milestones.error)
 
       const riskCount = unwrapList(risks).length
       const issueCount = unwrapList(issues).length
@@ -122,3 +134,4 @@ export const GovernanceReadinessService = {
     }
   }
 }
+

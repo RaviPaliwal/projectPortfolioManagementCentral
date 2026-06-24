@@ -5,6 +5,7 @@ import {
   Pm_agentinsightspm_priority,
   Pm_agentinsightspm_actionstatus,
 } from '@/generated/models/Pm_agentinsightsModel'
+import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import { unwrapList } from '@/services/common'
 
 export interface AgentInsightModel {
@@ -37,7 +38,7 @@ export const mapAgentInsight = (item: Pm_agentinsights): AgentInsightModel => ({
 
 export async function fetchAgentInsights(): Promise<AgentInsightModel[]> {
   try {
-    const result = await Pm_agentinsightsService.getAll({
+    const options: IGetAllOptions = {
       select: [
         'pm_agentinsightid', 'pm_insighttitle', 'pm_insightdescription',
         'pm_insighttype', 'pm_priority', 'pm_actionstatus',
@@ -46,13 +47,20 @@ export async function fetchAgentInsights(): Promise<AgentInsightModel[]> {
       ],
       orderBy: ['createdon desc'],
       top: 100,
-    })
+    }
+    const result = await Pm_agentinsightsService.getAll(options)
+    if (!result.success) {
+      console.error('[AgentInsightsService] fetchAgentInsights failed:', result.error)
+      return []
+    }
     const items = unwrapList<Pm_agentinsights>(result)
     const unreviewed = items.filter(
       (i) => i.pm_actionstatus === undefined || i.pm_actionstatus === null || String(i.pm_actionstatus) === '125570000'
     )
     return unreviewed.map(mapAgentInsight)
   } catch (err) {
+    console.error('[AgentInsightsService] fetchAgentInsights exception:', err)
     return []
   }
 }
+

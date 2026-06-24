@@ -20,6 +20,7 @@ import {
   updateProject,
   deleteProject,
   fetchProjectsFull,
+  fetchProjectsForSystemUser,
   fetchMilestonesDueThisMonth,
   fetchPortfolioHierarchy,
   uploadDocument,
@@ -48,7 +49,7 @@ import {
 import { recalculateProjectFinancials, normalizeLookupId, mapProjectTask, mapProjectMilestone } from '@/services'
 
 export default function ProjectsPage() {
-  const { currentUser, users } = useUser()
+  const { currentUser, currentUserPersona, users } = useUser()
   const { allowed: canCreate } = useAuthorization('PROJECTS', 'create')
   const { allowed: canEdit } = useAuthorization('PROJECTS', 'update')
   const { allowed: canDelete } = useAuthorization('PROJECTS', 'delete')
@@ -103,8 +104,13 @@ export default function ProjectsPage() {
     setLoading(true)
     setError(null)
     try {
+      const isTeamMember = currentUserPersona === 'TeamMember'
+      const projPromise = isTeamMember && currentUser?.systemuserid
+        ? fetchProjectsForSystemUser(currentUser.systemuserid)
+        : fetchProjectsFull()
+
       const [projList, milestones, hierarchy] = await Promise.all([
-        fetchProjectsFull(),
+        projPromise,
         fetchMilestonesDueThisMonth(),
         fetchPortfolioHierarchy(),
       ])

@@ -253,6 +253,7 @@ export default function TasksPage() {
 }
 
 function TeamTasksView({ isDark }: { isDark: boolean }) {
+  const { currentUser, currentUserPersona } = useUser()
   const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -266,8 +267,35 @@ function TeamTasksView({ isDark }: { isDark: boolean }) {
     setError(null)
     ;(async () => {
       try {
+        const isTeamMember = currentUserPersona === 'TeamMember'
+        let filterStr = 'statecode eq 0'
+
+        if (isTeamMember && currentUser?.systemuserid) {
+          const { resolveResourceIdForSystemUser } = await import('@/services')
+          const resourceId = await resolveResourceIdForSystemUser(currentUser.systemuserid)
+          if (resourceId) {
+            const { Pm_resourceallocationsService } = await import('@/generated')
+            const allocResult = await Pm_resourceallocationsService.getAll({
+              filter: `_pm_resource_value eq '${resourceId}' and statecode eq 0`,
+              select: ['_pm_project_value'],
+              top: 500,
+            })
+            const allocations = allocResult.success ? unwrapList<any>(allocResult) : []
+            const projectIds = Array.from(new Set(allocations.map(a => a._pm_project_value).filter(Boolean))) as string[]
+
+            const conditions = [`_pm_assignedtoresource_value eq '${resourceId}'`]
+            if (projectIds.length > 0) {
+              conditions.push(`(${projectIds.map(id => `_pm_project_value eq '${id}'`).join(' or ')})`)
+            }
+            filterStr = `statecode eq 0 and (${conditions.join(' or ')})`
+          } else {
+            filterStr = 'statecode eq 0 and pm_projecttaskid eq null'
+          }
+        }
+
         const result = await Pm_projecttasksService.getAll({
-          select: ['pm_projecttaskid', 'pm_taskname', 'pm_status', 'pm_duedate', 'pm_assignedto', '_pm_project_value', 'pm_percentcomplete'],
+          select: ['pm_projecttaskid', 'pm_taskname', 'pm_status', 'pm_duedate', 'pm_assignedto', '_pm_project_value', 'pm_percentcomplete', '_pm_assignedtoresource_value'],
+          filter: filterStr,
           orderBy: ['pm_taskname asc'],
           top: 500,
         })
@@ -280,7 +308,7 @@ function TeamTasksView({ isDark }: { isDark: boolean }) {
         setLoading(false)
       }
     })()
-  }, [])
+  }, [currentUser, currentUserPersona])
 
   const handleSort = useCallback((field: TeamSortField) => {
     setSort((prev) => ({ field, dir: prev.field === field && prev.dir === 'asc' ? 'desc' : 'asc' }))

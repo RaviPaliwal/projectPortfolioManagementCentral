@@ -147,18 +147,44 @@ async function fetchTeamRolesFromDataverse(): Promise<Record<string, string[]>> 
   return teamRolesMap
 }
 
+function getSessionCachedData() {
+  try {
+    const cu = sessionStorage.getItem('ppm_cached_current_user')
+    const u = sessionStorage.getItem('ppm_cached_users')
+    const p = sessionStorage.getItem('ppm_cached_personas')
+    const r = sessionStorage.getItem('ppm_cached_roles_map')
+    const t = sessionStorage.getItem('ppm_cached_teams')
+    
+    if (cu && u && p && r && t) {
+      return {
+        currentUser: JSON.parse(cu) as SystemUser,
+        users: JSON.parse(u) as SystemUser[],
+        userPersonas: JSON.parse(p) as Record<string, Persona>,
+        userRolesMap: JSON.parse(r) as Record<string, string[]>,
+        userTeams: new Map<string, string[]>(Object.entries(JSON.parse(t))),
+        loading: false
+      }
+    }
+  } catch (e) {
+    console.warn('[UserContext] Failed to parse cached session data', e)
+  }
+  return null
+}
+
 export function UserContextProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<SystemUser | null>(null)
-  const [users, setUsers] = useState<SystemUser[]>([])
-  const [userPersonas, setUserPersonas] = useState<Record<string, Persona>>({})
-  const [loading, setLoading] = useState(true)
-  const [userRolesMap, setUserRolesMap] = useState<Record<string, string[]>>({})
-  const [userTeamsState, setUserTeamsState] = useState<Map<string, string[]>>(new Map())
+  const cached = getSessionCachedData()
+
+  const [currentUser, setCurrentUser] = useState<SystemUser | null>(cached?.currentUser ?? null)
+  const [users, setUsers] = useState<SystemUser[]>(cached?.users ?? [])
+  const [userPersonas, setUserPersonas] = useState<Record<string, Persona>>(cached?.userPersonas ?? {})
+  const [loading, setLoading] = useState(cached ? false : true)
+  const [userRolesMap, setUserRolesMap] = useState<Record<string, string[]>>(cached?.userRolesMap ?? {})
+  const [userTeamsState, setUserTeamsState] = useState<Map<string, string[]>>(cached?.userTeams ?? new Map())
 
   // ── Refs to break circular deps and prevent stale closures ─────────────
   const currentUserRef = useRef<SystemUser | null>(null)
   const mountedRef = useRef(true)
-  const initialLoadDoneRef = useRef(false)
+  const initialLoadDoneRef = useRef(!!cached)
 
   // Keep ref in sync with state
   currentUserRef.current = currentUser
@@ -169,8 +195,9 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
       try {
         localStorage.setItem('ppm_selected_user_id', user.systemuserid)
         localStorage.setItem('ppm_selected_user_fullname', user.fullname || '')
+        sessionStorage.setItem('ppm_cached_current_user', JSON.stringify(user))
       } catch (e) {
-        console.warn('[UserContext] Failed to persist user selection to localStorage', e)
+        console.warn('[UserContext] Failed to persist user selection to localStorage/sessionStorage', e)
       }
     }
   }, [])
@@ -181,7 +208,13 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
       setLoading(true)
     }
     try {
-      const [usersResult, teamsResult, membershipsResult] = await Promise.all([
+      const [
+        usersResult,
+        teamsResult,
+        membershipsResult,
+        userRolesMap,
+        teamRolesMap
+      ] = await Promise.all([
         SystemusersService.getAll({
           select: ['systemuserid', 'fullname', 'domainname', 'internalemailaddress', 'jobtitle', 'firstname', 'lastname', '_businessunitid_value'] as any,
           filter: "isdisabled eq false",
@@ -195,7 +228,9 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         TeammembershipsService.getAll({
           select: ['systemuserid', 'teamid'],
           top: 5000,
-        })
+        }),
+        fetchUserRolesFromDataverse(),
+        fetchTeamRolesFromDataverse()
       ])
 
       if (!mountedRef.current) return
@@ -230,14 +265,6 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
           userTeamIds.get(cleanUserId)!.push(cleanTeamId)
         }
       }
-
-      // Fetch user roles and team roles from Dataverse Web API
-      const [userRolesMap, teamRolesMap] = await Promise.all([
-        fetchUserRolesFromDataverse(),
-        fetchTeamRolesFromDataverse()
-      ])
-
-      if (!mountedRef.current) return
 
       // Seed the logged-in user's roles from the Xrm context if available (instant and includes team-inherited roles)
       const loggedInId = getLoggedInUserId()
@@ -300,8 +327,19 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
       setUserRolesMap(userRolesMap)
       setUserTeamsState(userTeams)
       
+      // Save to sessionStorage cache
+      try {
+        sessionStorage.setItem('ppm_cached_users', JSON.stringify(list))
+        sessionStorage.setItem('ppm_cached_personas', JSON.stringify(personas))
+        sessionStorage.setItem('ppm_cached_roles_map', JSON.stringify(userRolesMap))
+        sessionStorage.setItem('ppm_cached_teams', JSON.stringify(Object.fromEntries(userTeams.entries())))
+      } catch (e) {
+        console.warn('[UserContext] Failed to save session cache', e)
+      }
+      
       // Use ref value instead of state for the guard to avoid stale closure issues
-      if (!currentUserRef.current && list.length > 0) {
+      let currentSelection = currentUserRef.current
+      if (!currentSelection && list.length > 0) {
         let storedUserId: string | null = null
         try {
           storedUserId = localStorage.getItem('ppm_selected_user_id')
@@ -326,6 +364,7 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         }
         
         if (startingUser) {
+          currentSelection = startingUser
           setCurrentUser(startingUser)
           if (startingUser.systemuserid) {
             try {
@@ -335,6 +374,15 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
               console.warn('[UserContext] Failed to persist user selection to localStorage', e)
             }
           }
+        }
+      }
+
+      // Also ensure currentSelection is cached in sessionStorage
+      if (currentSelection) {
+        try {
+          sessionStorage.setItem('ppm_cached_current_user', JSON.stringify(currentSelection))
+        } catch (e) {
+          console.warn('[UserContext] Failed to cache current user to sessionStorage', e)
         }
       }
 
@@ -359,6 +407,14 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
     if (!currentUser || !currentUser.systemuserid) return 'TeamMember'
     return userPersonas[normalizeGuid(currentUser.systemuserid)] || 'TeamMember'
   }, [currentUser, userPersonas])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('ppm_current_user_persona', currentUserPersona)
+    } catch (e) {
+      console.warn('[UserContext] Failed to save persona to sessionStorage', e)
+    }
+  }, [currentUserPersona])
 
   const handleSetPersonaOverride = useCallback((userId: string, persona: Persona | null) => {
     setPersonaOverride(userId, persona)

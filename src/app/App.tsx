@@ -49,12 +49,6 @@ import { getPageMap } from './routes'
 import { FormDialog } from '@/components/common'
 import RouteGuard from '@/components/common/RouteGuard/RouteGuard'
 
-export function guardActiveTab(tab: TabKey, allowedTabs: TabKey[]): TabKey {
-  if (allowedTabs.length === 0) return tab
-  if (allowedTabs.includes(tab)) return tab
-  return allowedTabs.includes('dashboard' as TabKey) ? 'dashboard' as TabKey : allowedTabs[0]
-}
-
 function App() {
   // Read initial tab from URL query param (?tab=xxx) for deep-link support
   const getInitialTab = (): TabKey => {
@@ -69,18 +63,39 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabKey>(getInitialTab)
   const [themeMode, setThemeMode] = useState<PaletteMode>('light')
 
-  // Sync activeTab to URL query params for shareable deep-links
+  // Sync activeTab to URL query params and support browser history back/forward
   useEffect(() => {
     try {
       const url = new URL(window.location.href)
-      if (activeTab === 'dashboard') {
-        url.searchParams.delete('tab')
-      } else {
-        url.searchParams.set('tab', activeTab)
+      const currentTabInUrl = url.searchParams.get('tab') || 'dashboard'
+      if (currentTabInUrl !== activeTab) {
+        if (activeTab === 'dashboard') {
+          url.searchParams.delete('tab')
+        } else {
+          url.searchParams.set('tab', activeTab)
+        }
+        window.history.pushState(null, '', url.toString())
       }
-      window.history.replaceState(null, '', url.toString())
     } catch { /* ignore */ }
   }, [activeTab])
+
+  useEffect(() => {
+    const handlePopState = () => {
+      try {
+        const params = new URLSearchParams(window.location.search)
+        const tabParam = params.get('tab') as TabKey | null
+        if (tabParam && tabs.some(t => t.key === tabParam)) {
+          setActiveTab(tabParam)
+        } else {
+          setActiveTab('dashboard')
+        }
+      } catch {
+        setActiveTab('dashboard')
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   const theme = useMemo(() => getTheme(themeMode), [themeMode])
   const pageMap = useMemo(() => getPageMap(setActiveTab), [setActiveTab])

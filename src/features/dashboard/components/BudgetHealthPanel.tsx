@@ -27,6 +27,11 @@ interface BudgetHealthPanelProps {
   sx?: SxProps<Theme>
 }
 
+const truncateLabel = (str: string, maxLen: number = 26): string => {
+  if (!str) return ''
+  return str.length > maxLen ? str.slice(0, maxLen - 3) + '...' : str
+}
+
 export const BudgetHealthPanel = ({ 
   totalApprovedBudget, 
   totalActualSpend, 
@@ -142,7 +147,7 @@ export const BudgetHealthPanel = ({
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, display: 'block', mb: 0.25 }}>
                 Variance
               </Typography>
-              <VarianceDisplay budget={totalApprovedBudget} consumed={totalActualSpend} />
+              <VarianceDisplay budget={totalApprovedBudget} consumed={totalActualSpend} variant="h5" />
             </Box>
           </Box>
 
@@ -172,11 +177,11 @@ export const BudgetHealthPanel = ({
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
                 Portfolio Financial Breakdown
               </Typography>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                   <XAxis type="number" tickFormatter={(v) => `€${(v / 1e6).toFixed(0)}M`} stroke={textColor} tick={{ fontSize: 9 }} />
-                  <YAxis type="category" dataKey="name" width={140} stroke={textColor} tick={{ fontSize: 9 }} />
+                  <YAxis type="category" dataKey="name" width={170} stroke={textColor} tickFormatter={(name) => truncateLabel(name, 26)} tick={{ fontSize: 10 }} />
                   <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`€${Number(v).toLocaleString()}`, '']} />
                   <Legend wrapperStyle={{ fontSize: 10 }} />
                   <Bar dataKey="Budget" fill="#0ea5e9" radius={[0, 4, 4, 0]} barSize={10} />

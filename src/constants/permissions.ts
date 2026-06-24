@@ -48,7 +48,7 @@ export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
     'dashboard', 'projects', 'tasks', 'calendar'
   ],
   TeamMember: [
-    'dashboard', 'timesheets', 'tasks', 'risks', 'issues', 'calendar'
+    'timesheets', 'tasks', 'risks', 'issues', 'calendar'
   ]
 }
 
@@ -243,9 +243,9 @@ export function getPersonaFromTeamName(teamName: string): Persona {
   if (containsKeyword(['admin', 'platform owner', 'sysadmin', 'administrator'])) return 'SystemAdministrator'
   if (containsKeyword(['executive', 'sponsor', 'director', 'vp', 'chief', 'president'])) return 'PortfolioExecutive'
   if (containsKeyword(['pmo', 'governance', 'compliance', 'audit'])) return 'PMO'
-  if (containsKeyword(['project manager', 'programme manager', 'delivery', 'pm', 'lead', 'scrum master'])) return 'ProjectManager'
-  if (containsKeyword(['financial', 'commercial', 'controller', 'finance', 'accountant', 'budget'])) return 'FinancialController'
+  if (containsKeyword(['financial', 'commercial', 'controller', 'finance', 'accountant', 'budget', 'financial controller'])) return 'FinancialController'
   if (containsKeyword(['planner', 'scheduler', 'planning'])) return 'Planner'
+  if (containsKeyword(['project manager', 'programme manager', 'delivery', 'pm', 'lead', 'scrum master'])) return 'ProjectManager'
 
   return 'TeamMember'
 }
@@ -371,19 +371,19 @@ export function getPersonaFromUser(
     return 'PMO'
   }
 
-  // 4. Project / Programme Manager
-  if (matches(['project manager', 'programme manager', 'delivery', 'pm', 'lead', 'scrum master'])) {
-    return 'ProjectManager'
-  }
-
-  // 5. Financial / Commercial Controller
-  if (matches(['financial', 'commercial', 'controller', 'finance', 'accountant', 'budget'])) {
+  // 4. Financial / Commercial Controller
+  if (matches(['financial', 'commercial', 'controller', 'finance', 'accountant', 'budget', 'financial controller'])) {
     return 'FinancialController'
   }
 
-  // 6. Planner / Scheduler
+  // 5. Planner / Scheduler
   if (matches(['planner', 'scheduler', 'planning'])) {
     return 'Planner'
+  }
+
+  // 6. Project / Programme Manager
+  if (matches(['project manager', 'programme manager', 'delivery', 'pm', 'lead', 'scrum master'])) {
+    return 'ProjectManager'
   }
 
   // Default: Team Member / Contributor

@@ -20,6 +20,7 @@ import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 import {
   fetchTimesheets,
+  resolveResourceIdForSystemUser,
   createTimesheet,
   updateTimesheetStatus,
   fetchTimesheetEntries,
@@ -113,7 +114,7 @@ export default function TimesheetsPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [approvalRefreshTrigger, setApprovalRefreshTrigger] = useState(0)
-  const { currentUser } = useUser()
+  const { currentUser, currentUserPersona } = useUser()
 
   const existingEntryDates = useMemo(
     () => entries.map((e) => e.pm_workdate?.split('T')[0] ?? '').filter(Boolean),
@@ -125,8 +126,16 @@ export default function TimesheetsPage() {
     setLoading(true)
     setError(null)
     try {
-      const [list, res] = await Promise.all([fetchTimesheets(), fetchResources()])
-      setTimesheets(list)
+      const isTeamMember = currentUserPersona === 'TeamMember'
+      let timesheetList: TimesheetModel[] = []
+      if (isTeamMember && currentUser?.systemuserid) {
+        const resourceId = await resolveResourceIdForSystemUser(currentUser.systemuserid)
+        timesheetList = resourceId ? await fetchTimesheets(resourceId) : []
+      } else {
+        timesheetList = await fetchTimesheets()
+      }
+      const res = await fetchResources()
+      setTimesheets(timesheetList)
       setResources(res)
     } catch (err) {
       console.error('[TimesheetsPage] loadData error:', err)
@@ -134,7 +143,7 @@ export default function TimesheetsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentUser, currentUserPersona])
 
   useEffect(() => {
     loadData()

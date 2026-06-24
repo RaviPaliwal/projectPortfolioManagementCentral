@@ -11,6 +11,7 @@ import type {
   BenefitModel,
   PerformanceMeasureModel,
 } from '@/types/dataverse'
+import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
 import { fetchProjectDetails, fetchProjectsFull } from './project.service'
 import { writeAuditLog } from './changelog.service'
@@ -50,7 +51,7 @@ export const mapBenefit = (item: Pm_benefits): BenefitModel => ({
   pm_realisationenddate: item.pm_realisationenddate,
   pm_programmename: item.pm_programmelookupname,
   pm_projectcode: item._pm_project_value ? undefined : item.pm_projectname,
-  pm_benifitownername: item.pm_benifitownername || (item as any)['_pm_benifitowner_value@OData.Community.Display.V1.FormattedValue'],
+  pm_benifitownername: item.pm_benifitownername || (item as unknown as Record<string, unknown>)['_pm_benifitowner_value@OData.Community.Display.V1.FormattedValue'] as string,
   pm_programmelookupname: item.pm_programmelookupname,
   pm_projectname: item.pm_projectname,
   _pm_benifitowner_value: item._pm_benifitowner_value,
@@ -76,82 +77,105 @@ export const mapPerformanceMeasure = (item: Pm_performancemeasures): Performance
 })
 
 export async function fetchGateReviewById(id: string): Promise<GateReviewModel | null> {
-  const result = await Pm_projectgatereviewsService.get(id, {
-    select: [
-      'pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage',
-      'pm_reviewoutcome', 'pm_reviewstatus', 'pm_plannedreviewdate',
-      'pm_actualreviewdate', 'pm_leadreviewer', 'pm_reviewnotes',
-      'pm_reviewconditions', 'pm_documentsurl', 'pm_projectcode',
-      'pm_programmename', '_pm_project_value', '_pm_programmelookup_value',
-    ],
-  })
-  const item = unwrapSingle<Pm_projectgatereviews>(result)
-  if (!item) return null
-  const review = mapGateReview(item)
-
   try {
-    const projId = normalizeLookupId(review._pm_project_value)
-    if (projId) {
-      const proj = await fetchProjectDetails(projId)
-      if (proj) {
-        review.pm_projectcode = proj.pm_projectcode ? `[${proj.pm_projectcode}] ${proj.pm_projectname || ''}` : proj.pm_projectname
-        review.pm_projectname = proj.pm_projectname
-        review.pm_programmename = proj.pm_programmename
-        review.pm_portfolioname = proj.pm_portfolioname
-      }
+    const result = await Pm_projectgatereviewsService.get(id, {
+      select: [
+        'pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage',
+        'pm_reviewoutcome', 'pm_reviewstatus', 'pm_plannedreviewdate',
+        'pm_actualreviewdate', 'pm_leadreviewer', 'pm_reviewnotes',
+        'pm_reviewconditions', 'pm_documentsurl', 'pm_projectcode',
+        'pm_programmename', '_pm_project_value', '_pm_programmelookup_value',
+      ],
+    })
+    if (!result.success) {
+      console.error('[GovernanceService] fetchGateReviewById failed:', result.error)
+      return null
     }
-  } catch (err) { }
+    const item = unwrapSingle<Pm_projectgatereviews>(result)
+    if (!item) return null
+    const review = mapGateReview(item)
 
-  return review
+    try {
+      const projId = normalizeLookupId(review._pm_project_value)
+      if (projId) {
+        const proj = await fetchProjectDetails(projId)
+        if (proj) {
+          review.pm_projectcode = proj.pm_projectcode ? `[${proj.pm_projectcode}] ${proj.pm_projectname || ''}` : proj.pm_projectname
+          review.pm_projectname = proj.pm_projectname
+          review.pm_programmename = proj.pm_programmename
+          review.pm_portfolioname = proj.pm_portfolioname
+        }
+      }
+    } catch (err) {
+      console.error('[GovernanceService] fetchGateReviewById project details resolution exception:', err)
+    }
+
+    return review
+  } catch (err) {
+    console.error('[GovernanceService] fetchGateReviewById exception:', err)
+    return null
+  }
 }
 
 export async function fetchGateReviews(): Promise<GateReviewModel[]> {
-  const result = await Pm_projectgatereviewsService.getAll({
-    filter: 'statecode eq 0',
-    select: [
-      'pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage',
-      'pm_reviewoutcome', 'pm_reviewstatus', 'pm_plannedreviewdate',
-      'pm_actualreviewdate', 'pm_leadreviewer', 'pm_reviewnotes',
-      'pm_reviewconditions', 'pm_documentsurl', 'pm_projectcode',
-      'pm_programmename', '_pm_project_value', '_pm_programmelookup_value',
-    ],
-    orderBy: ['pm_plannedreviewdate desc'],
-    top: 500,
-  })
-  const list = unwrapList<Pm_projectgatereviews>(result).map(mapGateReview)
-
   try {
-    const projects = await fetchProjectsFull()
-    const projectMap = new Map<string, any>()
-    for (const p of projects) {
-      if (p.pm_projectid) {
-        projectMap.set(normalizeLookupId(p.pm_projectid)!, p)
-      }
+    const options: IGetAllOptions = {
+      filter: 'statecode eq 0',
+      select: [
+        'pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage',
+        'pm_reviewoutcome', 'pm_reviewstatus', 'pm_plannedreviewdate',
+        'pm_actualreviewdate', 'pm_leadreviewer', 'pm_reviewnotes',
+        'pm_reviewconditions', 'pm_documentsurl', 'pm_projectcode',
+        'pm_programmename', '_pm_project_value', '_pm_programmelookup_value',
+      ],
+      orderBy: ['pm_plannedreviewdate desc'],
+      top: 500,
     }
-    for (const r of list) {
-      const projId = normalizeLookupId(r._pm_project_value)
-      if (projId && projectMap.has(projId)) {
-        const p = projectMap.get(projId)!
-        r.pm_projectcode = p.pm_projectcode ? `[${p.pm_projectcode}] ${p.pm_projectname || ''}` : p.pm_projectname
-        r.pm_projectname = p.pm_projectname
-        r.pm_programmename = p.pm_programmename
-        r.pm_portfolioname = p.pm_portfolioname
-      }
+    const result = await Pm_projectgatereviewsService.getAll(options)
+    if (!result.success) {
+      console.error('[GovernanceService] fetchGateReviews failed:', result.error)
+      return []
     }
-  } catch (err) { }
+    const list = unwrapList<Pm_projectgatereviews>(result).map(mapGateReview)
 
-  return list
+    try {
+      const projects = await fetchProjectsFull()
+      const projectMap = new Map<string, typeof projects[0]>()
+      for (const p of projects) {
+        if (p.pm_projectid) {
+          projectMap.set(normalizeLookupId(p.pm_projectid)!, p)
+        }
+      }
+      for (const r of list) {
+        const projId = normalizeLookupId(r._pm_project_value)
+        if (projId && projectMap.has(projId)) {
+          const p = projectMap.get(projId)!
+          r.pm_projectcode = p.pm_projectcode ? `[${p.pm_projectcode}] ${p.pm_projectname || ''}` : p.pm_projectname
+          r.pm_projectname = p.pm_projectname
+          r.pm_programmename = p.pm_programmename
+          r.pm_portfolioname = p.pm_portfolioname
+        }
+      }
+    } catch (err) {
+      console.error('[GovernanceService] fetchGateReviews projects resolution exception:', err)
+    }
+
+    return list
+  } catch (err) {
+    console.error('[GovernanceService] fetchGateReviews exception:', err)
+    return []
+  }
 }
 
 export async function createGateReview(payload: Partial<GateReviewModel>): Promise<GateReviewModel | null> {
-  const cleanPayload: Record<string, any> = {}
+  const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null && value !== '' &&
         key !== '_pm_project_value' && key !== '_pm_programmelookup_value') {
       cleanPayload[key] = value
     }
   }
-  const defaults: Record<string, any> = {
+  const defaults: Record<string, unknown> = {
     statecode: 0,
     statuscode: 1,
   }
@@ -167,149 +191,197 @@ export async function createGateReview(payload: Partial<GateReviewModel>): Promi
       cleanPayload['pm_ProgrammeLookup@odata.bind'] = `/pm_programmes(${programmeId})`
     }
   }
-  const result = await Pm_projectgatereviewsService.create({ ...defaults, ...cleanPayload } as any)
-  const item = unwrapSingle<Pm_projectgatereviews>(result)
-  const mapped = item ? mapGateReview(item) : null
-  
-  if (mapped && mapped.pm_projectgatereviewid) {
-    writeAuditLog({
-      actionType: 'Create',
-      entityName: 'pm_projectgatereviews',
-      recordId: mapped.pm_projectgatereviewid,
-      recordName: mapped.pm_gatename || 'Gate Review',
-    })
+  try {
+    const result = await Pm_projectgatereviewsService.create({ ...defaults, ...cleanPayload } as any)
+    if (!result.success) {
+      console.error('[GovernanceService] createGateReview failed:', result.error)
+      return null
+    }
+    const item = unwrapSingle<Pm_projectgatereviews>(result)
+    const mapped = item ? mapGateReview(item) : null
+    
+    if (mapped && mapped.pm_projectgatereviewid) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_projectgatereviews',
+        recordId: mapped.pm_projectgatereviewid,
+        recordName: mapped.pm_gatename || 'Gate Review',
+      })
+    }
+    return mapped
+  } catch (err) {
+    console.error('[GovernanceService] createGateReview exception:', err)
+    return null
   }
-  
-  return mapped
 }
 
 export async function updateGateReview(id: string, changes: Partial<GateReviewModel>): Promise<GateReviewModel | null> {
-  const result = await Pm_projectgatereviewsService.update(id, changes as any)
-  const item = unwrapSingle<Pm_projectgatereviews>(result)
-  const mapped = item ? mapGateReview(item) : null
-  
-  if (mapped && mapped.pm_projectgatereviewid) {
-    Object.keys(changes).forEach((key) => {
-      const val = (changes as any)[key]
-      if (val !== undefined && key !== 'pm_projectgatereviewid') {
-        writeAuditLog({
-          actionType: 'Update',
-          entityName: 'pm_projectgatereviews',
-          recordId: id,
-          recordName: mapped.pm_gatename || 'Gate Review',
-          fieldName: key,
-          newValue: String(val),
-        })
-      }
-    })
+  try {
+    const result = await Pm_projectgatereviewsService.update(id, changes as any)
+    if (!result.success) {
+      console.error('[GovernanceService] updateGateReview failed:', result.error)
+      return null
+    }
+    const item = unwrapSingle<Pm_projectgatereviews>(result)
+    const mapped = item ? mapGateReview(item) : null
+    
+    if (mapped && mapped.pm_projectgatereviewid) {
+      Object.keys(changes).forEach((key) => {
+        const val = (changes as any)[key]
+        if (val !== undefined && key !== 'pm_projectgatereviewid') {
+          writeAuditLog({
+            actionType: 'Update',
+            entityName: 'pm_projectgatereviews',
+            recordId: id,
+            recordName: mapped.pm_gatename || 'Gate Review',
+            fieldName: key,
+            newValue: String(val),
+          })
+        }
+      })
+    }
+    return mapped
+  } catch (err) {
+    console.error('[GovernanceService] updateGateReview exception:', err)
+    return null
   }
-  
-  return mapped
 }
 
 export async function deleteGateReview(id: string): Promise<void> {
-  writeAuditLog({
-    actionType: 'Update',
-    entityName: 'pm_projectgatereviews',
-    recordId: id,
-    fieldName: 'deleted',
-    oldValue: 'Active',
-    newValue: 'Deleted',
-  })
-  await Pm_projectgatereviewsService.delete(id)
+  try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_projectgatereviews',
+      recordId: id,
+      fieldName: 'deleted',
+      oldValue: 'Active',
+      newValue: 'Deleted',
+    })
+    await Pm_projectgatereviewsService.delete(id)
+  } catch (err) {
+    console.error('[GovernanceService] deleteGateReview exception:', err)
+    throw err
+  }
 }
 
 export async function fetchBenefits(): Promise<BenefitModel[]> {
-  const selectFields = [
-    'pm_benefitid', 'pm_benefitname', 'pm_benefitcategory',
-    'pm_benefitdescription', 'pm_benefitstatus', 'pm_benefittype',
-    'pm_benefitreference', 'pm_baselinevalue', 'pm_targetvalue',
-    'pm_unitofmeasure', 'pm_ragstatus', 'pm_realisationstartdate',
-    'pm_realisationenddate',
-    '_pm_benifitowner_value', '_pm_programmelookup_value', '_pm_project_value',
-  ]
-  const options = {
-    select: selectFields,
-    orderBy: ['pm_benefitname asc'],
-    top: 500,
+  try {
+    const selectFields = [
+      'pm_benefitid', 'pm_benefitname', 'pm_benefitcategory',
+      'pm_benefitdescription', 'pm_benefitstatus', 'pm_benefittype',
+      'pm_benefitreference', 'pm_baselinevalue', 'pm_targetvalue',
+      'pm_unitofmeasure', 'pm_ragstatus', 'pm_realisationstartdate',
+      'pm_realisationenddate',
+      '_pm_benifitowner_value', '_pm_programmelookup_value', '_pm_project_value',
+    ]
+    const options: IGetAllOptions = {
+      select: selectFields,
+      orderBy: ['pm_benefitname asc'],
+      top: 500,
+    }
+    const result = await Pm_benefitsService.getAll({ ...options, filter: 'statecode eq 0' })
+    if (!result.success) {
+      console.error('[GovernanceService] fetchBenefits failed:', result.error)
+      return []
+    }
+    let list = unwrapList<Pm_benefits>(result).map(mapBenefit)
+    if (list.length === 0) {
+      const fallbackResult = await Pm_benefitsService.getAll(options)
+      if (fallbackResult.success) {
+        list = unwrapList<Pm_benefits>(fallbackResult).map(mapBenefit)
+      }
+    }
+    return list
+  } catch (err) {
+    console.error('[GovernanceService] fetchBenefits exception:', err)
+    return []
   }
-  const result = await Pm_benefitsService.getAll({ ...options, filter: 'statecode eq 0' })
-  let list = unwrapList<Pm_benefits>(result).map(mapBenefit)
-  if (list.length === 0) {
-    const fallbackResult = await Pm_benefitsService.getAll(options)
-    list = unwrapList<Pm_benefits>(fallbackResult).map(mapBenefit)
-  }
-  return list
 }
 
 export async function createBenefit(payload: Partial<BenefitModel>): Promise<BenefitModel | null> {
-  const cleanPayload: Record<string, any> = {}
+  const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null && value !== '' &&
         key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
       cleanPayload[key] = value
     }
   }
-  const defaults: Record<string, any> = {
+  const defaults: Record<string, unknown> = {
     statecode: 0,
     statuscode: 1,
   }
-  const result = await Pm_benefitsService.create({ ...defaults, ...cleanPayload } as any)
-  const item = unwrapSingle<Pm_benefits>(result)
-  const mapped = item ? mapBenefit(item) : null
-  
-  if (mapped && mapped.pm_benefitid) {
-    writeAuditLog({
-      actionType: 'Create',
-      entityName: 'pm_benefits',
-      recordId: mapped.pm_benefitid,
-      recordName: mapped.pm_benefitname,
-    })
+  try {
+    const result = await Pm_benefitsService.create({ ...defaults, ...cleanPayload } as any)
+    if (!result.success) {
+      console.error('[GovernanceService] createBenefit failed:', result.error)
+      return null
+    }
+    const item = unwrapSingle<Pm_benefits>(result)
+    const mapped = item ? mapBenefit(item) : null
+    
+    if (mapped && mapped.pm_benefitid) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_benefits',
+        recordId: mapped.pm_benefitid,
+        recordName: mapped.pm_benefitname,
+      })
+    }
+    return mapped
+  } catch (err) {
+    console.error('[GovernanceService] createBenefit exception:', err)
+    return null
   }
-  
-  return mapped
 }
 
 export async function updateBenefit(id: string, changes: Partial<BenefitModel>): Promise<BenefitModel | null> {
-  const cleanPayload: Record<string, any> = {}
+  const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null &&
         key !== 'pm_benefitid' && key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
       cleanPayload[key] = value
     }
   }
-  const result = await Pm_benefitsService.update(id, cleanPayload as any)
-  const item = unwrapSingle<Pm_benefits>(result)
-  const mapped = item ? mapBenefit(item) : null
-  
-  if (mapped && mapped.pm_benefitid) {
-    Object.keys(changes).forEach((key) => {
-      const val = (changes as any)[key]
-      if (val !== undefined && key !== 'pm_benefitid') {
-        writeAuditLog({
-          actionType: 'Update',
-          entityName: 'pm_benefits',
-          recordId: id,
-          recordName: mapped.pm_benefitname,
-          fieldName: key,
-          newValue: String(val),
-        })
-      }
-    })
+  try {
+    const result = await Pm_benefitsService.update(id, cleanPayload as any)
+    if (!result.success) {
+      console.error('[GovernanceService] updateBenefit failed:', result.error)
+      return null
+    }
+    const item = unwrapSingle<Pm_benefits>(result)
+    const mapped = item ? mapBenefit(item) : null
+    
+    if (mapped && mapped.pm_benefitid) {
+      Object.keys(changes).forEach((key) => {
+        const val = (changes as any)[key]
+        if (val !== undefined && key !== 'pm_benefitid') {
+          writeAuditLog({
+            actionType: 'Update',
+            entityName: 'pm_benefits',
+            recordId: id,
+            recordName: mapped.pm_benefitname,
+            fieldName: key,
+            newValue: String(val),
+          })
+        }
+      })
+    }
+    return mapped
+  } catch (err) {
+    console.error('[GovernanceService] updateBenefit exception:', err)
+    return null
   }
-  
-  return mapped
 }
 
 export async function createBenefitFull(payload: Partial<BenefitModel>): Promise<BenefitModel | null> {
-  const cleanPayload: Record<string, any> = {}
+  const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null && value !== '' &&
         key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
       cleanPayload[key] = value
     }
   }
-  const defaults: Record<string, any> = {
+  const defaults: Record<string, unknown> = {
     statecode: 0,
     statuscode: 1,
   }
@@ -331,24 +403,32 @@ export async function createBenefitFull(payload: Partial<BenefitModel>): Promise
       cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
     }
   }
-  const result = await Pm_benefitsService.create({ ...defaults, ...cleanPayload } as any)
-  const item = unwrapSingle<Pm_benefits>(result)
-  const mapped = item ? mapBenefit(item) : null
-  
-  if (mapped && mapped.pm_benefitid) {
-    writeAuditLog({
-      actionType: 'Create',
-      entityName: 'pm_benefits',
-      recordId: mapped.pm_benefitid,
-      recordName: mapped.pm_benefitname,
-    })
+  try {
+    const result = await Pm_benefitsService.create({ ...defaults, ...cleanPayload } as any)
+    if (!result.success) {
+      console.error('[GovernanceService] createBenefitFull failed:', result.error)
+      return null
+    }
+    const item = unwrapSingle<Pm_benefits>(result)
+    const mapped = item ? mapBenefit(item) : null
+    
+    if (mapped && mapped.pm_benefitid) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_benefits',
+        recordId: mapped.pm_benefitid,
+        recordName: mapped.pm_benefitname,
+      })
+    }
+    return mapped
+  } catch (err) {
+    console.error('[GovernanceService] createBenefitFull exception:', err)
+    return null
   }
-  
-  return mapped
 }
 
 export async function updateBenefitFull(id: string, changes: Partial<BenefitModel>): Promise<BenefitModel | null> {
-  const cleanPayload: Record<string, any> = {}
+  const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(changes)) {
     if (value !== undefined && value !== null &&
         key !== 'pm_benefitid' && key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
@@ -373,65 +453,88 @@ export async function updateBenefitFull(id: string, changes: Partial<BenefitMode
       cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
     }
   }
-  const result = await Pm_benefitsService.update(id, cleanPayload as any)
-  const item = unwrapSingle<Pm_benefits>(result)
-  const mapped = item ? mapBenefit(item) : null
-  
-  if (mapped && mapped.pm_benefitid) {
-    Object.keys(changes).forEach((key) => {
-      const val = (changes as any)[key]
-      if (val !== undefined && key !== 'pm_benefitid') {
-        writeAuditLog({
-          actionType: 'Update',
-          entityName: 'pm_benefits',
-          recordId: id,
-          recordName: mapped.pm_benefitname,
-          fieldName: key,
-          newValue: String(val),
-        })
-      }
-    })
+  try {
+    const result = await Pm_benefitsService.update(id, cleanPayload as any)
+    if (!result.success) {
+      console.error('[GovernanceService] updateBenefitFull failed:', result.error)
+      return null
+    }
+    const item = unwrapSingle<Pm_benefits>(result)
+    const mapped = item ? mapBenefit(item) : null
+    
+    if (mapped && mapped.pm_benefitid) {
+      Object.keys(changes).forEach((key) => {
+        const val = (changes as any)[key]
+        if (val !== undefined && key !== 'pm_benefitid') {
+          writeAuditLog({
+            actionType: 'Update',
+            entityName: 'pm_benefits',
+            recordId: id,
+            recordName: mapped.pm_benefitname,
+            fieldName: key,
+            newValue: String(val),
+          })
+        }
+      })
+    }
+    return mapped
+  } catch (err) {
+    console.error('[GovernanceService] updateBenefitFull exception:', err)
+    return null
   }
-  
-  return mapped
 }
 
 export async function deleteBenefit(id: string): Promise<void> {
-  writeAuditLog({
-    actionType: 'Update',
-    entityName: 'pm_benefits',
-    recordId: id,
-    fieldName: 'deleted',
-    oldValue: 'Active',
-    newValue: 'Deleted',
-  })
-  await Pm_benefitsService.delete(id)
+  try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_benefits',
+      recordId: id,
+      fieldName: 'deleted',
+      oldValue: 'Active',
+      newValue: 'Deleted',
+    })
+    await Pm_benefitsService.delete(id)
+  } catch (err) {
+    console.error('[GovernanceService] deleteBenefit exception:', err)
+    throw err
+  }
 }
 
 export async function fetchPerformanceMeasures(benefitId?: string): Promise<PerformanceMeasureModel[]> {
-  const filter = benefitId ? `_pm_benefit_value eq '${benefitId}' and statecode eq 0` : 'statecode eq 0'
-  const result = await Pm_performancemeasuresService.getAll({
-    filter,
-    select: [
-      'pm_performancemeasureid', 'pm_measurename', 'pm_benefitname',
-      'pm_plannedvalue', 'pm_actualvalue', 'pm_cumulativeplanned',
-      'pm_cumulativeactual', 'pm_variance', 'pm_reportingperiod',
-      'pm_evidenced', 'pm_notes',
-    ],
-    orderBy: ['pm_reportingperiod asc'],
-    top: 500,
-  })
-  return unwrapList<Pm_performancemeasures>(result).map(mapPerformanceMeasure)
+  try {
+    const filter = benefitId ? `_pm_benefit_value eq '${benefitId}' and statecode eq 0` : 'statecode eq 0'
+    const options: IGetAllOptions = {
+      filter,
+      select: [
+        'pm_performancemeasureid', 'pm_measurename', 'pm_benefitname',
+        'pm_plannedvalue', 'pm_actualvalue', 'pm_cumulativeplanned',
+        'pm_cumulativeactual', 'pm_variance', 'pm_reportingperiod',
+        'pm_evidenced', 'pm_notes',
+      ],
+      orderBy: ['pm_reportingperiod asc'],
+      top: 500,
+    }
+    const result = await Pm_performancemeasuresService.getAll(options)
+    if (!result.success) {
+      console.error('[GovernanceService] fetchPerformanceMeasures failed:', result.error)
+      return []
+    }
+    return unwrapList<Pm_performancemeasures>(result).map(mapPerformanceMeasure)
+  } catch (err) {
+    console.error('[GovernanceService] fetchPerformanceMeasures exception:', err)
+    return []
+  }
 }
 
 export async function createPerformanceMeasure(payload: Partial<PerformanceMeasureModel> & { _pm_benefit_value?: string }): Promise<PerformanceMeasureModel | null> {
-  const cleanPayload: Record<string, any> = {}
+  const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null && value !== '' && key !== '_pm_benefit_value') {
       cleanPayload[key] = value
     }
   }
-  const defaults: Record<string, any> = {
+  const defaults: Record<string, unknown> = {
     statecode: 0,
     statuscode: 1,
   }
@@ -441,54 +544,76 @@ export async function createPerformanceMeasure(payload: Partial<PerformanceMeasu
       cleanPayload['pm_benefit@odata.bind'] = `/pm_benefits(${benefitId})`
     }
   }
-  const result = await Pm_performancemeasuresService.create({ ...defaults, ...cleanPayload } as any)
-  const item = unwrapSingle<Pm_performancemeasures>(result)
-  const mapped = item ? mapPerformanceMeasure(item) : null
-  
-  if (mapped && mapped.pm_performancemeasureid) {
-    writeAuditLog({
-      actionType: 'Create',
-      entityName: 'pm_performancemeasures',
-      recordId: mapped.pm_performancemeasureid,
-      recordName: mapped.pm_measurename,
-    })
+  try {
+    const result = await Pm_performancemeasuresService.create({ ...defaults, ...cleanPayload } as any)
+    if (!result.success) {
+      console.error('[GovernanceService] createPerformanceMeasure failed:', result.error)
+      return null
+    }
+    const item = unwrapSingle<Pm_performancemeasures>(result)
+    const mapped = item ? mapPerformanceMeasure(item) : null
+    
+    if (mapped && mapped.pm_performancemeasureid) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_performancemeasures',
+        recordId: mapped.pm_performancemeasureid,
+        recordName: mapped.pm_measurename,
+      })
+    }
+    return mapped
+  } catch (err) {
+    console.error('[GovernanceService] createPerformanceMeasure exception:', err)
+    return null
   }
-  
-  return mapped
 }
 
 export async function updatePerformanceMeasure(id: string, changes: Partial<PerformanceMeasureModel>): Promise<PerformanceMeasureModel | null> {
-  const result = await Pm_performancemeasuresService.update(id, changes as any)
-  const item = unwrapSingle<Pm_performancemeasures>(result)
-  const mapped = item ? mapPerformanceMeasure(item) : null
-  
-  if (mapped && mapped.pm_performancemeasureid) {
-    Object.keys(changes).forEach((key) => {
-      const val = (changes as any)[key]
-      if (val !== undefined && key !== 'pm_performancemeasureid') {
-        writeAuditLog({
-          actionType: 'Update',
-          entityName: 'pm_performancemeasures',
-          recordId: id,
-          recordName: mapped.pm_measurename,
-          fieldName: key,
-          newValue: String(val),
-        })
-      }
-    })
+  try {
+    const result = await Pm_performancemeasuresService.update(id, changes as any)
+    if (!result.success) {
+      console.error('[GovernanceService] updatePerformanceMeasure failed:', result.error)
+      return null
+    }
+    const item = unwrapSingle<Pm_performancemeasures>(result)
+    const mapped = item ? mapPerformanceMeasure(item) : null
+    
+    if (mapped && mapped.pm_performancemeasureid) {
+      Object.keys(changes).forEach((key) => {
+        const val = (changes as any)[key]
+        if (val !== undefined && key !== 'pm_performancemeasureid') {
+          writeAuditLog({
+            actionType: 'Update',
+            entityName: 'pm_performancemeasures',
+            recordId: id,
+            recordName: mapped.pm_measurename,
+            fieldName: key,
+            newValue: String(val),
+          })
+        }
+      })
+    }
+    return mapped
+  } catch (err) {
+    console.error('[GovernanceService] updatePerformanceMeasure exception:', err)
+    return null
   }
-  
-  return mapped
 }
 
 export async function deletePerformanceMeasure(id: string): Promise<void> {
-  writeAuditLog({
-    actionType: 'Update',
-    entityName: 'pm_performancemeasures',
-    recordId: id,
-    fieldName: 'deleted',
-    oldValue: 'Active',
-    newValue: 'Deleted',
-  })
-  await Pm_performancemeasuresService.delete(id)
+  try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_performancemeasures',
+      recordId: id,
+      fieldName: 'deleted',
+      oldValue: 'Active',
+      newValue: 'Deleted',
+    })
+    await Pm_performancemeasuresService.delete(id)
+  } catch (err) {
+    console.error('[GovernanceService] deletePerformanceMeasure exception:', err)
+    throw err
+  }
 }
+

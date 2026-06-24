@@ -116,17 +116,26 @@ export async function writeAuditLog({
     // 3. Try to get it from Xrm context correlation ID or sessionInfo
     if (!sessionId) {
       try {
-        let xrm: any = null
+        let xrm: unknown = null
         if (typeof window !== 'undefined') {
-          xrm = (window as any).Xrm
+          xrm = (window as unknown as Record<string, unknown>).Xrm
           if (!xrm) {
             try {
-              xrm = (window.parent as any).Xrm
+              xrm = (window.parent as unknown as Record<string, unknown>).Xrm
             } catch (e) { }
           }
         }
-        if (xrm?.Utility?.getGlobalContext) {
-          const context = xrm.Utility.getGlobalContext()
+        const xrmObj = xrm as {
+          Utility?: {
+            getGlobalContext?: () => {
+              correlationId?: string
+              sessionInfo?: { sessionId?: string }
+              organizationSettings?: { organizationId?: string }
+            }
+          }
+        }
+        if (xrmObj?.Utility?.getGlobalContext) {
+          const context = xrmObj.Utility.getGlobalContext()
           sessionId = context.correlationId ||
             context.sessionInfo?.sessionId ||
             context.organizationSettings?.organizationId ||
@@ -137,9 +146,9 @@ export async function writeAuditLog({
 
     // 4. Fallback to in-memory window global or sessionStorage or new UUID
     if (!sessionId) {
-      const win = (typeof window !== 'undefined' ? window : {}) as any
+      const win = (typeof window !== 'undefined' ? window : {}) as Record<string, unknown>
       if (win.__ppm_audit_session_id) {
-        sessionId = win.__ppm_audit_session_id
+        sessionId = win.__ppm_audit_session_id as string
       } else {
         try {
           if (typeof sessionStorage !== 'undefined') {
@@ -170,8 +179,7 @@ export async function writeAuditLog({
       sessionId = 'unknown-session'
     }
 
-
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       pm_actiontype: mappedAction,
       pm_entityname: entityName,
       pm_recordidentifier: recordId,
@@ -194,8 +202,9 @@ export async function writeAuditLog({
     }
     await Pm_changelogentriesService.create(payload as any)
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[writeAuditLog] ❌ Exception failed to create audit log entry:', error)
   }
 }
+
 
