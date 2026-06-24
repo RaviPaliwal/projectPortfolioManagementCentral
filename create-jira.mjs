@@ -14,7 +14,7 @@ const tickets = [
   { summary: "Workflow Engine — Step templates, routing rules, Power Automate triggers", assignee: "suvigya", priority: "High", done: true },
   { summary: "Status Snapshots — 13-period RAG status reporting with snapshots", assignee: "suvigya", priority: "Medium", done: true },
   { summary: "Strategic Roster — Headcount planning / strategic workforce visualization", assignee: "suvigya", priority: "Medium", done: true },
-  
+
   // Ravi's completed tickets
   { summary: "Timesheet Recording & Approval — Entry-based timesheets + status workflow + overlap validation", assignee: "ravi", priority: "High", done: true },
   { summary: "Budget Line Management — CRUD + funding source linkage", assignee: "ravi", priority: "High", done: true },
@@ -23,24 +23,24 @@ const tickets = [
   { summary: "Cashflow Management — CRUD + financial calendar entries", assignee: "ravi", priority: "Medium", done: true },
   { summary: "Funding Source Management — CRUD", assignee: "ravi", priority: "Medium", done: true },
   { summary: "Workflow Tasks — Read-only approval step tasks view", assignee: "ravi", priority: "Medium", done: true },
-  
+
   // SECURITY & AUTH - Completed
   { summary: "Persona Resolution System — 7 personas: keyword matching against job title, team names, security roles", assignee: "ravi", priority: "High", done: true },
   { summary: "CRUD Permission Matrix — Per-module per-action persona-based access control", assignee: "ravi", priority: "High", done: true },
   { summary: "Route Guard — Tab-level access validation in PrimaryShell + deep-link URL protection", assignee: "ravi", priority: "High", done: true },
   { summary: "User Context & Role Resolution — Fetches users, teams, memberships; resolves personas", assignee: "ravi", priority: "High", done: true },
   { summary: "User Selector — Avatar chip + popover with user switching, persona display, active indicator", assignee: "ravi", priority: "Medium", done: true },
-  
+
   // WORKFLOW & INTEGRATIONS - Completed
   { summary: "Approval Workflow Engine — Multi-step approval flows, 17 task modals, FORM_DIALOG_DECISION_EVENT", assignee: "suvigya", priority: "High", done: true },
   { summary: "Outlook Calendar Integration — CreateOutlookEventService + GetOutlookEventsService", assignee: "suvigya", priority: "Medium", done: true },
   { summary: "Calendar View — Integrated calendar display with Outlook events, local event creation", assignee: "suvigya", priority: "Medium", done: true },
   { summary: "Document Upload & Management — Document CRUD, binary upload, EntityDocumentsTab", assignee: "suvigya", priority: "Medium", done: true },
-  
+
   // FINANCIAL ENGINE - Completed
   { summary: "Financial Rollup Engine — Portfolio-level budget aggregation, programme budget consolidation", assignee: "ravi", priority: "High", done: true },
   { summary: "Financial KPI Dashboard — Budget vs actual, cashflow projections, funding utilization", assignee: "ravi", priority: "Medium", done: true },
-  
+
   // NEW EVM & TOTALS ROW - Completed (Ravi)
   { summary: "EVM Financial KPIs — Implement EV, CPI, EAC, CV metrics in financials tab", assignee: "ravi", priority: "High", done: true },
   { summary: "Financial Layout Customization — Move totals cards to budget lines grid footer row", assignee: "ravi", priority: "Medium", done: true },
@@ -48,7 +48,7 @@ const tickets = [
   // AUDIT & COMPLIANCE - Completed
   { summary: "Audit Trail / Activity Log — changelog.service.ts writes audit entries on all CRUD operations", assignee: "ravi", priority: "High", done: true },
   { summary: "Changelog Service — Audit logging with session ID from Xrm context, entity-level change tracking", assignee: "ravi", priority: "Medium", done: true },
-  
+
   // UI / COMMON COMPONENTS - Completed
   { summary: "Common Component Library — 34 reusable components (DataverseTable, DetailDrawer, etc.)", assignee: "suvigya", priority: "Medium", done: true },
   { summary: "Custom Hooks — useAuthorization, useDataGrid, useDataverseAsync, useDataverseCrud", assignee: "suvigya", priority: "Medium", done: true },
@@ -80,7 +80,20 @@ const tickets = [
   { summary: "Row-level data filtering — expand to Resources, Projects, Timesheets, Risks, Tasks", assignee: "ravi", priority: "High", done: false },
   { summary: "Column-level security — Hide financial fields from unauthorized personas", assignee: "suvigya", priority: "Medium", done: true },
   { summary: "API-level RBAC — Add $filter based on user persona in service calls", assignee: "suvigya", priority: "High", done: false },
-  { summary: "WCAG 2.1 AA Accessibility — No accessibility implementation", assignee: "ravi", priority: "High", done: false }
+  { summary: "WCAG 2.1 AA Accessibility — No accessibility implementation", assignee: "ravi", priority: "High", done: false },
+
+  // CONVERSATION SESSION — June 22 (Ravi)
+  { summary: "Bug Fix: Timesheet entry update Entity Reference error (Converted _pm_project_value/_pm_projecttask_value to @odata.bind navigation properties)", assignee: "ravi", priority: "High", done: true },
+  { summary: "Bug Fix: fetchPendingApprovalRequests pm_portfolioname query error (Removed non-existent field from $select)", assignee: "ravi", priority: "High", done: true },
+  { summary: "Change Request: Add 'Rejected' status (3) to models, labels, colors, KPI cards & filter options", assignee: "ravi", priority: "Medium", done: true },
+  { summary: "Change Request: Enhanced approval task modal with project/programme context, baseline badge, benefits impact, decision maker capture", assignee: "ravi", priority: "Medium", done: true },
+  { summary: "Change Request: Add EntityDocumentsTab (document attachments) to detail drawer", assignee: "ravi", priority: "Medium", done: true },
+  { summary: "Change Request: Auto-submit for approval on creation, remove manual Submit button, hide edit/delete when Under Review", assignee: "ravi", priority: "Medium", done: true },
+  { summary: "Change Request: File upload capability in create/edit form dialog (drag-drop zone, file chips, auto-upload on save)", assignee: "ravi", priority: "Medium", done: true },
+  { summary: "Change Request: Remove Approval (WorkflowMilestone) tab from detail drawer, clean up unused import", assignee: "ravi", priority: "Low", done: true },
+  { summary: "Change Request: Add post-submission confirmation dialog (floating success icon, reference, change type tags, workflow notice)", assignee: "ravi", priority: "Medium", done: true },
+  { summary: "Refactor: Extract duplicated file upload logic into shared uploadSelectedFiles useCallback helper", assignee: "ravi", priority: "Low", done: true },
+  { summary: "Bug Fix: Build errors — syntax fix in ChangeRequestsPage dialog onClose, missing entriesCount prop in TimesheetStatusControls", assignee: "ravi", priority: "High", done: true },
 ];
 
 (async () => {
@@ -96,7 +109,7 @@ const tickets = [
   await page.waitForSelector('button:has-text("Create")', { timeout: 180000 }).catch(() => console.log('Timeout waiting for Create button'));
 
   console.log('Injecting ticket creation & status sync script...');
-  
+
   await page.evaluate(async (tickets) => {
     // Inject floating overlay
     const overlay = document.createElement('div');
@@ -106,7 +119,7 @@ const tickets = [
     // Resolve Account IDs for both users
     let raviId = null;
     let suvigyaId = null;
-    
+
     try {
       const userRes = await fetch(`/rest/api/3/user/search?query=${encodeURIComponent("Ravi Paliwal")}`);
       if (userRes.ok) {
@@ -115,7 +128,7 @@ const tickets = [
           raviId = users[0].accountId;
         }
       }
-    } catch(e) {
+    } catch (e) {
       console.error('Error finding user Ravi:', e);
     }
 
@@ -127,7 +140,7 @@ const tickets = [
           suvigyaId = users[0].accountId;
         }
       }
-    } catch(e) {
+    } catch (e) {
       console.error('Error finding user Suvigya:', e);
     }
 
@@ -148,7 +161,7 @@ const tickets = [
     for (let i = 0; i < tickets.length; i++) {
       const t = tickets[i];
       const targetAssigneeId = t.assignee === 'ravi' ? raviId : suvigyaId;
-      overlay.innerHTML = `<h3>🚀 Antigravity Sync</h3><p>Syncing ticket <b>${i+1}</b> of ${tickets.length}...</p><p style="color:#00C7E6;">${t.summary}</p><p><small>Assignee: ${t.assignee} | Done: ${t.done ? '✅ Yes' : '❌ No'}</small></p>`;
+      overlay.innerHTML = `<h3>🚀 Antigravity Sync</h3><p>Syncing ticket <b>${i + 1}</b> of ${tickets.length}...</p><p style="color:#00C7E6;">${t.summary}</p><p><small>Assignee: ${t.assignee} | Done: ${t.done ? '✅ Yes' : '❌ No'}</small></p>`;
 
       try {
         // 1. Search if the issue already exists
@@ -157,7 +170,7 @@ const tickets = [
         const escapedSummary = t.summary.replace(/"/g, '\\"');
         const searchJql = `project = "J2" and summary ~ "\\"${escapedSummary}\\""`;
         const searchRes = await fetch(`/rest/api/3/search?jql=${encodeURIComponent(searchJql)}`);
-        
+
         if (searchRes.ok) {
           const searchData = await searchRes.json();
           if (searchData.issues && searchData.issues.length > 0) {
@@ -184,7 +197,7 @@ const tickets = [
           if (targetAssigneeId) {
             payload.fields.assignee = { id: targetAssigneeId };
           }
-          
+
           const prioId = prioritiesMap[t.priority.toLowerCase()];
           if (prioId) {
             payload.fields.priority = { id: prioId };
@@ -195,7 +208,7 @@ const tickets = [
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
-          
+
           if (createRes.ok) {
             const newIssue = await createRes.json();
             issueKey = newIssue.key;
@@ -231,9 +244,9 @@ const tickets = [
           const transRes = await fetch(`/rest/api/3/issue/${issueKey}/transitions`);
           if (transRes.ok) {
             const transData = await transRes.json();
-            const doneTransition = transData.transitions.find(tr => 
-              tr.name.toLowerCase() === 'done' || 
-              tr.to.name.toLowerCase() === 'done' || 
+            const doneTransition = transData.transitions.find(tr =>
+              tr.name.toLowerCase() === 'done' ||
+              tr.to.name.toLowerCase() === 'done' ||
               tr.to.statusCategory.name.toLowerCase() === 'done'
             );
 
@@ -251,11 +264,11 @@ const tickets = [
         }
 
         await new Promise(r => setTimeout(r, 600));
-      } catch(e) {
+      } catch (e) {
         console.error('Exception syncing', t.summary, e);
       }
     }
-    
+
     overlay.innerHTML = `<h3>🚀 Antigravity Sync</h3><p>✅ All ${tickets.length} tickets synchronized!</p><p>Please refresh the page to see updates.</p>`;
     setTimeout(() => overlay.remove(), 10000);
   }, tickets);
