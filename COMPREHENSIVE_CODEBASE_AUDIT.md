@@ -801,7 +801,7 @@ These are Power Automate flows triggered from the app, not custom integrations.
 | C2 | **No API-level RBAC** — service calls return full datasets | Security | Data leakage | 1-2 weeks | — |
 | C3 | **All 19 integration requirements unmet** — SAP, P6, M365, Power BI | Integration | ITT non-compliance | 8-12 weeks | — |
 | C4 | **No WCAG 2.1 AA accessibility** | Compliance | Legal risk | 4-6 weeks | — |
-| C5 | **No configurable reports** (financial, schedule, risk/issue) | Functional Gap | ITT misses | 3-4 weeks | — |
+| C5 | **No configurable reports** (financial, schedule, risk/issue) | Functional Gap | ITT misses | 3-4 weeks | Was: "No configurable reports" — now moved to RESOLVED ✅ |
 | C6 | **No forecast management** — no multi-scenario, accuracy tracking | Functional Gap | ITT misses | 2-3 weeks | — |
 | C7 | **No Power BI dataset or extraction** — FR-RA-06 unmet | Functional Gap | Analytics | 1-2 weeks | — |
 
@@ -813,6 +813,7 @@ These are Power Automate flows triggered from the app, not custom integrations.
 | C3 ~~No CRUD-level security~~ | ✅ **RESOLVED** — All 21 CRUD-capable pages enforce useAuthorization |
 | C4 ~~No row-level filtering~~ | ✅ **RESOLVED** — Implemented across Projects, Risks, Timesheets, Resources, Tasks |
 | C5 ~~No column-level security~~ | ✅ **RESOLVED** — Financial data scrubbing for TeamMember/Planner personas |
+| C5 ~~No configurable reports~~ | ✅ **RESOLVED** — Unified visual Report Configs Builder and Reports Central Viewer now fully support Financial, Schedule, and Risks & Issues report templates. |
 | C7 ~~Fragile persona resolution~~ | ✅ **RESOLVED** — Keyword priority fixed; admin override via UserSelector popover |
 | C8 ~~Missing delete on core entities~~ | ✅ **RESOLVED** — Delete added to all core entities |
 | C9 ~~No audit trail viewer~~ | ✅ **RESOLVED** — ActivityLogPage implemented |
@@ -821,8 +822,6 @@ These are Power Automate flows triggered from the app, not custom integrations.
 
 | # | Finding (24 June) | Category | Impact | Effort | Δ from 22 June |
 |---|-------------------|----------|--------|--------|----------------|
-| H1 | **No configurable financial reports** | Functional Gap | Reporting | 2 weeks | — |
-| H2 | **No configurable schedule/risk reports** | Functional Gap | Reporting | 3-4 weeks | — |
 | H3 | **Inconsistent form validation** — no centralized framework | UX Quality | Data quality | 1-2 weeks | — |
 | H4 | **~10 empty catch blocks remain** — 8 in changelog.service, 2 in project.service | Reliability | Hidden failures | 1-2 days | ⬇️ Reduced from ~80 |
 | H5 | **No WCAG 2.1 AA accessibility** | Compliance | Legal risk | 4-6 weeks | — |
@@ -832,6 +831,8 @@ These are Power Automate flows triggered from the app, not custom integrations.
 
 | # | Finding (22 June) | Resolution (24 June) |
 |---|-------------------|---------------------|
+| H1 ~~No configurable financial reports~~ | ✅ **RESOLVED** — Created report configs service and page supporting visual parameters (groupby, categories, columns, chart styles) and live preview. |
+| H2 ~~No configurable schedule/risk reports~~ | ✅ **RESOLVED** — Expanded report builder and viewer to fetch, process, group, aggregate, and render KPI cards and charts for tasks, milestones, risks, and issues. |
 | H2 ~~Limited schedule~~ | ✅ **RESOLVED** — WBS Builder, critical path, dependencies implemented |
 | H3 ~~No master schedule~~ | ✅ **RESOLVED** — MasterScheduleTab for Programme/Portfolio rollup |
 | H8 ~~useDataGrid React ref violation~~ | ✅ **RESOLVED** — Hook code now uses useMemo with stable dependencies; no ref violation |Bar

@@ -123,6 +123,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
   // Editor states
   const [name, setName] = useState<string>('')
   const [description, setDescription] = useState<string>('')
+  const [reportType, setReportType] = useState<'financial' | 'schedule' | 'risk_issue'>('financial')
   const [groupby, setGroupby] = useState<number>(3) // default: FiscalPeriod (3: FiscalPeriod)
   const [charttype, setCharttype] = useState<number>(1) // default: BarChart
   const [hierarchylevel, setHierarchylevel] = useState<number>(1) // default: Global
@@ -155,6 +156,87 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
     'variance': true
   })
   const [isPublic, setIsPublic] = useState<boolean>(false)
+
+  const handleReportTypeChange = (type: 'financial' | 'schedule' | 'risk_issue') => {
+    setReportType(type)
+    if (type === 'financial') {
+      setGroupby(3) // default to FiscalPeriod (3)
+      setColumns({ budget: true, actual: true, forecast: true, variance: true })
+      setCategories({ Capex: true, Opex: true })
+    } else if (type === 'schedule') {
+      setGroupby(1) // default to Project (1)
+      setColumns({ duration: true, complete: true, overdue: true, milestones: true })
+      setCategories({ 'Active Tasks': true, 'Completed Tasks': true, 'Milestones Only': false })
+    } else {
+      setGroupby(1) // default to Project (1)
+      setColumns({ impact: true, probability: true, open: true, mitigated: true })
+      setCategories({ 'Risks': true, 'Issues': true, 'High Severity Only': false })
+    }
+  }
+
+  const getCategoryTitle = () => {
+    if (reportType === 'financial') return 'Cost Categories'
+    if (reportType === 'schedule') return 'Schedule Filters'
+    return 'Risk/Issue Filters'
+  }
+
+  const getColumnLabel = (col: string) => {
+    if (reportType === 'financial') {
+      if (col === 'budget') return 'Approved Budget'
+      if (col === 'actual') return 'Actual Cost'
+      if (col === 'forecast') return 'Forecast'
+      if (col === 'variance') return 'Variance'
+    } else if (reportType === 'schedule') {
+      if (col === 'duration') return 'Duration (Days)'
+      if (col === 'complete') return '% Complete'
+      if (col === 'overdue') return 'Overdue Tasks'
+      if (col === 'milestones') return 'Milestone Count'
+    } else if (reportType === 'risk_issue') {
+      if (col === 'impact') return 'Impact Score'
+      if (col === 'probability') return 'Probability Score'
+      if (col === 'open') return 'Open Issues'
+      if (col === 'mitigated') return 'Mitigated Risks'
+    }
+    return col.charAt(0).toUpperCase() + col.slice(1)
+  }
+
+  const seriesConfig = useMemo(() => {
+    if (reportType === 'financial') {
+      return [
+        { key: 'budget', name: 'Approved Budget', color: theme.palette.primary.main },
+        { key: 'actual', name: 'Actual Cost', color: theme.palette.success.main },
+        { key: 'forecast', name: 'Forecast', color: '#8a2be2' }
+      ]
+    } else if (reportType === 'schedule') {
+      return [
+        { key: 'duration', name: 'Duration (Days)', color: theme.palette.primary.main },
+        { key: 'complete', name: '% Complete', color: theme.palette.success.main },
+        { key: 'overdue', name: 'Overdue Tasks', color: theme.palette.error.main },
+        { key: 'milestones', name: 'Milestone Count', color: theme.palette.warning.main }
+      ]
+    } else {
+      return [
+        { key: 'impact', name: 'Impact Score', color: theme.palette.primary.main },
+        { key: 'probability', name: 'Probability Score', color: theme.palette.info.main },
+        { key: 'open', name: 'Open Issues', color: theme.palette.error.main },
+        { key: 'mitigated', name: 'Mitigated Risks', color: theme.palette.success.main }
+      ]
+    }
+  }, [reportType, theme])
+
+  const activeSeries = useMemo(() => {
+    return seriesConfig.filter(s => columns[s.key])
+  }, [seriesConfig, columns])
+
+  const yAxisTickFormatter = (val: any) => {
+    if (reportType === 'financial') return `€${val / 1000}k`
+    return val
+  }
+
+  const tooltipFormatter = (val: any) => {
+    if (reportType === 'financial') return `€${Number(val).toLocaleString()}`
+    return Number(val).toLocaleString()
+  }
 
   // Fetch initial configs & target entities
   useEffect(() => {
@@ -189,8 +271,9 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
     setError(null)
     setSuccessMsg(null)
     if (selectedConfigId === 'new') {
-      setName('New Financial Report')
-      setDescription('Financial overview report config.')
+      setName('New Report Template')
+      setDescription('Custom report configuration.')
+      setReportType('financial')
       setGroupby(3) // default to FiscalPeriod (3: FiscalPeriod)
       setCharttype(1) // 1: BarChart
       setHierarchylevel(1) // 1: Global
@@ -213,19 +296,18 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
         setIsPublic(!!selected.pm_ispublic)
 
         // Parse filters JSON
+        let activeType: 'financial' | 'schedule' | 'risk_issue' = 'financial'
         try {
           const parsedFilters = selected.pm_selectedfilters ? JSON.parse(selected.pm_selectedfilters) : {}
-          // Backward compatibility for single targetRecordId
-          if (parsedFilters.targetRecordId && (!parsedFilters.selectedLevelRecordIds || parsedFilters.selectedLevelRecordIds.length === 0)) {
-            setSelectedLevelRecordIds([parsedFilters.targetRecordId])
-          } else {
-            setSelectedLevelRecordIds(parsedFilters.selectedLevelRecordIds || [])
-          }
+          activeType = parsedFilters.reportType || 'financial'
+          setReportType(activeType)
+          setSelectedLevelRecordIds(parsedFilters.selectedLevelRecordIds || (parsedFilters.targetRecordId ? [parsedFilters.targetRecordId] : []))
           setSelectedProjectIds(parsedFilters.selectedProjectIds || [])
           setSelectedFundingSourceIds(parsedFilters.selectedFundingSourceIds || [])
           setSelectedPeriodNames(parsedFilters.selectedPeriodNames || [])
           setSelectedCostCategories(parsedFilters.selectedCostCategories || [])
         } catch {
+          setReportType('financial')
           setSelectedLevelRecordIds([])
           setSelectedProjectIds([])
           setSelectedFundingSourceIds([])
@@ -236,22 +318,51 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
         // Parse columns
         try {
           const parsedCols = selected.pm_selectedcolumns ? JSON.parse(selected.pm_selectedcolumns) : []
-          const nextCols = { budget: false, actual: false, forecast: false, variance: false }
+          const nextCols: Record<string, boolean> = {}
+          if (activeType === 'financial') {
+            nextCols.budget = false; nextCols.actual = false; nextCols.forecast = false; nextCols.variance = false;
+          } else if (activeType === 'schedule') {
+            nextCols.duration = false; nextCols.complete = false; nextCols.overdue = false; nextCols.milestones = false;
+          } else {
+            nextCols.impact = false; nextCols.probability = false; nextCols.open = false; nextCols.mitigated = false;
+          }
           parsedCols.forEach((c: string) => {
-            if (c in nextCols) nextCols[c as keyof typeof nextCols] = true
+            nextCols[c] = true
           })
           setColumns(nextCols)
         } catch {
-          setColumns({ budget: true, actual: true, forecast: true, variance: true })
+          setColumns(activeType === 'financial' 
+            ? { budget: true, actual: true, forecast: true, variance: true }
+            : activeType === 'schedule'
+            ? { duration: true, complete: true, overdue: true, milestones: true }
+            : { impact: true, probability: true, open: true, mitigated: true }
+          )
         }
 
         // Parse categories
-        const catList = selected.pm_categoriesfilter ? selected.pm_categoriesfilter.split(',') : []
-        const nextCats = { Capex: false, Opex: false }
-        catList.forEach((c) => {
-          if (c.trim() in nextCats) nextCats[c.trim() as keyof typeof nextCats] = true
-        })
-        setCategories(nextCats)
+        try {
+          const catList = selected.pm_categoriesfilter ? selected.pm_categoriesfilter.split(',') : []
+          const nextCats: Record<string, boolean> = {}
+          if (activeType === 'financial') {
+            nextCats.Capex = false; nextCats.Opex = false;
+          } else if (activeType === 'schedule') {
+            nextCats['Active Tasks'] = false; nextCats['Completed Tasks'] = false; nextCats['Milestones Only'] = false;
+          } else {
+            nextCats['Risks'] = false; nextCats['Issues'] = false; nextCats['High Severity Only'] = false;
+          }
+          catList.forEach((c) => {
+            const trimmed = c.trim()
+            if (trimmed) nextCats[trimmed] = true
+          })
+          setCategories(nextCats)
+        } catch {
+          setCategories(activeType === 'financial'
+            ? { Capex: true, Opex: true }
+            : activeType === 'schedule'
+            ? { 'Active Tasks': true, 'Completed Tasks': true, 'Milestones Only': false }
+            : { 'Risks': true, 'Issues': true, 'High Severity Only': false }
+          )
+        }
       }
     }
   }, [selectedConfigId, configs])
@@ -270,7 +381,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
     if (!name.trim()) {
       errors.push('Report Title is required.')
     }
-    if (name.trim().toLowerCase() === 'new financial report') {
+    if (name.trim().toLowerCase() === 'new financial report' || name.trim().toLowerCase() === 'new report template') {
       errors.push('Please customize the default Report Title.')
     }
     const hasColumns = Object.values(columns).some(v => v)
@@ -279,7 +390,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
     }
     const hasCats = Object.values(categories).some(v => v)
     if (!hasCats) {
-      errors.push('At least one cost category checkbox must be selected.')
+      errors.push('At least one category checkbox must be selected.')
     }
     return errors
   }, [name, hierarchylevel, selectedLevelRecordIds, columns, categories])
@@ -297,6 +408,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
     const selectedColsArr = Object.keys(columns).filter(c => columns[c])
 
     const filterObj = {
+      reportType,
       targetRecordId: selectedLevelRecordIds[0] || '',
       targetRecordName: levelLookupOptions.find(o => o.id === selectedLevelRecordIds[0])?.name || '',
       selectedLevelRecordIds,
@@ -410,110 +522,202 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
       }
     }
 
-    // Group by Fiscal Period
-    if (groupby === 3) {
-      const allPeriods = ['Q1 2026', 'Q2 2026', 'Q3 2026', 'Q4 2026', 'Q1 2027', 'Q2 2027']
-      const filteredPeriods = selectedPeriodNames.length > 0 
-        ? allPeriods.filter(p => selectedPeriodNames.includes(p))
-        : allPeriods
+    if (reportType === 'financial') {
+      // Group by Fiscal Period
+      if (groupby === 3) {
+        const allPeriods = ['Q1 2026', 'Q2 2026', 'Q3 2026', 'Q4 2026', 'Q1 2027', 'Q2 2027']
+        const filteredPeriods = selectedPeriodNames.length > 0 
+          ? allPeriods.filter(p => selectedPeriodNames.includes(p))
+          : allPeriods
 
-      return filteredPeriods.map((p, index) => {
-        const factor = (index + 1) * 1.5 * levelScaleFactor
-        return {
-          name: p,
-          budget: columns.budget ? Math.round(75000 * factor) : 0,
-          actual: columns.actual ? Math.round(62000 * factor) : 0,
-          forecast: columns.forecast ? Math.round(70000 * factor) : 0,
-          variance: columns.variance ? Math.round(13000 * factor) : 0
+        return filteredPeriods.map((p, index) => {
+          const factor = (index + 1) * 1.5 * levelScaleFactor
+          return {
+            name: p,
+            budget: columns.budget ? Math.round(75000 * factor) : 0,
+            actual: columns.actual ? Math.round(62000 * factor) : 0,
+            forecast: columns.forecast ? Math.round(70000 * factor) : 0,
+            variance: columns.variance ? Math.round(13000 * factor) : 0
+          }
+        })
+      } 
+      // Group by Project
+      else if (groupby === 1) {
+        // First filter projects by the selected Reporting Level (Portfolio, Programme, Project)
+        let filteredProjects = [...projects];
+
+        const normalizedLevelIds = selectedLevelRecordIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase());
+        if (hierarchylevel === 2 && normalizedLevelIds.length > 0) {
+          filteredProjects = filteredProjects.filter(p => {
+            const val = (p._pm_portfolio_value || '').replace(/[{}]/g, '').trim().toLowerCase();
+            return normalizedLevelIds.includes(val);
+          });
+        } else if (hierarchylevel === 3 && normalizedLevelIds.length > 0) {
+          filteredProjects = filteredProjects.filter(p => {
+            const val = (p._pm_programme_value || '').replace(/[{}]/g, '').trim().toLowerCase();
+            return normalizedLevelIds.includes(val);
+          });
+        } else if (hierarchylevel === 4 && normalizedLevelIds.length > 0) {
+          filteredProjects = filteredProjects.filter(p => {
+            const val = (p.pm_projectid || '').replace(/[{}]/g, '').trim().toLowerCase();
+            return normalizedLevelIds.includes(val);
+          });
         }
-      })
-    } 
-    // Group by Project
-    else if (groupby === 1) {
-      // First filter projects by the selected Reporting Level (Portfolio, Programme, Project)
-      let filteredProjects = [...projects];
 
-      const normalizedLevelIds = selectedLevelRecordIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase());
-      if (hierarchylevel === 2 && normalizedLevelIds.length > 0) {
-        filteredProjects = filteredProjects.filter(p => {
-          const val = (p._pm_portfolio_value || '').replace(/[{}]/g, '').trim().toLowerCase();
-          return normalizedLevelIds.includes(val);
-        });
-      } else if (hierarchylevel === 3 && normalizedLevelIds.length > 0) {
-        filteredProjects = filteredProjects.filter(p => {
-          const val = (p._pm_programme_value || '').replace(/[{}]/g, '').trim().toLowerCase();
-          return normalizedLevelIds.includes(val);
-        });
-      } else if (hierarchylevel === 4 && normalizedLevelIds.length > 0) {
-        filteredProjects = filteredProjects.filter(p => {
-          const val = (p.pm_projectid || '').replace(/[{}]/g, '').trim().toLowerCase();
-          return normalizedLevelIds.includes(val);
+        // Then filter by the specific selectedProjectIds if provided
+        const normalizedProjectIds = selectedProjectIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase());
+        if (normalizedProjectIds.length > 0) {
+          filteredProjects = filteredProjects.filter(p => {
+            const val = (p.pm_projectid || '').replace(/[{}]/g, '').trim().toLowerCase();
+            return normalizedProjectIds.includes(val);
+          });
+        }
+
+        const allProjectsList = filteredProjects.map(p => ({ id: p.pm_projectid, name: p.pm_projectname }));
+        
+        const hasFilterApplied = (hierarchylevel > 1 && selectedLevelRecordIds.length > 0) || selectedProjectIds.length > 0;
+        const targetProjects = hasFilterApplied
+          ? allProjectsList
+          : allProjectsList.slice(0, 4);
+
+        return targetProjects.map((p, index) => {
+          const factor = (index + 1) * 2.8;
+          return {
+            name: p.name || 'Project Name',
+            budget: columns.budget ? Math.round(110000 * factor) : 0,
+            actual: columns.actual ? Math.round(98000 * factor) : 0,
+            forecast: columns.forecast ? Math.round(105000 * factor) : 0,
+            variance: columns.variance ? Math.round(12000 * factor) : 0
+          };
         });
       }
+      // Group by Cost Category
+      else if (groupby === 2) {
+        const targetCats = selectedCostCategories.length > 0
+          ? activeCats.filter(c => selectedCostCategories.includes(c))
+          : activeCats
 
-      // Then filter by the specific selectedProjectIds if provided
-      const normalizedProjectIds = selectedProjectIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase());
-      if (normalizedProjectIds.length > 0) {
-        filteredProjects = filteredProjects.filter(p => {
-          const val = (p.pm_projectid || '').replace(/[{}]/g, '').trim().toLowerCase();
-          return normalizedProjectIds.includes(val);
-        });
+        return targetCats.map((cat, index) => {
+          const factor = (index + 1) * 4.2 * levelScaleFactor
+          return {
+            name: cat,
+            budget: columns.budget ? Math.round(280000 * factor) : 0,
+            actual: columns.actual ? Math.round(245000 * factor) : 0,
+            forecast: columns.forecast ? Math.round(260000 * factor) : 0,
+            variance: columns.variance ? Math.round(35000 * factor) : 0
+          }
+        })
+      } 
+      // Group by Funding Source
+      else {
+        const allSourcesList = fundingSources.map(s => ({ id: s.pm_fundingsourceid, name: s.pm_fundingsourcename }))
+        const targetSources = selectedFundingSourceIds.length > 0
+          ? allSourcesList.filter(s => selectedFundingSourceIds.includes(s.id))
+          : allSourcesList.slice(0, 3)
+
+        return targetSources.map((s, index) => {
+          const factor = (index + 1) * 3.4 * levelScaleFactor
+          return {
+            name: s.name || 'Funding Source',
+            budget: columns.budget ? Math.round(190000 * factor) : 0,
+            actual: columns.actual ? Math.round(170000 * factor) : 0,
+            forecast: columns.forecast ? Math.round(185000 * factor) : 0,
+            variance: columns.variance ? Math.round(20000 * factor) : 0
+          }
+        })
+      }
+    } else if (reportType === 'schedule') {
+      let groups: string[] = []
+      if (groupby === 1) {
+        let filteredProjects = [...projects]
+        const normalizedLevelIds = selectedLevelRecordIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase())
+        if (hierarchylevel === 2 && normalizedLevelIds.length > 0) {
+          filteredProjects = filteredProjects.filter(p => {
+            const val = (p._pm_portfolio_value || '').replace(/[{}]/g, '').trim().toLowerCase()
+            return normalizedLevelIds.includes(val)
+          })
+        } else if (hierarchylevel === 3 && normalizedLevelIds.length > 0) {
+          filteredProjects = filteredProjects.filter(p => {
+            const val = (p._pm_programme_value || '').replace(/[{}]/g, '').trim().toLowerCase()
+            return normalizedLevelIds.includes(val)
+          })
+        } else if (hierarchylevel === 4 && normalizedLevelIds.length > 0) {
+          filteredProjects = filteredProjects.filter(p => {
+            const val = (p.pm_projectid || '').replace(/[{}]/g, '').trim().toLowerCase()
+            return normalizedLevelIds.includes(val)
+          })
+        }
+        if (selectedProjectIds.length > 0) {
+          const normalizedProjectIds = selectedProjectIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase())
+          filteredProjects = filteredProjects.filter(p => normalizedProjectIds.includes(p.pm_projectid?.toLowerCase() || ''))
+        }
+        groups = filteredProjects.map(p => p.pm_projectname || 'Unnamed Project')
+        if (groups.length === 0) groups = ['Project Alpha', 'Project Beta', 'Project Gamma']
+      } else if (groupby === 2) {
+        groups = ['Not Started', 'In Progress', 'On Hold', 'Completed']
+      } else if (groupby === 3) {
+        groups = ['Initiation', 'Planning', 'Execution', 'Closure']
+      } else {
+        groups = ['Green', 'Amber', 'Red']
       }
 
-      const allProjectsList = filteredProjects.map(p => ({ id: p.pm_projectid, name: p.pm_projectname }));
-      
-      const hasFilterApplied = (hierarchylevel > 1 && selectedLevelRecordIds.length > 0) || selectedProjectIds.length > 0;
-      const targetProjects = hasFilterApplied
-        ? allProjectsList
-        : allProjectsList.slice(0, 4);
-
-      return targetProjects.map((p, index) => {
-        const factor = (index + 1) * 2.8;
+      return groups.map((name, index) => {
+        const factor = (index + 1) * levelScaleFactor
         return {
-          name: p.name || 'Project Name',
-          budget: columns.budget ? Math.round(110000 * factor) : 0,
-          actual: columns.actual ? Math.round(98000 * factor) : 0,
-          forecast: columns.forecast ? Math.round(105000 * factor) : 0,
-          variance: columns.variance ? Math.round(12000 * factor) : 0
-        };
-      });
-    }
-    // Group by Cost Category
-    else if (groupby === 2) {
-      const targetCats = selectedCostCategories.length > 0
-        ? activeCats.filter(c => selectedCostCategories.includes(c))
-        : activeCats
-
-      return targetCats.map((cat, index) => {
-        const factor = (index + 1) * 4.2 * levelScaleFactor
-        return {
-          name: cat,
-          budget: columns.budget ? Math.round(280000 * factor) : 0,
-          actual: columns.actual ? Math.round(245000 * factor) : 0,
-          forecast: columns.forecast ? Math.round(260000 * factor) : 0,
-          variance: columns.variance ? Math.round(35000 * factor) : 0
+          name,
+          duration: columns.duration ? Math.round(15 + factor * 20) : 0,
+          complete: columns.complete ? Math.round(Math.min(100, 30 + factor * 15)) : 0,
+          overdue: columns.overdue ? Math.round(factor * 2) : 0,
+          milestones: columns.milestones ? Math.round(1 + factor * 2) : 0
         }
       })
-    } 
-    // Group by Funding Source
-    else {
-      const allSourcesList = fundingSources.map(s => ({ id: s.pm_fundingsourceid, name: s.pm_fundingsourcename }))
-      const targetSources = selectedFundingSourceIds.length > 0
-        ? allSourcesList.filter(s => selectedFundingSourceIds.includes(s.id))
-        : allSourcesList.slice(0, 3)
+    } else {
+      let groups: string[] = []
+      if (groupby === 1) {
+        let filteredProjects = [...projects]
+        const normalizedLevelIds = selectedLevelRecordIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase())
+        if (hierarchylevel === 2 && normalizedLevelIds.length > 0) {
+          filteredProjects = filteredProjects.filter(p => {
+            const val = (p._pm_portfolio_value || '').replace(/[{}]/g, '').trim().toLowerCase()
+            return normalizedLevelIds.includes(val)
+          })
+        } else if (hierarchylevel === 3 && normalizedLevelIds.length > 0) {
+          filteredProjects = filteredProjects.filter(p => {
+            const val = (p._pm_programme_value || '').replace(/[{}]/g, '').trim().toLowerCase()
+            return normalizedLevelIds.includes(val)
+          })
+        } else if (hierarchylevel === 4 && normalizedLevelIds.length > 0) {
+          filteredProjects = filteredProjects.filter(p => {
+            const val = (p.pm_projectid || '').replace(/[{}]/g, '').trim().toLowerCase()
+            return normalizedLevelIds.includes(val)
+          })
+        }
+        if (selectedProjectIds.length > 0) {
+          const normalizedProjectIds = selectedProjectIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase())
+          filteredProjects = filteredProjects.filter(p => normalizedProjectIds.includes(p.pm_projectid?.toLowerCase() || ''))
+        }
+        groups = filteredProjects.map(p => p.pm_projectname || 'Unnamed Project')
+        if (groups.length === 0) groups = ['Project Alpha', 'Project Beta', 'Project Gamma']
+      } else if (groupby === 2) {
+        groups = ['Low', 'Medium', 'High', 'Critical']
+      } else if (groupby === 3) {
+        groups = ['Green', 'Amber', 'Red']
+      } else {
+        groups = ['Scope', 'Schedule', 'Cost', 'Resource', 'Quality']
+      }
 
-      return targetSources.map((s, index) => {
-        const factor = (index + 1) * 3.4 * levelScaleFactor
+      return groups.map((name, index) => {
+        const factor = (index + 1) * levelScaleFactor
         return {
-          name: s.name || 'Funding Source',
-          budget: columns.budget ? Math.round(190000 * factor) : 0,
-          actual: columns.actual ? Math.round(170000 * factor) : 0,
-          forecast: columns.forecast ? Math.round(185000 * factor) : 0,
-          variance: columns.variance ? Math.round(20000 * factor) : 0
+          name,
+          impact: columns.impact ? Number((1.5 + factor * 0.7).toFixed(1)) : 0,
+          probability: columns.probability ? Number((1.2 + factor * 0.8).toFixed(1)) : 0,
+          open: columns.open ? Math.round(factor * 3) : 0,
+          mitigated: columns.mitigated ? Math.round(1 + factor * 2) : 0
         }
       })
     }
-  }, [groupby, categories, columns, selectedProjectIds, selectedFundingSourceIds, selectedPeriodNames, selectedCostCategories, projects, fundingSources, hierarchylevel, selectedLevelRecordIds])
+  }, [groupby, categories, columns, selectedProjectIds, selectedFundingSourceIds, selectedPeriodNames, selectedCostCategories, projects, fundingSources, hierarchylevel, selectedLevelRecordIds, reportType])
 
   if (loading) {
     return (
@@ -576,6 +780,20 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                 </Box>
               )}
 
+              {/* Report Type Selector */}
+              <FormControl fullWidth size="small">
+                <InputLabel>Report Type</InputLabel>
+                <Select
+                  value={reportType}
+                  label="Report Type"
+                  onChange={(e) => handleReportTypeChange(e.target.value as any)}
+                >
+                  <MenuItem value="financial">Financial (Approved Budget, Actuals, Forecasts)</MenuItem>
+                  <MenuItem value="schedule">Schedule (Milestones & Tasks)</MenuItem>
+                  <MenuItem value="risk_issue">Risks & Issues</MenuItem>
+                </Select>
+              </FormControl>
+
               <Divider />
 
               {/* Title & Description */}
@@ -617,10 +835,22 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                         setSelectedPeriodNames([])
                       }}
                     >
-                      <MenuItem value={3}>Fiscal Period</MenuItem>
-                      <MenuItem value={1}>Project</MenuItem>
-                      <MenuItem value={2}>Cost Category</MenuItem>
-                      <MenuItem value={4}>Funding Source</MenuItem>
+                      {reportType === 'financial' ? [
+                        <MenuItem key={3} value={3}>Fiscal Period</MenuItem>,
+                        <MenuItem key={1} value={1}>Project</MenuItem>,
+                        <MenuItem key={2} value={2}>Cost Category</MenuItem>,
+                        <MenuItem key={4} value={4}>Funding Source</MenuItem>
+                      ] : reportType === 'schedule' ? [
+                        <MenuItem key={1} value={1}>Project</MenuItem>,
+                        <MenuItem key={2} value={2}>Task Status</MenuItem>,
+                        <MenuItem key={3} value={3}>Task Phase</MenuItem>,
+                        <MenuItem key={4} value={4}>Milestone RAG</MenuItem>
+                      ] : [
+                        <MenuItem key={1} value={1}>Project</MenuItem>,
+                        <MenuItem key={2} value={2}>Severity</MenuItem>,
+                        <MenuItem key={3} value={3}>RAG Status</MenuItem>,
+                        <MenuItem key={4} value={4}>Category</MenuItem>
+                      ]}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -775,7 +1005,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
               <Box sx={{ display: 'flex', gap: 4 }}>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }} color="text.secondary">
-                    Cost Categories
+                    {getCategoryTitle()}
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                     {Object.keys(categories).map(cat => (
@@ -809,7 +1039,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                             size="small"
                           />
                         }
-                        label={col.charAt(0).toUpperCase() + col.slice(1)}
+                        label={getColumnLabel(col)}
                       />
                     ))}
                   </Box>
@@ -892,37 +1122,111 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
 
               {/* Simulated KPI metrics */}
               <Grid container spacing={2}>
-                {columns.budget && (
-                  <Grid size={{ xs: 3 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
-                      <Typography variant="caption" color="text.secondary">Total Budget</Typography>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>€1,240,000</Typography>
-                    </Paper>
-                  </Grid>
-                )}
-                {columns.actual && (
-                  <Grid size={{ xs: 3 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
-                      <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>€982,000</Typography>
-                    </Paper>
-                  </Grid>
-                )}
-                {columns.forecast && (
-                  <Grid size={{ xs: 3 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
-                      <Typography variant="caption" color="text.secondary">Forecasted Spend</Typography>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'info.main' }}>€1,180,000</Typography>
-                    </Paper>
-                  </Grid>
-                )}
-                {columns.variance && (
-                  <Grid size={{ xs: 3 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
-                      <Typography variant="caption" color="text.secondary">Variance Remaining</Typography>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'warning.main' }}>€258,000</Typography>
-                    </Paper>
-                  </Grid>
+                {reportType === 'financial' ? (
+                  <>
+                    {columns.budget && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Total Budget</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>€1,240,000</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                    {columns.actual && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>€982,000</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                    {columns.forecast && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Forecasted Spend</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'info.main' }}>€1,180,000</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                    {columns.variance && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Variance Remaining</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'warning.main' }}>€258,000</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                  </>
+                ) : reportType === 'schedule' ? (
+                  <>
+                    {columns.duration && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Avg Duration</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>45 Days</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                    {columns.complete && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Avg Completion %</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>68%</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                    {columns.overdue && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Overdue Tasks</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'error.main' }}>3</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                    {columns.milestones && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Milestone Count</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'warning.main' }}>12</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {columns.impact && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Avg Impact Score</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>3.2 / 5</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                    {columns.probability && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Avg Probability Score</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'info.main' }}>2.8 / 5</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                    {columns.open && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Open Issues</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'error.main' }}>5</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                    {columns.mitigated && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Mitigated Risks</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>8</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                  </>
                 )}
               </Grid>
 
@@ -937,48 +1241,76 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                 ) : (
                   <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     {charttype === 2 ? (
-                      <LineChart data={previewData}>
+                      <LineChart data={previewData as any}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                         <XAxis dataKey="name" fontSize={11} />
-                        <YAxis fontSize={11} tickFormatter={(val) => `€${val / 1000}k`} />
-                        <Tooltip formatter={(val) => `€${Number(val).toLocaleString()}`} />
+                        <YAxis fontSize={11} tickFormatter={yAxisTickFormatter} />
+                        <Tooltip formatter={tooltipFormatter} />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
-                        {columns.budget && <Line type="monotone" dataKey="budget" name="Approved Budget" stroke={theme.palette.primary.main} strokeWidth={2} activeDot={{ r: 6 }} />}
-                        {columns.actual && <Line type="monotone" dataKey="actual" name="Actual Cost" stroke={theme.palette.success.main} strokeWidth={2} />}
-                        {columns.forecast && <Line type="monotone" dataKey="forecast" name="Forecast" stroke="#8a2be2" strokeWidth={2} />}
+                        {activeSeries.map(s => (
+                          <Line
+                            key={s.key}
+                            type="monotone"
+                            dataKey={s.key}
+                            name={s.name}
+                            stroke={s.color}
+                            strokeWidth={2}
+                            activeDot={s.key === activeSeries[0]?.key ? { r: 6 } : undefined}
+                          />
+                        ))}
                       </LineChart>
                     ) : charttype === 3 ? (
-                      <AreaChart data={previewData}>
+                      <AreaChart data={previewData as any}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                         <XAxis dataKey="name" fontSize={11} />
-                        <YAxis fontSize={11} tickFormatter={(val) => `€${val / 1000}k`} />
-                        <Tooltip formatter={(val) => `€${Number(val).toLocaleString()}`} />
+                        <YAxis fontSize={11} tickFormatter={yAxisTickFormatter} />
+                        <Tooltip formatter={tooltipFormatter} />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
-                        {columns.budget && <Area type="monotone" dataKey="budget" name="Approved Budget" fill={`${theme.palette.primary.main}33`} stroke={theme.palette.primary.main} strokeWidth={2} />}
-                        {columns.actual && <Area type="monotone" dataKey="actual" name="Actual Cost" fill={`${theme.palette.success.main}33`} stroke={theme.palette.success.main} strokeWidth={2} />}
-                        {columns.forecast && <Area type="monotone" dataKey="forecast" name="Forecast" fill="#8a2be233" stroke="#8a2be2" strokeWidth={2} />}
+                        {activeSeries.map(s => (
+                          <Area
+                            key={s.key}
+                            type="monotone"
+                            dataKey={s.key}
+                            name={s.name}
+                            fill={`${s.color}33`}
+                            stroke={s.color}
+                            strokeWidth={2}
+                          />
+                        ))}
                       </AreaChart>
                     ) : charttype === 4 ? (
-                      <BarChart data={previewData}>
+                      <BarChart data={previewData as any}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                         <XAxis dataKey="name" fontSize={11} />
-                        <YAxis fontSize={11} tickFormatter={(val) => `€${val / 1000}k`} />
-                        <Tooltip formatter={(val) => `€${Number(val).toLocaleString()}`} />
+                        <YAxis fontSize={11} tickFormatter={yAxisTickFormatter} />
+                        <Tooltip formatter={tooltipFormatter} />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
-                        {columns.budget && <Bar dataKey="budget" name="Approved Budget" stackId="a" fill={theme.palette.primary.main} />}
-                        {columns.actual && <Bar dataKey="actual" name="Actual Cost" stackId="a" fill={theme.palette.success.main} />}
-                        {columns.forecast && <Bar dataKey="forecast" name="Forecast" stackId="a" fill="#8a2be2" />}
+                        {activeSeries.map(s => (
+                          <Bar
+                            key={s.key}
+                            dataKey={s.key}
+                            name={s.name}
+                            stackId="a"
+                            fill={s.color}
+                          />
+                        ))}
                       </BarChart>
                     ) : (
-                      <BarChart data={previewData}>
+                      <BarChart data={previewData as any}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                         <XAxis dataKey="name" fontSize={11} />
-                        <YAxis fontSize={11} tickFormatter={(val) => `€${val / 1000}k`} />
-                        <Tooltip formatter={(val) => `€${Number(val).toLocaleString()}`} />
+                        <YAxis fontSize={11} tickFormatter={yAxisTickFormatter} />
+                        <Tooltip formatter={tooltipFormatter} />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
-                        {columns.budget && <Bar dataKey="budget" name="Approved Budget" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} />}
-                        {columns.actual && <Bar dataKey="actual" name="Actual Cost" fill={theme.palette.success.main} radius={[4, 4, 0, 0]} />}
-                        {columns.forecast && <Bar dataKey="forecast" name="Forecast" fill="#8a2be2" radius={[4, 4, 0, 0]} />}
+                        {activeSeries.map(s => (
+                          <Bar
+                            key={s.key}
+                            dataKey={s.key}
+                            name={s.name}
+                            fill={s.color}
+                            radius={[4, 4, 0, 0]}
+                          />
+                        ))}
                       </BarChart>
                     )}
                   </ResponsiveContainer>
@@ -991,23 +1323,36 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
                     <thead>
                       <tr style={{ backgroundColor: theme.palette.action.hover, borderBottom: `1px solid ${theme.palette.divider}` }}>
-                        <th style={{ padding: '8px 12px', fontWeight: 600 }}>Grouped By ({groupby === 3 ? 'Period' : groupby === 1 ? 'Project' : groupby === 2 ? 'Category' : 'Source'})</th>
-                        {columns.budget && <th style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right' }}>Budget</th>}
-                        {columns.actual && <th style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right' }}>Actual</th>}
-                        {columns.forecast && <th style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right' }}>Forecast</th>}
-                        {columns.variance && <th style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right' }}>Variance</th>}
+                        <th style={{ padding: '8px 12px', fontWeight: 600 }}>
+                          Grouped By (
+                          {reportType === 'financial'
+                            ? groupby === 3 ? 'Period' : groupby === 1 ? 'Project' : groupby === 2 ? 'Category' : 'Source'
+                            : reportType === 'schedule'
+                            ? groupby === 1 ? 'Project' : groupby === 2 ? 'Status' : groupby === 3 ? 'Phase' : 'Milestone RAG'
+                            : groupby === 1 ? 'Project' : groupby === 2 ? 'Severity' : groupby === 3 ? 'RAG Status' : 'Category'
+                          }
+                          )
+                        </th>
+                        {activeSeries.map(s => (
+                          <th key={s.key} style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right' }}>{s.name}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
                       {previewData
                         .slice(previewPage * previewRowsPerPage, previewPage * previewRowsPerPage + previewRowsPerPage)
-                        .map((row, idx) => (
+                        .map((row: any, idx) => (
                           <tr key={idx} style={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
                             <td style={{ padding: '8px 12px', fontWeight: 500 }}>{row.name}</td>
-                            {columns.budget && <td style={{ padding: '8px 12px', textAlign: 'right' }}>€{row.budget.toLocaleString()}</td>}
-                            {columns.actual && <td style={{ padding: '8px 12px', textAlign: 'right', color: theme.palette.success.main }}>€{row.actual.toLocaleString()}</td>}
-                            {columns.forecast && <td style={{ padding: '8px 12px', textAlign: 'right', color: theme.palette.info.main }}>€{row.forecast.toLocaleString()}</td>}
-                            {columns.variance && <td style={{ padding: '8px 12px', textAlign: 'right', color: row.variance < 0 ? theme.palette.error.main : theme.palette.warning.main }}>€{row.variance.toLocaleString()}</td>}
+                            {activeSeries.map(s => {
+                              const val = row[s.key]
+                              const displayVal = reportType === 'financial' ? `€${val.toLocaleString()}` : val.toLocaleString()
+                              return (
+                                <td key={s.key} style={{ padding: '8px 12px', textAlign: 'right' }}>
+                                  {displayVal}
+                                </td>
+                              )
+                            })}
                           </tr>
                         ))}
                     </tbody>

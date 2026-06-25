@@ -1,5 +1,5 @@
 import { Box, useTheme, alpha } from '@mui/material'
-import type { ReactNode } from 'react'
+import { forwardRef, type ReactNode } from 'react'
 
 export type StatusTagColor = 'success' | 'warning' | 'error' | 'info' | 'primary' | 'secondary' | 'default' | string
 
@@ -13,7 +13,7 @@ export interface StatusTagProps {
   [key: string]: any
 }
 
-export const StatusTag = ({ 
+export const StatusTag = forwardRef<HTMLSpanElement, StatusTagProps>(({ 
   label, 
   color = 'default', 
   icon, 
@@ -21,7 +21,7 @@ export const StatusTag = ({
   size = 'small', 
   sx = {},
   ...props 
-}: StatusTagProps) => {
+}, ref) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
@@ -69,7 +69,7 @@ export const StatusTag = ({
   }
 
   return (
-    <Box component="span" sx={styles} {...props}>
+    <Box ref={ref} component="span" sx={styles} {...props}>
       {icon && (
         <Box sx={{ 
           display: 'flex', 
@@ -81,6 +81,6 @@ export const StatusTag = ({
       {(label ?? '—').toString().toUpperCase()}
     </Box>
   )
-}
+})
 
 export default StatusTag
