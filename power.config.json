@@ -274,6 +274,11 @@
           "entitySetName": "pm_documents",
           "logicalName": "pm_document",
           "isHidden": false
+        },
+        "financialreportconfigurations": {
+          "entitySetName": "pm_financialreportconfigs",
+          "logicalName": "pm_financialreportconfig",
+          "isHidden": false
         }
       },
       "environmentVariableName": ""

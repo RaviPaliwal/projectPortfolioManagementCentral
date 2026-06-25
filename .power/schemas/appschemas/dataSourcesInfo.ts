@@ -99,6 +99,13 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pm_financialreportconfigs": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_financialreportconfigid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pm_fundingsources": {
     "tableId": "",
     "version": "",

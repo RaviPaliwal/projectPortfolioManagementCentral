@@ -1,99 +1,13 @@
 import { chromium } from 'playwright';
 
 const tickets = [
-  // CORE MODULES - Completed (Original Assignees)
-  { summary: "Portfolio Management — CRUD + DetailDrawer + health snapshots + financial rollup", assignee: "suvigya", priority: "High", done: true },
-  { summary: "Programme Management — CRUD + child project budget aggregation", assignee: "suvigya", priority: "High", done: true },
-  { summary: "Project Management — CRUD + 360° view + Gantt chart + milestones + tasks", assignee: "suvigya", priority: "High", done: true },
-  { summary: "Pipeline/Opportunity Lifecycle — Initiative CRUD + scoring + approval workflow", assignee: "suvigya", priority: "High", done: true },
-  { summary: "Resource Management — CRUD + allocations + capacity validation + skill search", assignee: "suvigya", priority: "High", done: true },
-  { summary: "Gate Review Workflow — CRUD + readiness checklists + approval steps", assignee: "suvigya", priority: "High", done: true },
-  { summary: "Benefits Tracking — CRUD + performance measures + realisation tracking", assignee: "suvigya", priority: "Medium", done: true },
-  { summary: "Change Request Workflow — CRUD + impact assessment + approval flow", assignee: "suvigya", priority: "High", done: true },
-  { summary: "Skills Management — CRUD + resource skill mapping", assignee: "suvigya", priority: "Medium", done: true },
-  { summary: "Workflow Engine — Step templates, routing rules, Power Automate triggers", assignee: "suvigya", priority: "High", done: true },
-  { summary: "Status Snapshots — 13-period RAG status reporting with snapshots", assignee: "suvigya", priority: "Medium", done: true },
-  { summary: "Strategic Roster — Headcount planning / strategic workforce visualization", assignee: "suvigya", priority: "Medium", done: true },
 
-  // Ravi's completed tickets
-  { summary: "Timesheet Recording & Approval — Entry-based timesheets + status workflow + overlap validation", assignee: "ravi", priority: "High", done: true },
-  { summary: "Budget Line Management — CRUD + funding source linkage", assignee: "ravi", priority: "High", done: true },
-  { summary: "Risk Management — CRUD + risk assessment + mitigation actions", assignee: "ravi", priority: "High", done: true },
-  { summary: "Issue Management — CRUD + owner-based row-level filtering", assignee: "ravi", priority: "High", done: true },
-  { summary: "Cashflow Management — CRUD + financial calendar entries", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Funding Source Management — CRUD", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Workflow Tasks — Read-only approval step tasks view", assignee: "ravi", priority: "Medium", done: true },
-
-  // SECURITY & AUTH - Completed
-  { summary: "Persona Resolution System — 7 personas: keyword matching against job title, team names, security roles", assignee: "ravi", priority: "High", done: true },
-  { summary: "CRUD Permission Matrix — Per-module per-action persona-based access control", assignee: "ravi", priority: "High", done: true },
-  { summary: "Route Guard — Tab-level access validation in PrimaryShell + deep-link URL protection", assignee: "ravi", priority: "High", done: true },
-  { summary: "User Context & Role Resolution — Fetches users, teams, memberships; resolves personas", assignee: "ravi", priority: "High", done: true },
-  { summary: "User Selector — Avatar chip + popover with user switching, persona display, active indicator", assignee: "ravi", priority: "Medium", done: true },
-
-  // WORKFLOW & INTEGRATIONS - Completed
-  { summary: "Approval Workflow Engine — Multi-step approval flows, 17 task modals, FORM_DIALOG_DECISION_EVENT", assignee: "suvigya", priority: "High", done: true },
-  { summary: "Outlook Calendar Integration — CreateOutlookEventService + GetOutlookEventsService", assignee: "suvigya", priority: "Medium", done: true },
-  { summary: "Calendar View — Integrated calendar display with Outlook events, local event creation", assignee: "suvigya", priority: "Medium", done: true },
-  { summary: "Document Upload & Management — Document CRUD, binary upload, EntityDocumentsTab", assignee: "suvigya", priority: "Medium", done: true },
-
-  // FINANCIAL ENGINE - Completed
-  { summary: "Financial Rollup Engine — Portfolio-level budget aggregation, programme budget consolidation", assignee: "ravi", priority: "High", done: true },
-  { summary: "Financial KPI Dashboard — Budget vs actual, cashflow projections, funding utilization", assignee: "ravi", priority: "Medium", done: true },
-
-  // NEW EVM & TOTALS ROW - Completed (Ravi)
-  { summary: "EVM Financial KPIs — Implement EV, CPI, EAC, CV metrics in financials tab", assignee: "ravi", priority: "High", done: true },
-  { summary: "Financial Layout Customization — Move totals cards to budget lines grid footer row", assignee: "ravi", priority: "Medium", done: true },
-
-  // AUDIT & COMPLIANCE - Completed
-  { summary: "Audit Trail / Activity Log — changelog.service.ts writes audit entries on all CRUD operations", assignee: "ravi", priority: "High", done: true },
-  { summary: "Changelog Service — Audit logging with session ID from Xrm context, entity-level change tracking", assignee: "ravi", priority: "Medium", done: true },
-
-  // UI / COMMON COMPONENTS - Completed
-  { summary: "Common Component Library — 34 reusable components (DataverseTable, DetailDrawer, etc.)", assignee: "suvigya", priority: "Medium", done: true },
-  { summary: "Custom Hooks — useAuthorization, useDataGrid, useDataverseAsync, useDataverseCrud", assignee: "suvigya", priority: "Medium", done: true },
-
-  // ADDITIONAL IMPLEMENTED MODULES & FEATURES - Completed (Ravi)
-  { summary: "Holidays Management — CRUD operations, seed dialog, calendar view, details panel, table search/filter", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Configurations Tile Navigation — Navigation tiles routing to Teams, Skills, Holidays, Resources, and Workflows", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Agent Insights Service — Automated analytics insight generation service layer", assignee: "ravi", priority: "Low", done: true },
-
-  // SPECIFIC BUG FIXES - Completed (Ravi)
-  { summary: "Bug Fix: Timesheet Approval Status Reverting to Draft (Corrected status option set values)", assignee: "ravi", priority: "High", done: true },
-  { summary: "Bug Fix: Task List Refresh Failure (Dispatched FORM_DIALOG_DECISION_EVENT to trigger parent reload)", assignee: "ravi", priority: "High", done: true },
-  { summary: "Bug Fix: Tasks Visibility Glitch (Matched both userId GUID and username string against assignee names)", assignee: "ravi", priority: "High", done: true },
-  { summary: "Bug Fix: Tab Switch Flash (Maintained loading state until UserContext resolves completely)", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Bug Fix: Financial Review Task empty view (Resolved entity type to fetch project initiative data instead of gate review)", assignee: "ravi", priority: "High", done: true },
-  { summary: "Bug Fix: Status Snapshot grid silent loading (Removed non-existent fields from OData select query)", assignee: "ravi", priority: "High", done: true },
-  { summary: "Bug Fix: Status Snapshot create ODataException (Formatted ownerid using systemusers bind path format)", assignee: "ravi", priority: "High", done: true },
-  { summary: "Bug Fix: Programme budget child project rollup aggregation correction", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Bug Fix: Resource allocation availability calculation and warnings overlap logic in Dialog", assignee: "ravi", priority: "High", done: true },
-  { summary: "Bug Fix: Timesheet grid hours race condition (Returned computed totals from recalculate endpoint to state)", assignee: "ravi", priority: "High", done: true },
-  { summary: "Bug Fix: Timesheet Submitted By / Approved By fields mapping and column selection in service", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Bug Fix: New timesheet creation period validation, resource selection enforcement, and future limit checks", assignee: "ravi", priority: "High", done: true },
-  { summary: "Bug Fix: useDataGrid React hook violation (Stable memoization of search fields and filter functions, H8)", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Bug Fix: Silent error swallowing in services (Added console.error logs and error propagation to all 25+ services, H9)", assignee: "ravi", priority: "High", done: true },
-
-  // CRITICAL GAPS - Remaining/Pending
-  { summary: "Fix 1389 ESLint errors — pervasive any types, empty catch blocks, React hook violations", assignee: "suvigya", priority: "Medium", done: false },
-  { summary: "Add unit/integration/E2E tests — Zero tests currently", assignee: "ravi", priority: "High", done: false },
-  { summary: "Row-level data filtering — expand to Resources, Projects, Timesheets, Risks, Tasks", assignee: "ravi", priority: "High", done: false },
-  { summary: "Column-level security — Hide financial fields from unauthorized personas", assignee: "suvigya", priority: "Medium", done: true },
-  { summary: "API-level RBAC — Add $filter based on user persona in service calls", assignee: "suvigya", priority: "High", done: false },
-  { summary: "WCAG 2.1 AA Accessibility — No accessibility implementation", assignee: "ravi", priority: "High", done: false },
-
-  // CONVERSATION SESSION — June 22 (Ravi)
-  { summary: "Bug Fix: Timesheet entry update Entity Reference error (Converted _pm_project_value/_pm_projecttask_value to @odata.bind navigation properties)", assignee: "ravi", priority: "High", done: true },
-  { summary: "Bug Fix: fetchPendingApprovalRequests pm_portfolioname query error (Removed non-existent field from $select)", assignee: "ravi", priority: "High", done: true },
-  { summary: "Change Request: Add 'Rejected' status (3) to models, labels, colors, KPI cards & filter options", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Change Request: Enhanced approval task modal with project/programme context, baseline badge, benefits impact, decision maker capture", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Change Request: Add EntityDocumentsTab (document attachments) to detail drawer", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Change Request: Auto-submit for approval on creation, remove manual Submit button, hide edit/delete when Under Review", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Change Request: File upload capability in create/edit form dialog (drag-drop zone, file chips, auto-upload on save)", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Change Request: Remove Approval (WorkflowMilestone) tab from detail drawer, clean up unused import", assignee: "ravi", priority: "Low", done: true },
-  { summary: "Change Request: Add post-submission confirmation dialog (floating success icon, reference, change type tags, workflow notice)", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Refactor: Extract duplicated file upload logic into shared uploadSelectedFiles useCallback helper", assignee: "ravi", priority: "Low", done: true },
-  { summary: "Bug Fix: Build errors — syntax fix in ChangeRequestsPage dialog onClose, missing entriesCount prop in TimesheetStatusControls", assignee: "ravi", priority: "High", done: true },
+  { summary: "Downgrade React to version 18.3.1 to resolve Fluent UI element warnings", assignee: "ravi", priority: "High", done: true },
+  { summary: "Enhanced report config configurations preview with dynamic Reporting Level scaling", assignee: "ravi", priority: "Medium", done: true },
+  { summary: "Support optional Limit to Portfolios / Programmes / Projects scope selection", assignee: "ravi", priority: "Medium", done: true },
+  { summary: "Add type safety checks for budget line pm_costcategory option sets in reporting grid", assignee: "ravi", priority: "High", done: true },
+  { summary: "Remove placeholder card from configurations main navigation tab", assignee: "ravi", priority: "Low", done: true },
+  { summary: "Fix ResponsiveContainer dimension warnings by adding minWidth props in charts", assignee: "ravi", priority: "Low", done: true }
 ];
 
 (async () => {

@@ -14,6 +14,8 @@ import {
   Tooltip,
   LinearProgress,
   Alert,
+  Tabs,
+  Tab
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
@@ -23,6 +25,8 @@ import ViewsIcon from '@mui/icons-material/GridView'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import ScheduleIcon from '@mui/icons-material/Schedule'
+import FinancialReportsPage from '@/features/financialreports/pages/FinancialReportsPage'
+import type { TabKey } from '@/components/layout/PrimaryShell'
 
 import {
   fetchDashboardMetrics,
@@ -52,9 +56,16 @@ import type { InitiativeModel, ApprovalRequestModel, PortfolioModel, ProgrammeMo
 import type { PipelineKpis } from '@/services'
 import { DashboardTasksWidget, BudgetHealthPanel, PipelineStageSummary, PortfolioHealthSnapshot } from '../components'
 import { currencyFormatter, formatDateTime } from '@/utils/formatters'
+import { useUser } from '@/context/UserContext'
 
-export default function DashboardPage() {
+export interface DashboardPageProps {
+  onNavigate?: (tab: TabKey) => void
+}
+
+export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const theme = useTheme()
+  const { currentUserPersona } = useUser()
+  const [dashboardTab, setDashboardTab] = useState<number>(0)
   const [metrics, setMetrics] = useState({
     totalActiveProjects: 0,
     totalActivePortfolios: 0,
@@ -235,64 +246,88 @@ export default function DashboardPage() {
       {/* Refreshing overlay */}
       {refreshing && <LinearProgress sx={{ mb: 1.5, borderRadius: 1.5 }} />}
 
-      {/* KPI Cards — Standardized Row */}
-      <KpiCardRow items={kpiItems} loading={loading} />
+      {/* Tab Switcher */}
+      {(() => {
+        const showFinancialTab = currentUserPersona === 'FinancialController' || currentUserPersona === 'SystemAdministrator'
+        return showFinancialTab ? (
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tabs
+              value={dashboardTab}
+              onChange={(_, newVal) => setDashboardTab(newVal)}
+              indicatorColor="primary"
+              textColor="primary"
+            >
+              <Tab label="Portfolio Overview" sx={{ fontWeight: 600 }} />
+              <Tab label="Financial Reports" sx={{ fontWeight: 600 }} />
+            </Tabs>
+          </Box>
+        ) : null
+      })()}
 
-      {/* Dashboard Charts */}
-      <Box sx={{ mb: 3 }}>
-        <DashboardCharts
-          projectStatusData={projectStatusData}
-          portfolioTrendData={portfolioTrendData}
-          capacityAllocationData={capacityAllocationData}
-          plannedVsActualData={plannedVsActualData}
-          utilizationByProjectData={utilizationByProjectData}
-          departmentDemandData={departmentDemandData}
-        />
-      </Box>
+      {dashboardTab === 0 || !(currentUserPersona === 'FinancialController' || currentUserPersona === 'SystemAdministrator') ? (
+        <>
+          {/* KPI Cards — Standardized Row */}
+          <KpiCardRow items={kpiItems} loading={loading} />
 
-      {/* Main grid */}
-      <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
-        {/* Row 1: Budget Health + Tasks */}
-        <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex' }}>
-          <BudgetHealthPanel
-            totalApprovedBudget={budgetMetrics.approved}
-            totalActualSpend={budgetMetrics.actual}
-            loading={loading || budgetLoading}
-            selectedYear={budgetYear}
-            availableYears={availableYears}
-            onYearChange={handleBudgetYearChange}
-            portfolios={allPortfolios}
-            sx={{ flex: 1, height: '100%' }}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex' }}>
-          <DashboardTasksWidget variant="tasks" sx={{ flex: 1, height: '100%' }} />
-        </Grid>
-      </Grid>
+          {/* Dashboard Charts */}
+          <Box sx={{ mb: 3 }}>
+            <DashboardCharts
+              projectStatusData={projectStatusData}
+              portfolioTrendData={portfolioTrendData}
+              capacityAllocationData={capacityAllocationData}
+              plannedVsActualData={plannedVsActualData}
+              utilizationByProjectData={utilizationByProjectData}
+              departmentDemandData={departmentDemandData}
+            />
+          </Box>
 
-      <Grid container spacing={2.5}>
-        {/* Left column — Portfolio Health Snapshot */}
-        <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex' }}>
-          <PortfolioHealthSnapshot
-            metrics={metrics}
-            portfolioSnapshot={portfolioSnapshot}
-            programmeSnapshot={programmeSnapshot}
-            milestonesDue={milestonesDue}
-            loading={loading}
-            sx={{ flex: 1, height: '100%' }}
-          />
-        </Grid>
+          {/* Main grid */}
+          <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
+            {/* Row 1: Budget Health + Tasks */}
+            <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex' }}>
+              <BudgetHealthPanel
+                totalApprovedBudget={budgetMetrics.approved}
+                totalActualSpend={budgetMetrics.actual}
+                loading={loading || budgetLoading}
+                selectedYear={budgetYear}
+                availableYears={availableYears}
+                onYearChange={handleBudgetYearChange}
+                portfolios={allPortfolios}
+                sx={{ flex: 1, height: '100%' }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex' }}>
+              <DashboardTasksWidget variant="tasks" sx={{ flex: 1, height: '100%' }} />
+            </Grid>
+          </Grid>
 
-        {/* Right column — AI Insights + Pipeline Stage Summary */}
-        <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          <DashboardTasksWidget variant="insights" />
-          <PipelineStageSummary
-            initiatives={initiatives}
-            loading={loading}
-            sx={{ flex: 1 }}
-          />
-        </Grid>
-      </Grid>
+          <Grid container spacing={2.5}>
+            {/* Left column — Portfolio Health Snapshot */}
+            <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex' }}>
+              <PortfolioHealthSnapshot
+                metrics={metrics}
+                portfolioSnapshot={portfolioSnapshot}
+                programmeSnapshot={programmeSnapshot}
+                milestonesDue={milestonesDue}
+                loading={loading}
+                sx={{ flex: 1, height: '100%' }}
+              />
+            </Grid>
+
+            {/* Right column — AI Insights + Pipeline Stage Summary */}
+            <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              <DashboardTasksWidget variant="insights" />
+              <PipelineStageSummary
+                initiatives={initiatives}
+                loading={loading}
+                sx={{ flex: 1 }}
+              />
+            </Grid>
+          </Grid>
+        </>
+      ) : (
+        <FinancialReportsPage onNavigate={onNavigate} />
+      )}
 
       {/* Error */}
       {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}

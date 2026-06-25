@@ -33,6 +33,7 @@ import ReportProblemIcon from '@mui/icons-material/ReportProblem'
 import ChangeCircleIcon from '@mui/icons-material/ChangeCircle'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import SchemaIcon from '@mui/icons-material/Schema'
+import BarChartIcon from '@mui/icons-material/BarChart'
 
 import SavingsIcon from '@mui/icons-material/Savings'
 import PsychologyIcon from '@mui/icons-material/Psychology'
@@ -44,7 +45,7 @@ import { useEffect } from 'react'
 import NotificationCenter from './NotificationCenter'
 import { PERSONA_PERMISSIONS } from '@/constants/permissions'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'calendar' | 'strategicRoster' | 'activitylog'
+export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'calendar' | 'strategicRoster' | 'activitylog' | 'reportConfigs'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?: boolean }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -74,6 +75,7 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?:
   { key: 'teamadmin', label: 'Team Admin', icon: <PeopleIcon />, hidden: true },
   { key: 'skills', label: 'Skills & Mapping', icon: <PsychologyIcon />, hidden: true },
   { key: 'holidays', label: 'Holiday Calendar', icon: <CalendarMonthIcon />, hidden: true },
+  { key: 'reportConfigs', label: 'Report Configurations', icon: <SettingsIcon />, hidden: true },
 ]
 
 interface PrimaryShellProps {

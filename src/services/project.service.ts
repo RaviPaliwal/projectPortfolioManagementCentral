@@ -243,10 +243,14 @@ export async function fetchProjectsFull(): Promise<ProjectModel[]> {
                 proj.pm_programmename = programmeNameById.get(proj._pm_programme_value)
             }
         }
-    } catch (err) { }
+    } catch (err) {
+        console.warn('[fetchProjects] ⚠️ Failed to resolve portfolio/programme lookup names:', err)
+    }
 
     return projects
 }
+
+export const fetchProjects = fetchProjectsFull
 
 export async function createProject(payload: Partial<ProjectModel>): Promise<ProjectModel | null> {
     const cleanPayload: Record<string, any> = {}
@@ -426,7 +430,9 @@ export async function deleteProject(id: string): Promise<void> {
     try {
         const details = await fetchProjectDetails(id)
         if (details?.pm_projectname) recordName = details.pm_projectname
-    } catch (e) { }
+    } catch (e) {
+        console.warn(`[deleteProject] ⚠️ Could not fetch project details for audit log naming (id: ${id}):`, e)
+    }
 
     await Pm_projectsService.delete(id)
 

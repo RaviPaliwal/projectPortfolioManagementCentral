@@ -26,9 +26,11 @@ import TeamUserManagementPage from '@/features/teamadmin/pages/TeamUserManagemen
 import ConfigurationsPage from '@/features/configurations/pages/ConfigurationsPage'
 import CalendarPage from '@/features/calendar/pages/CalendarPage'
 import ActivityLogPage from '@/features/activitylog/pages/ActivityLogPage'
+import FinancialReportsPage from '@/features/financialreports/pages/FinancialReportsPage'
+import ReportConfigsPage from '@/features/financialreports/pages/ReportConfigsPage'
 
 export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, ReactNode> => ({
-  dashboard: <DashboardPage />,
+  dashboard: <DashboardPage onNavigate={onNavigate} />,
   cashflow: <CashflowPage />,
   portfolios: <PortfoliosPage />,
   programmes: <ProgrammesPage />,
@@ -53,4 +55,5 @@ export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, Re
   configurations: <ConfigurationsPage onNavigate={onNavigate} />,
   calendar: <CalendarPage />,
   activitylog: <ActivityLogPage />,
+  reportConfigs: <ReportConfigsPage onNavigate={onNavigate} />,
 })

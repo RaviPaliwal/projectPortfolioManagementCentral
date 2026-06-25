@@ -15,7 +15,13 @@ const alreadyDoneThisSession = [
   { summary: "Route-level guard + deep-link URL support (?tab= param)", assignee: "ravi", priority: "High" },
   { summary: "Persona keyword priority fix (Executive before PMO)", assignee: "ravi", priority: "High" },
   { summary: "Manual persona override UI in User Selector", assignee: "ravi", priority: "High" },
-  { summary: "S2-S4 resolved in COMPREHENSIVE_CODEBASE_AUDIT.md", assignee: "suvigya", priority: "High" }
+  { summary: "S2-S4 resolved in COMPREHENSIVE_CODEBASE_AUDIT.md", assignee: "suvigya", priority: "High" },
+  { summary: "Downgrade React to version 18.3.1 to resolve Fluent UI element warnings", assignee: "ravi", priority: "High" },
+  { summary: "Enhanced report config configurations preview with dynamic Reporting Level scaling", assignee: "ravi", priority: "Medium" },
+  { summary: "Support optional Limit to Portfolios / Programmes / Projects scope selection", assignee: "ravi", priority: "Medium" },
+  { summary: "Add type safety checks for budget line pm_costcategory option sets in reporting grid", assignee: "ravi", priority: "High" },
+  { summary: "Remove placeholder card from configurations main navigation tab", assignee: "ravi", priority: "Low" },
+  { summary: "Fix ResponsiveContainer dimension warnings by adding minWidth props in charts", assignee: "ravi", priority: "Low" }
 ];
 
 (async () => {

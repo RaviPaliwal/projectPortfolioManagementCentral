@@ -45,7 +45,7 @@ export async function fetchPortfolios(): Promise<PortfolioModel[]> {
   try {
     const options: IGetAllOptions = {
       filter: 'statecode eq 0',
-      select: ['pm_portfolioid', 'pm_portfolioname', 'pm_ragstatus', 'pm_approvedbudgeteur', 'pm_actualspendeur', '_pm_ownerlookup_value', 'pm_ownerlookupname'],
+      select: ['pm_portfolioid', 'pm_portfolioname', 'pm_ragstatus', 'pm_approvedbudgeteur', 'pm_actualspendeur', '_pm_ownerlookup_value'],
       top: 500,
     }
     const result = await Pm_portfoliosService.getAll(options)

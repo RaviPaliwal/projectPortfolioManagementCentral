@@ -75,7 +75,9 @@ export async function writeAuditLog({
       if (typeof window !== 'undefined' && window.location) {
         ipAddress = window.location.hostname || '127.0.0.1'
       }
-    } catch (e) { }
+    } catch (e) {
+      // Ignore: window or window.location might not be available or accessible
+    }
 
     let sessionId = ''
 
@@ -89,7 +91,9 @@ export async function writeAuditLog({
             return value
           }
         }
-      } catch (e) { }
+      } catch (e) {
+        // Ignore: parsing URLSearchParams failed (e.g. malformed query string)
+      }
       return null
     }
 
@@ -100,7 +104,9 @@ export async function writeAuditLog({
           getSessionParam(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '') ||
           ''
       }
-    } catch (e) { }
+    } catch (e) {
+      // Ignore: window.location is inaccessible
+    }
 
     // 2. Try url parameters on parent window (safely caught in case of cross-origin)
     if (!sessionId) {
@@ -110,7 +116,9 @@ export async function writeAuditLog({
             getSessionParam(window.parent.location.hash.includes('?') ? window.parent.location.hash.split('?')[1] : '') ||
             ''
         }
-      } catch (e) { }
+      } catch (e) {
+        // Ignore: parent window location is inaccessible (cross-origin restrictions)
+      }
     }
 
     // 3. Try to get it from Xrm context correlation ID or sessionInfo
@@ -122,7 +130,9 @@ export async function writeAuditLog({
           if (!xrm) {
             try {
               xrm = (window.parent as unknown as Record<string, unknown>).Xrm
-            } catch (e) { }
+            } catch (e) {
+              // Ignore: accessing window.parent is blocked by cross-origin policy
+            }
           }
         }
         const xrmObj = xrm as {
@@ -141,7 +151,9 @@ export async function writeAuditLog({
             context.organizationSettings?.organizationId ||
             ''
         }
-      } catch (e) { }
+      } catch (e) {
+        // Ignore: Xrm context resolution failed or utility context not present
+      }
     }
 
     // 4. Fallback to in-memory window global or sessionStorage or new UUID
@@ -154,7 +166,9 @@ export async function writeAuditLog({
           if (typeof sessionStorage !== 'undefined') {
             sessionId = sessionStorage.getItem('ppm_audit_session_id') || ''
           }
-        } catch (e) { }
+        } catch (e) {
+          // Ignore: sessionStorage access blocked by browser security settings
+        }
 
         if (!sessionId) {
           try {
@@ -169,7 +183,9 @@ export async function writeAuditLog({
             if (typeof sessionStorage !== 'undefined') {
               sessionStorage.setItem('ppm_audit_session_id', sessionId)
             }
-          } catch (e) { }
+          } catch (e) {
+            // Ignore: sessionStorage write blocked (e.g. private browsing mode)
+          }
         }
         win.__ppm_audit_session_id = sessionId
       }

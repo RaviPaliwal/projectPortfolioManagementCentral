@@ -834,7 +834,7 @@ These are Power Automate flows triggered from the app, not custom integrations.
 |---|-------------------|---------------------|
 | H2 ~~Limited schedule~~ | ✅ **RESOLVED** — WBS Builder, critical path, dependencies implemented |
 | H3 ~~No master schedule~~ | ✅ **RESOLVED** — MasterScheduleTab for Programme/Portfolio rollup |
-| H8 ~~useDataGrid React ref violation~~ | ✅ **RESOLVED** — Hook code now uses useMemo with stable dependencies; no ref violation |
+| H8 ~~useDataGrid React ref violation~~ | ✅ **RESOLVED** — Hook code now uses useMemo with stable dependencies; no ref violation |Bar
 | H9 ~~~80 empty catch blocks~~ | ✅ **REDUCED TO ~10** — Only intentional blocks in changelog.service.ts remain |
 
 ### 🔵 MEDIUM (Should Fix Post-MVP)

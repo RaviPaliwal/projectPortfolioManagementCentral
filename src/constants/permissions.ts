@@ -26,7 +26,8 @@ export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
     'dashboard', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline', 'resources',
     'timesheets', 'budgets', 'gatereviews', 'benefits', 'risks',
     'issues', 'changerequests', 'cashflow', 'tasks', 'fundingsources',
-    'statussnapshots', 'configurations', 'workflows', 'teamadmin', 'skills', 'holidays', 'calendar', 'activitylog'
+    'statussnapshots', 'configurations', 'workflows', 'teamadmin', 'skills', 'holidays', 'calendar', 'activitylog',
+    'reportConfigs'
   ],
   PortfolioExecutive: [
     'dashboard', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
@@ -35,7 +36,7 @@ export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
   PMO: [
     'dashboard', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
     'gatereviews', 'changerequests', 'tasks', 'statussnapshots',
-    'workflows', 'teamadmin', 'calendar', 'activitylog', 'resources'
+    'workflows', 'teamadmin', 'calendar', 'activitylog', 'resources', 'reportConfigs'
   ],
   ProjectManager: [
     'dashboard', 'strategicRoster', 'projects', 'resources', 'timesheets', 'gatereviews',
@@ -74,6 +75,7 @@ export type CrudModule =
   | 'HOLIDAYS'
   | 'TEAM_ADMIN'
   | 'CONFIGURATIONS'
+  | 'FINANCIAL_REPORT_CONFIGS'
 
 /**
  * CRUD Permission Matrix
@@ -82,6 +84,12 @@ export type CrudModule =
  */
 export const CRUD_PERMISSIONS: Record<CrudModule, Partial<Record<CrudAction, Persona[]>>> = {
   DASHBOARD: { read: ALL_PERSONAS },
+  FINANCIAL_REPORT_CONFIGS: {
+    create: ['PMO', 'SystemAdministrator'],
+    read: ['SystemAdministrator', 'PortfolioExecutive', 'PMO', 'ProjectManager', 'FinancialController'],
+    update: ['PMO', 'SystemAdministrator'],
+    delete: ['SystemAdministrator'],
+  },
   PORTFOLIOS: {
     create: ['PortfolioExecutive', 'PMO', 'SystemAdministrator'],
     read: ALL_PERSONAS,

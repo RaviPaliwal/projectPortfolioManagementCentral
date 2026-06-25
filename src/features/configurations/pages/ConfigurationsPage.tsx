@@ -14,6 +14,7 @@ import PsychologyIcon from '@mui/icons-material/Psychology'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd'
+import BarChartIcon from '@mui/icons-material/BarChart'
 import { PageHeader } from '@/components/common'
 import type { TabKey } from '@/components/layout/PrimaryShell'
 
@@ -121,6 +122,13 @@ export default function ConfigurationsPage({ onNavigate }: ConfigurationsPagePro
       description: 'Manage resource profiles, capacities, daily rates, and system user mappings.',
       icon: <AssignmentIndIcon fontSize="large" />,
       color: 'secondary.main'
+    },
+    {
+      key: 'reportConfigs' as TabKey,
+      title: 'Report Configurations',
+      description: 'Design visual and interactive layouts, charts, and groupings for financial reports.',
+      icon: <BarChartIcon fontSize="large" />,
+      color: 'info.main'
     }
   ]
 
@@ -143,26 +151,6 @@ export default function ConfigurationsPage({ onNavigate }: ConfigurationsPagePro
             />
           </Grid>
         ))}
-        
-        {/* Future Expansion Placeholder */}
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-          <Card 
-            elevation={0}
-            sx={{ 
-              height: '100%',
-              border: `1px dashed ${useTheme().palette.divider}`,
-              bgcolor: 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              p: 4
-            }}
-          >
-            <Typography variant="body2" color="text.disabled" align="center">
-              Additional configuration modules will appear here as they are implemented.
-            </Typography>
-          </Card>
-        </Grid>
       </Grid>
     </Box>
   )

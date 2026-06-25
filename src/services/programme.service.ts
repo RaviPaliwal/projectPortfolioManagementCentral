@@ -43,6 +43,39 @@ export const mapProgramme = (item: Pm_programmes): ProgrammeModel => {
   }
 }
 
+export async function fetchProgrammes(): Promise<ProgrammeModel[]> {
+  try {
+    const result = await Pm_programmesService.getAll({
+      filter: 'statecode eq 0',
+      select: [
+        'pm_programmeid',
+        'pm_programmename',
+        '_pm_portfolio_value',
+        'pm_programmephase',
+        'pm_ragstatus',
+        'pm_startdate',
+        'pm_enddate',
+        '_pm_programmemanager_value',
+        'pm_sponsorname',
+        'pm_programmedescription',
+        'pm_budgeteur',
+        'pm_actualspendeur',
+        'pm_businessunit'
+      ],
+      top: 500
+    })
+    if (!result.success) {
+      console.error('[ProgrammeService] fetchProgrammes failed:', result.error)
+      return []
+    }
+    const list = unwrapList<Pm_programmes>(result)
+    return list.map(mapProgramme)
+  } catch (err) {
+    console.error('[ProgrammeService] fetchProgrammes exception:', err)
+    return []
+  }
+}
+
 export async function createProgramme(payload: Partial<ProgrammeModel>): Promise<ProgrammeModel | null> {
   const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(payload)) {
