@@ -3,7 +3,7 @@
 > **Project**: Project Portfolio Management (PPM) Central  
 > **Audit Date**: 24 June 2026  *(Previous audit: 22 June 2026)*
 > **Codebase**: 313 source files across `src/` *(up from 269)*
-> **Framework**: React 19 + TypeScript 5.9 + Vite 7 + MUI 9  
+> **Framework**: React 18 + TypeScript 5.9 + Vite 7 + MUI 9  
 > **Target Platform**: Microsoft Power Platform / Dataverse
 
 ---
@@ -32,7 +32,7 @@
 
 ### Overall Assessment: **MVP-READY WITH REMAINING GAPS**
 
-The codebase implements a **feature-rich Project Portfolio Management** front-end application built on React 19 with MUI 9, targeting Microsoft Dataverse via the Power Apps SDK. It has **24 registered feature modules**, a **custom workflow approval engine**, **34 reusable common components**, **25 custom services**, and **42 auto-generated SDK models/services**.
+The codebase implements a **feature-rich Project Portfolio Management** front-end application built on React 18 with MUI 9, targeting Microsoft Dataverse via the Power Apps SDK. It has **24 registered feature modules**, a **custom workflow approval engine**, **34 reusable common components**, **25 custom services**, and **42 auto-generated SDK models/services**.
 
 ### Key Strengths
 
@@ -56,7 +56,7 @@ The codebase implements a **feature-rich Project Portfolio Management** front-en
 | **Testing** | **Zero tests** — no unit, integration, or E2E tests configured. |
 | **Accessibility** | WCAG 2.1 AA **not addressed**. |
 | **Form Validation** | No centralized validation framework — manual per-field checks. |
-| **Configurable Reports** | No configurable financial, schedule, or risk/issue reports. |
+| **Configurable Reports** | Configurable financial reports builder fully implemented (with visual charts, multi-select scopes, cost categories, paging grids, and public/private template rules). |
 
 ### Key Changes Since 22 June Audit
 
@@ -90,7 +90,7 @@ The codebase implements a **feature-rich Project Portfolio Management** front-en
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| **Framework** | React | ^19.2.0 |
+| **Framework** | React | ^18.3.1 |
 | **Language** | TypeScript | ~5.9.3 |
 | **Build** | Vite | ^7.2.4 |
 | **UI Library** | MUI (Material UI) | ^9.0.1 |
@@ -738,7 +738,7 @@ These are Power Automate flows triggered from the app, not custom integrations.
 | FR-RM-03 | Resource allocation/approval | ✅ Full | ✅ **Full** ⬆️ | **100%** — Available hours validation added |
 | FR-RA-01 | Status snapshots (13 periods) | ✅ Full | ✅ **Full** ⬆️ | **100%** — Load data & create bugs fixed |
 | FR-RA-02 | Out-of-box dashboards | 🟡 Partial | 🟡 Partial | 60% |
-| FR-RA-03 | Financial reports | 🟡 Partial | 🟡 Partial | 40% |
+| FR-RA-03 | Financial reports | 🟡 Partial | ✅ **Full** ⬆️ | **100%** — Configurable Financial Report Configs visual builder, dynamic grouping/preview/paging, public/private templates |
 | FR-RA-04 | Schedule reports | 🔴 Missing | 🔴 Missing | 10% |
 | FR-RA-05 | Risk/issue reports | 🟡 Partial | 🟡 Partial | 50% |
 | FR-RA-06 | Data extraction to Power BI | 🔴 Missing | 🔴 Missing | 0% |
@@ -916,7 +916,7 @@ These are Power Automate flows triggered from the app, not custom integrations.
 | 14 | Implement Excel upload for schedule data | project.service | Closes NFR-INT-12 |
 | 15 | Provide baseline Power BI dataset | New deliverable | Closes NFR-INT-18 |
 | 16 | Add contextual help/tooltips | Common component | Closes NFR-USE-03 |
-| 17 | Implement configurable reports (financial/schedule/risk) | New reporting module | Closes FR-RA-03/04/05 |
+| 17 | Implement configurable reports (schedule/risk) | New reporting module | Closes FR-RA-04/05 (Financial report builder completed) |
 | 18 | Implement API-level RBAC | Services/Security | Closes NFR-DM-06 |
 
 ### 15.4 Long-Term Roadmap
@@ -949,6 +949,17 @@ The following fixes and improvements were applied between 22 June (original audi
 | 11 | Submitted By / Approved By fields — passed `currentUser?.fullname`; added `$select` fields (J2-134) | Timesheets | FR-TM-02 |
 | 12 | New timesheet dialog validation — resource required, period duration display, limits (J2-136) | Timesheets | FR-TM-01 |
 
+### Session Updates — 25 June 2026
+
+| # | Fix / Change | Area | ITT Impact |
+|---|--------------|------|------------|
+| 13 | Downgraded React to version 18.3.1 to resolve Fluent UI element warnings & WebPlayer crashes | Tech Stack | NFR-USE-06 |
+| 14 | Built Configurable Financial Reports Visual Builder with multi-select, groupby, chart types | Financial Reports | FR-RA-03 |
+| 15 | Added dynamic preview scaling based on Reporting Level project selection proportion | Financial Reports | FR-RA-03 |
+| 16 | Made Limit to Portfolios / Programmes / Projects scope selection optional | Financial Reports | FR-RA-03 |
+| 17 | Added type safety checks (`String()` casting) for budget line `pm_costcategory` option sets | Financial Reports | FR-RA-03 |
+| 18 | Removed future placeholder expansion card and resolved Recharts `minWidth` dimension warnings | UI / Common | NFR-USE-06 |
+
 ---
 
-*End of Comprehensive Codebase Audit Report (Updated 24 June 2026)*
+*End of Comprehensive Codebase Audit Report (Updated 25 June 2026)*
