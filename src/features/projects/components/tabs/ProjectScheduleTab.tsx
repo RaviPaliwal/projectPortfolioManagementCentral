@@ -19,6 +19,8 @@ import {
   Tooltip,
   FormControlLabel,
   Switch,
+  Button,
+  alpha,
 } from '@mui/material'
 import FlagIcon from '@mui/icons-material/Flag'
 import AssignmentIcon from '@mui/icons-material/Assignment'
@@ -27,14 +29,17 @@ import ListIcon from '@mui/icons-material/List'
 import EditIcon from '@mui/icons-material/Edit'
 import SchemaIcon from '@mui/icons-material/Schema'
 import PrintIcon from '@mui/icons-material/Print'
-import { StatusChip, StatusTag, MetricTile } from '@/components/common'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
+import { StatusChip, StatusTag, MetricTile, ExcelImportDialog } from '@/components/common'
 import GanttChart from '@/components/common/GanttChart/GanttChart'
 import { WbsBuilder } from './WbsBuilder'
 import { DependencyNetwork } from './DependencyNetwork'
+import { createProjectTask, createProjectMilestone } from '@/services'
 import type { ProjectMilestoneModel, ProjectTaskModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 
 interface ProjectScheduleTabProps {
+  projectId?: string
   milestones: ProjectMilestoneModel[]
   tasks: ProjectTaskModel[]
   onEditMilestone?: (milestone: ProjectMilestoneModel) => void
@@ -46,6 +51,7 @@ interface ProjectScheduleTabProps {
 }
 
 export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ 
+  projectId,
   milestones, 
   tasks, 
   onEditMilestone, 
@@ -59,6 +65,67 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
   const isDark = theme.palette.mode === 'dark'
   const [activeView, setActiveView] = useState(0)
   const [showCriticalPathOnly, setShowCriticalPathOnly] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
+
+  const handleImportTasks = async (
+    rows: any[],
+    onProgress: (current: number, total: number) => void
+  ) => {
+    let successCount = 0
+    let failedCount = 0
+    const errors: string[] = []
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+      try {
+        if (row.pm_ismilestone) {
+          const payload: Partial<ProjectMilestoneModel> = {
+            pm_milestonename: row.pm_taskname,
+            pm_description: row.pm_taskdescription || '',
+            pm_planneddate: row.pm_plannedstartdate,
+            _pm_project_value: projectId,
+            pm_status: 1, // Not Started / Active
+          }
+          const created = await createProjectMilestone(payload)
+          if (created) {
+            successCount++
+          } else {
+            failedCount++
+            errors.push(`Row ${i + 1}: Failed to save milestone to Dataverse`)
+          }
+        } else {
+          const percent = row.pm_percentcomplete ?? 0
+          const payload: Partial<ProjectTaskModel> = {
+            pm_taskname: row.pm_taskname,
+            pm_taskdescription: row.pm_taskdescription || '',
+            pm_plannedstartdate: row.pm_plannedstartdate,
+            pm_plannedenddate: row.pm_plannedenddate,
+            pm_percentcomplete: percent,
+            pm_taskstatus: percent === 100 ? '0' : percent > 0 ? '1' : '2',
+            pm_tasklevel: row.pm_tasklevel ?? 1,
+            pm_wbsnumber: row.pm_wbsnumber || '',
+            _pm_project_value: projectId,
+          }
+          const created = await createProjectTask(payload)
+          if (created) {
+            successCount++
+          } else {
+            failedCount++
+            errors.push(`Row ${i + 1}: Failed to save task to Dataverse`)
+          }
+        }
+      } catch (err: any) {
+        failedCount++
+        errors.push(`Row ${i + 1}: ${err.message || 'Unknown error'}`)
+      }
+      onProgress(i + 1, rows.length)
+    }
+
+    if (onRefresh) {
+      onRefresh()
+    }
+    return { successCount, failedCount, errors }
+  }
 
   const getStatusLabel = (status?: string | number | null): string => {
     const s = String(status ?? '')
@@ -226,6 +293,17 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                 </Typography>
               }
             />
+            {canEdit && (
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<CloudUploadIcon />}
+                onClick={() => setImportDialogOpen(true)}
+                sx={{ borderRadius: 1.15 }}
+              >
+                Import Tasks
+              </Button>
+            )}
             <Tooltip title="Print / Export PDF">
               <IconButton size="small" onClick={handlePrintPDF} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.15 }}>
                 <PrintIcon fontSize="small" />
@@ -403,6 +481,15 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
           )}
         </Box>
       </Paper>
+
+      {/* ── Excel/CSV Import Dialog ────────────────── */}
+      <ExcelImportDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        importType="tasks"
+        title="Import Tasks and Milestones from CSV"
+        onImport={handleImportTasks}
+      />
     </Box>
   )
 }

@@ -47,6 +47,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import AssessmentIcon from '@mui/icons-material/Assessment'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import TimelineIcon from '@mui/icons-material/Timeline'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 import {
@@ -65,7 +66,7 @@ import type { BudgetLineModel, FundingSourceModel, FinancialPeriodModel } from '
 import type { PortfolioLookupItem, ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
 import { BudgetLineFormDialog } from '../components'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, Breadcrumbs } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, Breadcrumbs, ExcelImportDialog } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
@@ -169,6 +170,9 @@ export default function BudgetsPage() {
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
+  // Excel/CSV import state
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -396,6 +400,106 @@ export default function BudgetsPage() {
     } finally {
       setActionLoading(false)
     }
+  }
+
+  const handleImportBudgets = async (
+    rows: any[],
+    onProgress: (current: number, total: number) => void
+  ) => {
+    let successCount = 0
+    let failedCount = 0
+    const errors: string[] = []
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+      try {
+        const method = Number(row.pm_costinglevelcode) === 1 ? 'Rate-Based' : 'Fixed Cost'
+        const unitCost = row.pm_unitcosteur || 0
+        const quantity = Number(row.pm_costinglevelcode) === 1 ? (row.pm_quantity || 1) : 1
+        const total = Number(row.pm_costinglevelcode) === 1 ? unitCost * quantity : unitCost
+
+        const pm_jsonrawcalculation = JSON.stringify({
+          costingMethod: method,
+          unitCost,
+          quantity,
+          totalAmount: total,
+          formula: method === 'Rate-Based' ? 'Unit Cost × Quantity' : 'Unit Cost (Fixed)',
+          generatedAt: new Date().toISOString(),
+        }, null, 2)
+
+        // Resolve Portfolio/Programme/Project names to GUIDs for Dataverse lookups
+        const portfolioMatch = row.pm_portfolioname
+          ? portfolioLookups.find(p => p.pm_portfolioname?.toLowerCase().trim() === row.pm_portfolioname.toLowerCase().trim())
+          : undefined
+        const programmeMatch = row.pm_programmename
+          ? programmeLookups.find(p => p.pm_programmename?.toLowerCase().trim() === row.pm_programmename.toLowerCase().trim())
+          : undefined
+        const projectMatch = row.pm_projectname
+          ? projectLookups.find(p => p.pm_projectname?.toLowerCase().trim() === row.pm_projectname.toLowerCase().trim())
+          : undefined
+        const fundingSourceMatch = row.pm_fundingsourcename
+          ? fundingSources.find(s => s.pm_fundingsourcename?.toLowerCase().trim() === row.pm_fundingsourcename.toLowerCase().trim())
+          : undefined
+
+        if (row.pm_portfolioname && !portfolioMatch) {
+          errors.push(`Row ${i + 1}: Portfolio "${row.pm_portfolioname}" not found in Dataverse`)
+          failedCount++
+          onProgress(i + 1, rows.length)
+          continue
+        }
+        if (row.pm_programmename && !programmeMatch) {
+          errors.push(`Row ${i + 1}: Programme "${row.pm_programmename}" not found in Dataverse`)
+          failedCount++
+          onProgress(i + 1, rows.length)
+          continue
+        }
+        if (row.pm_projectname && !projectMatch) {
+          errors.push(`Row ${i + 1}: Project "${row.pm_projectname}" not found in Dataverse`)
+          failedCount++
+          onProgress(i + 1, rows.length)
+          continue
+        }
+        if (row.pm_fundingsourcename && !fundingSourceMatch) {
+          errors.push(`Row ${i + 1}: Funding source "${row.pm_fundingsourcename}" not found in Dataverse`)
+          failedCount++
+          onProgress(i + 1, rows.length)
+          continue
+        }
+
+        const payload: Partial<BudgetLineModel> = {
+          pm_budgetlinename: row.pm_budgetlinename,
+          pm_costcategory: row.pm_costcategory ?? 0,
+          pm_expencecatagory: row.pm_expencecatagory ?? 0,
+          pm_approvedbudgeteur: total,
+          pm_revisedbudgeteur: total,
+          pm_actualspendeur: total,
+          pm_committedspendeur: total,
+          pm_forecastspendeur: total,
+          pm_estimateatcompletioneur: total,
+          pm_jsonrawcalculation,
+          pm_notes: row.pm_notes || '',
+          _pm_portfoliolookup_value: portfolioMatch ? portfolioMatch.pm_portfolioid : undefined,
+          _pm_programmelookup_value: programmeMatch ? programmeMatch.pm_programmeid : undefined,
+          _pm_project_value: projectMatch ? projectMatch.pm_projectid : undefined,
+          _pm_fundingsource_value: fundingSourceMatch ? fundingSourceMatch.pm_fundingsourceid : undefined,
+        }
+
+        const created = await createBudgetLine(payload)
+        if (created) {
+          successCount++
+        } else {
+          failedCount++
+          errors.push(`Row ${i + 1}: Failed to save record to Dataverse`)
+        }
+      } catch (err: any) {
+        failedCount++
+        errors.push(`Row ${i + 1}: ${err.message || 'Unknown error'}`)
+      }
+      onProgress(i + 1, rows.length)
+    }
+
+    await loadData()
+    return { successCount, failedCount, errors }
   }
 
   // ── Budget utilization percentage ──
@@ -660,9 +764,18 @@ export default function BudgetsPage() {
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <ExportButton filename="budgets.csv" columns={budgetExportColumns} data={filteredBudgetLines} />
                 {canCreate && (
-                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => setBudgetFormEditRecord(null)}>
-                    Add Budget Line
-                  </Button>
+                  <>
+                    <Button
+                      variant="outlined"
+                      startIcon={<CloudUploadIcon />}
+                      onClick={() => setImportDialogOpen(true)}
+                    >
+                      Import Budget Lines
+                    </Button>
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => setBudgetFormEditRecord(null)}>
+                      Add Budget Line
+                    </Button>
+                  </>
                 )}
               </Box>
             }
@@ -903,6 +1016,15 @@ export default function BudgetsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* ── Excel/CSV Import Dialog ────────────────── */}
+      <ExcelImportDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        importType="budgets"
+        title="Import Budget Lines from CSV"
+        onImport={handleImportBudgets}
+      />
     </Box>
   )
 }

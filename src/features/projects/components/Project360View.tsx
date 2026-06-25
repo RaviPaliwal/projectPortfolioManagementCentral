@@ -239,6 +239,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
               )}
               {activeTab === 1 && (
                 <ProjectScheduleTab 
+                  projectId={project.pm_projectid}
                   milestones={milestones} 
                   tasks={tasks} 
                   onEditMilestone={onEditMilestone}
