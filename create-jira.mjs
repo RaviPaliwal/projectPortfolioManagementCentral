@@ -1,13 +1,12 @@
 import { chromium } from 'playwright';
 
 const tickets = [
-
-  { summary: "Downgrade React to version 18.3.1 to resolve Fluent UI element warnings", assignee: "ravi", priority: "High", done: true },
-  { summary: "Enhanced report config configurations preview with dynamic Reporting Level scaling", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Support optional Limit to Portfolios / Programmes / Projects scope selection", assignee: "ravi", priority: "Medium", done: true },
-  { summary: "Add type safety checks for budget line pm_costcategory option sets in reporting grid", assignee: "ravi", priority: "High", done: true },
-  { summary: "Remove placeholder card from configurations main navigation tab", assignee: "ravi", priority: "Low", done: true },
-  { summary: "Fix ResponsiveContainer dimension warnings by adding minWidth props in charts", assignee: "ravi", priority: "Low", done: true }
+  { summary: "Add exponential backoff retry logic and fallback cache to UserContext to prevent Dataverse API glitches", assignee: "ravi", priority: "High", done: true },
+  { summary: "Security-gate localStorage persona overrides to prevent privilege escalation in production builds", assignee: "ravi", priority: "Medium", done: true },
+  { summary: "Enrich React PageErrorBoundary to display component stack traces in development mode", assignee: "ravi", priority: "Medium", done: true },
+  { summary: "Add OData action success validation to Holidays, Change Requests, and Risks saving/seeding/deleting", assignee: "ravi", priority: "High", done: true },
+  { summary: "Persist strategic roster layout mode selection in localStorage across component tab switches", assignee: "ravi", priority: "Low", done: true },
+  { summary: "Implement Gate Review transition checklists and auto-trigger workflow chains on auto-submission", assignee: "ravi", priority: "High", done: true }
 ];
 
 (async () => {

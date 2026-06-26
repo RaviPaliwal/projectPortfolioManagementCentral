@@ -293,6 +293,10 @@ export const ExcelImportDialog: React.FC<ExcelImportDialogProps> = ({
       if (s.key === 'pm_programmename') return '"Cloud Migration"'
       if (s.key === 'pm_projectname') return '"Project Alpha"'
       if (s.key === 'pm_fundingsourcename') return '"Corporate Budget 2026"'
+      if (s.key === 'pm_taskname') return '"Design WBS Phase"'
+      if (s.key === 'pm_taskdescription') return '"Analyze and outline main deliverables"'
+      if (s.key === 'pm_tasklevel') return '1'
+      if (s.key === 'pm_wbsnumber') return '"1.1"'
       return `"${s.label} Sample"`
     }).join(',')
     

@@ -314,7 +314,15 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
   const [ragFilter, setRagFilter] = useState('')
   const [minBudget, setMinBudget] = useState('')
   const [maxBudget, setMaxBudget] = useState('')
-  const [viewMode, setViewMode] = useState<'timeline' | 'cards' | 'table' | 'tree'>('timeline')
+  const [viewMode, setViewMode] = useState<'timeline' | 'cards' | 'table' | 'tree'>(() => {
+    try {
+      const stored = localStorage.getItem('ppm_strategic_roster_view_mode')
+      if (stored === 'timeline' || stored === 'cards' || stored === 'table' || stored === 'tree') {
+        return stored
+      }
+    } catch {}
+    return 'timeline'
+  })
   const [selectedYear, setSelectedYear] = useState<string>('')
 
   const availableYears = useMemo(() => {
@@ -635,7 +643,14 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
             <ToggleButtonGroup
               value={viewMode}
               exclusive
-              onChange={(_, val) => val && setViewMode(val)}
+              onChange={(_, val) => {
+                if (val) {
+                  setViewMode(val)
+                  try {
+                    localStorage.setItem('ppm_strategic_roster_view_mode', val)
+                  } catch {}
+                }
+              }}
               size="small"
               sx={{
                 '& .MuiToggleButton-root': {

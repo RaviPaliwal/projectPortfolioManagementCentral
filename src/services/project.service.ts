@@ -160,7 +160,7 @@ export async function fetchProjectDetails(projectId: string): Promise<ProjectMod
                 const prItem = unwrapSingle<any>(prRes)
                 if (prItem?.pm_programmename) mapped.pm_programmename = prItem.pm_programmename
             }
-        } catch (e) {
+        } catch {
             // Ignore lookup resolution failures
         }
 
@@ -414,11 +414,21 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
                     newValue: changes.pm_projectmanager || ''
                 })
             }
-        } else { }
+        }
 
         // Dataverse update often returns empty. We ALWAYS fetch fresh full details 
         // to ensure the UI gets the complete record with all computed/lookup fields.
-        return fetchProjectDetails(normalizedId)
+        const updatedProject = await fetchProjectDetails(normalizedId)
+
+        // Trigger auto-submit check asynchronously so project update doesn't block
+        if (updatedProject && updatedProject.pm_projectphase !== undefined) {
+            import('./governance.service').then(({ autoSubmitGateReviewRequest }) => {
+                autoSubmitGateReviewRequest(normalizedId, updatedProject.pm_projectphase!)
+                    .catch(e => console.error('[ProjectService] autoSubmitGateReviewRequest error:', e))
+            })
+        }
+
+        return updatedProject
     } catch (err) {
         console.error('[updateProject] ❌ updateProject failed:', err)
         throw err

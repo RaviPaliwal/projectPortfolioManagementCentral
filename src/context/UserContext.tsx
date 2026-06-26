@@ -207,6 +207,17 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
     if (!initialLoadDoneRef.current) {
       setLoading(true)
     }
+
+    const executeWithRetry = async <T,>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> => {
+      try {
+        return await fn();
+      } catch (err) {
+        if (retries <= 0) throw err;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return executeWithRetry(fn, retries - 1, delay * 2);
+      }
+    };
+
     try {
       const [
         usersResult,
@@ -215,22 +226,22 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
         userRolesMap,
         teamRolesMap
       ] = await Promise.all([
-        SystemusersService.getAll({
+        executeWithRetry(() => SystemusersService.getAll({
           select: ['systemuserid', 'fullname', 'domainname', 'internalemailaddress', 'jobtitle', 'firstname', 'lastname', '_businessunitid_value'] as any,
           filter: "isdisabled eq false",
           orderBy: ['fullname asc'],
           top: 200,
-        }),
-        TeamsService.getAll({
+        })),
+        executeWithRetry(() => TeamsService.getAll({
           select: ['teamid', 'name'],
           top: 500,
-        }),
-        TeammembershipsService.getAll({
+        })),
+        executeWithRetry(() => TeammembershipsService.getAll({
           select: ['systemuserid', 'teamid'],
           top: 5000,
-        }),
-        fetchUserRolesFromDataverse(),
-        fetchTeamRolesFromDataverse()
+        })),
+        executeWithRetry(() => fetchUserRolesFromDataverse()),
+        executeWithRetry(() => fetchTeamRolesFromDataverse())
       ])
 
       if (!mountedRef.current) return
@@ -389,6 +400,16 @@ export function UserContextProvider({ children }: { children: ReactNode }) {
       initialLoadDoneRef.current = true
     } catch (err) {
       console.error('[UserContext] Failed to fetch users/teams:', err)
+      // Fallback: try loading cached session data to keep app usable
+      const backup = getSessionCachedData()
+      if (backup && mountedRef.current) {
+        console.warn('[UserContext] Loading fallback cached session data.')
+        setCurrentUser(backup.currentUser)
+        setUsers(backup.users)
+        setUserPersonas(backup.userPersonas)
+        setUserRolesMap(backup.userRolesMap)
+        setUserTeamsState(backup.userTeams)
+      }
     } finally {
       setLoading(false)
       initialLoadDoneRef.current = true

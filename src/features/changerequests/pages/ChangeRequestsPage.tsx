@@ -477,7 +477,10 @@ export default function ChangeRequestsPage() {
     try {
       const payload = { ...formData }
       if (editingCR?.pm_changerequestid) {
-        await updateChangeRequest(editingCR.pm_changerequestid, payload)
+        const result = await updateChangeRequest(editingCR.pm_changerequestid, payload)
+        if (!result) {
+          throw new Error('Update returned empty response')
+        }
         createdId = editingCR.pm_changerequestid
         isUpdate = true
         setSuccessMsg('Change request updated successfully.')
@@ -485,7 +488,10 @@ export default function ChangeRequestsPage() {
         // Auto-generate reference for new change requests
         payload.pm_changerequestreference = autoGenerateReference()
         const created = await createChangeRequest(payload)
-        createdId = created?.pm_changerequestid ?? null
+        if (!created) {
+          throw new Error('Create returned empty response')
+        }
+        createdId = created.pm_changerequestid ?? null
         setSuccessMsg('Change request created successfully.')
 
         // Auto-trigger workflow after creation

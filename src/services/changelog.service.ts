@@ -75,7 +75,7 @@ export async function writeAuditLog({
       if (typeof window !== 'undefined' && window.location) {
         ipAddress = window.location.hostname || '127.0.0.1'
       }
-    } catch (e) {
+    } catch {
       // Ignore: window or window.location might not be available or accessible
     }
 
@@ -91,7 +91,7 @@ export async function writeAuditLog({
             return value
           }
         }
-      } catch (e) {
+      } catch {
         // Ignore: parsing URLSearchParams failed (e.g. malformed query string)
       }
       return null
@@ -104,7 +104,7 @@ export async function writeAuditLog({
           getSessionParam(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '') ||
           ''
       }
-    } catch (e) {
+    } catch {
       // Ignore: window.location is inaccessible
     }
 
@@ -116,7 +116,7 @@ export async function writeAuditLog({
             getSessionParam(window.parent.location.hash.includes('?') ? window.parent.location.hash.split('?')[1] : '') ||
             ''
         }
-      } catch (e) {
+      } catch {
         // Ignore: parent window location is inaccessible (cross-origin restrictions)
       }
     }
@@ -130,7 +130,7 @@ export async function writeAuditLog({
           if (!xrm) {
             try {
               xrm = (window.parent as unknown as Record<string, unknown>).Xrm
-            } catch (e) {
+            } catch {
               // Ignore: accessing window.parent is blocked by cross-origin policy
             }
           }
@@ -151,7 +151,7 @@ export async function writeAuditLog({
             context.organizationSettings?.organizationId ||
             ''
         }
-      } catch (e) {
+      } catch {
         // Ignore: Xrm context resolution failed or utility context not present
       }
     }
@@ -166,7 +166,7 @@ export async function writeAuditLog({
           if (typeof sessionStorage !== 'undefined') {
             sessionId = sessionStorage.getItem('ppm_audit_session_id') || ''
           }
-        } catch (e) {
+        } catch {
           // Ignore: sessionStorage access blocked by browser security settings
         }
 
@@ -175,7 +175,7 @@ export async function writeAuditLog({
             sessionId = typeof crypto !== 'undefined' && crypto.randomUUID
               ? crypto.randomUUID()
               : Math.random().toString(36).substring(2, 15)
-          } catch (e) {
+          } catch {
             sessionId = Math.random().toString(36).substring(2, 15)
           }
 
@@ -183,7 +183,7 @@ export async function writeAuditLog({
             if (typeof sessionStorage !== 'undefined') {
               sessionStorage.setItem('ppm_audit_session_id', sessionId)
             }
-          } catch (e) {
+          } catch {
             // Ignore: sessionStorage write blocked (e.g. private browsing mode)
           }
         }

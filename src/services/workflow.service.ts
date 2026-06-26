@@ -21,6 +21,7 @@ import type {
   WorkflowStepTemplateModel,
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle } from '@/services/common'
+import { writeAuditLog } from '@/services/changelog.service'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import type { ManualTriggerInputtext } from '@/generated/models/InitiateWorkflowModel'
@@ -152,6 +153,15 @@ export async function createWorkflow(payload: Partial<WorkflowModel>): Promise<W
       throw new Error(`Failed to create workflow: ${result.error?.message || 'Unknown error'}`)
     }
     const item = unwrapSingle<Pm_workflows>(result)
+    if (item) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_workflows',
+        recordId: item.pm_workflowid!,
+        recordName: item.pm_workflowname,
+        moduleName: 'Workflows',
+      })
+    }
     return item ? mapWorkflow(item) : null
   } catch (err) {
     console.error('[WorkflowService] createWorkflow exception:', err)
@@ -161,6 +171,13 @@ export async function createWorkflow(payload: Partial<WorkflowModel>): Promise<W
 
 export async function updateWorkflow(id: string, changes: Partial<WorkflowModel>): Promise<WorkflowModel | null> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_workflows',
+      recordId: id,
+      recordName: changes.pm_workflowname,
+      moduleName: 'Workflows',
+    })
     const payload: Record<string, unknown> = { ...changes }
     if ('pm_workflowdescription' in payload) {
       payload.pm_description = payload.pm_workflowdescription
@@ -189,6 +206,13 @@ export async function updateWorkflow(id: string, changes: Partial<WorkflowModel>
 
 export async function deleteWorkflow(id: string): Promise<void> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_workflows',
+      recordId: id,
+      moduleName: 'Workflows',
+      description: `Deleted workflow ${id}`,
+    })
     await Pm_workflowsService.delete(id)
   } catch (err) {
     console.error('[WorkflowService] deleteWorkflow exception:', err)
@@ -250,6 +274,15 @@ export async function createWorkflowStepTemplate(payload: Partial<WorkflowStepTe
       throw new Error(`Failed to create step template: ${result.error?.message || 'Unknown error'}`)
     }
     const item = unwrapSingle<Pm_workflowsteptemplates>(result)
+    if (item) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_workflowsteptemplates',
+        recordId: item.pm_workflowsteptemplateid,
+        recordName: item.pm_workflowname,
+        moduleName: 'Workflow Step Templates',
+      })
+    }
     return item ? mapWorkflowStepTemplate(item) : null
   } catch (err) {
     console.error('[WorkflowService] createWorkflowStepTemplate exception:', err)
@@ -259,6 +292,13 @@ export async function createWorkflowStepTemplate(payload: Partial<WorkflowStepTe
 
 export async function updateWorkflowStepTemplate(id: string, changes: Partial<WorkflowStepTemplateModel>): Promise<WorkflowStepTemplateModel | null> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_workflowsteptemplates',
+      recordId: id,
+      recordName: changes.pm_workflowname,
+      moduleName: 'Workflow Step Templates',
+    })
     const cleanPayload: Record<string, unknown> = {}
     let workflowBindValue: string | undefined
     for (const [key, value] of Object.entries(changes)) {
@@ -291,6 +331,13 @@ export async function updateWorkflowStepTemplate(id: string, changes: Partial<Wo
 
 export async function deleteWorkflowStepTemplate(id: string): Promise<void> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_workflowsteptemplates',
+      recordId: id,
+      moduleName: 'Workflow Step Templates',
+      description: `Deleted step template ${id}`,
+    })
     await Pm_workflowsteptemplatesService.delete(id)
   } catch (err) {
     console.error('[WorkflowService] deleteWorkflowStepTemplate exception:', err)
@@ -399,6 +446,13 @@ export async function fetchWorkflowInstances(): Promise<WorkflowInstanceModel[]>
 
 export async function deleteWorkflowInstance(id: string): Promise<void> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_workflowinstances',
+      recordId: id,
+      moduleName: 'Workflow Instances',
+      description: `Deleted workflow instance ${id}`,
+    })
     await Pm_workflowinstancesService.delete(id)
   } catch (err) {
     console.error('[WorkflowService] deleteWorkflowInstance exception:', err)

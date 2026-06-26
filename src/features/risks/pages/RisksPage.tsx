@@ -163,18 +163,22 @@ export default function RisksPage() {
         if (updated) {
           setRisks((prev) => prev.map((r) => (r.pm_riskid === updated.pm_riskid ? updated : r)))
           setSuccessMsg('Risk updated.')
+        } else {
+          throw new Error('Update returned empty response')
         }
       } else {
         const created = await createRiskFull(data)
         if (created) {
           setRisks((prev) => [...prev, created])
           setSuccessMsg('Risk created.')
+        } else {
+          throw new Error('Create returned empty response')
         }
       }
       setDialogOpen(false)
       setTimeout(() => setSuccessMsg(null), 3000)
-    } catch (err) {
-      setError('Unable to save risk.')
+    } catch (err: any) {
+      setError(err.message || 'Unable to save risk.')
     } finally {
       setSaving(false)
     }

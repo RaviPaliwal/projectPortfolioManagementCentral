@@ -201,6 +201,9 @@ export default function HolidaysPage() {
     setError(null)
     try {
       const result = await Pm_holidaiesService.delete(deleteConfirm)
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Delete failed')
+      }
       setHolidays(prev => prev.filter(h => h.pm_holidayid !== deleteConfirm))
       setSuccessMsg('Holiday removed successfully.')
       setDeleteConfirm(null)
@@ -235,6 +238,8 @@ export default function HolidaysPage() {
         if (result.success && result.data) {
           setHolidays(prev => [result.data!, ...prev])
           created++
+        } else if (result.error) {
+          console.warn('[HolidaysPage] Skipping holiday seed due to error:', result.error)
         }
       }
       setSuccessMsg(`${created} Irish public holidays added for ${calendarYear}.`)

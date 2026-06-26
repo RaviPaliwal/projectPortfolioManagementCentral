@@ -340,7 +340,7 @@ export async function createPortfolio(payload: Partial<PortfolioModel>): Promise
   } catch (err: any) {
     try {
       console.error('[PortfolioService] createPortfolio API call failed:', err?.message || err, '| payload:', JSON.stringify(cleanPayload))
-    } catch (e) {
+    } catch {
       console.error('[PortfolioService] createPortfolio API call failed (unable to serialize):', err)
     }
     throw err

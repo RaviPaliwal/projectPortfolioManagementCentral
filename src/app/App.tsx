@@ -17,22 +17,23 @@ import { getTheme } from '@/styles/theme'
 
 // ─── ErrorBoundary ────────────────────────────────────────────────────────────
 interface EBProps { children: ReactNode; pageName?: string }
-interface EBState { error: Error | null }
+interface EBState { error: Error | null; errorInfo: ErrorInfo | null }
 class PageErrorBoundary extends Component<EBProps, EBState> {
   constructor(props: EBProps) {
     super(props)
-    this.state = { error: null }
+    this.state = { error: null, errorInfo: null }
   }
-  static getDerivedStateFromError(error: Error): EBState { return { error } }
-  componentDidCatch(error: Error, _info: ErrorInfo): void {
-    console.error(`[ErrorBoundary] ${this.props.pageName ?? 'Page'} crashed:`, error, _info)
+  static getDerivedStateFromError(error: Error): Partial<EBState> { return { error } }
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    console.error(`[ErrorBoundary] ${this.props.pageName ?? 'Page'} crashed:`, error, errorInfo)
+    this.setState({ errorInfo })
   }
-  handleRetry = (): void => this.setState({ error: null })
+  handleRetry = (): void => this.setState({ error: null, errorInfo: null })
   render(): ReactNode {
     if (this.state.error) {
       return (
         <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
-          <Paper sx={{ p: 4, maxWidth: 560, textAlign: 'center', borderRadius: 1.15 }}>
+          <Paper sx={{ p: 4, maxWidth: 640, width: '100%', textAlign: 'center', borderRadius: 1.15 }}>
             <ErrorOutlineIcon sx={{ fontSize: 56, color: 'error.main', mb: 2 }} />
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
               {this.props.pageName ?? 'This page'} encountered an error
@@ -41,9 +42,16 @@ class PageErrorBoundary extends Component<EBProps, EBState> {
               Something went wrong while rendering. This may be caused by a connectivity issue or data mismatch.
             </Typography>
             {import.meta.env.DEV && (
-              <Alert severity="error" sx={{ mb: 2, textAlign: 'left', fontSize: '0.75rem', fontFamily: 'monospace' }}>
-                {this.state.error.name}: {this.state.error.message}
-              </Alert>
+              <Box sx={{ mb: 3, textAlign: 'left' }}>
+                <Alert severity="error" sx={{ mb: 1, fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                  <strong>{this.state.error.name}</strong>: {this.state.error.message}
+                </Alert>
+                {this.state.errorInfo?.componentStack && (
+                  <Typography variant="caption" sx={{ display: 'block', p: 1.5, bgcolor: 'action.hover', borderRadius: 0.5, fontFamily: 'monospace', fontSize: '0.7rem', overflowX: 'auto', whiteSpace: 'pre', maxHeight: 200 }}>
+                    {this.state.errorInfo.componentStack}
+                  </Typography>
+                )}
+              </Box>
             )}
             <Button variant="contained" onClick={this.handleRetry}>Retry</Button>
           </Paper>

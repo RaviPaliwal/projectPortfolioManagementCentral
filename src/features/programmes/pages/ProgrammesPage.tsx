@@ -46,7 +46,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 
-import { fetchProgrammeDetails, fetchPortfolioHierarchy, deleteProgramme } from '@/services'
+import { fetchProgrammeDetails, fetchPortfolioHierarchy, deleteProgramme, fetchEscalatedRisksByProgramme } from '@/services'
 import {
   StatusChip,
   StatusTag,
@@ -352,6 +352,15 @@ export default function ProgrammesPage() {
     const detailRisks = detailData.risks
     const detailIssues = detailData.issues
 
+    const escalatedRisks = detailRisks.filter((r) => r.pm_escalated)
+    const escalatedIssues = detailIssues.filter((i) => i.pm_escalationstatus)
+
+    const severityDistribution = {
+      high: detailRisks.filter((r) => String(r.pm_ragstatus ?? '') === '2').length,
+      medium: detailRisks.filter((r) => String(r.pm_ragstatus ?? '') === '0').length,
+      low: detailRisks.filter((r) => String(r.pm_ragstatus ?? '') === '1').length,
+    }
+
     const projectColumns = [
       {
         key: 'pm_projectname',
@@ -585,13 +594,46 @@ export default function ProgrammesPage() {
                 Escalated Risks & Issues
               </Typography>
               <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
+                {/* Risk Severity Distribution Bar */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 1.5, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <GppMaybeIcon sx={{ fontSize: 18 }} /> Risk Severity Distribution (All Projects)
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 4 }}>
+                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '4px solid', borderLeftColor: 'error.main', textAlign: 'center' }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>High</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5, color: 'error.main' }}>
+                          {severityDistribution.high}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid size={{ xs: 4 }}>
+                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '4px solid', borderLeftColor: 'warning.main', textAlign: 'center' }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Medium</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5, color: 'warning.main' }}>
+                          {severityDistribution.medium}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                    <Grid size={{ xs: 4 }}>
+                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '4px solid', borderLeftColor: 'success.main', textAlign: 'center' }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Low</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>
+                          {severityDistribution.low}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+                </Box>
+
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'error.main' }}>
-                      Risks ({detailRisks.length})
+                      Risks ({escalatedRisks.length})
                     </Typography>
-                    {detailRisks.length > 0 ? (
-                      detailRisks.map(r => (
+                    {escalatedRisks.length > 0 ? (
+                      escalatedRisks.map(r => (
                         <Paper
                           key={r.pm_riskid}
                           variant="outlined"
@@ -619,10 +661,10 @@ export default function ProgrammesPage() {
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'warning.main' }}>
-                      Issues ({detailIssues.length})
+                      Issues ({escalatedIssues.length})
                     </Typography>
-                    {detailIssues.length > 0 ? (
-                      detailIssues.map(i => (
+                    {escalatedIssues.length > 0 ? (
+                      escalatedIssues.map(i => (
                         <Paper
                           key={i.pm_issueid}
                           variant="outlined"
