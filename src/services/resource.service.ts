@@ -16,22 +16,27 @@ import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
 import { mapProject } from './project.service'
 
 
-export const mapResource = (item: Pm_resources): ResourceModel => ({
-  pm_resourceid: item.pm_resourceid,
-  pm_fullname: item.pm_fullname,
-  pm_departmentname: item.pm_departmentname,
-  pm_primaryrole: item.pm_primaryrole,
-  pm_resourcecategory: item.pm_resourcecategory,
-  pm_employmentstatus: item.pm_employmentstatus,
-  pm_dailyworkcapacity: item.pm_dailyworkcapacity,
-  pm_dailycostrate: item.pm_dailycostrate,
-  pm_positiontitle: item.pm_positiontitle,
-  _pm_systemuser_value: item._pm_systemuser_value,
-  pm_suppliercompany: item.pm_suppliercompany,
-  pm_contractstartdate: item.pm_contractstartdate,
-  pm_contractenddate: item.pm_contractenddate,
-  statecode: item.statecode,
-})
+import { applySecurityMasking } from './security'
+
+export const mapResource = (item: Pm_resources): ResourceModel => {
+  const mapped: ResourceModel = {
+    pm_resourceid: item.pm_resourceid,
+    pm_fullname: item.pm_fullname,
+    pm_departmentname: item.pm_departmentname,
+    pm_primaryrole: item.pm_primaryrole,
+    pm_resourcecategory: item.pm_resourcecategory,
+    pm_employmentstatus: item.pm_employmentstatus,
+    pm_dailyworkcapacity: item.pm_dailyworkcapacity,
+    pm_dailycostrate: item.pm_dailycostrate,
+    pm_positiontitle: item.pm_positiontitle,
+    _pm_systemuser_value: item._pm_systemuser_value,
+    pm_suppliercompany: item.pm_suppliercompany,
+    pm_contractstartdate: item.pm_contractstartdate,
+    pm_contractenddate: item.pm_contractenddate,
+    statecode: item.statecode,
+  }
+  return applySecurityMasking(mapped, 'resource')
+}
 
 export const mapResourceAllocation = (item: Pm_resourceallocations): ResourceAllocationModel => {
   const rawItem = item as unknown as Record<string, unknown>

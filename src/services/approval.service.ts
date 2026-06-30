@@ -77,7 +77,7 @@ export async function createApprovalRequest(payload: Partial<ApprovalRequestMode
       writeAuditLog({
         actionType: 'Create',
         entityName: 'pm_projectapprovalrequests',
-        recordId: item.pm_projectapprovalrequestid || id,
+        recordId: item.pm_projectapprovalrequestid || payload.pm_projectapprovalrequestid || '',
         recordName: item.pm_requesttitle || payload.pm_requesttitle,
         moduleName: 'Approval Requests',
       })

@@ -200,10 +200,7 @@ export default function HolidaysPage() {
     setSaving(true)
     setError(null)
     try {
-      const result = await Pm_holidaiesService.delete(deleteConfirm)
-      if (!result.success) {
-        throw new Error(result.error?.message || 'Delete failed')
-      }
+      await Pm_holidaiesService.delete(deleteConfirm)
       setHolidays(prev => prev.filter(h => h.pm_holidayid !== deleteConfirm))
       setSuccessMsg('Holiday removed successfully.')
       setDeleteConfirm(null)

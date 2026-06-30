@@ -448,8 +448,10 @@ export default function FundingSourcesPage() {
           filterOptions={FUNDING_TYPE_FILTER_OPTIONS}
           extraFilters={
             <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Status</InputLabel>
+              <InputLabel id="funding-status-filter-label">Status</InputLabel>
               <Select
+                id="funding-status-filter-select"
+                labelId="funding-status-filter-label"
                 value={statusFilter}
                 label="Status"
                 onChange={(e) => handleStatusFilterChange(e.target.value)}
@@ -890,8 +892,10 @@ export default function FundingSourcesPage() {
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Funding Type</InputLabel>
+                <InputLabel id="funding-type-label">Funding Type</InputLabel>
                 <Select
+                  id="funding-type-select"
+                  labelId="funding-type-label"
                   value={formData.pm_fundingtype}
                   label="Funding Type"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_fundingtype: e.target.value as number }))}
@@ -906,8 +910,10 @@ export default function FundingSourcesPage() {
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
+                <InputLabel id="funding-status-label">Status</InputLabel>
                 <Select
+                  id="funding-status-select"
+                  labelId="funding-status-label"
                   value={formData.pm_fundingstatus}
                   label="Status"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_fundingstatus: e.target.value as number }))}

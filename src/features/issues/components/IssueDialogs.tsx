@@ -28,14 +28,8 @@ import type { IssueModel } from '@/types/dataverse'
 // ─── Constants ─────────────────────────────────────────────────────────────
 
 const ISSUE_CATEGORIES = [
-  { value: '0', label: 'Operational' },
+  { value: '0', label: 'Dependency' },
   { value: '1', label: 'Technical' },
-  { value: '2', label: 'Resource' },
-  { value: '3', label: 'Financial' },
-  { value: '4', label: 'Scope' },
-  { value: '5', label: 'Quality' },
-  { value: '6', label: 'Vendor' },
-  { value: '7', label: 'Safety' },
 ]
 
 const PRIORITY_LEVELS = [

@@ -210,8 +210,10 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>Entity Type</InputLabel>
+                    <InputLabel id="snapshot-entity-type-label">Entity Type</InputLabel>
                     <Select
+                      id="snapshot-entity-type-select"
+                      labelId="snapshot-entity-type-label"
                       value={formData.pm_entitytype}
                       label="Entity Type"
                       onChange={(e) => handleEntityTypeChange(e.target.value)}
@@ -225,8 +227,10 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth size="small" disabled={!formData.pm_entitytype}>
-                    <InputLabel>Select Active {formData.pm_entitytype}</InputLabel>
+                    <InputLabel id="snapshot-active-entity-label">Select Active {formData.pm_entitytype}</InputLabel>
                     <Select
+                      id="snapshot-active-entity-select"
+                      labelId="snapshot-active-entity-label"
                       value={formData.selectedEntityId || ''}
                       label={`Select Active ${formData.pm_entitytype}`}
                       onChange={(e) => handleEntitySelect(e.target.value)}
@@ -264,8 +268,16 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Entity Type</InputLabel>
-                <Select value={formData.pm_entitytype} label="Entity Type" onChange={(e) => handleEntityTypeChange(e.target.value)} sx={{ borderRadius: 2 }} disabled={!editingSnapshot && !!formData.selectedEntityId}>
+                <InputLabel id="snapshot-edit-entity-type-label">Entity Type</InputLabel>
+                <Select
+                  id="snapshot-edit-entity-type-select"
+                  labelId="snapshot-edit-entity-type-label"
+                  value={formData.pm_entitytype}
+                  label="Entity Type"
+                  onChange={(e) => handleEntityTypeChange(e.target.value)}
+                  sx={{ borderRadius: 2 }}
+                  disabled={!editingSnapshot && !!formData.selectedEntityId}
+                >
                   {entityTypeOptions.filter((o) => o.value).map((opt) => (
                     <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                   ))}
@@ -279,8 +291,15 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Reporting Period</InputLabel>
-                <Select value={formData.pm_reportingperiod} label="Reporting Period" onChange={(e) => handlePeriodChange(e.target.value)} sx={{ borderRadius: 2 }}>
+                <InputLabel id="snapshot-period-label">Reporting Period</InputLabel>
+                <Select
+                  id="snapshot-period-select"
+                  labelId="snapshot-period-label"
+                  value={formData.pm_reportingperiod}
+                  label="Reporting Period"
+                  onChange={(e) => handlePeriodChange(e.target.value)}
+                  sx={{ borderRadius: 2 }}
+                >
                   {fiscalPeriodOptions.filter((o) => o.value).map((opt) => (
                     <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                   ))}
@@ -299,8 +318,15 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
           <Grid container spacing={2.5} sx={{ mb: 3 }}>
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Overall RAG</InputLabel>
-                <Select value={formData.pm_overallragstatus} label="Overall RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_overallragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <InputLabel id="snapshot-overall-rag-label">Overall RAG</InputLabel>
+                <Select
+                  id="snapshot-overall-rag-select"
+                  labelId="snapshot-overall-rag-label"
+                  value={formData.pm_overallragstatus}
+                  label="Overall RAG"
+                  onChange={(e) => setFormData((f: any) => ({ ...f, pm_overallragstatus: Number(e.target.value) }))}
+                  sx={{ borderRadius: 2 }}
+                >
                   <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
                   <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Medium</Box></MenuItem>
                   <MenuItem value={2}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} /> High</Box></MenuItem>
@@ -309,8 +335,15 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Cost RAG</InputLabel>
-                <Select value={formData.pm_costragstatus} label="Cost RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_costragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <InputLabel id="snapshot-cost-rag-label">Cost RAG</InputLabel>
+                <Select
+                  id="snapshot-cost-rag-select"
+                  labelId="snapshot-cost-rag-label"
+                  value={formData.pm_costragstatus}
+                  label="Cost RAG"
+                  onChange={(e) => setFormData((f: any) => ({ ...f, pm_costragstatus: Number(e.target.value) }))}
+                  sx={{ borderRadius: 2 }}
+                >
                   <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
                   <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Medium</Box></MenuItem>
                 </Select>
@@ -318,8 +351,15 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Schedule RAG</InputLabel>
-                <Select value={formData.pm_scheduleragstatus} label="Schedule RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_scheduleragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <InputLabel id="snapshot-schedule-rag-label">Schedule RAG</InputLabel>
+                <Select
+                  id="snapshot-schedule-rag-select"
+                  labelId="snapshot-schedule-rag-label"
+                  value={formData.pm_scheduleragstatus}
+                  label="Schedule RAG"
+                  onChange={(e) => setFormData((f: any) => ({ ...f, pm_scheduleragstatus: Number(e.target.value) }))}
+                  sx={{ borderRadius: 2 }}
+                >
                   <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
                   <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Medium</Box></MenuItem>
                   <MenuItem value={2}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} /> High</Box></MenuItem>
@@ -328,8 +368,15 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Risk RAG</InputLabel>
-                <Select value={formData.pm_riskragstatus} label="Risk RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_riskragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <InputLabel id="snapshot-risk-rag-label">Risk RAG</InputLabel>
+                <Select
+                  id="snapshot-risk-rag-select"
+                  labelId="snapshot-risk-rag-label"
+                  value={formData.pm_riskragstatus}
+                  label="Risk RAG"
+                  onChange={(e) => setFormData((f: any) => ({ ...f, pm_riskragstatus: Number(e.target.value) }))}
+                  sx={{ borderRadius: 2 }}
+                >
                   <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
                   <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Medium</Box></MenuItem>
                   <MenuItem value={2}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} /> High</Box></MenuItem>
@@ -338,8 +385,15 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Resource RAG</InputLabel>
-                <Select value={formData.pm_resourceragstatus} label="Resource RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_resourceragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <InputLabel id="snapshot-resource-rag-label">Resource RAG</InputLabel>
+                <Select
+                  id="snapshot-resource-rag-select"
+                  labelId="snapshot-resource-rag-label"
+                  value={formData.pm_resourceragstatus}
+                  label="Resource RAG"
+                  onChange={(e) => setFormData((f: any) => ({ ...f, pm_resourceragstatus: Number(e.target.value) }))}
+                  sx={{ borderRadius: 2 }}
+                >
                   <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
                   <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Medium</Box></MenuItem>
                 </Select>
@@ -347,8 +401,15 @@ export const SnapshotDialogs: React.FC<SnapshotDialogsProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Benefits RAG</InputLabel>
-                <Select value={formData.pm_benefitsragstatus} label="Benefits RAG" onChange={(e) => setFormData((f: any) => ({ ...f, pm_benefitsragstatus: Number(e.target.value) }))} sx={{ borderRadius: 2 }}>
+                <InputLabel id="snapshot-benefits-rag-label">Benefits RAG</InputLabel>
+                <Select
+                  id="snapshot-benefits-rag-select"
+                  labelId="snapshot-benefits-rag-label"
+                  value={formData.pm_benefitsragstatus}
+                  label="Benefits RAG"
+                  onChange={(e) => setFormData((f: any) => ({ ...f, pm_benefitsragstatus: Number(e.target.value) }))}
+                  sx={{ borderRadius: 2 }}
+                >
                   <MenuItem value={0}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> Low</Box></MenuItem>
                   <MenuItem value={1}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ChecklistIcon sx={{ fontSize: 16, color: 'text.disabled' }} /> Not Set</Box></MenuItem>
                 </Select>

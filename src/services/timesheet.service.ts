@@ -5,6 +5,7 @@ import {
   Pm_projectsService,
 } from '@/generated'
 import { writeAuditLog } from './changelog.service'
+import { sendNotificationToUser, sendNotificationToUserName } from './notification.service'
 import type { Pm_timesheets } from '@/generated/models/Pm_timesheetsModel'
 import type { Pm_timesheetentries } from '@/generated/models/Pm_timesheetentriesModel'
 import type { Pm_resources } from '@/generated/models/Pm_resourcesModel'
@@ -34,6 +35,8 @@ export const mapTimesheet = (item: Pm_timesheets): TimesheetModel => ({
   pm_rejectionreason: item.pm_rejectionreason,
   pm_resourcename: item.pm_resourcename,
   _pm_resource_value: item._pm_resource_value,
+  ownerid: (item as any)._ownerid_value || item.ownerid,
+  owneridtype: item.owneridtype,
 })
 
 export const mapTimesheetEntry = (item: Pm_timesheetentries): TimesheetEntryModel => ({
@@ -127,7 +130,7 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
       'pm_totalhours', 'pm_totalchargeablehours', 'pm_totalnonchargeablehours',
       'pm_submissiondate', 'pm_submittedby',
       'pm_approvaldate', 'pm_approvedby',
-      'pm_rejectionreason', '_pm_resource_value',
+      'pm_rejectionreason', '_pm_resource_value', 'ownerid',
     ]
     const result = await Pm_timesheetsService.get(timesheetId, { select: selectFields })
     if (!result.success) {
@@ -136,16 +139,21 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
     }
     const item = unwrapSingle<Pm_timesheets>(result)
     if (!item) return null
+    console.log('[TimesheetService] fetchTimesheetDetails raw item:', JSON.stringify(item))
     const mapped = mapTimesheet(item)
     try {
       const resourceId = normalizeLookupId(item._pm_resource_value)
       if (resourceId) {
-        const resResult = await Pm_resourcesService.get(resourceId, { select: ['pm_resourceid', 'pm_fullname'] })
+        const resResult = await Pm_resourcesService.get(resourceId, { select: ['pm_resourceid', 'pm_fullname', '_pm_systemuser_value'] })
         if (resResult.success) {
           const res = unwrapSingle<Pm_resources>(resResult)
           if (res?.pm_fullname) {
             mapped.pm_resourcename = res.pm_fullname.trim()
             mapped.pm_ownername = res.pm_fullname.trim()
+          }
+          if (res && res._pm_systemuser_value) {
+            mapped.ownerid = res._pm_systemuser_value
+            console.log('[TimesheetService] Resolved ownerid from resource systemuser lookup:', res._pm_systemuser_value)
           }
         }
       }
@@ -215,6 +223,7 @@ export async function updateTimesheetStatus(
   extra?: { pm_rejectionreason?: string },
   currentUserName?: string
 ): Promise<void> {
+  console.log(`[TimesheetService] updateTimesheetStatus called: timesheetId=${timesheetId}, status=${status}, currentUserName=${currentUserName}`)
   try {
     const userName = currentUserName || 'System'
     const changes: Record<string, unknown> = { pm_timesheetstatus: status }
@@ -232,8 +241,9 @@ export async function updateTimesheetStatus(
 
     let recordName = timesheetId
     let oldStatusStr = ''
+    let details: any = null
     try {
-      const details = await fetchTimesheetDetails(timesheetId)
+      details = await fetchTimesheetDetails(timesheetId)
       if (details) {
         if (details.pm_timesheetname) recordName = details.pm_timesheetname
         oldStatusStr = String(details.pm_timesheetstatus ?? '')
@@ -285,6 +295,53 @@ export async function updateTimesheetStatus(
       oldValue: oldStatusStr,
       newValue: String(status)
     })
+
+    // Send Teams/Outlook notifications using the Send Message flow
+    try {
+      console.log('[TimesheetService] Details check:', JSON.stringify(details))
+      if (details && details.ownerid) {
+        const ownerName = details.pm_resourcename || details.pm_ownername || 'Team Member'
+        const sheetName = details.pm_timesheetname || timesheetId
+        
+        if (status === 1) {
+          // Submitted: Notify Approver / Admin via Teams
+          const success = await sendNotificationToUserName(
+            'Admin', 
+            'Teams', 
+            'Timesheet Submitted for Review', 
+            `Timesheet "${sheetName}" has been submitted by ${ownerName} and is awaiting review.`
+          )
+          if (!success && currentUserName) {
+            console.log(`[TimesheetService] 'Admin' user not found in Dataverse. Notifying submitter (${currentUserName}) directly for testing/verification.`);
+            await sendNotificationToUserName(
+              currentUserName,
+              'Teams',
+              'Timesheet Submitted for Review (Verification)',
+              `Timesheet "${sheetName}" has been submitted by ${ownerName} and is awaiting review.`
+            )
+          }
+        } else if (status === 0) {
+          // Approved: Notify Owner via Teams
+          await sendNotificationToUser(
+            details.ownerid, 
+            'Teams', 
+            'Timesheet Approved', 
+            `Your timesheet "${sheetName}" has been approved by ${userName}.`
+          )
+        } else if (status === 2) {
+          // Rejected: Notify Owner via Outlook
+          const reason = extra?.pm_rejectionreason || 'No reason provided'
+          await sendNotificationToUser(
+            details.ownerid, 
+            'Outlook', 
+            'Timesheet Rejected', 
+            `Your timesheet "${sheetName}" has been rejected by ${userName}.\n\nReason for Rejection: ${reason}`
+          )
+        }
+      }
+    } catch (notifErr) {
+      console.error('[TimesheetService] Failed to send status change notification:', notifErr)
+    }
   } catch (err) {
     console.error('[TimesheetService] updateTimesheetStatus exception:', err)
     throw err

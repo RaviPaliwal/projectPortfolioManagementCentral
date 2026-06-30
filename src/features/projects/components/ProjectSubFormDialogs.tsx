@@ -222,7 +222,7 @@ export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId
     { name: 'pm_issuetitle', label: 'Issue title', type: 'text', required: true },
     { name: 'pm_issuedescription', label: 'Description', type: 'multiline', rows: 3 },
     { name: 'pm_issuecategory', label: 'Category', type: 'select', defaultValue: '0', gridSize: 6, options: [
-      { value: '0', label: 'Scope' }, { value: '1', label: 'Schedule' }, { value: '2', label: 'Budget' }, { value: '3', label: 'Quality' }, { value: '4', label: 'Resource' }
+      { value: '0', label: 'Dependency' }, { value: '1', label: 'Technical' }
     ]},
     { name: 'pm_prioritylevel', label: 'Priority', type: 'select', defaultValue: '0', gridSize: 6, options: [
       { value: '0', label: 'Normal' }, { value: '1', label: 'High' }, { value: '2', label: 'Critical' }

@@ -421,6 +421,7 @@ export interface ChangeRequestModel {
   _pm_programmelookup_value?: string
   _pm_changerequest_value?: string
   statecode?: number
+  ownerid?: string
 }
 
 export interface ApprovalRequestModel {

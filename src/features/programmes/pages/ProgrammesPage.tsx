@@ -786,8 +786,10 @@ export default function ProgrammesPage() {
           extraFilters={
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               <FormControl size="small" sx={{ minWidth: 130 }}>
-                <InputLabel>RAG</InputLabel>
+                <InputLabel id="programme-rag-filter-label">RAG</InputLabel>
                 <Select
+                  id="programme-rag-filter-select"
+                  labelId="programme-rag-filter-label"
                   value={ragFilter}
                   label="RAG"
                   onChange={(e) => { setRagFilter(e.target.value); setPage(0) }}

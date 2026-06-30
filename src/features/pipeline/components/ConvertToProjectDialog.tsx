@@ -293,8 +293,10 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
         <Grid container spacing={2.5} sx={{ mb: 4 }}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Programme</InputLabel>
+              <InputLabel id="convert-programme-label">Programme</InputLabel>
               <Select
+                id="convert-programme-select"
+                labelId="convert-programme-label"
                 value={form._pm_programme_value}
                 label="Programme"
                 onChange={(e) => setForm((p) => ({ ...p, _pm_programme_value: e.target.value }))}
@@ -310,8 +312,10 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Project Manager</InputLabel>
+              <InputLabel id="convert-pm-label">Project Manager</InputLabel>
               <Select
+                id="convert-pm-select"
+                labelId="convert-pm-label"
                 value={form.pm_projectmanager}
                 label="Project Manager"
                 onChange={(e) => setForm((p) => ({ ...p, pm_projectmanager: e.target.value }))}
@@ -352,8 +356,10 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Priority</InputLabel>
+              <InputLabel id="convert-priority-label">Priority</InputLabel>
               <Select
+                id="convert-priority-select"
+                labelId="convert-priority-label"
                 value={form.pm_projectpriority}
                 label="Priority"
                 onChange={(e) => setForm((p) => ({ ...p, pm_projectpriority: e.target.value as number }))}

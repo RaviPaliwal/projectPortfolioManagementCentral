@@ -494,6 +494,7 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
       <FormControl size="small" sx={{ minWidth: 200 }}>
         <Select
           value={currentUser?.systemuserid ?? ''}
+          inputProps={{ 'aria-label': 'Switch User Profile' }}
           onChange={(e) => {
             const user = users.find((u) => u.systemuserid === e.target.value)
             if (user) setCurrentUser(user)
@@ -614,6 +615,7 @@ export function UserSelector({ variant = 'compact' }: UserSelectorProps) {
                       <FormControl size="small" sx={{ minWidth: 140 }}>
                         <Select
                           value={currentOverride || persona}
+                          inputProps={{ 'aria-label': 'Override Persona' }}
                           displayEmpty
                           onChange={(e) => {
                             const val = e.target.value

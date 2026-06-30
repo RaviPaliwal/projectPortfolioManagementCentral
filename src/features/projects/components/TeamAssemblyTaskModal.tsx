@@ -201,8 +201,10 @@ export const TeamAssemblyTaskModal: React.FC<TeamAssemblyTaskModalProps> = ({
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>Add Team Member</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Resource</InputLabel>
+                  <InputLabel id="team-assembly-resource-label">Resource</InputLabel>
                   <Select
+                    id="team-assembly-resource-select"
+                    labelId="team-assembly-resource-label"
                     label="Resource"
                     value={selectedResourceId}
                     onChange={(e) => {

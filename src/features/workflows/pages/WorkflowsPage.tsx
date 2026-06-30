@@ -297,8 +297,14 @@ export default function WorkflowsPage() {
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
             <TextField size="small" placeholder="Search templates..." value={wfSearch} onChange={(e) => { setWfSearch(e.target.value); setWfPage(0) }} sx={{ minWidth: 240 }} />
             <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>Status</InputLabel>
-              <Select value={wfStatusFilter} label="Status" onChange={(e) => { setWfStatusFilter(e.target.value); setWfPage(0) }}>
+              <InputLabel id="workflow-template-status-label">Status</InputLabel>
+              <Select
+                id="workflow-template-status-select"
+                labelId="workflow-template-status-label"
+                value={wfStatusFilter}
+                label="Status"
+                onChange={(e) => { setWfStatusFilter(e.target.value); setWfPage(0) }}
+              >
                 {STATUS_FILTERS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </Select>
             </FormControl>
@@ -365,8 +371,14 @@ export default function WorkflowsPage() {
           <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
             <TextField size="small" placeholder="Search instances..." value={instSearch} onChange={(e) => { setInstSearch(e.target.value); setInstPage(0) }} sx={{ minWidth: 240 }} />
             <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>Status</InputLabel>
-              <Select value={instStatusFilter} label="Status" onChange={(e) => { setInstStatusFilter(e.target.value); setInstPage(0) }}>
+              <InputLabel id="workflow-instance-status-label">Status</InputLabel>
+              <Select
+                id="workflow-instance-status-select"
+                labelId="workflow-instance-status-label"
+                value={instStatusFilter}
+                label="Status"
+                onChange={(e) => { setInstStatusFilter(e.target.value); setInstPage(0) }}
+              >
                 {INSTANCE_STATUS_FILTERS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </Select>
             </FormControl>

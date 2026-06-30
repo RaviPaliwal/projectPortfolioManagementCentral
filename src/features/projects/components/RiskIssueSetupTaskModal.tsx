@@ -56,11 +56,8 @@ const RAG_OPTIONS = [
   { value: 2, label: 'High' },
 ]
 const ISSUE_CATEGORIES = [
-  { value: 0, label: 'Scope' },
-  { value: 1, label: 'Schedule' },
-  { value: 2, label: 'Budget' },
-  { value: 3, label: 'Quality' },
-  { value: 4, label: 'Resource' },
+  { value: 0, label: 'Dependency' },
+  { value: 1, label: 'Technical' },
 ]
 const PRIORITY_OPTIONS = [
   { value: 0, label: 'Normal' },
@@ -224,15 +221,23 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
                     placeholder="Describe the risk" />
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <FormControl fullWidth size="small">
-                      <InputLabel>Category</InputLabel>
-                      <Select label="Category" value={newRisk.pm_riskcategory}
+                      <InputLabel id="risk-category-label">Category</InputLabel>
+                      <Select
+                        id="risk-category-select"
+                        labelId="risk-category-label"
+                        label="Category"
+                        value={newRisk.pm_riskcategory}
                         onChange={(e) => setNewRisk(p => ({ ...p, pm_riskcategory: Number(e.target.value) }))}>
                         {RISK_CATEGORIES.map(c => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
                       </Select>
                     </FormControl>
                     <FormControl fullWidth size="small">
-                      <InputLabel>RAG</InputLabel>
-                      <Select label="RAG" value={newRisk.pm_ragstatus}
+                      <InputLabel id="risk-rag-label">RAG</InputLabel>
+                      <Select
+                        id="risk-rag-select"
+                        labelId="risk-rag-label"
+                        label="RAG"
+                        value={newRisk.pm_ragstatus}
                         onChange={(e) => setNewRisk(p => ({ ...p, pm_ragstatus: Number(e.target.value) }))}>
                         {RAG_OPTIONS.map(c => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
                       </Select>
@@ -302,22 +307,34 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
                     placeholder="Describe the issue" />
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <FormControl fullWidth size="small">
-                      <InputLabel>Category</InputLabel>
-                      <Select label="Category" value={newIssue.pm_issuecategory}
+                      <InputLabel id="issue-category-label">Category</InputLabel>
+                      <Select
+                        id="issue-category-select"
+                        labelId="issue-category-label"
+                        label="Category"
+                        value={newIssue.pm_issuecategory}
                         onChange={(e) => setNewIssue(p => ({ ...p, pm_issuecategory: Number(e.target.value) }))}>
                         {ISSUE_CATEGORIES.map(c => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
                       </Select>
                     </FormControl>
                     <FormControl fullWidth size="small">
-                      <InputLabel>RAG</InputLabel>
-                      <Select label="RAG" value={newIssue.pm_ragstatus}
+                      <InputLabel id="issue-rag-label">RAG</InputLabel>
+                      <Select
+                        id="issue-rag-select"
+                        labelId="issue-rag-label"
+                        label="RAG"
+                        value={newIssue.pm_ragstatus}
                         onChange={(e) => setNewIssue(p => ({ ...p, pm_ragstatus: Number(e.target.value) }))}>
                         {RAG_OPTIONS.map(c => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
                       </Select>
                     </FormControl>
                     <FormControl fullWidth size="small">
-                      <InputLabel>Priority</InputLabel>
-                      <Select label="Priority" value={newIssue.pm_prioritylevel}
+                      <InputLabel id="issue-priority-label">Priority</InputLabel>
+                      <Select
+                        id="issue-priority-select"
+                        labelId="issue-priority-label"
+                        label="Priority"
+                        value={newIssue.pm_prioritylevel}
                         onChange={(e) => setNewIssue(p => ({ ...p, pm_prioritylevel: Number(e.target.value) }))}>
                         {PRIORITY_OPTIONS.map(c => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
                       </Select>

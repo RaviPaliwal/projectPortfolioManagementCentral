@@ -13,7 +13,8 @@ import {
 import type { Pm_programmes } from '@/generated/models/Pm_programmesModel'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
 import type { ChangeRequestModel } from '@/types/dataverse'
-import { unwrapList, unwrapSingle } from './common'
+import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
+import { sendNotificationToUser, sendNotificationToUserName } from './notification.service'
 import type { IGetAllOptions } from '@/generated/models/CommonModels'
 
 export const mapChangeRequest = (item: Pm_changerequests): ChangeRequestModel => ({
@@ -45,6 +46,7 @@ export const mapChangeRequest = (item: Pm_changerequests): ChangeRequestModel =>
   _pm_project_value: item._pm_project_value,
   _pm_programmelookup_value: item._pm_programmelookup_value,
   statecode: item.statecode,
+  ownerid: item.ownerid || (item as any)._ownerid_value,
 })
 
 export async function fetchChangeRequests(): Promise<ChangeRequestModel[]> {
@@ -60,7 +62,7 @@ export async function fetchChangeRequests(): Promise<ChangeRequestModel[]> {
       'pm_requestorname', 'pm_submissiondate',
       'pm_decisiondate', 'pm_decisionmaker',
       'pm_projectcode',
-      '_pm_project_value', '_pm_programmelookup_value',
+      '_pm_project_value', '_pm_programmelookup_value', 'ownerid',
     ]
     const options: IGetAllOptions = {
       select: selectFields,
@@ -257,6 +259,42 @@ export async function updateChangeRequest(id: string, changes: Partial<ChangeReq
       }
     }
 
+    if (item && item.pm_changerequestid && changes.pm_status !== undefined) {
+      const newStatus = Number(changes.pm_status)
+      try {
+        if (newStatus === 1) { // Under Review
+          const projId = normalizeLookupId(item._pm_project_value || original?._pm_project_value)
+          if (projId) {
+            const projRes = await Pm_projectsService.get(projId, { select: ['pm_projectid', 'pm_projectname', '_pm_projectmanager_value'] })
+            if (projRes.success) {
+              const proj = unwrapSingle<Pm_projects>(projRes)
+              if (proj && proj._pm_projectmanager_value) {
+                await sendNotificationToUser(
+                  proj._pm_projectmanager_value,
+                  'Teams',
+                  'Change Request Pending Review',
+                  `Change Request "${item.pm_changerequesttitle || 'Change Request'}" for Project "${proj.pm_projectname || ''}" is now Under Review and requires your attention.`
+                )
+              }
+            }
+          }
+        } else if (newStatus === 0 || newStatus === 3) { // Approved / Rejected
+          const ownerId = item.ownerid || (item as any)._ownerid_value || original?.ownerid
+          if (ownerId) {
+            const statusText = newStatus === 0 ? 'Approved' : 'Rejected'
+            await sendNotificationToUser(
+              ownerId,
+              'Outlook',
+              `Change Request ${statusText}`,
+              `Your Change Request "${item.pm_changerequesttitle || 'Change Request'}" has been ${statusText} by the review board.`
+            )
+          }
+        }
+      } catch (notifErr) {
+        console.error('[ChangeRequestService] Failed to send change request status change notification:', notifErr)
+      }
+    }
+
     return item ? mapChangeRequest(item) : null
   } catch (err) {
     console.error('[ChangeRequestService] updateChangeRequest exception:', err)
@@ -308,7 +346,7 @@ export async function fetchChangeRequestById(id: string): Promise<ChangeRequestM
         'pm_requestorname', 'pm_submissiondate',
         'pm_decisiondate', 'pm_decisionmaker',
         'pm_projectcode', 'pm_versionnumber',
-        '_pm_project_value', '_pm_programmelookup_value',
+        '_pm_project_value', '_pm_programmelookup_value', 'ownerid',
       ],
     })
     if (!result.success) {

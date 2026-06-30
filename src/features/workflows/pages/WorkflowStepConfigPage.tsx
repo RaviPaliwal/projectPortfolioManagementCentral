@@ -350,8 +350,12 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
               <TextField label="SLA Days" type="number" size="small" value={formData.pm_sladays}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_sladays: Number(e.target.value) }))} />
               <FormControl size="small">
-                <InputLabel>Assignee Type</InputLabel>
-                <Select value={formData.pm_assignetype} label="Assignee Type"
+                <InputLabel id="workflow-step-assignee-type-label">Assignee Type</InputLabel>
+                <Select
+                  id="workflow-step-assignee-type-select"
+                  labelId="workflow-step-assignee-type-label"
+                  value={formData.pm_assignetype}
+                  label="Assignee Type"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_assignetype: e.target.value as number, pm_assigneeid: '' }))}>
                   <MenuItem value={0}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

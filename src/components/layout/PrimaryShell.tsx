@@ -117,6 +117,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
       {/* Sidebar */}
       <Drawer
         variant="permanent"
+        aria-label="Navigation sidebar"
         sx={{
           width: DRAWER_WIDTH,
           flexShrink: 0,
@@ -129,13 +130,14 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
         }}
       >
         {/* Navigation */}
-        <List sx={{ px: 1.5, py: 2 }}>
+        <List sx={{ px: 1.5, py: 2 }} aria-label="Primary navigation">
           {sidebarTabs.map((tab) => {
             const isActive = activeTab === tab.key
             return (
               <ListItemButton
                 key={tab.key}
                 selected={isActive}
+                aria-current={isActive ? 'page' : undefined}
                 onClick={() => onChangeTab(tab.key)}
                 sx={{
                   borderRadius: 1.15,
@@ -230,17 +232,24 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
             <Box sx={{ flex: 1 }} />
             <UserSelector />
             <NotificationCenter />
-            <IconButton onClick={onToggleTheme} sx={{ color: 'text.secondary' }}>
+            <IconButton 
+              onClick={onToggleTheme} 
+              sx={{ color: 'text.secondary' }}
+              aria-label="Toggle light or dark theme"
+            >
               {themeMode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
             </IconButton>
-            <IconButton sx={{ color: 'text.secondary' }}>
+            <IconButton 
+              sx={{ color: 'text.secondary' }}
+              aria-label="Documentation guide"
+            >
               <MenuBookIcon />
             </IconButton>
           </Toolbar>
         </AppBar>
 
         {/* Page content */}
-        <Box sx={{ flex: 1, p: 3, overflow: 'auto' }}>
+        <Box component="main" sx={{ flex: 1, p: 3, overflow: 'auto' }}>
           {children}
         </Box>
       </Box>

@@ -13,23 +13,28 @@ import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
 import { writeAuditLog } from './changelog.service'
 
-export const mapInitiative = (item: Pm_initiatives): InitiativeModel => ({
-  pm_initiativeid: item.pm_initiativeid,
-  pm_name: item.pm_initiativename,
-  pm_businesscase: item.pm_businesscasedescription,
-  pm_estimatedcost: item.pm_estimatedcosteur,
-  pm_estimatedbenefits: item.pm_estimatedbenefitseur,
-  pm_priorityscore: (item as unknown as Record<string, unknown>).pm_priorityscore as number,
-  pm_strategicalignmentscore: (item as unknown as Record<string, unknown>).pm_strategicalignmentscore as number,
-  pm_pipelinestatus: item.pm_pipelinestatus,
-  pm_requestorname: item.pm_requestorname,
-  pm_submissiondate: item.pm_submissiondate,
-  pm_portfolioname: item.pm_portfolioname,
-  pm_initiativetype: (item as unknown as Record<string, unknown>).pm_initiativetype as number,
-  pm_decisiondate: item.pm_decisiondate,
-  pm_createdbyname: undefined,
-  _pm_portfolio_value: (item as unknown as Record<string, unknown>)._pm_portfolio_value as string,
-})
+import { applySecurityMasking } from './security'
+
+export const mapInitiative = (item: Pm_initiatives): InitiativeModel => {
+  const mapped: InitiativeModel = {
+    pm_initiativeid: item.pm_initiativeid,
+    pm_name: item.pm_initiativename,
+    pm_businesscase: item.pm_businesscasedescription,
+    pm_estimatedcost: item.pm_estimatedcosteur,
+    pm_estimatedbenefits: item.pm_estimatedbenefitseur,
+    pm_priorityscore: (item as unknown as Record<string, unknown>).pm_priorityscore as number,
+    pm_strategicalignmentscore: (item as unknown as Record<string, unknown>).pm_strategicalignmentscore as number,
+    pm_pipelinestatus: item.pm_pipelinestatus,
+    pm_requestorname: item.pm_requestorname,
+    pm_submissiondate: item.pm_submissiondate,
+    pm_portfolioname: item.pm_portfolioname,
+    pm_initiativetype: (item as unknown as Record<string, unknown>).pm_initiativetype as number,
+    pm_decisiondate: item.pm_decisiondate,
+    pm_createdbyname: undefined,
+    _pm_portfolio_value: (item as unknown as Record<string, unknown>)._pm_portfolio_value as string,
+  }
+  return applySecurityMasking(mapped, 'initiative')
+}
 
 export async function fetchInitiatives(status?: number): Promise<InitiativeModel[]> {
   try {

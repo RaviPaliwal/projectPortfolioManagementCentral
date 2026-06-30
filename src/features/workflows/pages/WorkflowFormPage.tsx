@@ -271,8 +271,14 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
           <TextField label="Description" fullWidth multiline rows={2} size="small" value={stepFormData.pm_description} onChange={(e) => setStepFormData(p => ({ ...p, pm_description: e.target.value }))} placeholder="Optional step description" />
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <FormControl size="small">
-              <InputLabel>Assignee Type</InputLabel>
-              <Select label="Assignee Type" value={stepFormData.pm_assignetype} onChange={(e) => setStepFormData(p => ({ ...p, pm_assignetype: e.target.value as number, pm_assigneeid: '' }))}>
+              <InputLabel id="workflow-step-assignee-type-label">Assignee Type</InputLabel>
+              <Select
+                id="workflow-step-assignee-type-select"
+                labelId="workflow-step-assignee-type-label"
+                label="Assignee Type"
+                value={stepFormData.pm_assignetype}
+                onChange={(e) => setStepFormData(p => ({ ...p, pm_assignetype: e.target.value as number, pm_assigneeid: '' }))}
+              >
                 <MenuItem value={0}>Individual User</MenuItem>
                 <MenuItem value={1}>Team / Group</MenuItem>
               </Select>
@@ -471,8 +477,15 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
                 autoFocus={!isEdit}
               />
               <FormControl fullWidth>
-                <InputLabel sx={{ fontWeight: 500 }}>Target Module</InputLabel>
-                <Select value={f.pm_module} label="Target Module" onChange={(e) => u('pm_module', e.target.value)} sx={{ fontWeight: 600 }}>
+                <InputLabel id="workflow-target-module-label" sx={{ fontWeight: 500 }}>Target Module</InputLabel>
+                <Select
+                  id="workflow-target-module-select"
+                  labelId="workflow-target-module-label"
+                  value={f.pm_module}
+                  label="Target Module"
+                  onChange={(e) => u('pm_module', e.target.value)}
+                  sx={{ fontWeight: 600 }}
+                >
                   {MODULES.map((o) => <MenuItem key={o.value} value={o.value} disabled={!o.value}>{o.label}</MenuItem>)}
                 </Select>
               </FormControl>

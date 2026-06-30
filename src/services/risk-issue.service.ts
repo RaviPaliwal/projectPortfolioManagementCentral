@@ -2,7 +2,9 @@ import {
   Pm_risksService,
   Pm_issuesService,
   Pm_riskmitigationactionsService,
+  Pm_projectsService,
 } from '@/generated'
+import { sendNotificationToUser } from './notification.service'
 import { writeAuditLog } from './changelog.service'
 import { fetchResourceBySystemUserId } from './resource.service'
 import type { Pm_risks } from '@/generated/models/Pm_risksModel'
@@ -52,9 +54,11 @@ async function resolveRiskOwnerResourceId(id: string): Promise<string | null> {
   return null
 }
 
+import { applySecurityMasking } from './security'
+
 export const mapRisk = (item: Pm_risks): RiskModel => {
   const rawItem = item as unknown as Record<string, unknown>
-  return {
+  const mapped: RiskModel = {
     pm_riskid: item.pm_riskid,
     pm_risktitle: item.pm_risktitle,
     pm_riskcategory: item.pm_riskcategory,
@@ -79,6 +83,7 @@ export const mapRisk = (item: Pm_risks): RiskModel => {
     _pm_riskowner_value: item._pm_riskowner_value,
     statecode: item.statecode,
   }
+  return applySecurityMasking(mapped, 'risk')
 }
 
 export const mapIssue = (item: Pm_issues): IssueModel => ({
@@ -735,6 +740,28 @@ export async function updateIssueFull(id: string, changes: Partial<IssueModel>):
             newValue: formatVal(value)
           })
         }
+      }
+    }
+
+    if (changes.pm_escalationstatus === true && original && original.pm_escalationstatus !== true) {
+      try {
+        const projId = normalizeLookupId(item?._pm_project_value || original?._pm_project_value)
+        if (projId) {
+          const projRes = await Pm_projectsService.get(projId, { select: ['pm_projectid', 'pm_projectname', '_pm_projectmanager_value'] })
+          if (projRes.success) {
+            const proj = unwrapSingle<any>(projRes)
+            if (proj && proj._pm_projectmanager_value) {
+              await sendNotificationToUser(
+                proj._pm_projectmanager_value,
+                'Teams',
+                'CRITICAL: Issue Escalation Alert',
+                `CRITICAL: Issue "${original.pm_issuetitle || 'Issue'}" has been escalated for project "${proj.pm_projectname || ''}". Please review details immediately.`
+              )
+            }
+          }
+        }
+      } catch (notifErr) {
+        console.error('[RiskIssueService] Failed to send issue escalation notification:', notifErr)
       }
     }
 

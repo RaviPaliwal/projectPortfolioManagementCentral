@@ -146,11 +146,14 @@ export function TimesheetFormDialog({
 
         <Grid container spacing={2.5}>
           <Grid size={{ xs: 12 }}>
-            <FormControl fullWidth size="small" required>
-              <InputLabel>Resource</InputLabel>
+            <FormControl fullWidth size="small" required error={!form._pm_resource_value}>
+              <InputLabel id="resource-select-label">Resource</InputLabel>
               <Select
+                id="resource-select"
+                labelId="resource-select-label"
                 value={form._pm_resource_value}
                 label="Resource"
+                aria-describedby="resource-select-helper"
                 onChange={(e) => setForm((f) => ({ ...f, _pm_resource_value: e.target.value }))}
               >
                 {resourceOptions.map((r) => (
@@ -158,7 +161,7 @@ export function TimesheetFormDialog({
                 ))}
               </Select>
               {!form._pm_resource_value && (
-                <FormHelperText>Resource is required</FormHelperText>
+                <FormHelperText id="resource-select-helper">Resource is required</FormHelperText>
               )}
             </FormControl>
           </Grid>

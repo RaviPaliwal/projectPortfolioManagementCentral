@@ -17,35 +17,41 @@ import type {
     ProjectMilestoneModel,
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
+import { autoSubmitGateReviewRequest } from './governance.service'
 
-export const mapProject = (item: Pm_projects): ProjectModel => ({
-    pm_projectid: item.pm_projectid,
-    pm_projectname: item.pm_projectname,
-    pm_projectcode: item.pm_projectcode,
-    _pm_portfolio_value: item._pm_portfolio_value,
-    _pm_programme_value: item._pm_programme_value,
-    pm_projectmanager: item._pm_projectmanager_value,
-    pm_projectmanagername: item.pm_projectmanagername || (item as any)['_pm_projectmanager_value@OData.Community.Display.V1.FormattedValue'],
-    _pm_projectmanager_value: item._pm_projectmanager_value,
-    pm_projectphase: item.pm_projectphase,
-    pm_ragstatus: item.pm_ragstatus,
-    pm_plannedstartdate: item.pm_plannedstartdate,
-    pm_plannedenddate: item.pm_plannedenddate,
-    pm_actualstartdate: item.pm_actualstartdate,
-    pm_actualenddate: item.pm_actualenddate,
-    pm_approvedbudgeteur: item.pm_approvedbudgeteur,
-    pm_actualcosteur: item.pm_actualcosteur,
-    pm_percentcomplete: item.pm_percentcomplete,
-    pm_businessunit: item.pm_businessunit,
-    pm_projectsponsor: item.pm_projectsponsor,
-    pm_portfolioname: item.pm_portfolioname || (item as any)['_pm_portfolio_value@OData.Community.Display.V1.FormattedValue'],
-    pm_programmename: item.pm_programmename || (item as any)['_pm_programme_value@OData.Community.Display.V1.FormattedValue'],
-    pm_isactive: item.pm_isactive,
-    pm_projectpriority: item.pm_projectpriority,
-    pm_costragstatus: item.pm_costragstatus,
-    pm_scheduleragstatus: item.pm_scheduleragstatus,
-    pm_benefitsragstatus: item.pm_benefitsragstatus,
-})
+import { applySecurityMasking } from './security'
+
+export const mapProject = (item: Pm_projects): ProjectModel => {
+    const mapped: ProjectModel = {
+        pm_projectid: item.pm_projectid,
+        pm_projectname: item.pm_projectname,
+        pm_projectcode: item.pm_projectcode,
+        _pm_portfolio_value: item._pm_portfolio_value,
+        _pm_programme_value: item._pm_programme_value,
+        pm_projectmanager: item._pm_projectmanager_value,
+        pm_projectmanagername: item.pm_projectmanagername || (item as any)['_pm_projectmanager_value@OData.Community.Display.V1.FormattedValue'],
+        _pm_projectmanager_value: item._pm_projectmanager_value,
+        pm_projectphase: item.pm_projectphase,
+        pm_ragstatus: item.pm_ragstatus,
+        pm_plannedstartdate: item.pm_plannedstartdate,
+        pm_plannedenddate: item.pm_plannedenddate,
+        pm_actualstartdate: item.pm_actualstartdate,
+        pm_actualenddate: item.pm_actualenddate,
+        pm_approvedbudgeteur: item.pm_approvedbudgeteur,
+        pm_actualcosteur: item.pm_actualcosteur,
+        pm_percentcomplete: item.pm_percentcomplete,
+        pm_businessunit: item.pm_businessunit,
+        pm_projectsponsor: item.pm_projectsponsor,
+        pm_portfolioname: item.pm_portfolioname || (item as any)['_pm_portfolio_value@OData.Community.Display.V1.FormattedValue'],
+        pm_programmename: item.pm_programmename || (item as any)['_pm_programme_value@OData.Community.Display.V1.FormattedValue'],
+        pm_isactive: item.pm_isactive,
+        pm_projectpriority: item.pm_projectpriority,
+        pm_costragstatus: item.pm_costragstatus,
+        pm_scheduleragstatus: item.pm_scheduleragstatus,
+        pm_benefitsragstatus: item.pm_benefitsragstatus,
+    }
+    return applySecurityMasking(mapped, 'project')
+}
 
 export const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => {
     return {
@@ -422,10 +428,8 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
 
         // Trigger auto-submit check asynchronously so project update doesn't block
         if (updatedProject && updatedProject.pm_projectphase !== undefined) {
-            import('./governance.service').then(({ autoSubmitGateReviewRequest }) => {
-                autoSubmitGateReviewRequest(normalizedId, updatedProject.pm_projectphase!)
-                    .catch(e => console.error('[ProjectService] autoSubmitGateReviewRequest error:', e))
-            })
+            autoSubmitGateReviewRequest(normalizedId, Number(updatedProject.pm_projectphase))
+                .catch(e => console.error('[ProjectService] autoSubmitGateReviewRequest error:', e))
         }
 
         return updatedProject

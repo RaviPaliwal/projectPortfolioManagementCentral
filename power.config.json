@@ -86,6 +86,26 @@
           "shared_office365": "979042e1-9a63-4d18-acc4-e61cc3535a6b"
         }
       }
+    },
+    "5ac3fa42-553f-4a64-95b5-8d18e90abbb5": {
+      "id": "/providers/microsoft.powerapps/apis/shared_teams",
+      "displayName": "Microsoft Teams"
+    },
+    "ec144e87-376c-43d9-b724-e3ceee4256c5": {
+      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+      "displayName": "Logic flows",
+      "dataSources": [
+        "sendmessage"
+      ],
+      "workflowDetails": {
+        "workflowEntityId": "ef7cfdd7-4a74-f111-ab0f-002248ec1213",
+        "workflowDisplayName": "Send Message",
+        "workflowName": "c645787e-df60-048c-824f-2806515d7e8f",
+        "dependencies": {
+          "shared_teams": "5ac3fa42-553f-4a64-95b5-8d18e90abbb5",
+          "shared_office365": "979042e1-9a63-4d18-acc4-e61cc3535a6b"
+        }
+      }
     }
   },
   "databaseReferences": {

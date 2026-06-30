@@ -1034,8 +1034,10 @@ export default function ResourcesPage() {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>Category</InputLabel>
+                    <InputLabel id="resource-category-label">Category</InputLabel>
                     <Select
+                      id="resource-category-select"
+                      labelId="resource-category-label"
                       value={formData.pm_resourcecategory}
                       label="Category"
                       onChange={(e) => setFormData((f) => ({ ...f, pm_resourcecategory: e.target.value as number }))}
@@ -1079,8 +1081,10 @@ export default function ResourcesPage() {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth size="small" error={!!systemUserConflict}>
-                    <InputLabel>System User</InputLabel>
+                    <InputLabel id="resource-system-user-label">System User</InputLabel>
                     <Select
+                      id="resource-system-user-select"
+                      labelId="resource-system-user-label"
                       value={users.find((u) => u.systemuserid === formData._pm_systemuser_value)?.systemuserid || ''}
                       label="System User"
                       onChange={(e) => setFormData(f => ({ ...f, _pm_systemuser_value: e.target.value }))}

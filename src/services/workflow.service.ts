@@ -23,6 +23,7 @@ import type {
 import { unwrapList, unwrapSingle } from '@/services/common'
 import { writeAuditLog } from '@/services/changelog.service'
 import { MODULE_NAMES } from '@/constants/moduleNames'
+import { sendNotificationToUser, sendNotificationToUserName } from './notification.service'
 import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import type { ManualTriggerInputtext } from '@/generated/models/InitiateWorkflowModel'
 
@@ -617,7 +618,41 @@ export async function createWorkflowApprovalStep(payload: Partial<WorkflowApprov
       throw new Error(`Failed to create workflow approval step: ${result.error?.message || 'Unknown error'}`)
     }
     const item = unwrapSingle<Pm_workflowapprovalsteps>(result)
-    return item ? mapWorkflowApprovalStep(item) : null
+    const mapped = item ? mapWorkflowApprovalStep(item) : null
+    
+    if (mapped) {
+      try {
+        const stepName = mapped.pm_stepname || 'Approval Step'
+        const instanceName = item?.pm_workflowinstancelookupname || 'Workflow Instance'
+        let success = false
+
+        if (item && item.ownerid) {
+          success = await sendNotificationToUser(
+            item.ownerid,
+            'Teams',
+            'New Workflow Task Assigned',
+            `You have been assigned a new approval task: "${stepName}" for "${instanceName}". Please review it in your dashboard.`
+          )
+        }
+
+        if (!success) {
+          const assigneeName = mapped.pm_assigneedisplayname || mapped.pm_approvername
+          if (assigneeName) {
+            console.log(`[WorkflowService] ownerid not resolved. Trying fallback by name: ${assigneeName}`)
+            await sendNotificationToUserName(
+              assigneeName,
+              'Teams',
+              'New Workflow Task Assigned',
+              `You have been assigned a new approval task: "${stepName}" for "${instanceName}". Please review it in your dashboard.`
+            )
+          }
+        }
+      } catch (notifErr) {
+        console.error('[WorkflowService] Failed to send step assignment notification:', notifErr)
+      }
+    }
+    
+    return mapped
   } catch (err) {
     console.error('[WorkflowService] createWorkflowApprovalStep exception:', err)
     throw err

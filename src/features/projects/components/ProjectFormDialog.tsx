@@ -190,8 +190,10 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Portfolio</InputLabel>
+              <InputLabel id="project-portfolio-label">Portfolio</InputLabel>
               <Select
+                id="project-portfolio-select"
+                labelId="project-portfolio-label"
                 value={form._pm_portfolio_value || ''}
                 label="Portfolio"
                 onChange={(e) => setForm((p) => ({ ...p, _pm_portfolio_value: e.target.value, _pm_programme_value: '' }))}
@@ -203,8 +205,10 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Programme</InputLabel>
+              <InputLabel id="project-programme-label">Programme</InputLabel>
               <Select
+                id="project-programme-select"
+                labelId="project-programme-label"
                 value={form._pm_programme_value || ''}
                 label="Programme"
                 onChange={(e) => setForm((p) => ({ ...p, _pm_programme_value: e.target.value }))}
@@ -217,8 +221,10 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Project manager</InputLabel>
+              <InputLabel id="project-manager-label">Project manager</InputLabel>
               <Select
+                id="project-manager-select"
+                labelId="project-manager-label"
                 value={form.pm_projectmanager || ''}
                 label="Project manager"
                 onChange={(e) => {
@@ -265,8 +271,10 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Priority</InputLabel>
+              <InputLabel id="project-priority-label">Priority</InputLabel>
               <Select
+                id="project-priority-select"
+                labelId="project-priority-label"
                 value={form.pm_projectpriority ?? 2}
                 label="Priority"
                 onChange={(e) => setForm((p) => ({ ...p, pm_projectpriority: e.target.value as number }))}

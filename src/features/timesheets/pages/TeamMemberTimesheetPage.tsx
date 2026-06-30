@@ -188,14 +188,15 @@ function AddEntryDialog({
           )}
           {/* Activity type */}
           <div className="ts-field">
-            <label>Activity Type</label>
-            <div className="ts-segmented">
+            <label id="activity-type-label">Activity Type</label>
+            <div className="ts-segmented" role="group" aria-labelledby="activity-type-label">
               {ACTIVITY_TYPES.map(a => (
                 <button
                   key={a.id}
                   className={cls('ts-segment', form.activity === a.id && 'ts-segment-active')}
                   style={form.activity === a.id ? { borderColor: a.color, color: a.color, fontWeight: 700 } : {}}
                   onClick={() => setForm(f => ({ ...f, activity: a.id }))}
+                  aria-pressed={form.activity === a.id}
                 >
                   <span className="ts-dot" style={{ background: a.color }} />
                   {a.label}
@@ -206,8 +207,9 @@ function AddEntryDialog({
           {/* Project selector — shown only for chargeable */}
           {form.activity === 'chargeable' && (
             <div className="ts-field">
-              <label>Project</label>
+              <label htmlFor="project-select">Project</label>
               <select
+                id="project-select"
                 className="ts-select"
                 value={form.projectId}
                 onChange={e => handleProjectChange(e.target.value)}
@@ -222,8 +224,9 @@ function AddEntryDialog({
           {/* Project Task selector — shown only for chargeable when a project is selected */}
           {form.activity === 'chargeable' && form.projectId && (
             <div className="ts-field">
-              <label>Project Task</label>
+              <label htmlFor="task-select">Project Task</label>
               <select
+                id="task-select"
                 className="ts-select"
                 value={form.projectTaskId}
                 onChange={e => setForm(f => ({ ...f, projectTaskId: e.target.value }))}
@@ -257,8 +260,9 @@ function AddEntryDialog({
           {/* Hours — different label when overtime */}
           {!form.isOvertime ? (
             <div className="ts-field">
-              <label>Hours per day</label>
+              <label htmlFor="hours-input">Hours per day</label>
               <input
+                id="hours-input"
                 type="number"
                 className="ts-input"
                 min={0.5}
@@ -270,8 +274,9 @@ function AddEntryDialog({
             </div>
           ) : (
             <div className="ts-field">
-              <label style={{ color: 'var(--charge)' }}>Overtime Hours</label>
+              <label htmlFor="overtime-hours-input" style={{ color: 'var(--charge)' }}>Overtime Hours</label>
               <input
+                id="overtime-hours-input"
                 type="number"
                 className="ts-input"
                 min={0.5}
@@ -285,8 +290,9 @@ function AddEntryDialog({
           )}
           {/* Comment */}
           <div className="ts-field">
-            <label>Notes (optional)</label>
+            <label htmlFor="notes-textarea">Notes (optional)</label>
             <textarea
+              id="notes-textarea"
               className="ts-textarea"
               rows={2}
               value={form.comment}

@@ -1055,8 +1055,10 @@ export default function PipelinePage() {
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Portfolio (optional)</InputLabel>
+                <InputLabel id="pipeline-portfolio-label">Portfolio (optional)</InputLabel>
                 <Select
+                  id="pipeline-portfolio-select"
+                  labelId="pipeline-portfolio-label"
                   value={createForm._pm_portfolio_value}
                   label="Portfolio (optional)"
                   onChange={(e) => setCreateForm((f) => ({ ...f, _pm_portfolio_value: e.target.value }))}
@@ -1077,8 +1079,10 @@ export default function PipelinePage() {
             </Grid>
             <Grid size={{ xs: 12 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Initiative Type</InputLabel>
+                <InputLabel id="pipeline-initiative-type-label">Initiative Type</InputLabel>
                 <Select
+                  id="pipeline-initiative-type-select"
+                  labelId="pipeline-initiative-type-label"
                   value={createForm.pm_initiativetype}
                   label="Initiative Type"
                   onChange={(e) => setCreateForm((f) => ({ ...f, pm_initiativetype: e.target.value as number }))}

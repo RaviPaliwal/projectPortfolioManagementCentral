@@ -146,6 +146,16 @@
   * Added `autoSubmitGateReviewRequest` to auto-generate a pending Gate Review request on project update when all readiness metrics qualify.
   * Integrated automatic active "Gate Reviews" workflow triggering to launch Power Automate approval chains on auto-submission.
 
+### Mon–Tue, June 29–30
+- **Timesheet Notification Debugging & Fixes**: Fixed timesheet cloud flow triggering by dynamically resolving the submitting user's `systemuserid` from their associated Resource details (`_pm_systemuser_value`) when Dataverse OData returns empty `ownerid` payloads.
+- **Workflow Approvals Notification Fallbacks**: Added name-based fallback search (`sendNotificationToUserName`) inside the step assignment flow to query the `systemusers` table using `pm_assigneedisplayname`/`pm_approvername` in case `ownerid` metadata is missing during step creation.
+- **Change Request Notification Routing**: Added Teams notifications for Project Managers when change requests transition to "Under Review", and Outlook email alerts for the creators upon approval or rejection.
+- **Issue Escalation Alerting**: Configured high-priority Teams alerts to notify project managers immediately when a project issue's escalation status transitions to `true`.
+- **Database Schema Validation Fixes**: Resolved HTTP 400 validation error crashes by restricting the UI issue category selections to accepted OData picklist options (`0` -> Dependency, `1` -> Technical) across all page and dialog components.
+- **Issue Detail Drawer Enhancements**: Added an "Escalate Issue" button in the drawer header and rendered the "Resolution Details" status card directly in the Overview tab for immediate visibility.
+- **WCAG 2.1/2.2 AA Accessibility Compliance (J2-271)**: Implemented ARIA roles, navigation landmarks, language specifications, screen-reader labels (`aria-label`, `aria-current`), and semantic HTML wrapping to establish WCAG accessibility standards.
+
+
 ## Key Architecture Facts
 - `pm_timesheetstatus` option set: `0=Approved`, `1=Submitted`, `2=Rejected`, `3=Draft`.
 - `FORM_DIALOG_DECISION_EVENT = 'form:decision-complete'` dispatched by modals after decision; parent pages listen and refresh.

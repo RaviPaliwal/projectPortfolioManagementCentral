@@ -71,10 +71,6 @@ import type { ProjectOption, ProgrammeOption, RiskOption, ResourceOption } from 
 const ISSUE_CATEGORY_LABELS: Record<string, string> = {
   '0': 'Dependency',
   '1': 'Technical',
-  '2': 'Resource',
-  '3': 'Financial',
-  '4': 'Scope',
-  '5': 'Quality',
 }
 
 const RAG_LABELS: Record<string, string> = {
@@ -358,6 +354,28 @@ export default function IssuesPage() {
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch (err) {
       setError('Unable to delete issue.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleEscalateIssue = async (issue: IssueModel) => {
+    if (!issue.pm_issueid) return
+    setError(null)
+    setSaving(true)
+    try {
+      const updated = await updateIssueFull(issue.pm_issueid, {
+        pm_escalationstatus: true
+      })
+      if (updated) {
+        setSuccessMsg('Issue escalated successfully.')
+        setSelectedIssue(updated)
+        setIssues(prev => prev.map(i => i.pm_issueid === issue.pm_issueid ? updated : i))
+        setTimeout(() => setSuccessMsg(null), 3000)
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to escalate issue.')
+      setTimeout(() => setError(null), 4000)
     } finally {
       setSaving(false)
     }
@@ -707,7 +725,19 @@ export default function IssuesPage() {
           </Box>
         )}
         headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+            {selectedIssue && !selectedIssue.pm_escalationstatus && canEdit && (
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                startIcon={<FlagIcon />}
+                onClick={() => handleEscalateIssue(selectedIssue)}
+                sx={{ mr: 1, borderRadius: 1.5 }}
+              >
+                Escalate Issue
+              </Button>
+            )}
             {canEdit && (
               <ActionIcon icon={<EditIcon />} onClick={() => openEdit(selectedIssue!)} label="Edit" />
             )}
@@ -728,6 +758,13 @@ export default function IssuesPage() {
                   <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Details</Typography>
                   <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
                     {selectedIssue.pm_issuedescription || 'No description provided.'}
+                  </Typography>
+                </Paper>
+                
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Resolution Details</Typography>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
+                    {selectedIssue.pm_resolutiondetails || 'No resolution details yet.'}
                   </Typography>
                 </Paper>
               </Box>

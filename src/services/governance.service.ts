@@ -13,7 +13,9 @@ import type {
 } from '@/types/dataverse'
 import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
-import { fetchProjectDetails, fetchProjectsFull } from './project.service'
+import { fetchProjectDetails, fetchProjectsFull, updateProject, fetchProjectMilestones } from './project.service'
+import { fetchAllocatedResourcesByProject } from './resource.service'
+import { fetchWorkflows, startWorkflowForEntity } from './workflow.service'
 import { writeAuditLog } from './changelog.service'
 
 export const mapGateReview = (item: Pm_projectgatereviews): GateReviewModel => ({
@@ -261,8 +263,6 @@ export async function updateGateReview(id: string, changes: Partial<GateReviewMo
 
           if (targetPhase !== null) {
             console.log(`[GovernanceService] Auto-transitioning project ${projectId} to phase ${targetPhase} due to gate approval.`)
-            // Dynamically import project update method to prevent circular references
-            const { updateProject } = await import('./project.service')
             await updateProject(projectId, { pm_projectphase: targetPhase } as any)
           }
         }
@@ -651,7 +651,6 @@ export async function deletePerformanceMeasure(id: string): Promise<void> {
 export async function evaluateGateTransitionPrerequisites(projectId: string, targetGateStage: string): Promise<{ ready: boolean; blockers: string[] }> {
   const blockers: string[] = []
   try {
-    const { fetchProjectDetails } = await import('./project.service')
     const project = await fetchProjectDetails(projectId)
     if (!project) {
       return { ready: false, blockers: ['Project not found.'] }
@@ -678,7 +677,6 @@ export async function evaluateGateTransitionPrerequisites(projectId: string, tar
         blockers.push('Planned Start Date and Planned End Date must be set.')
       }
       // Check for at least 1 resource allocation
-      const { fetchAllocatedResourcesByProject } = await import('./resource.service')
       const resources = await fetchAllocatedResourcesByProject(projectId)
       if (resources.length === 0) {
         blockers.push('At least one Resource Allocation is required.')
@@ -690,7 +688,6 @@ export async function evaluateGateTransitionPrerequisites(projectId: string, tar
         blockers.push('Project must be 100% complete.')
       }
       // Check milestones
-      const { fetchProjectMilestones } = await import('./project.service')
       const milestones = await fetchProjectMilestones(projectId)
       const uncompletedMilestones = milestones.filter(m => m.pm_status !== 'Completed' && m.pm_status !== '1') // Assuming status value
       if (uncompletedMilestones.length > 0) {
@@ -763,7 +760,6 @@ export async function autoSubmitGateReviewRequest(projectId: string, currentPhas
       
       // Auto-trigger approval workflow if a template exists
       try {
-        const { fetchWorkflows, startWorkflowForEntity } = await import('./workflow.service')
         const workflows = await fetchWorkflows()
         // Find active workflow corresponding to Gate Reviews
         const gateWorkflow = workflows.find(w => w.pm_isactive && w.pm_module?.toLowerCase() === 'gate reviews')
