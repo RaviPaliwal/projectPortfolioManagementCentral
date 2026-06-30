@@ -31,6 +31,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import ViewWeekIcon from '@mui/icons-material/ViewWeek'
 import ListIcon from '@mui/icons-material/List'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import SchemaIcon from '@mui/icons-material/Schema'
 import PrintIcon from '@mui/icons-material/Print'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
@@ -48,6 +49,7 @@ interface ProjectScheduleTabProps {
   tasks: ProjectTaskModel[]
   onEditMilestone?: (milestone: ProjectMilestoneModel) => void
   onEditTask?: (task: ProjectTaskModel) => void
+  onDeleteMilestone?: (milestoneId: string) => Promise<void>
   canEdit?: boolean
   onRefresh?: () => void
   onSuccess?: (msg: string) => void
@@ -60,6 +62,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
   tasks, 
   onEditMilestone, 
   onEditTask,
+  onDeleteMilestone,
   canEdit = false,
   onRefresh,
   onSuccess,
@@ -393,6 +396,16 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
     printWindow.print()
   }
 
+  const handleDeleteMilestoneClick = async (milestoneId: string) => {
+    if (!onDeleteMilestone) return
+    if (!window.confirm('Are you sure you want to delete this milestone?')) return
+    try {
+      await onDeleteMilestone(milestoneId)
+    } catch (err) {
+      console.error('[ProjectScheduleTab] delete milestone error:', err)
+    }
+  }
+
   // Combine and sort by planned date for the list view
   const timelineItems = useMemo(() => {
     const filteredTasks = showCriticalPathOnly
@@ -630,35 +643,53 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
                       </TableCell>
                       {canEdit && (
                         <TableCell align="right" sx={{ pr: 3 }}>
-                          {item.type === 'milestone' ? (
-                            <Tooltip title="Edit Milestone">
-                              <IconButton
-                                size="small"
-                                onClick={() => onEditMilestone?.(milestones.find(m => m.pm_projectmilestoneid === item.id)!)}
-                                sx={{
-                                  border: '1px solid',
-                                  borderColor: 'divider',
-                                  '&:hover': { bgcolor: 'action.hover' }
-                                }}
-                              >
-                                <EditIcon sx={{ fontSize: 14 }} />
-                              </IconButton>
-                            </Tooltip>
-                          ) : (
-                            <Tooltip title="Edit Task">
-                              <IconButton
-                                size="small"
-                                onClick={() => onEditTask?.(tasks.find(t => t.pm_projecttaskid === item.id)!)}
-                                sx={{
-                                  border: '1px solid',
-                                  borderColor: 'divider',
-                                  '&:hover': { bgcolor: 'action.hover' }
-                                }}
-                              >
-                                <EditIcon sx={{ fontSize: 14 }} />
-                              </IconButton>
-                            </Tooltip>
-                          )}
+                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                            {item.type === 'milestone' ? (
+                              <>
+                                <Tooltip title="Edit Milestone">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => onEditMilestone?.(milestones.find(m => m.pm_projectmilestoneid === item.id)!)}
+                                    sx={{
+                                      border: '1px solid',
+                                      borderColor: 'divider',
+                                      '&:hover': { bgcolor: 'action.hover' }
+                                    }}
+                                  >
+                                    <EditIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Delete Milestone">
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => handleDeleteMilestoneClick(item.id!)}
+                                    sx={{
+                                      border: '1px solid',
+                                      borderColor: 'error.light',
+                                      '&:hover': { bgcolor: 'error.lighter' }
+                                    }}
+                                  >
+                                    <DeleteIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
+                            ) : (
+                              <Tooltip title="Edit Task">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => onEditTask?.(tasks.find(t => t.pm_projecttaskid === item.id)!)}
+                                  sx={{
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    '&:hover': { bgcolor: 'action.hover' }
+                                  }}
+                                >
+                                  <EditIcon sx={{ fontSize: 14 }} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Box>
                         </TableCell>
                       )}
                     </TableRow>

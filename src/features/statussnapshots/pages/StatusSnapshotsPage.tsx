@@ -338,6 +338,24 @@ export default function StatusSnapshotsPage() {
       .catch((err) => console.error('Failed to load portfolio hierarchy for status snapshots:', err))
   }, [])
 
+  const getProjectName = (id?: string) => {
+    if (!id) return '\u2014'
+    const found = activeHierarchy.projects.find(p => p.pm_projectid === id)
+    return found ? found.pm_projectname : id
+  }
+
+  const getProgrammeName = (id?: string) => {
+    if (!id) return '\u2014'
+    const found = activeHierarchy.programmes.find(p => p.pm_programmeid === id)
+    return found ? found.pm_programmename : id
+  }
+
+  const getPortfolioName = (id?: string) => {
+    if (!id) return '\u2014'
+    const found = activeHierarchy.portfolios.find(p => p.pm_portfolioid === id)
+    return found ? found.pm_portfolioname : id
+  }
+
   const kpiItems = useMemo((): KpiCardItem[] => {
     const total = snapshots.length
     const green = snapshots.filter((s) => Number(s.pm_overallragstatus) === 1)
@@ -948,20 +966,32 @@ export default function StatusSnapshotsPage() {
                 </Box>
                 {selectedSnapshot._pm_project_value && (
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project Ref</Typography>
-                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>{selectedSnapshot._pm_project_value}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project</Typography>
+                    <Tooltip title={`ID: ${selectedSnapshot._pm_project_value}`} arrow>
+                      <Typography variant="body2" sx={{ fontWeight: 600, cursor: 'help' }}>
+                        {getProjectName(selectedSnapshot._pm_project_value)}
+                      </Typography>
+                    </Tooltip>
                   </Box>
                 )}
                 {selectedSnapshot._pm_portfoliolookup_value && (
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Portfolio Ref</Typography>
-                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>{selectedSnapshot._pm_portfoliolookup_value}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Portfolio</Typography>
+                    <Tooltip title={`ID: ${selectedSnapshot._pm_portfoliolookup_value}`} arrow>
+                      <Typography variant="body2" sx={{ fontWeight: 600, cursor: 'help' }}>
+                        {getPortfolioName(selectedSnapshot._pm_portfoliolookup_value)}
+                      </Typography>
+                    </Tooltip>
                   </Box>
                 )}
                 {selectedSnapshot._pm_programmename_value && (
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme Ref</Typography>
-                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>{selectedSnapshot._pm_programmename_value}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme</Typography>
+                    <Tooltip title={`ID: ${selectedSnapshot._pm_programmename_value}`} arrow>
+                      <Typography variant="body2" sx={{ fontWeight: 600, cursor: 'help' }}>
+                        {getProgrammeName(selectedSnapshot._pm_programmename_value)}
+                      </Typography>
+                    </Tooltip>
                   </Box>
                 )}
               </Box>

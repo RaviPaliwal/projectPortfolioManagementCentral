@@ -78,6 +78,8 @@ interface Project360ViewProps {
   onEditMilestone?: (milestone: ProjectMilestoneModel) => void
   onEditTask?: (task: ProjectTaskModel) => void
   onUpdateTaskStatus?: (taskId: string, status: string, percent: number) => Promise<void>
+  onDeleteTask?: (taskId: string) => Promise<void>
+  onDeleteMilestone?: (milestoneId: string) => Promise<void>
   onEditBudgetLine?: (budget: BudgetLineModel) => void
   onRefresh?: () => void
   onSuccess?: (msg: string) => void
@@ -114,6 +116,8 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onEditMilestone,
   onEditTask,
   onUpdateTaskStatus,
+  onDeleteTask,
+  onDeleteMilestone,
   onEditBudgetLine,
   onRefresh,
   onSuccess,
@@ -242,8 +246,9 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   projectId={project.pm_projectid}
                   milestones={milestones} 
                   tasks={tasks} 
-                  onEditMilestone={onEditMilestone}
+                  onEditMilestone={onEditMilestone} 
                   onEditTask={onEditTask}
+                  onDeleteMilestone={onDeleteMilestone}
                   canEdit={canEdit}
                   onRefresh={onRefresh}
                   onSuccess={onSuccess}
@@ -278,6 +283,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   onMarkTaskAsDone={onMarkTaskAsDone}
                   onEditTask={onEditTask}
                   onUpdateTaskStatus={onUpdateTaskStatus}
+                  onDeleteTask={onDeleteTask}
                 />
               )}
               {activeTab === 8 && project.pm_projectid && (

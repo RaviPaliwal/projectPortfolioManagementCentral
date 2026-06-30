@@ -21,6 +21,7 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 
 import { useUser } from '@/context/UserContext'
 import { StatusTag } from '@/components/common'
@@ -34,6 +35,7 @@ interface ProjectTasksTabProps {
   onMarkTaskAsDone?: (taskId: string) => Promise<void>
   onEditTask?: (task: ProjectTaskModel) => void
   onUpdateTaskStatus?: (taskId: string, status: string, percent: number) => Promise<void>
+  onDeleteTask?: (taskId: string) => Promise<void>
 }
 
 export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
@@ -41,13 +43,15 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
   tasks,
   onMarkTaskAsDone,
   onEditTask,
-  onUpdateTaskStatus
+  onUpdateTaskStatus,
+  onDeleteTask
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const { currentUserPersona } = useUser()
   const [activeSubTab, setActiveSubTab] = useState(0)
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null)
 
   const [statusMenuAnchor, setStatusMenuAnchor] = useState<{ element: HTMLElement | null, task: ProjectTaskModel | null }>({ element: null, task: null })
 
@@ -61,6 +65,17 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
       await onMarkTaskAsDone(taskId)
     } finally {
       setUpdatingTaskId(null)
+    }
+  }
+
+  const handleDeleteTaskClick = async (taskId: string) => {
+    if (!onDeleteTask) return
+    if (!window.confirm('Are you sure you want to delete this task?')) return
+    setDeletingTaskId(taskId)
+    try {
+      await onDeleteTask(taskId)
+    } finally {
+      setDeletingTaskId(null)
     }
   }
 
@@ -223,7 +238,7 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
                                 <IconButton
                                   size="small"
                                   color="success"
-                                  disabled={updatingTaskId === task.pm_projecttaskid}
+                                  disabled={updatingTaskId === task.pm_projecttaskid || deletingTaskId === task.pm_projecttaskid}
                                   onClick={() => handleMarkAsDoneClick(task.pm_projecttaskid!)}
                                   sx={{
                                     border: '1px solid',
@@ -247,6 +262,26 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
                                 </span>
                               </Tooltip>
                             )}
+
+                            <Tooltip title="Delete Task">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                disabled={updatingTaskId === task.pm_projecttaskid || deletingTaskId === task.pm_projecttaskid}
+                                onClick={() => handleDeleteTaskClick(task.pm_projecttaskid!)}
+                                sx={{
+                                  border: '1px solid',
+                                  borderColor: 'error.light',
+                                  '&:hover': { bgcolor: 'error.lighter' }
+                                }}
+                              >
+                                {deletingTaskId === task.pm_projecttaskid ? (
+                                  <CircularProgress size={16} color="inherit" />
+                                ) : (
+                                  <DeleteIcon sx={{ fontSize: 16 }} />
+                                )}
+                              </IconButton>
+                            </Tooltip>
                           </Box>
                         </TableCell>
                       )}

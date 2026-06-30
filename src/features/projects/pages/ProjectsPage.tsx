@@ -25,6 +25,8 @@ import {
   fetchPortfolioHierarchy,
   uploadDocument,
   updateProjectTask,
+  deleteProjectTask,
+  deleteProjectMilestone,
 } from '@/services'
 import { useUser } from '@/context/UserContext'
 import { MODULE_NAMES } from '@/constants/moduleNames'
@@ -473,6 +475,65 @@ export default function ProjectsPage() {
     }
   }
 
+  const handleDeleteTask = async (taskId: string) => {
+    if (!selectedProject?.pm_projectid) return
+    try {
+      // 1. Delete task in Dataverse
+      await deleteProjectTask(taskId)
+
+      // 2. Filter details local state
+      const updatedTasks = detailTasks.filter((t) => t.pm_projecttaskid !== taskId)
+
+      // 3. Compute new average progress
+      const total = updatedTasks.length
+      const avgProgress = total > 0
+        ? Math.round(updatedTasks.reduce((s, t) => s + (t.pm_percentcomplete ?? 0), 0) / total)
+        : 0
+
+      // 4. Update the project in Dataverse
+      await updateProject(selectedProject.pm_projectid, {
+        pm_percentcomplete: avgProgress
+      })
+
+      setSuccessMsg('Task deleted successfully and project progress updated.')
+
+      // 5. Update UI states
+      setDetailTasks(updatedTasks)
+      setSelectedProject((prev) => (prev ? { ...prev, pm_percentcomplete: avgProgress } : null))
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.pm_projectid === selectedProject.pm_projectid ? { ...p, pm_percentcomplete: avgProgress } : p
+        )
+      )
+
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err) {
+      console.error('[ProjectsPage] handleDeleteTask error:', err)
+      setError('Unable to delete project task.')
+    }
+  }
+
+  const handleDeleteMilestone = async (milestoneId: string) => {
+    if (!selectedProject?.pm_projectid) return
+    try {
+      // 1. Delete milestone in Dataverse
+      await deleteProjectMilestone(milestoneId)
+
+      // 2. Filter details local state
+      const updatedMilestones = detailMilestones.filter((m) => m.pm_projectmilestoneid !== milestoneId)
+
+      setSuccessMsg('Milestone deleted successfully.')
+
+      // 3. Update UI states
+      setDetailMilestones(updatedMilestones)
+
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err) {
+      console.error('[ProjectsPage] handleDeleteMilestone error:', err)
+      setError('Unable to delete project milestone.')
+    }
+  }
+
   const handleEditMilestone = (milestone: ProjectMilestoneModel) => {
     setEditingMilestone(milestone)
     setMilestoneDialogOpen(true)
@@ -579,6 +640,8 @@ export default function ProjectsPage() {
           onEditProject={openEditForm}
           onMarkTaskAsDone={handleMarkTaskAsDone}
           onUpdateTaskStatus={handleUpdateTaskStatus}
+          onDeleteTask={handleDeleteTask}
+          onDeleteMilestone={handleDeleteMilestone}
           onRefresh={() => refreshDetailData('task')}
           onSuccess={(msg) => {
             setSuccessMsg(msg)
