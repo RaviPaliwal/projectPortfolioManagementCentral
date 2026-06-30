@@ -91,7 +91,7 @@ const DRAWER_WIDTH = 260
 export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, themeMode, children }: PrimaryShellProps) {
   const theme = useTheme()
   const { currentUserPersona } = useUser()
-// RouteGuard in App.tsx handles persona-based redirect on mount/navigation
+  // RouteGuard in App.tsx handles persona-based redirect on mount/navigation
   const allowedTabs = PERSONA_PERMISSIONS[currentUserPersona] || []
   const sidebarTabs = tabs.filter(t => !t.hidden && allowedTabs.includes(t.key))
 
@@ -111,7 +111,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
     return () => window.removeEventListener('navigate', handler)
   }, [activeTab, onChangeTab, allowedTabs])
 
-  
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Sidebar */}
@@ -195,7 +195,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
               {activeTab !== 'dashboard' && (
                 <>
                   <Typography variant="caption" color="text.disabled">/</Typography>
-                  {['workflows', 'teamadmin', 'skills', 'holidays'].includes(activeTab) && (
+                  {['workflows', 'teamadmin', 'skills', 'holidays', 'resources', 'reportConfigs'].includes(activeTab) && (
                     <>
                       <Typography
                         variant="body2"
@@ -232,14 +232,14 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
             <Box sx={{ flex: 1 }} />
             <UserSelector />
             <NotificationCenter />
-            <IconButton 
-              onClick={onToggleTheme} 
+            <IconButton
+              onClick={onToggleTheme}
               sx={{ color: 'text.secondary' }}
               aria-label="Toggle light or dark theme"
             >
               {themeMode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
             </IconButton>
-            <IconButton 
+            <IconButton
               sx={{ color: 'text.secondary' }}
               aria-label="Documentation guide"
             >
