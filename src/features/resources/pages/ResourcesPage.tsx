@@ -183,7 +183,7 @@ export default function ResourcesPage() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('')
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [sort, setSort] = useState<SortState>({ field: 'name', dir: 'asc' })
 
   // Detail panel state
@@ -749,7 +749,7 @@ export default function ResourcesPage() {
                 onPageChange={handleChangePage}
                 rowsPerPage={rowsPerPage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[25, 50, 100]}
+                rowsPerPageOptions={[10, 25, 50, 100]}
               />
             )}
           </Paper>

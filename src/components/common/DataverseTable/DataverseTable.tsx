@@ -29,6 +29,7 @@ export interface DataverseTableProps<T> {
   showExport?: boolean;
   minHeight?: number | string;
   maxHeight?: string;
+  variant?: 'elevation' | 'outlined' | 'flat';
 }
 
 export function DataverseTable<T extends Record<string, any>>({
@@ -48,6 +49,7 @@ export function DataverseTable<T extends Record<string, any>>({
   showExport = true,
   minHeight,
   maxHeight,
+  variant = 'elevation',
 }: DataverseTableProps<T>) {
   const {
     searchQuery,
@@ -63,7 +65,7 @@ export function DataverseTable<T extends Record<string, any>>({
     reset,
   } = useDataGrid(data, {
     searchFields,
-    initialRowsPerPage: 25,
+    initialRowsPerPage: 10,
   });
 
   const handleClear = () => {
@@ -72,7 +74,17 @@ export function DataverseTable<T extends Record<string, any>>({
   };
 
   return (
-    <Paper sx={{ overflow: 'hidden', mb: 3, borderRadius: 2 }}>
+    <Paper 
+      elevation={variant === 'elevation' ? 1 : 0} 
+      variant={variant === 'outlined' ? 'outlined' : 'elevation'}
+      sx={{ 
+        overflow: 'hidden', 
+        mb: 3, 
+        borderRadius: variant === 'flat' ? 0 : 2,
+        bgcolor: variant === 'flat' ? 'transparent' : 'background.paper',
+        border: variant === 'flat' ? 'none' : undefined,
+      }}
+    >
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, borderBottom: 1, borderColor: 'divider' }}>
         <SearchFilterBar
           searchQuery={searchQuery}

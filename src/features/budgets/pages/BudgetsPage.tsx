@@ -205,7 +205,7 @@ export default function BudgetsPage() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [sort, setSort] = useState<SortState>({ field: 'name', dir: 'asc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Detail panel state
   const [selectedBudget, setSelectedBudget] = useState<BudgetLineModel | null>(null)
@@ -1170,7 +1170,7 @@ export default function BudgetsPage() {
                     onPageChange={handleChangePage}
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={handleChangeRowsPerPage}
-                    rowsPerPageOptions={[25, 50, 100]}
+                    rowsPerPageOptions={[10, 25, 50, 100]}
                   />
                 )}
               </Paper>

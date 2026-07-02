@@ -24,7 +24,7 @@ export const TableShell: React.FC<TableShellProps> = ({
   emptyTitle = 'No data found',
   emptyMessage,
   emptyAction,
-  maxHeight = 'calc(100vh - 460px)',
+  maxHeight = 'auto',
   minHeight = 300,
   sx,
 }) => {
@@ -60,11 +60,6 @@ export const TableShell: React.FC<TableShellProps> = ({
       sx={{ 
         maxHeight, 
         minHeight, 
-        borderRadius: 2.5,
-        boxShadow: (theme) => theme.palette.mode === 'dark' 
-          ? '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-          : '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-        border: (theme) => `1px solid ${theme.palette.divider}`,
         overflow: 'auto',
         ...sx 
       }}

@@ -497,30 +497,17 @@ export default function PortfoliosPage() {
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Programmes
               </Typography>
-              <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
-                <Box sx={{
-                  '& .MuiPaper-root': {
-                    boxShadow: 'none',
-                    border: 'none',
-                    bgcolor: 'transparent',
-                    backgroundImage: 'none',
-                    borderRadius: 0,
-                    mb: 0
-                  }
-                }}>
-                  <DataverseTable
-                    data={detailProgrammes}
-                    columns={programmeColumns}
-                    loading={loading}
-                    emptyIcon={<FolderIcon />}
-                    emptyTitle="No programmes linked to this portfolio."
-                    searchPlaceholder="Search programmes..."
-                    searchFields={['pm_programmename']}
-                    showExport={false}
-                    minHeight="auto"
-                  />
-                </Box>
-              </Paper>
+              <DataverseTable
+                variant="flat"
+                data={detailProgrammes}
+                columns={programmeColumns}
+                loading={loading}
+                emptyIcon={<FolderIcon />}
+                emptyTitle="No programmes linked to this portfolio."
+                searchPlaceholder="Search programmes..."
+                searchFields={['pm_programmename']}
+                showExport={false}
+              />
             </Box>
 
             {/* Block 4: Linked Projects Grid */}
@@ -528,30 +515,17 @@ export default function PortfoliosPage() {
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Projects
               </Typography>
-              <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
-                <Box sx={{
-                  '& .MuiPaper-root': {
-                    boxShadow: 'none',
-                    border: 'none',
-                    bgcolor: 'transparent',
-                    backgroundImage: 'none',
-                    borderRadius: 0,
-                    mb: 0
-                  }
-                }}>
-                  <DataverseTable
-                    data={detailProjects}
-                    columns={projectColumns}
-                    loading={loading}
-                    emptyIcon={<AccountTreeIcon />}
-                    emptyTitle="No projects linked to this portfolio."
-                    searchPlaceholder="Search projects..."
-                    searchFields={['pm_projectname', 'pm_projectcode']}
-                    showExport={false}
-                    minHeight="auto"
-                  />
-                </Box>
-              </Paper>
+              <DataverseTable
+                variant="flat"
+                data={detailProjects}
+                columns={projectColumns}
+                loading={loading}
+                emptyIcon={<AccountTreeIcon />}
+                emptyTitle="No projects linked to this portfolio."
+                searchPlaceholder="Search projects..."
+                searchFields={['pm_projectname', 'pm_projectcode']}
+                showExport={false}
+              />
             </Box>
           </>
         )}

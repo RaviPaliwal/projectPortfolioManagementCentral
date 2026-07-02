@@ -262,7 +262,7 @@ export default function StatusSnapshotsPage() {
   const [ragFilter, setRagFilter] = useState('')
   const [sort, setSort] = useState<SortState>({ field: 'name', dir: 'asc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [selectedSnapshot, setSelectedSnapshot] = useState<ProjectStatusSnapshotModel | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingSnapshot, setEditingSnapshot] = useState<ProjectStatusSnapshotModel | null>(null)

@@ -615,7 +615,7 @@ export default function SkillsPage() {
               onPageChange={(_, p) => setSkillPage(p)}
               rowsPerPage={skillRowsPerPage}
               onRowsPerPageChange={(e) => { setSkillRowsPerPage(parseInt(e.target.value, 10)); setSkillPage(0) }}
-              rowsPerPageOptions={[25, 50, 100]}
+              rowsPerPageOptions={[10, 25, 50, 100]}
             />
           )}
         </Paper>
@@ -921,7 +921,7 @@ export default function SkillsPage() {
               onPageChange={(_, p) => setRsPage(p)}
               rowsPerPage={rsRowsPerPage}
               onRowsPerPageChange={(e) => { setRsRowsPerPage(parseInt(e.target.value, 10)); setRsPage(0) }}
-              rowsPerPageOptions={[25, 50, 100]}
+              rowsPerPageOptions={[10, 25, 50, 100]}
             />
           )}
         </Paper>

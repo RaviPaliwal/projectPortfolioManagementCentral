@@ -56,7 +56,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
   const [searchQuery, setSearchQuery] = useState('')
   const [phaseFilter, setPhaseFilter] = useState('')
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [sort, setSort] = useState<SortState>({ field: 'pm_projectname', direction: 'asc' })
 
   const handleSort = useCallback((field: string) => {
@@ -304,7 +304,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[25, 50, 100]}
+          rowsPerPageOptions={[10, 25, 50, 100]}
         />
       )}
     </Paper>

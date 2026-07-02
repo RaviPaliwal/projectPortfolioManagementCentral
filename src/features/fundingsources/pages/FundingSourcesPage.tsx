@@ -140,7 +140,7 @@ export default function FundingSourcesPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [sort, setSort] = useState<SortState>({ field: 'name', dir: 'asc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Detail panel state
   const [selectedSource, setSelectedSource] = useState<FundingSourceModel | null>(null)
@@ -649,7 +649,7 @@ export default function FundingSourcesPage() {
             onPageChange={handleChangePage}
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[25, 50, 100]}
+            rowsPerPageOptions={[10, 25, 50, 100]}
           />
         )}
       </Paper>

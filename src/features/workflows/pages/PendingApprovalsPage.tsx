@@ -48,7 +48,7 @@ export default function PendingApprovalsPage() {
 
   const [sort, setSort] = useState<SortState>({ field: 'due', dir: 'asc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
 
   // Reject dialog
@@ -372,7 +372,7 @@ export default function PendingApprovalsPage() {
               onPageChange={(_, p) => setPage(p)}
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0) }}
-              rowsPerPageOptions={[25, 50, 100]}
+              rowsPerPageOptions={[10, 25, 50, 100]}
             />
           </>
         )}

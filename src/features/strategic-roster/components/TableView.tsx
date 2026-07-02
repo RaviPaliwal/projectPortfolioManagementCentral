@@ -174,7 +174,7 @@ const TableView: React.FC<TableViewProps> = ({ portfolios, programmes, projects,
   )
 
   return (
-    <TableContainer sx={{ maxHeight: 'calc(100vh - 480px)', borderRadius: 0 }}>
+    <TableContainer sx={{ borderRadius: 0 }}>
       <Table stickyHeader size="small">
         <TableHead>
           <TableRow>

@@ -15,7 +15,7 @@ export interface UseDataGridOptions<T> {
 export function useDataGrid<T>(data: T[], options: UseDataGridOptions<T> = {}) {
   const {
     initialSort = { field: '', dir: 'asc' },
-    initialRowsPerPage = 25,
+    initialRowsPerPage = 10,
     searchFields = [],
     filterFn,
   } = options

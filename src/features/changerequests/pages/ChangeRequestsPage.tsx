@@ -158,7 +158,7 @@ export default function ChangeRequestsPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [sort, setSort] = useState<SortState>({ field: 'title', dir: 'asc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   const [selectedCR, setSelectedCR] = useState<ChangeRequestModel | null>(null)
   const [detailTab, setDetailTab] = useState(0)
@@ -752,7 +752,7 @@ export default function ChangeRequestsPage() {
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[25, 50, 100]}
+              rowsPerPageOptions={[10, 25, 50, 100]}
             />
           </>
         )}

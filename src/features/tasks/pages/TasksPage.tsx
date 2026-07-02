@@ -270,7 +270,7 @@ export default function TasksPage() {
               <TablePagination component="div" count={filteredSteps.length} page={myPage}
                 onPageChange={(_, p) => setMyPage(p)} rowsPerPage={myRowsPerPage}
                 onRowsPerPageChange={(e) => { setMyRowsPerPage(parseInt(e.target.value, 10)); setMyPage(0) }}
-                rowsPerPageOptions={[25, 50, 100]} />
+                rowsPerPageOptions={[10, 25, 50, 100]} />
             </>
           )}
         </Paper>
@@ -353,7 +353,7 @@ export default function TasksPage() {
                 setProjectTasksRowsPerPage(parseInt(e.target.value, 10))
                 setProjectTasksPage(0)
               }}
-              rowsPerPageOptions={[25, 50, 100]} />
+              rowsPerPageOptions={[10, 25, 50, 100]} />
           )}
         </Paper>
       )}
@@ -365,7 +365,7 @@ export default function TasksPage() {
 function TeamTasksView({ isDark, teamSteps, loading }: { isDark: boolean, teamSteps: WorkflowApprovalStepModel[], loading: boolean }) {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [sort, setSort] = useState<TeamSortState>({ field: 'due', dir: 'asc' })
 
   const handleSort = useCallback((field: TeamSortField) => {
@@ -476,7 +476,7 @@ function TeamTasksView({ isDark, teamSteps, loading }: { isDark: boolean, teamSt
           <TablePagination component="div" count={filtered.length} page={page}
             onPageChange={(_, p) => setPage(p)} rowsPerPage={rowsPerPage}
             onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0) }}
-            rowsPerPageOptions={[25, 50, 100]} />
+            rowsPerPageOptions={[10, 25, 50, 100]} />
         </>
       )}
     </Paper>
