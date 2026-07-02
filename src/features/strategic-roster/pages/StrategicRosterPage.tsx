@@ -52,6 +52,7 @@ import { PageHeader, KpiCardRow } from '@/components/common'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import type { TabKey } from '@/components/layout/PrimaryShell'
 import { currencyFormatter } from '@/utils/formatters'
+import { navigateToModule } from '@/utils/navigation'
 import { fontSizes } from '@/styles'
 import CardView from '../components/CardView'
 import TableView from '../components/TableView'
@@ -820,7 +821,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                           hasChildren={programs.length > 0}
                           expanded={isExpanded}
                           onToggle={() => toggleExpand(portId)}
-                          onOpenDetails={() => onNavigate?.('portfolios')}
+                          onOpenDetails={() => navigateToModule('Portfolio', portId)}
                           minDate={minDate}
                           totalDays={totalDays}
                         />
@@ -852,7 +853,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                                   hasChildren={projects.length > 0}
                                   expanded={isProgExpanded}
                                   onToggle={() => toggleExpand(progId)}
-                                  onOpenDetails={() => onNavigate?.('programmes')}
+                                  onOpenDetails={() => navigateToModule('Programme', progId)}
                                   minDate={minDate}
                                   totalDays={totalDays}
                                 />
@@ -871,7 +872,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                                       level={2}
                                       minDate={minDate}
                                       totalDays={totalDays}
-                                      onOpenDetails={() => onNavigate?.('projects')}
+                                      onOpenDetails={() => navigateToModule('Project', proj.pm_projectid!)}
                                     />
                                   ))}
                                 </Collapse>
@@ -898,7 +899,10 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                 (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
                 (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
               )}
-              onItemClick={(id, type, name) => onNavigate?.(type === 'portfolio' ? 'portfolios' : type === 'programme' ? 'programmes' : 'projects')}
+              onItemClick={(id, type, name) => {
+                const modMap: Record<string, string> = { portfolio: 'Portfolio', programme: 'Programme', project: 'Project' }
+                navigateToModule(modMap[type], id)
+              }}
             />
           )}
 
@@ -913,7 +917,10 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                 (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
                 (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
               )}
-              onItemClick={(id, type, name) => onNavigate?.(type === 'portfolio' ? 'portfolios' : type === 'programme' ? 'programmes' : 'projects')}
+              onItemClick={(id, type, name) => {
+                const modMap: Record<string, string> = { portfolio: 'Portfolio', programme: 'Programme', project: 'Project' }
+                navigateToModule(modMap[type], id)
+              }}
             />
           )}
 
@@ -928,7 +935,10 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                 (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
                 (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
               )}
-              onItemClick={(id, type, name) => onNavigate?.(type === 'portfolio' ? 'portfolios' : type === 'programme' ? 'programmes' : 'projects')}
+              onItemClick={(id, type, name) => {
+                const modMap: Record<string, string> = { portfolio: 'Portfolio', programme: 'Programme', project: 'Project' }
+                navigateToModule(modMap[type], id)
+              }}
             />
           )}
         </Paper>
