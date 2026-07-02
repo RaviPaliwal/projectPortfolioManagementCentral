@@ -21,8 +21,8 @@ import PersonIcon from '@mui/icons-material/Person'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import FolderIcon from '@mui/icons-material/Folder'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import ErrorIcon from '@mui/icons-material/Error'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import DescriptionIcon from '@mui/icons-material/Description'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
@@ -635,21 +635,21 @@ export default function PortfoliosPage() {
                 color: "secondary.main"
               },
               {
-                label: "Green Health",
+                label: "Low Risk",
                 value: kpiHealth.green,
                 subtitle: "On track",
                 icon: <CheckCircleIcon />,
                 color: "success.main"
               },
               {
-                label: "Amber Health",
+                label: "Medium Risk",
                 value: kpiHealth.amber,
                 subtitle: "At risk",
-                icon: <GppMaybeIcon />,
+                icon: <WarningAmberIcon />,
                 color: "warning.main"
               },
               {
-                label: "Red Health",
+                label: "High Risk",
                 value: kpiHealth.red,
                 subtitle: "Critical",
                 icon: <ErrorIcon />,

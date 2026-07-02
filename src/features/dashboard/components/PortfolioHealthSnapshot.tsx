@@ -43,7 +43,7 @@ export const PortfolioHealthSnapshot = ({
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>Health Snapshot</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>Risk Snapshot</Typography>
         {!loading && (
           <StatusTag
             icon={<CalendarMonthIcon />}
@@ -73,7 +73,7 @@ export const PortfolioHealthSnapshot = ({
           {/* Portfolio Snapshot */}
           <Box>
             <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: '0.03em', mb: 1, display: 'block' }}>
-              Portfolio Health
+              Portfolio Risk
             </Typography>
             {portfolioSnapshot.length > 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
@@ -99,7 +99,7 @@ export const PortfolioHealthSnapshot = ({
           {/* Programme Snapshot */}
           <Box>
             <Typography variant="caption" sx={{ fontWeight: 700, color: 'secondary.main', textTransform: 'uppercase', letterSpacing: '0.03em', mb: 1, display: 'block' }}>
-              Programme Health
+              Programme Risk
             </Typography>
             {programmeSnapshot.length > 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>

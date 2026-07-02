@@ -19,7 +19,7 @@ import PowerIcon from '@mui/icons-material/Power'
 import PowerOffIcon from '@mui/icons-material/PowerOff'
 import CloseIcon from '@mui/icons-material/Close'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import type { WorkflowModel, WorkflowInstanceModel, WorkflowStepTemplateModel } from '@/types/dataverse'
+import type { WorkflowModel, WorkflowInstanceModel, WorkflowStepTemplateModel, WorkflowApprovalStepModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
 import { useUser } from '@/context/UserContext'
 import { useAuthorization } from '@/hooks/useAuthorization'
@@ -27,7 +27,7 @@ import type { CrudModule } from '@/constants/permissions'
 import {
   fetchWorkflows, deleteWorkflow,
   fetchWorkflowInstances, deleteWorkflowInstance,
-  fetchWorkflowStepTemplates,
+  fetchWorkflowStepTemplates, fetchAllWorkflowApprovalSteps
 } from '@/services'
 import { fontSizes } from '@/styles/fontSizes'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, TabPanel, ExportButton, StatusTag, Button, ConfirmDialog, TableHeader } from '@/components/common'
@@ -86,6 +86,7 @@ export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<WorkflowModel[]>([])
   const [instances, setInstances] = useState<WorkflowInstanceModel[]>([])
   const [stepTemplates, setStepTemplates] = useState<WorkflowStepTemplateModel[]>([])
+  const [allApprovalSteps, setAllApprovalSteps] = useState<WorkflowApprovalStepModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -111,14 +112,16 @@ export default function WorkflowsPage() {
     setLoading(true)
     setError(null)
     try {
-      const [wfList, instList, stList] = await Promise.all([
+      const [wfList, instList, stList, approvalStepsList] = await Promise.all([
         fetchWorkflows(),
         fetchWorkflowInstances(),
-        fetchWorkflowStepTemplates()
+        fetchWorkflowStepTemplates(),
+        fetchAllWorkflowApprovalSteps()
       ])
       setWorkflows(wfList)
       setInstances(instList)
       setStepTemplates(stList)
+      setAllApprovalSteps(approvalStepsList)
     } catch (err) {
       setError('Unable to load workflow data. ' + (err instanceof Error ? err.message : String(err)))
     } finally {
@@ -171,11 +174,14 @@ export default function WorkflowsPage() {
     if (inst.pm_status === 0 || inst.pm_status === '0') return 100
     const workflowId = inst._pm_workflowlookup_value
     if (!workflowId) return 0
-    const totalSteps = stepTemplates.filter(s => s._pm_workflowlookup_value === workflowId).length
-    if (totalSteps === 0) return 0
-    const currentStep = inst.pm_currentstep ?? 1
-    return Math.round(((currentStep - 1) / totalSteps) * 100)
-  }, [stepTemplates])
+    
+    const instanceSteps = allApprovalSteps.filter(s => s._pm_workflowinstance_value === inst.pm_workflowinstanceid)
+    if (instanceSteps.length === 0) return 0
+
+    const completedSteps = instanceSteps.filter(s => s.pm_decisionstatus === 0 || s.pm_decisionstatus === 3 || s.pm_decisionstatus === '0' || s.pm_decisionstatus === '3').length
+    
+    return Math.round((completedSteps / instanceSteps.length) * 100)
+  }, [allApprovalSteps])
 
   const getInstanceModule = useCallback((inst: WorkflowInstanceModel) => {
     const wf = workflows.find(w => w.pm_workflowid === inst._pm_workflowlookup_value)
@@ -423,7 +429,7 @@ export default function WorkflowsPage() {
                           <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 35 }}>{completion}%</Typography>
                         </Box>
                       </TableCell>
-                      <TableCell align="center"><StatusTag label={INSTANCE_STATUS_LABELS[String(inst.pm_status ?? '')] ?? 'Unknown'} color={INSTANCE_STATUS_COLORS[String(inst.pm_status ?? '')] ?? 'default'} size="small" sx={{ fontWeight: 600 }} /></TableCell>
+                      <TableCell align="center"><StatusTag label={completion === 100 ? 'Completed' : (INSTANCE_STATUS_LABELS[String(inst.pm_status ?? '')] ?? 'Unknown')} color={completion === 100 ? 'success' : (INSTANCE_STATUS_COLORS[String(inst.pm_status ?? '')] ?? 'default')} size="small" sx={{ fontWeight: 600 }} /></TableCell>
                       <TableCell><Typography variant="body2" color="text.secondary">{formatDate(inst.pm_startdate)}</Typography></TableCell>
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>

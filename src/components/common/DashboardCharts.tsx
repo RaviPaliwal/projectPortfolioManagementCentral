@@ -26,6 +26,8 @@ export interface DashboardChartsProps {
   plannedVsActualData?: Array<{ month: string; planned: number; actual: number }>
   utilizationByProjectData?: Array<{ name: string; hours: number }>
   departmentDemandData?: Array<{ month: string; role: string; hours: number }>
+  resourceMonth?: Date
+  onResourceMonthChange?: (date: Date) => void
 }
 
 const RAG_COLORS = ['#22c55e', '#f59e0b', '#ef4444']
@@ -54,6 +56,8 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
   plannedVsActualData = [],
   utilizationByProjectData = [],
   departmentDemandData = [],
+  resourceMonth,
+  onResourceMonthChange,
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -63,11 +67,13 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
   const [resourceTab, setResourceTab] = useState(0)
 
   const tooltipStyle = {
-    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+    backgroundColor: isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.9)',
+    backdropFilter: 'blur(8px)',
     border: `1px solid ${gridColor}`,
     color: textColor,
-    borderRadius: 1.15,
+    borderRadius: 8,
     fontSize: 13,
+    boxShadow: isDark ? '0 10px 15px -3px rgba(0,0,0,0.5)' : '0 10px 15px -3px rgba(0,0,0,0.1)',
   }
 
   // ── Project Status Donut ─────────────────────────────────────────────────
@@ -78,18 +84,18 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
           data={projectStatusData}
           cx="50%"
           cy="50%"
-          labelLine={false}
-          label={({ name, value }) => `${name}: ${value}`}
-          outerRadius={80}
-          fill="#8884d8"
+          innerRadius={60}
+          outerRadius={85}
+          paddingAngle={5}
           dataKey="value"
+          stroke="none"
         >
           {projectStatusData.map((_, index) => (
             <Cell key={`cell-${index}`} fill={RAG_COLORS[index % RAG_COLORS.length]} />
           ))}
         </Pie>
         <Tooltip contentStyle={tooltipStyle} />
-        <Legend />
+        <Legend verticalAlign="bottom" height={16} iconSize={10} />
       </PieChart>
     </ResponsiveContainer>
   )
@@ -367,7 +373,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          Project Status Distribution
+          Project Risk Distribution
         </Typography>
         {renderProjectStatus()}
       </Paper>
@@ -414,22 +420,42 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
           Resource Utilization
         </Typography>
 
-        <Tabs
-          value={resourceTab}
-          onChange={(_, v) => setResourceTab(v)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            mb: 1.5,
-            borderBottom: 1,
-            borderColor: 'divider',
-            '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40 },
-          }}
-        >
-          {resourceChartPanels.map((panel, idx) => (
-            <Tab key={idx} label={panel.label} />
-          ))}
-        </Tabs>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={resourceTab}
+            onChange={(_, v) => setResourceTab(v)}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40 },
+            }}
+          >
+            {resourceChartPanels.map((panel, idx) => (
+              <Tab key={idx} label={panel.label} />
+            ))}
+          </Tabs>
+          {resourceTab === 0 && onResourceMonthChange && resourceMonth && (
+            <input 
+              type="month"
+              value={`${resourceMonth.getFullYear()}-${String(resourceMonth.getMonth() + 1).padStart(2, '0')}`}
+              onChange={(e) => {
+                if (e.target.value) {
+                  const [year, month] = e.target.value.split('-')
+                  onResourceMonthChange(new Date(parseInt(year), parseInt(month) - 1, 1))
+                }
+              }}
+              style={{
+                padding: '4px 8px',
+                borderRadius: '4px',
+                border: '1px solid #ccc',
+                background: isDark ? '#1e293b' : '#fff',
+                color: textColor,
+                fontSize: '14px',
+                marginRight: '8px'
+              }}
+            />
+          )}
+        </Box>
 
         <Box sx={{ minHeight: 400 }}>
           {resourceChartPanels[resourceTab].content}

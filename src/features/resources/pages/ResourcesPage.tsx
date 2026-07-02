@@ -73,7 +73,7 @@ import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, ActionIcon, WorkflowMilestone } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import type { KpiCardItem, FilterOption } from '@/components/common'
-import  { StatusTag } from '@/components/common'
+import { StatusTag } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import { useUser } from '@/context/UserContext'
 import {
@@ -774,12 +774,7 @@ export default function ResourcesPage() {
                     {selectedResource.pm_departmentname}
                   </Typography>
                 )}
-                {selectedResource._pm_systemuser_value && (
-                  <Typography variant="body2" color="text.secondary">
-                    <EmailIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                    System User: {selectedResource._pm_systemuser_value}
-                  </Typography>
-                )}
+
                 <StatusTag
                   label={CATEGORY_LABELS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'Unknown'}
                   color={CATEGORY_COLORS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'default'}
@@ -810,9 +805,7 @@ export default function ResourcesPage() {
             }
             tabs={[
               { label: 'Overview' },
-              { label: 'Assignments', count: resourceAllocations.length },
-              { label: 'Approval' },
-              { label: 'Tasks' },
+              { label: 'Allocations', count: resourceAllocations.length },
             ]}
             tabValue={detailTab}
             onTabChange={(v) => { setDetailTab(v); setError(null) }}
@@ -856,14 +849,6 @@ export default function ResourcesPage() {
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Department</Typography>
                           <Typography variant="body2">{selectedResource.pm_departmentname || '—'}</Typography>
                         </Box>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>System User ID</Typography>
-                          <Typography variant="body2">{selectedResource._pm_systemuser_value || '—'}</Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Supplier</Typography>
-                          <Typography variant="body2">{selectedResource.pm_suppliercompany || '—'}</Typography>
-                        </Box>
                         {selectedResource.pm_contractstartdate && (
                           <Box>
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Contract Start</Typography>
@@ -890,22 +875,41 @@ export default function ResourcesPage() {
                             {resourceAllocations.reduce((s, a) => s + (a.pm_allocatedhours ?? 0), 0)}h
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Total allocated hours across {resourceAllocations.length} assignment{resourceAllocations.length !== 1 ? 's' : ''}
+                            Total allocated hours across {resourceAllocations.length} allocation{resourceAllocations.length !== 1 ? 's' : ''}
                           </Typography>
                         </>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          No current assignments. Allocate this resource to projects from the Assignments tab.
+                          No current allocations. Allocate this resource to projects from the Allocations tab.
                         </Typography>
                       )}
                     </Paper>
                   </Box>
                 </TabPanel>
 
-                {/* Assignments Tab */}
+                {/* Allocations Tab */}
                 <TabPanel value={detailTab} index={1} pt={0}>
                   {resourceAllocations.length > 0 ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 1 }}>
+                        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Hours Allocated</Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>
+                            {resourceAllocations.reduce((acc, curr) => acc + (curr.pm_allocatedhours || 0), 0)}h
+                          </Typography>
+                          <LinearProgress variant="determinate" value={100} sx={{ height: 6, borderRadius: 3 }} />
+                        </Paper>
+                        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Average Allocation %</Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main', fontFamily: '"JetBrains Mono", monospace' }}>
+                            {Math.round(resourceAllocations.reduce((acc, curr) => acc + (curr.pm_allocationpercentage || 0), 0) / resourceAllocations.length)}%
+                          </Typography>
+                          <LinearProgress variant="determinate" value={Math.round(resourceAllocations.reduce((acc, curr) => acc + (curr.pm_allocationpercentage || 0), 0) / resourceAllocations.length)} color="success" sx={{ height: 6, borderRadius: 3 }} />
+                        </Paper>
+                      </Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 1, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <WorkIcon sx={{ fontSize: 16 }} /> Detailed Allocations
+                      </Typography>
                       {resourceAllocations.map((alloc) => (
                         <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -938,55 +942,11 @@ export default function ResourcesPage() {
                     </Box>
                   ) : (
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
-                      No assignments for this resource yet.
+                      No allocations for this resource yet.
                     </Typography>
                   )}
                 </TabPanel>
 
-                {/* Approval Tab */}
-                <TabPanel value={detailTab} index={2} pt={0}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <TimelineIcon sx={{ fontSize: 20 }} /> Approval Workflow Timeline
-                  </Typography>
-                  {resourceAllocations.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {resourceAllocations.map((alloc) => (
-                        <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <WorkIcon sx={{ fontSize: 16 }} />
-                            {alloc.pm_assignmentrole || 'Unspecified Role'}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                            {alloc.pm_allocatedhours ?? 0}h A� {alloc.pm_allocationpercentage ?? 0}%
-                            {alloc.pm_startdate ? ` A� ${new Date(alloc.pm_startdate).toLocaleDateString()} \u2192 ${alloc.pm_enddate ? new Date(alloc.pm_enddate).toLocaleDateString() : '\u2014'}` : ''}
-                          </Typography>
-                          {alloc.pm_resourceallocationid && (
-                            <WorkflowMilestone
-                              moduleName={MODULE_NAMES.RESOURCES.value}
-                              entityId={alloc.pm_resourceallocationid}
-                            />
-                          )}
-                        </Paper>
-                      ))}
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
-                      No allocations with workflow tracking yet.
-                    </Typography>
-                  )}
-                </TabPanel>
-
-                <TabPanel value={detailTab} index={3} pt={0}>
-                  {selectedResource?.pm_resourceid && (
-                    <EntityApprovalTasks
-                      entityId={selectedResource.pm_resourceid}
-                      moduleName={MODULE_NAMES.RESOURCES.value}
-                      entityLabel="Resource"
-                      tabValue={detailTab}
-                      index={3}
-                    />
-                  )}
-                </TabPanel>
               </>
             )}
           </DetailDrawer>

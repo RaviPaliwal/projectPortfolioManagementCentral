@@ -57,7 +57,26 @@ export const getTheme = (mode: PaletteMode) =>
         },
       },
       MuiChip: { styleOverrides: { root: { fontWeight: 600, fontSize: fontSizes.sm, borderRadius: 1.155 * 12 } } },
-      MuiDialog: { styleOverrides: { paper: { borderRadius: 1.155 * 12 } } },
+      MuiDialog: { 
+        styleOverrides: { 
+          paper: { 
+            borderRadius: 1.155 * 12,
+            backdropFilter: 'blur(16px)',
+            backgroundColor: mode === 'dark' ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.95)',
+            boxShadow: mode === 'dark' ? '0 25px 50px -12px rgba(0, 0, 0, 0.7)' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            border: `1px solid ${mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'}`,
+          } 
+        } 
+      },
+      MuiDrawer: {
+        styleOverrides: {
+          paper: {
+            backdropFilter: 'blur(16px)',
+            backgroundColor: mode === 'dark' ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.95)',
+            borderLeft: `1px solid ${mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'}`,
+          }
+        }
+      },
       MuiTab: { styleOverrides: { root: { textTransform: 'none', fontWeight: 600, fontSize: fontSizes.smMd } } },
       MuiTableCell: { styleOverrides: { root: { fontSize: fontSizes.sm } } },
       MuiInputBase: { styleOverrides: { root: { fontSize: fontSizes.base } } },

@@ -323,13 +323,36 @@ export async function updateResourceSkill(id: string, changes: Partial<ResourceS
 
   const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null && value !== '' &&
-        key !== 'pm_resourceskillid' && key !== '_pm_resource_value' && key !== '_pm_skill_value') {
-      cleanPayload[key] = value
+    if (value !== undefined &&
+        key !== 'pm_resourceskillid' && 
+        key !== '_pm_resource_value' && 
+        key !== '_pm_skill_value' &&
+        key !== 'pm_skillid' &&
+        key !== 'pm_skillname' &&
+        key !== 'pm_resourceid' &&
+        key !== 'pm_resourcename') {
+      cleanPayload[key] = value === '' ? null : value
     }
   }
+
+  if (changes._pm_resource_value) {
+    const resourceId = changes._pm_resource_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (resourceId) {
+      cleanPayload['pm_resource@odata.bind'] = '/pm_resources(' + resourceId + ')'
+    }
+  }
+  if (changes._pm_skill_value) {
+    const skillId = changes._pm_skill_value.replace(/[{}]/g, '').trim().toLowerCase()
+    if (skillId) {
+      cleanPayload['pm_skill@odata.bind'] = '/pm_skills(' + skillId + ')'
+    }
+  }
+
+  console.log('[SkillService] updateResourceSkill payload:', cleanPayload)
+
   try {
     const result = await Pm_resourceskillsService.update(id, cleanPayload as any)
+    console.log('[SkillService] updateResourceSkill result:', result)
     if (!result.success) {
       console.error('[SkillService] updateResourceSkill failed:', result.error)
       return null

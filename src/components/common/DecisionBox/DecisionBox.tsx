@@ -30,7 +30,7 @@ export interface DecisionBoxProps {
   /** The workflow approval step ID to submit the decision for */
   approvalStepId: string
   /** Called BEFORE the workflow decision is submitted. Return false to cancel. */
-  onBeforeDecision?: (decision: number) => Promise<boolean | void> | boolean | void
+  onBeforeDecision?: (decision: number, notes: string) => Promise<boolean | void> | boolean | void
   /** Called after the workflow decision is successfully submitted */
   onDecisionComplete?: (decision: number) => void
   /** Called if the workflow decision submission fails */
@@ -59,7 +59,7 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
     try {
       // Step 1: Allow the parent (task modal) to save its data first
       if (onBeforeDecision) {
-        const shouldContinue = await onBeforeDecision(decision)
+        const shouldContinue = await onBeforeDecision(decision, notes)
         if (shouldContinue === false) {
           setSubmitting(false)
           return // Parent cancelled the decision

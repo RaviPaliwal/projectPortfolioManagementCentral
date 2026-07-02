@@ -223,12 +223,12 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
         {DecisionBoxProp && approvalStepId ? (
           <DecisionBoxProp
             approvalStepId={approvalStepId}
-              onBeforeDecision={async (decision) => {
+            onBeforeDecision={async (decision, notes) => {
               setSaving(true)
               try {
                 const newStatus = decision === 0 ? 0 : 2
                 const approverName = currentUser?.fullname ?? 'System'
-                await updateTimesheetStatus(timesheetId, newStatus, undefined, approverName)
+                await updateTimesheetStatus(timesheetId, newStatus, { pm_rejectionreason: notes }, approverName)
                 const decisionLabel = decision === 0 ? 'Approved' : 'Rejected'
                 onSuccess('Timesheet review completed. Decision: ' + decisionLabel + '.')
                 return true

@@ -681,9 +681,12 @@ export default function StatusSnapshotsPage() {
                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
                   <Grid container spacing={1.5}>
                     {FISCAL_PERIOD_OPTIONS.filter((o) => o.value).map((period) => {
-                      const count = snapshots.filter((s) => s.pm_reportingperiod === period.value).length
-                      const maxCount = Math.max(1, ...FISCAL_PERIOD_OPTIONS.filter(o => o.value).map(p => snapshots.filter((s) => s.pm_reportingperiod === p.value).length))
-                      const pct = (count / maxCount) * 100
+                      const periodSnapshots = snapshots.filter((s) => s.pm_reportingperiod === period.value)
+                      const count = periodSnapshots.length
+                      const green = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 1).length
+                      const amber = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 0).length
+                      const red = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 2).length
+                      
                       return (
                         <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={period.value}>
                           <Box
@@ -695,21 +698,36 @@ export default function StatusSnapshotsPage() {
                               bgcolor: isDark ? '#1a2332' : 'background.default',
                               cursor: 'pointer',
                               transition: 'all 0.15s ease',
-                              '&:hover': { borderColor: 'primary.main' },
+                              '&:hover': { borderColor: 'primary.main', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
                             }}
                             onClick={() => { setPeriodFilter(period.value!); setPageTab(1) }}
                           >
                             <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', fontSize: 11 }}>
                               {period.label}
                             </Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 700, fontSize: fontSizes.lg, mt: 0.5 }}>
-                              {count}
-                            </Typography>
-                            <LinearProgress
-                              variant="determinate"
-                              value={pct}
-                              sx={{ mt: 1, borderRadius: 2, height: 4, bgcolor: isDark ? 'background.paper' : '#e2e8f0' }}
-                            />
+                            
+                            <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', mt: 0.5 }}>
+                              <Typography variant="body1" sx={{ fontWeight: 800, fontSize: fontSizes.lg, lineHeight: 1 }}>
+                                {count} <Typography component="span" variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: 10 }}>reports</Typography>
+                              </Typography>
+                              {count > 0 && (
+                                <Box sx={{ display: 'flex', gap: 1, mb: 0.25 }}>
+                                  {green > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'success.main' }} /><Typography variant="caption" sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>{green}</Typography></Box>}
+                                  {amber > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'warning.main' }} /><Typography variant="caption" sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>{amber}</Typography></Box>}
+                                  {red > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'error.main' }} /><Typography variant="caption" sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>{red}</Typography></Box>}
+                                </Box>
+                              )}
+                            </Box>
+                            
+                            {count > 0 ? (
+                              <Box sx={{ display: 'flex', width: '100%', height: 4, borderRadius: 2, overflow: 'hidden', mt: 1.5 }}>
+                                {green > 0 && <Box sx={{ width: `${(green / count) * 100}%`, bgcolor: 'success.main' }} />}
+                                {amber > 0 && <Box sx={{ width: `${(amber / count) * 100}%`, bgcolor: 'warning.main' }} />}
+                                {red > 0 && <Box sx={{ width: `${(red / count) * 100}%`, bgcolor: 'error.main' }} />}
+                              </Box>
+                            ) : (
+                              <Box sx={{ width: '100%', height: 4, borderRadius: 2, bgcolor: isDark ? 'background.paper' : '#e2e8f0', mt: 1.5 }} />
+                            )}
                           </Box>
                         </Grid>
                       )

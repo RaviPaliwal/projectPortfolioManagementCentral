@@ -38,7 +38,7 @@ interface SortState { field: SortField; dir: SortDir }
 export default function PendingApprovalsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
-  const { currentUser } = useUser()
+  const { currentUser, userTeams } = useUser()
 
   const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
   const [loading, setLoading] = useState(true)
@@ -63,8 +63,10 @@ export default function PendingApprovalsPage() {
     setLoading(true)
     setError(null)
     try {
+      const cleanId = (currentUser.systemuserid ?? '').replace(/[{}]/g, '').toLowerCase()
+      const teams = userTeams.get(cleanId) || []
       const result = await fetchPendingWorkflowApprovals(
-          currentUser.systemuserid ?? '', currentUser.fullname,
+          currentUser.systemuserid ?? '', currentUser.fullname, teams
         )
       setSteps(result)
     } catch (err) {
@@ -73,7 +75,7 @@ export default function PendingApprovalsPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentUser])
+  }, [currentUser, userTeams])
 
   useEffect(() => {
     loadApprovals()

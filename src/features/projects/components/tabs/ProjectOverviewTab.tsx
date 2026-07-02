@@ -312,10 +312,10 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
         <Grid size={{ xs: 12, md: 4.5 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             
-            {/* Strategic RAG Health Check */}
+            {/* Strategic RAG Risk Check */}
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2.5, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5 }}>
-                Health Check Indicators
+                Risk Check Indicators
               </Typography>
               
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -332,7 +332,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
                 {/* Schedule */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 1.5, bgcolor: scheduleRag.bg, border: '1px solid', borderColor: scheduleRag.border }}>
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Schedule Health</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Schedule Risk</Typography>
                     <Typography variant="caption" color="text.secondary">Timeline & milestone alignment</Typography>
                   </Box>
                   <StatusTag label={scheduleRag.label} color={project.pm_scheduleragstatus === 1 ? 'success' : project.pm_scheduleragstatus === 0 ? 'warning' : project.pm_scheduleragstatus === 2 ? 'error' : 'default'} size="small" />
@@ -341,7 +341,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
                 {/* Cost */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 1.5, bgcolor: costRag.bg, border: '1px solid', borderColor: costRag.border }}>
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Cost Health</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Cost Risk</Typography>
                     <Typography variant="caption" color="text.secondary">Actual spend vs budget</Typography>
                   </Box>
                   <StatusTag label={costRag.label} color={project.pm_costragstatus === 1 ? 'success' : project.pm_costragstatus === 0 ? 'warning' : project.pm_costragstatus === 2 ? 'error' : 'default'} size="small" />
@@ -350,7 +350,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
                 {/* Benefits */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 1.5, bgcolor: benefitsRag.bg, border: '1px solid', borderColor: benefitsRag.border }}>
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Benefits Health</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Benefits Risk</Typography>
                     <Typography variant="caption" color="text.secondary">Strategic value delivery</Typography>
                   </Box>
                   <StatusTag label={benefitsRag.label} color={project.pm_benefitsragstatus === 0 ? 'success' : project.pm_benefitsragstatus === 1 ? 'warning' : 'default'} size="small" />

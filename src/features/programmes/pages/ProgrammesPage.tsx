@@ -338,9 +338,9 @@ export default function ProgrammesPage() {
 
   const kpiItems: KpiCardItem[] = [
     { label: 'Total Programmes', value: kpiData.count, icon: <AccountTreeIcon />, color: 'primary.main' },
-    { label: 'Green Health', value: kpiData.green, icon: <CheckCircleIcon />, color: 'success.main' },
-    { label: 'Amber Health', value: kpiData.amber, icon: <GppMaybeIcon />, color: 'warning.main' },
-    { label: 'Red Health', value: kpiData.red, icon: <ErrorIcon />, color: 'error.main' },
+    { label: 'Low Risk', value: kpiData.green, icon: <CheckCircleIcon />, color: 'success.main' },
+    { label: 'Medium Risk', value: kpiData.amber, icon: <WarningAmberIcon />, color: 'warning.main' },
+    { label: 'High Risk', value: kpiData.red, icon: <ErrorIcon />, color: 'error.main' },
     { label: 'Total Budget', value: currencyFormatter.format(kpiData.totalBudget), icon: <AccountBalanceWalletIcon />, color: 'primary.main' },
     { label: 'Total Actual', value: currencyFormatter.format(kpiData.totalActual), icon: <TrendingDownIcon />, color: 'warning.main' },
   ]

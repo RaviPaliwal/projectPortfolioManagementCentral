@@ -84,7 +84,7 @@ interface DashboardTasksWidgetProps {
 }
 
 export default function DashboardTasksWidget({ variant = 'full', sx }: DashboardTasksWidgetProps) {
-  const { currentUser } = useUser()
+  const { currentUser, userTeams } = useUser()
   const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
   const [insights, setInsights] = useState<AgentInsightModel[]>([])
   const [loading, setLoading] = useState(true)
@@ -103,9 +103,10 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
     try {
       const shouldFetchTasks = variant === 'full' || variant === 'tasks'
       const shouldFetchInsights = variant === 'full' || variant === 'insights'
+      const teams = userTeams.get(currentUser?.systemuserid ?? '') || []
       const [workflowSteps, agentInsights] = await Promise.all([
         shouldFetchTasks && currentUser?.fullname
-          ? fetchPendingWorkflowApprovals(currentUser.systemuserid ?? '')
+          ? fetchPendingWorkflowApprovals(currentUser.systemuserid ?? '', currentUser.fullname, teams)
           : Promise.resolve<WorkflowApprovalStepModel[]>([]),
         shouldFetchInsights ? fetchAgentInsights() : Promise.resolve<AgentInsightModel[]>([]),
       ])
@@ -116,7 +117,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
     } finally {
       setLoading(false)
     }
-  }, [currentUser, variant])
+  }, [currentUser, variant, userTeams])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -228,63 +229,68 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                       key={step.pm_workflowapprovalstepid}
                       variant="outlined"
                       sx={{
-                        p: 1.5,
-                        borderRadius: 1.5,
-                        borderLeft: '3px solid',
-                        borderLeftColor: isOverdue ? 'error.main' : 'primary.main',
-                        transition: 'all 0.15s ease',
-                        '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+                        p: 2,
+                        borderRadius: 2,
+                        borderLeft: '4px solid',
+                        borderLeftColor: isOverdue ? 'error.main' : 'warning.main',
+                        transition: 'all 0.2s ease',
+                        mb: 1.5,
+                        '&:hover': { bgcolor: 'action.hover', boxShadow: 1 },
                       }}
                     >
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, minWidth: 0 }}>
-                          <Box sx={{ position: 'relative', mt: 0.25 }}>
-                            <AssignmentIcon sx={{ fontSize: fontSizes.md, color: isOverdue ? 'error.main' : 'primary.main' }} />
-                            {(step as any).pm_entitytype && (
-                              <Box sx={{ position: 'absolute', top: -6, right: -6, transform: 'scale(0.7)' }}>
-                                {getEntityIcon((step as any).pm_entitytype)}
-                              </Box>
-                            )}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, minWidth: 0 }}>
+                          <Box sx={{ mt: 0.25 }}>
+                            <Box sx={{ width: 36, height: 36, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'primary.50' }}>
+                              {getEntityIcon((step as any).pm_entitytype)}
+                            </Box>
                           </Box>
                           <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: fontSizes.sm }}>
-                              {step.pm_stepname || 'Approval Step'}
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: fontSizes.sm, color: 'text.primary', mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {(step as any).pm_workflowname || step.pm_stepname || 'Approval Step'}
                             </Typography>
-                            {(step as any).pm_entitytype && (
-                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.3, fontSize: fontSizes.xs }}>
-                                {getEntityLabel((step as any).pm_entitytype)}
-                              </Typography>
-                            )}
-                            {(step as any).pm_workflowname && (
-                              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', lineHeight: 1.3, fontSize: fontSizes.xs, mt: 0.25 }}>
-                                {(step as any).pm_workflowname}
-                              </Typography>
-                            )}
+                            <Typography variant="body2" sx={{ display: 'block', color: 'primary.main', fontSize: fontSizes.xs, mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {step.pm_stepname || 'Step'}
+                            </Typography>
                             {(step as any).pm_initiatedby && (
-                              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', lineHeight: 1.3, fontSize: fontSizes.xs }}>
+                              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 Requested by {(step as any).pm_initiatedby}
                               </Typography>
                             )}
                           </Box>
                         </Box>
-                        <Typography variant="caption" color={isOverdue ? 'error' : 'text.secondary'} sx={{ whiteSpace: 'nowrap', ml: 1, fontWeight: isOverdue ? 700 : 400 }}>
-                          {step.pm_duedate ? (isOverdue ? 'Overdue' : formatDate(step.pm_duedate)) : 'No due date'}
-                        </Typography>
+                        <Chip
+                          size="small"
+                          label={step.pm_duedate ? (isOverdue ? 'Overdue' : formatDate(step.pm_duedate)) : 'No date'}
+                          icon={<Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: isOverdue ? 'error.main' : 'warning.main', ml: 1 }} />}
+                          sx={{ 
+                            height: 24, 
+                            fontSize: '11px', 
+                            fontWeight: 600, 
+                            bgcolor: isOverdue ? 'error.50' : 'warning.50',
+                            color: isOverdue ? 'error.main' : 'warning.dark',
+                            border: 'none'
+                          }}
+                        />
                       </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pl: 6.5 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {(step as any).pm_entitytype && (
-                            <StatusTag
-                              label={getEntityLabel((step as any).pm_entitytype)}
+                            <Chip
+                              label={getEntityLabel((step as any).pm_entitytype).toUpperCase()}
                               size="small"
                               variant="outlined"
-                              color="primary"
+                              sx={{ height: 24, fontSize: '11px', fontWeight: 600, color: 'text.secondary', borderColor: 'divider', borderRadius: 1 }}
                             />
                           )}
                           {((step as any).pm_assigneename || step.pm_approvername) && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <PersonIcon sx={{ fontSize: fontSizes.sm, color: 'text.secondary' }} />
-                              <Typography variant="caption" color="text.secondary">{(step as any).pm_assigneename || step.pm_approvername}</Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                              <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>
+                                {((step as any).pm_assigneename || step.pm_approvername).substring(0, 2).toUpperCase()}
+                              </Box>
+                              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                                {(step as any).pm_assigneename || step.pm_approvername}
+                              </Typography>
                             </Box>
                           )}
                         </Box>
@@ -302,7 +308,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                               setOpeningStep(null)
                             }
                           }}
-                          sx={{ fontWeight: 600, fontSize: fontSizes.xs, py: 0.5, minWidth: 90 }}
+                          sx={{ fontWeight: 600, fontSize: fontSizes.xs, py: 0.5, px: 2, borderRadius: 12, minWidth: 90 }}
                         >
                           {openingStep === step.pm_workflowapprovalstepid ? 'Opening...' : 'Review'}
                         </Button>
@@ -434,7 +440,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                               <Chip label={insight.type} size="small" color={insight.type === 'Alert' ? 'warning' : 'info'} variant="outlined" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
                               <Chip label={insight.priority} size="small" color={insight.priority === 'High' ? 'error' : insight.priority === 'Medium' ? 'warning' : 'default'} variant="filled" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
                               {insight.confidenceScore > 0 && (
-                                <Chip label={`${Math.round(insight.confidenceScore * 100)}% confidence`} size="small" variant="outlined" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
+                                <Chip label={`${Math.round(insight.confidenceScore)}% confidence`} size="small" variant="outlined" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
                               )}
                             </Box>
                           </Box>

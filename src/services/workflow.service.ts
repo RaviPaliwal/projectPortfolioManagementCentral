@@ -396,8 +396,8 @@ export async function submitWorkflowDecision(
     // Trigger workflowrouter flow
     const result = await WorkflowRoutingHandlerService.Run({
       text_2: stepId,
-      text_3: '{}', // Teams config — empty per user request
-      text_4: '{}', // Email config — empty per user request
+      text_3: '', // Email config — empty string per user request
+      text_4: '', // Teams config — empty string per user request
       number: decision,
       text: decisionNotes || '',
     })
@@ -496,6 +496,33 @@ export async function fetchWorkflowInstancesForEntity(
 }
 
 // ─── CRUD: Approval Steps ──────────────────────────────────────────────
+
+export async function fetchAllWorkflowApprovalSteps(): Promise<WorkflowApprovalStepModel[]> {
+  try {
+    const result = await Pm_workflowapprovalstepsService.getAll({
+      select: [
+        'pm_stepname',
+        'pm_workflowapprovalstepid', 'pm_steporder',
+        'pm_approvername', 'pm_assigneedisplayname', 'pm_assigneetype',
+        'pm_decisionstatus',
+        'pm_decisionnotes', 'pm_decisiondate',
+        'pm_duedate', 'pm_isparallelstep',
+        '_pm_workflowinstancelookup_value', '_pm_workflowtemplate_value',
+      ],
+      orderBy: ['pm_steporder asc'],
+      top: 5000,
+    })
+    if (!result.success) {
+      console.error('[WorkflowService] fetchAllWorkflowApprovalSteps failed:', result.error)
+      return []
+    }
+    const steps = unwrapList<Pm_workflowapprovalsteps>(result)
+    return steps.map(mapWorkflowApprovalStep)
+  } catch (err) {
+    console.error('[WorkflowService] fetchAllWorkflowApprovalSteps exception:', err)
+    return []
+  }
+}
 
 export async function fetchWorkflowApprovalSteps(instanceId: string): Promise<WorkflowApprovalStepModel[]> {
   try {
@@ -732,8 +759,8 @@ export async function approveWorkflowStep(
     // Trigger workflowrouter flow
     const result = await WorkflowRoutingHandlerService.Run({
       text_2: stepId,
-      text_3: '{}', // Email config — managed by Power Automate
-      text_4: '{}', // Teams config — managed by Power Automate
+      text_3: '', // Email config — managed by Power Automate
+      text_4: '', // Teams config — managed by Power Automate
       number: 0,    // 0 = Approved
       text: notes || '',
     })
@@ -768,8 +795,8 @@ export async function rejectWorkflowStep(
     // Trigger workflowrouter flow
     const result = await WorkflowRoutingHandlerService.Run({
       text_2: stepId,
-      text_3: '{}', // Email config — managed by Power Automate
-      text_4: '{}', // Teams config — managed by Power Automate
+      text_3: '', // Email config — managed by Power Automate
+      text_4: '', // Teams config — managed by Power Automate
       number: 3,    // 3 = Rejected
       text: reason || '',
     })
@@ -791,6 +818,7 @@ function isGuid(value: string): boolean {
 export async function fetchPendingWorkflowApprovals(
   userId: string,
   userName?: string,
+  userTeams?: string[],
 ): Promise<WorkflowApprovalStepModel[]> {
   try {
     const allPendingResult = await Pm_workflowapprovalstepsService.getAll({
@@ -816,12 +844,15 @@ export async function fetchPendingWorkflowApprovals(
       const approver = (step.pm_approvername || '').toLowerCase()
       const assigneeDisplay = (step.pm_assigneedisplayname || '').toLowerCase()
       const userIdLower = userId.toLowerCase()
-      if (approver === userIdLower) return true
-      if (assigneeDisplay === userIdLower) return true
+      if (approver === userIdLower || assigneeDisplay === userIdLower) return true
       if (userName) {
         const nameLower = userName.toLowerCase()
-        if (approver === nameLower) return true
-        if (assigneeDisplay === nameLower) return true
+        if (approver === nameLower || assigneeDisplay === nameLower) return true
+      }
+      if (userTeams && userTeams.length > 0) {
+        if (userTeams.some(t => t.toLowerCase() === approver || t.toLowerCase() === assigneeDisplay)) {
+          return true
+        }
       }
       return false
     })
@@ -847,7 +878,7 @@ export async function fetchPendingWorkflowApprovals(
               stepRaw.pm_workflowname = workflowTemplateName || instance.pm_instancename
               stepRaw.pm_entityid = instance.pm_entityid
               stepRaw.pm_entitytype = instance.pm_entitytype
-              stepRaw.pm_initiatedby = instance.pm_initiatedbylookupname || instance._pm_initiatedbylookup_value
+              stepRaw.pm_initiatedby = instance.pm_initiatedbylookupname || (rawInstance['_pm_initiatedbylookup_value@OData.Community.Display.V1.FormattedValue'] as string) || instance._pm_initiatedbylookup_value
             }
           }
         } catch (err) {

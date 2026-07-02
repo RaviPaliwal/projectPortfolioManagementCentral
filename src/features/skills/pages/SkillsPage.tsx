@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   Box,
   Paper,
@@ -46,6 +46,7 @@ import StarIcon from '@mui/icons-material/Star'
 import PersonIcon from '@mui/icons-material/Person'
 import EngineeringIcon from '@mui/icons-material/Engineering'
 import type { SkillModel, ResourceSkillModel } from '@/types/dataverse'
+import type { ResourceModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
@@ -59,10 +60,12 @@ import {
   updateResourceSkill,
   deleteResourceSkill,
 } from '@/services/skill.service'
+import { fetchResources } from '@/services/resource.service'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, ConfirmDialog } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
-import { SkillDialog, ResourceSkillDialog } from '../components'
+import { SkillDialog } from '../components/SkillFormDialogs'
+import { ResourceSkillsManagerDialog } from '../components/ResourceSkillsManagerDialog'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -131,6 +134,7 @@ export default function SkillsPage() {
   // Data state
   const [skills, setSkills] = useState<SkillModel[]>([])
   const [resourceSkills, setResourceSkills] = useState<ResourceSkillModel[]>([])
+  const [resources, setResources] = useState<ResourceModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -161,7 +165,7 @@ export default function SkillsPage() {
 
   // Create/Edit Resource-Skill modal
   const [showRsForm, setShowRsForm] = useState(false)
-  const [editingRs, setEditingRs] = useState<ResourceSkillModel | null>(null)
+  const [initialRsManagerResource, setInitialRsManagerResource] = useState<string | undefined>(undefined)
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
@@ -172,12 +176,14 @@ export default function SkillsPage() {
     setLoading(true)
     setError(null)
     try {
-      const [skillsList, rsList] = await Promise.all([
+      const [skillsList, rsList, resList] = await Promise.all([
         fetchSkills(),
         fetchResourceSkills(),
+        fetchResources(),
       ])
       setSkills(skillsList)
       setResourceSkills(rsList)
+      setResources(resList)
     } catch {
       setError('Unable to load skills data.')
     } finally {
@@ -296,9 +302,28 @@ export default function SkillsPage() {
     })
   }, [resourceSkills, rsSearch, rsSort])
 
-  const paginatedRS = useMemo(
-    () => filteredRS.slice(rsPage * rsRowsPerPage, rsPage * rsRowsPerPage + rsRowsPerPage),
-    [filteredRS, rsPage, rsRowsPerPage]
+  // Group by Resource
+  const groupedRS = useMemo(() => {
+    const groups: Record<string, { resourceName: string; resourceId: string; skills: ResourceSkillModel[] }> = {}
+    
+    filteredRS.forEach(rs => {
+      const resId = rs._pm_resource_value || 'unassigned'
+      if (!groups[resId]) {
+        groups[resId] = {
+          resourceName: rs.pm_resourcename || 'Unknown Resource',
+          resourceId: resId,
+          skills: []
+        }
+      }
+      groups[resId].skills.push(rs)
+    })
+    
+    return Object.values(groups).sort((a, b) => a.resourceName.localeCompare(b.resourceName))
+  }, [filteredRS])
+
+  const paginatedRSGroups = useMemo(
+    () => groupedRS.slice(rsPage * rsRowsPerPage, rsPage * rsRowsPerPage + rsRowsPerPage),
+    [groupedRS, rsPage, rsRowsPerPage]
   )
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -353,45 +378,10 @@ export default function SkillsPage() {
   }
 
   // ── Resource-Skill Form ──
-  const openCreateRs = useCallback(() => {
-    setEditingRs(null)
+  const openRsManager = useCallback((resourceId?: string) => {
+    setInitialRsManagerResource(resourceId)
     setShowRsForm(true)
   }, [])
-
-  const openEditRs = useCallback((rs: ResourceSkillModel) => {
-    setEditingRs(rs)
-    setShowRsForm(true)
-  }, [])
-
-  const handleSaveRs = async (data: Record<string, any>) => {
-    if (!data.pm_skillid && !data.pm_skillname) {
-      setError('Skill is required.')
-      return
-    }
-    if (!data._pm_resource_value && !data.pm_resourcename) {
-      setError('Resource is required.')
-      return
-    }
-    setError(null)
-    setActionLoading(true)
-    try {
-      const payload: any = { ...data }
-      if (editingRs?.pm_resourceskillid) {
-        await updateResourceSkill(editingRs.pm_resourceskillid, payload)
-        setSuccessMsg('Resource-Skill mapping updated successfully.')
-      } else {
-        await createResourceSkill(payload)
-        setSuccessMsg('Resource-Skill mapping created successfully.')
-      }
-      setShowRsForm(false)
-      setTimeout(() => setSuccessMsg(null), 3000)
-      await loadData()
-    } catch {
-      setError(editingRs ? 'Unable to update mapping.' : 'Unable to create mapping.')
-    } finally {
-      setActionLoading(false)
-    }
-  }
 
   // ── Delete ──
   const handleDelete = async () => {
@@ -440,8 +430,8 @@ export default function SkillsPage() {
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ExportButton data={filteredSkills} columns={skillExportColumns} filename="SkillsCatalog" />
             {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={pageTab === 0 ? openCreateSkill : openCreateRs}>
-                {pageTab === 0 ? 'Add Skill' : 'Add Mapping'}
+              <Button variant="contained" startIcon={<AddIcon />} onClick={pageTab === 0 ? openCreateSkill : () => openRsManager()}>
+                {pageTab === 0 ? 'Add Skill' : 'Manage Resource Skills'}
               </Button>
             )}
           </Box>
@@ -526,6 +516,9 @@ export default function SkillsPage() {
                   <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     Status
                   </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -573,6 +566,33 @@ export default function SkillsPage() {
                         size="small"
                         sx={{ fontWeight: 600 }}
                       />
+                    </TableCell>
+                    <TableCell align="right">
+                      {canEdit && (
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditSkill(skill);
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      {canDelete && (
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteType('skill');
+                            if (skill.pm_skillid) setDeleteConfirm(skill.pm_skillid);
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -723,12 +743,12 @@ export default function SkillsPage() {
 
           <TableShell
             loading={loading}
-            empty={filteredRS.length === 0}
+            empty={groupedRS.length === 0}
             emptyIcon={<LinkIcon />}
             emptyTitle={rsSearch ? 'No mappings match your criteria.' : 'No resource-skill mappings yet.'}
             emptyAction={!rsSearch ? (
-              <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreateRs}>
-                Add your first mapping
+              <Button variant="outlined" startIcon={<AddIcon />} onClick={() => openRsManager()}>
+                Manage Resource Skills
               </Button>
             ) : undefined}
           >
@@ -743,16 +763,6 @@ export default function SkillsPage() {
                       sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}
                     >
                       Skill
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel
-                      active={rsSort.field === 'resource'}
-                      direction={rsSort.field === 'resource' ? rsSort.dir : 'asc'}
-                      onClick={() => handleRsSort('resource')}
-                      sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}
-                    >
-                      Resource
                     </TableSortLabel>
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
@@ -781,90 +791,132 @@ export default function SkillsPage() {
                   <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
                     Primary
                   </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {paginatedRS.map((rs, idx) => (
-                  <TableRow
-                    key={rs.pm_resourceskillid}
-                    hover
-                    sx={{
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                      transition: 'background-color 0.15s ease',
-                      '& td': { px: 2.5, py: 1.25 },
-                    }}
-                  >
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
-                          {(rs.pm_skillname ?? 'S').charAt(0).toUpperCase()}
-                        </Avatar>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {rs.pm_skillname ?? '—'}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                        <Typography variant="body2">{rs.pm_resourcename || '—'}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <StatusTag
-                        label={PROFICIENCY_LABELS[String(rs.pm_proficiencylevel ?? '')] ?? 'Unknown'}
-                        color={PROFICIENCY_COLORS[String(rs.pm_proficiencylevel ?? '')] ?? 'default'}
-                        size="small"
-                        variant="outlined"
+                {paginatedRSGroups.map((group, gIdx) => (
+                  <React.Fragment key={group.resourceId}>
+                    {/* Resource Header Row */}
+                    <TableRow sx={{ bgcolor: isDark ? '#0f172a' : '#f8fafc' }}>
+                      <TableCell colSpan={6} sx={{ py: 1.5, px: 2.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <PersonIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: 14 }}>
+                            {group.resourceName}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', bgcolor: isDark ? '#1e293b' : '#e2e8f0', px: 1, py: 0.25, borderRadius: 1 }}>
+                            {group.skills.length} {group.skills.length === 1 ? 'skill' : 'skills'}
+                          </Typography>
+                          <Box sx={{ flexGrow: 1 }} />
+                          {canEdit && (
+                            <Button 
+                              size="small" 
+                              variant="outlined" 
+                              onClick={() => openRsManager(group.resourceId)}
+                              sx={{ py: 0.25, px: 1, minWidth: 0, textTransform: 'none', fontSize: 12 }}
+                            >
+                              Edit Resource Skills
+                            </Button>
+                          )}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                    
+                    {/* Resource Skill Rows */}
+                    {group.skills.map((rs, idx) => (
+                      <TableRow
+                        key={rs.pm_resourceskillid}
+                        hover
                         sx={{
-                          fontWeight: 600,
-                          borderColor: getProficiencyColor(rs.pm_proficiencylevel),
-                          color: getProficiencyColor(rs.pm_proficiencylevel),
+                          '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                          transition: 'background-color 0.15s ease',
+                          '& td': { px: 2.5, py: 1.25, pl: 5 },
                         }}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
-                        {rs.pm_yearsofexperience ?? '—'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        {rs.pm_certified ? (
-                          <VerifiedIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                        ) : (
-                          <SchoolIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-                        )}
-                        <Typography variant="body2" color="text.secondary">
-                          {rs.pm_certificationname || (rs.pm_certified ? 'Certified' : '—')}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center">
-                      {rs.pm_primaryskill ? (
-                        <StarIcon sx={{ fontSize: 20, color: 'warning.main' }} />
-                      ) : (
-                        <Typography variant="caption" color="text.disabled">—</Typography>
-                      )}
-                    </TableCell>
-                  </TableRow>
+                      >
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Avatar sx={{ width: 28, height: 28, bgcolor: 'secondary.main', fontSize: fontSizes.xs, fontWeight: 700 }}>
+                              {(rs.pm_skillname ?? 'S').charAt(0).toUpperCase()}
+                            </Avatar>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {rs.pm_skillname ?? '—'}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <StatusTag
+                            label={PROFICIENCY_LABELS[String(rs.pm_proficiencylevel ?? '')] ?? 'Unknown'}
+                            color={PROFICIENCY_COLORS[String(rs.pm_proficiencylevel ?? '')] ?? 'default'}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              fontWeight: 600,
+                              borderColor: getProficiencyColor(rs.pm_proficiencylevel),
+                              color: getProficiencyColor(rs.pm_proficiencylevel),
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
+                            {rs.pm_yearsofexperience ?? '—'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                            {rs.pm_certified ? (
+                              <VerifiedIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                            ) : (
+                              <SchoolIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
+                            )}
+                            <Typography variant="body2" color="text.secondary">
+                              {rs.pm_certificationname || (rs.pm_certified ? 'Certified' : 'Not Certified')}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center">
+                          {rs.pm_primaryskill ? (
+                            <StarIcon sx={{ fontSize: 20, color: 'warning.main' }} />
+                          ) : (
+                            <StarIcon sx={{ fontSize: 20, color: 'action.disabled', opacity: 0.4 }} />
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          {canDelete && (
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteType('resource-skill');
+                                if (rs.pm_resourceskillid) setDeleteConfirm(rs.pm_resourceskillid);
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </React.Fragment>
                 ))}
               </TableBody>
             </Table>
           </TableShell>
 
-          {!loading && filteredRS.length > 0 && (
+          {!loading && groupedRS.length > 0 && (
             <TableFooter
-              filteredCount={filteredRS.length}
-              totalCount={resourceSkills.length}
-              itemLabel="mapping"
+              filteredCount={groupedRS.length}
+              totalCount={groupedRS.length}
+              itemLabel="resource"
             />
           )}
-          {!loading && filteredRS.length > 0 && (
+          {!loading && groupedRS.length > 0 && (
             <TablePagination
               component="div"
-              count={filteredRS.length}
+              count={groupedRS.length}
               page={rsPage}
               onPageChange={(_, p) => setRsPage(p)}
               rowsPerPage={rsRowsPerPage}
@@ -875,12 +927,18 @@ export default function SkillsPage() {
         </Paper>
 
         {/* ── Create/Edit Resource-Skill Dialog ────── */}
-        <ResourceSkillDialog
+        <ResourceSkillsManagerDialog
           open={showRsForm}
           onClose={() => !actionLoading && setShowRsForm(false)}
-          initialData={editingRs}
+          initialResourceId={initialRsManagerResource}
           skills={skills}
-          onSave={handleSaveRs}
+          resources={resources}
+          allResourceSkills={resourceSkills}
+          onSaved={async () => {
+            setShowRsForm(false)
+            setSuccessMsg('Resource skills updated successfully.')
+            await loadData()
+          }}
         />
       </TabPanel>
 

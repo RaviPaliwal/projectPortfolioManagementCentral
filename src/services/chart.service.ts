@@ -14,7 +14,7 @@ import {
   normalizeLookupName,
 } from './common'
 
-export async function fetchCapacityAllocationData(): Promise<
+export async function fetchCapacityAllocationData(targetDate?: Date): Promise<
   { resource: string; capacity: number; allocated: number; percentage: number }[]
 > {
   try {
@@ -75,12 +75,46 @@ export async function fetchCapacityAllocationData(): Promise<
       return undefined
     }
 
+    const now = targetDate || new Date()
+    const targetYear = now.getFullYear()
+    const targetMonth = now.getMonth()
+
+    const monthStart = new Date(targetYear, targetMonth, 1)
+    const monthEnd = new Date(targetYear, targetMonth + 1, 0)
+    let totalWorkingDaysInMonth = 0
+    for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
+      const day = d.getDay()
+      if (day !== 0 && day !== 6) totalWorkingDaysInMonth++
+    }
+
     const allocationMap = new Map<string, number>()
     for (const a of allocations) {
       const name = resolveResourceName(a)
       if (!name) continue
-      const totalAlloc = a.pm_allocatedhours ?? 0
-      allocationMap.set(name, (allocationMap.get(name) ?? 0) + totalAlloc)
+      
+      let allocatedForMonth = 0
+      
+      if (a.pm_startdate && a.pm_enddate) {
+        const start = new Date(a.pm_startdate)
+        const end = new Date(a.pm_enddate)
+        const overlapStart = start > monthStart ? start : monthStart
+        const overlapEnd = end < monthEnd ? end : monthEnd
+        
+        if (overlapStart <= overlapEnd) {
+          let workingDaysOverlap = 0
+          for (let d = new Date(overlapStart); d <= overlapEnd; d.setDate(d.getDate() + 1)) {
+            const day = d.getDay()
+            if (day !== 0 && day !== 6) workingDaysOverlap++
+          }
+          const capacity = resourceByName.get(name.toLowerCase())?.capacity ?? 8
+          const allocPct = a.pm_allocationpercentage ?? 100
+          allocatedForMonth = workingDaysOverlap * capacity * (allocPct / 100)
+        }
+      } else {
+        allocatedForMonth = a.pm_allocatedhours ?? 0
+      }
+      
+      allocationMap.set(name, (allocationMap.get(name) ?? 0) + allocatedForMonth)
     }
 
     for (const resourceInfo of resourceByName.values()) {
@@ -97,12 +131,12 @@ export async function fetchCapacityAllocationData(): Promise<
     const result: { resource: string; capacity: number; allocated: number; percentage: number }[] = []
     for (const [resource, allocated] of allocationMap) {
       const capacity = resourceCapacityByName.get(resource) ?? 8
-      const monthlyCapacity = capacity * 20
+      const monthlyCapacity = capacity * totalWorkingDaysInMonth
       const percentage = monthlyCapacity > 0 ? Math.round((allocated / monthlyCapacity) * 100) : 0
       result.push({
         resource,
         capacity: monthlyCapacity,
-        allocated,
+        allocated: Math.round(allocated),
         percentage,
       })
     }

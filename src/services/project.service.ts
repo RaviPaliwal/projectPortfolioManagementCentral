@@ -75,6 +75,7 @@ export const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => {
         pm_predecessortaskid: (item as any).pm_predecessortaskid,
         _pm_predecessortask_value: item._pm_predecessortask_value,
         _pm_project_value: item._pm_project_value,
+        pm_projectname: item.pm_projectname || (item.pm_project as any)?.pm_projectname || (item as any)['_pm_project_value@OData.Community.Display.V1.FormattedValue'] || (item as any).pm_projectname,
         _pm_assignedtoresource_value: item._pm_assignedtoresource_value,
     }
 }
@@ -459,6 +460,29 @@ export async function deleteProject(id: string): Promise<void> {
         oldValue: 'Active',
         newValue: 'Deleted'
     })
+}
+
+export async function fetchProjectTasksForResource(resourceId: string): Promise<ProjectTaskModel[]> {
+  const filter = `_pm_assignedtoresource_value eq '${resourceId}'`
+  const result = await Pm_projecttasksService.getAll({
+    filter,
+    select: [
+      'pm_projecttaskid', 'pm_taskname',
+      'pm_tasklevel', 'pm_wbsnumber',
+      'pm_durationdays',
+      'pm_plannedstartdate', 'pm_plannedenddate',
+      'pm_actualstartdate', 'pm_actualenddate',
+      'pm_percentcomplete', 'pm_taskstatus',
+      '_pm_assignedtoresource_value',
+      '_pm_predecessortask_value',
+      '_pm_project_value'
+    ],
+  })
+  if (result.error) {
+    console.error('[ProjectService] fetchProjectTasksForResource failed:', result.error)
+    return []
+  }
+  return unwrapList<Pm_projecttasks>(result).map(mapProjectTask)
 }
 
 export async function fetchProjectTasksByResource(projectId: string, resourceId?: string): Promise<ProjectTaskModel[]> {

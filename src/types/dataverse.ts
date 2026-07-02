@@ -157,6 +157,7 @@ export interface ProjectTaskModel {
   pm_predecessortaskid?: string
   _pm_predecessortask_value?: string
   _pm_project_value?: string
+  pm_projectname?: string
   _pm_assignedtoresource_value?: string
 }
 

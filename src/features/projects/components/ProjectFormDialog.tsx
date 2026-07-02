@@ -166,7 +166,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
       <DialogContent sx={{ pt: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           {initialData?.pm_projectid 
-            ? 'Update project details, timelines, and health indicators.'
+            ? 'Update project details, timelines, and risk indicators.'
             : 'Register a new project and associate it with a portfolio and programme.'}
         </Typography>
 
@@ -287,11 +287,11 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           </Grid>
         </Grid>
 
-        {/* Section: Status & Health */}
+        {/* Section: Status & Risk */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           <GppGoodIcon sx={{ fontSize: 18, color: 'primary.main' }} />
           <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-            Status & Health
+            Status & Risk
           </Typography>
           <Divider sx={{ flex: 1 }} />
         </Box>

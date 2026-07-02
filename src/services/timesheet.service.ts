@@ -329,11 +329,17 @@ export async function updateTimesheetStatus(
             `Your timesheet "${sheetName}" has been approved by ${userName}.`
           )
         } else if (status === 2) {
-          // Rejected: Notify Owner via Outlook
+          // Rejected: Notify Owner via Outlook and Teams
           const reason = extra?.pm_rejectionreason || 'No reason provided'
           await sendNotificationToUser(
             details.ownerid, 
             'Outlook', 
+            'Timesheet Rejected', 
+            `Your timesheet "${sheetName}" has been rejected by ${userName}.\n\nReason for Rejection: ${reason}`
+          )
+          await sendNotificationToUser(
+            details.ownerid, 
+            'Teams', 
             'Timesheet Rejected', 
             `Your timesheet "${sheetName}" has been rejected by ${userName}.\n\nReason for Rejection: ${reason}`
           )

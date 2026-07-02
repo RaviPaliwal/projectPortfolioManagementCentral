@@ -257,7 +257,6 @@ export const RiskTable = ({
                     <StatusTag
                       label={RISK_STATUS_LABELS[String(risk.pm_riskstatus ?? '')] ?? '—'}
                       color={RISK_STATUS_COLORS[String(risk.pm_riskstatus ?? '')] ?? 'default'}
-                      variant={String(risk.pm_riskstatus) === '0' ? 'filled' : 'outlined'}
                     />
                   </TableCell>
                   <TableCell align="right">

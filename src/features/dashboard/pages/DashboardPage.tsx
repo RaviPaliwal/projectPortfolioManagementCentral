@@ -108,6 +108,13 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const [availableYears, setAvailableYears] = useState<number[]>([])
   const [budgetYear, setBudgetYear] = useState<number | 'all'>('all')
 
+  // Resource Filter State
+  const [resourceMonth, setResourceMonth] = useState<Date>(new Date())
+
+  useEffect(() => {
+    fetchCapacityAllocationData(resourceMonth).then(setCapacityAllocationData)
+  }, [resourceMonth])
+
   const sortByRag = <T extends { pm_ragstatus?: string | number }>(a: T, b: T) => {
     const rank = (status?: string | number) => (status === '2' || status === 2 ? 0 : status === '0' || status === 0 ? 1 : 2)
     return rank(a.pm_ragstatus) - rank(b.pm_ragstatus)
@@ -215,7 +222,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     { label: 'Actual Spend', value: currencyFormatter.format(metrics.totalActualSpend), icon: <TrendingDownIcon />, color: 'warning.main', subtitle: `${budgetPct}% of budget consumed` },
     { label: 'Red / Amber', value: metrics.projectsInRed + metrics.projectsInAmber, icon: <WarningIcon />, color: 'error.main', subtitle: `${pipelineKpis.pendingApprovals} pending approvals` },
     { label: 'Pipeline Value', value: currencyFormatter.format(metrics.pipelineValue), icon: <TimelineIcon />, color: 'secondary.main', subtitle: `${pipelineKpis.totalActiveInitiatives} initiatives` },
-    { label: 'RAG Health', value: `${metrics.projectsInGreen}/${metrics.projectsInAmber}/${metrics.projectsInRed}`, icon: <CheckCircleIcon />, color: 'success.main', subtitle: 'G / A / R ratio' },
+    { label: 'RAG Risk', value: `${metrics.projectsInGreen}/${metrics.projectsInAmber}/${metrics.projectsInRed}`, icon: <CheckCircleIcon />, color: 'success.main', subtitle: 'G / A / R ratio' },
   ]
 
   return (
@@ -278,6 +285,8 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               plannedVsActualData={plannedVsActualData}
               utilizationByProjectData={utilizationByProjectData}
               departmentDemandData={departmentDemandData}
+              resourceMonth={resourceMonth}
+              onResourceMonthChange={setResourceMonth}
             />
           </Box>
 

@@ -697,18 +697,9 @@ export default function FundingSourcesPage() {
             )}
           </Box>
         }
-        tabs={[
-          { label: 'Overview' },
-          { label: 'Approval' },
-        ]}
-        tabValue={detailTab}
-        onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
       >
         {selectedSource && (
-          <>
-            {/* Overview Tab */}
-            <TabPanel value={detailTab} index={0} pt={0}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 3 }}>
                 {/* Funding Amounts */}
                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -816,35 +807,6 @@ export default function FundingSourcesPage() {
                   </Box>
                 </Paper>
               </Box>
-            </TabPanel>
-
-            {/* Approval Tab */}
-            <TabPanel value={detailTab} index={1} pt={0}>
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TimelineIcon sx={{ fontSize: 20 }} /> Approval Workflow Timeline
-              </Typography>
-              {selectedSource?.pm_fundingsourceid ? (
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <AccountBalanceIcon sx={{ fontSize: 16 }} />
-                    {selectedSource.pm_fundingsourcename || 'Funding Source'}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                    {selectedSource.pm_totalamounteur != null ? currencyFormatter.format(selectedSource.pm_totalamounteur) : ''}
-                    {selectedSource.pm_fundingbody ? ` · ${selectedSource.pm_fundingbody}` : ''}
-                  </Typography>
-                  <WorkflowMilestone
-                    moduleName={MODULE_NAMES.FUNDING_SOURCES.value}
-                    entityId={selectedSource.pm_fundingsourceid}
-                  />
-                </Paper>
-              ) : (
-                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
-                  No workflow tracking available for this funding source.
-                </Typography>
-              )}
-            </TabPanel>
-          </>
         )}
       </DetailDrawer>
 
@@ -908,22 +870,7 @@ export default function FundingSourcesPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel id="funding-status-label">Status</InputLabel>
-                <Select
-                  id="funding-status-select"
-                  labelId="funding-status-label"
-                  value={formData.pm_fundingstatus}
-                  label="Status"
-                  onChange={(e) => setFormData((f) => ({ ...f, pm_fundingstatus: e.target.value as number }))}
-                  sx={{ borderRadius: 1.5 }}
-                >
-                  <MenuItem value={0}>Active</MenuItem>
-                  <MenuItem value={1}>Exhausted</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Funding Body"
@@ -932,17 +879,6 @@ export default function FundingSourcesPage() {
                 value={formData.pm_fundingbody}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_fundingbody: e.target.value }))}
                 placeholder="e.g., European Commission"
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Reference Code"
-                fullWidth
-                size="small"
-                value={formData.pm_fundingbody}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_fundingbody: e.target.value }))}
-                placeholder="e.g., FS-2026-001"
                 slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>

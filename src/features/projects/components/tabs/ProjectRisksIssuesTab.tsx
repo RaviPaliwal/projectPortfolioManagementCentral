@@ -40,7 +40,7 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ ri
           <Typography variant="caption" color="text.secondary">{criticalIssues} High Priority</Typography>
         </Paper>
         <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: `3px solid ${escalatedRisks + criticalIssues > 0 ? 'error.main' : 'success.main'}` }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Health Factor</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Risk Factor</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700, color: escalatedRisks + criticalIssues > 0 ? 'error.main' : 'success.main' }}>
             {escalatedRisks + criticalIssues === 0 ? 'Good' : escalatedRisks + criticalIssues < 3 ? 'Caution' : 'Critical'}
           </Typography>

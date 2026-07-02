@@ -22,10 +22,22 @@ export interface AgentInsightModel {
   createdOn?: string
 }
 
+const sanitizeText = (text: string) => {
+  if (!text) return ''
+  return text
+    .replace(/\(Project ID: [0-9a-fA-F\-]{36}\)/gi, '')
+    .replace(/Project [0-9a-fA-F]{8}\b/gi, 'Project')
+    .replace(/Project [0-9a-fA-F\-]{36}/gi, 'Project')
+    .replace(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/gi, '')
+    .replace(/\s+/g, ' ')
+    .replace(/ — $/g, '')
+    .trim()
+}
+
 export const mapAgentInsight = (item: Pm_agentinsights): AgentInsightModel => ({
   id: item.pm_agentinsightid,
-  title: item.pm_insighttitle || '',
-  description: item.pm_insightdescription || '',
+  title: sanitizeText(item.pm_insighttitle || ''),
+  description: sanitizeText(item.pm_insightdescription || ''),
   type: Pm_agentinsightspm_insighttype[item.pm_insighttype as keyof typeof Pm_agentinsightspm_insighttype] || 'Suggestion',
   priority: Pm_agentinsightspm_priority[item.pm_priority as keyof typeof Pm_agentinsightspm_priority] || 'Medium',
   typeCode: Number(item.pm_insighttype ?? 125570001),
