@@ -26,8 +26,8 @@ const sanitizeText = (text: string) => {
   if (!text) return ''
   return text
     .replace(/\(Project ID: [0-9a-fA-F\-]{36}\)/gi, '')
-    .replace(/Project [0-9a-fA-F]{8}\b/gi, 'Project')
-    .replace(/Project [0-9a-fA-F\-]{36}/gi, 'Project')
+    .replace(/Project[ -][0-9a-fA-F]{8}\b/gi, 'Project')
+    .replace(/Project[ -][0-9a-fA-F\-]{36}/gi, 'Project')
     .replace(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/gi, '')
     .replace(/\s+/g, ' ')
     .replace(/ — $/g, '')

@@ -161,3 +161,13 @@
 - `FORM_DIALOG_DECISION_EVENT = 'form:decision-complete'` dispatched by modals after decision; parent pages listen and refresh.
 - Workflow instances can target either gate reviews (`pm_projectgatereview`) or initiatives (`pm_initiative`), distinguished by the `entityType` field on the workflow instance.
 - `ApprovalStepTaskModal.tsx` contains wrapper components (`ApprovalStepResolver`) that resolve `approvalStepId` → entity ID → pass to modal.
+
+### Thu, July 2
+- **Dashboard Task Widget**: Removed RAW GUIDs; updated inner card to remove rounded corners, replaced completion percentage with a linear progress bar, added color coding for percentages, and ensured it fits in one row without scrolling.
+- **Risk Page**: Fixed the Mitigation Tag style to match other tags.
+- **Configurations / UI**: Hid the Funding Source tile/tab. Fixed Database confidence value display to show as a 0-100% percentage and removed GUIDs.
+- **Resource Summary Page**:
+  - Cleaned up navigation by removing the "Tasks" and "Approval" tabs.
+  - Renamed "Assignments" tab and terminology to "Allocations".
+  - Removed the "Supplier" field from the Resource Details section.
+  - Injected a "Detailed Allocations Analysis" section into the Allocations tab containing rich KPI cards (Total Hours Allocated and Average Allocation %) with linear progress bars.

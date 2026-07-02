@@ -128,7 +128,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
   ).length
 
   const taskDisplayCount = 5
-  const insightDisplayCount = 7
+  const insightDisplayCount = 2
 
   if (!currentUser) {
     return (
@@ -418,7 +418,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                           p: 1.5,
                           borderRadius: 1.5,
                           borderLeft: '3px solid',
-                          borderLeftColor: insight.priorityCode === 2 ? 'error.main' : insight.priorityCode === 1 ? 'warning.main' : 'info.main',
+                          borderLeftColor: insight.type === 'Alert' ? 'warning.main' : 'info.main',
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
@@ -434,7 +434,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                               {insight.title}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5, display: 'block', mt: 0.25 }}>
-                              {insight.description.length > 150 ? insight.description.substring(0, 150) + '...' : insight.description}
+                              {insight.description}
                             </Typography>
                             <Box sx={{ display: 'flex', gap: 0.75, mt: 0.5, flexWrap: 'wrap' }}>
                               <Chip label={insight.type} size="small" color={insight.type === 'Alert' ? 'warning' : 'info'} variant="outlined" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />

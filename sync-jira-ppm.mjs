@@ -4,30 +4,14 @@ import * as fs from 'fs';
 const logFile = './JIRA_TICKETS_LOG.md';
 
 // === ANALYSIS: Tickets that are To Do but actually Done ===
-const markDone = [
-  'J2-201', // Fix 1389 ESLint errors -> DONE (0 remaining)
-  'J2-203', // Row-level data filtering -> DONE (5 modules)
-  'J2-204', // Column-level security -> DONE (financial scrubbing)
-];
+const markDone = [];
 
 // === NEW tickets for completed work missing from Jira ===
 const newTickets = [
-  { summary: 'Configurable Financial Reports Builder (ReportConfigsPage) — visual chart/group-by/category builder', priority: 'High' },
-  { summary: 'Financial Reports Viewer (FinancialReportsPage) — standalone report browsing with KPIs and grids', priority: 'High' },
-  { summary: 'ExcelImportDialog — reusable Excel drag-and-drop import with column mapping and validation', priority: 'Medium' },
-  { summary: 'Budget page Excel import integration using ExcelImportDialog', priority: 'Medium' },
-  { summary: 'Downgrade React to version 18.3.1 to resolve Fluent UI element warnings and WebPlayer crashes', priority: 'High' },
-  { summary: 'Fix empty catch blocks across services — 11 fixes (changelog, portfolio, project)', priority: 'High' },
-  { summary: 'Standardize audit logging on approval & financial-report-config & workflow services (27+ writeAuditLog calls)', priority: 'High' },
-  { summary: 'Enhanced report config preview with dynamic Reporting Level scaling', priority: 'Medium' },
-  { summary: 'Support optional Limit to Portfolios / Programmes / Projects scope selection in reports', priority: 'Medium' },
-  { summary: 'Add type safety checks for budget line pm_costcategory option sets in reporting grid', priority: 'High' },
-  { summary: 'Remove placeholder card from configurations main navigation tab', priority: 'Low' },
-  { summary: 'Fix ResponsiveContainer dimension warnings by adding minWidth props in charts', priority: 'Low' },
-  { summary: 'Update COMPREHENSIVE_CODEBASE_AUDIT.md to reflect empty catch block and audit logging fixes', priority: 'Medium' },
-  { summary: 'Strategic Roster page — 4 view modes, portfolio hierarchy, KPI cards', priority: 'Medium' },
-  { summary: 'Skills Management page — catalog + resource-skill mapping CRUD', priority: 'Medium' },
-  { summary: 'Agent Insights Service — agent-based analytics service layer', priority: 'Low' },
+  { summary: 'Dashboard Task Widget UI enhancements: remove GUIDs, remove rounded corners, linear progress bar, color coding', priority: 'Medium' },
+  { summary: 'Risk Page Mitigation Tag style fix', priority: 'Low' },
+  { summary: 'Configurations/UI: Hide Funding Source tile, format Database confidence value to percentage, remove GUIDs', priority: 'Medium' },
+  { summary: 'Resource Summary Page enhancements: rename Assignments to Allocations, remove Tasks/Approval tabs, remove Supplier field, add Detailed Allocations Analysis with KPI cards', priority: 'High' }
 ];
 
 (async () => {
