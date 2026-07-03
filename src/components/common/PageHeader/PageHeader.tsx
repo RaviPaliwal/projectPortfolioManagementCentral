@@ -13,7 +13,7 @@ export interface PageHeaderAction {
 
 export interface PageHeaderProps {
   title: string
-  subtitle?: string
+  subtitle?: ReactNode
   /** Optional action button shown on the right */
   action?: PageHeaderAction
   /** Custom action element (overrides action prop if provided) */

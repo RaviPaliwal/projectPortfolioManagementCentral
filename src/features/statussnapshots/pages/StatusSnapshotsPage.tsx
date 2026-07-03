@@ -58,7 +58,7 @@ import { Pm_projectstatussnapshotsService } from '../../../generated'
 import type { ProjectStatusSnapshotModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, SearchFilterBar, DetailDrawer, TabPanel, ExportButton, StatusTag, ActionIcon } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, Breadcrumbs } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import { SnapshotDialogs } from '../components/SnapshotDialogs'
 
@@ -575,330 +575,38 @@ export default function StatusSnapshotsPage() {
 
   return (
     <Box>
-      <PageHeader
-        title="Status Snapshots"
-        subtitle="Track project, programme, and portfolio status across 13-period fiscal years with multi-dimensional RAG ratings."
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <ExportButton data={filteredSnapshots} columns={exportColumns} filename={'StatusSnapshots_' + new Date().toISOString().slice(0, 10)} />
-            {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-                Add Snapshot
-              </Button>
-            )}
-          </Box>
-        }
-      />
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-      {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
-      {!loading && <KpiCardRow items={kpiItems} />}
-
-      <Tabs
-        value={pageTab}
-        onChange={(_, v) => { setPageTab(v); setError(null) }}
-        sx={{
-          mb: 3,
-          borderBottom: 1,
-          borderColor: 'divider',
-          '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40, px: 3 },
-          '& .Mui-selected': { color: 'primary.main' },
-        }}
-      >
-        <Tab icon={<AssessmentIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="RAG Overview" />
-        <Tab icon={<ChecklistIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="List View" />
-      </Tabs>
-
-      {/* TAB 0: RAG Overview */}
-      <TabPanel value={pageTab} index={0} pt={0}>
-        {loading ? (
-          <TableShell loading={true} empty={false}>
-            <Table size="small"><TableHead><TableRow><TableCell /></TableRow></TableHead></Table>
-          </TableShell>
-        ) : (
-          <Grid container spacing={3}>
-            {/* Summary Cards */}
-            <Grid size={{ xs: 12 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AssessmentIcon sx={{ color: 'primary.main' }} />
-                Multi-Dimensional RAG Status Overview
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Overview of RAG status distribution across {snapshots.length} snapshot(s) for each performance dimension.
-              </Typography>
-            </Grid>
-
-            {RAG_DIMENSIONS.map((dim) => {
-              const dist = ragDistribution[dim.key]
-              const total = dist.green + dist.amber + dist.red + dist.notset
-              const greenPct = total > 0 ? (dist.green / total) * 100 : 0
-              const amberPct = total > 0 ? (dist.amber / total) * 100 : 0
-              const redPct = total > 0 ? (dist.red / total) * 100 : 0
-              return (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dim.key}>
-                  <Card variant="outlined" sx={{
-                    borderRadius: 2,
-                    height: '100%',
-                    transition: 'box-shadow 0.2s ease, transform 0.2s ease',
-                    '&:hover': {
-                      boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.08)',
-                      transform: 'translateY(-2px)',
-                    },
-                  }}>
-                    <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                          {dim.label} RAG
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                        <Box sx={{ flex: 1, height: 12, borderRadius: 2, overflow: 'hidden', bgcolor: isDark ? 'background.paper' : '#f1f5f9', display: 'flex' }}>
-                          <Box sx={{ width: greenPct + '%', bgcolor: 'success.main', transition: 'width 0.5s ease' }} />
-                          <Box sx={{ width: amberPct + '%', bgcolor: 'warning.main', transition: 'width 0.5s ease' }} />
-                          <Box sx={{ width: redPct + '%', bgcolor: 'error.main', transition: 'width 0.5s ease' }} />
-                        </Box>
-                      </Box>
-                      <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-                        <StatusTag icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={dist.green + ' Green'} size="small" sx={{ fontWeight: 600, bgcolor: isDark ? '#052e16' : '#f0fdf4', color: 'success.main' }} />
-                        <StatusTag icon={<WarningAmberIcon sx={{ fontSize: 14 }} />} label={dist.amber + ' Amber'} size="small" sx={{ fontWeight: 600, bgcolor: isDark ? '#1c1917' : '#fffbeb', color: 'warning.main' }} />
-                        <StatusTag icon={<ErrorIcon sx={{ fontSize: 14 }} />} label={dist.red + ' Red'} size="small" sx={{ fontWeight: 600, bgcolor: isDark ? '#450a0a' : '#fef2f2', color: 'error.main' }} />
-                        {dist.notset > 0 && (
-                          <StatusTag label={dist.notset + ' Not Set'} size="small" sx={{ fontWeight: 600 }} />
-                        )}
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              )
-            })}
-
-            {/* Fiscal Period Distribution */}
-            {snapshots.length > 0 && (
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CalendarMonthIcon sx={{ color: 'primary.main' }} />
-                  13-Period Fiscal Year Distribution
-                </Typography>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-                  <Grid container spacing={1.5}>
-                    {FISCAL_PERIOD_OPTIONS.filter((o) => o.value).map((period) => {
-                      const periodSnapshots = snapshots.filter((s) => s.pm_reportingperiod === period.value)
-                      const count = periodSnapshots.length
-                      const green = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 1).length
-                      const amber = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 0).length
-                      const red = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 2).length
-                      
-                      return (
-                        <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={period.value}>
-                          <Box
-                            sx={{
-                              p: 1.5,
-                              borderRadius: 2,
-                              border: '1px solid',
-                              borderColor: isDark ? '#334155' : '#e2e8f0',
-                              bgcolor: isDark ? '#1a2332' : 'background.default',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                              '&:hover': { borderColor: 'primary.main', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
-                            }}
-                            onClick={() => { setPeriodFilter(period.value!); setPageTab(1) }}
-                          >
-                            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', fontSize: 11 }}>
-                              {period.label}
-                            </Typography>
-                            
-                            <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', mt: 0.5 }}>
-                              <Typography variant="body1" sx={{ fontWeight: 800, fontSize: fontSizes.lg, lineHeight: 1 }}>
-                                {count} <Typography component="span" variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: 10 }}>reports</Typography>
-                              </Typography>
-                              {count > 0 && (
-                                <Box sx={{ display: 'flex', gap: 1, mb: 0.25 }}>
-                                  {green > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'success.main' }} /><Typography variant="caption" sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>{green}</Typography></Box>}
-                                  {amber > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'warning.main' }} /><Typography variant="caption" sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>{amber}</Typography></Box>}
-                                  {red > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'error.main' }} /><Typography variant="caption" sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>{red}</Typography></Box>}
-                                </Box>
-                              )}
-                            </Box>
-                            
-                            {count > 0 ? (
-                              <Box sx={{ display: 'flex', width: '100%', height: 4, borderRadius: 2, overflow: 'hidden', mt: 1.5 }}>
-                                {green > 0 && <Box sx={{ width: `${(green / count) * 100}%`, bgcolor: 'success.main' }} />}
-                                {amber > 0 && <Box sx={{ width: `${(amber / count) * 100}%`, bgcolor: 'warning.main' }} />}
-                                {red > 0 && <Box sx={{ width: `${(red / count) * 100}%`, bgcolor: 'error.main' }} />}
-                              </Box>
-                            ) : (
-                              <Box sx={{ width: '100%', height: 4, borderRadius: 2, bgcolor: isDark ? 'background.paper' : '#e2e8f0', mt: 1.5 }} />
-                            )}
-                          </Box>
-                        </Grid>
-                      )
-                    })}
-                  </Grid>
-                </Paper>
-              </Grid>
-            )}
-          </Grid>
-        )}
-      </TabPanel>
-
-      {/* TAB 1: List View */}
-      <TabPanel value={pageTab} index={1} pt={0}>
-        <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-          <SearchFilterBar
-            searchQuery={searchQuery}
-            onSearchChange={(v) => { setSearchQuery(v); setPage(0) }}
-            searchPlaceholder="Search by name, project, period..."
-            filterValue={entityFilter}
-            onFilterChange={(v) => { setEntityFilter(v); setPage(0) }}
-            filterLabel="Entity Type"
-            filterOptions={ENTITY_TYPE_OPTIONS}
-            secondaryFilterValue={periodFilter}
-            onSecondaryFilterChange={(v) => { setPeriodFilter(v); setPage(0) }}
-            secondaryFilterLabel="Fiscal Period"
-            secondaryFilterOptions={FISCAL_PERIOD_OPTIONS}
-            onClear={() => { setSearchQuery(''); setEntityFilter(''); setPeriodFilter(''); setRagFilter(''); setPage(0) }}
+      {selectedSnapshot ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Snapshots', path: 'list' },
+              { label: selectedSnapshot.pm_snapshotname ?? 'Detail' }
+            ]}
+            onNavigate={() => setSelectedSnapshot(null)}
           />
-          <TableShell
-            loading={loading}
-            empty={filteredSnapshots.length === 0}
-            emptyIcon={<AssessmentIcon />}
-            emptyTitle={searchQuery || entityFilter || periodFilter ? 'No snapshots match your criteria.' : 'No status snapshots yet.'}
-            emptyAction={!searchQuery && !entityFilter && !periodFilter ? (
-              <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreate}>
-                Add your first snapshot
-              </Button>
-            ) : undefined}
-          >
-            <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700 }}>Snapshot</TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'entity'} direction={sort.field === 'entity' ? sort.dir : 'asc'} onClick={() => handleSort('entity')} sx={{ fontWeight: 700 }}>Entity</TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'period'} direction={sort.field === 'period' ? sort.dir : 'asc'} onClick={() => handleSort('period')} sx={{ fontWeight: 700 }}>Fiscal Period</TableSortLabel>
-                  </TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'overallrag'} direction={sort.field === 'overallrag' ? sort.dir : 'asc'} onClick={() => handleSort('overallrag')} sx={{ fontWeight: 700 }}>RAG Status</TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'date'} direction={sort.field === 'date' ? sort.dir : 'asc'} onClick={() => handleSort('date')} sx={{ fontWeight: 700 }}>Submitted</TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>Dimensions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedSnapshots.map((snapshot, idx) => (
-                  <TableRow
-                    key={snapshot.pm_projectstatussnapshotid}
-                    hover
-                    onClick={() => setSelectedSnapshot(snapshot)}
-                    sx={{
-                      cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                      transition: 'background-color 0.15s ease',
-                      '& td': { px: 2.5, py: 1.25 },
-                    }}
-                  >
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
-                          <AssessmentIcon sx={{ fontSize: 16 }} />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {snapshot.pm_snapshotname || 'Unnamed'}
-                          </Typography>
-                          {snapshot.pm_projectcode && (
-                            <Typography variant="caption" color="text.secondary">
-                              {snapshot.pm_projectcode}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <StatusTag label={snapshot.pm_entitytype || '\u2014'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>
-                        {snapshot.pm_reportingperiod || '\u2014'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <RagChip field="pm_overallragstatus" value={snapshot.pm_overallragstatus} />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontSize: fontSizes.sm }}>
-                        {formatDate(snapshot.pm_submissiondate)}
-                      </Typography>
-                      {snapshot.pm_submittedby && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                          {snapshot.pm_submittedby}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5}>
-                        <Tooltip title="Cost" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_costragstatus', snapshot.pm_costragstatus) }} />
-                        </Tooltip>
-                        <Tooltip title="Schedule" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_scheduleragstatus', snapshot.pm_scheduleragstatus) }} />
-                        </Tooltip>
-                        <Tooltip title="Risk" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_riskragstatus', snapshot.pm_riskragstatus) }} />
-                        </Tooltip>
-                        <Tooltip title="Resource" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_resourceragstatus', snapshot.pm_resourceragstatus) }} />
-                        </Tooltip>
-                        <Tooltip title="Benefits" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_benefitsragstatus', snapshot.pm_benefitsragstatus) }} />
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <PageHeader
+            title={selectedSnapshot?.pm_snapshotname ?? 'Snapshot Detail'}
+            subtitle={
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1 }}>
+                <StatusTag label={selectedSnapshot.pm_entitytype || '\u2014'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+              </Box>
+            }
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                {canEdit && (
+                  <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedSnapshot && openEdit(selectedSnapshot)} sx={{ borderRadius: 1.5 }}>
+                    Edit Snapshot
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => selectedSnapshot?.pm_projectstatussnapshotid && setDeleteConfirm(selectedSnapshot.pm_projectstatussnapshotid)} sx={{ borderRadius: 1.5 }}>
+                    Delete Snapshot
+                  </Button>
+                )}
+              </Box>
+            }
+          />
 
-          </TableShell>
-        </Paper>
-      </TabPanel>
-
-      {/* Detail Drawer */}
-      <DetailDrawer
-        open={!!selectedSnapshot}
-        onClose={() => setSelectedSnapshot(null)}
-        icon={<AssessmentIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
-        title={selectedSnapshot?.pm_snapshotname ?? ''}
-        subtitle={selectedSnapshot && (
-          <StatusTag label={selectedSnapshot.pm_entitytype || '\u2014'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {canDelete && (
-              <ActionIcon
-                icon={<DeleteIcon />}
-                onClick={() => selectedSnapshot?.pm_projectstatussnapshotid && setDeleteConfirm(selectedSnapshot.pm_projectstatussnapshotid)}
-                label="Delete Snapshot"
-                color="error"
-              />
-            )}
-            {canEdit && (
-              <ActionIcon
-                icon={<EditIcon />}
-                onClick={() => selectedSnapshot && openEdit(selectedSnapshot)}
-                label="Edit Snapshot"
-              />
-            )}
-          </Box>
-        }
-      >
-        {selectedSnapshot && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {/* RAG Status Cards */}
             <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
@@ -1024,8 +732,289 @@ export default function StatusSnapshotsPage() {
               </Paper>
             )}
           </Box>
-        )}
-      </DetailDrawer>
+        </Box>
+      ) : (
+        <>
+          <PageHeader
+            title="Status Snapshots"
+            subtitle="Track health, highlights, and lowlights across all your projects in discrete reporting periods."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <ExportButton data={snapshots} columns={exportColumns} filename="status_snapshots" />
+                {canCreate && (
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+                    Create Snapshot
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+          <KpiCardRow items={kpiItems} loading={loading} />
+          
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tabs value={pageTab} onChange={(e, v) => setPageTab(v)} sx={{ minHeight: 48 }}>
+              <Tab icon={<HubIcon />} iconPosition="start" label="Dashboard" sx={{ minHeight: 48, fontWeight: 600 }} />
+              <Tab icon={<AssignmentIcon />} iconPosition="start" label="All Snapshots" sx={{ minHeight: 48, fontWeight: 600 }} />
+            </Tabs>
+          </Box>
+
+          <TabPanel value={pageTab} index={0} pt={0}>
+            {loading ? (
+              <TableShell loading={true} empty={false}>
+                <Table size="small"><TableHead><TableRow><TableCell /></TableRow></TableHead></Table>
+              </TableShell>
+            ) : (
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AssessmentIcon sx={{ color: 'primary.main' }} />
+                    Multi-Dimensional RAG Status Overview
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    Overview of RAG status distribution across {snapshots.length} snapshot(s) for each performance dimension.
+                  </Typography>
+                </Grid>
+
+                {RAG_DIMENSIONS.map((dim) => {
+                  const dist = ragDistribution[dim.key]
+                  const total = dist.green + dist.amber + dist.red + dist.notset
+                  const greenPct = total > 0 ? (dist.green / total) * 100 : 0
+                  const amberPct = total > 0 ? (dist.amber / total) * 100 : 0
+                  const redPct = total > 0 ? (dist.red / total) * 100 : 0
+                  return (
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dim.key}>
+                      <Card variant="outlined" sx={{
+                        borderRadius: 2,
+                        height: '100%',
+                        transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+                        '&:hover': {
+                          boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.08)',
+                          transform: 'translateY(-2px)',
+                        },
+                      }}>
+                        <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                              {dim.label} RAG
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                            <Box sx={{ flex: 1, height: 12, borderRadius: 2, overflow: 'hidden', bgcolor: isDark ? 'background.paper' : '#f1f5f9', display: 'flex' }}>
+                              <Box sx={{ width: greenPct + '%', bgcolor: 'success.main', transition: 'width 0.5s ease' }} />
+                              <Box sx={{ width: amberPct + '%', bgcolor: 'warning.main', transition: 'width 0.5s ease' }} />
+                              <Box sx={{ width: redPct + '%', bgcolor: 'error.main', transition: 'width 0.5s ease' }} />
+                            </Box>
+                          </Box>
+                          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                            <StatusTag icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={dist.green + ' Green'} size="small" sx={{ fontWeight: 600, bgcolor: isDark ? '#052e16' : '#f0fdf4', color: 'success.main' }} />
+                            <StatusTag icon={<WarningAmberIcon sx={{ fontSize: 14 }} />} label={dist.amber + ' Amber'} size="small" sx={{ fontWeight: 600, bgcolor: isDark ? '#1c1917' : '#fffbeb', color: 'warning.main' }} />
+                            <StatusTag icon={<ErrorIcon sx={{ fontSize: 14 }} />} label={dist.red + ' Red'} size="small" sx={{ fontWeight: 600, bgcolor: isDark ? '#450a0a' : '#fef2f2', color: 'error.main' }} />
+                            {dist.notset > 0 && (
+                              <StatusTag label={dist.notset + ' Not Set'} size="small" sx={{ fontWeight: 600 }} />
+                            )}
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  )
+                })}
+
+                {snapshots.length > 0 && (
+                  <Grid size={{ xs: 12 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CalendarMonthIcon sx={{ color: 'primary.main' }} />
+                      13-Period Fiscal Year Distribution
+                    </Typography>
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                      <Grid container spacing={1.5}>
+                        {FISCAL_PERIOD_OPTIONS.filter((o) => o.value).map((period) => {
+                          const periodSnapshots = snapshots.filter((s) => s.pm_reportingperiod === period.value)
+                          const count = periodSnapshots.length
+                          const green = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 1).length
+                          const amber = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 0).length
+                          const red = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 2).length
+                          
+                          return (
+                            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={period.value}>
+                              <Box
+                                sx={{
+                                  p: 1.5,
+                                  borderRadius: 2,
+                                  border: '1px solid',
+                                  borderColor: isDark ? '#334155' : '#e2e8f0',
+                                  bgcolor: isDark ? '#1a2332' : 'background.default',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                  '&:hover': { borderColor: 'primary.main', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
+                                }}
+                                onClick={() => { setPeriodFilter(period.value!); setPageTab(1) }}
+                              >
+                                <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', fontSize: 11 }}>
+                                  {period.label}
+                                </Typography>
+                                
+                                <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', mt: 0.5 }}>
+                                  <Typography variant="body1" sx={{ fontWeight: 800, fontSize: fontSizes.lg, lineHeight: 1 }}>
+                                    {count} <Typography component="span" variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: 10 }}>reports</Typography>
+                                  </Typography>
+                                  {count > 0 && (
+                                    <Box sx={{ display: 'flex', gap: 1, mb: 0.25 }}>
+                                      {green > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'success.main' }} /><Typography variant="caption" sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>{green}</Typography></Box>}
+                                      {amber > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'warning.main' }} /><Typography variant="caption" sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>{amber}</Typography></Box>}
+                                      {red > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'error.main' }} /><Typography variant="caption" sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>{red}</Typography></Box>}
+                                    </Box>
+                                  )}
+                                </Box>
+                                
+                                {count > 0 ? (
+                                  <Box sx={{ display: 'flex', width: '100%', height: 4, borderRadius: 2, overflow: 'hidden', mt: 1.5 }}>
+                                    {green > 0 && <Box sx={{ width: `${(green / count) * 100}%`, bgcolor: 'success.main' }} />}
+                                    {amber > 0 && <Box sx={{ width: `${(amber / count) * 100}%`, bgcolor: 'warning.main' }} />}
+                                    {red > 0 && <Box sx={{ width: `${(red / count) * 100}%`, bgcolor: 'error.main' }} />}
+                                  </Box>
+                                ) : (
+                                  <Box sx={{ width: '100%', height: 4, borderRadius: 2, bgcolor: isDark ? 'background.paper' : '#e2e8f0', mt: 1.5 }} />
+                                )}
+                              </Box>
+                            </Grid>
+                          )
+                        })}
+                      </Grid>
+                    </Paper>
+                  </Grid>
+                )}
+              </Grid>
+            )}
+          </TabPanel>
+
+          <TabPanel value={pageTab} index={1} pt={0}>
+            <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+              <SearchFilterBar
+                searchQuery={searchQuery}
+                onSearchChange={(v) => { setSearchQuery(v); setPage(0) }}
+                searchPlaceholder="Search by name, project, period..."
+                filterValue={entityFilter}
+                onFilterChange={(v) => { setEntityFilter(v); setPage(0) }}
+                filterLabel="Entity Type"
+                filterOptions={ENTITY_TYPE_OPTIONS}
+                secondaryFilterValue={periodFilter}
+                onSecondaryFilterChange={(v) => { setPeriodFilter(v); setPage(0) }}
+                secondaryFilterLabel="Fiscal Period"
+                secondaryFilterOptions={FISCAL_PERIOD_OPTIONS}
+                onClear={() => { setSearchQuery(''); setEntityFilter(''); setPeriodFilter(''); setRagFilter(''); setPage(0) }}
+              />
+              <TableShell
+                loading={loading}
+                empty={filteredSnapshots.length === 0}
+                emptyIcon={<AssessmentIcon />}
+                emptyTitle={searchQuery || entityFilter || periodFilter ? 'No snapshots match your criteria.' : 'No status snapshots yet.'}
+                emptyAction={!searchQuery && !entityFilter && !periodFilter ? (
+                  <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreate}>
+                    Add your first snapshot
+                  </Button>
+                ) : undefined}
+              >
+                <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                        <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700 }}>Snapshot</TableSortLabel>
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                        <TableSortLabel active={sort.field === 'entity'} direction={sort.field === 'entity' ? sort.dir : 'asc'} onClick={() => handleSort('entity')} sx={{ fontWeight: 700 }}>Entity</TableSortLabel>
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                        <TableSortLabel active={sort.field === 'period'} direction={sort.field === 'period' ? sort.dir : 'asc'} onClick={() => handleSort('period')} sx={{ fontWeight: 700 }}>Fiscal Period</TableSortLabel>
+                      </TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                        <TableSortLabel active={sort.field === 'overallrag'} direction={sort.field === 'overallrag' ? sort.dir : 'asc'} onClick={() => handleSort('overallrag')} sx={{ fontWeight: 700 }}>RAG Status</TableSortLabel>
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                        <TableSortLabel active={sort.field === 'date'} direction={sort.field === 'date' ? sort.dir : 'asc'} onClick={() => handleSort('date')} sx={{ fontWeight: 700 }}>Submitted</TableSortLabel>
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>Dimensions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedSnapshots.map((snapshot, idx) => (
+                      <TableRow
+                        key={snapshot.pm_projectstatussnapshotid}
+                        hover
+                        onClick={() => setSelectedSnapshot(snapshot)}
+                        sx={{
+                          cursor: 'pointer',
+                          bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
+                          '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                          transition: 'background-color 0.15s ease',
+                          '& td': { px: 2.5, py: 1.25 },
+                        }}
+                      >
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
+                              <AssessmentIcon sx={{ fontSize: 16 }} />
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {snapshot.pm_snapshotname || 'Unnamed'}
+                              </Typography>
+                              {snapshot.pm_projectcode && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {snapshot.pm_projectcode}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <StatusTag label={snapshot.pm_entitytype || '\u2014'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>
+                            {snapshot.pm_reportingperiod || '\u2014'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <RagChip field="pm_overallragstatus" value={snapshot.pm_overallragstatus} />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontSize: fontSizes.sm }}>
+                            {formatDate(snapshot.pm_submissiondate)}
+                          </Typography>
+                          {snapshot.pm_submittedby && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              {snapshot.pm_submittedby}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={0.5}>
+                            <Tooltip title="Cost" arrow>
+                              <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_costragstatus', snapshot.pm_costragstatus) }} />
+                            </Tooltip>
+                            <Tooltip title="Schedule" arrow>
+                              <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_scheduleragstatus', snapshot.pm_scheduleragstatus) }} />
+                            </Tooltip>
+                            <Tooltip title="Risk" arrow>
+                              <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_riskragstatus', snapshot.pm_riskragstatus) }} />
+                            </Tooltip>
+                            <Tooltip title="Resource" arrow>
+                              <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_resourceragstatus', snapshot.pm_resourceragstatus) }} />
+                            </Tooltip>
+                            <Tooltip title="Benefits" arrow>
+                              <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_benefitsragstatus', snapshot.pm_benefitsragstatus) }} />
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableShell>
+            </Paper>
+          </TabPanel>
+        </>
+      )}
 
       <SnapshotDialogs
         showForm={showForm}

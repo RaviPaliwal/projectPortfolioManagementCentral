@@ -35,6 +35,8 @@ import {
   IconButton,
   Tooltip,
   alpha,
+  Tabs,
+  Tab,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -91,7 +93,7 @@ import {
   TableFooter,
   TableShell,
   TableHeader,
-  DetailDrawer,
+  Breadcrumbs,
   SearchFilterBar,
   ExportButton,
   StatusTag,
@@ -670,162 +672,165 @@ export default function PipelinePage() {
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-      {/* ── 1. 4-Column KPI Header ──────────────────────────────────────────── */}
-      {!loading && <KpiCardRow items={kpiItems} />}
+      {!selectedInitiative ? (
+        <>
+          {/* ── 1. 4-Column KPI Header ──────────────────────────────────────────── */}
+          {!loading && <KpiCardRow items={kpiItems} />}
 
-      {/* ── 2. Master Pipeline Grid ──────────────────────────────────────────── */}
-      <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-        <SearchFilterBar
-          searchQuery={searchQuery}
-          onSearchChange={handleSearchChange}
-          searchPlaceholder="Search by name, sponsor, portfolio..."
-          filterValue={statusFilter}
-          onFilterChange={handleStatusFilterChange}
-          filterLabel="Status"
-          filterOptions={STATUS_FILTER_OPTIONS}
-          onClear={() => { setSearchQuery(''); setStatusFilter(''); setPage(0) }}
+          {/* ── 2. Master Pipeline Grid ──────────────────────────────────────────── */}
+          <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+            <SearchFilterBar
+              searchQuery={searchQuery}
+              onSearchChange={handleSearchChange}
+              searchPlaceholder="Search by name, sponsor, portfolio..."
+              filterValue={statusFilter}
+              onFilterChange={handleStatusFilterChange}
+              filterLabel="Status"
+              filterOptions={STATUS_FILTER_OPTIONS}
+              onClear={() => { setSearchQuery(''); setStatusFilter(''); setPage(0) }}
+            />
+
+            <TableShell
+              loading={loading}
+              empty={filteredInitiatives.length === 0}
+              emptyIcon={<LightbulbIcon />}
+              emptyTitle={searchQuery || statusFilter ? 'No initiatives match your search criteria.' : 'No initiatives found.'}
+              emptyAction={(!searchQuery && !statusFilter && canCreate) ? (
+                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
+                  Create your first initiative
+                </Button>
+              ) : undefined}
+            >
+              <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+                <TableHeader cells={[
+                  { label: 'Initiative Name', sortable: true, active: sort.field === 'name', dir: sort.dir, onClick: () => handleSort('name') },
+                  { label: 'Business Sponsor', sortable: true, active: sort.field === 'sponsor', dir: sort.dir, onClick: () => handleSort('sponsor') },
+                  { label: 'Strategic Alignment', sortable: true, active: sort.field === 'strategicScore', dir: sort.dir, onClick: () => handleSort('strategicScore') },
+                  { label: 'Estimated Cost', align: 'right', sortable: true, active: sort.field === 'estimatedCost', dir: sort.dir, onClick: () => handleSort('estimatedCost') },
+                  { label: 'Status', sortable: true, active: sort.field === 'status', dir: sort.dir, onClick: () => handleSort('status') },
+                  { label: 'Actions', align: 'center' },
+                ]} />
+                <TableBody>
+                  {paginatedInitiatives.map((initiative, idx) => {
+                    const statusCfg = STATUS_CONFIG[String(initiative.pm_pipelinestatus ?? '')] ?? { label: 'Draft', color: 'default' as const }
+                    return (
+                      <TableRow
+                        key={initiative.pm_initiativeid}
+                        hover
+                        onClick={() => handleRowClick(initiative)}
+                        sx={{
+                          cursor: 'pointer',
+                          bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
+                          '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                          transition: 'background-color 0.15s ease',
+                          '& td': { px: 2.5, py: 1.25 },
+                        }}
+                      >
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <LightbulbIcon sx={{ fontSize: 18, color: 'warning.main', opacity: 0.7 }} />
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {initiative.pm_name ?? 'Untitled Initiative'}
+                              </Typography>
+                              {initiative.pm_portfolioname && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {initiative.pm_portfolioname}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                            <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                            <Typography variant="body2" color="text.secondary">
+                              {initiative.pm_requestorname || '—'}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <TrendingUpIcon sx={{ fontSize: 14, color: 'primary.main', opacity: 0.7 }} />
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {initiative.pm_strategicalignmentscore ?? '—'} / 100
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                            {initiative.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <StatusTag label={statusCfg.label} color={statusCfg.color} size="small" />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Tooltip title="Delete">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => { e.stopPropagation(); setDeleteTarget(initiative); }}
+                                disabled={!canDelete}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </TableShell>
+
+            {filteredInitiatives.length > 0 && (
+              <TablePagination
+                component="div"
+                count={filteredInitiatives.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[10, 25, 50, 100]}
+              />
+            )}
+          </Paper>
+        </>
+      ) : (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+        <Breadcrumbs
+          items={[
+            { label: 'Pipeline', path: 'list' },
+            { label: selectedInitiative.pm_name ?? 'Detail' }
+          ]}
+          onNavigate={() => handleCloseDetail()}
+        />
+        <PageHeader
+          title={selectedInitiative?.pm_name ?? ''}
+          subtitle={drawerSubtitle}
         />
 
-        <TableShell
-          loading={loading}
-          empty={filteredInitiatives.length === 0}
-          emptyIcon={<LightbulbIcon />}
-          emptyTitle={searchQuery || statusFilter ? 'No initiatives match your search criteria.' : 'No initiatives found.'}
-          emptyAction={(!searchQuery && !statusFilter && canCreate) ? (
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
-              Create your first initiative
-            </Button>
-          ) : undefined}
-        >
-          <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
-            <TableHeader cells={[
-              { label: 'Initiative Name', sortable: true, active: sort.field === 'name', dir: sort.dir, onClick: () => handleSort('name') },
-              { label: 'Business Sponsor', sortable: true, active: sort.field === 'sponsor', dir: sort.dir, onClick: () => handleSort('sponsor') },
-              { label: 'Strategic Alignment', sortable: true, active: sort.field === 'strategicScore', dir: sort.dir, onClick: () => handleSort('strategicScore') },
-              { label: 'Estimated Cost', align: 'right', sortable: true, active: sort.field === 'estimatedCost', dir: sort.dir, onClick: () => handleSort('estimatedCost') },
-              { label: 'Status', sortable: true, active: sort.field === 'status', dir: sort.dir, onClick: () => handleSort('status') },
-              { label: 'Actions', align: 'center' },
-            ]} />
-            <TableBody>
-              {paginatedInitiatives.map((initiative, idx) => {
-                const statusCfg = STATUS_CONFIG[String(initiative.pm_pipelinestatus ?? '')] ?? { label: 'Draft', color: 'default' as const }
-                return (
-                  <TableRow
-                    key={initiative.pm_initiativeid}
-                    hover
-                    onClick={() => handleRowClick(initiative)}
-                    sx={{
-                      cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                      transition: 'background-color 0.15s ease',
-                      '& td': { px: 2.5, py: 1.25 },
-                    }}
-                  >
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <LightbulbIcon sx={{ fontSize: 18, color: 'warning.main', opacity: 0.7 }} />
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {initiative.pm_name ?? 'Untitled Initiative'}
-                          </Typography>
-                          {initiative.pm_portfolioname && (
-                            <Typography variant="caption" color="text.secondary">
-                              {initiative.pm_portfolioname}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {initiative.pm_requestorname || '—'}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <StrategicScoreDisplay score={initiative.pm_strategicalignmentscore} />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {initiative.pm_estimatedcost ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <StatusTag
-                        label={statusCfg.label}
-                        color={statusCfg.color}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontWeight: 600 }}
-                      />
-                    </TableCell>
-                    <TableCell align="center" onClick={(e) => e.stopPropagation()}>
-                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                        {canDelete && (
-                          <Tooltip title="Delete Initiative">
-                            <IconButton
-                              size="small"
-                              onClick={() => setDeleteTarget(initiative)}
-                              sx={{ color: 'error.main' }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </TableShell>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Tabs
+            value={detailTab}
+            onChange={(e, v) => { setDetailTab(v); setEditScoreMode(false) }}
+            sx={{
+              '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40, px: 3 },
+              '& .Mui-selected': { color: 'primary.main' },
+            }}
+          >
+            <Tab label="Overview" />
+            <Tab label="Score & Triage" />
+            <Tab label="Actions" />
+            <Tab label="Tasks" />
+            <Tab label="Documents" />
+          </Tabs>
+        </Box>
 
-        {!loading && filteredInitiatives.length > 0 && (
-          <TableFooter
-            filteredCount={filteredInitiatives.length}
-            totalCount={initiatives.length}
-            itemLabel="initiative"
-            totals={[
-              { label: 'Est. pipeline', value: currencyFormatter.format(filteredInitiatives.reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)) },
-            ]}
-          />
-        )}
-        {!loading && filteredInitiatives.length > 0 && (
-          <TablePagination
-            component="div"
-            count={filteredInitiatives.length}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[10, 25, 50, 100]}
-          />
-        )}
-      </Paper>
 
-      {/* ── 3. Slide-Out Detail Panel ────────────────────────────────────────── */}
-      <DetailDrawer
-        open={!!selectedInitiative}
-        onClose={handleCloseDetail}
-        icon={<LightbulbIcon sx={{ color: 'warning.main', fontSize: 22 }} />}
-        title={selectedInitiative?.pm_name ?? ''}
-        subtitle={drawerSubtitle}
-        tabs={[
-          { label: 'Overview' },
-          { label: 'Score & Triage' },
-          { label: 'Actions' },
-          { label: 'Tasks' },
-          { label: 'Documents' },
-        ]}
-        tabValue={detailTab}
-        onTabChange={(v) => { setDetailTab(v); setEditScoreMode(false) }}
-      >
-        {/* ═══ Tab 0: Overview ═══ */}
-        <TabPanel value={detailTab} index={0} pt={0}>
+          <TabPanel value={detailTab} index={0} pt={0}>
           {selectedInitiative && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {selectedInitiative.pm_businesscase ? (
@@ -1004,7 +1009,8 @@ export default function PipelinePage() {
             />
           )}
         </TabPanel>
-      </DetailDrawer>
+        </Box>
+      )}
 
       {/* ── 4. Create Initiative Modal ────────────────────────────────────────── */}
       <Dialog

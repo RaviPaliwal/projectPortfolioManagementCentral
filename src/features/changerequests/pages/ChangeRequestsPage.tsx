@@ -6,7 +6,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Grid, TextField, FormControl, InputLabel, Select,
   MenuItem, Divider, Avatar, LinearProgress,
-  Switch, FormControlLabel,
+  Switch, FormControlLabel, Tabs, Tab,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -48,7 +48,7 @@ import { useUser } from '@/context/UserContext'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
 import type { ExportColumn } from '@/utils/exportUtils'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, ConfirmDialog, EntityDocumentsTab } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, Breadcrumbs, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, ConfirmDialog, EntityDocumentsTab } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { KpiCardItem, FilterOption } from '@/components/common'
@@ -598,8 +598,9 @@ export default function ChangeRequestsPage() {
 
       {!loading && <KpiCardRow items={kpiItems} />}
 
-      <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-        <SearchFilterBar
+      {!selectedCR ? (
+        <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+          <SearchFilterBar
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
           searchPlaceholder="Search by title, reference, requestor, project..."
@@ -757,49 +758,60 @@ export default function ChangeRequestsPage() {
           </>
         )}
       </Paper>
+      ) : (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+        <Breadcrumbs
+          items={[
+            { label: 'Change Requests', path: 'list' },
+            { label: selectedCR.pm_changerequesttitle ?? 'Detail' }
+          ]}
+          onNavigate={() => handleCloseDetail()}
+        />
+        <PageHeader
+          title={selectedCR?.pm_changerequesttitle ?? ''}
+          subtitle={
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: 1 }}>
+              <StatusTag label={STATUS_LABELS[String(selectedCR.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(selectedCR.pm_status ?? '')] ?? 'default'} variant="outlined" />
+              {selectedCR.pm_changerequestreference && (
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 1, display: 'inline', fontFamily: '\"JetBrains Mono\", monospace', fontSize: fontSizes.xs }}>
+                  {selectedCR.pm_changerequestreference}
+                </Typography>
+              )}
+            </Box>
+          }
+          actionElement={
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {canEdit && selectedCR && String(selectedCR.pm_status) !== '1' && (
+                <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedCR && openEditForm(selectedCR)} sx={{ borderRadius: 1.5 }}>
+                  Edit
+                </Button>
+              )}
+              {canDelete && selectedCR && String(selectedCR.pm_status) !== '1' && (
+                <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)} sx={{ borderRadius: 1.5 }}>
+                  Delete
+                </Button>
+              )}
+            </Box>
+          }
+        />
 
-      <DetailDrawer
-        open={!!selectedCR}
-        onClose={handleCloseDetail}
-        icon={<ChangeCircleIcon sx={{ color: 'primary.main', fontSize: fontSizes.xl }} />}
-        title={selectedCR?.pm_changerequesttitle ?? ''}
-        subtitle={selectedCR && (
-          <>
-            <StatusTag label={STATUS_LABELS[String(selectedCR.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(selectedCR.pm_status ?? '')] ?? 'default'} variant="outlined" />
-            {selectedCR.pm_changerequestreference && (
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 1, display: 'inline', fontFamily: '\"JetBrains Mono\", monospace', fontSize: fontSizes.xs }}>
-                {selectedCR.pm_changerequestreference}
-              </Typography>
-            )}
-          </>
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {canDelete && selectedCR && String(selectedCR.pm_status) !== '1' && (
-              <ActionIcon
-                label="Delete"
-                color="error"
-                onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)}
-                icon={<DeleteIcon />}
-              />
-            )}
-            {canEdit && selectedCR && String(selectedCR.pm_status) !== '1' && (
-              <ActionIcon
-                label="Edit"
-                color="primary"
-                onClick={() => selectedCR && openEditForm(selectedCR)}
-                icon={<EditIcon />}
-              />
-            )}
-          </Box>
-        }
-        tabs={[{ label: 'Overview' }, { label: 'Details' }, { label: 'Tasks' }, { label: 'Documents' }]}
-        tabValue={detailTab}
-        onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
-      >
-        {selectedCR && (
-          <>
-            <TabPanel value={detailTab} index={0} pt={0}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Tabs
+            value={detailTab}
+            onChange={(_e, v) => { setDetailTab(v); setError(null) }}
+            sx={{
+              '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40, px: 3 },
+              '& .Mui-selected': { color: 'primary.main' },
+            }}
+          >
+            <Tab label="Overview" />
+            <Tab label="Details" />
+            <Tab label="Tasks" />
+            <Tab label="Documents" />
+          </Tabs>
+        </Box>
+
+          <TabPanel value={detailTab} index={0} pt={0}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -935,9 +947,8 @@ export default function ChangeRequestsPage() {
                 </Box>
               )}
             </TabPanel>
-          </>
-        )}
-      </DetailDrawer>
+        </Box>
+      )}
 
       <Dialog
         open={showFormModal}

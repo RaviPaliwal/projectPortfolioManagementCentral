@@ -5,6 +5,8 @@ import {
   Chip,
   useTheme,
   Typography,
+  Tabs,
+  Tab,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import ScheduleIcon from '@mui/icons-material/Schedule'
@@ -36,7 +38,6 @@ import {
 import type { TimesheetModel, TimesheetEntryModel, ResourceModel } from '@/types/dataverse'
 import {
   PageHeader,
-  DetailDrawer,
   TabPanel,
   ExportButton,
   KpiCardRow,
@@ -44,6 +45,7 @@ import {
   WorkflowMilestone,
   Button,
   ConfirmDialog,
+  Breadcrumbs,
 } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
@@ -362,6 +364,7 @@ export default function TimesheetsPage() {
   }
 
   // â”€â”€ KPI Ribbon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ——————————————————————————————————————————————————————————
   const kpiData = useMemo(() => {
     const total = timesheets.length
     const pending = timesheets.filter((t) => String(t.pm_timesheetstatus) === '1').length
@@ -421,99 +424,73 @@ export default function TimesheetsPage() {
 
   return (
     <Box>
-      <PageHeader
-        title="Timesheets"
-        subtitle="Track and manage time entries â€” create timesheets, log hours, and manage the approval workflow."
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <ExportButton filename="timesheets.csv" columns={timesheetExportColumns} data={timesheets} />
-            {canCreate && (
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => { setDraftMode(true); setShowCreateModal(true); setOverlapError(null) }}
-                disabled={actionLoading || loading}
-              >
-                New Entry
-              </Button>
-            )}
-          </Box>
-        }
-      />
-
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-      {/* KPI Ribbon â€” Standardized Row */}
-      {!loading && (
-        <KpiCardRow items={kpiData} loading={loading} />
-      )}
-
-      {/* Main Grid */}
-      <TimesheetGrid
-        timesheets={timesheets}
-        loading={loading}
-        onRowClick={handleRowClick}
-        selectedTimesheetId={selectedTimesheet?.pm_timesheetid}
-        onCreateFirst={() => setShowCreateModal(true)}
-      />
-
-      {/* Detail Drawer */}
-      <DetailDrawer
-        open={!!selectedTimesheet}
-        onClose={handleCloseDetail}
-        icon={<EventNoteIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
-        title={selectedTimesheet?.pm_timesheetname ?? ''}
-        subtitle={
-          selectedTimesheet && (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-              <StatusTag
-                icon={STATUS_ICONS[currentStatus]}
-                label={TIMESHEET_STATUS_LABELS[currentStatus] ?? 'Unknown'}
-                color={TIMESHEET_STATUS_COLORS[currentStatus] ?? 'default'}
-                size="small"
-                variant={currentStatus === '2' ? 'filled' : 'outlined'}
-                sx={{ fontWeight: 600 }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                <PersonIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                {selectedTimesheet.pm_ownername || 'â€”'}
-              </Typography>
-            </Box>
-          )
-        }
-        headerActions={
-          selectedTimesheet && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <TimesheetStatusControls
-                status={currentStatus}
-                onStatusUpdate={handleStatusUpdate}
-                approvalDate={selectedTimesheet.pm_approvaldate}
-                rejectionReason={selectedTimesheet.pm_rejectionreason}
-                loading={actionLoading}
-                entriesCount={entries.length}
-              />
-              {canDelete && (
-                <Button
+      {/* Main Content conditionally rendered */}
+      {selectedTimesheet ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Timesheets', path: 'list' },
+              { label: selectedTimesheet.pm_timesheetname ?? 'Detail' }
+            ]}
+            onNavigate={() => setSelectedTimesheet(null)}
+          />
+          <PageHeader
+            title={selectedTimesheet.pm_timesheetname ?? 'Timesheet Detail'}
+            subtitle={
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: 1 }}>
+                <StatusTag
+                  icon={STATUS_ICONS[currentStatus]}
+                  label={TIMESHEET_STATUS_LABELS[currentStatus] ?? 'Unknown'}
+                  color={TIMESHEET_STATUS_COLORS[currentStatus] ?? 'default'}
                   size="small"
-                  color="error"
-                  variant="outlined"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  disabled={actionLoading || deleteLoading}
-                  sx={{ minWidth: 0, px: 1.5 }}
-                >
-                  Delete
-                </Button>
-              )}
+                  variant={currentStatus === '2' ? 'filled' : 'outlined'}
+                  sx={{ fontWeight: 600 }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  <PersonIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                  {selectedTimesheet.pm_ownername || '—'}
+                </Typography>
+              </Box>
+            }
+            actionElement={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TimesheetStatusControls
+                  status={currentStatus}
+                  onStatusUpdate={handleStatusUpdate}
+                  approvalDate={selectedTimesheet.pm_approvaldate}
+                  rejectionReason={selectedTimesheet.pm_rejectionreason}
+                  loading={actionLoading}
+                  entriesCount={entries.length}
+                />
+                {canDelete && (
+                  <Button
+                    size="small"
+                    color="error"
+                    variant="outlined"
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    disabled={actionLoading || deleteLoading}
+                    sx={{ minWidth: 0, px: 1.5, borderRadius: 1.5 }}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tabs value={detailTab} onChange={(_, v) => setDetailTab(v)}>
+                <Tab label="Entries" />
+                <Tab label="Details" />
+                <Tab label="Approval" />
+                <Tab label="Tasks" />
+              </Tabs>
             </Box>
-          )
-        }
-        tabs={[{ label: 'Entries', count: entries.length }, { label: 'Details' }, { label: 'Approval' }, { label: 'Tasks' }]}
-        tabValue={detailTab}
-        onTabChange={(value) => setDetailTab(value)}
-      >
-        {selectedTimesheet && (
-          <>
+
             <TabPanel value={detailTab} index={0} pt={0}>
               <TimesheetEntryList
                 entries={entries}
@@ -566,9 +543,45 @@ export default function TimesheetsPage() {
                 />
               )}
             </TabPanel>
-          </>
-        )}
-      </DetailDrawer>
+          </Box>
+        </Box>
+      ) : (
+        <>
+          <PageHeader
+            title="Timesheets"
+            subtitle="Track and manage time entries — create timesheets, log hours, and manage the approval workflow."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <ExportButton filename="timesheets.csv" columns={timesheetExportColumns} data={timesheets} />
+                {canCreate && (
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => { setDraftMode(true); setShowCreateModal(true); setOverlapError(null) }}
+                    disabled={actionLoading || loading}
+                  >
+                    New Entry
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+
+          {/* KPI Ribbon — Standardized Row */}
+          {!loading && (
+            <KpiCardRow items={kpiData} loading={loading} />
+          )}
+
+          {/* Main Grid */}
+          <TimesheetGrid
+            timesheets={timesheets}
+            loading={loading}
+            onRowClick={handleRowClick}
+            selectedTimesheetId={undefined}
+            onCreateFirst={() => setShowCreateModal(true)}
+          />
+        </>
+      )}
 
       {/* Modals */}
       <TimesheetFormDialog

@@ -25,7 +25,7 @@ import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { 
   PageHeader, 
   KpiCardRow, 
-  DetailDrawer, 
+  Breadcrumbs,
   StatusTag, 
   ActionIcon, 
   Button, 
@@ -195,47 +195,62 @@ export default function CashflowPage() {
 
       <KpiCardRow items={kpiCards} loading={loading} />
 
-      <CashflowTable
-        loading={loading}
-        entries={filteredEntries}
-        directionFilter={directionFilter}
-        onDirectionFilterChange={setDirectionFilter}
-        txnTypeFilter={txnTypeFilter}
-        onTxnTypeFilterChange={setTxnTypeFilter}
-        categoryFilter={categoryFilter}
-        onCategoryFilterChange={setCategoryFilter}
-        onSelectEntry={setSelectedEntry}
-        onEditEntry={(entry) => { setFormData(entry); setDialogMode('edit') }}
-        onDeleteEntry={setDeleteTarget}
-        canEdit={canEdit}
-        canDelete={canDelete}
-      />
-
-      <DetailDrawer
-        open={!!selectedEntry}
-        onClose={() => setSelectedEntry(null)}
-        title={selectedEntry?.pm_entryname ?? ''}
-        subtitle={selectedEntry && (
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <StatusTag 
-              label={DIRECTION_LABELS[String(selectedEntry.pm_transactiondirection)] || '—'} 
-              color={DIRECTION_COLORS[String(selectedEntry.pm_transactiondirection)] || 'default'} 
-            />
-            <StatusTag label={TXN_TYPE_LABELS[String(selectedEntry.pm_transactiontype)] || '—'} variant="outlined" />
-          </Box>
-        )}            headerActions={
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
+      {!selectedEntry ? (
+        <CashflowTable
+          loading={loading}
+          entries={filteredEntries}
+          directionFilter={directionFilter}
+          onDirectionFilterChange={setDirectionFilter}
+          txnTypeFilter={txnTypeFilter}
+          onTxnTypeFilterChange={setTxnTypeFilter}
+          categoryFilter={categoryFilter}
+          onCategoryFilterChange={setCategoryFilter}
+          onSelectEntry={setSelectedEntry}
+          onEditEntry={(entry) => { setFormData(entry); setDialogMode('edit') }}
+          onDeleteEntry={setDeleteTarget}
+          canEdit={canEdit}
+          canDelete={canDelete}
+        />
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Cashflow', path: 'list' },
+              { label: selectedEntry.pm_entryname ?? 'Detail' }
+            ]}
+            onNavigate={() => setSelectedEntry(null)}
+          />
+          <PageHeader
+            title={selectedEntry?.pm_entryname ?? ''}
+            subtitle={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <StatusTag 
+                  label={DIRECTION_LABELS[String(selectedEntry.pm_transactiondirection)] || '—'} 
+                  color={DIRECTION_COLORS[String(selectedEntry.pm_transactiondirection)] || 'default'} 
+                />
+                <StatusTag label={TXN_TYPE_LABELS[String(selectedEntry.pm_transactiontype)] || '—'} variant="outlined" />
+              </Box>
+            }
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
                 {canEdit && (
-                  <ActionIcon icon={<EditIcon />} onClick={() => { setFormData(selectedEntry!); setDialogMode('edit') }} label="Edit" color="primary" />
+                  <Button variant="outlined" startIcon={<EditIcon />} onClick={() => { setFormData(selectedEntry!); setDialogMode('edit') }} sx={{ borderRadius: 1.5 }}>
+                    Edit
+                  </Button>
                 )}
                 {canDelete && (
-                  <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedEntry)} label="Delete" color="error" />
+                  <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedEntry)} sx={{ borderRadius: 1.5 }}>
+                    Delete
+                  </Button>
                 )}
               </Box>
             }
-      >
-        {selectedEntry && <CashflowDetail entry={selectedEntry} />}
-      </DetailDrawer>
+          />
+          <CashflowDetail entry={selectedEntry} />
+        </Box>
+      )}
+
+
 
       <CashflowEntryForm
         open={dialogMode !== null}

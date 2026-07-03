@@ -62,7 +62,7 @@ import {
 } from '@/services/skill.service'
 import { fetchResources } from '@/services/resource.service'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, ConfirmDialog } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, ConfirmDialog, Breadcrumbs } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import { SkillDialog } from '../components/SkillFormDialogs'
 import { ResourceSkillsManagerDialog } from '../components/ResourceSkillsManagerDialog'
@@ -423,20 +423,22 @@ export default function SkillsPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Box>
-      <PageHeader
-        title="Skills & Resource Skills"
-        subtitle="Manage the skills catalog and map skills to resources — track certifications, proficiency levels, and primary skills."
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <ExportButton data={filteredSkills} columns={skillExportColumns} filename="SkillsCatalog" />
-            {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={pageTab === 0 ? openCreateSkill : () => openRsManager()}>
-                {pageTab === 0 ? 'Add Skill' : 'Manage Resource Skills'}
-              </Button>
-            )}
-          </Box>
-        }
-      />
+      {!selectedSkill ? (
+        <>
+          <PageHeader
+            title="Skills & Resource Skills"
+            subtitle="Manage the skills catalog and map skills to resources — track certifications, proficiency levels, and primary skills."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <ExportButton data={filteredSkills} columns={skillExportColumns} filename="SkillsCatalog" />
+                {canCreate && (
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={pageTab === 0 ? openCreateSkill : () => openRsManager()}>
+                    {pageTab === 0 ? 'Add Skill' : 'Manage Resource Skills'}
+                  </Button>
+                )}
+              </Box>
+            }
+          />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
@@ -620,105 +622,7 @@ export default function SkillsPage() {
           )}
         </Paper>
 
-        {/* ── Detail Drawer (Skills) ──────────────── */}
-        <DetailDrawer
-          open={!!selectedSkill}
-          onClose={() => setSelectedSkill(null)}
-          icon={<PsychologyIcon sx={{ color: 'secondary.main', fontSize: 22 }} />}
-          title={selectedSkill?.pm_skillname ?? ''}
-          subtitle={selectedSkill && (
-            <StatusTag
-              label={CATEGORY_LABELS[String(selectedSkill.pm_skillcategory ?? '')] ?? 'Unknown'}
-              color={CATEGORY_COLORS[String(selectedSkill.pm_skillcategory ?? '')] ?? 'default'}
-              size="small"
-              variant="outlined"
-              sx={{ fontWeight: 600 }}
-            />
-          )}
-          headerActions={
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              {canEdit && (
-                <ActionIcon
-                  icon={<EditIcon />}
-                  onClick={() => selectedSkill && openEditSkill(selectedSkill)}
-                  label="Edit Skill"
-                  color="primary"
-                />
-              )}
-              {canDelete && (
-                <ActionIcon
-                  icon={<DeleteIcon />}
-                  onClick={() => { setDeleteType('skill'); selectedSkill?.pm_skillid && setDeleteConfirm(selectedSkill.pm_skillid) }}
-                  label="Delete Skill"
-                  color="error"
-                />
-              )}
-            </Box>
-          }
-        >
-          {selectedSkill && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              {/* Skill Details */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <AutoAwesomeIcon sx={{ fontSize: 16 }} /> Skill Details
-                </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Category</Typography>
-                    <Typography variant="body2">{CATEGORY_LABELS[String(selectedSkill.pm_skillcategory ?? '')] || selectedSkill.pm_skillcategoryname || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Status</Typography>
-                    <StatusTag
-                      label={selectedSkill.pm_isactive !== false ? 'Active' : 'Inactive'}
-                      color={selectedSkill.pm_isactive !== false ? 'success' : 'default'}
-                      size="small"
-                      sx={{ fontWeight: 600 }}
-                    />
-                  </Box>
 
-                </Box>
-                {selectedSkill.pm_skilldescription && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Description</Typography>
-                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>{selectedSkill.pm_skilldescription}</Typography>
-                  </Box>
-                )}
-              </Paper>
-
-              {/* Resource Count */}
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <PersonIcon sx={{ fontSize: 16 }} /> Resources with this Skill
-                </Typography>
-                {(() => {
-                  const count = resourceSkills.filter((rs) => {
-                    // Match by GUID lookup reference (_pm_skill_value → pm_skillid)
-                    const rsGuid = (rs._pm_skill_value || '').replace(/[{}]/g, '').trim().toLowerCase()
-                    const selGuid = (selectedSkill.pm_skillid || '').replace(/[{}]/g, '').trim().toLowerCase()
-                    if (rsGuid && selGuid && rsGuid === selGuid) return true
-                    // Fallback: match by resolved skill name (case-insensitive)
-                    const rsName = rs.pm_skillname?.trim().toLowerCase()
-                    const selName = selectedSkill.pm_skillname?.trim().toLowerCase()
-                    if (rsName && selName && rsName === selName) return true
-                    return false
-                  }).length
-                  return (
-                    <>
-                      <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
-                        {count}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {count === 1 ? 'Resource has' : 'Resources have'} this skill mapped
-                      </Typography>
-                    </>
-                  )
-                })()}
-              </Paper>
-            </Box>
-          )}
-        </DetailDrawer>
 
       {/* ── Create/Edit Skill Dialog ──────────────── */}
       <SkillDialog
@@ -941,6 +845,103 @@ export default function SkillsPage() {
           }}
         />
       </TabPanel>
+      </>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Skills Catalog', path: 'list' },
+              { label: selectedSkill.pm_skillname ?? 'Detail' }
+            ]}
+            onNavigate={() => setSelectedSkill(null)}
+          />
+          <PageHeader
+            title={selectedSkill?.pm_skillname ?? 'Skill Detail'}
+            subtitle={
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1 }}>
+                <StatusTag
+                  label={CATEGORY_LABELS[String(selectedSkill?.pm_skillcategory ?? '')] ?? 'Unknown'}
+                  color={CATEGORY_COLORS[String(selectedSkill?.pm_skillcategory ?? '')] ?? 'default'}
+                  size="small"
+                  variant="outlined"
+                  sx={{ fontWeight: 600 }}
+                />
+              </Box>
+            }
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                {canEdit && (
+                  <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedSkill && openEditSkill(selectedSkill)} sx={{ borderRadius: 1.5 }}>
+                    Edit Skill
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => {
+                    if (selectedSkill?.pm_skillid) {
+                      setDeleteType('skill');
+                      setDeleteConfirm(selectedSkill.pm_skillid);
+                    }
+                  }} sx={{ borderRadius: 1.5 }}>
+                    Delete Skill
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            {/* Overview Paper */}
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <AutoAwesomeIcon sx={{ fontSize: 16 }} /> Skill Overview
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Status</Typography>
+                  <StatusTag
+                    label={selectedSkill.pm_isactive !== false ? 'Active' : 'Inactive'}
+                    color={selectedSkill.pm_isactive !== false ? 'success' : 'default'}
+                    size="small"
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Description</Typography>
+                  <Typography variant="body2" sx={{ color: selectedSkill.pm_skilldescription ? 'text.primary' : 'text.secondary', fontStyle: selectedSkill.pm_skilldescription ? 'normal' : 'italic' }}>
+                    {selectedSkill.pm_skilldescription || 'No description provided.'}
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+            {/* Usage Stats Paper */}
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 4 }}>
+              <GroupsIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1.5 }} />
+              {(() => {
+                const count = resourceSkills.filter(rs => {
+                  // Primary match by ID
+                  const rsGuid = rs._pm_skill_value?.toLowerCase()
+                  const selGuid = selectedSkill.pm_skillid?.toLowerCase()
+                  if (rsGuid && selGuid && rsGuid === selGuid) return true
+                  // Fallback: match by resolved skill name (case-insensitive)
+                  const rsName = rs.pm_skillname?.trim().toLowerCase()
+                  const selName = selectedSkill.pm_skillname?.trim().toLowerCase()
+                  if (rsName && selName && rsName === selName) return true
+                  return false
+                }).length
+                return (
+                  <>
+                    <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
+                      {count}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {count === 1 ? 'Resource has' : 'Resources have'} this skill mapped
+                    </Typography>
+                  </>
+                )
+              })()}
+            </Paper>
+          </Box>
+        </Box>
+      )}
 
       {/* ── Delete Confirmation ────────────────────── */}
       <ConfirmDialog

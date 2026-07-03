@@ -50,7 +50,7 @@ import {
 } from '@/services'
 import type { FundingSourceModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon, WorkflowMilestone, TabPanel } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, Breadcrumbs, SearchFilterBar, ExportButton, StatusTag, ActionIcon, WorkflowMilestone, TabPanel } from '@/components/common'
 import type { KpiCardItem, FilterOption, ExportColumn } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 
@@ -145,6 +145,9 @@ export default function FundingSourcesPage() {
   // Detail panel state
   const [selectedSource, setSelectedSource] = useState<FundingSourceModel | null>(null)
   const [detailTab, setDetailTab] = useState(0)
+
+  // Handlers
+  const handleCloseDetail = useCallback(() => setSelectedSource(null), [])
 
   // Create/Edit modal state
   const [showFormModal, setShowFormModal] = useState(false)
@@ -305,9 +308,7 @@ export default function FundingSourcesPage() {
     setDetailTab(0)
   }, [])
 
-  const handleCloseDetail = useCallback(() => {
-    setSelectedSource(null)
-  }, [])
+
 
   // ── Form open for create/edit ──
   const openCreateForm = useCallback(() => {
@@ -437,6 +438,7 @@ export default function FundingSourcesPage() {
       {!loading && <KpiCardRow items={kpiItems} />}
 
       {/* ── Funding Sources Grid ─────────────────────── */}
+      {!selectedSource ? (
       <Paper sx={{ overflow: 'hidden', mb: 3 }}>
         <SearchFilterBar
           searchQuery={searchQuery}
@@ -653,53 +655,52 @@ export default function FundingSourcesPage() {
           />
         )}
       </Paper>
+      ) : (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+        <Breadcrumbs
+          items={[
+            { label: 'Funding Sources', path: 'list' },
+            { label: selectedSource?.pm_fundingsourcename ?? 'Detail' }
+          ]}
+          onNavigate={() => handleCloseDetail()}
+        />
+        <PageHeader
+          title={selectedSource?.pm_fundingsourcename ?? ''}
+          subtitle={
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+              <StatusTag
+                label={FUNDING_TYPE_LABELS[String(selectedSource?.pm_fundingtype ?? '')]}
+                color={FUNDING_TYPE_COLORS[String(selectedSource?.pm_fundingtype ?? '')] ?? 'default'}
+              />
+              <StatusTag
+                label={STATUS_LABELS[String(selectedSource?.pm_fundingstatus ?? '')]}
+                color={STATUS_COLORS[String(selectedSource?.pm_fundingstatus ?? '')] ?? 'default'}
+              />
+              {selectedSource?.pm_fundingbody && (
+                <Typography variant="body2" color="text.secondary">
+                  {selectedSource.pm_fundingbody}
+                </Typography>
+              )}
+            </Box>
+          }
+          actionElement={
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {canEdit && (
+                <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedSource && openEditForm(selectedSource)} sx={{ borderRadius: 1.5 }}>
+                  Edit
+                </Button>
+              )}
+              {canDelete && (
+                <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => selectedSource?.pm_fundingsourceid && setDeleteConfirm(selectedSource.pm_fundingsourceid)} sx={{ borderRadius: 1.5 }}>
+                  Delete
+                </Button>
+              )}
+            </Box>
+          }
+        />
 
-      {/* ── Detail Drawer ────────────────────────────── */}
-      <DetailDrawer
-        open={!!selectedSource}
-        onClose={handleCloseDetail}
-        icon={<AccountBalanceIcon sx={{ color: 'secondary.main', fontSize: 22 }} />}
-        title={selectedSource?.pm_fundingsourcename ?? ''}
-        subtitle={selectedSource && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-            <StatusTag
-              label={FUNDING_TYPE_LABELS[String(selectedSource.pm_fundingtype ?? '')]}
-              color={FUNDING_TYPE_COLORS[String(selectedSource.pm_fundingtype ?? '')] ?? 'default'}
-            />
-            <StatusTag
-              label={STATUS_LABELS[String(selectedSource.pm_fundingstatus ?? '')]}
-              color={STATUS_COLORS[String(selectedSource.pm_fundingstatus ?? '')] ?? 'default'}
-            />
-            {selectedSource.pm_fundingbody && (
-              <Typography variant="body2" color="text.secondary">
-                {selectedSource.pm_fundingbody}
-              </Typography>
-            )}
-          </Box>
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {canDelete && (
-              <ActionIcon
-                label="Delete"
-                color="error"
-                onClick={() => selectedSource?.pm_fundingsourceid && setDeleteConfirm(selectedSource.pm_fundingsourceid)}
-                icon={<DeleteIcon />}
-              />
-            )}
-            {canEdit && (
-              <ActionIcon
-                label="Edit"
-                color="primary"
-                onClick={() => selectedSource && openEditForm(selectedSource)}
-                icon={<EditIcon />}
-              />
-            )}
-          </Box>
-        }
-      >
         {selectedSource && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
                 {/* Funding Amounts */}
                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -808,7 +809,8 @@ export default function FundingSourcesPage() {
                 </Paper>
               </Box>
         )}
-      </DetailDrawer>
+      </Box>
+      )}
 
       {/* ── Create/Edit Modal ──────────────────────── */}
       <Dialog

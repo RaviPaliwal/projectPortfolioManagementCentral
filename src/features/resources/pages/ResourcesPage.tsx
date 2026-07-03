@@ -70,7 +70,7 @@ import {
 import type { ExportColumn } from '@/utils/exportUtils'
 import type { ResourceModel, ResourceAllocationModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, ActionIcon, WorkflowMilestone } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, Breadcrumbs, SearchFilterBar, TabPanel, ExportButton, ActionIcon, WorkflowMilestone } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import { StatusTag } from '@/components/common'
@@ -582,8 +582,9 @@ export default function ResourcesPage() {
           {!loading && <KpiCardRow items={kpiItems} />}
 
           {/* ── Resource Grid ─────────────────────────────── */}
-          <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-            <SearchFilterBar
+          {!selectedResource && (
+            <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+              <SearchFilterBar
               searchQuery={searchQuery}
               onSearchChange={handleSearchChange}
               searchPlaceholder="Search by name, role, department, email..."
@@ -753,64 +754,73 @@ export default function ResourcesPage() {
               />
             )}
           </Paper>
+          )}
 
-          {/* ── Detail Drawer ────────────────────────────── */}
-          <DetailDrawer
-            open={!!selectedResource}
-            onClose={handleCloseDetail}
-            icon={<PersonIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
-            title={selectedResource?.pm_fullname ?? ''}
-            subtitle={selectedResource && (
-              <>
-                {selectedResource.pm_positiontitle && (
-                  <Typography variant="body2" color="text.secondary">
-                    <BadgeIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                    {selectedResource.pm_positiontitle}
-                  </Typography>
-                )}
-                {selectedResource.pm_departmentname && (
-                  <Typography variant="body2" color="text.secondary">
-                    <BusinessCenterIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                    {selectedResource.pm_departmentname}
-                  </Typography>
-                )}
+          {/* ── Detail View ────────────────────────────── */}
+          {selectedResource && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+              <Breadcrumbs
+                items={[
+                  { label: 'Directory', path: 'list' },
+                  { label: selectedResource.pm_fullname ?? 'Detail' }
+                ]}
+                onNavigate={() => handleCloseDetail()}
+              />
+              <PageHeader
+                title={selectedResource?.pm_fullname ?? ''}
+                subtitle={
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: 1 }}>
+                    {selectedResource.pm_positiontitle && (
+                      <Typography variant="body2" color="text.secondary">
+                        <BadgeIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                        {selectedResource.pm_positiontitle}
+                      </Typography>
+                    )}
+                    {selectedResource.pm_departmentname && (
+                      <Typography variant="body2" color="text.secondary">
+                        <BusinessCenterIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                        {selectedResource.pm_departmentname}
+                      </Typography>
+                    )}
 
-                <StatusTag
-                  label={CATEGORY_LABELS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'Unknown'}
-                  color={CATEGORY_COLORS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'default'}
-                  size="small"
-                  variant="outlined"
-                />
-              </>
-            )}
-            headerActions={
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                {canEdit && (
-                  <ActionIcon
-                    icon={<EditIcon />}
-                    onClick={() => selectedResource && openEditForm(selectedResource)}
-                    label="Edit Resource"
-                    color="primary"
-                  />
-                )}
-                {canDelete && (
-                  <ActionIcon
-                    icon={<DeleteIcon />}
-                    onClick={() => selectedResource?.pm_resourceid && setDeleteConfirm(selectedResource.pm_resourceid)}
-                    label="Delete Resource"
-                    color="error"
-                  />
-                )}
+                    <StatusTag
+                      label={CATEGORY_LABELS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'Unknown'}
+                      color={CATEGORY_COLORS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'default'}
+                      size="small"
+                      variant="outlined"
+                    />
+                  </Box>
+                }
+                actionElement={
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {canEdit && (
+                      <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedResource && openEditForm(selectedResource)} sx={{ borderRadius: 1.5 }}>
+                        Edit Resource
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => selectedResource?.pm_resourceid && setDeleteConfirm(selectedResource.pm_resourceid)} sx={{ borderRadius: 1.5 }}>
+                        Delete Resource
+                      </Button>
+                    )}
+                  </Box>
+                }
+              />
+
+              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                <Tabs
+                  value={detailTab}
+                  onChange={(_, v) => { setDetailTab(v); setError(null) }}
+                  sx={{
+                    '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40, px: 3 },
+                    '& .Mui-selected': { color: 'primary.main' },
+                  }}
+                >
+                  <Tab label="Overview" />
+                  <Tab label={`Allocations (${resourceAllocations.length})`} />
+                </Tabs>
               </Box>
-            }
-            tabs={[
-              { label: 'Overview' },
-              { label: 'Allocations', count: resourceAllocations.length },
-            ]}
-            tabValue={detailTab}
-            onTabChange={(v) => { setDetailTab(v); setError(null) }}
-          >
-            {selectedResource && (
+
               <>
                 {/* Overview Tab */}
                 <TabPanel value={detailTab} index={0} pt={0}>
@@ -948,8 +958,8 @@ export default function ResourcesPage() {
                 </TabPanel>
 
               </>
-            )}
-          </DetailDrawer>
+            </Box>
+          )}
 
           {/* ── Create/Edit Modal ──────────────────────── */}
           <Dialog

@@ -14,6 +14,8 @@ import {
   useTheme,
   IconButton,
   Tooltip,
+  Tabs,
+  Tab,
 } from '@mui/material'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import BugReportIcon from '@mui/icons-material/BugReport'
@@ -31,7 +33,6 @@ import AddIcon from '@mui/icons-material/Add'
 import {
   PageHeader,
   KpiCardRow,
-  DetailDrawer,
   StatusTag,
   ActionIcon,
   ExportButton,
@@ -40,8 +41,9 @@ import {
   TableFooter,
   SearchFilterBar,
   ConfirmDialog,
-  TabPanel,
   TableHeader,
+  Breadcrumbs,
+  TabPanel,
 } from '@/components/common'
 import type { FilterOption } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
@@ -141,10 +143,9 @@ export default function IssuesPage() {
   const [resources, setResources] = useState<ResourceOption[]>([])
   const [resourcesLoading, setResourcesLoading] = useState(false)
 
-  // Drawer
+  // Detail View
   const [selectedIssue, setSelectedIssue] = useState<IssueModel | null>(null)
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [drawerTab, setDrawerTab] = useState(0)
+  const [detailTab, setDetailTab] = useState(0)
 
   // Create/Edit dialog
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -294,7 +295,6 @@ export default function IssuesPage() {
         const issue = issues.find(i => normalizeLookupId(i.pm_issueid) === normalizeLookupId(preselectedId))
         if (issue) {
           setSelectedIssue(issue)
-          setDrawerOpen(true)
         }
       }
     }
@@ -348,7 +348,6 @@ export default function IssuesPage() {
       setSuccessMsg('Issue deleted.')
       setDeleteTarget(null)
       if (selectedIssue?.pm_issueid === deleteTarget.pm_issueid) {
-        setDrawerOpen(false)
         setSelectedIssue(null)
       }
       setTimeout(() => setSuccessMsg(null), 3000)
@@ -525,6 +524,10 @@ export default function IssuesPage() {
 
   return (
     <Box>
+
+      {!selectedIssue ? (
+        <>
+
       {successMsg && <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ mb: 2 }}>{successMsg}</Alert>}
       {error && <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -612,7 +615,7 @@ export default function IssuesPage() {
                 <TableRow
                   key={issue.pm_issueid}
                   hover
-                  onClick={() => { setSelectedIssue(issue); setDrawerOpen(true); setDrawerTab(0) }}
+                  onClick={() => setSelectedIssue(issue)}
                   sx={{
                     cursor: 'pointer',
                     bgcolor: idx % 2 === 1 ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)') : 'transparent',
@@ -708,51 +711,67 @@ export default function IssuesPage() {
         )}
       </Paper>
 
-      {/* Drawer */}
-      <DetailDrawer
-        open={drawerOpen}
-        onClose={() => { setDrawerOpen(false); setSelectedIssue(null) }}
-        title={selectedIssue?.pm_issuetitle ?? ''}
-        subtitle={selectedIssue && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-            <StatusTag label={ISSUE_CATEGORY_LABELS[String(selectedIssue.pm_issuecategory ?? '')] ?? '—'} variant="outlined" />
-            <StatusTag label={RAG_LABELS[String(selectedIssue.pm_ragstatus ?? '')] ?? '—'} color={RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] || 'default'} />
-            {selectedIssue.pm_escalationstatus && (
-              <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600, bgcolor: 'error.main', color: 'white', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <FlagIcon sx={{ fontSize: 12 }} /> Escalated
+      
+        </>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Issues', path: 'list' },
+              { label: selectedIssue.pm_issuetitle ?? 'Detail' }
+            ]}
+            onNavigate={() => setSelectedIssue(null)}
+          />
+          <PageHeader
+            title={selectedIssue?.pm_issuetitle ?? 'Issue Detail'}
+            subtitle={
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                <StatusTag label={ISSUE_CATEGORY_LABELS[String(selectedIssue.pm_issuecategory ?? '')] ?? '—'} variant="outlined" />
+                <StatusTag label={RAG_LABELS[String(selectedIssue.pm_ragstatus ?? '')] ?? '—'} color={RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] || 'default'} />
+                {selectedIssue.pm_escalationstatus && (
+                  <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600, bgcolor: 'error.main', color: 'white', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <FlagIcon sx={{ fontSize: 12 }} /> Escalated
+                  </Box>
+                )}
               </Box>
-            )}
+            }
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                {selectedIssue && !selectedIssue.pm_escalationstatus && canEdit && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    startIcon={<FlagIcon />}
+                    onClick={() => handleEscalateIssue(selectedIssue)}
+                    sx={{ mr: 1, borderRadius: 1.5 }}
+                  >
+                    Escalate Issue
+                  </Button>
+                )}
+                {canEdit && (
+                  <Button variant="outlined" startIcon={<EditIcon />} onClick={() => openEdit(selectedIssue)} sx={{ borderRadius: 1.5 }}>
+                    Edit Issue
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedIssue)} sx={{ borderRadius: 1.5 }}>
+                    Delete Issue
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Tabs value={detailTab} onChange={(_e, v) => setDetailTab(v)} variant="scrollable" scrollButtons="auto">
+              <Tab label="Overview" />
+              <Tab label="Resolution" />
+            </Tabs>
           </Box>
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-            {selectedIssue && !selectedIssue.pm_escalationstatus && canEdit && (
-              <Button
-                variant="outlined"
-                color="error"
-                size="small"
-                startIcon={<FlagIcon />}
-                onClick={() => handleEscalateIssue(selectedIssue)}
-                sx={{ mr: 1, borderRadius: 1.5 }}
-              >
-                Escalate Issue
-              </Button>
-            )}
-            {canEdit && (
-              <ActionIcon icon={<EditIcon />} onClick={() => openEdit(selectedIssue!)} label="Edit" />
-            )}
-            {canDelete && (
-              <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedIssue)} label="Delete" color="error" />
-            )}
-          </Box>
-        }
-        tabs={[{ label: 'Overview' }, { label: 'Resolution' }]}
-        tabValue={drawerTab}
-        onTabChange={(_e, v) => setDrawerTab(v)}
-      >
-        {selectedIssue && (
-          <>
-            <TabPanel value={drawerTab} index={0}>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            <TabPanel value={detailTab} index={0}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Details</Typography>
@@ -769,7 +788,7 @@ export default function IssuesPage() {
                 </Paper>
               </Box>
             </TabPanel>
-            <TabPanel value={drawerTab} index={1}>
+            <TabPanel value={detailTab} index={1}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Resolution details</Typography>
@@ -779,9 +798,9 @@ export default function IssuesPage() {
                 </Paper>
               </Box>
             </TabPanel>
-          </>
-        )}
-      </DetailDrawer>
+          </Box>
+        </Box>
+      )}
 
       {/* Create / Edit Dialog */}
       <IssueDialog
