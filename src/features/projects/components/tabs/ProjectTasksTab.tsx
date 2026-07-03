@@ -172,7 +172,7 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
                       key={task.pm_projecttaskid}
                       hover
                       sx={{
-                        bgcolor: idx % 2 === 1 ? (isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.005)') : 'transparent',
+                        bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
                         '&:last-child td': { border: 0 }
                       }}
                     >

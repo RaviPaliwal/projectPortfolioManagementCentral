@@ -374,7 +374,7 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
           border: 1,
           borderColor: 'divider',
           borderRadius: 1.5,
-          bgcolor: isDark ? '#0f172a' : '#f8fafc',
+          bgcolor: 'background.default',
           position: 'relative',
         }}
       >
@@ -493,7 +493,7 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
                           boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
                         }}
                       />
-                      <Typography variant="caption" sx={{ fontSize: '0.58rem', fontWeight: 700, mt: 0.5, whiteSpace: 'nowrap', bgcolor: isDark ? '#0f172a' : '#f8fafc', px: 0.5, borderRadius: 0.5 }}>
+                      <Typography variant="caption" sx={{ fontSize: '0.58rem', fontWeight: 700, mt: 0.5, whiteSpace: 'nowrap', bgcolor: 'background.default', px: 0.5, borderRadius: 0.5 }}>
                         {m.name}
                       </Typography>
                     </Box>

@@ -102,15 +102,17 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
   return (
     <Box
       sx={{
-        borderRadius: 1.15,
-        border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-        bgcolor: isDark ? '#0f172a' : '#ffffff',
+        borderRadius: '24px',
+        border: 'none',
+        bgcolor: isDark ? 'background.paper' : '#ffffff',
         overflow: 'hidden',
-        transition: 'box-shadow 0.2s ease',
+        boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
         '&:hover': {
+          transform: 'translateY(-2px)',
           boxShadow: isDark
-            ? '0 4px 20px rgba(0,0,0,0.3)'
-            : '0 4px 20px rgba(0,0,0,0.06)',
+            ? '0 12px 40px rgba(0,0,0,0.6)'
+            : '0 12px 40px rgba(0,0,0,0.08)',
         },
         ...sx,
       }}
@@ -120,7 +122,7 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
         sx={{
           px: 2.5,
           py: 1.75,
-          borderBottom: `1px solid ${isDark ? '#1e293b' : '#f1f5f9'}`,
+          borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}`,
           display: 'flex',
           alignItems: 'center',
           gap: 1,
@@ -169,9 +171,9 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
             <Box
               key={block.label}
               sx={{
-                borderRadius: 1.15,
+                borderRadius: '24px',
                 bgcolor: block.bg,
-                border: `1px solid ${block.border}`,
+                border: 'none',
                 p: 1.5,
                 textAlign: 'center',
                 transition: 'transform 0.15s ease, box-shadow 0.15s ease',
@@ -217,8 +219,8 @@ export const HealthSplitBar: React.FC<HealthSplitBarProps> = ({ green, amber, re
         <Box
           sx={{
             width: '100%',
-            height: 10,
-            borderRadius: 1.15,
+            height: 12,
+            borderRadius: '100px',
             overflow: 'hidden',
             display: 'flex',
             bgcolor: isDark ? '#1e293b' : '#f1f5f9',

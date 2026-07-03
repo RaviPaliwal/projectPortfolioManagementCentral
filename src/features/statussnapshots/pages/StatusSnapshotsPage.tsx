@@ -619,7 +619,7 @@ export default function StatusSnapshotsPage() {
                     <Box sx={{
                       p: 1.5,
                       borderRadius: 2,
-                      bgcolor: isDark ? '#1a2332' : 'background.default',
+                      bgcolor: 'background.default',
                       border: '1px solid',
                       borderColor: isDark ? '#334155' : '#e2e8f0',
                     }}>
@@ -842,7 +842,7 @@ export default function StatusSnapshotsPage() {
                                   borderRadius: 2,
                                   border: '1px solid',
                                   borderColor: isDark ? '#334155' : '#e2e8f0',
-                                  bgcolor: isDark ? '#1a2332' : 'background.default',
+                                  bgcolor: 'background.default',
                                   cursor: 'pointer',
                                   transition: 'all 0.15s ease',
                                   '&:hover': { borderColor: 'primary.main', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
@@ -943,8 +943,8 @@ export default function StatusSnapshotsPage() {
                         onClick={() => setSelectedSnapshot(snapshot)}
                         sx={{
                           cursor: 'pointer',
-                          bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                          '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                          bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                          '&:hover': { bgcolor: 'action.selected' },
                           transition: 'background-color 0.15s ease',
                           '& td': { px: 2.5, py: 1.25 },
                         }}

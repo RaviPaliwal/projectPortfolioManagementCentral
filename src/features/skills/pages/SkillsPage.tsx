@@ -531,8 +531,8 @@ export default function SkillsPage() {
                     onClick={() => setSelectedSkill(skill)}
                     sx={{
                       cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                      bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                      '&:hover': { bgcolor: 'action.selected' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
                     }}
@@ -704,7 +704,7 @@ export default function SkillsPage() {
                 {paginatedRSGroups.map((group, gIdx) => (
                   <React.Fragment key={group.resourceId}>
                     {/* Resource Header Row */}
-                    <TableRow sx={{ bgcolor: isDark ? '#0f172a' : '#f8fafc' }}>
+                    <TableRow sx={{ bgcolor: 'background.default' }}>
                       <TableCell colSpan={6} sx={{ py: 1.5, px: 2.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                           <PersonIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
@@ -735,7 +735,7 @@ export default function SkillsPage() {
                         key={rs.pm_resourceskillid}
                         hover
                         sx={{
-                          '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                          '&:hover': { bgcolor: 'action.selected' },
                           transition: 'background-color 0.15s ease',
                           '& td': { px: 2.5, py: 1.25, pl: 5 },
                         }}

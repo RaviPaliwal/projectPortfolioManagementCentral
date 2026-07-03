@@ -232,7 +232,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
   const stepListContent = (
     <Stack spacing={2}>
       {(stepTemplates as any[]).map((step: any, idx: number) => (
-        <Paper key={idx} variant="outlined" sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 3, borderLeft: '4px solid', borderLeftColor: 'primary.main', bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fff' }}>
+        <Paper key={idx} variant="outlined" sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 3, borderLeft: '4px solid', borderLeftColor: 'primary.main', bgcolor: 'background.paper' }}>
           <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontWeight: 800, fontSize: fontSizes.base }}>{idx + 1}</Avatar>
           <Box sx={{ flex: 1 }}>
             <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>{step.pm_workflowname}</Typography>
@@ -346,7 +346,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
     <Grid container spacing={3}>
       <Grid size={{ xs: 12, md: 5 }}>
         <Stack spacing={3}>
-          <Paper variant="outlined" sx={{ p: 3, bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fcfcfc' }}>
+          <Paper variant="outlined" sx={{ p: 3, bgcolor: 'background.paper' }}>
             <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, color: 'text.disabled', mb: 2.5, display: 'block' }}>
               Template Details
             </Typography>
@@ -525,7 +525,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
             {loadingSteps ? (
               <Box sx={{ py: 10, textAlign: 'center' }}><CircularProgress /></Box>
             ) : stepTemplates.length === 0 ? (
-              <Box sx={{ py: 12, textAlign: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa', border: '2px dashed', borderColor: 'divider' }}>
+              <Box sx={{ py: 12, textAlign: 'center', bgcolor: 'background.default', border: '2px dashed', borderColor: 'divider' }}>
                 <LayersIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2, opacity: 0.3 }} />
                 <Typography color="text.secondary" variant="body2" sx={{ fontWeight: 500 }}>No approval steps defined yet.</Typography>
                 <Button size="small" onClick={openAddStep} sx={{ mt: 2, fontWeight: 700 }}>Add your first step</Button>
@@ -550,7 +550,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
             </Stack>
 
             <Stack spacing={3}>
-              <Paper variant="outlined" sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa' }}>
+              <Paper variant="outlined" sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'background.default' }}>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 800 }}>
                     {isEdit ? 'Version Update' : 'Initial Version'}

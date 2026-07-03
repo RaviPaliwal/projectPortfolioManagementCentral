@@ -675,8 +675,8 @@ export default function ChangeRequestsPage() {
                   onClick={() => handleRowClick(cr)}
                   sx={{
                     cursor: 'pointer',
-                    bgcolor: idx % 2 === 1 ? (isDark ? 'action.hover' : 'background.default') : 'transparent',
-                    '&:hover': { bgcolor: isDark ? 'action.selected' : 'primary.light' },
+                    bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                    '&:hover': { bgcolor: 'action.selected' },
                     transition: 'background-color 0.15s ease',
                     '& td': { px: 2.5, py: 1.25 },
                   }}

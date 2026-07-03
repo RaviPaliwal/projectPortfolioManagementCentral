@@ -228,12 +228,13 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                     <Paper
                       key={step.pm_workflowapprovalstepid}
                       variant="outlined"
+                      className="activity-list-item"
                       sx={{
                         p: 2,
                         borderRadius: 2,
                         borderLeft: '4px solid',
                         borderLeftColor: isOverdue ? 'error.main' : 'warning.main',
-                        transition: 'all 0.2s ease',
+                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                         mb: 1.5,
                         '&:hover': { bgcolor: 'action.hover', boxShadow: 1 },
                       }}
@@ -414,11 +415,13 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                       <Paper
                         key={insight.id}
                         variant="outlined"
+                        className="activity-list-item"
                         sx={{
                           p: 1.5,
                           borderRadius: 1.5,
                           borderLeft: '3px solid',
                           borderLeftColor: insight.type === 'Alert' ? 'warning.main' : 'info.main',
+                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>

@@ -279,9 +279,9 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
                 label="Priority"
                 onChange={(e) => setForm((p) => ({ ...p, pm_projectpriority: e.target.value as number }))}
               >
-                <MenuItem value={1}>1 - High</MenuItem>
-                <MenuItem value={2}>2 - Medium</MenuItem>
-                <MenuItem value={3}>3 - Low</MenuItem>
+                <MenuItem value={1}>High</MenuItem>
+                <MenuItem value={2}>Medium</MenuItem>
+                <MenuItem value={3}>Low</MenuItem>
               </Select>
             </FormControl>
           </Grid>

@@ -86,7 +86,7 @@ interface PrimaryShellProps {
   children: ReactNode
 }
 
-const DRAWER_WIDTH = 260
+const DRAWER_WIDTH = 240
 
 export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, themeMode, children }: PrimaryShellProps) {
   const theme = useTheme()
@@ -113,19 +113,34 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
 
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      minHeight: '100vh', 
+      bgcolor: 'background.default',
+      backgroundImage: themeMode === 'light'
+        ? 'radial-gradient(circle at 80% 0%, rgba(33, 124, 53, 0.12), transparent 40%), radial-gradient(circle at 20% 100%, rgba(228, 98, 26, 0.08), transparent 40%)'
+        : 'radial-gradient(circle at 80% 0%, rgba(33, 124, 53, 0.2), transparent 40%), radial-gradient(circle at 20% 100%, rgba(228, 98, 26, 0.15), transparent 40%)',
+      backgroundAttachment: 'fixed',
+    }}>
       {/* Sidebar */}
       <Drawer
         variant="permanent"
         aria-label="Navigation sidebar"
+        slotProps={{
+          paper: {
+            className: 'sidebar-scrollbar',
+          },
+        }}
         sx={{
           width: DRAWER_WIDTH,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,
             boxSizing: 'border-box',
-            borderRight: `1px solid ${theme.palette.divider}`,
+            borderRight: '1px solid',
+            borderColor: 'divider',
             bgcolor: 'background.paper',
+            color: 'text.secondary',
           },
         }}
       >
@@ -140,22 +155,41 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
                 aria-current={isActive ? 'page' : undefined}
                 onClick={() => onChangeTab(tab.key)}
                 sx={{
-                  borderRadius: 1.15,
+                  borderRadius: '12px',
                   mb: 0.5,
-                  py: 1.25,
+                  py: 1,
                   px: 2,
+                  color: 'text.secondary',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  '& .MuiListItemIcon-root': {
+                    color: 'inherit',
+                    minWidth: 40,
+                    transition: 'transform 0.2s ease',
+                  },
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                    color: 'text.primary',
+                    '& .MuiListItemIcon-root': {
+                      transform: 'translateX(2px)',
+                    },
+                  },
                   '&.Mui-selected': {
                     bgcolor: 'primary.main',
                     color: 'primary.contrastText',
-                    '&:hover': { bgcolor: 'primary.dark' },
-                    '& .MuiListItemIcon-root': { color: 'primary.contrastText' },
+                    boxShadow: '0 4px 12px rgba(33, 124, 53, 0.25)',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                    },
+                    '& .MuiListItemIcon-root': {
+                      color: 'inherit',
+                    },
                   },
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 40 }}>{tab.icon}</ListItemIcon>
+                <ListItemIcon>{tab.icon}</ListItemIcon>
                 <ListItemText
                   primary={tab.label}
-                  slotProps={{ primary: { sx: { fontWeight: isActive ? 700 : 500, fontSize: '0.875rem' } } }}
+                  slotProps={{ primary: { sx: { fontWeight: isActive ? 700 : 500, fontSize: '0.8125rem' } } }}
                 />
               </ListItemButton>
             )
@@ -170,12 +204,15 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
           position="sticky"
           elevation={0}
           sx={{
-            bgcolor: 'background.paper',
-            borderBottom: `1px solid ${theme.palette.divider}`,
+            height: 64,
+            justifyContent: 'center',
+            bgcolor: 'transparent',
+            backdropFilter: 'blur(12px)',
+            borderBottom: `1px solid ${themeMode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`,
             color: 'text.primary',
           }}
         >
-          <Toolbar sx={{ px: 3, gap: 2 }}>
+          <Toolbar sx={{ px: 3, gap: 2, minHeight: '64px !important' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography
                 variant="caption"
@@ -250,7 +287,9 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
 
         {/* Page content */}
         <Box component="main" sx={{ flex: 1, p: 3, overflow: 'auto' }}>
-          {children}
+          <Box key={activeTab} className="page-transition-wrapper">
+            {children}
+          </Box>
         </Box>
       </Box>
     </Box>

@@ -227,7 +227,7 @@ export default function TasksPage() {
                     const isUrgent = step.pm_duedate && !isOverdue && new Date(step.pm_duedate).getTime() - Date.now() < 86400000 * 2
                     return (
                       <TableRow key={step.pm_workflowapprovalstepid} hover
-                        sx={{ bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent', '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
+                        sx={{ bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent', '&:hover': { bgcolor: 'action.selected' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                             <Avatar sx={{ width: 32, height: 32, bgcolor: isOverdue ? 'error.main' : isUrgent ? 'warning.main' : 'secondary.main', fontSize: 12, fontWeight: 700 }}>
@@ -433,7 +433,7 @@ function TeamTasksView({ isDark, teamSteps, loading }: { isDark: boolean, teamSt
               const isUrgent = step.pm_duedate && !isOverdue && new Date(step.pm_duedate).getTime() - Date.now() < 86400000 * 2
               return (
                 <TableRow key={step.pm_workflowapprovalstepid} hover
-                  sx={{ bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent', '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
+                  sx={{ bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent', '&:hover': { bgcolor: 'action.selected' }, transition: 'background-color 0.15s ease', '& td': { px: 2.5, py: 1.25 } }}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Avatar sx={{ width: 32, height: 32, bgcolor: isOverdue ? 'error.main' : isUrgent ? 'warning.main' : 'secondary.main', fontSize: 12, fontWeight: 700 }}>

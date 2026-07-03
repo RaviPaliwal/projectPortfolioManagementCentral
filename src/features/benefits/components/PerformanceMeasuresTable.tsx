@@ -92,7 +92,7 @@ export const PerformanceMeasuresTable = ({
     const overallVariance = totalPlanned > 0 ? ((totalActual - totalPlanned) / totalPlanned) * 100 : 0
 
     return (
-      <Box sx={{ p: 2, display: 'flex', gap: 4, bgcolor: isDark ? '#1a2332' : 'background.default' }}>
+      <Box sx={{ p: 2, display: 'flex', gap: 4, bgcolor: 'background.default' }}>
         <Box>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Total Cumul. Planned</Typography>
           <Typography variant="body2" sx={{ fontWeight: 700 }}>{totalPlanned.toLocaleString()}</Typography>

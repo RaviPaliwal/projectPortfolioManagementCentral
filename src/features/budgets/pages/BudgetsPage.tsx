@@ -1069,8 +1069,8 @@ export default function BudgetsPage() {
                             onClick={() => handleRowClick(line)}
                             sx={{
                               cursor: 'pointer',
-                              bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                              '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                              bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                              '&:hover': { bgcolor: 'action.selected' },
                               transition: 'background-color 0.15s ease',
                               '& td': { px: 2.5, py: 1.25 },
                             }}
@@ -1334,7 +1334,7 @@ export default function BudgetsPage() {
                                   key={line.pm_budgetlineid}
                                   hover
                                   sx={{
-                                    bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
+                                    bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
                                     '& td': { px: 2, py: 1.25 }
                                   }}
                                 >
@@ -1391,7 +1391,7 @@ export default function BudgetsPage() {
                                 key={line.pm_budgetlineid}
                                 hover
                                 sx={{
-                                  bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
+                                  bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
                                   '& td': { px: 2, py: 1.25 }
                                 }}
                               >

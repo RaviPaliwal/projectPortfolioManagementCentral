@@ -222,8 +222,8 @@ const TableView: React.FC<TableViewProps> = ({ portfolios, programmes, projects,
               onClick={() => onItemClick?.(row.id, row.type.toLowerCase(), row.name)}
               sx={{
                 cursor: onItemClick ? 'pointer' : 'default',
-                bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                '&:hover': { bgcolor: 'action.selected' },
                 '& td': { px: 2.5, py: 1.25 },
               }}
             >

@@ -255,7 +255,7 @@ export const ProjectLifecycleStepper: React.FC<ProjectLifecycleStepperProps> = (
                         borderRadius: 1,
                         bgcolor: substep.isDone ? 'rgba(34, 197, 94, 0.08)' : 'transparent',
                         transition: 'background-color 0.15s',
-                        '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.025)' },
+                        '&:hover': { bgcolor: 'action.selected' },
                       }}
                     >
                       {substep.isDone ? (

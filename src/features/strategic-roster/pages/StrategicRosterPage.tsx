@@ -514,7 +514,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
         subtitle="Full-spectrum visibility from executive portfolios to project delivery milestones"
       />
 
-      <Box sx={{ px: 3, pb: 4 }}>
+      <Box sx={{ pb: 4 }}>
         {/*
           FIX 4: KpiCardRow prop name — your KpiCardRowProps likely uses a different
           prop name than `kpis`. Check your component definition and replace `items`
@@ -528,7 +528,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
           variant="outlined"
           sx={{
             mt: 4,
-            borderRadius: 5,
+            borderRadius: '24px',
             overflow: 'hidden',
             bgcolor: 'background.paper',
             boxShadow: '0 12px 40px rgba(0,0,0,0.06)',
@@ -550,7 +550,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
               alignItems: 'center',
               bgcolor: 'background.paper',
               border: `1px solid ${theme.palette.divider}`,
-              borderRadius: 4,
+              borderRadius: '16px',
               px: 2.5,
               py: 1,
               width: 320,
@@ -591,7 +591,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
             {/* Budget Range */}
             <TextField
               size="small"
-              placeholder="Min budget"
+              placeholder="Min"
               value={minBudget}
               onChange={(e) => {
                 const val = e.target.value
@@ -603,12 +603,12 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                   sx: { borderRadius: 1.15, fontSize: fontSizes.base },
                 },
               }}
-              sx={{ maxWidth: 130 }}
+              sx={{ width: 120 }}
             />
             <Typography variant="body2" color="text.secondary" sx={{ userSelect: 'none' }}>—</Typography>
             <TextField
               size="small"
-              placeholder="Max budget"
+              placeholder="Max"
               value={maxBudget}
               onChange={(e) => {
                 const val = e.target.value
@@ -620,7 +620,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                   sx: { borderRadius: 1.15, fontSize: fontSizes.base },
                 },
               }}
-              sx={{ maxWidth: 130 }}
+              sx={{ width: 120 }}
             />
 
             <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />

@@ -617,39 +617,7 @@ export default function PipelinePage() {
   }
 
   // ── Detail Drawer subtitle ────────────────────────────────────────────────
-  const drawerSubtitle = selectedInitiative && (
-    <>
-      {selectedInitiative.pm_requestorname && (
-        <Typography variant="body2" color="text.secondary">
-          <PersonIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-          {selectedInitiative.pm_requestorname}
-        </Typography>
-      )}
-      {selectedInitiative.pm_portfolioname && (
-        <StatusTag
-          label={selectedInitiative.pm_portfolioname}
-          size="small"
-          color="primary"
-          variant="outlined"
-          sx={{ fontWeight: 600, fontSize: fontSizes.xs, height: 22 }}
-        />
-      )}
 
-      {selectedInitiative.pm_submissiondate && (
-        <Typography variant="body2" color="text.secondary">
-          <CalendarTodayIcon sx={{ fontSize: 13, mr: 0.5, verticalAlign: 'text-bottom' }} />
-          Submitted: {new Date(selectedInitiative.pm_submissiondate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </Typography>
-      )}
-      <StatusTag
-        label={STATUS_CONFIG[String(selectedInitiative.pm_pipelinestatus ?? '')]?.label ?? 'Draft'}
-        color={STATUS_CONFIG[String(selectedInitiative.pm_pipelinestatus ?? '')]?.color ?? 'default'}
-        size="small"
-        variant="outlined"
-        sx={{ fontWeight: 600 }}
-      />
-    </>
-  )
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -720,8 +688,8 @@ export default function PipelinePage() {
                         onClick={() => handleRowClick(initiative)}
                         sx={{
                           cursor: 'pointer',
-                          bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                          '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                          bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                          '&:hover': { bgcolor: 'action.selected' },
                           transition: 'background-color 0.15s ease',
                           '& td': { px: 2.5, py: 1.25 },
                         }}
@@ -799,216 +767,265 @@ export default function PipelinePage() {
           </Paper>
         </>
       ) : (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
-        <Breadcrumbs
-          items={[
-            { label: 'Pipeline', path: 'list' },
-            { label: selectedInitiative.pm_name ?? 'Detail' }
-          ]}
-          onNavigate={() => handleCloseDetail()}
-        />
-        <PageHeader
-          title={selectedInitiative?.pm_name ?? ''}
-          subtitle={drawerSubtitle}
-        />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Pipeline', path: 'list' },
+              { label: selectedInitiative.pm_name ?? 'Detail' }
+            ]}
+            onNavigate={() => handleCloseDetail()}
+          />
+          <PageHeader
+            title={selectedInitiative?.pm_name ?? ''}
+            subtitle={selectedInitiative?.pm_requestorname ? `Sponsor: ${selectedInitiative.pm_requestorname}` : undefined}
+          />
 
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs
-            value={detailTab}
-            onChange={(e, v) => { setDetailTab(v); setEditScoreMode(false) }}
-            sx={{
-              '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40, px: 3 },
-              '& .Mui-selected': { color: 'primary.main' },
-            }}
-          >
-            <Tab label="Overview" />
-            <Tab label="Score & Triage" />
-            <Tab label="Actions" />
-            <Tab label="Tasks" />
-            <Tab label="Documents" />
-          </Tabs>
-        </Box>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: -2, mb: 1.5 }}>
+            <StatusTag
+              label={STATUS_CONFIG[String(selectedInitiative?.pm_pipelinestatus ?? '')]?.label ?? 'Draft'}
+              color={STATUS_CONFIG[String(selectedInitiative?.pm_pipelinestatus ?? '')]?.color ?? 'default'}
+              size="small"
+              variant="outlined"
+              sx={{ fontWeight: 600 }}
+            />
+            {selectedInitiative?.pm_portfolioname && (
+              <StatusTag label={selectedInitiative.pm_portfolioname} size="small" color="primary" variant="outlined" />
+            )}
+            {selectedInitiative?.pm_submissiondate && (
+              <Chip
+                icon={<CalendarTodayIcon sx={{ fontSize: '14px !important', ml: 0.5 }} />}
+                label={`Submitted: ${new Date(selectedInitiative.pm_submissiondate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                size="small"
+                variant="outlined"
+                sx={{ fontWeight: 600 }}
+              />
+            )}
+          </Box>
 
-
-          <TabPanel value={detailTab} index={0} pt={0}>
-          {selectedInitiative && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              {selectedInitiative.pm_businesscase ? (
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <DescriptionIcon sx={{ fontSize: 16 }} /> Business Case
-                  </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: isDark ? 'background.paper' : 'background.default' }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                      {selectedInitiative.pm_businesscase}
-                    </Typography>
-                  </Paper>
-                </Box>
-              ) : (
-                <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">No business case provided.</Typography>
-                </Paper>
-              )}
-
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                <Paper variant="outlined" sx={{ p: 2, borderLeft: '3px solid', borderLeftColor: 'primary.main' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Est. Cost</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—'}</Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ p: 2, borderLeft: '3px solid', borderLeftColor: 'success.main' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Est. Benefits</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—'}</Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ p: 2, borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Priority Score</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>{selectedInitiative.pm_priorityscore ?? '—'}</Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ p: 2, borderLeft: '3px solid', borderLeftColor: 'secondary.main' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>Strategic Alignment</Typography>
-                  <Box sx={{ mt: 0.5 }}><StrategicScoreDisplay score={selectedInitiative.pm_strategicalignmentscore} /></Box>
-                </Paper>
-              </Box>
-
-              {selectedInitiative.pm_submissiondate && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <CalendarTodayIcon sx={{ fontSize: 16 }} /> Timeline
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    Submitted: {new Date(selectedInitiative.pm_submissiondate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </Typography>
-                </Paper>
-              )}
-            </Box>
-          )}
-        </TabPanel>
-
-        {/* ═══ Tab 1: Score & Triage ═══ */}
-        <TabPanel value={detailTab} index={1} pt={0}>
-          {selectedInitiative && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Paper variant="outlined" sx={{ p: 2.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <ThumbsUpDownIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Strategic Alignment Score
+          {/* Unified Overview Block */}
+          <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', mb: 3.5, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+            <Grid container spacing={4}>
+              {/* Left Column: Business Case & Details */}
+              <Grid size={{ xs: 12, md: 8 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.primary' }}>
+                  <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Overview
                 </Typography>
-                {editScoreMode ? (
+
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 2.5 }}>
                   <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Rate this initiative against strategic pillars (1–5).</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                      <Rating value={editScore} onChange={(_, v) => setEditScore(v ?? 0)} precision={0.5} max={5} size="large" sx={{ fontSize: '2rem' }} />
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{editScore.toFixed(1)}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button variant="contained" size="small" onClick={handleSaveScore} disabled={actionLoading}>
-                        {actionLoading ? 'Saving...' : 'Save Score'}
-                      </Button>
-                      <Button variant="outlined" size="small" onClick={() => setEditScoreMode(false)}>Cancel</Button>
-                    </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Sponsor</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedInitiative.pm_requestorname || '—'}</Typography>
                   </Box>
-                ) : (
                   <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
-                      <Rating value={selectedInitiative.pm_strategicalignmentscore ?? 0} readOnly precision={0.5} max={5} size="large" sx={{ fontSize: '1.75rem' }} />
-                      <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {selectedInitiative.pm_strategicalignmentscore?.toFixed(1) ?? '—'}
-                      </Typography>
-                      {selectedInitiative.pm_strategicalignmentscore != null && (
-                        <StatusTag
-                          label={selectedInitiative.pm_strategicalignmentscore >= 4 ? 'High' : selectedInitiative.pm_strategicalignmentscore >= 2.5 ? 'Medium' : 'Low'}
-                          color={selectedInitiative.pm_strategicalignmentscore >= 4 ? 'success' : selectedInitiative.pm_strategicalignmentscore >= 2.5 ? 'warning' : 'default'}
-                          size="small" variant="filled"
-                          sx={{ fontWeight: 700 }}
-                        />
-                      )}
-                    </Box>
-                    {canEdit && (
-                      <Button variant="outlined" size="small" startIcon={<EditIcon />}
-                        onClick={() => { setEditScore(selectedInitiative.pm_strategicalignmentscore ?? 0); setEditScoreMode(true) }}>
-                        Edit Score
-                      </Button>
-                    )}
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Target Portfolio</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedInitiative.pm_portfolioname || '—'}</Typography>
+                  </Box>
+                </Box>
+
+                <Divider sx={{ mb: 2.5 }} />
+
+                <Box sx={{ mb: selectedInitiative.pm_submissiondate ? 2.5 : 0 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.75 }}>Business Case</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8, whiteSpace: 'pre-wrap', fontSize: fontSizes.smMd }}>
+                    {selectedInitiative.pm_businesscase || 'No business case provided.'}
+                  </Typography>
+                </Box>
+
+                {selectedInitiative.pm_submissiondate && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <CalendarTodayIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                      Submitted on: {new Date(selectedInitiative.pm_submissiondate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </Typography>
                   </Box>
                 )}
-              </Paper>
+              </Grid>
 
-              <Paper variant="outlined" sx={{ p: 2.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <TrendingUpIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Priority Score
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                  {selectedInitiative.pm_priorityscore ?? '—'}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                  Higher scores indicate greater urgency and business impact.
-                </Typography>
-              </Paper>
-            </Box>
-          )}
-        </TabPanel>
+              {/* Right Column: Financials & Metrics */}
+              <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Box sx={{ p: 2.5, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Financials & Alignment</Typography>
 
-        {/* ═══ Tab 2: Actions ═══ */}
-        <TabPanel value={detailTab} index={2} pt={0}>
-          {selectedInitiative && canEdit && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              {[
-                { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to the investment board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
-                { icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />, title: 'Convert to Project', desc: 'Create a new project from this approved initiative.', color: 'success.main', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
-              ]
-                .filter((a) => !a.btnDisabled)
-                .map((action, idx) => (
-                <Paper key={idx} variant="outlined" sx={{ p: 2.5, borderLeft: `3px solid ${action.color}`, transition: 'all 0.2s', '&:hover': { bgcolor: isDark ? 'background.paper' : 'background.default' } }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        {action.icon} {action.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 0, fontSize: fontSizes.smMd }}>{action.desc}</Typography>
-                    </Box>
-                    <Button variant={action.btnVariant} size="small" color={action.btnColor}
-                      onClick={action.onClick} disabled={actionLoading}
-                      sx={{ whiteSpace: 'nowrap', ml: 2 }}>
-                      {actionLoading ? 'Processing...' : action.btnLabel}
-                    </Button>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <MonetizationOnIcon fontSize="small" sx={{ color: 'primary.main', opacity: 0.8 }} /> Est. Cost
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                      {selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—'}
+                    </Typography>
                   </Box>
-                </Paper>
-              ))}
-              {canEdit && [
-                { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to the investment board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
-                { icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />, title: 'Convert to Project', desc: 'Create a new project from this approved initiative.', color: 'success.main', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
-              ].filter((a) => a.btnDisabled).length === 2 && (
-                <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    No actions available for this initiative in its current status.
-                  </Typography>
-                </Paper>
-              )}
-            </Box>
-          )}
-        </TabPanel>
 
-        {/* ═══ Tab 3: Tasks ═══ */}
-        <TabPanel value={detailTab} index={3} pt={0}>
-          {selectedInitiative?.pm_initiativeid && (
-            <EntityApprovalTasks
-              entityId={selectedInitiative.pm_initiativeid}
-              moduleName={MODULE_NAMES.PIPELINE.value}
-              entityLabel="Initiative"
-              tabValue={detailTab}
-              index={3}
-            />
-          )}
-        </TabPanel>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TrendingUpIcon fontSize="small" sx={{ color: 'success.main', opacity: 0.8 }} /> Est. Benefits
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                      {selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—'}
+                    </Typography>
+                  </Box>
 
-        {/* ═══ Tab 4: Documents ═══ */}
-        <TabPanel value={detailTab} index={4} pt={0}>
-          {selectedInitiative?.pm_initiativeid && (
-            <EntityDocumentsTab
-              entityId={selectedInitiative.pm_initiativeid}
-              moduleName={MODULE_NAMES.PIPELINE.value}
-              canEdit={canEdit}
-            />
-          )}
-        </TabPanel>
+                  <Divider />
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LightbulbIcon fontSize="small" sx={{ color: 'warning.main', opacity: 0.8 }} /> Priority Score
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {selectedInitiative.pm_priorityscore ?? '—'}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AccountTreeIcon fontSize="small" sx={{ color: 'secondary.main', opacity: 0.8 }} /> Alignment
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <StrategicScoreDisplay score={selectedInitiative.pm_strategicalignmentscore} />
+                    </Box>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+
+          {/* 2-2 Equally Divided Blocks Grid */}
+          <Grid container spacing={3.5}>
+            {/* Row 1, Block 1: Score & Triage */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2.5, display: 'flex', alignItems: 'center', gap: 0.75, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <ThumbsUpDownIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Score & Triage Details
+                </Typography>
+                <Grid container spacing={2} sx={{ flexGrow: 1 }}>
+                  <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+                    <Paper variant="outlined" sx={{ p: 2.5, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                          <TrendingUpIcon sx={{ fontSize: 16, color: 'primary.main' }} /> Strategic Alignment
+                        </Typography>
+                        {editScoreMode ? (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>Rate strategic pillars (1–5).</Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                              <Rating value={editScore} onChange={(_, v) => setEditScore(v ?? 0)} precision={0.5} max={5} size="small" />
+                              <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{editScore.toFixed(1)}</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Button variant="contained" size="small" onClick={handleSaveScore} disabled={actionLoading}>
+                                Save
+                              </Button>
+                              <Button variant="outlined" size="small" onClick={() => setEditScoreMode(false)}>Cancel</Button>
+                            </Box>
+                          </Box>
+                        ) : (
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                              <Rating value={selectedInitiative.pm_strategicalignmentscore ?? 0} readOnly precision={0.5} max={5} size="small" />
+                              <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                                {selectedInitiative.pm_strategicalignmentscore?.toFixed(1) ?? '—'}
+                              </Typography>
+                            </Box>
+                            {canEdit && (
+                              <Button variant="outlined" size="small" startIcon={<EditIcon sx={{ fontSize: 12 }} />}
+                                onClick={() => { setEditScore(selectedInitiative.pm_strategicalignmentscore ?? 0); setEditScoreMode(true) }}>
+                                Edit Score
+                              </Button>
+                            )}
+                          </Box>
+                        )}
+                      </Box>
+                    </Paper>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+                    <Paper variant="outlined" sx={{ p: 2.5, width: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <LightbulbIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Priority Score
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', mb: 1 }}>
+                        {selectedInitiative.pm_priorityscore ?? '—'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.4 }}>
+                        Higher priority score indicates greater urgency.
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </Paper>
+            </Grid>
+
+            {/* Row 1, Block 2: Actions */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.75, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <TransformIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Available Actions
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1, justifyContent: 'center' }}>
+                  {[
+                    { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
+                    { icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />, title: 'Convert to Project', desc: 'Create project from initiative.', color: 'success.main', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
+                  ]
+                    .filter((a) => !a.btnDisabled)
+                    .map((action, idx) => (
+                      <Paper key={idx} variant="outlined" sx={{ p: 2, borderLeft: `3px solid ${action.color}`, transition: 'all 0.2s', '&:hover': { bgcolor: 'action.selected' } }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                              {action.icon} {action.title}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">{action.desc}</Typography>
+                          </Box>
+                          <Button variant={action.btnVariant} size="small" color={action.btnColor}
+                            onClick={action.onClick} disabled={actionLoading}
+                            sx={{ whiteSpace: 'nowrap', ml: 2 }}>
+                            {actionLoading ? 'Processing...' : action.btnLabel}
+                          </Button>
+                        </Box>
+                      </Paper>
+                    ))}
+                  {[
+                    { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
+                    { icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />, title: 'Convert to Project', desc: 'Create project from initiative.', color: 'success.main', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
+                  ].filter((a) => a.btnDisabled).length === 2 && (
+                      <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          No actions available for this initiative in its current status.
+                        </Typography>
+                      </Paper>
+                    )}
+                </Box>
+              </Paper>
+            </Grid>
+
+            {/* Row 2, Block 1: Approval Tasks */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', height: '100%', minHeight: 350, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <TaskAltIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Approval Tasks
+                </Typography>
+                <EntityApprovalTasks
+                  entityId={selectedInitiative.pm_initiativeid ?? null}
+                  moduleName={MODULE_NAMES.PIPELINE.value}
+                  entityLabel="Initiative"
+                  tabValue={0}
+                  index={0}
+                />
+              </Paper>
+            </Grid>
+
+            {/* Row 2, Block 2: Supporting Documents */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', height: '100%', minHeight: 350, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Supporting Documents
+                </Typography>
+                <EntityDocumentsTab
+                  entityId={selectedInitiative.pm_initiativeid || ''}
+                  moduleName={MODULE_NAMES.PIPELINE.value}
+                  canEdit={canEdit}
+                />
+              </Paper>
+            </Grid>
+          </Grid>
         </Box>
       )}
 

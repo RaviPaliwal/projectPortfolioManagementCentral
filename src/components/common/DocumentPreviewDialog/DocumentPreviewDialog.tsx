@@ -112,11 +112,10 @@ export const DocumentPreviewDialog: React.FC<DocumentPreviewDialogProps> = ({
       slotProps={{
         paper: {
           sx: {
-            borderRadius: 1.5,
+            borderRadius: '16px',
             height: '85vh',
             display: 'flex',
             flexDirection: 'column',
-            bgcolor: isDark ? '#0f172a' : '#ffffff',
           },
         },
       }}
@@ -147,7 +146,7 @@ export const DocumentPreviewDialog: React.FC<DocumentPreviewDialogProps> = ({
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0, flex: 1, display: 'flex', flexDirection: 'column', bgcolor: isDark ? '#020617' : '#f8fafc', overflow: 'hidden' }}>
+      <DialogContent sx={{ p: 0, flex: 1, display: 'flex', flexDirection: 'column', bgcolor: 'background.default', overflow: 'hidden' }}>
         {loading ? (
           <Box sx={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <CircularProgress />

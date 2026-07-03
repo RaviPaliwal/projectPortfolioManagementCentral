@@ -25,6 +25,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Divider,
 } from '@mui/material'
 import ErrorIcon from '@mui/icons-material/Error'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
@@ -42,6 +43,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
+import TaskAltIcon from '@mui/icons-material/TaskAlt'
+import FolderIcon from '@mui/icons-material/Folder'
 
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
@@ -361,6 +364,13 @@ export default function ProgrammesPage() {
       low: detailRisks.filter((r) => String(r.pm_ragstatus ?? '') === '1').length,
     }
 
+    let specificGreen = 0, specificAmber = 0, specificRed = 0
+    for (const p of detailProjects) {
+      if (String(p.pm_ragstatus) === '1') specificGreen++
+      else if (String(p.pm_ragstatus) === '0') specificAmber++
+      else if (String(p.pm_ragstatus) === '2') specificRed++
+    }
+
     const projectColumns = [
       {
         key: 'pm_projectname',
@@ -445,7 +455,7 @@ export default function ProgrammesPage() {
           }
         />
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: -1.5 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: -1 }}>
           <StatusChip status={prog?.pm_ragstatus} type="rag" size="small" />
           <StatusChip status={prog?.pm_programmephase} type="prog_phase" size="small" />
           {prog?.pm_portfolioname && (
@@ -456,123 +466,90 @@ export default function ProgrammesPage() {
         <Tabs
           value={detailTab}
           onChange={(_, v) => setDetailTab(v)}
-          sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}
+          sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
           <Tab label="Overview & Projects" sx={{ textTransform: 'none', fontWeight: 600 }} />
           <Tab label="Master Schedule" sx={{ textTransform: 'none', fontWeight: 600 }} />
-          <Tab label="Documents & Tasks" sx={{ textTransform: 'none', fontWeight: 600 }} />
         </Tabs>
 
         {detailTab === 0 && (
-          <>
-            {/* 1. Financials KPI Cards at the top */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Financials
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Total Budget</Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
-                      {currencyFormatter.format(prog?.pm_budgeteur ?? 0)}
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            {/* Overview - Full Width */}
+            <Grid size={{ xs: 12 }}>
+              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 8 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Overview
                     </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Actual Spend</Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
-                      {currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Variance</Typography>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 700,
-                        mt: 0.5,
-                        color: ((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? 'error.main' : 'success.main'
-                      }}
-                    >
-                      {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              </Grid>
-            </Box>
-
-            {/* 2. Overview Grouping: Details & Objectives */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Overview
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Details
-                    </Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Phase</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                          {['Delivery', 'Planning', 'Initiation'][Number(prog?.pm_programmephase)] ?? '—'}
-                        </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Phase</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{['Delivery', 'Planning', 'Initiation'][Number(prog?.pm_programmephase)] ?? '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Manager</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{prog?.pm_programmemanagername || '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Sponsor</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{prog?.pm_sponsorname || '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Unit</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{prog?.pm_businessunit || '—'}</Typography>
+                        </Box>
                       </Box>
+                      <Divider />
                       <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Manager</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                          {prog?.pm_programmemanagername || '—'}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Sponsor</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                          {prog?.pm_sponsorname || '—'}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Unit</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                          {prog?.pm_businessunit || '—'}
-                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>Objectives</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>{prog?.pm_programmedescription || 'No description provided.'}</Typography>
                       </Box>
                     </Box>
-                  </Paper>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <Box sx={{ p: 2, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>OVERALL HEALTH</Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+                            <Box sx={{ height: 8, width: 8, borderRadius: '50%', bgcolor: 'success.main' }} /> Low Risk
+                          </Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{specificGreen}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+                            <Box sx={{ height: 8, width: 8, borderRadius: '50%', bgcolor: 'warning.main' }} /> Medium Risk
+                          </Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{specificAmber}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+                            <Box sx={{ height: 8, width: 8, borderRadius: '50%', bgcolor: 'error.main' }} /> High Risk
+                          </Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{specificRed}</Typography>
+                        </Box>
+                      </Box>
+                      <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 2, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                        {detailProjects.length} entities tracked
+                      </Typography>
+                    </Box>
+                  </Grid>
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LightbulbIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Objectives
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                      {prog?.pm_programmedescription || 'No description provided.'}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              </Grid>
-            </Box>
+              </Paper>
+            </Grid>
 
-            {/* 3. Projects block using the generic DataverseTable */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Projects
-              </Typography>
-              <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
-                <Box sx={{
-                  '& .MuiPaper-root': {
-                    boxShadow: 'none',
-                    border: 'none',
-                    bgcolor: 'transparent',
-                    backgroundImage: 'none',
-                    borderRadius: 0,
-                    mb: 0
-                  }
-                }}>
+            {/* Left Column: Tables and Risks */}
+            <Grid size={{ xs: 12, lg: 7 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Projects Table */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <AccountTreeIcon sx={{ color: 'primary.main', fontSize: 18 }} /> Linked Projects
+                  </Typography>
+                </Box>
+                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', '& .MuiPaper-root': { boxShadow: 'none', border: 'none', bgcolor: 'transparent', backgroundImage: 'none', borderRadius: 0, mb: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' } }}>
                   <DataverseTable
                     showExport={false}
                     minHeight={"auto"}
@@ -586,48 +563,78 @@ export default function ProgrammesPage() {
                   />
                 </Box>
               </Paper>
-            </Box>
 
-            {/* 4. Risks & Issues */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Escalated Risks & Issues
-              </Typography>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                {/* Risk Severity Distribution Bar */}
+              {/* Documents */}
+              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <FolderIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Documents
+                </Typography>
+                <EntityDocumentsTab
+                  entityId={selectedProgrammeId}
+                  moduleName={MODULE_NAMES.PROGRAMMES.value}
+                  canEdit={canEdit}
+                />
+              </Paper>
+            </Grid>
+
+            {/* Right Column: Cards */}
+            <Grid size={{ xs: 12, lg: 5 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Financials Card */}
+              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Financials
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider', pb: 1.5 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Total Budget</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider', pb: 1.5 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Actual Spend</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'warning.main' }}>{currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 0.5 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Variance</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: ((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? 'error.main' : 'success.main' }}>
+                      {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+
+              {/* Escalated Risks & Issues */}
+              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <GppMaybeIcon sx={{ fontSize: 18, color: 'error.main' }} /> Escalated Risks & Issues
+                </Typography>
+                
                 <Box sx={{ mb: 3 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 1.5, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <GppMaybeIcon sx={{ fontSize: 18 }} /> Risk Severity Distribution (All Projects)
+                  <Typography variant="caption" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary', display: 'block', textTransform: 'uppercase' }}>
+                    Severity Distribution
                   </Typography>
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 4 }}>
-                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '4px solid', borderLeftColor: 'error.main', textAlign: 'center' }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>High</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5, color: 'error.main' }}>
-                          {severityDistribution.high}
-                        </Typography>
+                      <Paper sx={{ p: 1.5, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(211,47,47,0.1)' : '#fee2e2', textAlign: 'center' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'error.main' }}>High</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'error.main' }}>{severityDistribution.high}</Typography>
                       </Paper>
                     </Grid>
                     <Grid size={{ xs: 4 }}>
-                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '4px solid', borderLeftColor: 'warning.main', textAlign: 'center' }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Medium</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5, color: 'warning.main' }}>
-                          {severityDistribution.medium}
-                        </Typography>
+                      <Paper sx={{ p: 1.5, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(237,108,2,0.1)' : '#fef3c7', textAlign: 'center' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'warning.main' }}>Medium</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>{severityDistribution.medium}</Typography>
                       </Paper>
                     </Grid>
                     <Grid size={{ xs: 4 }}>
-                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '4px solid', borderLeftColor: 'success.main', textAlign: 'center' }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Low</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>
-                          {severityDistribution.low}
-                        </Typography>
+                      <Paper sx={{ p: 1.5, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(46,125,50,0.1)' : '#dcfce7', textAlign: 'center' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'success.main' }}>Low</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>{severityDistribution.low}</Typography>
                       </Paper>
                     </Grid>
                   </Grid>
                 </Box>
 
-                <Grid container spacing={2}>
+                <Grid container spacing={3}>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'error.main' }}>
                       Risks ({escalatedRisks.length})
@@ -636,22 +643,11 @@ export default function ProgrammesPage() {
                       escalatedRisks.map(r => (
                         <Paper
                           key={r.pm_riskid}
-                          variant="outlined"
-                          sx={{
-                            p: 1.5,
-                            mb: 1,
-                            borderRadius: 1,
-                            borderLeft: '3px solid',
-                            borderLeftColor: 'error.main',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                            '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' }
-                          }}
+                          sx={{ p: 1.5, mb: 1, borderRadius: '12px', border: '1px solid', borderColor: 'divider', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'error.main' } }}
                           onClick={() => r.pm_riskid && navigateToRisk(r.pm_riskid)}
                         >
                           <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {r.pm_risktitle}
-                            <OpenInNewIcon sx={{ fontSize: 12 }} />
+                            {r.pm_risktitle} <OpenInNewIcon sx={{ fontSize: 12 }} />
                           </Typography>
                         </Paper>
                       ))
@@ -667,22 +663,11 @@ export default function ProgrammesPage() {
                       escalatedIssues.map(i => (
                         <Paper
                           key={i.pm_issueid}
-                          variant="outlined"
-                          sx={{
-                            p: 1.5,
-                            mb: 1,
-                            borderRadius: 1,
-                            borderLeft: '3px solid',
-                            borderLeftColor: 'warning.main',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                            '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' }
-                          }}
+                          sx={{ p: 1.5, mb: 1, borderRadius: '12px', border: '1px solid', borderColor: 'divider', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'warning.main' } }}
                           onClick={() => i.pm_issueid && navigateToIssue(i.pm_issueid)}
                         >
                           <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {i.pm_issuetitle}
-                            <OpenInNewIcon sx={{ fontSize: 12 }} />
+                            {i.pm_issuetitle} <OpenInNewIcon sx={{ fontSize: 12 }} />
                           </Typography>
                         </Paper>
                       ))
@@ -692,20 +677,11 @@ export default function ProgrammesPage() {
                   </Grid>
                 </Grid>
               </Paper>
-            </Box>
-          </>
-        )}
 
-        {detailTab === 1 && (
-          <MasterScheduleTab projects={detailProjects} />
-        )}
-
-        {detailTab === 2 && (
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                  Approval Tasks
+              {/* Approval Tasks */}
+              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <TaskAltIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Approval Tasks
                 </Typography>
                 <EntityApprovalTasks
                   entityId={selectedProgrammeId}
@@ -715,21 +691,14 @@ export default function ProgrammesPage() {
                   index={0}
                 />
               </Paper>
-            </Grid>
 
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                  Documents
-                </Typography>
-                <EntityDocumentsTab
-                  entityId={selectedProgrammeId}
-                  moduleName={MODULE_NAMES.PROGRAMMES.value}
-                  canEdit={canEdit}
-                />
-              </Paper>
+
             </Grid>
           </Grid>
+        )}
+
+        {detailTab === 1 && (
+          <MasterScheduleTab projects={detailProjects} />
         )}
 
         <ProgrammeFormDialog
@@ -763,7 +732,6 @@ export default function ProgrammesPage() {
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {!loading && <KpiCardRow items={kpiItems} />}
-      {!loading && <HealthSplitBar green={kpiData.green} amber={kpiData.amber} red={kpiData.red} sx={{ mb: 3 }} />}
 
       <Paper sx={{ overflow: 'hidden', mb: 3 }}>
         <SearchFilterBar
@@ -933,8 +901,8 @@ export default function ProgrammesPage() {
                     onClick={() => p.pm_programmeid && openDetail(p.pm_programmeid)}
                     sx={{
                       cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                      bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                      '&:hover': { bgcolor: 'action.selected' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
                     }}

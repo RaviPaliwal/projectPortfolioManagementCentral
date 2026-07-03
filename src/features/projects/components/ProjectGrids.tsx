@@ -201,7 +201,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
                 onClick={() => onRowClick(project)}
                 sx={{
                   cursor: 'pointer',
-                  bgcolor: idx % 2 === 1 ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)') : 'transparent',
+                  bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
                   '& td': { py: 1.25, px: 2.5 },
                   '&:hover': { bgcolor: 'action.hover !important' },
                   transition: 'background-color 0.15s ease',

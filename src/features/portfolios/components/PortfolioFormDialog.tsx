@@ -268,10 +268,10 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
                   onChange={(e) => setFormData((f) => ({ ...f, pm_prioritylevel: e.target.value as number }))}
                   sx={{ borderRadius: 1.5 }}
                 >
-                  <MenuItem value={1}>1 - High</MenuItem>
-                  <MenuItem value={2}>2 - Medium</MenuItem>
-                  <MenuItem value={3}>3 - Low</MenuItem>
-                  <MenuItem value={4}>4 - Very Low</MenuItem>
+                  <MenuItem value={1}>High</MenuItem>
+                  <MenuItem value={2}>Medium</MenuItem>
+                  <MenuItem value={3}>Low</MenuItem>
+                  <MenuItem value={4}>Very Low</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

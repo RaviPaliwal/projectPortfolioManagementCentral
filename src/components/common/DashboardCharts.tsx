@@ -123,17 +123,17 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
     // Transform data for stacked bar: break into segments that sum to the total bar
     const stackedData = hasData
       ? capacityAllocationData.map((d) => {
-          const capped = Math.min(d.allocated, d.capacity)
-          const available = Math.max(0, d.capacity - d.allocated)
-          const overage = Math.max(0, d.allocated - d.capacity)
-          return {
-            resource: d.resource,
-            allocated: capped,
-            available,
-            overage,
-            percentage: d.percentage,
-          }
-        })
+        const capped = Math.min(d.allocated, d.capacity)
+        const available = Math.max(0, d.capacity - d.allocated)
+        const overage = Math.max(0, d.allocated - d.capacity)
+        return {
+          resource: d.resource,
+          allocated: capped,
+          available,
+          overage,
+          percentage: d.percentage,
+        }
+      })
       : [{ resource: 'No Data', allocated: 0, available: 160, overage: 0, percentage: 0 }]
 
     return (
@@ -320,28 +320,28 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
             <Legend verticalAlign="bottom" height={16} iconSize={10} />
             {hasData
               ? roles.map((role, idx) => (
-                  <Area
-                    key={role}
-                    type="monotone"
-                    dataKey={role}
-                    stroke={roleColors[idx % roleColors.length]}
-                    fill={roleColors[idx % roleColors.length]}
-                    fillOpacity={0.15}
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                ))
+                <Area
+                  key={role}
+                  type="monotone"
+                  dataKey={role}
+                  stroke={roleColors[idx % roleColors.length]}
+                  fill={roleColors[idx % roleColors.length]}
+                  fillOpacity={0.15}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              ))
               : (
-                  <Area
-                    type="monotone"
-                    dataKey="No Data"
-                    stroke="#94a3b8"
-                    fill="#94a3b8"
-                    fillOpacity={0.15}
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                )
+                <Area
+                  type="monotone"
+                  dataKey="No Data"
+                  stroke="#94a3b8"
+                  fill="#94a3b8"
+                  fillOpacity={0.15}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              )
             }
           </AreaChart>
         </ResponsiveContainer>
@@ -435,7 +435,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
             ))}
           </Tabs>
           {resourceTab === 0 && onResourceMonthChange && resourceMonth && (
-            <input 
+            <input
               type="month"
               value={`${resourceMonth.getFullYear()}-${String(resourceMonth.getMonth() + 1).padStart(2, '0')}`}
               onChange={(e) => {

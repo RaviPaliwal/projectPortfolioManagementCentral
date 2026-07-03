@@ -61,7 +61,7 @@ export const PipelineStageSummary = ({ initiatives, loading, sx }: PipelineStage
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, flexGrow: 1 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, flexGrow: 1 }}>
             {pipelineStages.map((stage) => (
-              <Box key={stage.key} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box key={stage.key} className="activity-list-item" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Box
                   sx={{
                     width: 10,

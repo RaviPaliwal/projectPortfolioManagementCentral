@@ -63,8 +63,8 @@ export const MetricTile = ({ label, value, subtitle, icon, color, valueColor, lo
         transition: 'all 0.2s ease-in-out',
         '&:hover': {
           borderColor: color || 'primary.main',
-          boxShadow: isDark 
-            ? '0 4px 12px rgba(0,0,0,0.4)' 
+          boxShadow: isDark
+            ? '0 4px 12px rgba(0,0,0,0.4)'
             : '0 4px 12px rgba(0,0,0,0.05)',
         },
       }}
@@ -89,11 +89,11 @@ export const MetricTile = ({ label, value, subtitle, icon, color, valueColor, lo
         )}
       </Box>
 
-      <Typography 
-        variant="h4" 
-        sx={{ 
-          fontWeight: 800, 
-          mb: 0.5, 
+      <Typography
+        variant="h4"
+        sx={{
+          fontWeight: 800,
+          mb: 0.5,
           letterSpacing: '-0.02em',
           color: valueColor || 'inherit'
         }}

@@ -2,12 +2,12 @@ import { createTheme, type PaletteMode, type ThemeOptions } from '@mui/material'
 import { fontSizes } from './fontSizes'
 
 const palette = {
-  primary: { main: '#0ea5e9', light: '#38bdf8', dark: '#0284c7', contrastText: '#ffffff' },
-  secondary: { main: '#8b5cf6', light: '#a78bfa', dark: '#7c3aed', contrastText: '#ffffff' },
-  success: { main: '#22c55e', light: '#4ade80', dark: '#16a34a', contrastText: '#ffffff' },
-  warning: { main: '#f59e0b', light: '#fbbf24', dark: '#d97706', contrastText: '#ffffff' },
+  primary: { main: '#217C35', light: '#2A9943', dark: '#135E23', contrastText: '#ffffff' },
+  secondary: { main: '#E4621A', light: '#F07C3A', dark: '#B9490C', contrastText: '#ffffff' },
+  success: { main: '#059669', light: '#34d399', dark: '#047857', contrastText: '#ffffff' },
+  warning: { main: '#d97706', light: '#fbbf24', dark: '#b45309', contrastText: '#ffffff' },
   error: { main: '#ef4444', light: '#f87171', dark: '#dc2626', contrastText: '#ffffff' },
-  info: { main: '#0ea5e9', light: '#38bdf8', dark: '#0284c7', contrastText: '#ffffff' },
+  info: { main: '#217C35', light: '#2A9943', dark: '#135E23', contrastText: '#ffffff' },
 }
 
 export const getTheme = (mode: PaletteMode) =>
@@ -16,25 +16,25 @@ export const getTheme = (mode: PaletteMode) =>
       mode,
       ...palette,
       background: {
-        default: mode === 'light' ? '#f8fafc' : '#0f172a',
-        paper: mode === 'light' ? '#ffffff' : '#1e293b',
+        default: mode === 'light' ? '#f8f9fa' : '#0b0f19',
+        paper: mode === 'light' ? '#ffffff' : '#111827',
       },
       text: {
-        primary: mode === 'light' ? '#0f172a' : '#f8fafc',
+        primary: mode === 'light' ? '#0f172a' : '#e2e8f0',
         secondary: mode === 'light' ? '#64748b' : '#94a3b8',
       },
-      divider: mode === 'light' ? '#e2e8f0' : '#334155',
+      divider: mode === 'light' ? '#e5e7eb' : '#1f2937',
     },
-    shape: { borderRadius: 5},
+    shape: { borderRadius: 12 },
     typography: {
       fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       fontSize: 14, // base = 0.875rem
-      h1: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 700, letterSpacing: '-0.02em', fontSize: fontSizes['4xl'] },
-      h2: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 700, letterSpacing: '-0.01em', fontSize: fontSizes['3xl'] },
-      h3: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 600, fontSize: fontSizes['2xl'] },
-      h4: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 600, fontSize: fontSizes['xl'] },
-      h5: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 600, fontSize: fontSizes['lg'] },
-      h6: { fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 600 },
+      h1: { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 900, letterSpacing: '-0.03em', fontSize: fontSizes['4xl'] },
+      h2: { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 800, letterSpacing: '-0.02em', fontSize: fontSizes['3xl'] },
+      h3: { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, letterSpacing: '-0.02em', fontSize: fontSizes['2xl'] },
+      h4: { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 700, letterSpacing: '-0.01em', fontSize: fontSizes['xl'] },
+      h5: { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, letterSpacing: '-0.01em', fontSize: fontSizes['lg'] },
+      h6: { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", fontWeight: 600, letterSpacing: '-0.01em' },
       subtitle1: { fontSize: fontSizes['base'] },
       subtitle2: { fontSize: fontSizes['sm'] },
       body1: { fontSize: fontSizes['base'] },
@@ -45,35 +45,53 @@ export const getTheme = (mode: PaletteMode) =>
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 1.155 * 12,
-            border: `1px solid ${mode === 'light' ? '#e2e8f0' : '#334155'}`,
-            transition: 'all 0.2s ease-in-out',
+            borderRadius: '12px',
+            border: `1px solid ${mode === 'light' ? '#e5e7eb' : '#1f2937'}`,
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
           },
         },
       },
       MuiButton: {
         styleOverrides: {
-          root: { textTransform: 'none', fontWeight: 600, borderRadius: 1.155 * 12, padding: '8px 20px', fontSize: fontSizes.smMd },
+          root: {
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: '12px',
+            padding: '8px 20px',
+            fontSize: fontSizes.smMd,
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          },
         },
       },
-      MuiChip: { styleOverrides: { root: { fontWeight: 600, fontSize: fontSizes.sm, borderRadius: 1.155 * 12 } } },
-      MuiDialog: { 
-        styleOverrides: { 
-          paper: { 
-            borderRadius: 1.155 * 12,
+      MuiChip: {
+        styleOverrides: {
+          root: {
+            fontWeight: 700,
+            fontSize: fontSizes.xs,
+            borderRadius: '9999px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }
+        }
+      },
+      MuiDialog: {
+        styleOverrides: {
+          paper: {
+            borderRadius: '16px',
             backdropFilter: 'blur(16px)',
-            backgroundColor: mode === 'dark' ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.95)',
-            boxShadow: mode === 'dark' ? '0 25px 50px -12px rgba(0, 0, 0, 0.7)' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            border: `1px solid ${mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'}`,
-          } 
-        } 
+            backgroundColor: mode === 'dark' ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.97)',
+            boxShadow: mode === 'dark' ? '0 25px 50px -12px rgba(0, 0, 0, 0.7)' : '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+            border: `1px solid ${mode === 'dark' ? '#1f2937' : '#e5e7eb'}`,
+          }
+        }
       },
       MuiDrawer: {
         styleOverrides: {
           paper: {
             backdropFilter: 'blur(16px)',
-            backgroundColor: mode === 'dark' ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.95)',
-            borderLeft: `1px solid ${mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'}`,
+            backgroundColor: mode === 'dark' ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.97)',
+            borderLeft: `1px solid ${mode === 'dark' ? '#1f2937' : '#e5e7eb'}`,
           }
         }
       },
@@ -83,7 +101,30 @@ export const getTheme = (mode: PaletteMode) =>
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            borderRadius: 1.155 * 12,
+            borderRadius: '20px',
+            backgroundColor: mode === 'light' ? '#f3f4f6' : '#1f2937',
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderWidth: '1px',
+              borderColor: 'transparent',
+            },
+            '&:hover': {
+              backgroundColor: mode === 'light' ? '#e5e7eb' : '#2d3748',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'transparent',
+              },
+            },
+            '&.Mui-focused': {
+              backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
+              boxShadow: mode === 'light' ? '0 0 0 3px rgba(27, 118, 255, 0.1)' : '0 0 0 3px rgba(27, 118, 255, 0.25)',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#1b76ff',
+                borderWidth: '1.5px',
+              },
+            },
+          },
+          input: {
+            padding: '8px 16px',
           },
         },
       },
@@ -99,11 +140,11 @@ export const getTheme = (mode: PaletteMode) =>
           },
           sizeSmall: {
             '&.MuiInputLabel-shrink': {
-              transform: 'translate(14px, -6px) scale(0.75)',
+              transform: 'translate(14px, -9px) scale(0.75)',
             },
           },
         },
       },
-      MuiPaper: { styleOverrides: { rounded: { borderRadius: 1.155 * 12 } } },
+      MuiPaper: { styleOverrides: { rounded: { borderRadius: '12px' } } },
     },
   })
