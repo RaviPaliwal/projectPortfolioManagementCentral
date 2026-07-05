@@ -78,7 +78,7 @@ export const getTheme = (mode: PaletteMode) =>
       MuiDialog: {
         styleOverrides: {
           paper: {
-            borderRadius: '16px',
+            borderRadius: '12px',
             backdropFilter: 'blur(16px)',
             backgroundColor: mode === 'dark' ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.97)',
             boxShadow: mode === 'dark' ? '0 25px 50px -12px rgba(0, 0, 0, 0.7)' : '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
@@ -101,7 +101,7 @@ export const getTheme = (mode: PaletteMode) =>
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            borderRadius: '20px',
+            borderRadius: '12px',
             backgroundColor: mode === 'light' ? '#f3f4f6' : '#1f2937',
             transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
             '& .MuiOutlinedInput-notchedOutline': {
@@ -145,6 +145,15 @@ export const getTheme = (mode: PaletteMode) =>
           },
         },
       },
-      MuiPaper: { styleOverrides: { rounded: { borderRadius: '12px' } } },
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            borderRadius: '12px',
+          },
+          rounded: {
+            borderRadius: '12px',
+          },
+        },
+      },
     },
   })

@@ -206,8 +206,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
           sx={{
             height: 64,
             justifyContent: 'center',
-            bgcolor: 'transparent',
-            backdropFilter: 'blur(12px)',
+            bgcolor: 'background.paper',
             borderBottom: `1px solid ${themeMode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`,
             color: 'text.primary',
           }}

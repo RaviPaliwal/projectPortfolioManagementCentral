@@ -14,8 +14,8 @@ import {
   useTheme,
   IconButton,
   Tooltip,
-  Tabs,
-  Tab,
+  Grid,
+  Divider,
 } from '@mui/material'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import BugReportIcon from '@mui/icons-material/BugReport'
@@ -145,7 +145,6 @@ export default function IssuesPage() {
 
   // Detail View
   const [selectedIssue, setSelectedIssue] = useState<IssueModel | null>(null)
-  const [detailTab, setDetailTab] = useState(0)
 
   // Create/Edit dialog
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -763,42 +762,105 @@ export default function IssuesPage() {
             }
           />
 
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-            <Tabs value={detailTab} onChange={(_e, v) => setDetailTab(v)} variant="scrollable" scrollButtons="auto">
-              <Tab label="Overview" />
-              <Tab label="Resolution" />
-            </Tabs>
-          </Box>
+          <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5 }}>
+            <Grid container spacing={4} sx={{ alignItems: 'stretch' }}>
+              {/* Left Column: Description & Resolution details */}
+              <Grid size={{ xs: 12, md: 8 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                      <BugReportIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description
+                    </Typography>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', lineHeight: 1.6 }}>
+                      {selectedIssue.pm_issuedescription || 'No description provided.'}
+                    </Typography>
+                  </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <TabPanel value={detailTab} index={0}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Details</Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
-                    {selectedIssue.pm_issuedescription || 'No description provided.'}
-                  </Typography>
-                </Paper>
-                
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Resolution Details</Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
-                    {selectedIssue.pm_resolutiondetails || 'No resolution details yet.'}
-                  </Typography>
-                </Paper>
-              </Box>
-            </TabPanel>
-            <TabPanel value={detailTab} index={1}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Resolution details</Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
-                    {selectedIssue.pm_resolutiondetails || 'No resolution details yet.'}
-                  </Typography>
-                </Paper>
-              </Box>
-            </TabPanel>
-          </Box>
+                  <Divider />
+
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                      <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} /> Resolution Details
+                    </Typography>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', lineHeight: 1.6 }}>
+                      {selectedIssue.pm_resolutiondetails || 'No resolution details recorded yet.'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              {/* Right Column: Metadata Overview */}
+              <Grid 
+                size={{ xs: 12, md: 4 }}
+                sx={{ 
+                  borderLeft: { md: `1px solid ${useTheme().palette.divider}` },
+                  pl: { md: 4 },
+                  pt: { xs: 3, md: 0 },
+                  borderTop: { xs: `1px solid ${useTheme().palette.divider}`, md: 'none' },
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                  Issue Context
+                </Typography>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Associated Project</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {projectNameMap[(selectedIssue._pm_project_value || '').toLowerCase()] || '—'}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Issue Owner</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {resourceNameMap[(selectedIssue._pm_issueowner_value || '').toLowerCase()] || selectedIssue.pm_issueowner || '—'}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Category</Typography>
+                      <StatusTag 
+                        label={ISSUE_CATEGORY_LABELS[String(selectedIssue.pm_issuecategory ?? '')] ?? '—'} 
+                        variant="outlined" 
+                        sx={{ mt: 0.5, borderColor: ISSUE_CATEGORY_COLORS[String(selectedIssue.pm_issuecategory ?? '')], color: ISSUE_CATEGORY_COLORS[String(selectedIssue.pm_issuecategory ?? '')] }}
+                      />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Priority</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                        {String(selectedIssue.pm_prioritylevel ?? '') === '1' && <NewReleasesIcon fontSize="small" sx={{ color: 'error.main' }} />}
+                        {String(selectedIssue.pm_prioritylevel ?? '') === '0' && <PriorityHighIcon fontSize="small" sx={{ color: 'warning.main' }} />}
+                        {String(selectedIssue.pm_prioritylevel ?? '') === '2' && <LowPriorityIcon fontSize="small" sx={{ color: 'info.main' }} />}
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {PRIORITY_LABELS[String(selectedIssue.pm_prioritylevel ?? '')] ?? '—'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>RAG Status</Typography>
+                      <Box sx={{ mt: 0.5 }}>
+                        <StatusTag 
+                          label={RAG_LABELS[String(selectedIssue.pm_ragstatus ?? '')] ?? '—'} 
+                          color={RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] || 'default'} 
+                        />
+                      </Box>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Target Date</Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
+                        {formatDate(selectedIssue.pm_targetresolutiondate) || '—'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
         </Box>
       )}
 

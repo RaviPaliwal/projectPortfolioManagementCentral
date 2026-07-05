@@ -749,124 +749,140 @@ export default function BudgetsPage() {
             )}
           </Box>
 
-          <Grid container spacing={3}>
-            {/* Column 1: Budget Utilization & Variance Analysis */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Budget Utilization
-                    </Typography>
-                    <Box sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Budget Used
+          <Grid container spacing={2.5}>
+            {/* Column 1: Budget Utilization & Variance Analysis (Horizontal Full Width) */}
+            <Grid size={{ xs: 12 }}>
+              <Paper sx={{ p: 2, borderRadius: 1.5 }}>
+                <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+                  {/* Left sub-column: Budget Utilization */}
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Budget Utilization
                         </Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {budgetUtilization(selectedBudget)}%
-                        </Typography>
+                        <Box sx={{ mb: 1.5 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Budget Used
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                              {budgetUtilization(selectedBudget)}%
+                            </Typography>
+                          </Box>
+                          <LinearProgress
+                            variant="determinate"
+                            value={budgetUtilization(selectedBudget)}
+                            sx={{
+                              height: 6,
+                              borderRadius: 1.5,
+                              bgcolor: isDark ? 'divider' : '#e2e8f0',
+                              '& .MuiLinearProgress-bar': {
+                                bgcolor: budgetUtilization(selectedBudget) > 85 ? 'error.main'
+                                  : budgetUtilization(selectedBudget) > 65 ? 'warning.main' : 'success.main',
+                              },
+                            }}
+                          />
+                        </Box>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                          <Box sx={{ p: 1, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25, fontWeight: 600 }}>Revised Budget</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
+                              {selectedBudget.pm_revisedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_revisedbudgeteur) : '—'}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ p: 1, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.success.main}` }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25, fontWeight: 600 }}>Actual Spend</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'success.main' }}>
+                              {selectedBudget.pm_actualspendeur != null ? currencyFormatter.format(selectedBudget.pm_actualspendeur) : '—'}
+                            </Typography>
+                          </Box>
+                        </Box>
                       </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={budgetUtilization(selectedBudget)}
-                        sx={{
-                          height: 8,
-                          borderRadius: 1.5,
-                          bgcolor: isDark ? 'divider' : '#e2e8f0',
-                          '& .MuiLinearProgress-bar': {
-                            bgcolor: budgetUtilization(selectedBudget) > 85 ? 'error.main'
-                              : budgetUtilization(selectedBudget) > 65 ? 'warning.main' : 'success.main',
-                          },
-                        }}
-                      />
                     </Box>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Revised Budget</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
-                          {selectedBudget.pm_revisedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_revisedbudgeteur) : '—'}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.success.main}` }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Actual Spend</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'success.main' }}>
-                          {selectedBudget.pm_actualspendeur != null ? currencyFormatter.format(selectedBudget.pm_actualspendeur) : '—'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
+                  </Grid>
 
-                  <Divider />
-
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CurrencyExchangeIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Variance Analysis
-                    </Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
-                      <Box
-                        sx={{
-                          p: 2,
-                          borderRadius: 1,
-                          textAlign: 'center',
-                          border: (theme) => `1px solid ${selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0 ? theme.palette.success.main : theme.palette.error.main}`,
-                          bgcolor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
-                            ? (isDark ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.05)')
-                            : (isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)'),
-                        }}
-                      >
-                        {selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
-                          ? <VerifiedIcon sx={{ fontSize: 24, color: 'success.main', mb: 0.5 }} />
-                          : <WarningAmberIcon sx={{ fontSize: 24, color: 'error.main', mb: 0.5 }} />
-                        }
-                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: getVarianceColor(selectedBudget.pm_varianceeur) }}>
-                          {selectedBudget.pm_varianceeur != null
-                            ? `${selectedBudget.pm_varianceeur >= 0 ? '+' : ''}${currencyFormatter.format(selectedBudget.pm_varianceeur)}`
-                            : '—'}
+                  {/* Right sub-column: Variance Analysis */}
+                  <Grid 
+                    size={{ xs: 12, md: 6 }}
+                    sx={{ 
+                      borderLeft: { md: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}` },
+                      pl: { md: 3 },
+                      pt: { xs: 2, md: 0 },
+                      borderTop: { xs: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`, md: 'none' },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CurrencyExchangeIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Variance Analysis
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">Variance</Typography>
-                      </Box>
-                      <Box sx={{ p: 2, borderRadius: 1, textAlign: 'center', border: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {selectedBudget.pm_committedspendeur != null ? currencyFormatter.format(selectedBudget.pm_committedspendeur) : '—'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">Committed</Typography>
-                      </Box>
-                      <Box sx={{ p: 2, borderRadius: 1, textAlign: 'center', border: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {selectedBudget.pm_forecastspendeur != null ? currencyFormatter.format(selectedBudget.pm_forecastspendeur) : '—'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">Forecast</Typography>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5 }}>
+                          <Box
+                            sx={{
+                              p: 1,
+                              borderRadius: 1,
+                              textAlign: 'center',
+                              border: (theme) => `1px solid ${selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0 ? theme.palette.success.main : theme.palette.error.main}`,
+                              bgcolor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
+                                ? (isDark ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.05)')
+                                : (isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)'),
+                            }}
+                          >
+                            {selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
+                              ? <VerifiedIcon sx={{ fontSize: 20, color: 'success.main', mb: 0.25 }} />
+                              : <WarningAmberIcon sx={{ fontSize: 20, color: 'error.main', mb: 0.25 }} />
+                            }
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: getVarianceColor(selectedBudget.pm_varianceeur) }}>
+                              {selectedBudget.pm_varianceeur != null
+                                ? `${selectedBudget.pm_varianceeur >= 0 ? '+' : ''}${currencyFormatter.format(selectedBudget.pm_varianceeur)}`
+                                : '—'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>Variance</Typography>
+                          </Box>
+                          <Box sx={{ p: 1, borderRadius: 1, textAlign: 'center', border: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', pt: 0.5 }}>
+                              {selectedBudget.pm_committedspendeur != null ? currencyFormatter.format(selectedBudget.pm_committedspendeur) : '—'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', mt: 0.5 }}>Committed</Typography>
+                          </Box>
+                          <Box sx={{ p: 1, borderRadius: 1, textAlign: 'center', border: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', pt: 0.5 }}>
+                              {selectedBudget.pm_forecastspendeur != null ? currencyFormatter.format(selectedBudget.pm_forecastspendeur) : '—'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', mt: 0.5 }}>Forecast</Typography>
+                          </Box>
+                        </Box>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mt: 1.5 }}>
+                          <Box sx={{ p: 1, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate at Completion</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                              {selectedBudget.pm_estimateatcompletioneur != null ? currencyFormatter.format(selectedBudget.pm_estimateatcompletioneur) : '—'}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ p: 1, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate to Complete</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                              {selectedBudget.pm_estimatetocompleteeur != null ? currencyFormatter.format(selectedBudget.pm_estimatetocompleteeur) : '—'}
+                            </Typography>
+                          </Box>
+                        </Box>
                       </Box>
                     </Box>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate at Completion</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {selectedBudget.pm_estimateatcompletioneur != null ? currencyFormatter.format(selectedBudget.pm_estimateatcompletioneur) : '—'}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate to Complete</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {selectedBudget.pm_estimatetocompleteeur != null ? currencyFormatter.format(selectedBudget.pm_estimatetocompleteeur) : '—'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                </Box>
+                  </Grid>
+                </Grid>
               </Paper>
             </Grid>
 
             {/* Column 2: Line Details & Notes */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 2, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                       <CategoryIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Line Details
                     </Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
                       <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Category</Typography>
                         <Typography variant="body2">{selectedBudget.pm_costcategory || CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] || '—'}</Typography>
@@ -899,18 +915,17 @@ export default function BudgetsPage() {
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Project</Typography>
                         <Typography variant="body2">{resolveProjectName(selectedBudget._pm_project_value) || selectedBudget.pm_projectcode || '—'}</Typography>
                       </Box>
-
                     </Box>
                   </Box>
 
                   {selectedBudget.pm_notes && (
                     <>
-                      <Divider />
+                      <Divider sx={{ my: 1 }} />
                       <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                           <NotesIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Notes
                         </Typography>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>
                           {selectedBudget.pm_notes}
                         </Typography>
                       </Box>
@@ -921,11 +936,11 @@ export default function BudgetsPage() {
             </Grid>
 
             {/* Column 3: Approval Tasks */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 2, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
                   <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                       <AssignmentIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Pending Decisions
                     </Typography>
                     {selectedBudget.pm_budgetlineid && (

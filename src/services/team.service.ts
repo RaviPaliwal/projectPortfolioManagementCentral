@@ -14,7 +14,7 @@ import { writeAuditLog } from './changelog.service'
 export async function fetchSystemUsers(): Promise<Systemusers[]> {
   try {
     const options: IGetAllOptions = {
-      select: ['systemuserid', 'fullname', 'internalemailaddress'] 
+      select: ['systemuserid', 'fullname', 'internalemailaddress']
     }
     const response = await SystemusersService.getAll(options)
     if (!response.success) {
@@ -76,7 +76,7 @@ export async function fetchTeamMembers(teamId: string): Promise<Systemusers[]> {
 
     const membershipList = unwrapList<Teammemberships>(membershipResult)
     const userIds: string[] = membershipList
-      .map((m: Teammemberships) => m.systemuserid || '') 
+      .map((m: Teammemberships) => m.systemuserid || '')
       .filter((id: string | undefined) => !!id)
 
     if (userIds.length === 0) {
@@ -126,7 +126,7 @@ export async function manageTeamMember(teamId: string, userId: string, action: '
       text_1: userId,
       text_2: action
     })
- 
+
     if (result && result.success) {
       writeAuditLog({
         actionType: 'Update',

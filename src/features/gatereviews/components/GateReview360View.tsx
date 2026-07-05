@@ -170,167 +170,162 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
 
       {/* ── Main Layout Grid ── */}
       <Grid container spacing={3}>
-        {/* Left column — Details */}
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Left column — Review Details (Overview, Notes, Conditions, Readiness) */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper variant="outlined" sx={{ p: 2.5, position: 'relative', overflow: 'hidden', height: '100%' }}>
+            <Box sx={{ position: 'absolute', right: -20, top: -20, opacity: 0.03 }}>
+              <FactCheckIcon sx={{ fontSize: 160 }} />
+            </Box>
             
-            {/* Review Overview Card */}
-            <Paper variant="outlined" sx={{ p: 3, position: 'relative', overflow: 'hidden' }}>
-              <Box sx={{ position: 'absolute', right: -20, top: -20, opacity: 0.03 }}>
-                <FactCheckIcon sx={{ fontSize: 160 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <DescriptionIcon sx={{ color: 'primary.main' }} /> Review Overview
-              </Typography>
-              
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
-                    Lead Reviewer
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <PersonIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        {review.pm_leadreviewer || 'Unassigned'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">Review Facilitator</Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
-                    Scheduled Date
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <CalendarMonthIcon sx={{ color: 'info.main', fontSize: 20 }} />
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        {review.pm_plannedreviewdate ? new Date(review.pm_plannedreviewdate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">Target Date</Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
-                    Actual Review Date
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        {review.pm_actualreviewdate ? new Date(review.pm_actualreviewdate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">Completion Date</Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
-                    Documentation
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <OpenInNewIcon sx={{ color: 'secondary.main', fontSize: 20 }} />
-                    <Box>
-                      {review.pm_documentsurl ? (
-                        <Link
-                          href={review.pm_documentsurl}
-                          target="_blank"
-                          rel="noopener"
-                          sx={{ fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 0.5 }}
-                        >
-                          View Files <OpenInNewIcon sx={{ fontSize: 12 }} />
-                        </Link>
-                      ) : (
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary' }}>—</Typography>
-                      )}
-                      <Typography variant="caption" color="text.secondary">Supporting Assets</Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
-
-            {/* Notes & Conditions Grid */}
-            <Grid container spacing={3}>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <DescriptionIcon sx={{ color: 'primary.main' }} /> Review Overview
+            </Typography>
+            
+            <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <Paper variant="outlined" sx={{ p: 3, height: '100%' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, textTransform: 'uppercase', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AssignmentIcon sx={{ color: 'primary.main', fontSize: 18 }} /> Review Notes
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
-                    {review.pm_reviewnotes || 'No review notes have been recorded for this gate review.'}
-                  </Typography>
-                </Paper>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
+                  Lead Reviewer
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <PersonIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {review.pm_leadreviewer || 'Unassigned'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">Review Facilitator</Typography>
+                  </Box>
+                </Box>
               </Grid>
-              
+
               <Grid size={{ xs: 12, sm: 6 }}>
-                <Paper variant="outlined" sx={{ p: 3, height: '100%' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, textTransform: 'uppercase', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CheckCircleIcon sx={{ color: 'warning.main', fontSize: 18 }} /> Review Conditions
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
-                    {review.pm_reviewconditions || 'No conditions have been attached to this gate review decision.'}
-                  </Typography>
-                </Paper>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
+                  Scheduled Date
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <CalendarMonthIcon sx={{ color: 'info.main', fontSize: 20 }} />
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {review.pm_plannedreviewdate ? new Date(review.pm_plannedreviewdate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">Target Date</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
+                  Actual Review Date
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {review.pm_actualreviewdate ? new Date(review.pm_actualreviewdate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">Completion Date</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
+                  Documentation
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <OpenInNewIcon sx={{ color: 'secondary.main', fontSize: 20 }} />
+                  <Box>
+                    {review.pm_documentsurl ? (
+                      <Link
+                        href={review.pm_documentsurl}
+                        target="_blank"
+                        rel="noopener"
+                        sx={{ fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 0.5 }}
+                      >
+                        View Files <OpenInNewIcon sx={{ fontSize: 12 }} />
+                      </Link>
+                    ) : (
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary' }}>—</Typography>
+                    )}
+                    <Typography variant="caption" color="text.secondary">Supporting Assets</Typography>
+                  </Box>
+                </Box>
               </Grid>
             </Grid>
 
-            {/* Governance Readiness Check Card */}
-            <Paper variant="outlined" sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 2.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <FactCheckIcon sx={{ color: 'success.main' }} /> Governance Readiness Check (Gate {Number(review.pm_gatestage ?? 0) + 1})
-              </Typography>
-              {loadingReadiness ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={24} /></Box>
-              ) : readiness ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {readiness.items.map((item: any) => (
-                    <Box key={item.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                      <Box sx={{
-                        mt: 0.25, width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                        bgcolor: item.status === 'passed' ? 'success.main' : item.status === 'failed' ? 'error.main' : 'warning.main',
-                        color: 'common.white', fontSize: fontSizes.xs, fontWeight: 700,
-                      }}>
-                        {item.status === 'passed' ? '✓' : item.status === 'failed' ? '✗' : '!'}
-                      </Box>
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.label}</Typography>
-                        {item.message && (
-                          <Typography variant="caption" color={item.status === 'failed' ? 'error.main' : 'text.secondary'} sx={{ display: 'block', mt: 0.25 }}>
-                            {item.message}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              ) : (
-                <Typography variant="body2" color="text.secondary">No readiness information available.</Typography>
-              )}
-            </Paper>
+            <Divider sx={{ my: 2 }} />
 
-          </Box>
+            {/* Notes & Conditions */}
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, textTransform: 'uppercase', color: 'text.secondary' }}>
+              Notes & Conditions
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 2.5 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, mb: 1, textTransform: 'uppercase', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AssignmentIcon sx={{ color: 'primary.main', fontSize: 18 }} /> Review Notes
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line', lineHeight: 1.5 }}>
+                  {review.pm_reviewnotes || 'No review notes recorded.'}
+                </Typography>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }} sx={{ borderLeft: { sm: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}` }, pl: { sm: 2 } }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, mb: 1, textTransform: 'uppercase', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CheckCircleIcon sx={{ color: 'warning.main', fontSize: 18 }} /> Review Conditions
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line', lineHeight: 1.5 }}>
+                  {review.pm_reviewconditions || 'No conditions attached.'}
+                </Typography>
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* Governance Readiness Check */}
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary' }}>
+              <FactCheckIcon sx={{ color: 'success.main', fontSize: 18 }} /> Governance Readiness Check (Gate {Number(review.pm_gatestage ?? 0) + 1})
+            </Typography>
+            {loadingReadiness ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={24} /></Box>
+            ) : readiness ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {readiness.items.map((item: any) => (
+                  <Box key={item.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                    <Box sx={{
+                      mt: 0.25, width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      bgcolor: item.status === 'passed' ? 'success.main' : item.status === 'failed' ? 'error.main' : 'warning.main',
+                      color: 'common.white', fontSize: fontSizes.xs, fontWeight: 700,
+                    }}>
+                      {item.status === 'passed' ? '✓' : item.status === 'failed' ? '✗' : '!'}
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.label}</Typography>
+                      {item.message && (
+                        <Typography variant="caption" color={item.status === 'failed' ? 'error.main' : 'text.secondary'} sx={{ display: 'block', mt: 0.25 }}>
+                          {item.message}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary">No readiness information available.</Typography>
+            )}
+          </Paper>
         </Grid>
 
-        {/* Right column — Context Card */}
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 800, px: 0.5, textTransform: 'uppercase', letterSpacing: 1, color: 'text.secondary' }}>
+        {/* Right column — Context Card (Hierarchy & Context) */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper variant="outlined" sx={{ p: 2.5, height: '100%' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, textTransform: 'uppercase', letterSpacing: 1, color: 'text.secondary' }}>
               Hierarchy & Context
             </Typography>
-            
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Paper variant="outlined" sx={{ p: 2.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
+              <Box sx={{ p: 1.5, borderRadius: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
                   Project
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <AccountTreeIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+                  <AccountTreeIcon sx={{ color: 'primary.main', fontSize: 20 }} />
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>
                       {review.pm_projectcode || '—'}
@@ -338,14 +333,14 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
                     <Typography variant="caption" color="text.secondary">Associated Project</Typography>
                   </Box>
                 </Box>
-              </Paper>
+              </Box>
 
-              <Paper variant="outlined" sx={{ p: 2.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
+              <Box sx={{ p: 1.5, borderRadius: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
                   Programme
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <AccountTreeIcon sx={{ color: 'secondary.main', fontSize: 22 }} />
+                  <AccountTreeIcon sx={{ color: 'secondary.main', fontSize: 20 }} />
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>
                       {review.pm_programmename || '—'}
@@ -353,14 +348,14 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
                     <Typography variant="caption" color="text.secondary">Associated Programme</Typography>
                   </Box>
                 </Box>
-              </Paper>
+              </Box>
 
-              <Paper variant="outlined" sx={{ p: 2.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 1 }}>
+              <Box sx={{ p: 1.5, borderRadius: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
                   Portfolio
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <AccountTreeIcon sx={{ color: 'info.main', fontSize: 22 }} />
+                  <AccountTreeIcon sx={{ color: 'info.main', fontSize: 20 }} />
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>
                       {review.pm_portfolioname || '—'}
@@ -368,9 +363,9 @@ export const GateReview360View: React.FC<GateReview360ViewProps> = ({
                     <Typography variant="caption" color="text.secondary">Associated Portfolio</Typography>
                   </Box>
                 </Box>
-              </Paper>
+              </Box>
             </Box>
-          </Box>
+          </Paper>
         </Grid>
       </Grid>
     </Box>

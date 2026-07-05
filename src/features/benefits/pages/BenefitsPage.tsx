@@ -276,91 +276,97 @@ export default function BenefitsPage() {
         {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
         <Grid container spacing={3}>
-          {/* Block 1: Benefit Info & Description (7-columns) */}
-          <Grid size={{ xs: 12, md: 7 }}>
-            <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
-                {/* Benefit Information */}
-                <Box>
+          {/* Block 1: Benefit Info & Description (Horizontal Full Width) */}
+          <Grid size={{ xs: 12 }}>
+            <Paper sx={{ p: 2.5, borderRadius: 1.5 }}>
+              <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+                {/* Left sub-column: Benefit Information */}
+                <Grid size={{ xs: 12, md: 7 }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Benefit Information
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Reference / ID</Typography>
-                      <Typography variant="body2">{selectedBenefit.pm_benefitreference || 'ΓÇö'}</Typography>
+                      <Typography variant="body2">{selectedBenefit.pm_benefitreference || '—'}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Category</Typography>
-                      <Typography variant="body2">{CATEGORY_LABELS[String(selectedBenefit.pm_benefitcategory)] || 'ΓÇö'}</Typography>
+                      <Typography variant="body2">{CATEGORY_LABELS[String(selectedBenefit.pm_benefitcategory)] || '—'}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Benefit Type</Typography>
                       <Typography variant="body2">
                         {selectedBenefit.pm_benefittype === 0 || String(selectedBenefit.pm_benefittype) === '0' ? 'Quantitative' :
-                          selectedBenefit.pm_benefittype === 1 || String(selectedBenefit.pm_benefittype) === '1' ? 'Qualitative' : 'ΓÇö'}
+                          selectedBenefit.pm_benefittype === 1 || String(selectedBenefit.pm_benefittype) === '1' ? 'Qualitative' : '—'}
                       </Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Owner</Typography>
-                      <Typography variant="body2">{selectedBenefit.pm_benifitownername || 'ΓÇö'}</Typography>
+                      <Typography variant="body2">{selectedBenefit.pm_benifitownername || '—'}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Project / Programme</Typography>
-                      <Typography variant="body2">{selectedBenefit.pm_projectcode || 'ΓÇö'}</Typography>
+                      <Typography variant="body2">{selectedBenefit.pm_projectcode || '—'}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>RAG Status</Typography>
                       <Box sx={{ mt: 0.5 }}>
                         <StatusTag
-                          label={RAG_LABELS[String(selectedBenefit.pm_ragstatus) as keyof typeof RAG_LABELS] ?? 'ΓÇö'}
+                          label={RAG_LABELS[String(selectedBenefit.pm_ragstatus) as keyof typeof RAG_LABELS] ?? '—'}
                           color={RAG_COLORS[String(selectedBenefit.pm_ragstatus) as keyof typeof RAG_COLORS]}
                         />
                       </Box>
                     </Box>
                   </Box>
-                </Box>
+                </Grid>
 
-                <Divider />
-
-                {/* Description */}
-                <Box>
+                {/* Right sub-column: Description */}
+                <Grid 
+                  size={{ xs: 12, md: 5 }}
+                  sx={{ 
+                    borderLeft: { md: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}` },
+                    pl: { md: 3 },
+                    pt: { xs: 2, md: 0 },
+                    borderTop: { xs: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`, md: 'none' },
+                  }}
+                >
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description
                   </Typography>
                   <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                     {selectedBenefit.pm_benefitdescription || 'No description provided.'}
                   </Typography>
-                </Box>
-              </Box>
+                </Grid>
+              </Grid>
             </Paper>
           </Grid>
 
-          {/* Block 2: Targets, Baseline & Timeline (5-columns) */}
-          <Grid size={{ xs: 12, md: 5 }}>
-            <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
+          {/* Block 2: Targets, Baseline & Timeline */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Paper sx={{ p: 2.5, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, flexGrow: 1 }}>
                 {/* Target & Baseline values */}
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TrackChangesIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Target & Baseline
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Unit of Measure</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedBenefit.pm_unitofmeasure || 'ΓÇö'}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedBenefit.pm_unitofmeasure || '—'}</Typography>
                     </Box>
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
                       <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.text.secondary}` }}>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Baseline</Typography>
                         <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {selectedBenefit.pm_baselinevalue != null ? numberFormatter.format(selectedBenefit.pm_baselinevalue) : 'ΓÇö'}
+                          {selectedBenefit.pm_baselinevalue != null ? numberFormatter.format(selectedBenefit.pm_baselinevalue) : '—'}
                         </Typography>
                       </Box>
                       <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Target</Typography>
                         <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
-                          {selectedBenefit.pm_targetvalue != null ? numberFormatter.format(selectedBenefit.pm_targetvalue) : 'ΓÇö'}
+                          {selectedBenefit.pm_targetvalue != null ? numberFormatter.format(selectedBenefit.pm_targetvalue) : '—'}
                         </Typography>
                       </Box>
                     </Box>
@@ -371,17 +377,17 @@ export default function BenefitsPage() {
 
                 {/* Timeline */}
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TimelineIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Realisation Timeline
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Start Date</Typography>
-                      <Typography variant="body2">{selectedBenefit.pm_realisationstartdate ? formatDate(selectedBenefit.pm_realisationstartdate) : 'ΓÇö'}</Typography>
+                      <Typography variant="body2">{selectedBenefit.pm_realisationstartdate ? formatDate(selectedBenefit.pm_realisationstartdate) : '—'}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>End Date</Typography>
-                      <Typography variant="body2">{selectedBenefit.pm_realisationenddate ? formatDate(selectedBenefit.pm_realisationenddate) : 'ΓÇö'}</Typography>
+                      <Typography variant="body2">{selectedBenefit.pm_realisationenddate ? formatDate(selectedBenefit.pm_realisationenddate) : '—'}</Typography>
                     </Box>
                   </Box>
                 </Box>
@@ -389,10 +395,11 @@ export default function BenefitsPage() {
             </Paper>
           </Grid>
 
-          {/* Block 3: Performance Measures (12-columns) */}
-          <Grid size={{ xs: 12 }}>
-            <Paper sx={{ p: 3, borderRadius: 1.5 }}>
+          {/* Block 3: Performance Measures (Measures by Period) */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Paper sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
               <Box sx={{ 
+                height: '100%',
                 '& .MuiPaper-root': { 
                   boxShadow: 'none', 
                   border: 'none', 

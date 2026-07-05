@@ -8,6 +8,7 @@ import {
   Alert,
   CircularProgress,
   Button,
+  Paper,
 } from '@mui/material'
 import FlagIcon from '@mui/icons-material/Flag'
 import AssignmentIcon from '@mui/icons-material/Assignment'
@@ -48,9 +49,9 @@ export const RiskDetailView = ({
 
   if (drawerTab === 0) {
     return (
-      <Box>
+      <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
         {/* Score cards using MetricTile */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid container spacing={2} sx={{ mb: 1.5 }}>
           <Grid size={6}>
             <MetricTile
               label="Inherent Score"
@@ -58,14 +59,6 @@ export const RiskDetailView = ({
               subtitle={selectedRiskScore > 0 ? getScoreLabel(selectedRiskScore) : 'Unscored'}
               color={getScoreColor(selectedRiskScore)}
             />
-            <Box sx={{ display: 'flex', gap: 2, mt: 1, px: 1 }}>
-              <Typography variant="caption" color="text.secondary">
-                P: {PROBABILITY_LABELS[String(selectedRisk.pm_inherentprobability ?? '')] ?? '—'}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                I: {IMPACT_LABELS[String(selectedRisk.pm_inherentimpact ?? '')] ?? '—'}
-              </Typography>
-            </Box>
           </Grid>
           <Grid size={6}>
             <MetricTile
@@ -74,64 +67,60 @@ export const RiskDetailView = ({
               subtitle={selectedResidualScore > 0 ? getScoreLabel(selectedResidualScore) : 'Unscored'}
               color={getScoreColor(selectedResidualScore)}
             />
-            <Box sx={{ display: 'flex', gap: 2, mt: 1, px: 1 }}>
-              <Typography variant="caption" color="text.secondary">
-                P: {RESIDUAL_PROB_LABELS[String(selectedRisk.pm_residualprobability ?? '')] ?? '—'}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                I: {RESIDUAL_IMPACT_LABELS[String(selectedRisk.pm_residualimpact ?? '')] ?? '—'}
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-
-        {/* Info grid */}
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Risk Details</Typography>
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid size={6}>
-            <Typography variant="caption" color="text.secondary">Risk</Typography>
-            <Typography variant="body2">{selectedRisk.pm_risktitle ?? '—'}</Typography>
-          </Grid>
-          <Grid size={6}>
-            <Typography variant="caption" color="text.secondary">Identified Date</Typography>
-            <Typography variant="body2">{selectedRisk.pm_identifieddate ?? '—'}</Typography>
-          </Grid>
-          <Grid size={6}>
-            <Typography variant="caption" color="text.secondary">Target Close Date</Typography>
-            <Typography variant="body2">{selectedRisk.pm_targetclosedate ?? '—'}</Typography>
-          </Grid>
-          <Grid size={6}>
-            <Typography variant="caption" color="text.secondary">Owner</Typography>
-            <Typography variant="body2">{selectedRisk.pm_riskownername ?? '—'}</Typography>
-          </Grid>
-          <Grid size={6}>
-            <Typography variant="caption" color="text.secondary">Project</Typography>
-            <Typography variant="body2">{selectedRisk.pm_projectname ?? '—'}</Typography>
           </Grid>
         </Grid>
 
         <Divider sx={{ my: 2 }} />
 
+        {/* Info grid */}
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', fontSize: '0.75rem' }}>Risk Details</Typography>
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid size={6}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Risk</Typography>
+            <Typography variant="body2">{selectedRisk.pm_risktitle ?? '—'}</Typography>
+          </Grid>
+          <Grid size={6}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Identified Date</Typography>
+            <Typography variant="body2">{selectedRisk.pm_identifieddate ?? '—'}</Typography>
+          </Grid>
+          <Grid size={6}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Target Close Date</Typography>
+            <Typography variant="body2">{selectedRisk.pm_targetclosedate ?? '—'}</Typography>
+          </Grid>
+          <Grid size={6}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Owner</Typography>
+            <Typography variant="body2">{selectedRisk.pm_riskownername ?? '—'}</Typography>
+          </Grid>
+          <Grid size={6}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Project</Typography>
+            <Typography variant="body2">{selectedRisk.pm_projectname ?? '—'}</Typography>
+          </Grid>
+        </Grid>
+
+        {(selectedRisk.pm_riskcause || selectedRisk.pm_riskeffect || selectedRisk.pm_riskdescription) && (
+          <Divider sx={{ my: 2 }} />
+        )}
+
         {/* Cause / Effect */}
         {selectedRisk.pm_riskcause && (
           <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>Cause</Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', fontSize: '0.75rem' }}>Cause</Typography>
             <Typography variant="body2" color="text.secondary">{selectedRisk.pm_riskcause}</Typography>
           </Box>
         )}
         {selectedRisk.pm_riskeffect && (
           <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>Effect</Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', fontSize: '0.75rem' }}>Effect</Typography>
             <Typography variant="body2" color="text.secondary">{selectedRisk.pm_riskeffect}</Typography>
           </Box>
         )}
         {selectedRisk.pm_riskdescription && (
           <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>Description</Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', fontSize: '0.75rem' }}>Description</Typography>
             <Typography variant="body2" color="text.secondary">{selectedRisk.pm_riskdescription}</Typography>
           </Box>
         )}
-      </Box>
+      </Paper>
     )
   }
 
