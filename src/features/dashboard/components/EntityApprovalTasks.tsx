@@ -87,9 +87,9 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
     prevPendingCount.current = curr
   }, [onAllStepsCompleted])
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isBackground = false) => {
     if (!entityId) return
-    setLoading(true)
+    if (!isBackground) setLoading(true)
     setError(null)
     try {
       const workflowInstances = await fetchWorkflowInstancesForEntity(moduleName, entityId as string)
@@ -141,7 +141,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
       pollTimer.current = null
     }
     if (entityId && steps.length > 0) {
-      pollTimer.current = setInterval(loadData, 8000)
+      pollTimer.current = setInterval(() => loadData(true), 8000)
     }
     return () => {
       if (pollTimer.current) {
