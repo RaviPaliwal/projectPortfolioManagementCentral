@@ -29,6 +29,8 @@ import { EntityApprovalTasks } from '@/features/dashboard/components/EntityAppro
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { ProjectModel, ProjectTaskModel } from '@/types/dataverse'
 
+import { Button } from '@mui/material'
+
 interface ProjectTasksTabProps {
   project: ProjectModel
   tasks: ProjectTaskModel[]
@@ -36,6 +38,7 @@ interface ProjectTasksTabProps {
   onEditTask?: (task: ProjectTaskModel) => void
   onUpdateTaskStatus?: (taskId: string, status: string, percent: number) => Promise<void>
   onDeleteTask?: (taskId: string) => Promise<void>
+  onAddTask?: () => void
 }
 
 export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
@@ -44,7 +47,8 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
   onMarkTaskAsDone,
   onEditTask,
   onUpdateTaskStatus,
-  onDeleteTask
+  onDeleteTask,
+  onAddTask
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -111,6 +115,13 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      {/* Action Buttons */}
+      {onAddTask && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -2 }}>
+          <Button size="small" variant="outlined" startIcon={<AssignmentIcon />} onClick={onAddTask}>Task</Button>
+        </Box>
+      )}
+
       <Tabs
         value={activeSubTab}
         onChange={(_, v) => setActiveSubTab(v)}

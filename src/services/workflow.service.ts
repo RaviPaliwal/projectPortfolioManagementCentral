@@ -461,6 +461,30 @@ export async function deleteWorkflowInstance(id: string): Promise<void> {
   }
 }
 
+export async function fetchWorkflowInstanceById(id: string): Promise<WorkflowInstanceModel | null> {
+  try {
+    const result = await Pm_workflowinstancesService.get(id, {
+      select: [
+        'pm_workflowinstanceid', 'pm_instancename',
+        'pm_entityid', 'pm_entitytype', 'pm_entityname',
+        'pm_status',
+        'pm_startdate', 'pm_completeddate',
+        'pm_currentstep',
+        '_pm_workflowlookup_value', '_pm_initiatedbylookup_value',
+      ]
+    })
+    if (!result.success) {
+      console.error('[WorkflowService] fetchWorkflowInstanceById failed:', result.error)
+      return null
+    }
+    const instance = unwrapSingle<Pm_workflowinstances>(result)
+    return instance ? mapWorkflowInstance(instance) : null
+  } catch (err) {
+    console.error('[WorkflowService] fetchWorkflowInstanceById exception:', err)
+    return null
+  }
+}
+
 /**
  * Fetch workflow instances for a specific entity by module name and entity ID.
  * Generic — can be used by GateReview, Project, or any other module.

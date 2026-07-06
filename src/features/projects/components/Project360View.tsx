@@ -189,23 +189,6 @@ export const Project360View: React.FC<Project360ViewProps> = ({
         }
       />
 
-      {/* ── Action Buttons Bar ────────────────────────────────── */}
-      <Paper sx={{ px: 2.5, py: 1.5, mb: 2.5, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mr: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>Actions:</Typography>
-        {canEdit && (
-          <>
-            <Button size="small" variant="outlined" startIcon={<FlagIcon />} onClick={onAddMilestone}>Milestone</Button>
-            <Button size="small" variant="outlined" color="error" startIcon={<ErrorIcon />} onClick={onLogRisk}>Risk</Button>
-            <Button size="small" variant="outlined" color="warning" startIcon={<WarningAmberIcon />} onClick={onLogIssue}>Issue</Button>
-            <Button size="small" variant="outlined" startIcon={<PersonAddIcon />} onClick={onAssignResource}>Resource</Button>
-            <Button size="small" variant="outlined" startIcon={<AttachMoneyIcon />} onClick={onAddBudgetLine}>Budget</Button>
-            <Button size="small" variant="outlined" startIcon={<EmojiEventsIcon />} onClick={onAddBenefit}>Benefit</Button>
-            <Button size="small" variant="outlined" startIcon={<AssignmentIcon />} onClick={onAddTask}>Task</Button>
-            <Button size="small" variant="contained" color="success" startIcon={<HowToRegIcon />} onClick={onNavigateToGateReview as any}>Gate Review</Button>
-          </>
-        )}
-      </Paper>
-
       {/* ── Tabbed Content ────────────────────────────────────── */}
       <Paper sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
         <Tabs
@@ -253,6 +236,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   onRefresh={onRefresh}
                   onSuccess={onSuccess}
                   onError={onError}
+                  onAddMilestone={canEdit ? onAddMilestone : undefined}
                 />
               )}
               {activeTab === 2 && (
@@ -261,9 +245,17 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   project={project}
                   onEditBudgetLine={onEditBudgetLine}
                   canEdit={canEdit}
+                  onAddBudgetLine={canEdit ? onAddBudgetLine : undefined}
                 />
               )}
-              {activeTab === 3 && <ProjectRisksIssuesTab risks={risks} issues={issues} />}
+              {activeTab === 3 && (
+                <ProjectRisksIssuesTab 
+                  risks={risks} 
+                  issues={issues}
+                  onLogRisk={canEdit ? onLogRisk : undefined}
+                  onLogIssue={canEdit ? onLogIssue : undefined}
+                />
+              )}
               {activeTab === 4 && (
                 <ProjectTeamTab 
                   resources={resources} 
@@ -272,10 +264,22 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   onComplete={onCompleteResource} 
                   onEditTask={onEditTask}
                   onUpdateTaskStatus={onUpdateTaskStatus}
+                  onAssignResource={canEdit ? onAssignResource : undefined}
                 />
               )}
-              {activeTab === 5 && <ProjectBenefitsTab benefits={benefits} />}
-              {activeTab === 6 && <ProjectGovernanceTab gateReviews={gateReviews} onNavigateToGateReview={onNavigateToGateReview} />}
+              {activeTab === 5 && (
+                <ProjectBenefitsTab 
+                  benefits={benefits} 
+                  onAddBenefit={canEdit ? onAddBenefit : undefined}
+                />
+              )}
+              {activeTab === 6 && (
+                <ProjectGovernanceTab 
+                  gateReviews={gateReviews} 
+                  onNavigateToGateReview={onNavigateToGateReview} 
+                  onAddGateReview={canEdit ? onNavigateToGateReview : undefined}
+                />
+              )}
               {activeTab === 7 && (
                 <ProjectTasksTab
                   project={project}
@@ -284,6 +288,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   onEditTask={onEditTask}
                   onUpdateTaskStatus={onUpdateTaskStatus}
                   onDeleteTask={onDeleteTask}
+                  onAddTask={canEdit ? onAddTask : undefined}
                 />
               )}
               {activeTab === 8 && project.pm_projectid && (

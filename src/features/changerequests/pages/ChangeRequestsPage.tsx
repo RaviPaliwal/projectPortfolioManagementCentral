@@ -578,25 +578,29 @@ export default function ChangeRequestsPage() {
 
   return (
     <Box>
-      <PageHeader
-        title="Change Requests"
-        subtitle="Manage scope, schedule, cost, and resource changes across projects and programmes \u2014 track lifecycle from submission to approval."
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <ExportButton data={filteredCRs} columns={changeRequestExportColumns} filename="change_requests" />
-            {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-                Add Change Request
-              </Button>
-            )}
-          </Box>
-        }
-      />
+      {!selectedCR && (
+        <>
+          <PageHeader
+            title="Change Requests"
+            subtitle="Manage scope, schedule, cost, and resource changes across projects and programmes \u2014 track lifecycle from submission to approval."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <ExportButton data={filteredCRs} columns={changeRequestExportColumns} filename="change_requests" />
+                {canCreate && (
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+                    Add Change Request
+                  </Button>
+                )}
+              </Box>
+            }
+          />
 
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-      {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+          {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-      {!loading && <KpiCardRow items={kpiItems} />}
+          {!loading && <KpiCardRow items={kpiItems} />}
+        </>
+      )}
 
       {!selectedCR ? (
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
@@ -767,28 +771,53 @@ export default function ChangeRequestsPage() {
           ]}
           onNavigate={() => handleCloseDetail()}
         />
+
+        {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+        {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
+
         <PageHeader
-          title={selectedCR?.pm_changerequesttitle ?? ''}
+          title={selectedCR?.pm_changerequesttitle ?? 'Change Request Detail'}
           subtitle={
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: 1 }}>
-              <StatusTag label={STATUS_LABELS[String(selectedCR.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(selectedCR.pm_status ?? '')] ?? 'default'} variant="outlined" />
-              {selectedCR.pm_changerequestreference && (
-                <Typography variant="body2" color="text.secondary" sx={{ ml: 1, display: 'inline', fontFamily: '\"JetBrains Mono\", monospace', fontSize: fontSizes.xs }}>
-                  {selectedCR.pm_changerequestreference}
-                </Typography>
-              )}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                Requestor: {selectedCR.pm_requestorname || '—'}
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                {selectedCR.pm_prioritylevel != null && (
+                  <StatusTag label={PRIORITY_LABELS[String(selectedCR.pm_prioritylevel)] ?? 'Unknown'} color={PRIORITY_COLORS[String(selectedCR.pm_prioritylevel)] ?? 'default'} variant="outlined" />
+                )}
+                <StatusTag label={STATUS_LABELS[String(selectedCR.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(selectedCR.pm_status ?? '')] ?? 'default'} variant="outlined" />
+                {selectedCR.pm_projectname && (
+                  <StatusTag label={selectedCR.pm_projectname} color="success" variant="outlined" />
+                )}
+                {selectedCR.pm_changerequestreference && (
+                  <StatusTag label={selectedCR.pm_changerequestreference} color="default" variant="outlined" sx={{ fontFamily: '"JetBrains Mono", monospace' }} />
+                )}
+              </Box>
             </Box>
           }
           actionElement={
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
               {canEdit && selectedCR && String(selectedCR.pm_status) !== '1' && (
-                <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedCR && openEditForm(selectedCR)} sx={{ borderRadius: 1.5 }}>
-                  Edit
+                <Button
+                  variant="outlined"
+                  color="success"
+                  startIcon={<EditIcon />}
+                  onClick={() => selectedCR && openEditForm(selectedCR)}
+                  sx={{ borderRadius: '24px', px: 2.5, py: 0.75, fontWeight: 600, textTransform: 'none' }}
+                >
+                  Edit Request
                 </Button>
               )}
               {canDelete && selectedCR && String(selectedCR.pm_status) !== '1' && (
-                <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)} sx={{ borderRadius: 1.5 }}>
-                  Delete
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)}
+                  sx={{ borderRadius: '24px', px: 2.5, py: 0.75, fontWeight: 600, textTransform: 'none' }}
+                >
+                  Delete Request
                 </Button>
               )}
             </Box>
@@ -806,16 +835,16 @@ export default function ChangeRequestsPage() {
                     <GppMaybeIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Impact Summary
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center', borderLeft: '3px solid', borderLeftColor: 'error.main' }}>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
                       <AttachMoneyIcon sx={{ fontSize: 20, color: 'error.main', mb: 0.5 }} />
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', fontSize: 16 }}>
+                      <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
                         {selectedCR.pm_costimpacteur != null ? '€' + numberFormatter.format(selectedCR.pm_costimpacteur) : '—'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">Cost Impact</Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center', borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
                       <ScheduleIcon sx={{ fontSize: 20, color: 'warning.main', mb: 0.5 }} />
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', fontSize: 16 }}>
+                      <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
                         {selectedCR.pm_scheduleimpactdays != null ? selectedCR.pm_scheduleimpactdays + ' days' : '—'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">Schedule Impact</Typography>

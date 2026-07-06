@@ -15,34 +15,56 @@ import type { RiskModel, IssueModel } from '@/types/dataverse'
 import { RAG_COLORS } from '../../constants'
 import { fontSizes } from '@/styles'
 import { navigateToRisk, navigateToIssue } from '@/utils/navigation'
+import { Button } from '@mui/material'
 
 interface ProjectRisksIssuesTabProps {
   risks: RiskModel[]
   issues: IssueModel[]
+  onLogRisk?: () => void
+  onLogIssue?: () => void
 }
 
-export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ risks, issues }) => {
+export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({ risks, issues, onLogRisk, onLogIssue }) => {
   const escalatedRisks = risks.filter(r => r.pm_ragstatus === '2' || r.pm_ragstatus === 2).length
   const criticalIssues = issues.filter((i: any) => i.pm_prioritylevel === '1' || i.pm_prioritylevel === 1).length
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Action Buttons */}
+      {(onLogRisk || onLogIssue) && (
+        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mb: -2 }}>
+          {onLogRisk && <Button size="small" variant="outlined" color="error" startIcon={<ErrorIcon />} onClick={onLogRisk}>Risk</Button>}
+          {onLogIssue && <Button size="small" variant="outlined" color="warning" startIcon={<WarningAmberIcon />} onClick={onLogIssue}>Issue</Button>}
+        </Box>
+      )}
+
       {/* Risk & Issue KPI Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'secondary.main' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Total Risks</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>{risks.length}</Typography>
-          <Typography variant="caption" color="text.secondary">{escalatedRisks} Critical / Escalated</Typography>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <WarningAmberIcon sx={{ fontSize: 20, color: 'secondary.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {risks.length}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Total Risks ({escalatedRisks} Escalated)
+          </Typography>
         </Paper>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Total Issues</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>{issues.length}</Typography>
-          <Typography variant="caption" color="text.secondary">{criticalIssues} High Priority</Typography>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <BugReportIcon sx={{ fontSize: 20, color: 'warning.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {issues.length}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Total Issues ({criticalIssues} High Priority)
+          </Typography>
         </Paper>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: `3px solid ${escalatedRisks + criticalIssues > 0 ? 'error.main' : 'success.main'}` }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Risk Factor</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: escalatedRisks + criticalIssues > 0 ? 'error.main' : 'success.main' }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <ErrorIcon sx={{ fontSize: 20, color: escalatedRisks + criticalIssues > 0 ? 'error.main' : 'success.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: escalatedRisks + criticalIssues > 0 ? 'error.main' : 'success.main' }}>
             {escalatedRisks + criticalIssues === 0 ? 'Good' : escalatedRisks + criticalIssues < 3 ? 'Caution' : 'Critical'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Risk Factor
           </Typography>
         </Paper>
       </Box>

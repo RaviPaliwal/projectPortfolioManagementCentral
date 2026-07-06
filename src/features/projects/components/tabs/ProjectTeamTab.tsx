@@ -19,6 +19,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import { StatusTag } from '@/components/common'
 import { useUser } from '@/context/UserContext'
 
@@ -29,6 +30,7 @@ interface ProjectTeamTabProps {
   onComplete?: (resource: any) => void
   onEditTask?: (task: any) => void
   onUpdateTaskStatus?: (taskId: string, status: string, percent: number) => Promise<void>
+  onAssignResource?: () => void
 }
 
 export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({ 
@@ -37,7 +39,8 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
   onEdit, 
   onComplete,
   onEditTask,
-  onUpdateTaskStatus
+  onUpdateTaskStatus,
+  onAssignResource
 }) => {
   const { currentUserPersona } = useUser()
   const isManager = ['PMO', 'ProjectManager', 'SystemAdministrator'].includes(currentUserPersona)
@@ -97,8 +100,16 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
   }
 
   return (
-    <Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Allocated Resources</Typography>
+      
+      {/* Action Buttons */}
+      {onAssignResource && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -2 }}>
+          <Button size="small" variant="outlined" startIcon={<PersonAddIcon />} onClick={onAssignResource}>Resource</Button>
+        </Box>
+      )}
+
       {resources.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {resources.map((alloc: any) => {

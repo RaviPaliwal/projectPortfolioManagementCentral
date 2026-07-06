@@ -41,7 +41,8 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import AccountTreeWorkflowIcon from '@mui/icons-material/AccountTree'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { UserSelector, useUser } from '@/context/UserContext'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import type { BreadcrumbItem } from '@/components/common/Breadcrumbs/Breadcrumbs'
 import NotificationCenter from './NotificationCenter'
 import { PERSONA_PERMISSIONS } from '@/constants/permissions'
 
@@ -94,6 +95,18 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
   // RouteGuard in App.tsx handles persona-based redirect on mount/navigation
   const allowedTabs = PERSONA_PERMISSIONS[currentUserPersona] || []
   const sidebarTabs = tabs.filter(t => !t.hidden && allowedTabs.includes(t.key))
+
+  const [customBreadcrumbs, setCustomBreadcrumbs] = useState<{ items: BreadcrumbItem[], onNavigate?: (path: string) => void } | null>(null)
+
+  useEffect(() => {
+    const handleSetBreadcrumbs = (e: any) => setCustomBreadcrumbs(e.detail)
+    window.addEventListener('set-breadcrumbs', handleSetBreadcrumbs)
+    return () => window.removeEventListener('set-breadcrumbs', handleSetBreadcrumbs)
+  }, [])
+
+  useEffect(() => {
+    setCustomBreadcrumbs(null)
+  }, [activeTab])
 
   // Listen for custom navigation events (e.g. from MyTasksWidget)
   useEffect(() => {
@@ -231,7 +244,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
               {activeTab !== 'dashboard' && (
                 <>
                   <Typography variant="caption" color="text.disabled">/</Typography>
-                  {['workflows', 'teamadmin', 'skills', 'holidays', 'resources', 'reportConfigs'].includes(activeTab) && (
+                  {['workflows', 'teamadmin', 'skills', 'holidays', 'resources', 'reportConfigs'].includes(activeTab) && !customBreadcrumbs && (
                     <>
                       <Typography
                         variant="body2"
@@ -249,19 +262,51 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
                       <Typography variant="caption" color="text.disabled">/</Typography>
                     </>
                   )}
-                  <Typography
-                    variant="body2"
-                    onClick={() => onChangeTab(activeTab)}
-                    sx={{
-                      fontWeight: 600,
-                      color: 'text.primary',
-                      cursor: 'pointer',
-                      transition: 'color 0.15s ease',
-                      '&:hover': { color: 'primary.main' },
-                    }}
-                  >
-                    {tabs.find((tab) => tab.key === activeTab)?.label || activeTab}
-                  </Typography>
+                  {customBreadcrumbs && customBreadcrumbs.items.length > 0 ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {customBreadcrumbs.items.map((item, index) => {
+                        const isLast = index === customBreadcrumbs.items.length - 1
+                        return (
+                          <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {index > 0 && <Typography variant="caption" color="text.disabled">/</Typography>}
+                            <Typography
+                              variant={isLast ? 'body2' : 'caption'}
+                              onClick={() => {
+                                if (item.path && customBreadcrumbs.onNavigate) {
+                                  customBreadcrumbs.onNavigate(item.path)
+                                }
+                              }}
+                              sx={{
+                                fontWeight: 600,
+                                color: isLast ? 'text.primary' : 'text.secondary',
+                                cursor: (!isLast && item.path) ? 'pointer' : 'default',
+                                textTransform: isLast ? 'none' : 'uppercase',
+                                letterSpacing: isLast ? 'normal' : '0.03em',
+                                transition: 'color 0.15s ease',
+                                '&:hover': (!isLast && item.path) ? { color: 'primary.main' } : {},
+                              }}
+                            >
+                              {item.label}
+                            </Typography>
+                          </Box>
+                        )
+                      })}
+                    </Box>
+                  ) : (
+                    <Typography
+                      variant="body2"
+                      onClick={() => onChangeTab(activeTab)}
+                      sx={{
+                        fontWeight: 600,
+                        color: 'text.primary',
+                        cursor: 'pointer',
+                        transition: 'color 0.15s ease',
+                        '&:hover': { color: 'primary.main' },
+                      }}
+                    >
+                      {tabs.find((tab) => tab.key === activeTab)?.label || activeTab}
+                    </Typography>
+                  )}
                 </>
               )}
             </Box>

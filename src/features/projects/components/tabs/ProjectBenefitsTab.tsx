@@ -11,26 +11,44 @@ import { StatusChip, StatusTag } from '@/components/common'
 import type { BenefitModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 
+import { Button } from '@mui/material'
+
 interface ProjectBenefitsTabProps {
   benefits: BenefitModel[]
+  onAddBenefit?: () => void
 }
 
-export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({ benefits }) => {
+export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({ benefits, onAddBenefit }) => {
   const achievedBenefits = benefits.filter(b => String(b.pm_benefitstatus) === '2' || b.pm_benefitstatus === 2).length
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Action Buttons */}
+      {onAddBenefit && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -2 }}>
+          <Button size="small" variant="outlined" startIcon={<EmojiEventsIcon />} onClick={onAddBenefit}>Benefit</Button>
+        </Box>
+      )}
+
       {/* Benefit KPI Row */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'success.main' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Total Benefits</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>{benefits.length}</Typography>
-          <Typography variant="caption" color="text.secondary">Defined in business case</Typography>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <StarIcon sx={{ fontSize: 20, color: 'success.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {benefits.length}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Total Benefits (Defined in business case)
+          </Typography>
         </Paper>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'primary.main' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Benefits Realized</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>{achievedBenefits}</Typography>
-          <Typography variant="caption" color="text.secondary">{((achievedBenefits / (benefits.length || 1)) * 100).toFixed(0)}% achievement rate</Typography>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <EmojiEventsIcon sx={{ fontSize: 20, color: 'primary.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {achievedBenefits}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Benefits Realized ({((achievedBenefits / (benefits.length || 1)) * 100).toFixed(0)}% achievement)
+          </Typography>
         </Paper>
       </Box>
 

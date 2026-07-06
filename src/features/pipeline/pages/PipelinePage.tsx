@@ -622,26 +622,25 @@ export default function PipelinePage() {
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <Box>
-      <PageHeader
-        title="Pipeline"
-        subtitle="Pre-project initiative pipeline — triage, score, and convert ideas into authorised projects."
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
-                New Initiative
-              </Button>
-            )}
-            <ExportButton filename="pipeline" columns={pipelineExportColumns} data={filteredInitiatives} />
-          </Box>
-        }
-      />
-
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
       {!selectedInitiative ? (
         <>
+          <PageHeader
+            title="Pipeline"
+            subtitle="Pre-project initiative pipeline — triage, score, and convert ideas into authorised projects."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                {canCreate && (
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowCreateModal(true)}>
+                    New Initiative
+                  </Button>
+                )}
+                <ExportButton filename="pipeline" columns={pipelineExportColumns} data={filteredInitiatives} />
+              </Box>
+            }
+          />
           {/* ── 1. 4-Column KPI Header ──────────────────────────────────────────── */}
           {!loading && <KpiCardRow items={kpiItems} />}
 

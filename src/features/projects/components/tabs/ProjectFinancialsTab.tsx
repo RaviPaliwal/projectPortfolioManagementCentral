@@ -11,11 +11,13 @@ import {
   TableContainer,
   IconButton,
   Tooltip,
+  Button,
 } from '@mui/material'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import PieChartIcon from '@mui/icons-material/PieChart'
 import EditIcon from '@mui/icons-material/Edit'
 import QueryStatsIcon from '@mui/icons-material/QueryStats'
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 
 import { StatusTag, VarianceDisplay } from '@/components/common'
 import type { BudgetLineModel, ProjectModel } from '@/types/dataverse'
@@ -27,6 +29,7 @@ interface ProjectFinancialsTabProps {
   project: ProjectModel
   onEditBudgetLine?: (budget: BudgetLineModel) => void
   canEdit?: boolean
+  onAddBudgetLine?: () => void
 }
 
 export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ 
@@ -34,6 +37,7 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
   project,
   onEditBudgetLine,
   canEdit = false,
+  onAddBudgetLine,
 }) => {
   const totalBudget = budgetLines.reduce((s, b) => s + (b.pm_approvedbudgeteur ?? 0), 0)
   const totalSpent = budgetLines.reduce((s, b) => s + (b.pm_actualspendeur ?? 0), 0)
@@ -48,40 +52,53 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Action Buttons */}
+      {onAddBudgetLine && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -2 }}>
+          <Button size="small" variant="outlined" startIcon={<AttachMoneyIcon />} onClick={onAddBudgetLine}>Budget</Button>
+        </Box>
+      )}
+
       {/* EVM Metrics Row */}
       <Box>
         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
           <QueryStatsIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Earned Value Performance (Financial KPIs)
         </Typography>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr 1fr' }, gap: 2 }}>
-          <Paper variant="outlined" sx={{ p: 2, borderLeft: '3px solid', borderLeftColor: 'info.main' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Earned Value (EV)</Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currency(earnedValue)}</Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', mt: 0.5, display: 'block' }}>
-              BAC × {percentComplete}% complete
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+            <QueryStatsIcon sx={{ fontSize: 20, color: 'info.main', mb: 0.5 }} />
+            <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+              {currency(earnedValue)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Earned Value (EV)
             </Typography>
           </Paper>
-          <Paper variant="outlined" sx={{ p: 2, borderLeft: '3px solid', borderLeftColor: cpi >= 1.0 ? 'success.main' : cpi >= 0.9 ? 'warning.main' : 'error.main' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Cost Performance (CPI)</Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: cpi >= 1.0 ? 'success.main' : cpi >= 0.9 ? 'warning.main' : 'error.main', fontFamily: '"JetBrains Mono", monospace' }}>{cpi.toFixed(2)}</Typography>
-            <Typography variant="caption" color={cpi >= 1.0 ? 'success.main' : cpi >= 0.9 ? 'warning.main' : 'error.main'} sx={{ fontSize: '0.75rem', mt: 0.5, display: 'block', fontWeight: 600 }}>
-              {cpi >= 1.0 ? 'Under budget (Efficient)' : cpi >= 0.9 ? 'Close to budget' : 'Over budget (Inefficient)'}
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+            <AccountBalanceWalletIcon sx={{ fontSize: 20, color: cpi >= 1.0 ? 'success.main' : cpi >= 0.9 ? 'warning.main' : 'error.main', mb: 0.5 }} />
+            <Typography variant="h4" sx={{ fontWeight: 800, color: cpi >= 1.0 ? 'success.main' : cpi >= 0.9 ? 'warning.main' : 'error.main', fontFamily: '"JetBrains Mono", monospace' }}>
+              {cpi.toFixed(2)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Cost Performance (CPI)
             </Typography>
           </Paper>
-          <Paper variant="outlined" sx={{ p: 2, borderLeft: '3px solid', borderLeftColor: 'secondary.main' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Estimate At Completion (EAC)</Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{currency(eac)}</Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', mt: 0.5, display: 'block' }}>
-              Projected cost based on CPI
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+            <QueryStatsIcon sx={{ fontSize: 20, color: 'secondary.main', mb: 0.5 }} />
+            <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+              {currency(eac)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Est. At Completion (EAC)
             </Typography>
           </Paper>
-          <Paper variant="outlined" sx={{ p: 2, borderLeft: '3px solid', borderLeftColor: costVariance >= 0 ? 'success.main' : 'error.main' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs }}>Cost Variance (CV)</Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: costVariance >= 0 ? 'success.main' : 'error.main', fontFamily: '"JetBrains Mono", monospace' }}>
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+            <AttachMoneyIcon sx={{ fontSize: 20, color: costVariance >= 0 ? 'success.main' : 'error.main', mb: 0.5 }} />
+            <Typography variant="h4" sx={{ fontWeight: 800, color: costVariance >= 0 ? 'success.main' : 'error.main', fontFamily: '"JetBrains Mono", monospace' }}>
               {costVariance >= 0 ? '+' : ''}{currency(costVariance)}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', mt: 0.5, display: 'block' }}>
-              EV − Actuals spent
+            <Typography variant="caption" color="text.secondary">
+              Cost Variance (CV)
             </Typography>
           </Paper>
         </Box>

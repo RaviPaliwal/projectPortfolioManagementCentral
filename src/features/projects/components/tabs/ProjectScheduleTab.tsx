@@ -54,6 +54,8 @@ interface ProjectScheduleTabProps {
   onRefresh?: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
+  onAddMilestone?: () => void
+  onAddTask?: () => void
 }
 
 export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ 
@@ -67,6 +69,8 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
   onRefresh,
   onSuccess,
   onError,
+  onAddMilestone,
+  onAddTask,
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -443,23 +447,57 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
     })
   }, [milestones, tasks, showCriticalPathOnly])
 
+  const scheduleProgress = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Action Buttons */}
+      {(onAddMilestone || onAddTask) && (
+        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mb: -2 }}>
+          {onAddMilestone && <Button size="small" variant="outlined" startIcon={<FlagIcon />} onClick={onAddMilestone}>Milestone</Button>}
+          {onAddTask && <Button size="small" variant="outlined" startIcon={<AssignmentIcon />} onClick={onAddTask}>Task</Button>}
+        </Box>
+      )}
+
       {/* ── Schedule Stats ── */}
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile label="Total Tasks" value={stats.total} icon={<AssignmentIcon />} color="primary.main" />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile label="Avg. Progress" value={`${stats.avgProgress}%`} icon={<ViewWeekIcon />} color="info.main" />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile label="Milestones" value={milestones.length} icon={<FlagIcon />} color="warning.main" />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile label="Completed" value={stats.completed} icon={<AssignmentIcon />} color="success.main" />
-        </Grid>
-      </Grid>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr 1fr' }, gap: 2 }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <AssignmentIcon sx={{ fontSize: 20, color: 'primary.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {stats.total}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Total Tasks
+          </Typography>
+        </Paper>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <ViewWeekIcon sx={{ fontSize: 20, color: 'info.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {stats.avgProgress}%
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Avg. Progress
+          </Typography>
+        </Paper>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <FlagIcon sx={{ fontSize: 20, color: 'warning.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {milestones.length}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Milestones
+          </Typography>
+        </Paper>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <AssignmentIcon sx={{ fontSize: 20, color: 'success.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {stats.completed}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Completed
+          </Typography>
+        </Paper>
+      </Box>
 
       {/* ── View Toggle ── */}
       <Paper sx={{ overflow: 'hidden' }}>

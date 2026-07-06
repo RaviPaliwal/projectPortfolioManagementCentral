@@ -9,6 +9,8 @@ import HowToRegIcon from '@mui/icons-material/HowToReg'
 import { StatusTag } from '@/components/common'
 import type { GateReviewModel } from '@/types/dataverse'
 
+import { Button } from '@mui/material'
+
 const GATE_STAGE_LABELS: Record<string, string> = {
   '0': 'Gate 1',
   '1': 'Gate 2',
@@ -19,13 +21,21 @@ const GATE_STAGE_LABELS: Record<string, string> = {
 interface ProjectGovernanceTabProps {
   gateReviews: GateReviewModel[]
   onNavigateToGateReview?: (gateReview?: GateReviewModel) => void
+  onAddGateReview?: () => void
 }
 
-export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gateReviews, onNavigateToGateReview }) => {
+export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gateReviews, onNavigateToGateReview, onAddGateReview }) => {
   return (
-    <Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Action Buttons */}
+      {onAddGateReview && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -2 }}>
+          <Button size="small" variant="contained" color="success" startIcon={<HowToRegIcon />} onClick={onAddGateReview}>Gate Review</Button>
+        </Box>
+      )}
+
       {gateReviews.length > 0 ? (
-        <Box sx={{ mb: 3 }}>
+        <Box>
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Gate Reviews ({gateReviews.length})</Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {gateReviews.map((g) => (

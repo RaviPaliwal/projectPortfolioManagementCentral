@@ -1,4 +1,4 @@
-import { Breadcrumbs as MuiBreadcrumbs, Link, Typography } from '@mui/material'
+import { useEffect } from 'react'
 
 export interface BreadcrumbItem {
   label: string
@@ -11,41 +11,16 @@ export interface BreadcrumbsProps {
 }
 
 export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, onNavigate }) => {
-  const handleClick = (path?: string) => {
-    if (path) {
-      if (onNavigate) {
-        onNavigate(path)
-      }
+  useEffect(() => {
+    const event = new CustomEvent('set-breadcrumbs', { detail: { items, onNavigate } })
+    window.dispatchEvent(event)
+    
+    return () => {
+      window.dispatchEvent(new CustomEvent('set-breadcrumbs', { detail: null }))
     }
-  }
+  }, [items, onNavigate])
 
-  return (
-    <MuiBreadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
-      {items.map((item, index) => {
-        const isLast = index === items.length - 1
-
-        if (isLast) {
-          return (
-            <Typography key={index} color="textPrimary" sx={{ fontWeight: 500 }}>
-              {item.label}
-            </Typography>
-          )
-        }
-
-        return (
-          <Link
-            key={index}
-            underline="hover"
-            color="primary"
-            sx={{ cursor: 'pointer' }}
-            onClick={() => handleClick(item.path)}
-          >
-            {item.label}
-          </Link>
-        )
-      })}
-    </MuiBreadcrumbs>
-  )
+  return null
 }
 
 export default Breadcrumbs

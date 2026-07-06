@@ -22,7 +22,8 @@ import ShieldAlertIcon from '@mui/icons-material/Security'
 
 import type { ProjectModel, ProjectMilestoneModel, ProjectTaskModel, RiskModel, IssueModel, BenefitModel } from '@/types/dataverse'
 import { phaseLabel, currency } from '../../constants'
-import { StatusChip, MetricTile, StatusTag } from '@/components/common'
+import { StatusChip, MetricTile, StatusTag, WorkflowMilestone } from '@/components/common'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import { fontSizes } from '@/styles'
 
 interface ProjectOverviewTabProps {
@@ -120,40 +121,44 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* ── KPI Row ── */}
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile 
-            label="Total Progress" 
-            value={`${taskStats.avgProgress}%`} 
-            icon={<SpeedIcon />} 
-            color={taskStats.avgProgress >= 100 ? 'success.main' : 'primary.main'} 
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile 
-            label="Budget Burn Rate" 
-            value={`${percentSpent}%`} 
-            icon={<TrendingUpIcon />} 
-            color={percentSpent > 100 ? 'error.main' : percentSpent > 85 ? 'warning.main' : 'info.main'} 
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile 
-            label="Active Risks & Issues" 
-            value={riskStats.activeRisks + riskStats.openIssues} 
-            icon={<BugReportIcon />} 
-            color={riskStats.criticalIssues + riskStats.criticalRisks > 0 ? 'error.main' : 'warning.main'} 
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile 
-            label="Milestones Achieved" 
-            value={`${milestoneStats.completed}/${milestoneStats.total}`} 
-            icon={<FlagIcon />} 
-            color="success.main" 
-          />
-        </Grid>
-      </Grid>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr 1fr' }, gap: 2 }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <SpeedIcon sx={{ fontSize: 20, color: taskStats.avgProgress >= 100 ? 'success.main' : 'primary.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {taskStats.avgProgress}%
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Total Progress
+          </Typography>
+        </Paper>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <TrendingUpIcon sx={{ fontSize: 20, color: percentSpent > 100 ? 'error.main' : percentSpent > 85 ? 'warning.main' : 'info.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {percentSpent}%
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Budget Burn Rate
+          </Typography>
+        </Paper>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <BugReportIcon sx={{ fontSize: 20, color: riskStats.criticalIssues + riskStats.criticalRisks > 0 ? 'error.main' : 'warning.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {riskStats.activeRisks + riskStats.openIssues}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Active Risks & Issues
+          </Typography>
+        </Paper>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
+          <FlagIcon sx={{ fontSize: 20, color: 'success.main', mb: 0.5 }} />
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+            {milestoneStats.completed}/{milestoneStats.total}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Milestones Achieved
+          </Typography>
+        </Paper>
+      </Box>
 
       {/* ── Main Layout Grid ── */}
       <Grid container spacing={3}>
@@ -161,6 +166,11 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
         <Grid size={{ xs: 12, md: 7.5 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             
+            <WorkflowMilestone
+              moduleName={MODULE_NAMES.PROJECTS.value}
+              entityId={project.pm_projectid}
+            />
+
             {/* Executive Summary */}
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
               <Box sx={{ position: 'absolute', right: -20, top: -20, opacity: 0.03 }}>

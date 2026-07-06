@@ -141,17 +141,19 @@ function isStepAssignedToUser(
 // ─── Props ────────────────────────────────────────────────────────────────
 
 export interface WorkflowMilestoneProps {
-  /** Module/entity type name, e.g. "GateReview", "Project", "Portfolio" */
-  moduleName: string
-  /** Entity GUID to fetch workflow instances for */
-  entityId: string
+  /** Optional explicit Workflow Instance ID. If provided, fetches only this workflow. */
+  workflowInstanceId?: string
+  /** Module/entity type name, e.g. "GateReview", "Project", "Portfolio". Used if workflowInstanceId is not provided. */
+  moduleName?: string
+  /** Entity GUID to fetch workflow instances for. Used if workflowInstanceId is not provided. */
+  entityId?: string
   /** Optional class name override */
   className?: string
 }
 
 // ─── Component ────────────────────────────────────────────────────────────
 
-export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowMilestoneProps) {
+export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, className }: WorkflowMilestoneProps) {
   const theme = useTheme()
 
   const [instances, setInstances] = useState<WorkflowInstanceModel[]>([])
@@ -160,14 +162,27 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
   const [error, setError] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
-    if (!moduleName || !entityId) {
+    if (!workflowInstanceId && (!moduleName || !entityId)) {
       setLoading(false)
       return
     }
     setLoading(true)
     setError(null)
     try {
-      const workflowInstances = await fetchWorkflowInstancesForEntity(moduleName, entityId)
+      let workflowInstances: WorkflowInstanceModel[] = []
+      
+      if (workflowInstanceId) {
+        // Fetch single instance by ID
+        // Note: fetchWorkflowInstanceById needs to be imported if not already
+        const instance = await import('@/services').then(m => m.fetchWorkflowInstanceById(workflowInstanceId))
+        if (instance) {
+          workflowInstances = [instance]
+        }
+      } else if (moduleName && entityId) {
+        // Fetch all instances for entity
+        workflowInstances = await fetchWorkflowInstancesForEntity(moduleName, entityId)
+      }
+      
       setInstances(workflowInstances)
 
       const stepsMap: Record<string, WorkflowApprovalStepModel[]> = {}
@@ -188,7 +203,7 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
     } finally {
       setLoading(false)
     }
-  }, [moduleName, entityId])
+  }, [workflowInstanceId, moduleName, entityId])
 
   // Initial load
   useEffect(() => {
@@ -432,8 +447,8 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
             {!isCompleted && (
               <Box sx={{ px: 3, pb: 3, borderTop: `1px solid ${theme.palette.divider}`, pt: 2 }}>
                 <EntityApprovalTasks
-                  entityId={entityId}
-                  moduleName={moduleName}
+                  entityId={entityId || instance.pm_entityid!}
+                  moduleName={moduleName || instance.pm_entitytype || ''}
                   entityLabel=""
                   tabValue={0}
                   index={0}
