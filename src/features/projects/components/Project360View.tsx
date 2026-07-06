@@ -130,12 +130,14 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   const [activeIssue, setActiveIssue] = useState<IssueModel | null>(null)
   const [activeBenefit, setActiveBenefit] = useState<BenefitModel | null>(null)
   const [activeBudgetLine, setActiveBudgetLine] = useState<BudgetLineModel | null>(null)
+  const [activeGateReview, setActiveGateReview] = useState<GateReviewModel | null>(null)
 
   useEffect(() => {
     setActiveRisk(null)
     setActiveIssue(null)
     setActiveBenefit(null)
     setActiveBudgetLine(null)
+    setActiveGateReview(null)
   }, [activeTab])
 
   const tabs = [
@@ -157,6 +159,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   const isInspectingRiskOrIssue = activeTab === 3 && (activeRisk || activeIssue)
   const isInspectingBenefit = activeTab === 5 && activeBenefit
   const isInspectingBudget = activeTab === 2 && activeBudgetLine
+  const isInspectingGateReview = activeTab === 6 && activeGateReview
   const breadcrumbItems = isInspectingRiskOrIssue
     ? [
         { label: 'Project Portfolio', path: 'list' },
@@ -169,14 +172,21 @@ export const Project360View: React.FC<Project360ViewProps> = ({
         { label: 'Project Portfolio', path: 'list' },
         { label: project.pm_projectname ?? 'Detail', path: 'project-detail' },
         { label: 'Benefits', path: 'benefits' },
-        { label: activeBenefit.pm_benefitname ?? 'Benefit' }
+        { label: activeBenefit?.pm_benefitname ?? 'Benefit' }
       ]
     : isInspectingBudget
     ? [
         { label: 'Project Portfolio', path: 'list' },
         { label: project.pm_projectname ?? 'Detail', path: 'project-detail' },
         { label: 'Financials', path: 'financials' },
-        { label: activeBudgetLine.pm_budgetlinename ?? 'Budget Line' }
+        { label: activeBudgetLine?.pm_budgetlinename ?? 'Budget Line' }
+      ]
+    : isInspectingGateReview
+    ? [
+        { label: 'Project Portfolio', path: 'list' },
+        { label: project.pm_projectname ?? 'Detail', path: 'project-detail' },
+        { label: 'Governance', path: 'governance' },
+        { label: activeGateReview.pm_gatename ?? 'Gate Review' }
       ]
     : [
         { label: 'Project Portfolio', path: 'list' },
@@ -186,11 +196,12 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   const handleBreadcrumbNavigate = (path: string) => {
     if (path === 'list') {
       onBack()
-    } else if (path === 'project-detail' || path === 'risks-issues' || path === 'benefits' || path === 'financials') {
+    } else if (path === 'project-detail' || path === 'risks-issues' || path === 'benefits' || path === 'financials' || path === 'governance') {
       setActiveRisk(null)
       setActiveIssue(null)
       setActiveBenefit(null)
       setActiveBudgetLine(null)
+      setActiveGateReview(null)
     }
   }
 
@@ -340,8 +351,10 @@ export const Project360View: React.FC<Project360ViewProps> = ({
               {activeTab === 6 && (
                 <ProjectGovernanceTab 
                   gateReviews={gateReviews} 
-                  onNavigateToGateReview={onNavigateToGateReview} 
+                  onNavigateToGateReview={(gr) => setActiveGateReview(gr || null)} 
                   onAddGateReview={canEdit ? onNavigateToGateReview : undefined}
+                  selectedGateReview={activeGateReview}
+                  setSelectedGateReview={setActiveGateReview}
                 />
               )}
               {activeTab === 7 && (

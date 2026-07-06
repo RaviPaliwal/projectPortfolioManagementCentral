@@ -68,7 +68,7 @@ import {
 import type { BudgetLineModel, FundingSourceModel, FinancialPeriodModel } from '@/types/dataverse'
 import type { PortfolioLookupItem, ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
-import { BudgetLineFormDialog } from '../components'
+import { BudgetLineFormDialog, BudgetTable } from '../components'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, Breadcrumbs, ExcelImportDialog } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import type { KpiCardItem, FilterOption } from '@/components/common'
@@ -1014,181 +1014,16 @@ export default function BudgetsPage() {
               {!loading && <KpiCardRow items={kpiItems} />}
 
               {/* ── Budget Grid ──────────────────────────────── */}
-              <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-                <SearchFilterBar
-                  searchQuery={searchQuery}
-                  onSearchChange={handleSearchChange}
-                  searchPlaceholder="Search by name, category, portfolio, programme..."
-                  filterValue={categoryFilter}
-                  onFilterChange={handleCategoryFilterChange}
-                  filterLabel="Category"
-                  filterOptions={CATEGORY_FILTER_OPTIONS}
-                  onClear={() => { setSearchQuery(''); setCategoryFilter(''); setPage(0) }}
-                />
-
-                <TableShell
-                  loading={loading}
-                  empty={filteredBudgetLines.length === 0}
-                  emptyIcon={<AccountBalanceWalletIcon />}
-                  emptyTitle={searchQuery || categoryFilter ? 'No budget lines match your criteria.' : 'No budget lines found.'}
-                  emptyAction={!searchQuery && !categoryFilter ? (
-                    <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setBudgetFormEditRecord(null)}>
-                      Add your first budget line
-                    </Button>
-                  ) : undefined}
-                >
-                  <Table stickyHeader size="small" sx={{ minWidth: 1100 }}>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                          <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                            Budget Line
-                          </TableSortLabel>
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                          <TableSortLabel active={sort.field === 'category'} direction={sort.field === 'category' ? sort.dir : 'asc'} onClick={() => handleSort('category')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                            Category
-                          </TableSortLabel>
-                        </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                          <TableSortLabel active={sort.field === 'budget'} direction={sort.field === 'budget' ? sort.dir : 'asc'} onClick={() => handleSort('budget')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                            Approved Budget
-                          </TableSortLabel>
-                        </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                          <TableSortLabel active={sort.field === 'revised'} direction={sort.field === 'revised' ? sort.dir : 'asc'} onClick={() => handleSort('revised')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                            Revised Budget
-                          </TableSortLabel>
-                        </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                          <TableSortLabel active={sort.field === 'actual'} direction={sort.field === 'actual' ? sort.dir : 'asc'} onClick={() => handleSort('actual')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                            Actual Spend
-                          </TableSortLabel>
-                        </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                          <TableSortLabel active={sort.field === 'variance'} direction={sort.field === 'variance' ? sort.dir : 'asc'} onClick={() => handleSort('variance')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                            Variance
-                          </TableSortLabel>
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {paginatedBudgetLines.map((line, idx) => {
-                        const ut = budgetUtilization(line)
-                        const variance = line.pm_varianceeur
-                        const isOverBudget = variance != null && variance < 0
-                        return (
-                          <TableRow
-                            key={line.pm_budgetlineid}
-                            hover
-                            onClick={() => handleRowClick(line)}
-                            sx={{
-                              cursor: 'pointer',
-                              bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
-                              '&:hover': { bgcolor: 'action.selected' },
-                              transition: 'background-color 0.15s ease',
-                              '& td': { px: 2.5, py: 1.25 },
-                            }}
-                          >
-                            <TableCell>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
-                                  {(line.pm_budgetlinename ?? 'B').charAt(0).toUpperCase()}
-                                </Avatar>
-                                <Box>
-                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                    {line.pm_budgetlinename ?? 'Unnamed'}
-                                  </Typography>
-                                  {line.pm_fundingsourcename && (
-                                    <Typography variant="caption" color="text.secondary">
-                                      {line.pm_fundingsourcename}
-                                    </Typography>
-                                  )}
-                                </Box>
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <StatusTag
-                                label={CATEGORY_LABELS[String(line.pm_costcategory ?? '')] ?? 'Unknown'}
-                                color={CATEGORY_COLORS[String(line.pm_costcategory ?? '')] ?? 'default'}
-                              />
-                            </TableCell>
-                            <TableCell align="right">
-                              <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
-                                {line.pm_approvedbudgeteur != null ? currencyFormatter.format(line.pm_approvedbudgeteur) : '—'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell align="right">
-                              <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
-                                {line.pm_revisedbudgeteur != null ? currencyFormatter.format(line.pm_revisedbudgeteur) : '—'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell align="right">
-                              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
-                                <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
-                                  {line.pm_actualspendeur != null ? currencyFormatter.format(line.pm_actualspendeur) : '—'}
-                                </Typography>
-                                <LinearProgress
-                                  variant="determinate"
-                                  value={ut}
-                                  sx={{
-                                    width: '100%',
-                                    maxWidth: 100,
-                                    height: 4,
-                                    borderRadius: 1.5,
-                                    bgcolor: isDark ? '#334155' : '#e2e8f0',
-                                    '& .MuiLinearProgress-bar': {
-                                      bgcolor: ut > 85 ? 'error.main' : ut > 65 ? 'warning.main' : 'success.main',
-                                    },
-                                  }}
-                                />
-                              </Box>
-                            </TableCell>
-                            <TableCell align="right">
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
-                                {isOverBudget && <WarningAmberIcon sx={{ fontSize: 16, color: 'error.main' }} />}
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    fontFamily: '"JetBrains Mono", monospace',
-                                    fontWeight: 700,
-                                    color: getVarianceColor(variance),
-                                  }}
-                                >
-                                  {variance != null ? `${variance >= 0 ? '+' : ''}${currencyFormatter.format(variance)}` : '—'}
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableShell>
-
-                {!loading && filteredBudgetLines.length > 0 && (
-                  <TableFooter
-                    filteredCount={filteredBudgetLines.length}
-                    totalCount={budgetLines.length}
-                    itemLabel="budget line"
-                    totals={[
-                      { label: 'Total budget', value: `€${numberFormatter.format(filteredBudgetLines.reduce((s, l) => s + (l.pm_approvedbudgeteur ?? 0), 0))}` },
-                      { label: 'Total spend', value: `€${numberFormatter.format(filteredBudgetLines.reduce((s, l) => s + (l.pm_actualspendeur ?? 0), 0))}` },
-                    ]}
-                  />
-                )}
-                {!loading && filteredBudgetLines.length > 0 && (
-                  <TablePagination
-                    component="div"
-                    count={filteredBudgetLines.length}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    rowsPerPage={rowsPerPage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                    rowsPerPageOptions={[10, 25, 50, 100]}
-                  />
-                )}
-              </Paper>
+              <BudgetTable
+                budgetLines={budgetLines}
+                loading={loading}
+                onSelect={handleRowClick}
+                onEdit={canEdit ? (line) => setBudgetFormEditRecord(line) : undefined}
+                categoryFilter={categoryFilter}
+                setCategoryFilter={setCategoryFilter}
+                openCreate={canCreate ? () => setBudgetFormEditRecord(null) : undefined}
+                canEdit={canEdit}
+              />
             </>
           ) : (
             <>

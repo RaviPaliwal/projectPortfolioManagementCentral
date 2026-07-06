@@ -23,6 +23,7 @@ import {
   InputAdornment,
   ToggleButtonGroup,
   ToggleButton,
+  Grid,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import FilterListIcon from '@mui/icons-material/FilterList'
@@ -123,6 +124,12 @@ const TimelineItem = ({
 
   const financialProgress = allottedBudget && allottedBudget > 0 ? Math.min(100, ((actual || 0) / allottedBudget) * 100) : 0
 
+  const gradient = type === 'portfolio'
+    ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.light ?? theme.palette.primary.main})`
+    : type === 'programme'
+    ? `linear-gradient(135deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.light ?? theme.palette.secondary.main})`
+    : `linear-gradient(135deg, ${theme.palette.info.main}, ${theme.palette.info.light ?? theme.palette.info.main})`
+
   return (
     <Box sx={{
       display: 'flex',
@@ -146,7 +153,8 @@ const TimelineItem = ({
         zIndex: 2,
         position: 'sticky',
         left: 0,
-      }}>            <Box sx={{ width: 32, display: 'flex', justifyContent: 'center', mr: 1 }}>
+      }}>
+        <Box sx={{ width: 32, display: 'flex', justifyContent: 'center', mr: 1 }}>
           {hasChildren && (
             <Tooltip title={expanded ? 'Collapse section' : 'Expand section'}>
               <IconButton size="small" onClick={onToggle} sx={{ color: 'text.secondary' }}>
@@ -236,7 +244,6 @@ const TimelineItem = ({
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5 }}>{name}</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
                 <Typography variant="caption" sx={{ opacity: 0.8 }}>📅 {start.toLocaleDateString()} — {end.toLocaleDateString()}</Typography>
-                {/* FIX 3 (continued): .format() on all currencyFormatter calls */}
                 <Typography variant="caption" sx={{ opacity: 0.8 }}>💰 Budget: {allottedBudget ? currencyFormatter.format(allottedBudget) : 'N/A'}</Typography>
                 <Typography variant="caption" sx={{ opacity: 0.8 }}>📉 Actual: {actual ? currencyFormatter.format(actual) : 'N/A'}</Typography>
               </Box>
@@ -245,38 +252,47 @@ const TimelineItem = ({
             <Box sx={{
               position: 'absolute',
               left: `${left}%`,
-              width: `${Math.max(1, width)}%`,
-              height: level === 0 ? 28 : level === 1 ? 22 : 16,
-              borderRadius: level === 0 ? 1.5 : level === 1 ? 1 : 0.75,
-              bgcolor: alpha(color, isDark ? 0.3 : 0.15),
-              borderLeft: `4px solid ${color}`,
-              border: `1px solid ${alpha(color, 0.4)}`,
+              width: `${Math.max(1.5, width)}%`,
+              height: level === 0 ? 36 : level === 1 ? 30 : 24,
+              borderRadius: '20px',
+              background: gradient,
+              boxShadow: `0 4px 12px ${alpha(color, 0.25)}`,
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: level === 0 ? `0 6px 15px ${alpha(color, 0.15)}` : 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              px: 1.5,
+              px: 2,
               overflow: 'hidden',
               '&:hover': {
-                bgcolor: alpha(color, isDark ? 0.5 : 0.3),
-                transform: 'scaleY(1.05)',
-                boxShadow: `0 8px 20px ${alpha(color, 0.25)}`,
+                transform: 'scale(1.02)',
+                boxShadow: `0 8px 24px ${alpha(color, 0.4)}`,
                 zIndex: 10,
               }
             }}>
-              {width > 12 && (
+              {width > 22 ? (
                 <Typography variant="caption" sx={{
-                  color: color,
-                  fontSize: level === 0 ? '0.7rem' : '0.6rem',
+                  color: '#fff',
+                  fontSize: level === 0 ? '0.75rem' : '0.68rem',
                   fontWeight: 800,
                   whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                  overflow: 'hidden',
                   letterSpacing: 0.5,
                   textTransform: 'uppercase'
                 }}>
+                  {name} ({Math.round((width / 100) * totalDays)}d)
+                </Typography>
+              ) : width > 10 ? (
+                <Typography variant="caption" sx={{
+                  color: '#fff',
+                  fontSize: level === 0 ? '0.72rem' : '0.65rem',
+                  fontWeight: 800,
+                  whiteSpace: 'nowrap',
+                  letterSpacing: 0.5
+                }}>
                   {Math.round((width / 100) * totalDays)}d
                 </Typography>
-              )}
+              ) : null}
             </Box>
           </Tooltip>
         )}
@@ -515,13 +531,83 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
       />
 
       <Box sx={{ pb: 4 }}>
-        {/*
-          FIX 4: KpiCardRow prop name — your KpiCardRowProps likely uses a different
-          prop name than `kpis`. Check your component definition and replace `items`
-          below with the correct prop name (common alternatives: items, cards, data).
-          Example: if KpiCardRowProps has `items`, use <KpiCardRow items={kpis} />
-        */}
-        <KpiCardRow items={kpis} />
+        <Grid container spacing={3} sx={{ mb: 2 }}>
+          {kpis.map((kpi, idx) => (
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 3,
+                  height: '100%',
+                  borderRadius: '20px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  bgcolor: isDark ? 'background.paper' : '#fff',
+                  border: `1px solid ${alpha(kpi.color, 0.15)}`,
+                  boxShadow: isDark
+                    ? `0 8px 30px ${alpha(kpi.color, 0.05)}`
+                    : `0 8px 30px ${alpha(kpi.color, 0.03)}`,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: `0 12px 40px ${alpha(kpi.color, 0.12)}`,
+                    borderColor: kpi.color,
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 800,
+                      color: 'text.secondary',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      fontSize: '0.72rem',
+                    }}
+                  >
+                    {kpi.label}
+                  </Typography>
+                  <Avatar
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      bgcolor: alpha(kpi.color, 0.1),
+                      color: kpi.color,
+                      border: `1px solid ${alpha(kpi.color, 0.2)}`,
+                    }}
+                  >
+                    {kpi.icon}
+                  </Avatar>
+                </Box>
+
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 900,
+                    letterSpacing: '-0.03em',
+                    color: isDark ? '#fff' : '#0f172a',
+                    fontFamily: '"Outfit", sans-serif',
+                    mb: 0.5,
+                  }}
+                >
+                  {kpi.value}
+                </Typography>
+
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '4px',
+                    background: `linear-gradient(90deg, ${kpi.color}, ${alpha(kpi.color, 0.3)})`,
+                  }}
+                />
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
 
         <Paper
           elevation={0}
