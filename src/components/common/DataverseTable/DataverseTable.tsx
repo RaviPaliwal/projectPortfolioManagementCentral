@@ -83,6 +83,9 @@ export function DataverseTable<T extends Record<string, any>>({
         borderRadius: variant === 'flat' ? 0 : 2,
         bgcolor: variant === 'flat' ? 'transparent' : 'background.paper',
         border: variant === 'flat' ? 'none' : undefined,
+        display: 'flex',
+        flexDirection: 'column',
+        flexGrow: 1,
       }}
     >
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, borderBottom: 1, borderColor: 'divider' }}>
@@ -113,6 +116,7 @@ export function DataverseTable<T extends Record<string, any>>({
         emptyTitle={emptyTitle}
         minHeight={minHeight}
         maxHeight={maxHeight}
+        sx={{ flexGrow: 1 }}
       >
         <Table size="small">
           <TableHeader

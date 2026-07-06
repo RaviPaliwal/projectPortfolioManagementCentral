@@ -85,6 +85,15 @@ import {
 } from '@/services'
 
 import { useUser } from '@/context/UserContext'
+import {
+  BarChart,
+  Bar,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from 'recharts'
 import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import type { Systemusers } from '@/generated/models/SystemusersModel'
 import type { PipelineKpis } from '@/services'
@@ -731,7 +740,104 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
             }
           />
           {/* ── 1. 4-Column KPI Header ──────────────────────────────────────────── */}
-          {!loading && <KpiCardRow items={kpiItems} />}
+          {/* ── 1. 4-Column KPI Header ──────────────────────────────────────────── */}
+          {!loading && (
+            <Grid container spacing={2.5} sx={{ mb: 4 }}>
+              {kpiItems.map((kpi, idx) => {
+                const themeColor = kpi.color === 'primary.main' ? theme.palette.primary.main
+                  : kpi.color === 'success.main' ? theme.palette.success.main
+                    : kpi.color === 'warning.main' ? theme.palette.warning.main
+                      : kpi.color === 'error.main' ? theme.palette.error.main
+                        : kpi.color === 'secondary.main' ? theme.palette.secondary.main
+                          : theme.palette.primary.main;
+                return (
+                  <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }} key={idx}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2.5,
+                        height: '100%',
+                        borderRadius: '20px',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        bgcolor: isDark ? 'background.paper' : '#fff',
+                        border: `1px solid ${alpha(themeColor, 0.15)}`,
+                        boxShadow: isDark
+                          ? `0 8px 30px ${alpha(themeColor, 0.05)}`
+                          : `0 8px 30px ${alpha(themeColor, 0.03)}`,
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: `0 12px 40px ${alpha(themeColor, 0.12)}`,
+                          borderColor: themeColor,
+                        },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 800,
+                            color: 'text.secondary',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.08em',
+                            fontSize: '0.68rem',
+                          }}
+                        >
+                          {kpi.label}
+                        </Typography>
+                        <Avatar
+                          sx={{
+                            width: 34,
+                            height: 34,
+                            bgcolor: alpha(themeColor, 0.1),
+                            color: themeColor,
+                            border: `1px solid ${alpha(themeColor, 0.2)}`,
+                            '& .MuiSvgIcon-root': { fontSize: 18 }
+                          }}
+                        >
+                          {kpi.icon}
+                        </Avatar>
+                      </Box>
+
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 900,
+                          letterSpacing: '-0.02em',
+                          color: isDark ? '#fff' : '#0f172a',
+                          fontFamily: '"Outfit", sans-serif',
+                          mb: 0.5,
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {kpi.value}
+                      </Typography>
+
+                      {kpi.subtitle && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', opacity: 0.8 }}>
+                          {kpi.subtitle}
+                        </Typography>
+                      )}
+
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '4px',
+                          background: `linear-gradient(90deg, ${themeColor}, ${alpha(themeColor, 0.3)})`,
+                        }}
+                      />
+                    </Paper>
+                  </Grid>
+                )
+              })}
+            </Grid>
+          )}
 
           {/* ── 2. Master Pipeline Grid ──────────────────────────────────────────── */}
           <Paper sx={{ overflow: 'hidden', mb: 3 }}>
@@ -970,6 +1076,124 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
             </Paper>
           )}
 
+          {/* KPI Ribbon */}
+          <Grid container spacing={2.5} sx={{ mb: 1 }}>
+            {[
+              {
+                label: "Estimated Cost",
+                value: selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—',
+                subtitle: "Est. budget required",
+                icon: <MonetizationOnIcon />,
+                color: theme.palette.primary.main
+              },
+              {
+                label: "Estimated Benefits",
+                value: selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—',
+                subtitle: "Est. return on investment",
+                icon: <TrendingUpIcon />,
+                color: theme.palette.success.main
+              },
+              {
+                label: "Priority Score",
+                value: selectedInitiative.pm_priorityscore ?? '—',
+                subtitle: "Calculated intake score",
+                icon: <LightbulbIcon />,
+                color: theme.palette.secondary.main
+              },
+              {
+                label: "Strategic Alignment",
+                value: selectedInitiative.pm_strategicalignmentscore ? `${selectedInitiative.pm_strategicalignmentscore.toFixed(1)} / 5.0` : '—',
+                subtitle: "Portfolio strategic alignment",
+                icon: <AccountTreeIcon />,
+                color: theme.palette.warning.main
+              }
+            ].map((kpi, idx) => (
+              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2.5,
+                    height: '100%',
+                    borderRadius: '20px',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    bgcolor: isDark ? 'background.paper' : '#fff',
+                    border: `1px solid ${alpha(kpi.color, 0.15)}`,
+                    boxShadow: isDark
+                      ? `0 8px 30px ${alpha(kpi.color, 0.05)}`
+                      : `0 8px 30px ${alpha(kpi.color, 0.03)}`,
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: `0 12px 40px ${alpha(kpi.color, 0.12)}`,
+                      borderColor: kpi.color,
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 800,
+                        color: 'text.secondary',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        fontSize: '0.68rem',
+                      }}
+                    >
+                      {kpi.label}
+                    </Typography>
+                    <Avatar
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        bgcolor: alpha(kpi.color, 0.1),
+                        color: kpi.color,
+                        border: `1px solid ${alpha(kpi.color, 0.2)}`,
+                        '& .MuiSvgIcon-root': { fontSize: 18 }
+                      }}
+                    >
+                      {kpi.icon}
+                    </Avatar>
+                  </Box>
+
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 900,
+                      letterSpacing: '-0.02em',
+                      color: isDark ? '#fff' : '#0f172a',
+                      fontFamily: '"Outfit", sans-serif',
+                      mb: 0.5,
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {kpi.value}
+                  </Typography>
+
+                  {kpi.subtitle && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', opacity: 0.8 }}>
+                      {kpi.subtitle}
+                    </Typography>
+                  )}
+
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '4px',
+                      background: `linear-gradient(90deg, ${kpi.color}, ${alpha(kpi.color, 0.3)})`,
+                    }}
+                  />
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+
           {/* Unified Overview Block */}
           <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', mb: 3.5, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
             <Grid container spacing={4}>
@@ -981,20 +1205,20 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
 
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 2.5 }}>
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Sponsor</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedInitiative.pm_requestedbyname || '—'}</Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Sponsor</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_requestedbyname || '—'}</Typography>
                   </Box>
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Target Portfolio</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedInitiative.pm_portfolioname || '—'}</Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Target Portfolio</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_portfolioname || '—'}</Typography>
                   </Box>
                 </Box>
 
                 <Divider sx={{ mb: 2.5 }} />
 
                 <Box sx={{ mb: selectedInitiative.pm_submissiondate ? 2.5 : 0 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.75 }}>Business Case</Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8, whiteSpace: 'pre-wrap', fontSize: fontSizes.smMd }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', display: 'block', mb: 0.5 }}>Business Case</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8, fontSize: '0.825rem' }}>
                     {selectedInitiative.pm_businesscase || 'No business case provided.'}
                   </Typography>
                 </Box>
@@ -1011,40 +1235,68 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
 
               {/* Right Column: Financials & Metrics */}
               <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <Box sx={{ p: 2.5, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ p: 2.5, borderRadius: '16px', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                   <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Financials & Alignment</Typography>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <MonetizationOnIcon fontSize="small" sx={{ color: 'primary.main', opacity: 0.8 }} /> Est. Cost
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                      {selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—'}
-                    </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
+                        <MonetizationOnIcon fontSize="small" sx={{ color: 'primary.main', opacity: 0.8 }} /> Est. Cost
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                        {selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—'}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
+                        <TrendingUpIcon fontSize="small" sx={{ color: 'success.main', opacity: 0.8 }} /> Est. Benefits
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 800, color: 'success.main' }}>
+                        {selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—'}
+                      </Typography>
+                    </Box>
                   </Box>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <TrendingUpIcon fontSize="small" sx={{ color: 'success.main', opacity: 0.8 }} /> Est. Benefits
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                      {selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—'}
-                    </Typography>
-                  </Box>
+                  {(selectedInitiative.pm_estimatedcost || selectedInitiative.pm_estimatedbenefits) && (
+                    <Box sx={{ height: 130, mt: -1, mb: -1 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={[
+                            { name: 'Est. Cost', amount: selectedInitiative.pm_estimatedcost ?? 0, color: theme.palette.primary.main },
+                            { name: 'Est. Benefits', amount: selectedInitiative.pm_estimatedbenefits ?? 0, color: theme.palette.success.main }
+                          ]}
+                          margin={{ top: 10, right: 10, left: -25, bottom: 5 }}
+                        >
+                          <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} stroke={theme.palette.divider} />
+                          <YAxis tick={{ fontSize: 9, fontFamily: 'monospace' }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
+                          <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
+                          <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={24}>
+                            {[
+                              { color: theme.palette.primary.main },
+                              { color: theme.palette.success.main }
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Box>
+                  )}
 
                   <Divider />
 
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
                       <LightbulbIcon fontSize="small" sx={{ color: 'warning.main', opacity: 0.8 }} /> Priority Score
                     </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 800 }}>
                       {selectedInitiative.pm_priorityscore ?? '—'}
                     </Typography>
                   </Box>
 
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
                       <AccountTreeIcon fontSize="small" sx={{ color: 'secondary.main', opacity: 0.8 }} /> Alignment
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>

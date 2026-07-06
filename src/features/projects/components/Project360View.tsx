@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Box,
   Paper,
@@ -126,6 +126,19 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const [activeTab, setActiveTab] = useState(0)
+  const [activeRisk, setActiveRisk] = useState<RiskModel | null>(null)
+  const [activeIssue, setActiveIssue] = useState<IssueModel | null>(null)
+  const [activeBenefit, setActiveBenefit] = useState<BenefitModel | null>(null)
+  const [activeBudgetLine, setActiveBudgetLine] = useState<BudgetLineModel | null>(null)
+  const [activeGateReview, setActiveGateReview] = useState<GateReviewModel | null>(null)
+
+  useEffect(() => {
+    setActiveRisk(null)
+    setActiveIssue(null)
+    setActiveBenefit(null)
+    setActiveBudgetLine(null)
+    setActiveGateReview(null)
+  }, [activeTab])
 
   const tabs = [
     { label: 'Overview', icon: <AnalyticsIcon fontSize="small" /> },
@@ -143,14 +156,60 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   const ragVal = project.pm_ragstatus?.toString()
   const accentColor = ragVal === '2' ? 'error.main' : ragVal === '0' ? 'warning.main' : 'success.main'
 
+  const isInspectingRiskOrIssue = activeTab === 3 && (activeRisk || activeIssue)
+  const isInspectingBenefit = activeTab === 5 && activeBenefit
+  const isInspectingBudget = activeTab === 2 && activeBudgetLine
+  const isInspectingGateReview = activeTab === 6 && activeGateReview
+  const breadcrumbItems = isInspectingRiskOrIssue
+    ? [
+        { label: 'Project Portfolio', path: 'list' },
+        { label: project.pm_projectname ?? 'Detail', path: 'project-detail' },
+        { label: 'Risks & Issues', path: 'risks-issues' },
+        { label: activeRisk ? (activeRisk.pm_risktitle ?? 'Risk') : (activeIssue?.pm_issuetitle ?? 'Issue') }
+      ]
+    : isInspectingBenefit
+    ? [
+        { label: 'Project Portfolio', path: 'list' },
+        { label: project.pm_projectname ?? 'Detail', path: 'project-detail' },
+        { label: 'Benefits', path: 'benefits' },
+        { label: activeBenefit?.pm_benefitname ?? 'Benefit' }
+      ]
+    : isInspectingBudget
+    ? [
+        { label: 'Project Portfolio', path: 'list' },
+        { label: project.pm_projectname ?? 'Detail', path: 'project-detail' },
+        { label: 'Financials', path: 'financials' },
+        { label: activeBudgetLine?.pm_budgetlinename ?? 'Budget Line' }
+      ]
+    : isInspectingGateReview
+    ? [
+        { label: 'Project Portfolio', path: 'list' },
+        { label: project.pm_projectname ?? 'Detail', path: 'project-detail' },
+        { label: 'Governance', path: 'governance' },
+        { label: activeGateReview.pm_gatename ?? 'Gate Review' }
+      ]
+    : [
+        { label: 'Project Portfolio', path: 'list' },
+        { label: project.pm_projectname ?? 'Detail' }
+      ]
+
+  const handleBreadcrumbNavigate = (path: string) => {
+    if (path === 'list') {
+      onBack()
+    } else if (path === 'project-detail' || path === 'risks-issues' || path === 'benefits' || path === 'financials' || path === 'governance') {
+      setActiveRisk(null)
+      setActiveIssue(null)
+      setActiveBenefit(null)
+      setActiveBudgetLine(null)
+      setActiveGateReview(null)
+    }
+  }
+
   return (
     <Box>
       <Breadcrumbs 
-        items={[
-          { label: 'Project Portfolio', path: 'list' },
-          { label: project.pm_projectname ?? 'Detail' }
-        ]} 
-        onNavigate={() => onBack()}
+        items={breadcrumbItems} 
+        onNavigate={handleBreadcrumbNavigate}
       />
 
       <PageHeader
@@ -253,14 +312,21 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   onEditBudgetLine={onEditBudgetLine}
                   canEdit={canEdit}
                   onAddBudgetLine={canEdit ? onAddBudgetLine : undefined}
+                  selectedBudgetLine={activeBudgetLine}
+                  setSelectedBudgetLine={setActiveBudgetLine}
                 />
               )}
               {activeTab === 3 && (
                 <ProjectRisksIssuesTab 
                   risks={risks} 
                   issues={issues}
+                  project={project}
                   onLogRisk={canEdit ? onLogRisk : undefined}
                   onLogIssue={canEdit ? onLogIssue : undefined}
+                  selectedRisk={activeRisk}
+                  setSelectedRisk={setActiveRisk}
+                  selectedIssue={activeIssue}
+                  setSelectedIssue={setActiveIssue}
                 />
               )}
               {activeTab === 4 && (
@@ -278,13 +344,17 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                 <ProjectBenefitsTab 
                   benefits={benefits} 
                   onAddBenefit={canEdit ? onAddBenefit : undefined}
+                  selectedBenefit={activeBenefit}
+                  setSelectedBenefit={setActiveBenefit}
                 />
               )}
               {activeTab === 6 && (
                 <ProjectGovernanceTab 
                   gateReviews={gateReviews} 
-                  onNavigateToGateReview={onNavigateToGateReview} 
+                  onNavigateToGateReview={(gr) => setActiveGateReview(gr || null)} 
                   onAddGateReview={canEdit ? onNavigateToGateReview : undefined}
+                  selectedGateReview={activeGateReview}
+                  setSelectedGateReview={setActiveGateReview}
                 />
               )}
               {activeTab === 7 && (

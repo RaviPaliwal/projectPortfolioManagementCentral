@@ -3,13 +3,13 @@ import {
   Box,
   Typography,
   Paper,
+  Button
 } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import HowToRegIcon from '@mui/icons-material/HowToReg'
 import { StatusTag } from '@/components/common'
 import type { GateReviewModel } from '@/types/dataverse'
-
-import { Button } from '@mui/material'
+import { GateReview360View } from '@/features/gatereviews/components/GateReview360View'
 
 const GATE_STAGE_LABELS: Record<string, string> = {
   '0': 'Gate 1',
@@ -22,9 +22,33 @@ interface ProjectGovernanceTabProps {
   gateReviews: GateReviewModel[]
   onNavigateToGateReview?: (gateReview?: GateReviewModel) => void
   onAddGateReview?: () => void
+  selectedGateReview: GateReviewModel | null
+  setSelectedGateReview: (gateReview: GateReviewModel | null) => void
 }
 
-export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gateReviews, onNavigateToGateReview, onAddGateReview }) => {
+export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({
+  gateReviews,
+  onNavigateToGateReview,
+  onAddGateReview,
+  selectedGateReview,
+  setSelectedGateReview
+}) => {
+  if (selectedGateReview) {
+    return (
+      <GateReview360View
+        review={selectedGateReview}
+        onBack={() => setSelectedGateReview(null)}
+        onPmoCheck={() => {}}
+        onFinanceReview={() => {}}
+        onBoardDecision={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+        canEdit={false}
+        canDelete={false}
+      />
+    )
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Action Buttons */}
@@ -48,16 +72,16 @@ export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gate
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  cursor: onNavigateToGateReview ? 'pointer' : 'default',
+                  cursor: 'pointer',
                   transition: 'all 0.15s ease',
-                  '&:hover': onNavigateToGateReview ? { bgcolor: 'action.hover', borderColor: 'primary.main' } : {},
+                  '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
                 }}
                 onClick={() => onNavigateToGateReview?.(g)}
               >
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {g.pm_gatename}
-                    {onNavigateToGateReview && <OpenInNewIcon sx={{ fontSize: 14, ml: 0.5, verticalAlign: 'middle', color: 'text.disabled' }} />}
+                    <OpenInNewIcon sx={{ fontSize: 14, ml: 0.5, verticalAlign: 'middle', color: 'text.disabled' }} />
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {GATE_STAGE_LABELS[String(g.pm_gatestage)] || `Stage ${g.pm_gatestage}`} · {g.pm_leadreviewer ? `Reviewer: ${g.pm_leadreviewer}` : ''}
