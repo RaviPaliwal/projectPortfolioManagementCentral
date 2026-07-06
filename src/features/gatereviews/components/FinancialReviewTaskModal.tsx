@@ -251,7 +251,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                       <Typography variant="caption" color="text.secondary">
-                        Req: {initiative.pm_requestorname || '—'}
+                        Req: {initiative.pm_requestedbyname || '—'}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

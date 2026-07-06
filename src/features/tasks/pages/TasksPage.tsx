@@ -113,7 +113,7 @@ export default function TasksPage() {
     if (!currentUser?.fullname) return []
     const name = currentUser.fullname.toLowerCase()
     return pendingInitiatives.filter(
-      (i) => i.pm_requestorname?.toLowerCase() === name
+      (i) => i.pm_requestedbyname?.toLowerCase() === name
     )
   }, [pendingInitiatives, currentUser?.fullname])
 

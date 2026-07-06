@@ -66,7 +66,7 @@ export default function MyTasksWidget() {
     if (!currentUser?.fullname) return []
     const name = currentUser.fullname.toLowerCase()
     return pendingApprovals.filter(
-      (i) => i.pm_requestorname?.toLowerCase() === name
+      (i) => i.pm_requestedbyname?.toLowerCase() === name
     )
   }, [pendingApprovals, currentUser?.fullname])
 
