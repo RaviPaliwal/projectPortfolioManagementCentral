@@ -32,7 +32,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 
-import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader, ActionIcon, EntityDocumentsTab } from '@/components/common'
+import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader, ActionIcon, EntityDocumentsTab, WorkflowMilestone } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
 import { RAG_COLORS, phaseLabel, currency } from '../constants'
 import { fontSizes } from '@/styles'
@@ -236,6 +236,13 @@ export const Project360View: React.FC<Project360ViewProps> = ({
           </Box>
         }
       />
+
+      <Box sx={{ mb: 3 }}>
+        <WorkflowMilestone
+          moduleName={MODULE_NAMES.PROJECTS.value}
+          entityId={project.pm_projectid}
+        />
+      </Box>
 
       {/* ── Tabbed Content ────────────────────────────────────── */}
       <Paper sx={{ borderRadius: 1.5, overflow: 'hidden' }}>

@@ -7,7 +7,7 @@ const palette = {
   success: { main: '#059669', light: '#34d399', dark: '#047857', contrastText: '#ffffff' },
   warning: { main: '#d97706', light: '#fbbf24', dark: '#b45309', contrastText: '#ffffff' },
   error: { main: '#ef4444', light: '#f87171', dark: '#dc2626', contrastText: '#ffffff' },
-  info: { main: '#217C35', light: '#2A9943', dark: '#135E23', contrastText: '#ffffff' },
+  info: { main: '#3b82f6', light: '#60a5fa', dark: '#2563eb', contrastText: '#ffffff' },
 }
 
 export const getTheme = (mode: PaletteMode) =>
@@ -152,6 +152,13 @@ export const getTheme = (mode: PaletteMode) =>
           },
           rounded: {
             borderRadius: '12px',
+          },
+        },
+      },
+      MuiCssBaseline: {
+        styleOverrides: {
+          '.recharts-wrapper, .recharts-surface, .recharts-responsive-container, .recharts-default-tooltip': {
+            outline: 'none !important',
           },
         },
       },

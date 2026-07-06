@@ -165,11 +165,6 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
         {/* Left Column — Project Info, Business Summary */}
         <Grid size={{ xs: 12, md: 7.5 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            
-            <WorkflowMilestone
-              moduleName={MODULE_NAMES.PROJECTS.value}
-              entityId={project.pm_projectid}
-            />
 
             {/* Executive Summary */}
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
