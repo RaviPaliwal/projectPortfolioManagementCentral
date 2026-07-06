@@ -44,8 +44,8 @@ const cardStyle = (theme: any) => ({
   bgcolor: theme.palette.background.paper,
   borderRadius: '24px',
   p: 3,
-  boxShadow: theme.palette.mode === 'dark' 
-    ? '0 10px 30px -10px rgba(0,0,0,0.7)' 
+  boxShadow: theme.palette.mode === 'dark'
+    ? '0 10px 30px -10px rgba(0,0,0,0.7)'
     : '0 10px 30px -10px rgba(0,0,0,0.03)',
   border: `1.5px solid ${theme.palette.divider}`,
   transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s, box-shadow 0.25s',
@@ -172,7 +172,7 @@ export const MockupKpiRow: React.FC<MockupKpiRowProps> = ({ metrics, pipelineKpi
               <Typography sx={{ fontWeight: 850, fontSize: '1.25rem', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {item.value}
               </Typography>
-              
+
               {/* Trend Tag */}
               <Box
                 sx={{
@@ -406,10 +406,30 @@ export const MockupFinancialsCard: React.FC<MockupFinancialsCardProps> = ({
       {/* Main Bar Chart in Theme Colors (Primary Green & Secondary Orange) */}
       <Box sx={{ flex: 1, minHeight: 230, mb: 3 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} barGap={6} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <BarChart data={data} barGap={6} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
             <XAxis dataKey="name" stroke="none" tick={{ fill: textColor, fontSize: 10, fontWeight: 600 }} />
-            <YAxis stroke="none" tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} tick={{ fill: textColor, fontSize: 10, fontWeight: 600 }} />
+            <YAxis
+              width={55}
+              stroke="none"
+              tickFormatter={(value) => {
+                if (value === 0) return '€0'
+                if (value >= 1_000_000_000) {
+                  const b = value / 1_000_000_000
+                  return `€${b % 1 === 0 ? b.toFixed(0) : b.toFixed(1)}B`
+                }
+                if (value >= 1_000_000) {
+                  const m = value / 1_000_000
+                  return `€${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}M`
+                }
+                if (value >= 1_000) {
+                  const k = value / 1_000
+                  return `€${k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)}k`
+                }
+                return `€${value}`
+              }}
+              tick={{ fill: textColor, fontSize: 10, fontWeight: 600 }}
+            />
             <Tooltip
               cursor={{ fill: alpha(theme.palette.primary.main, 0.02) }}
               contentStyle={{
@@ -736,11 +756,11 @@ export const MockupBudgetGaugeCard: React.FC<MockupBudgetGaugeCardProps> = ({ to
   const strokeDashoffset = circumference - (budgetPct / 100) * circumference
 
   // Render non-zero tiny values with higher precision so they don't round to 0.0%
-  const displayPct = budgetPct > 0 && budgetPct < 0.01 
-    ? '>0.00%' 
-    : budgetPct > 0 && budgetPct < 0.1 
-    ? `${budgetPct.toFixed(2)}%` 
-    : `${budgetPct.toFixed(1)}%`
+  const displayPct = budgetPct > 0 && budgetPct < 0.01
+    ? '>0.00%'
+    : budgetPct > 0 && budgetPct < 0.1
+      ? `${budgetPct.toFixed(2)}%`
+      : `${budgetPct.toFixed(1)}%`
 
   return (
     <Paper sx={cardStyle(theme)}>
