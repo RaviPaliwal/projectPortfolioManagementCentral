@@ -15,6 +15,7 @@ import {
   Tooltip,
   useTheme,
   styled,
+  alpha,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -35,16 +36,21 @@ import { EntityApprovalTasks } from '@/features/dashboard/components/EntityAppro
 // ─── Styled Step Connector ────────────────────────────────────────────────
 
 const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
+  [`&.${stepConnectorClasses.alternativeLabel}`]: {
+    top: 20,
+    left: 'calc(-50% + 20px)',
+    right: 'calc(50% + 20px)',
+  },
   [`&.${stepConnectorClasses.active}`]: {
     [`& .${stepConnectorClasses.line}`]: {
-      backgroundImage:
-        'linear-gradient( 95deg, rgb(59,130,246) 0%, rgb(99,102,241) 50%, rgb(139,92,246) 100%)',
+      backgroundColor: theme.palette.info.main,
+      opacity: 0.8,
     },
   },
   [`&.${stepConnectorClasses.completed}`]: {
     [`& .${stepConnectorClasses.line}`]: {
-      backgroundImage:
-        'linear-gradient( 95deg, rgb(34,197,94) 0%, rgb(22,163,74) 100%)',
+      backgroundColor: theme.palette.success.main,
+      opacity: 0.8,
     },
   },
   [`& .${stepConnectorClasses.line}`]: {
@@ -70,14 +76,14 @@ const ColorlibStepIconRoot = styled('div')<{
   alignItems: 'center',
   transition: 'all 0.2s ease',
   ...(ownerState.active && {
-    backgroundImage:
-      'linear-gradient( 136deg, rgb(59,130,246) 0%, rgb(99,102,241) 50%, rgb(139,92,246) 100%)',
-    boxShadow: '0 4px 10px 0 rgba(59,130,246,0.3)',
+    backgroundColor: theme.palette.info.main,
+    color: theme.palette.info.contrastText,
+    boxShadow: `0 4px 10px 0 ${alpha(theme.palette.info.main, 0.3)}`,
   }),
   ...(ownerState.completed && {
-    backgroundImage:
-      'linear-gradient( 136deg, rgb(34,197,94) 0%, rgb(22,163,74) 100%)',
-    boxShadow: '0 4px 10px 0 rgba(34,197,94,0.3)',
+    backgroundColor: theme.palette.success.main,
+    color: theme.palette.success.contrastText,
+    boxShadow: `0 4px 10px 0 ${alpha(theme.palette.success.main, 0.3)}`,
   }),
 }))
 
@@ -360,7 +366,7 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                                 color: isPast
                                   ? 'text.secondary'
                                   : isCurrent
-                                    ? 'primary.main'
+                                    ? 'info.main'
                                     : 'text.primary',
                               }}
                             >
@@ -397,8 +403,6 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                               />
                             </Box>
 
-
-
                             {/* Due Date / Decision Date */}
                             {(step.pm_duedate || step.pm_decisiondate) && (
                               <Typography
@@ -412,28 +416,6 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                                     ? `Due: ${new Date(step.pm_duedate).toLocaleDateString()}`
                                     : ''}
                               </Typography>
-                            )}
-
-                            {/* Decision Notes */}
-                            {step.pm_decisionnotes && (
-                              <Tooltip title={step.pm_decisionnotes}>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  sx={{
-                                    display: 'block',
-                                    mt: 0.5,
-                                    fontSize: '0.6rem',
-                                    maxWidth: 140,
-                                    mx: 'auto',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  {step.pm_decisionnotes}
-                                </Typography>
-                              </Tooltip>
                             )}
                           </Box>
                         </StepLabel>

@@ -282,7 +282,6 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
         </Typography>
       </Box>
 
-      {/* Scrollable container */}
       <Box
         ref={scrollRef}
         sx={{
@@ -292,10 +291,9 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
           borderRadius: 2,
           bgcolor: isDark ? '#0f172a' : '#ffffff',
           height: (height ?? 0) || undefined,
-          // boxShadow removed - elevation handled by parent Paper
         }}
       >
-        <Box sx={{ display: 'flex', minHeight: totalHeight, position: 'relative' }}>
+        <Box sx={{ display: 'flex', minHeight: totalHeight, position: 'relative', width: 'max-content', minWidth: '100%' }}>
           
           {/* Name column (sticky left) */}
           <Box sx={{
