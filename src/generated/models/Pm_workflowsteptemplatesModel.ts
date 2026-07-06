@@ -7,6 +7,11 @@ export const Pm_workflowsteptemplatespm_assignetype = {
   1: 'Team'
 } as const;
 export type Pm_workflowsteptemplatespm_assignetype = keyof typeof Pm_workflowsteptemplatespm_assignetype;
+export const Pm_workflowsteptemplatespm_tasktype = {
+  1: 'Custom',
+  2: 'Checklist'
+} as const;
+export type Pm_workflowsteptemplatespm_tasktype = keyof typeof Pm_workflowsteptemplatespm_tasktype;
 export const Pm_workflowsteptemplatesstatecode = {
   0: 'Active',
   1: 'Inactive'
@@ -29,6 +34,7 @@ export interface Pm_workflowsteptemplatesBase {
   pm_description?: string;
   pm_sladays?: number;
   pm_steporder?: number;
+  pm_tasktype?: Pm_workflowsteptemplatespm_tasktype;
   "pm_workflowLookup@odata.bind"?: string;
   pm_workflowname: string;
   pm_workflowsteptemplateid: string;
@@ -53,6 +59,7 @@ export interface Pm_workflowsteptemplates extends Pm_workflowsteptemplatesBase {
   owneridyominame: string;
   owningbusinessunitname: string;
   pm_assignetypename?: string;
+  pm_tasktypename?: string;
   pm_workflowlookupname?: string;
   statecodename?: string;
   statuscodename?: string;

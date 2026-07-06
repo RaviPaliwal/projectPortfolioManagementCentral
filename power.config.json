@@ -299,6 +299,16 @@
           "entitySetName": "pm_financialreportconfigs",
           "logicalName": "pm_financialreportconfig",
           "isHidden": false
+        },
+        "checklistresponses": {
+          "entitySetName": "pm_checklistresponses",
+          "logicalName": "pm_checklistresponse",
+          "isHidden": false
+        },
+        "workflowchecklistconfigurations": {
+          "entitySetName": "pm_workflowchecklistconfigurations",
+          "logicalName": "pm_workflowchecklistconfiguration",
+          "isHidden": false
         }
       },
       "environmentVariableName": ""

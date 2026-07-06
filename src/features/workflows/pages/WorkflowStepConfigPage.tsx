@@ -30,6 +30,7 @@ import type { WorkflowModel, WorkflowStepTemplateModel } from '@/types/dataverse
 import { FORM_REGISTRY } from '@/constants/formRegistry'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Button, ConfirmDialog } from '@/components/common'
+import { ChecklistConfigurationPanel } from '../components/ChecklistConfigurationPanel'
  
 type TeamOptionUI = {
   value: string
@@ -73,7 +74,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
   const [teams, setTeams] = useState<DataverseTeamOption[]>([])
   const [formData, setFormData] = useState({
     pm_workflowname: '', pm_steporder: 1, pm_assignetype: 0, pm_assigneeid: '',
-    pm_description: '', pm_sladays: 5, new_formkey: '',
+    pm_description: '', pm_sladays: 5, new_formkey: '', pm_tasktype: 1,
   })
  
   // Load steps
@@ -104,7 +105,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
     setEditing(null)
     setFormData({
       pm_workflowname: '', pm_steporder: (steps.length) + 1, pm_assignetype: 0,
-      pm_assigneeid: '', pm_description: '', pm_sladays: 5, new_formkey: '',
+      pm_assigneeid: '', pm_description: '', pm_sladays: 5, new_formkey: '', pm_tasktype: 1,
     })
     setShowForm(true)
   }
@@ -119,6 +120,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
       pm_description: step.pm_description ?? '',
       pm_sladays: step.pm_sladays ?? 5,
       new_formkey: step.new_formkey ?? '',
+      pm_tasktype: Number(step.pm_tasktype) || 1,
     })
     setShowForm(true)
   }
@@ -430,15 +432,43 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
               )
             })()}
 
+            <FormControl fullWidth size="small">
+              <InputLabel id="workflow-step-tasktype-label">Task Type</InputLabel>
+              <Select
+                id="workflow-step-tasktype-select"
+                labelId="workflow-step-tasktype-label"
+                value={formData.pm_tasktype}
+                label="Task Type"
+                onChange={(e) => setFormData((f) => ({ ...f, pm_tasktype: Number(e.target.value) }))}
+              >
+                <MenuItem value={1}>Custom (Form)</MenuItem>
+                <MenuItem value={2}>Checklist</MenuItem>
+              </Select>
+            </FormControl>
+
             {/* Custom Form Key Input */}
-            <TextField
-              fullWidth
-              size="small"
-              label="Form Key"
-              placeholder="e.g. gate-review-form"
-              value={formData.new_formkey}
-              onChange={(e) => setFormData((f) => ({ ...f, new_formkey: e.target.value }))}
-            />
+            {formData.pm_tasktype === 1 && (
+              <TextField
+                fullWidth
+                size="small"
+                label="Form Key"
+                placeholder="e.g. CHECKLIST_APPROVAL_TASK"
+                value={formData.new_formkey}
+                onChange={(e) => setFormData((f) => ({ ...f, new_formkey: e.target.value }))}
+              />
+            )}
+
+            {formData.pm_tasktype === 2 && (
+              <Box sx={{ mt: 1 }}>
+                {editing?.pm_workflowsteptemplateid ? (
+                  <ChecklistConfigurationPanel stepTemplateId={editing.pm_workflowsteptemplateid} />
+                ) : (
+                  <Alert severity="info">
+                    Please save this step first before configuring checklist items.
+                  </Alert>
+                )}
+              </Box>
+            )}
 
           </Box>
         </DialogContent>

@@ -85,6 +85,13 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pm_checklistresponses": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_checklistresponseid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pm_documents": {
     "tableId": "",
     "version": "",
@@ -316,6 +323,13 @@ export const dataSourcesInfo = {
     "tableId": "",
     "version": "",
     "primaryKey": "pm_workflowapprovalstepid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_workflowchecklistconfigurations": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_workflowchecklistconfigurationid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },

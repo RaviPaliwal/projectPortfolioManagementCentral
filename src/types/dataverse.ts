@@ -581,6 +581,7 @@ export interface WorkflowStepTemplateModel {
   pm_assigneeid?: string
   pm_description?: string
   pm_sladays?: number
+  pm_tasktype?: number | string
   new_formkey?: string
   _pm_workflowlookup_value?: string
   statecode?: number
@@ -604,4 +605,23 @@ export interface WorkflowApprovalStepModel {
   _pm_workflowtemplate_value?: string
   statecode?: number
   pm_stepname?: string
+}
+
+export interface ChecklistConfigurationModel {
+  pm_workflowchecklistconfigurationid?: string
+  pm_name?: string
+  pm_itemname?: string
+  pm_isrequired?: boolean
+  _pm_workflowsteptemplate_value?: string
+  statecode?: number
+}
+
+export interface ChecklistResponseModel {
+  pm_checklistresponseid?: string
+  pm_name?: string
+  pm_checklistitem?: string
+  pm_responseflag?: boolean
+  _pm_checklistconfiguration_value?: string
+  _pm_workflowapprovalstep_value?: string
+  statecode?: number
 }

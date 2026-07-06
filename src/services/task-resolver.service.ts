@@ -16,7 +16,7 @@
 import { Pm_workflowapprovalstepsService, Pm_workflowinstancesService } from '@/generated'
 import type { Pm_workflowapprovalsteps } from '@/generated/models/Pm_workflowapprovalstepsModel'
 import type { Pm_workflowinstances } from '@/generated/models/Pm_workflowinstancesModel'
-import { fetchStepTemplateById } from '@/services/workflow.service'
+import { fetchStepTemplateById, fetchWorkflowStepTemplates } from '@/services/workflow.service'
 import { getFormByKey } from '@/constants/formRegistry'
 import type { FormRegistryEntry } from '@/constants/formRegistry'
 import { unwrapSingle } from '@/services/common'
@@ -149,12 +149,20 @@ export async function resolveApprovalStepTask(stepId: string): Promise<ResolvedT
     if (step.new_formkey) {
       formKey = step.new_formkey
     }
-    // Fallback: fetch from the step template
-    else if (step._pm_workflowtemplate_value) {
+    // Fallback: fetch from the step template (by matching workflow ID and step name)
+    else if (step._pm_workflowtemplate_value && step.pm_stepname) {
       try {
-        const template = await fetchStepTemplateById(step._pm_workflowtemplate_value)
-        if (template?.new_formkey) {
-          formKey = template.new_formkey
+        const templates = await fetchWorkflowStepTemplates(step._pm_workflowtemplate_value)
+        const template = templates.find((t) => t.pm_workflowname === step.pm_stepname)
+        if (template) {
+          // Task Type 2 = Checklist
+          if (String(template.pm_tasktype) === '2') {
+            formKey = 'CHECKLIST_APPROVAL_TASK'
+          } else if (template.new_formkey) {
+            formKey = template.new_formkey
+          }
+        } else {
+           console.warn(`[TaskResolver] Step Template for ${step.pm_stepname} not found`)
         }
       } catch (err) {
         console.error('[TaskResolver] resolveApprovalStepTask - fetch step template exception:', err)

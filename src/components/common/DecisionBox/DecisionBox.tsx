@@ -37,6 +37,8 @@ export interface DecisionBoxProps {
   onDecisionError?: (message: string) => void
   /** Disable the buttons (e.g. while saving task data) */
   disabled?: boolean
+  /** Disable only the Approve button */
+  approveDisabled?: boolean
 }
 
 // ─── Component ──────────────────────────────────────────────────────────
@@ -47,6 +49,7 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
   onDecisionComplete,
   onDecisionError,
   disabled = false,
+  approveDisabled = false,
 }) => {
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -124,7 +127,7 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
         <Button
           variant="contained"
           color="success"
-          disabled={isLoading || disabled}
+          disabled={isLoading || disabled || approveDisabled}
           onClick={() => handleDecision(0)}
           startIcon={isLoading ? <CircularProgress size={16} /> : <CheckCircleIcon />}
           sx={{ fontWeight: 600, minWidth: 140 }}

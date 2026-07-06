@@ -45,6 +45,7 @@ import type { WorkflowModel, WorkflowStepTemplateModel } from '@/types/dataverse
 import { StatusTag, Button } from '@/components/common'
 import { getModuleOptionsForWorkflow } from '@/constants/moduleNames'
 import { FORM_REGISTRY } from '@/constants/formRegistry'
+import { ChecklistConfigurationPanel } from './../components/ChecklistConfigurationPanel'
 
 const STEPS_CREATE = ['Basic Information', 'Approval Steps', 'Workflow Settings', 'Review & Create']
 const STEPS_EDIT = ['Basic Information', 'Approval Steps', 'Workflow Settings', 'Review & Save']
@@ -89,7 +90,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
   const [editingStepIdx, setEditingStepIdx] = useState<number | null>(null)
   const [stepFormData, setStepFormData] = useState({
     pm_workflowname: '', pm_steporder: 1, pm_assignetype: 0, pm_assigneeid: '',
-    pm_description: '', pm_sladays: 5, new_formkey: '',
+    pm_description: '', pm_sladays: 5, new_formkey: '', pm_tasktype: 1,
   })
   const u = useCallback((k: string, v: unknown) => setF((p) => ({ ...p, [k]: v })), [])
 
@@ -178,7 +179,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
     setEditingStepIdx(null)
     setStepFormData({
       pm_workflowname: '', pm_steporder: stepTemplates.length + 1, pm_assignetype: 0,
-      pm_assigneeid: '', pm_description: '', pm_sladays: 5, new_formkey: '',
+      pm_assigneeid: '', pm_description: '', pm_sladays: 5, new_formkey: '', pm_tasktype: 1,
     })
     setShowStepForm(true)
   }
@@ -194,6 +195,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
       pm_description: s.pm_description || '',
       pm_sladays: s.pm_sladays || 5,
       new_formkey: s.new_formkey || '',
+      pm_tasktype: Number(s.pm_tasktype) || 1,
     })
     setShowStepForm(true)
   }
@@ -305,7 +307,22 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
             )
           })()}
 
-          <Autocomplete
+          <FormControl fullWidth size="small">
+            <InputLabel id="workflow-form-tasktype-label">Task Type</InputLabel>
+            <Select
+              id="workflow-form-tasktype-select"
+              labelId="workflow-form-tasktype-label"
+              value={stepFormData.pm_tasktype}
+              label="Task Type"
+              onChange={(e) => setStepFormData(p => ({ ...p, pm_tasktype: Number(e.target.value) }))}
+            >
+              <MenuItem value={1}>Custom (Form)</MenuItem>
+              <MenuItem value={2}>Checklist</MenuItem>
+            </Select>
+          </FormControl>
+
+          {stepFormData.pm_tasktype === 1 && (
+            <Autocomplete
             size="small"
             options={FORM_REGISTRY}
             value={FORM_REGISTRY.find((f) => f.key === stepFormData.new_formkey) ?? null}
@@ -334,6 +351,19 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
             )}
             clearText="Clear"
           />
+          )}
+
+          {stepFormData.pm_tasktype === 2 && (
+            <Box sx={{ mt: 1 }}>
+              {editingStepIdx !== null && (stepTemplates[editingStepIdx] as any)?.pm_workflowsteptemplateid ? (
+                <ChecklistConfigurationPanel stepTemplateId={(stepTemplates[editingStepIdx] as any).pm_workflowsteptemplateid} />
+              ) : (
+                <Alert severity="info">
+                  Please save the workflow first to generate this step before configuring checklist items.
+                </Alert>
+              )}
+            </Box>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1 }}>
