@@ -92,6 +92,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
   const [showInsights, setShowInsights] = useState(true)
   const [showAllInsights, setShowAllInsights] = useState(false)
   const [openingStep, setOpeningStep] = useState<string | null>(null)
+  const [expandedInsights, setExpandedInsights] = useState<Record<string, boolean>>({})
 
   const navigateToPending = useCallback(() => {
     window.dispatchEvent(new CustomEvent('navigate', { detail: { tab: 'tasks' } }))
@@ -132,7 +133,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
 
   if (!currentUser) {
     return (
-      <Paper sx={{ p: 3, borderRadius: 2 }}>
+      <Paper sx={{ p: 3, borderRadius: '24px' }}>
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <PersonIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
           <Typography variant="body1" color="text.secondary">No user selected</Typography>
@@ -150,7 +151,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
       {showTasks && (
         <Paper
           sx={{
-            borderRadius: 2,
+            borderRadius: '24px',
             overflow: 'hidden',
             flexGrow: 1,
             display: 'flex',
@@ -231,7 +232,8 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                       className="activity-list-item"
                       sx={{
                         p: 2,
-                        borderRadius: 2,
+                        pl: 2.5,
+                        borderRadius: (theme) => `${theme.shape.borderRadius}px`,
                         borderLeft: '4px solid',
                         borderLeftColor: isOverdue ? 'error.main' : 'warning.main',
                         transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -239,26 +241,19 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                         '&:hover': { bgcolor: 'action.hover', boxShadow: 1 },
                       }}
                     >
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, minWidth: 0 }}>
-                          <Box sx={{ mt: 0.25 }}>
-                            <Box sx={{ width: 36, height: 36, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'primary.50' }}>
-                              {getEntityIcon((step as any).pm_entitytype)}
-                            </Box>
-                          </Box>
-                          <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: fontSizes.sm, color: 'text.primary', mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {(step as any).pm_workflowname || step.pm_stepname || 'Approval Step'}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: fontSizes.sm, color: 'text.primary', mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            Task: {step.pm_stepname || 'Approval Step'}
+                          </Typography>
+                          <Typography variant="body2" sx={{ display: 'block', color: 'primary.main', fontSize: fontSizes.xs, mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            Workflow: {(step as any).pm_workflowname || 'Approval Workflow'}
+                          </Typography>
+                          {(step as any).pm_initiatedby && (
+                            <Typography variant="caption" color="text.disabled" sx={{ display: 'block', fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              Requested by {(step as any).pm_initiatedby}
                             </Typography>
-                            <Typography variant="body2" sx={{ display: 'block', color: 'primary.main', fontSize: fontSizes.xs, mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {step.pm_stepname || 'Step'}
-                            </Typography>
-                            {(step as any).pm_initiatedby && (
-                              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                Requested by {(step as any).pm_initiatedby}
-                              </Typography>
-                            )}
-                          </Box>
+                          )}
                         </Box>
                         <Chip
                           size="small"
@@ -274,7 +269,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                           }}
                         />
                       </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pl: 6.5 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {(step as any).pm_entitytype && (
                             <Chip
@@ -337,7 +332,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
       {showAI && (
         <Paper
           sx={{
-            borderRadius: 2,
+            borderRadius: '24px',
             overflow: 'hidden',
             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             '&:hover': {
@@ -392,9 +387,9 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 1,
-                      maxHeight: 450,
-                      overflowY: 'auto',
-                      pr: 0.75,
+                      maxHeight: showAllInsights ? 450 : 'unset',
+                      overflowY: showAllInsights ? 'auto' : 'visible',
+                      pr: showAllInsights ? 0.75 : 0,
                       // Custom scrollbar
                       '&::-webkit-scrollbar': {
                         width: '6px',
@@ -411,34 +406,63 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                       },
                     }}
                   >
-                    {(showAllInsights ? insights : insights.slice(0, insightDisplayCount)).map((insight) => (
-                      <Paper
-                        key={insight.id}
-                        variant="outlined"
-                        className="activity-list-item"
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 1.5,
-                          borderLeft: '3px solid',
-                          borderLeftColor: insight.type === 'Alert' ? 'warning.main' : 'info.main',
-                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                          <Box sx={{ mt: 0.25 }}>
-                            {insight.type === 'Alert' ? (
-                              <WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} />
-                            ) : (
-                              <LightbulbIcon sx={{ fontSize: 16, color: 'info.main' }} />
-                            )}
-                          </Box>
-                          <Box sx={{ minWidth: 0, flex: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: fontSizes.sm }}>
-                              {insight.title}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5, display: 'block', mt: 0.25 }}>
-                              {insight.description}
-                            </Typography>
+                    {(showAllInsights ? insights : insights.slice(0, insightDisplayCount)).map((insight) => {
+                      const isExpanded = expandedInsights[insight.id]
+                      const words = (insight.description || '').split(/\s+/)
+                      const hasMoreThan50Words = words.length > 50
+                      const truncatedText = isExpanded || !hasMoreThan50Words
+                        ? insight.description
+                        : words.slice(0, 50).join(' ') + '...'
+
+                      return (
+                        <Paper
+                          key={insight.id}
+                          variant="outlined"
+                          className="activity-list-item"
+                          sx={{
+                            p: 1.5,
+                            borderRadius: (theme) => `${theme.shape.borderRadius}px`,
+                            borderLeft: '3px solid',
+                            borderLeftColor: insight.type === 'Alert' ? 'warning.main' : 'info.main',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                            <Box sx={{ mt: 0.25 }}>
+                              {insight.type === 'Alert' ? (
+                                <WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+                              ) : (
+                                <LightbulbIcon sx={{ fontSize: 16, color: 'info.main' }} />
+                              )}
+                            </Box>
+                            <Box sx={{ minWidth: 0, flex: 1 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: fontSizes.sm }}>
+                                {insight.title}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5, display: 'block', mt: 0.25 }}>
+                                {truncatedText}
+                              </Typography>
+                              {hasMoreThan50Words && (
+                                <Typography
+                                  variant="caption"
+                                  color="primary.main"
+                                  onClick={() => {
+                                    setExpandedInsights((prev) => ({
+                                      ...prev,
+                                      [insight.id]: !prev[insight.id],
+                                    }))
+                                  }}
+                                  sx={{
+                                    cursor: 'pointer',
+                                    fontWeight: 700,
+                                    mt: 0.5,
+                                    display: 'inline-block',
+                                    '&:hover': { textDecoration: 'underline' }
+                                  }}
+                                >
+                                  {isExpanded ? 'Show less' : 'Show more'}
+                                </Typography>
+                              )}
                             <Box sx={{ display: 'flex', gap: 0.75, mt: 0.5, flexWrap: 'wrap' }}>
                               <Chip label={insight.type} size="small" color={insight.type === 'Alert' ? 'warning' : 'info'} variant="outlined" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
                               <Chip label={insight.priority} size="small" color={insight.priority === 'High' ? 'error' : insight.priority === 'Medium' ? 'warning' : 'default'} variant="filled" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
@@ -449,7 +473,8 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                           </Box>
                         </Box>
                       </Paper>
-                    ))}
+                    )
+                  })}
                   </Box>
                   {insights.length > insightDisplayCount && (
                     <Button

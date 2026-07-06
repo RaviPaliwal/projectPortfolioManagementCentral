@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogActions,
   useTheme,
+  alpha,
   IconButton,
   Tooltip,
   LinearProgress,
@@ -55,6 +56,16 @@ import { fontSizes } from '@/styles'
 import type { InitiativeModel, ApprovalRequestModel, PortfolioModel, ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
 import type { PipelineKpis } from '@/services'
 import { DashboardTasksWidget, BudgetHealthPanel, PipelineStageSummary, PortfolioHealthSnapshot } from '../components'
+import {
+  MockupKpiRow,
+  MockupOverviewCard,
+  MockupFinancialsCard,
+  MockupTrendCard,
+  MockupPipelineCard,
+  MockupResourceTrendCard,
+  MockupBudgetGaugeCard,
+  MockupSeverityCard
+} from '../components/MockupDashboardLayout'
 import { currencyFormatter, formatDateTime } from '@/utils/formatters'
 import { useUser } from '@/context/UserContext'
 
@@ -272,68 +283,56 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       })()}
 
       {dashboardTab === 0 || !(currentUserPersona === 'FinancialController' || currentUserPersona === 'SystemAdministrator') ? (
-        <>
-          {/* KPI Cards — Standardized Row */}
-          <KpiCardRow items={kpiItems} loading={loading} />
+        <Box sx={{ mt: 1 }}>
+          {/* Top Pill KPI Row */}
+          <MockupKpiRow metrics={metrics} pipelineKpis={pipelineKpis} />
 
-          {/* Dashboard Charts */}
-          <Box sx={{ mb: 3 }}>
-            <DashboardCharts
-              projectStatusData={projectStatusData}
-              portfolioTrendData={portfolioTrendData}
-              capacityAllocationData={capacityAllocationData}
-              plannedVsActualData={plannedVsActualData}
-              utilizationByProjectData={utilizationByProjectData}
-              departmentDemandData={departmentDemandData}
-              resourceMonth={resourceMonth}
-              onResourceMonthChange={setResourceMonth}
-            />
-          </Box>
-
-          {/* Main grid */}
-          <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
-            {/* Row 1: Budget Health + Tasks */}
-            <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex' }}>
-              <BudgetHealthPanel
+          {/* Row 1: RAG Overview, Financial Performance & Trends */}
+          <Grid container spacing={3.5} sx={{ mb: 3.5 }}>
+            <Grid size={{ xs: 12, lg: 3 }}>
+              <MockupOverviewCard metrics={metrics} pipelineKpis={pipelineKpis} />
+            </Grid>
+            <Grid size={{ xs: 12, lg: 6 }}>
+              <MockupFinancialsCard
                 totalApprovedBudget={budgetMetrics.approved}
                 totalActualSpend={budgetMetrics.actual}
-                loading={loading || budgetLoading}
+                portfolios={allPortfolios}
                 selectedYear={budgetYear}
                 availableYears={availableYears}
                 onYearChange={handleBudgetYearChange}
-                portfolios={allPortfolios}
-                sx={{ flex: 1, height: '100%' }}
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex' }}>
-              <DashboardTasksWidget variant="tasks" sx={{ flex: 1, height: '100%' }} />
+            <Grid size={{ xs: 12, lg: 3 }}>
+              <MockupTrendCard portfolioTrendData={portfolioTrendData} metrics={metrics} />
             </Grid>
           </Grid>
 
-          <Grid container spacing={2.5}>
-            {/* Left column — Portfolio Health Snapshot */}
-            <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex' }}>
-              <PortfolioHealthSnapshot
-                metrics={metrics}
-                portfolioSnapshot={portfolioSnapshot}
-                programmeSnapshot={programmeSnapshot}
-                milestonesDue={milestonesDue}
-                loading={loading}
-                sx={{ flex: 1, height: '100%' }}
-              />
+          {/* Row 2: Pipeline, Logged Hours, Budget Consumption Circular Gauge, Threat Levels Column Chart */}
+          <Grid container spacing={3.5} sx={{ mb: 3.5 }}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <MockupPipelineCard initiatives={initiatives} />
             </Grid>
-
-            {/* Right column — AI Insights + Pipeline Stage Summary */}
-            <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <DashboardTasksWidget variant="insights" />
-              <PipelineStageSummary
-                initiatives={initiatives}
-                loading={loading}
-                sx={{ flex: 1 }}
-              />
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <MockupResourceTrendCard plannedVsActualData={plannedVsActualData} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <MockupBudgetGaugeCard totalApprovedBudget={budgetMetrics.approved} totalActualSpend={budgetMetrics.actual} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <MockupSeverityCard risks={risks} issues={issues} />
             </Grid>
           </Grid>
-        </>
+
+          {/* Row 3: Action Center & AI Copilot Tasks (Approvals & Insights) */}
+          <Grid container spacing={3.5}>
+            <Grid size={{ xs: 12, lg: 7 }}>
+              <DashboardTasksWidget variant="tasks" sx={{ height: '100%' }} />
+            </Grid>
+            <Grid size={{ xs: 12, lg: 5 }}>
+              <DashboardTasksWidget variant="insights" sx={{ height: '100%' }} />
+            </Grid>
+          </Grid>
+        </Box>
       ) : (
         <FinancialReportsPage onNavigate={onNavigate} />
       )}
