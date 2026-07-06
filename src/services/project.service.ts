@@ -259,6 +259,27 @@ export async function fetchProjectsFull(): Promise<ProjectModel[]> {
 
 export const fetchProjects = fetchProjectsFull
 
+export async function generateNextProjectCode(): Promise<string> {
+    try {
+        const result = await Pm_projectsService.getAll({ select: ['pm_projectcode'] })
+        if (!result.success) return 'PRJ-1001'
+        const list = unwrapList<Pm_projects>(result)
+        let maxNum = 1000
+        list.forEach((item) => {
+            const code = item.pm_projectcode
+            if (code && code.startsWith('PRJ-')) {
+                const numPart = parseInt(code.substring(4), 10)
+                if (!isNaN(numPart) && numPart > maxNum) {
+                    maxNum = numPart
+                }
+            }
+        })
+        return `PRJ-${maxNum + 1}`
+    } catch {
+        return 'PRJ-1001'
+    }
+}
+
 export async function createProject(payload: Partial<ProjectModel>): Promise<ProjectModel | null> {
     const cleanPayload: Record<string, any> = {}
     const exclude = ['_pm_portfolio_value', '_pm_programme_value', 'pm_projectmanager', 'pm_projectid']
@@ -266,6 +287,9 @@ export async function createProject(payload: Partial<ProjectModel>): Promise<Pro
         if (value !== undefined && value !== null && value !== '' && !exclude.includes(key)) {
             cleanPayload[key] = value
         }
+    }
+    if (!cleanPayload.pm_projectcode) {
+        cleanPayload.pm_projectcode = await generateNextProjectCode()
     }
     if (payload._pm_portfolio_value) cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${normalizeLookupId(payload._pm_portfolio_value)})`
     if (payload._pm_programme_value) cleanPayload['pm_programme@odata.bind'] = `/pm_programmes(${normalizeLookupId(payload._pm_programme_value)})`

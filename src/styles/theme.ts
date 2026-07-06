@@ -116,9 +116,9 @@ export const getTheme = (mode: PaletteMode) =>
             },
             '&.Mui-focused': {
               backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
-              boxShadow: mode === 'light' ? '0 0 0 3px rgba(27, 118, 255, 0.1)' : '0 0 0 3px rgba(27, 118, 255, 0.25)',
+              boxShadow: mode === 'light' ? '0 0 0 3px rgba(33, 124, 53, 0.1)' : '0 0 0 3px rgba(33, 124, 53, 0.25)',
               '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: '#1b76ff',
+                borderColor: '#217C35',
                 borderWidth: '1.5px',
               },
             },
@@ -132,15 +132,31 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           root: {
             fontSize: fontSizes.base,
+            '&.Mui-focused': {
+              color: '#217C35',
+            },
           },
           outlined: {
             '&.MuiInputLabel-shrink': {
               transform: 'translate(14px, -9px) scale(0.75)',
+              backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
+              padding: '0 6px',
             },
           },
           sizeSmall: {
             '&.MuiInputLabel-shrink': {
               transform: 'translate(14px, -9px) scale(0.75)',
+              backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
+              padding: '0 6px',
+            },
+          },
+        },
+      },
+      MuiFormLabel: {
+        styleOverrides: {
+          root: {
+            '&.Mui-focused': {
+              color: '#217C35',
             },
           },
         },

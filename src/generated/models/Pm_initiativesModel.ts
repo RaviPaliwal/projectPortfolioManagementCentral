@@ -5,7 +5,7 @@
 export const Pm_initiativespm_initiativetype = {
   0: 'Project',
   1: 'Programme',
-  2: 'Initiative'
+  2: 'Portfolio'
 } as const;
 export type Pm_initiativespm_initiativetype = keyof typeof Pm_initiativespm_initiativetype;
 export const Pm_initiativespm_pipelinestatus = {
@@ -42,8 +42,9 @@ export interface Pm_initiativesBase {
   pm_initiativetype?: Pm_initiativespm_initiativetype;
   pm_pipelinestatus?: Pm_initiativespm_pipelinestatus;
   "pm_portfolio@odata.bind"?: string;
-  pm_portfoliocode?: string;
   pm_priorityscore?: number;
+  "pm_Programme@odata.bind"?: string;
+  "pm_RequestedBy@odata.bind"?: string;
   pm_requestorname?: string;
   pm_strategicalignmentscore?: number;
   pm_submissiondate?: string;
@@ -74,6 +75,9 @@ export interface Pm_initiatives extends Pm_initiativesBase {
   pm_initiativetypename?: string;
   pm_pipelinestatusname?: string;
   pm_portfolioname?: string;
+  pm_programmename?: string;
+  pm_requestedbyname?: string;
+  pm_requestedbyyominame?: string;
   statecodename?: string;
   statuscodename?: string;
   transactioncurrencyidname?: string;
@@ -94,6 +98,10 @@ export interface Pm_initiatives extends Pm_initiativesBase {
   _owninguser_value?: string;
   pm_portfolio?: object;
   _pm_portfolio_value?: string;
+  pm_programme?: object;
+  _pm_programme_value?: string;
+  pm_requestedby?: object;
+  _pm_requestedby_value?: string;
   transactioncurrencyid?: object;
   _transactioncurrencyid_value?: string;
 }

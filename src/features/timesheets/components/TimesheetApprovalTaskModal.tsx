@@ -92,18 +92,18 @@ export const TimesheetApprovalTaskModal: React.FC<TimesheetApprovalTaskModalProp
 
   return (
     <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: 'primary.contrastText', py: 1.5, pr: 1 }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', py: 2, px: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <EventNoteIcon />
+          <EventNoteIcon sx={{ color: 'primary.main' }} />
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Timesheet Review</Typography>
-            <Typography variant="caption" sx={{ opacity: 0.85 }}>
+            <Typography variant="caption" color="text.secondary">
               {timesheet?.pm_resourcename || timesheet?.pm_ownername || ''}
             </Typography>
           </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'common.white' }}>
+          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'text.secondary' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>

@@ -232,7 +232,7 @@
           "x-ms-dataverse-attribute": "pm_businesscasedescription",
           "x-ms-dataverse-type": "StringType",
           "x-ms-schema-name": "pm_businesscasedescription",
-          "maxLength": 100
+          "maxLength": 2000
         },
         "pm_convertedtoreference": {
           "type": "string",
@@ -307,7 +307,7 @@
           "enum": [
             "Project",
             "Programme",
-            "Initiative"
+            "Portfolio"
           ],
           "x-ms-enum-values": [
             0,
@@ -379,14 +379,6 @@
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_portfolio"
         },
-        "pm_portfoliocode": {
-          "type": "string",
-          "title": "Portfolio",
-          "x-ms-dataverse-attribute": "pm_portfoliocode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_portfoliocode",
-          "maxLength": 100
-        },
         "pm_portfolioname": {
           "type": "string",
           "title": "pm_portfolioname",
@@ -402,6 +394,47 @@
           "x-ms-dataverse-attribute": "pm_priorityscore",
           "x-ms-dataverse-type": "IntegerType",
           "x-ms-schema-name": "pm_priorityscore"
+        },
+        "pm_programme": {
+          "type": "string",
+          "title": "Programme",
+          "x-ms-dataverse-attribute": "pm_programme",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_Programme"
+        },
+        "pm_programmename": {
+          "type": "string",
+          "title": "pm_programmename",
+          "x-ms-dataverse-attribute": "pm_programmename",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_ProgrammeName",
+          "x-ms-read-only": true,
+          "maxLength": 850
+        },
+        "pm_requestedby": {
+          "type": "string",
+          "title": "Requested By",
+          "x-ms-dataverse-attribute": "pm_requestedby",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_RequestedBy"
+        },
+        "pm_requestedbyname": {
+          "type": "string",
+          "title": "pm_requestedbyname",
+          "x-ms-dataverse-attribute": "pm_requestedbyname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_RequestedByName",
+          "x-ms-read-only": true,
+          "maxLength": 200
+        },
+        "pm_requestedbyyominame": {
+          "type": "string",
+          "title": "pm_requestedbyyominame",
+          "x-ms-dataverse-attribute": "pm_requestedbyyominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_RequestedByYomiName",
+          "x-ms-read-only": true,
+          "maxLength": 200
         },
         "pm_requestorname": {
           "type": "string",

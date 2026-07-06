@@ -185,8 +185,16 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
               onChange={(e) => setForm((p) => ({ ...p, pm_projectname: e.target.value }))} />
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Project code" size="small" value={form.pm_projectcode ?? ''}
-              onChange={(e) => setForm((p) => ({ ...p, pm_projectcode: e.target.value }))} />
+            <TextField
+              fullWidth
+              label="Project code"
+              size="small"
+              value={initialData?.pm_projectid ? (form.pm_projectcode ?? '') : '(Auto-generated)'}
+              disabled
+              slotProps={{
+                input: { readOnly: true },
+              }}
+            />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">

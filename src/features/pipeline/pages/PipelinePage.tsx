@@ -8,6 +8,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  LinearProgress,
   TableHead,
   TableRow,
   TableSortLabel,
@@ -80,10 +81,12 @@ import {
   fetchPortfolioHierarchy,
   startWorkflowForEntity,
   uploadDocument,
+  fetchSystemUsers,
 } from '@/services'
 
 import { useUser } from '@/context/UserContext'
 import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
+import type { Systemusers } from '@/generated/models/SystemusersModel'
 import type { PipelineKpis } from '@/services'
 import { fontSizes } from '@/styles'
 import {
@@ -101,12 +104,13 @@ import {
   DocumentPreviewDialog,
   Button,
   ConfirmDialog,
+  WorkflowMilestone,
 } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { WORKFLOW_DECISION_EVENT } from '@/services/workflow.service'
 import { ConvertToProjectDialog } from '../components/ConvertToProjectDialog'
-import { createProject } from '@/services'
+import { createProject, createProgramme, createPortfolio } from '@/services'
 
 // ── Export columns ────────────────────────────────────────────────────────────
 const pipelineExportColumns: ExportColumn[] = [
@@ -146,7 +150,7 @@ const STATUS_FILTER_OPTIONS: FilterOption[] = [
   { value: '4', label: 'Converted' },
 ]
 
-type SortField = 'name' | 'sponsor' | 'strategicScore' | 'estimatedCost' | 'status'
+type SortField = 'name' | 'sponsor' | 'strategicScore' | 'type' | 'status'
 type SortDir = 'asc' | 'desc'
 
 interface SortState {
@@ -185,7 +189,7 @@ function StrategicScoreDisplay({ score }: { score?: number }) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export default function PipelinePage() {
+export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) => void }) {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
@@ -201,6 +205,7 @@ export default function PipelinePage() {
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [users, setUsers] = useState<Systemusers[]>([])
 
   // ── Grid State ─────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('')
@@ -222,10 +227,11 @@ export default function PipelinePage() {
     pm_businesscasedescription: '',
     pm_estimatedcosteur: 0,
     pm_estimatedbenefitseur: 0,
-    pm_requestorname: '',
-    pm_initiativetype: 2,
+    _pm_requestedby_value: '',
+    pm_initiativetype: 0,
     pm_pipelinestatus: 1,
     _pm_portfolio_value: '',
+    _pm_programme_value: '',
   })
 
   // ── Confirmation Dialog State ─────────────────────────────────────────────
@@ -250,6 +256,7 @@ export default function PipelinePage() {
   const [programmes, setProgrammes] = useState<ProgrammeModel[]>([])
   const [projects, setProjects] = useState<ProjectModel[]>([])
   const [showConvertDialog, setShowConvertDialog] = useState(false)
+  const [showBudgetWarningDialog, setShowBudgetWarningDialog] = useState(false)
 
   // ── Portfolio budget info for create modal ──────────────────────────────
   const portfolioBudgetInfo = useMemo(() => {
@@ -278,16 +285,18 @@ export default function PipelinePage() {
     setLoading(true)
     setError(null)
     try {
-      const [list, kpiData, hierarchy] = await Promise.all([
+      const [list, kpiData, hierarchy, systemUsers] = await Promise.all([
         fetchInitiatives(),
         fetchPipelineKpis(),
         fetchPortfolioHierarchy(),
+        fetchSystemUsers(),
       ])
       setInitiatives(list)
       setKpis(kpiData)
       setPortfolios(hierarchy.portfolios)
       setProgrammes(hierarchy.programmes)
       setProjects(hierarchy.projects)
+      setUsers(systemUsers)
     } catch {
       setError('Unable to load pipeline data.')
     } finally {
@@ -370,7 +379,7 @@ export default function PipelinePage() {
       list = list.filter(
         (i) =>
           i.pm_name?.toLowerCase().includes(q) ||
-          i.pm_requestorname?.toLowerCase().includes(q) ||
+          i.pm_requestedbyname?.toLowerCase().includes(q) ||
           i.pm_businesscase?.toLowerCase().includes(q) ||
           i.pm_portfolioname?.toLowerCase().includes(q)
       )
@@ -387,13 +396,13 @@ export default function PipelinePage() {
           cmp = (a.pm_name ?? '').localeCompare(b.pm_name ?? '')
           break
         case 'sponsor':
-          cmp = (a.pm_requestorname ?? '').localeCompare(b.pm_requestorname ?? '')
+          cmp = (a.pm_requestedbyname ?? '').localeCompare(b.pm_requestedbyname ?? '')
           break
         case 'strategicScore':
           cmp = (a.pm_strategicalignmentscore ?? 0) - (b.pm_strategicalignmentscore ?? 0)
           break
-        case 'estimatedCost':
-          cmp = (a.pm_estimatedcost ?? 0) - (b.pm_estimatedcost ?? 0)
+        case 'type':
+          cmp = Number(a.pm_initiativetype ?? 0) - Number(b.pm_initiativetype ?? 0)
           break
         case 'status':
           cmp = (String(a.pm_pipelinestatus ?? '')).localeCompare(String(b.pm_pipelinestatus ?? ''))
@@ -432,11 +441,7 @@ export default function PipelinePage() {
     setEditScoreMode(false)
   }, [])
 
-  const handleCreateInitiative = async () => {
-    if (!createForm.pm_initiativename.trim()) {
-      setError('Initiative name is required.')
-      return
-    }
+  const executeCreateInitiative = async () => {
     setError(null)
     setActionLoading(true)
     try {
@@ -462,10 +467,11 @@ export default function PipelinePage() {
           pm_businesscasedescription: '',
           pm_estimatedcosteur: 0,
           pm_estimatedbenefitseur: 0,
-          pm_requestorname: '',
-          pm_initiativetype: 2,
+          _pm_requestedby_value: '',
+          pm_initiativetype: 0,
           pm_pipelinestatus: 1,
           _pm_portfolio_value: '',
+          _pm_programme_value: '',
         })
         setStagedFiles([])
         await loadData()
@@ -477,6 +483,18 @@ export default function PipelinePage() {
       setError('Unable to create initiative.')
     } finally {
       setActionLoading(false)
+    }
+  }
+
+  const handleCreateInitiative = () => {
+    if (!createForm.pm_initiativename.trim()) {
+      setError('Initiative name is required.')
+      return
+    }
+    if (hasBudgetError) {
+      setShowBudgetWarningDialog(true)
+    } else {
+      executeCreateInitiative()
     }
   }
 
@@ -519,51 +537,122 @@ export default function PipelinePage() {
   const handleConvertToProject = () => {
     setShowConvertDialog(true)
   }
-
-  const handleCreateProjectFromInitiative = async (projectData: Partial<any>, files: File[] = []) => {
+  const handleConvertInitiative = async (entityData: Partial<any>, files: File[] = [], triggerApproval: boolean = true) => {
     if (!selectedInitiative) return
     setActionLoading(true)
     setError(null)
+    const type = selectedInitiative.pm_initiativetype
     try {
-      const created = await createProject(projectData)
-      if (created && created.pm_projectid) {
-        // Upload any staged files linked to the new project ID
+      let createdId = ''
+      let createdName = ''
+      let moduleName = ''
+
+      if (type === 0) {
+        const projPayload = {
+          pm_projectname: entityData.pm_projectname,
+          pm_projectcode: entityData.pm_projectcode,
+          _pm_portfolio_value: entityData._pm_portfolio_value,
+          _pm_programme_value: entityData._pm_programme_value,
+          pm_projectmanager: entityData.pm_projectmanager,
+          pm_projectsponsor: entityData.pm_projectsponsor,
+          pm_projectphase: entityData.pm_projectphase,
+          pm_ragstatus: entityData.pm_ragstatus,
+          pm_approvedbudgeteur: entityData.pm_approvedbudgeteur,
+          pm_actualcosteur: entityData.pm_actualcosteur,
+          pm_plannedstartdate: entityData.pm_plannedstartdate,
+          pm_plannedenddate: entityData.pm_plannedenddate,
+          pm_actualstartdate: entityData.pm_actualstartdate,
+          pm_actualenddate: entityData.pm_actualenddate,
+          pm_businessunit: entityData.pm_businessunit,
+          pm_projectpriority: entityData.pm_projectpriority,
+          pm_percentcomplete: entityData.pm_percentcomplete,
+          pm_costragstatus: entityData.pm_costragstatus,
+          pm_scheduleragstatus: entityData.pm_scheduleragstatus,
+          pm_benefitsragstatus: entityData.pm_benefitsragstatus,
+        }
+        const created = await createProject(projPayload)
+        if (created && created.pm_projectid) {
+          createdId = created.pm_projectid
+          createdName = created.pm_projectname ?? 'New Project'
+          moduleName = MODULE_NAMES.PROJECTS.value
+        }
+      } else if (type === 1) {
+        const progPayload = {
+          pm_programmename: entityData.pm_programmename,
+          _pm_portfolio_value: entityData._pm_portfolio_value,
+          pm_programmemanager: entityData.pm_programmemanager,
+          pm_sponsorname: entityData.pm_sponsorname,
+          pm_businessunit: entityData.pm_businessunit,
+          pm_ragstatus: entityData.pm_ragstatus,
+          pm_programmephase: entityData.pm_projectphase,
+          pm_budgeteur: entityData.pm_approvedbudgeteur,
+          pm_startdate: entityData.pm_plannedstartdate,
+          pm_enddate: entityData.pm_plannedenddate,
+          pm_programmedescription: entityData.pm_programmedescription,
+        }
+        const created = await createProgramme(progPayload)
+        if (created && created.pm_programmeid) {
+          createdId = created.pm_programmeid
+          createdName = created.pm_programmename ?? 'New Programme'
+          moduleName = MODULE_NAMES.PROGRAMMES.value
+        }
+      } else if (type === 2) {
+        const portPayload = {
+          pm_portfolioname: entityData.pm_portfolioname,
+          pm_portfoliodescription: entityData.pm_portfoliodescription,
+          pm_ownerlookup: entityData.pm_ownerlookup,
+          pm_businessunit: entityData.pm_businessunit,
+          pm_ragstatus: entityData.pm_ragstatus,
+          pm_portfoliostatus: entityData.pm_projectphase,
+          pm_approvedbudgeteur: entityData.pm_approvedbudgeteur,
+          pm_startdate: entityData.pm_plannedstartdate,
+          pm_enddate: entityData.pm_plannedenddate,
+          pm_strategicobjective: entityData.pm_strategicobjective,
+        }
+        const created = await createPortfolio(portPayload)
+        if (created && created.pm_portfolioid) {
+          createdId = created.pm_portfolioid
+          createdName = created.pm_portfolioname ?? 'New Portfolio'
+          moduleName = MODULE_NAMES.PORTFOLIOS.value
+        }
+      }
+
+      if (createdId) {
         if (files.length > 0) {
           const ownerId = currentUser?.systemuserid || ''
           await Promise.all(
             files.map((file) =>
-              uploadDocument(MODULE_NAMES.PROJECTS.value, created.pm_projectid!, file, ownerId)
+              uploadDocument(moduleName, createdId, file, ownerId)
             )
           )
         }
 
-        // Update the initiative's conversion reference
         try {
           await updateInitiative(selectedInitiative.pm_initiativeid!, {
-            pm_convertedtoreference: created.pm_projectid,
+            pm_convertedtoreference: createdId,
           } as any)
           await updateInitiativeStatus(selectedInitiative.pm_initiativeid!, 4)
         } catch (e) {
           // Ignore initiative conversion reference update failure
         }
         setShowConvertDialog(false)
-        setSuccessMsg(`Project "${created.pm_projectname}" created successfully.`)
+        setSuccessMsg(`Converted to ${type === 1 ? 'Programme' : type === 2 ? 'Portfolio' : 'Project'} "${createdName}" successfully.`)
         await loadData()
         setSelectedInitiative(null)
-        if (created.pm_projectid) {
-          startWorkflowForEntity('default-template', created.pm_projectid, MODULE_NAMES.PROJECTS.value, currentUser?.fullname ?? 'System')
+        if (triggerApproval) {
+          await startWorkflowForEntity('default-template', createdId, moduleName, currentUser?.fullname ?? 'System')
         }
         setTimeout(() => setSuccessMsg(null), 3000)
       } else {
         setError('Conversion failed. Please try again.')
       }
-    } catch {
-      setError('Unable to convert initiative to project.')
+    } catch (err: any) {
+      console.error('[PipelinePage] handleConvertInitiative exception:', err)
+      setError(`Unable to convert initiative to ${type === 1 ? 'programme' : type === 2 ? 'portfolio' : 'project'}.`)
     } finally {
       setActionLoading(false)
     }
   }
-
   const handleDefer = async () => {
     if (!selectedInitiative?.pm_initiativeid) return
     setActionLoading(true)
@@ -673,7 +762,7 @@ export default function PipelinePage() {
                   { label: 'Initiative Name', sortable: true, active: sort.field === 'name', dir: sort.dir, onClick: () => handleSort('name') },
                   { label: 'Business Sponsor', sortable: true, active: sort.field === 'sponsor', dir: sort.dir, onClick: () => handleSort('sponsor') },
                   { label: 'Strategic Alignment', sortable: true, active: sort.field === 'strategicScore', dir: sort.dir, onClick: () => handleSort('strategicScore') },
-                  { label: 'Estimated Cost', align: 'right', sortable: true, active: sort.field === 'estimatedCost', dir: sort.dir, onClick: () => handleSort('estimatedCost') },
+                  { label: 'Initiative Type', sortable: true, active: sort.field === 'type', dir: sort.dir, onClick: () => handleSort('type') },
                   { label: 'Status', sortable: true, active: sort.field === 'status', dir: sort.dir, onClick: () => handleSort('status') },
                   { label: 'Actions', align: 'center' },
                 ]} />
@@ -700,11 +789,23 @@ export default function PipelinePage() {
                               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                                 {initiative.pm_name ?? 'Untitled Initiative'}
                               </Typography>
-                              {initiative.pm_portfolioname && (
-                                <Typography variant="caption" color="text.secondary">
-                                  {initiative.pm_portfolioname}
-                                </Typography>
-                              )}
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
+                                {initiative.pm_portfolioname && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    {initiative.pm_portfolioname}
+                                  </Typography>
+                                )}
+                                {initiative.pm_portfolioname && initiative.pm_programmename && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    •
+                                  </Typography>
+                                )}
+                                {initiative.pm_programmename && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    {initiative.pm_programmename}
+                                  </Typography>
+                                )}
+                              </Box>
                             </Box>
                           </Box>
                         </TableCell>
@@ -712,7 +813,7 @@ export default function PipelinePage() {
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                             <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                             <Typography variant="body2" color="text.secondary">
-                              {initiative.pm_requestorname || '—'}
+                              {initiative.pm_requestedbyname || '—'}
                             </Typography>
                           </Box>
                         </TableCell>
@@ -724,10 +825,17 @@ export default function PipelinePage() {
                             </Typography>
                           </Box>
                         </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
-                            {initiative.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
-                          </Typography>
+                        <TableCell>
+                          {initiative.pm_initiativetype != null ? (
+                            <StatusTag
+                              label={initiative.pm_initiativetype === 0 ? 'Project' : initiative.pm_initiativetype === 1 ? 'Programme' : initiative.pm_initiativetype === 2 ? 'Portfolio' : 'Unknown'}
+                              color={initiative.pm_initiativetype === 0 ? 'primary' : initiative.pm_initiativetype === 1 ? 'secondary' : 'info'}
+                              size="small"
+                              sx={{ fontWeight: 600 }}
+                            />
+                          ) : (
+                            <Typography variant="body2" color="text.disabled">—</Typography>
+                          )}
                         </TableCell>
                         <TableCell>
                           <StatusTag label={statusCfg.label} color={statusCfg.color} size="small" />
@@ -776,7 +884,7 @@ export default function PipelinePage() {
           />
           <PageHeader
             title={selectedInitiative?.pm_name ?? ''}
-            subtitle={selectedInitiative?.pm_requestorname ? `Sponsor: ${selectedInitiative.pm_requestorname}` : undefined}
+            subtitle={selectedInitiative?.pm_requestedbyname ? `Sponsor: ${selectedInitiative.pm_requestedbyname}` : undefined}
           />
 
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: -2, mb: 1.5 }}>
@@ -801,6 +909,67 @@ export default function PipelinePage() {
             )}
           </Box>
 
+          {/* Workflow Step Milestones */}
+          <WorkflowMilestone
+            entityId={selectedInitiative.pm_initiativeid || ''}
+            moduleName={MODULE_NAMES.PIPELINE.value}
+          />
+
+          {/* Converted Entity Banner */}
+          {selectedInitiative.pm_convertedtoreference && (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2.5,
+                borderRadius: '16px',
+                borderColor: 'success.main',
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(46, 125, 50, 0.05)' : 'rgba(46, 125, 50, 0.02)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 2,
+                mb: 3
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>
+                  <TransformIcon sx={{ color: '#fff' }} />
+                </Avatar>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'success.main' }}>
+                    Converted to {selectedInitiative.pm_initiativetype === 1 ? 'Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Portfolio' : 'Project'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    This pipeline initiative has been successfully converted.
+                  </Typography>
+                </Box>
+              </Box>
+              <Button
+                variant="contained"
+                color="success"
+                size="small"
+                onClick={() => {
+                  const targetRef = selectedInitiative.pm_convertedtoreference;
+                  if (!targetRef) return;
+                  if (selectedInitiative.pm_initiativetype === 1) {
+                    sessionStorage.setItem('preselectProgrammeId', targetRef);
+                    if (onNavigate) onNavigate('programmes');
+                  } else if (selectedInitiative.pm_initiativetype === 2) {
+                    sessionStorage.setItem('preselectPortfolioId', targetRef);
+                    if (onNavigate) onNavigate('portfolios');
+                  } else {
+                    sessionStorage.setItem('preselectProjectId', targetRef);
+                    if (onNavigate) onNavigate('projects');
+                  }
+                }}
+                sx={{ fontWeight: 600 }}
+              >
+                Go to Converted {selectedInitiative.pm_initiativetype === 1 ? 'Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Portfolio' : 'Project'}
+              </Button>
+            </Paper>
+          )}
+
           {/* Unified Overview Block */}
           <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', mb: 3.5, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
             <Grid container spacing={4}>
@@ -813,7 +982,7 @@ export default function PipelinePage() {
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 2.5 }}>
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Sponsor</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedInitiative.pm_requestorname || '—'}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedInitiative.pm_requestedbyname || '—'}</Typography>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Target Portfolio</Typography>
@@ -961,7 +1130,17 @@ export default function PipelinePage() {
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1, justifyContent: 'center' }}>
                   {[
                     { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
-                    { icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />, title: 'Convert to Project', desc: 'Create project from initiative.', color: 'success.main', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
+                    {
+                      icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />,
+                      title: selectedInitiative.pm_initiativetype === 1 ? 'Convert to Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Convert to Portfolio' : 'Convert to Project',
+                      desc: selectedInitiative.pm_initiativetype === 1 ? 'Create programme from initiative.' : selectedInitiative.pm_initiativetype === 2 ? 'Create portfolio from initiative.' : 'Create project from initiative.',
+                      color: 'success.main',
+                      btnLabel: selectedInitiative.pm_initiativetype === 1 ? 'Convert to Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Convert to Portfolio' : 'Convert to Project',
+                      btnVariant: 'contained' as const,
+                      btnColor: 'success' as const,
+                      onClick: handleConvertToProject,
+                      btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0'
+                    },
                   ]
                     .filter((a) => !a.btnDisabled)
                     .map((action, idx) => (
@@ -983,7 +1162,17 @@ export default function PipelinePage() {
                     ))}
                   {[
                     { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
-                    { icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />, title: 'Convert to Project', desc: 'Create project from initiative.', color: 'success.main', btnLabel: 'Convert to Project', btnVariant: 'contained' as const, btnColor: 'success' as const, onClick: handleConvertToProject, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0' },
+                    {
+                      icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />,
+                      title: selectedInitiative.pm_initiativetype === 1 ? 'Convert to Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Convert to Portfolio' : 'Convert to Project',
+                      desc: selectedInitiative.pm_initiativetype === 1 ? 'Create programme from initiative.' : selectedInitiative.pm_initiativetype === 2 ? 'Create portfolio from initiative.' : 'Create project from initiative.',
+                      color: 'success.main',
+                      btnLabel: selectedInitiative.pm_initiativetype === 1 ? 'Convert to Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Convert to Portfolio' : 'Convert to Project',
+                      btnVariant: 'contained' as const,
+                      btnColor: 'success' as const,
+                      onClick: handleConvertToProject,
+                      btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0'
+                    },
                   ].filter((a) => a.btnDisabled).length === 2 && (
                       <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Typography variant="body2" color="text.secondary">
@@ -1066,40 +1255,27 @@ export default function PipelinePage() {
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Requester / Sponsor"
-                fullWidth
-                size="small"
-                value={createForm.pm_requestorname}
-                onChange={(e) => setCreateForm((f) => ({ ...f, pm_requestorname: e.target.value }))}
-                slotProps={{ input: { startAdornment: <PersonIcon sx={{ fontSize: 18, mr: 0.75, color: 'action.active' }} /> } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel id="pipeline-portfolio-label">Portfolio (optional)</InputLabel>
+                <InputLabel id="pipeline-requestedby-label">Requested By</InputLabel>
                 <Select
-                  id="pipeline-portfolio-select"
-                  labelId="pipeline-portfolio-label"
-                  value={createForm._pm_portfolio_value}
-                  label="Portfolio (optional)"
-                  onChange={(e) => setCreateForm((f) => ({ ...f, _pm_portfolio_value: e.target.value }))}
+                  id="pipeline-requestedby-select"
+                  labelId="pipeline-requestedby-label"
+                  value={createForm._pm_requestedby_value}
+                  label="Requested By"
+                  onChange={(e) => setCreateForm((f) => ({ ...f, _pm_requestedby_value: e.target.value }))}
                 >
                   <MenuItem value="">
-                    <em style={{ color: 'text.disabled' }}>No portfolio</em>
+                    <em style={{ color: 'text.disabled' }}>Select User</em>
                   </MenuItem>
-                  {portfolios.map((p) => (
-                    <MenuItem key={p.pm_portfolioid} value={p.pm_portfolioid}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <AccountTreeIcon sx={{ fontSize: 16, color: 'primary.main', opacity: 0.6 }} />
-                        {p.pm_portfolioname}
-                      </Box>
+                  {users.map((u) => (
+                    <MenuItem key={u.systemuserid} value={u.systemuserid}>
+                      {u.fullname}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel id="pipeline-initiative-type-label">Initiative Type</InputLabel>
                 <Select
@@ -1107,77 +1283,186 @@ export default function PipelinePage() {
                   labelId="pipeline-initiative-type-label"
                   value={createForm.pm_initiativetype}
                   label="Initiative Type"
-                  onChange={(e) => setCreateForm((f) => ({ ...f, pm_initiativetype: e.target.value as number }))}
+                  onChange={(e) => {
+                    const newType = e.target.value as number
+                    setCreateForm((f) => {
+                      const updated = { ...f, pm_initiativetype: newType }
+                      if (newType !== 0) {
+                        updated._pm_programme_value = ''
+                      }
+                      if (newType === 2) {
+                        updated._pm_portfolio_value = ''
+                        updated._pm_programme_value = ''
+                      }
+                      return updated
+                    })
+                  }}
                 >
-                  <MenuItem value={2}>Initiative</MenuItem>
                   <MenuItem value={0}>Project</MenuItem>
                   <MenuItem value={1}>Programme</MenuItem>
+                  <MenuItem value={2}>Portfolio</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
+
+            {createForm.pm_initiativetype !== 2 && (
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="pipeline-portfolio-label">Portfolio (optional)</InputLabel>
+                  <Select
+                    id="pipeline-portfolio-select"
+                    labelId="pipeline-portfolio-label"
+                    value={createForm._pm_portfolio_value}
+                    label="Portfolio (optional)"
+                    onChange={(e) => {
+                      const newPortfolioId = e.target.value
+                      setCreateForm((f) => {
+                        const updated = { ...f, _pm_portfolio_value: newPortfolioId }
+                        const selectedProg = programmes.find(p => p.pm_programmeid === f._pm_programme_value)
+                        if (selectedProg && selectedProg._pm_portfolio_value !== newPortfolioId) {
+                          updated._pm_programme_value = ''
+                        }
+                        return updated
+                      })
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em style={{ color: 'text.disabled' }}>No portfolio</em>
+                    </MenuItem>
+                    {portfolios.map((p) => (
+                      <MenuItem key={p.pm_portfolioid} value={p.pm_portfolioid}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AccountTreeIcon sx={{ fontSize: 16, color: 'primary.main', opacity: 0.6 }} />
+                          {p.pm_portfolioname}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+
+            {createForm.pm_initiativetype === 0 && (
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="pipeline-programme-label">Programme (optional)</InputLabel>
+                  <Select
+                    id="pipeline-programme-select"
+                    labelId="pipeline-programme-label"
+                    value={createForm._pm_programme_value}
+                    label="Programme (optional)"
+                    onChange={(e) => setCreateForm((f) => ({ ...f, _pm_programme_value: e.target.value }))}
+                  >
+                    <MenuItem value="">
+                      <em style={{ color: 'text.disabled' }}>No programme</em>
+                    </MenuItem>
+                    {programmes
+                      .filter(p => !createForm._pm_portfolio_value || p._pm_portfolio_value === createForm._pm_portfolio_value)
+                      .map((p) => (
+                        <MenuItem key={p.pm_programmeid} value={p.pm_programmeid}>
+                          {p.pm_programmename}
+                        </MenuItem>
+                      ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
           </Grid>
 
           {/* ── Section: Financial Estimates ── */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <MonetizationOnIcon sx={{ fontSize: 18, color: 'success.main' }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-              Financial Estimates
-            </Typography>
-            <Divider sx={{ flex: 1 }} />
-          </Box>
-          <Grid container spacing={2.5} sx={{ mb: 3 }}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Estimated Cost (EUR)"
-                type="number"
-                fullWidth
-                size="small"
-                value={createForm.pm_estimatedcosteur}
-                onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedcosteur: Number(e.target.value) }))}
-                error={hasBudgetError}
-                helperText={hasBudgetError ? `Exceeds remaining portfolio budget by ${currencyFormatter.format(createForm.pm_estimatedcosteur - portfolioBudgetInfo!.availableBudget)}` : ''}
-                slotProps={{
-                  input: { startAdornment: <CurrencyExchangeIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} /> },
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Estimated Benefits (EUR)"
-                type="number"
-                fullWidth
-                size="small"
-                value={createForm.pm_estimatedbenefitseur}
-                onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedbenefitseur: Number(e.target.value) }))}
-                slotProps={{
-                  input: { startAdornment: <TrendingUpIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} /> },
-                }}
-              />
-            </Grid>
-          </Grid>
-
-          {portfolioBudgetInfo && (
-            <Paper variant="outlined" sx={{ p: 1.5, mb: 3, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'grey.50' }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <AccountBalanceWalletIcon sx={{ fontSize: 14 }} /> Portfolio Budget Allocation
-              </Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <Typography variant="caption" color="text.secondary">Portfolio Budget</Typography>
-                <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace' }}>{currencyFormatter.format(portfolioBudgetInfo.portfolioBudget)}</Typography>
+          {createForm.pm_initiativetype !== 2 && (
+            <>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <MonetizationOnIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+                  Financial Estimates
+                </Typography>
+                <Divider sx={{ flex: 1 }} />
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <Typography variant="caption" color="text.secondary">Allocated to programmes & other initiatives</Typography>
-                <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace', color: 'warning.main' }}>{currencyFormatter.format(portfolioBudgetInfo.usedBudget)}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="caption" sx={{ fontWeight: 700 }}>Available</Typography>
-                <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: 'monospace', color: portfolioBudgetInfo.availableBudget <= 0 ? 'error.main' : 'success.main' }}>{currencyFormatter.format(portfolioBudgetInfo.availableBudget)}</Typography>
-              </Box>
-              {portfolioBudgetInfo.availableBudget <= 0 && (
-                <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.75, fontWeight: 600 }}>No remaining budget in this portfolio.</Typography>
-              )}
-            </Paper>
+              <Grid container spacing={2.5} sx={{ mb: 3 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Estimated Cost (EUR)"
+                    type="number"
+                    fullWidth
+                    size="small"
+                    value={createForm.pm_estimatedcosteur}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedcosteur: Number(e.target.value) }))}
+                    error={hasBudgetError}
+                    helperText={hasBudgetError ? `Exceeds remaining portfolio budget by ${currencyFormatter.format(createForm.pm_estimatedcosteur - portfolioBudgetInfo!.availableBudget)}` : ''}
+                    slotProps={{
+                      input: { startAdornment: <CurrencyExchangeIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} /> },
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Estimated Benefits (EUR)"
+                    type="number"
+                    fullWidth
+                    size="small"
+                    value={createForm.pm_estimatedbenefitseur}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedbenefitseur: Number(e.target.value) }))}
+                    slotProps={{
+                      input: { startAdornment: <TrendingUpIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} /> },
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </>
           )}
+
+          {portfolioBudgetInfo && (() => {
+            const allocatedPct = Math.min(100, Math.round((portfolioBudgetInfo.usedBudget / portfolioBudgetInfo.portfolioBudget) * 100))
+            const isOverBudget = portfolioBudgetInfo.availableBudget <= 0
+            return (
+              <Paper variant="outlined" sx={{ p: 2.5, mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: '16px', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'grey.50' }}>
+                <Typography variant="body2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.primary' }}>
+                  <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Portfolio Budget Allocation
+                </Typography>
+
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Portfolio Budget</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.md }}>
+                      {currencyFormatter.format(portfolioBudgetInfo.portfolioBudget)}
+                    </Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Allocated</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'warning.main', fontSize: fontSizes.md }}>
+                      {currencyFormatter.format(portfolioBudgetInfo.usedBudget)}
+                    </Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Available Remaining</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: isOverBudget ? 'error.main' : 'success.main', fontSize: fontSizes.lg }}>
+                      {currencyFormatter.format(portfolioBudgetInfo.availableBudget)}
+                    </Typography>
+                  </Grid>
+                </Grid>
+
+                <Box sx={{ mb: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Allocation Usage</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700 }}>{allocatedPct}%</Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={allocatedPct}
+                    color={isOverBudget ? 'error' : allocatedPct > 80 ? 'warning' : 'success'}
+                    sx={{ height: 10, borderRadius: 5 }}
+                  />
+                </Box>
+
+                {isOverBudget && (
+                  <Typography variant="caption" color="error.main" sx={{ display: 'block', mt: 1, fontWeight: 700 }}>
+                    ⚠️ No remaining budget in this portfolio.
+                  </Typography>
+                )}
+              </Paper>
+            )
+          })()}
 
           {hasBudgetError && (
             <Box sx={{ mb: 2, p: 1.25, bgcolor: alpha(theme.palette.error.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.error.main, 0.2), display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1285,7 +1570,7 @@ export default function PipelinePage() {
           <Button
             onClick={handleCreateInitiative}
             variant="contained"
-            disabled={!createForm.pm_initiativename.trim() || actionLoading || hasBudgetError}
+            disabled={!createForm.pm_initiativename.trim() || actionLoading}
             startIcon={actionLoading ? undefined : <AddIcon />}
             sx={{
               bgcolor: 'primary.main',
@@ -1306,7 +1591,7 @@ export default function PipelinePage() {
         portfolios={portfolios}
         programmes={programmes}
         allProjects={projects}
-        onConvert={handleCreateProjectFromInitiative}
+        onConvert={handleConvertInitiative}
         converting={actionLoading}
       />
 
@@ -1378,6 +1663,42 @@ export default function PipelinePage() {
           fileUrl={previewFile.url}
         />
       )}
+
+      {/* Budget Warning Dialog */}
+      <Dialog
+        open={showBudgetWarningDialog}
+        onClose={() => setShowBudgetWarningDialog(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'warning.main', fontWeight: 700 }}>
+          <WarningAmberIcon color="warning" /> Budget Limit Warning
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 1.5 }}>
+            The estimated cost of this initiative exceeds the available portfolio budget by <strong>{portfolioBudgetInfo ? currencyFormatter.format(createForm.pm_estimatedcosteur - portfolioBudgetInfo.availableBudget) : ''}</strong>.
+          </Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            Do you still want to proceed and create this initiative?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setShowBudgetWarningDialog(false)} variant="outlined">
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              setShowBudgetWarningDialog(false)
+              executeCreateInitiative()
+            }}
+            variant="contained"
+            color="warning"
+            sx={{ fontWeight: 600 }}
+          >
+            Proceed
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Delete Confirmation */}
       <ConfirmDialog

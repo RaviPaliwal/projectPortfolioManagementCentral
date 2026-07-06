@@ -127,13 +127,17 @@ export interface InitiativeModel {
   pm_priorityscore?: number
   pm_strategicalignmentscore?: number
   pm_pipelinestatus?: string | number
-  pm_requestorname?: string
+  pm_requestedbyname?: string
+  _pm_requestedby_value?: string
   pm_createdbyname?: string
   pm_submissiondate?: string
   pm_portfolioname?: string
+  pm_programmename?: string
+  _pm_programme_value?: string
   pm_initiativetype?: number | string
   _pm_portfolio_value?: string
   pm_decisiondate?: string
+  pm_convertedtoreference?: string
 }
 
 export interface ProjectTaskModel {

@@ -114,6 +114,17 @@ export default function PortfoliosPage() {
     loadData()
   }, [loadData])
 
+  useEffect(() => {
+    const preselectedId = sessionStorage.getItem('preselectPortfolioId')
+    if (preselectedId && !loading && hierarchy.portfolios.length > 0) {
+      sessionStorage.removeItem('preselectPortfolioId')
+      const portfolio = hierarchy.portfolios.find((p) => p.pm_portfolioid === preselectedId)
+      if (portfolio) {
+        setSelectedPortfolio(portfolio)
+      }
+    }
+  }, [loading, hierarchy.portfolios])
+
   // ── Derived Data ──────────────────────────────────────────────────────────
   const portfolioList = hierarchy.portfolios
 

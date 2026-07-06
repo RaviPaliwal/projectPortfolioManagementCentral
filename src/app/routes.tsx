@@ -35,7 +35,7 @@ export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, Re
   portfolios: <PortfoliosPage />,
   programmes: <ProgrammesPage />,
   projects: <ProjectsPage />,
-  pipeline: <PipelinePage />,
+  pipeline: <PipelinePage onNavigate={onNavigate} />,
   resources: <ResourcesPage />,
   timesheets: <TeamMemberTimesheetPage />,
   budgets: <BudgetsPage />,

@@ -48,12 +48,15 @@ function isStepAssignedToUser(
   if (String(step.pm_assigneetype) === '1') return true
 
   const assigneeDisplay = (step.pm_assigneedisplayname || '').toLowerCase()
+  const assigneeName = ((step as any).pm_assigneename || '').toLowerCase()
   const approverName = (step.pm_approvername || '').toLowerCase()
 
-  if (assigneeDisplay === userId.toLowerCase()) return true
-  if (assigneeDisplay === userName.toLowerCase()) return true
-  if (approverName === userId.toLowerCase()) return true
-  if (approverName === userName.toLowerCase()) return true
+  const uId = userId.toLowerCase()
+  const uName = userName.toLowerCase()
+
+  if (assigneeDisplay === uId || assigneeDisplay === uName) return true
+  if (assigneeName === uId || assigneeName === uName) return true
+  if (approverName === uId || approverName === uName) return true
 
   return false
 }

@@ -3,17 +3,20 @@ import {
   Pm_portfoliosService,
   Pm_projectsService,
   SystemusersService,
+  Pm_programmesService,
 } from '@/generated'
 import type { Pm_initiatives } from '@/generated/models/Pm_initiativesModel'
 import type { Pm_portfolios } from '@/generated/models/Pm_portfoliosModel'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
 import type { Systemusers } from '@/generated/models/SystemusersModel'
+import type { Pm_programmes } from '@/generated/models/Pm_programmesModel'
 import type { InitiativeModel } from '@/types/dataverse'
 import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
 import { writeAuditLog } from './changelog.service'
 
 import { applySecurityMasking } from './security'
+import { generateNextProjectCode } from './project.service'
 
 export const mapInitiative = (item: Pm_initiatives): InitiativeModel => {
   const mapped: InitiativeModel = {
@@ -25,20 +28,24 @@ export const mapInitiative = (item: Pm_initiatives): InitiativeModel => {
     pm_priorityscore: (item as unknown as Record<string, unknown>).pm_priorityscore as number,
     pm_strategicalignmentscore: (item as unknown as Record<string, unknown>).pm_strategicalignmentscore as number,
     pm_pipelinestatus: item.pm_pipelinestatus,
-    pm_requestorname: item.pm_requestorname,
-    pm_submissiondate: item.pm_submissiondate,
+    pm_requestedbyname: item.pm_requestedbyname,
+    _pm_requestedby_value: (item as unknown as Record<string, unknown>)._pm_requestedby_value as string,
+    pm_programmename: item.pm_programmename,
+    _pm_programme_value: (item as unknown as Record<string, unknown>)._pm_programme_value as string,
+    pm_submissiondate: item.pm_submissiondate || (item as any).createdon,
     pm_portfolioname: item.pm_portfolioname,
     pm_initiativetype: (item as unknown as Record<string, unknown>).pm_initiativetype as number,
     pm_decisiondate: item.pm_decisiondate,
     pm_createdbyname: undefined,
     _pm_portfolio_value: (item as unknown as Record<string, unknown>)._pm_portfolio_value as string,
+    pm_convertedtoreference: item.pm_convertedtoreference,
   }
   return applySecurityMasking(mapped, 'initiative')
 }
 
 export async function fetchInitiatives(status?: number): Promise<InitiativeModel[]> {
   try {
-    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', 'pm_requestorname', 'pm_submissiondate', '_pm_portfolio_value']
+    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', '_pm_portfolio_value', 'pm_initiativetype', 'pm_convertedtoreference']
     const options: IGetAllOptions = { select, orderBy: ['pm_initiativename asc'], top: 200 }
     if (typeof status === 'number') options.filter = `pm_pipelinestatus eq ${status}`
     const result = await Pm_initiativesService.getAll(options)
@@ -48,25 +55,68 @@ export async function fetchInitiatives(status?: number): Promise<InitiativeModel
     }
     const list = unwrapList<Pm_initiatives>(result).map(mapInitiative)
 
-
     try {
-      const portfolioIds = Array.from(new Set(list.map((i) => (i as Record<string, any>)._pm_portfolio_value).filter(Boolean))) as string[]
-      if (portfolioIds.length > 0) {
-        const portfolios = await Promise.all(portfolioIds.map((id) => Pm_portfoliosService.get(id, { select: ['pm_portfolioid', 'pm_portfolioname'] })))
-        const pMap: Record<string, string> = {}
-        portfolios.forEach((res) => {
-          if (res.success) {
-            const item = unwrapSingle<Pm_portfolios>(res)
-            if (item && item.pm_portfolioid) pMap[item.pm_portfolioid] = item.pm_portfolioname ?? ''
-          }
-        })
-        for (const init of list) {
-          const pid = (init as Record<string, any>)._pm_portfolio_value as string | undefined
-          if (pid && pMap[pid]) init.pm_portfolioname = pMap[pid]
+      // 1. Resolve Portfolios
+      const portfolioIds = Array.from(new Set(list.map((i) => i._pm_portfolio_value).filter(Boolean))) as string[]
+      const portfoliosPromise = portfolioIds.length > 0
+        ? Promise.all(portfolioIds.map((id) => Pm_portfoliosService.get(id, { select: ['pm_portfolioid', 'pm_portfolioname'] })))
+        : Promise.resolve([])
+
+      // 2. Resolve Programmes
+      const programmeIds = Array.from(new Set(list.map((i) => i._pm_programme_value).filter(Boolean))) as string[]
+      const programmesPromise = programmeIds.length > 0
+        ? Promise.all(programmeIds.map((id) => Pm_programmesService.get(id, { select: ['pm_programmeid', 'pm_programmename'] })))
+        : Promise.resolve([])
+
+      // 3. Resolve Requested By Users
+      const userIds = Array.from(new Set(list.map((i) => i._pm_requestedby_value).filter(Boolean))) as string[]
+      const usersPromise = userIds.length > 0
+        ? Promise.all(userIds.map((id) => SystemusersService.get(id, { select: ['systemuserid', 'fullname'] })))
+        : Promise.resolve([])
+
+      const [portfolios, programmes, users] = await Promise.all([
+        portfoliosPromise,
+        programmesPromise,
+        usersPromise
+      ])
+
+      const pMap: Record<string, string> = {}
+      portfolios.forEach((res) => {
+        if (res.success) {
+          const item = unwrapSingle<Pm_portfolios>(res)
+          if (item && item.pm_portfolioid) pMap[item.pm_portfolioid] = item.pm_portfolioname ?? ''
+        }
+      })
+
+      const progMap: Record<string, string> = {}
+      programmes.forEach((res) => {
+        if (res.success) {
+          const item = unwrapSingle<Pm_programmes>(res)
+          if (item && item.pm_programmeid) progMap[item.pm_programmeid] = item.pm_programmename ?? ''
+        }
+      })
+
+      const uMap: Record<string, string> = {}
+      users.forEach((res) => {
+        if (res.success) {
+          const item = unwrapSingle<Systemusers>(res)
+          if (item && item.systemuserid) uMap[item.systemuserid] = item.fullname ?? ''
+        }
+      })
+
+      for (const init of list) {
+        if (init._pm_portfolio_value && pMap[init._pm_portfolio_value]) {
+          init.pm_portfolioname = pMap[init._pm_portfolio_value]
+        }
+        if (init._pm_programme_value && progMap[init._pm_programme_value]) {
+          init.pm_programmename = progMap[init._pm_programme_value]
+        }
+        if (init._pm_requestedby_value && uMap[init._pm_requestedby_value]) {
+          init.pm_requestedbyname = uMap[init._pm_requestedby_value]
         }
       }
     } catch (err) {
-      console.error('[InitiativeService] fetchInitiatives portfolios resolution exception:', err)
+      console.error('[InitiativeService] fetchInitiatives lookups resolution exception:', err)
     }
 
     return list
@@ -78,7 +128,7 @@ export async function fetchInitiatives(status?: number): Promise<InitiativeModel
 
 export async function fetchInitiativeById(id: string): Promise<InitiativeModel | null> {
   try {
-    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', 'pm_requestorname', 'pm_submissiondate', 'pm_initiativetype', 'pm_decisiondate', '_pm_portfolio_value', '_createdby_value']
+    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', 'pm_initiativetype', 'pm_decisiondate', '_pm_portfolio_value', '_createdby_value', 'pm_convertedtoreference']
     const result = await Pm_initiativesService.get(id, { select })
     if (!result.success) {
       console.error('[InitiativeService] fetchInitiativeById failed:', result.error)
@@ -101,6 +151,36 @@ export async function fetchInitiativeById(id: string): Promise<InitiativeModel |
         }
       } catch (e) {
         console.error('[InitiativeService] fetchInitiativeById portfolio lookup exception:', e)
+      }
+    }
+
+    const programmeId = (item as unknown as Record<string, unknown>)._pm_programme_value as string | undefined
+    if (programmeId) {
+      try {
+        const progResult = await Pm_programmesService.get(programmeId, { select: ['pm_programmeid', 'pm_programmename'] })
+        if (progResult.success) {
+          const prog = unwrapSingle<Pm_programmes>(progResult)
+          if (prog && prog.pm_programmename) {
+            mapped.pm_programmename = prog.pm_programmename
+          }
+        }
+      } catch (e) {
+        console.error('[InitiativeService] fetchInitiativeById programme lookup exception:', e)
+      }
+    }
+
+    const requestedById = (item as unknown as Record<string, unknown>)._pm_requestedby_value as string | undefined
+    if (requestedById) {
+      try {
+        const userResult = await SystemusersService.get(requestedById, { select: ['systemuserid', 'fullname'] })
+        if (userResult.success) {
+          const user = unwrapSingle<Systemusers>(userResult)
+          if (user?.fullname) {
+            mapped.pm_requestedbyname = user.fullname
+          }
+        }
+      } catch (e) {
+        console.error('[InitiativeService] fetchInitiativeById requestedby lookup exception:', e)
       }
     }
 
@@ -132,7 +212,7 @@ export async function fetchPendingApprovalRequests(): Promise<InitiativeModel[]>
   try {
     const options: IGetAllOptions = {
       filter: "pm_pipelinestatus eq 1",
-      select: ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_pipelinestatus', 'pm_requestorname', 'pm_submissiondate', '_pm_portfolio_value'],
+      select: ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', '_pm_portfolio_value', 'pm_initiativetype'],
       orderBy: ['pm_submissiondate desc'],
       top: 100,
     }
@@ -143,31 +223,68 @@ export async function fetchPendingApprovalRequests(): Promise<InitiativeModel[]>
     }
     const list = unwrapList<Pm_initiatives>(result).map(mapInitiative)
 
-    // Resolve portfolio names from the lookup
     try {
-      const portfolioIds = Array.from(new Set(list.map((i) => (i as Record<string, any>)._pm_portfolio_value).filter(Boolean))) as string[]
-      if (portfolioIds.length > 0) {
-        const portfoliosResult = await Pm_portfoliosService.getAll({
-          filter: portfolioIds.map((id) => `pm_portfolioid eq '${id}'`).join(' or '),
-          select: ['pm_portfolioid', 'pm_portfolioname'],
-          top: 500,
-        })
-        if (portfoliosResult.success) {
-          const portfolios = unwrapList<Pm_portfolios>(portfoliosResult)
-          const pMap: Record<string, string> = {}
-          portfolios.forEach((item) => {
-            if (item.pm_portfolioid && item.pm_portfolioname) {
-              pMap[item.pm_portfolioid] = item.pm_portfolioname
-            }
-          })
-          for (const init of list) {
-            const pid = (init as Record<string, any>)._pm_portfolio_value as string | undefined
-            if (pid && pMap[pid]) init.pm_portfolioname = pMap[pid]
-          }
+      // 1. Resolve Portfolios
+      const portfolioIds = Array.from(new Set(list.map((i) => i._pm_portfolio_value).filter(Boolean))) as string[]
+      const portfoliosPromise = portfolioIds.length > 0
+        ? Promise.all(portfolioIds.map((id) => Pm_portfoliosService.get(id, { select: ['pm_portfolioid', 'pm_portfolioname'] })))
+        : Promise.resolve([])
+
+      // 2. Resolve Programmes
+      const programmeIds = Array.from(new Set(list.map((i) => i._pm_programme_value).filter(Boolean))) as string[]
+      const programmesPromise = programmeIds.length > 0
+        ? Promise.all(programmeIds.map((id) => Pm_programmesService.get(id, { select: ['pm_programmeid', 'pm_programmename'] })))
+        : Promise.resolve([])
+
+      // 3. Resolve Requested By Users
+      const userIds = Array.from(new Set(list.map((i) => i._pm_requestedby_value).filter(Boolean))) as string[]
+      const usersPromise = userIds.length > 0
+        ? Promise.all(userIds.map((id) => SystemusersService.get(id, { select: ['systemuserid', 'fullname'] })))
+        : Promise.resolve([])
+
+      const [portfolios, programmes, users] = await Promise.all([
+        portfoliosPromise,
+        programmesPromise,
+        usersPromise
+      ])
+
+      const pMap: Record<string, string> = {}
+      portfolios.forEach((res) => {
+        if (res.success) {
+          const item = unwrapSingle<Pm_portfolios>(res)
+          if (item && item.pm_portfolioid) pMap[item.pm_portfolioid] = item.pm_portfolioname ?? ''
+        }
+      })
+
+      const progMap: Record<string, string> = {}
+      programmes.forEach((res) => {
+        if (res.success) {
+          const item = unwrapSingle<Pm_programmes>(res)
+          if (item && item.pm_programmeid) progMap[item.pm_programmeid] = item.pm_programmename ?? ''
+        }
+      })
+
+      const uMap: Record<string, string> = {}
+      users.forEach((res) => {
+        if (res.success) {
+          const item = unwrapSingle<Systemusers>(res)
+          if (item && item.systemuserid) uMap[item.systemuserid] = item.fullname ?? ''
+        }
+      })
+
+      for (const init of list) {
+        if (init._pm_portfolio_value && pMap[init._pm_portfolio_value]) {
+          init.pm_portfolioname = pMap[init._pm_portfolio_value]
+        }
+        if (init._pm_programme_value && progMap[init._pm_programme_value]) {
+          init.pm_programmename = progMap[init._pm_programme_value]
+        }
+        if (init._pm_requestedby_value && uMap[init._pm_requestedby_value]) {
+          init.pm_requestedbyname = uMap[init._pm_requestedby_value]
         }
       }
     } catch (err) {
-      console.error('[InitiativeService] fetchPendingApprovalRequests portfolio resolution failed:', err)
+      console.error('[InitiativeService] fetchPendingApprovalRequests lookups resolution failed:', err)
     }
 
     return list
@@ -199,9 +316,16 @@ export async function updateInitiativeStatus(initiativeId: string, status: numbe
 
 export async function convertInitiativeToProject(initiative: InitiativeModel): Promise<string | null> {
   try {
-    const payload: Record<string, unknown> = { pm_projectname: initiative.pm_name }
+    const projectCode = await generateNextProjectCode()
+    const payload: Record<string, unknown> = { 
+      pm_projectname: initiative.pm_name,
+      pm_projectcode: projectCode
+    }
     if ((initiative as Record<string, any>)._pm_portfolio_value) {
       payload['pm_portfolio@odata.bind'] = `/pm_portfolios(${(initiative as Record<string, any>)._pm_portfolio_value})`
+    }
+    if ((initiative as Record<string, any>)._pm_programme_value) {
+      payload['pm_programme@odata.bind'] = `/pm_programmes(${(initiative as Record<string, any>)._pm_programme_value})`
     }
     const created = await Pm_projectsService.create(payload as any)
     if (!created.success) {
@@ -246,10 +370,10 @@ export async function convertInitiativeToProject(initiative: InitiativeModel): P
   return null
 }
 
-export async function createInitiative(payload: Partial<InitiativeModel> & { _pm_portfolio_value?: string }): Promise<InitiativeModel | null> {
+export async function createInitiative(payload: Partial<InitiativeModel>): Promise<InitiativeModel | null> {
   const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && key !== '_pm_portfolio_value') {
+    if (value !== undefined && value !== null && !key.startsWith('_') && key !== 'pm_initiativeid') {
       cleanPayload[key] = value
     }
   }
@@ -259,9 +383,22 @@ export async function createInitiative(payload: Partial<InitiativeModel> & { _pm
       cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${portfolioId})`
     }
   }
+  if (payload._pm_programme_value) {
+    const programmeId = normalizeLookupId(payload._pm_programme_value)
+    if (programmeId) {
+      cleanPayload['pm_Programme@odata.bind'] = `/pm_programmes(${programmeId})`
+    }
+  }
+  if (payload._pm_requestedby_value) {
+    const userId = normalizeLookupId(payload._pm_requestedby_value)
+    if (userId) {
+      cleanPayload['pm_RequestedBy@odata.bind'] = `/systemusers(${userId})`
+    }
+  }
   const defaults: Record<string, unknown> = {
     statecode: 0,
     statuscode: 1,
+    pm_submissiondate: new Date().toISOString(),
   }
   try {
     const result = await Pm_initiativesService.create({ ...defaults, ...cleanPayload } as any)
@@ -290,7 +427,35 @@ export async function createInitiative(payload: Partial<InitiativeModel> & { _pm
 
 export async function updateInitiative(id: string, changes: Partial<InitiativeModel>): Promise<InitiativeModel | null> {
   try {
-    const result = await Pm_initiativesService.update(id, changes as any)
+    const cleanChanges: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(changes)) {
+      if (value !== undefined && !key.startsWith('_') && key !== 'pm_initiativeid') {
+        if (key === 'pm_name') {
+          cleanChanges.pm_initiativename = value
+        } else if (key === 'pm_businesscase') {
+          cleanChanges.pm_businesscasedescription = value
+        } else if (key === 'pm_estimatedcost') {
+          cleanChanges.pm_estimatedcosteur = value
+        } else if (key === 'pm_estimatedbenefits') {
+          cleanChanges.pm_estimatedbenefitseur = value
+        } else {
+          cleanChanges[key] = value
+        }
+      }
+    }
+    if (changes._pm_portfolio_value !== undefined) {
+      const portfolioId = normalizeLookupId(changes._pm_portfolio_value)
+      cleanChanges['pm_portfolio@odata.bind'] = portfolioId ? `/pm_portfolios(${portfolioId})` : null
+    }
+    if (changes._pm_programme_value !== undefined) {
+      const programmeId = normalizeLookupId(changes._pm_programme_value)
+      cleanChanges['pm_Programme@odata.bind'] = programmeId ? `/pm_programmes(${programmeId})` : null
+    }
+    if (changes._pm_requestedby_value !== undefined) {
+      const userId = normalizeLookupId(changes._pm_requestedby_value)
+      cleanChanges['pm_RequestedBy@odata.bind'] = userId ? `/systemusers(${userId})` : null
+    }
+    const result = await Pm_initiativesService.update(id, cleanChanges as any)
     if (!result.success) {
       console.error('[InitiativeService] updateInitiative failed:', result.error)
       return null

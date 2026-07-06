@@ -36,8 +36,6 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [initiative, setInitiative] = useState<InitiativeModel | null>(null)
-  const [reviewNotes, setReviewNotes] = useState('')
-  const [recommendation, setRecommendation] = useState('')
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -52,7 +50,7 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
   }, [initiativeId, onError])
 
   useEffect(() => {
-    if (open) { loadData(); setReviewNotes(''); setRecommendation('') }
+    if (open) { loadData() }
   }, [open, loadData])
 
   const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
@@ -71,40 +69,49 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
 
   return (
     <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'warning.main', color: 'warning.contrastText', py: 1.5, pr: 1 }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', py: 2, px: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <LightbulbIcon />
+          <LightbulbIcon sx={{ color: 'warning.main' }} />
           <Typography variant="h6" sx={{ fontWeight: 700 }}>Pipeline Review Task</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip label="Pending Review" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'white' }}>
+          <Chip label="Pending Review" color="warning" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'text.secondary' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
       </DialogTitle>
-      <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
+      <DialogContent sx={{ p: 3, pt: '24px !important', bgcolor: 'background.default' }}>
         {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
         ) : (
-          <Grid container sx={{ height: '100%' }}>
-            <Grid size={{ xs: 12, md: 4 }} sx={{ borderRight: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', p: 3 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1 }}>Initiative Context</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{initiative?.pm_name || 'Loading...'}</Typography>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Requester</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{initiative?.pm_requestorname || 'Unassigned'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Submitted</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Initiative Details Card */}
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1, display: 'block', mb: 1.5 }}>
+                Initiative Context
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 800, mb: 2.5 }}>
+                {initiative?.pm_name || 'Loading...'}
+              </Typography>
+
+              <Grid container spacing={2.5}>
+                <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Sponsor</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{initiative?.pm_requestedbyname || 'Unassigned'}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Submitted Date</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
                     {initiative?.pm_submissiondate ? new Date(initiative.pm_submissiondate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                   </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Initiative Type</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Target Portfolio</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{initiative?.pm_portfolioname || '-'}</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Initiative Type</Typography>
                   <Box sx={{ mt: 0.5 }}>
                     {initiative?.pm_initiativetype != null ? (
                       <StatusTag
@@ -117,19 +124,10 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
                       <Typography variant="body2" color="text.disabled">Not specified</Typography>
                     )}
                   </Box>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Portfolio</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{initiative?.pm_portfolioname || '-'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Est. Cost</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {initiative?.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Priority Score</Typography>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Priority Score</Typography>
                   <Box sx={{ mt: 0.5 }}>
                     {initiative?.pm_priorityscore != null ? (
                       <StatusTag
@@ -142,9 +140,9 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
                       <Typography variant="body2" color="text.disabled">Not scored</Typography>
                     )}
                   </Box>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Strategic Alignment</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Strategic Alignment</Typography>
                   <Box sx={{ mt: 0.5 }}>
                     {initiative?.pm_strategicalignmentscore != null ? (
                       <StatusTag
@@ -157,75 +155,67 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
                       <Typography variant="body2" color="text.disabled">Not scored</Typography>
                     )}
                   </Box>
-                </Box>
-              </Box>
-              <Box sx={{ mt: 4, p: 2, bgcolor: alpha(theme.palette.warning.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.warning.main, 0.2) }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <FactCheckIcon sx={{ fontSize: 16 }} /> Review Instructions
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.8rem' }}>
-                  Assess the initiative's alignment, feasibility, and readiness. Provide your recommendation for the next stage of the pipeline.
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12, md: 8 }} sx={{ p: 3 }}>
-              {initiative?.pm_businesscase && (
-                <>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <DescriptionIcon sx={{ fontSize: 16 }} /> Business Case
-                  </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'background.paper', maxHeight: 150, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
-                    {initiative.pm_businesscase}
-                  </Paper>
-                </>
-              )}
+                </Grid>
+              </Grid>
+            </Paper>
 
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {/* Business Case Paper */}
+            {initiative?.pm_businesscase && (
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <DescriptionIcon sx={{ fontSize: 16 }} /> Business Case
+                </Typography>
+                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.paper', maxHeight: 150, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
+                  {initiative.pm_businesscase}
+                </Paper>
+              </Box>
+            )}
+
+            {/* Financial Summary */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <MonetizationOnIcon sx={{ fontSize: 16 }} /> Financial Summary
               </Typography>
-              <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-                <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
-                  <Typography variant="caption" color="text.secondary">Est. Cost</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {initiative?.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
-                  </Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120 }}>
-                  <Typography variant="caption" color="text.secondary">Est. Benefits</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {initiative?.pm_estimatedbenefits != null ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '-'}
-                  </Typography>
-                </Paper>
-                {initiative?.pm_estimatedbenefits != null && initiative?.pm_estimatedcost != null && (
-                  <Paper variant="outlined" sx={{ p: 1.5, flex: 1, minWidth: 120, bgcolor: alpha(theme.palette.success.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.success.main, 0.2) }}>
-                    <Typography variant="caption" color="success.main" sx={{ fontWeight: 700 }}>Net Benefit</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: initiative.pm_estimatedbenefits - initiative.pm_estimatedcost >= 0 ? 'success.main' : 'error.main' }}>
-                      {currencyFormatter.format(initiative.pm_estimatedbenefits - initiative.pm_estimatedcost)}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Paper variant="outlined" sx={{ p: 2 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Est. Cost</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 700, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
+                      {initiative?.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
                     </Typography>
                   </Paper>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Paper variant="outlined" sx={{ p: 2 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Est. Benefits</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 700, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
+                      {initiative?.pm_estimatedbenefits != null ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '-'}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                {initiative?.pm_estimatedbenefits != null && initiative?.pm_estimatedcost != null && (
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Paper variant="outlined" sx={{ p: 2, bgcolor: alpha(theme.palette.success.main, 0.05), borderColor: alpha(theme.palette.success.main, 0.1) }}>
+                      <Typography variant="caption" color="success.main" sx={{ fontWeight: 700 }}>Net Benefit</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 700, mt: 0.5, fontFamily: '"JetBrains Mono", monospace', color: initiative.pm_estimatedbenefits - initiative.pm_estimatedcost >= 0 ? 'success.main' : 'error.main' }}>
+                        {currencyFormatter.format(initiative.pm_estimatedbenefits - initiative.pm_estimatedcost)}
+                      </Typography>
+                    </Paper>
+                  </Grid>
                 )}
-              </Box>
+              </Grid>
+            </Box>
 
-              <Divider sx={{ my: 3 }} />
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Review Assessment</Typography>
-              <TextField
-                fullWidth multiline rows={2} size="small"
-                label="Recommendation"
-                placeholder="Summarize your recommendation (e.g., 'Proceed to financial review', 'Needs more information')"
-                value={recommendation}
-                onChange={(e) => setRecommendation(e.target.value)}
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth multiline rows={4} size="small"
-                label="Review Notes"
-                placeholder="Enter detailed review notes, concerns, or observations about this initiative..."
-                value={reviewNotes}
-                onChange={(e) => setReviewNotes(e.target.value)}
-              />
-            </Grid>
-          </Grid>
+            {/* Review Instructions Banner */}
+            <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: alpha(theme.palette.info.main, 0.05), border: '1px solid', borderColor: alpha(theme.palette.info.main, 0.1) }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5, color: 'info.main' }}>
+                <FactCheckIcon sx={{ fontSize: 16 }} /> Review Instructions
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.8rem' }}>
+                Assess the initiative's alignment, feasibility, and readiness. Provide your decision and notes using the options in the footer.
+              </Typography>
+            </Box>
+          </Box>
         )}
       </DialogContent>
       <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
