@@ -30,9 +30,9 @@ export const StatusProgressBar = ({
   const clampedPercentage = Math.min(100, Math.max(0, percentage))
 
   const getBarColor = () => {
-    if (percentage >= thresholds.error) return '#ef4444' // Red
-    if (percentage >= thresholds.warning) return '#f59e0b' // Amber
-    return '#22c55e' // Green
+    if (percentage >= thresholds.error) return theme.palette.error.main
+    if (percentage >= thresholds.warning) return theme.palette.warning.main
+    return theme.palette.success.main
   }
 
   return (

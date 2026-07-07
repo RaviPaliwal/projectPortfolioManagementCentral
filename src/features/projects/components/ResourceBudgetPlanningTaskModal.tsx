@@ -40,6 +40,7 @@ interface LocalBudgetLineEntry {
   pm_budgetlinename: string
   pm_costcategory: number
   pm_approvedbudgeteur: number
+  pm_budgetlinestatus?: number
 }
 
 const COST_CATEGORY_OPTIONS = [
@@ -143,7 +144,8 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
     setAddedBudgetLines(prev => [...prev, {
       pm_budgetlinename: newBudgetLineName.trim(),
       pm_costcategory: newBudgetLineCategory,
-      pm_approvedbudgeteur: newBudgetLineAmount
+      pm_approvedbudgeteur: newBudgetLineAmount,
+      pm_budgetlinestatus: 1
     }])
     setNewBudgetLineName('')
     setNewBudgetLineCategory(0)
@@ -304,6 +306,7 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700 }}>Budget Line Name</TableCell>
                       <TableCell sx={{ fontWeight: 700 }} width={180}>Cost Category</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }} width={160}>Status</TableCell>
                       <TableCell sx={{ fontWeight: 700 }} width={180}>Amount</TableCell>
                       <TableCell sx={{ fontWeight: 700 }} align="center" width={60}>Actions</TableCell>
                     </TableRow>
@@ -311,7 +314,7 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
                   <TableBody>
                     {addedBudgetLines.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} align="center" sx={{ py: 3, color: 'text.secondary' }}>
+                        <TableCell colSpan={5} align="center" sx={{ py: 3, color: 'text.secondary' }}>
                           No budget lines proposed. Use the form below to add budget lines.
                         </TableCell>
                       </TableRow>
@@ -325,6 +328,15 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
                             <Chip
                               label={CATEGORY_LABELS[String(line.pm_costcategory)] || 'Unknown'}
                               size="small"
+                              variant="outlined"
+                              sx={{ height: 22, fontWeight: 600 }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={line.pm_budgetlinestatus === 1 ? 'Under Approval' : 'Unknown'}
+                              size="small"
+                              color="warning"
                               variant="outlined"
                               sx={{ height: 22, fontWeight: 600 }}
                             />

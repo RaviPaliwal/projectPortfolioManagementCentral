@@ -275,6 +275,40 @@
           "x-ms-dataverse-primary-name": true,
           "maxLength": 850
         },
+        "pm_budgetlinestatus": {
+          "type": "string",
+          "title": "Budget Line Status",
+          "x-ms-dataverse-attribute": "pm_budgetlinestatus",
+          "x-ms-dataverse-type": "PicklistType",
+          "x-ms-schema-name": "pm_BudgetLineStatus",
+          "enum": [
+            "Under Approval",
+            "Approved",
+            "Rejected"
+          ],
+          "x-ms-enum-values": [
+            1,
+            2,
+            3
+          ],
+          "Color": [
+            null,
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "7b1f668a-e779-f111-ab0f-002248ec1213",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Budget Line Status",
+          "x-ms-optionSetType": "Picklist"
+        },
+        "pm_budgetlinestatusname": {
+          "type": "string",
+          "title": "pm_budgetlinestatusname",
+          "x-ms-dataverse-attribute": "pm_budgetlinestatusname",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pm_budgetlinestatusName",
+          "x-ms-read-only": true
+        },
         "pm_committedspendeur": {
           "type": "string",
           "title": "Committed Spend (EUR)",

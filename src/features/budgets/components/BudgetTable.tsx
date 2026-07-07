@@ -150,6 +150,7 @@ export const BudgetTable: React.FC<BudgetTableProps> = ({
           <TableHeader cells={[
             { label: 'Budget Line', sortable: true, active: sort.field === 'pm_budgetlinename', dir: sort.dir, onClick: () => setSort('pm_budgetlinename') },
             { label: 'Category', sortable: true, active: sort.field === 'pm_costcategory', dir: sort.dir, onClick: () => setSort('pm_costcategory') },
+            { label: 'Status', sortable: true, active: sort.field === 'pm_budgetlinestatus', dir: sort.dir, onClick: () => setSort('pm_budgetlinestatus') },
             { label: 'Approved Budget', align: 'right', sortable: true, active: sort.field === 'pm_approvedbudgeteur', dir: sort.dir, onClick: () => setSort('pm_approvedbudgeteur') },
             { label: 'Revised Budget', align: 'right', sortable: true, active: sort.field === 'pm_revisedbudgeteur', dir: sort.dir, onClick: () => setSort('pm_revisedbudgeteur') },
             { label: 'Actual Spend', align: 'right', sortable: true, active: sort.field === 'pm_actualspendeur', dir: sort.dir, onClick: () => setSort('pm_actualspendeur') },
@@ -196,6 +197,12 @@ export const BudgetTable: React.FC<BudgetTableProps> = ({
                     <StatusTag
                       label={CATEGORY_LABELS[String(line.pm_costcategory ?? '')] ?? 'Unknown'}
                       color={CATEGORY_COLORS[String(line.pm_costcategory ?? '')] ?? 'default'}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <StatusTag
+                      label={String(line.pm_budgetlinestatus) === '1' ? 'Under Approval' : String(line.pm_budgetlinestatus) === '2' ? 'Approved' : String(line.pm_budgetlinestatus) === '3' ? 'Rejected' : 'Unknown'}
+                      color={String(line.pm_budgetlinestatus) === '1' ? 'warning' : String(line.pm_budgetlinestatus) === '2' ? 'success' : String(line.pm_budgetlinestatus) === '3' ? 'error' : 'default'}
                     />
                   </TableCell>
                   <TableCell align="right">

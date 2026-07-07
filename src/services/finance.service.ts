@@ -42,6 +42,8 @@ export const mapBudgetLine = (item: Pm_budgetlines): BudgetLineModel => {
   return {
     pm_budgetlineid: item.pm_budgetlineid ? item.pm_budgetlineid.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
     pm_budgetlinename: item.pm_budgetlinename,
+    pm_budgetlinestatus: item.pm_budgetlinestatus,
+    pm_budgetlinestatusname: item.pm_budgetlinestatusname,
     pm_approvedbudgeteur: item.pm_approvedbudgeteur,
     pm_revisedbudgeteur: item.pm_revisedbudgeteur,
     pm_actualspendeur: item.pm_actualspendeur,
@@ -129,7 +131,7 @@ export const mapFinancialPeriod = (item: Pm_fiscalperiods): FinancialPeriodModel
 export async function fetchBudgetLines(): Promise<BudgetLineModel[]> {
   try {
     const selectFields = [
-      'pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur',
+      'pm_budgetlineid', 'pm_budgetlinename', 'pm_budgetlinestatus', 'pm_approvedbudgeteur',
       'pm_revisedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur',
       'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory', 'pm_expencecatagory',
       'pm_notes',
@@ -165,7 +167,7 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
   try {
     const result = await Pm_budgetlinesService.get(budgetLineId, {
       select: [
-        'pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur',
+        'pm_budgetlineid', 'pm_budgetlinename', 'pm_budgetlinestatus', 'pm_approvedbudgeteur',
         'pm_revisedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur',
         'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory', 'pm_expencecatagory',
         'pm_estimateatcompletioneur', 'pm_estimatetocompleteeur',
@@ -302,6 +304,7 @@ export async function createBudgetLine(payload: Partial<BudgetLineModel>): Promi
       if (id) cleanPayload['pm_fundingsource@odata.bind'] = `/pm_fundingsources(${id})`
     }
     const defaults: Record<string, unknown> = {
+      pm_budgetlinestatus: 1,
       statecode: 0,
       statuscode: 1,
     }

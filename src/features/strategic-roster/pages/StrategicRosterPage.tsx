@@ -125,10 +125,10 @@ const TimelineItem = ({
   const financialProgress = allottedBudget && allottedBudget > 0 ? Math.min(100, ((actual || 0) / allottedBudget) * 100) : 0
 
   const gradient = type === 'portfolio'
-    ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.light ?? theme.palette.primary.main})`
+    ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.75)}, ${alpha(theme.palette.primary.light ?? theme.palette.primary.main, 0.65)})`
     : type === 'programme'
-    ? `linear-gradient(135deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.light ?? theme.palette.secondary.main})`
-    : `linear-gradient(135deg, ${theme.palette.info.main}, ${theme.palette.info.light ?? theme.palette.info.main})`
+    ? `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.75)}, ${alpha(theme.palette.secondary.light ?? theme.palette.secondary.main, 0.65)})`
+    : `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.75)}, ${alpha(theme.palette.info.light ?? theme.palette.info.main, 0.65)})`
 
   return (
     <Box sx={{
@@ -253,7 +253,7 @@ const TimelineItem = ({
               position: 'absolute',
               left: `${left}%`,
               width: `${Math.max(1.5, width)}%`,
-              height: level === 0 ? 36 : level === 1 ? 30 : 24,
+              height: 28,
               borderRadius: '20px',
               background: gradient,
               boxShadow: `0 4px 12px ${alpha(color, 0.25)}`,
@@ -272,7 +272,7 @@ const TimelineItem = ({
               {width > 22 ? (
                 <Typography variant="caption" sx={{
                   color: '#fff',
-                  fontSize: level === 0 ? '0.75rem' : '0.68rem',
+                  fontSize: '0.7rem',
                   fontWeight: 800,
                   whiteSpace: 'nowrap',
                   textOverflow: 'ellipsis',
@@ -285,7 +285,7 @@ const TimelineItem = ({
               ) : width > 10 ? (
                 <Typography variant="caption" sx={{
                   color: '#fff',
-                  fontSize: level === 0 ? '0.72rem' : '0.65rem',
+                  fontSize: '0.68rem',
                   fontWeight: 800,
                   whiteSpace: 'nowrap',
                   letterSpacing: 0.5

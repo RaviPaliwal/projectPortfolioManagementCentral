@@ -1,13 +1,14 @@
 import { createTheme, type PaletteMode, type ThemeOptions } from '@mui/material'
 import { fontSizes } from './fontSizes'
+import { colors } from './colors'
 
 const palette = {
-  primary: { main: '#217C35', light: '#2A9943', dark: '#135E23', contrastText: '#ffffff' },
-  secondary: { main: '#E4621A', light: '#F07C3A', dark: '#B9490C', contrastText: '#ffffff' },
-  success: { main: '#059669', light: '#34d399', dark: '#047857', contrastText: '#ffffff' },
-  warning: { main: '#d97706', light: '#fbbf24', dark: '#b45309', contrastText: '#ffffff' },
-  error: { main: '#ef4444', light: '#f87171', dark: '#dc2626', contrastText: '#ffffff' },
-  info: { main: '#3b82f6', light: '#60a5fa', dark: '#2563eb', contrastText: '#ffffff' },
+  primary: colors.primary,
+  secondary: colors.secondary,
+  success: colors.success,
+  warning: colors.warning,
+  error: colors.error,
+  info: colors.info,
 }
 
 export const getTheme = (mode: PaletteMode) =>

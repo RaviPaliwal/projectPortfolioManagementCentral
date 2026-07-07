@@ -546,117 +546,220 @@ export default function ProgrammesPage() {
 
         {detailTab === 0 && (
           <Grid container spacing={3} sx={{ mt: 1 }}>
-            {/* Overview - Full Width */}
-            <Grid size={{ xs: 12 }}>
-              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Grid container spacing={3}>
-                  <Grid size={{ xs: 12, md: 8 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                      <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Overview
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Phase</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>
-                            {prog?.pm_programmephase !== undefined && prog?.pm_programmephase !== null
-                              ? ({ 0: 'Delivery', 1: 'Planning', 2: 'Initiation', 3: 'Under Approval' }[prog.pm_programmephase as number] ?? '—')
-                              : '—'}
+            {/* Overview - 6/12 Width */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <DescriptionIcon sx={{ fontSize: 18, color: 'success.main' }} /> Overview
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5, flexGrow: 1 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr 1fr 1fr' }, gap: 2.5 }}>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Phase</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>
+                        {prog?.pm_programmephase !== undefined && prog?.pm_programmephase !== null
+                          ? ({ 0: 'Delivery', 1: 'Planning', 2: 'Initiation', 3: 'Under Approval' }[prog.pm_programmephase as number] ?? '—')
+                          : '—'}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Manager</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_programmemanagername || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Sponsor</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_sponsorname || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Unit</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_businessunit || '—'}</Typography>
+                    </Box>
+
+                    {/* Visual Milestone Timeline */}
+                    <Box sx={{ gridColumn: 'span 4', mt: 1.5 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', mb: 1 }}>Timeline Pathway</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative', px: 1, py: 1 }}>
+                        {/* Connecting Line */}
+                        <Box sx={{
+                          position: 'absolute',
+                          left: 30,
+                          right: 30,
+                          top: 14,
+                          height: 4,
+                          bgcolor: 'action.hover',
+                          borderRadius: 2,
+                          zIndex: 1
+                        }}>
+                          <Box sx={{
+                            width: `${(() => {
+                              const start = prog?.pm_startdate ? new Date(prog.pm_startdate) : null;
+                              const end = prog?.pm_enddate ? new Date(prog.pm_enddate) : null;
+                              if (!start || !end) return 0;
+                              const total = end.getTime() - start.getTime();
+                              if (total <= 0) return 0;
+                              const elapsed = new Date().getTime() - start.getTime();
+                              return Math.min(100, Math.max(0, (elapsed / total) * 100));
+                            })()}%`,
+                            height: '100%',
+                            bgcolor: 'success.main',
+                            borderRadius: 2
+                          }} />
+                        </Box>
+
+                        {/* Start Node */}
+                        <Box sx={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'success.main', border: '2px solid', borderColor: 'background.paper', ml: 1.5 }} />
+                          <Typography variant="caption" sx={{ fontWeight: 700, mt: 1, color: 'text.secondary', fontSize: '0.72rem' }}>
+                            Start: {prog?.pm_startdate ? new Date(prog.pm_startdate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                           </Typography>
                         </Box>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Manager</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_programmemanagername || '—'}</Typography>
+
+                        <Box sx={{ flexGrow: 1 }} />
+
+                        {/* Today Node */}
+                        {(() => {
+                          const start = prog?.pm_startdate ? new Date(prog.pm_startdate) : null;
+                          const end = prog?.pm_enddate ? new Date(prog.pm_enddate) : null;
+                          const today = new Date();
+                          if (start && end && today >= start && today <= end) {
+                            const total = end.getTime() - start.getTime();
+                            const elapsed = today.getTime() - start.getTime();
+                            const percent = (elapsed / total) * 100;
+                            return (
+                              <Box sx={{
+                                position: 'absolute',
+                                left: `calc(${percent}% + ${30 - percent*0.6}px)`,
+                                top: 4,
+                                zIndex: 3,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center'
+                              }}>
+                                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'primary.main', border: '2px solid', borderColor: 'background.paper' }} />
+                                <Typography variant="caption" sx={{ fontWeight: 800, mt: 0.5, color: 'primary.main', fontSize: '0.62rem', whiteSpace: 'nowrap' }}>
+                                  Today
+                                </Typography>
+                              </Box>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                        {/* End Node */}
+                        <Box sx={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'divider', border: '2px solid', borderColor: 'background.paper', mr: 1.5 }} />
+                          <Typography variant="caption" sx={{ fontWeight: 700, mt: 1, color: 'text.secondary', fontSize: '0.72rem' }}>
+                            End: {prog?.pm_enddate ? new Date(prog.pm_enddate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                          </Typography>
                         </Box>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Sponsor</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_sponsorname || '—'}</Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Unit</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_businessunit || '—'}</Typography>
-                        </Box>
-                      </Box>
-                      <Divider />
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', display: 'block', mb: 0.5 }}>Objectives</Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, fontSize: '0.825rem' }}>{prog?.pm_programmedescription || 'No description provided.'}</Typography>
                       </Box>
                     </Box>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <Box sx={{ p: 2, borderRadius: '16px', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        OVERALL HEALTH
-                      </Typography>
-                      {detailProjects.length > 0 ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minHeight: 120 }}>
-                          <Box sx={{ width: 120, height: 120, position: 'relative', flexShrink: 0 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie
-                                  data={[
-                                    { name: 'Low Risk', value: specificGreen, color: '#22c55e' },
-                                    { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
-                                    { name: 'High Risk', value: specificRed, color: '#ef4444' },
-                                  ].filter(d => d.value > 0)}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={30}
-                                  outerRadius={45}
-                                  paddingAngle={3}
-                                  dataKey="value"
-                                  stroke="none"
-                                >
-                                  {[
-                                    { name: 'Low Risk', value: specificGreen, color: '#22c55e' },
-                                    { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
-                                    { name: 'High Risk', value: specificRed, color: '#ef4444' },
-                                  ].filter(d => d.value > 0).map((entry, idx) => (
-                                    <Cell key={`cell-${idx}`} fill={entry.color} />
-                                  ))}
-                                </Pie>
-                                <RechartsTooltip formatter={(value) => [value, 'Projects']} />
-                              </PieChart>
-                            </ResponsiveContainer>
-                            <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1 }}>
-                                {detailProjects.length}
-                              </Typography>
-                            </Box>
-                          </Box>
-                          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', fontWeight: 600 }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#22c55e' }} /> Low Risk
-                              </Typography>
-                              <Typography variant="caption" sx={{ fontWeight: 800 }}>{specificGreen}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', fontWeight: 600 }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f59e0b' }} /> Medium Risk
-                              </Typography>
-                              <Typography variant="caption" sx={{ fontWeight: 800 }}>{specificAmber}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', fontWeight: 600 }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444' }} /> High Risk
-                              </Typography>
-                              <Typography variant="caption" sx={{ fontWeight: 800 }}>{specificRed}</Typography>
-                            </Box>
+                  </Box>
+                  <Divider />
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', display: 'block', mb: 0.5 }}>Objectives</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, fontSize: '0.825rem' }}>{prog?.pm_programmedescription || 'No description provided.'}</Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+
+            {/* Overall Health - 6/12 Width */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <LightbulbIcon sx={{ fontSize: 18, color: 'success.main' }} /> Overall Health
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1, gap: 2 }}>
+                  {detailProjects.length > 0 ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, py: 1.5, justifyContent: 'center' }}>
+                        <Box sx={{ width: 160, height: 160, position: 'relative', flexShrink: 0 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={[
+                                  { name: 'Low Risk', value: specificGreen, color: theme.palette.success.main },
+                                  { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
+                                  { name: 'High Risk', value: specificRed, color: '#ef4444' },
+                                ].filter(d => d.value > 0)}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={45}
+                                outerRadius={68}
+                                paddingAngle={3}
+                                dataKey="value"
+                                stroke="none"
+                              >
+                                {[
+                                  { name: 'Low Risk', value: specificGreen, color: theme.palette.success.main },
+                                  { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
+                                  { name: 'High Risk', value: specificRed, color: '#ef4444' },
+                                ].filter(d => d.value > 0).map((entry, idx) => (
+                                  <Cell key={`cell-${idx}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <RechartsTooltip formatter={(value) => [value, 'Projects']} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                            <Typography variant="h4" sx={{ fontWeight: 900, lineHeight: 1, fontFamily: '"Outfit", sans-serif' }}>
+                              {detailProjects.length}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              Projects
+                            </Typography>
                           </Box>
                         </Box>
-                      ) : (
-                        <Typography variant="body2" color="text.disabled" sx={{ py: 2, textAlign: 'center' }}>
-                          No project data to analyze health
+                        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.success.main, 0.08) : alpha(theme.palette.success.main, 0.05), border: '1px solid', borderColor: (theme) => alpha(theme.palette.success.main, 0.2) }}>
+                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: 'success.dark', fontWeight: 800 }}>
+                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'success.main' }} /> Low
+                            </Typography>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'success.dark', fontFamily: '"Outfit", sans-serif' }}>{specificGreen}</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.08)' : '#fffbeb', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.2)' }}>
+                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#92400e', fontWeight: 800 }}>
+                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f59e0b' }} /> Medium
+                            </Typography>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#92400e', fontFamily: '"Outfit", sans-serif' }}>{specificAmber}</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.08)' : '#fef2f2', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.2)' }}>
+                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#991b1b', fontWeight: 800 }}>
+                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ef4444' }} /> High
+                            </Typography>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#991b1b', fontFamily: '"Outfit", sans-serif' }}>{specificRed}</Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+
+                      <Box sx={{ p: 2, borderRadius: '16px', border: '1px dashed', borderColor: 'divider', bgcolor: 'background.default' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          Delivery Confidence
                         </Typography>
-                      )}
-                      <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 2, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
-                        {detailProjects.length} entities tracked
-                      </Typography>
+                        <Box sx={{ display: 'flex', gap: 0.5, height: 10, borderRadius: '5px', overflow: 'hidden', bgcolor: 'action.disabledBackground' }}>
+                          {specificGreen > 0 && <Box sx={{ width: `${(specificGreen / detailProjects.length) * 100}%`, bgcolor: theme.palette.success.main }} />}
+                          {specificAmber > 0 && <Box sx={{ width: `${(specificAmber / detailProjects.length) * 100}%`, bgcolor: '#f59e0b' }} />}
+                          {specificRed > 0 && <Box sx={{ width: `${(specificRed / detailProjects.length) * 100}%`, bgcolor: '#ef4444' }} />}
+                        </Box>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1, fontSize: '0.7rem', textAlign: 'center', fontWeight: 700 }}>
+                          {specificGreen === detailProjects.length ? '100% on track' : `${Math.round((specificGreen / detailProjects.length) * 100)}% of projects are on track`}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Grid>
-                </Grid>
+                  ) : (
+                    <Typography variant="body2" color="text.disabled" sx={{ py: 2, textAlign: 'center' }}>
+                      No project data to analyze health
+                    </Typography>
+                  )}
+                  <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 1.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                    {detailProjects.length} entities tracked
+                  </Typography>
+                </Box>
               </Paper>
             </Grid>
 
@@ -703,6 +806,24 @@ export default function ProgrammesPage() {
 
             {/* Right Column: Cards */}
             <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Approval Tasks */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <TaskAltIcon sx={{ fontSize: 18, color: 'success.main' }} /> Approval Tasks
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3 }}>
+                  <EntityApprovalTasks
+                    entityId={selectedProgrammeId}
+                    moduleName={MODULE_NAMES.PROGRAMMES.value}
+                    entityLabel="Programme"
+                    tabValue={0}
+                    index={0}
+                  />
+                </Box>
+              </Paper>
+
               {/* Financials Card */}
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
                 <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
@@ -711,15 +832,25 @@ export default function ProgrammesPage() {
                   </Typography>
                 </Box>
                 <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Total Budget</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>{currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}</Typography>
-                    </Box>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Total Budget</Typography>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'primary.main', mt: 0.5 }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Actual Spend</Typography>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'warning.main', mt: 0.5 }}>{currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}</Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Variance</Typography>
+                      <Typography variant="subtitle1" sx={{
+                        fontWeight: 800,
+                        color: 'info.main',
+                        mt: 0.5
+                      }}>
+                        {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
+                      </Typography>
+                    </Paper>
                   </Box>
 
                   <Box>
@@ -735,18 +866,18 @@ export default function ProgrammesPage() {
                         data={[
                           { name: 'Approved', amount: prog?.pm_budgeteur ?? 0, color: theme.palette.primary.main },
                           { name: 'Spend', amount: prog?.pm_actualspendeur ?? 0, color: theme.palette.warning.main },
-                          { name: 'Variance', amount: Math.max(0, (prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)), color: theme.palette.success.main }
+                          { name: 'Variance', amount: Math.max(0, (prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)), color: theme.palette.info.main }
                         ]}
-                        margin={{ top: 10, right: 10, left: -25, bottom: 5 }}
+                        margin={{ top: 10, right: 10, left: -25, bottom: 20 }}
                       >
-                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} stroke={theme.palette.divider} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: theme.palette.text.secondary }} stroke={theme.palette.divider} />
                         <YAxis tick={{ fontSize: 9, fontFamily: 'monospace' }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
                         <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
                         <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={20}>
                           {[
                             { color: theme.palette.primary.main },
                             { color: theme.palette.warning.main },
-                            { color: theme.palette.success.main }
+                            { color: theme.palette.info.main }
                           ].map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
@@ -755,10 +886,7 @@ export default function ProgrammesPage() {
                     </ResponsiveContainer>
                   </Box>
 
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Variance</Typography>
-                    <VarianceDisplay budget={prog?.pm_budgeteur} consumed={prog?.pm_actualspendeur} />
-                  </Box>
+
                 </Box>
               </Paper>
 
@@ -838,24 +966,6 @@ export default function ProgrammesPage() {
                       )}
                     </Grid>
                   </Grid>
-                </Box>
-              </Paper>
-
-              {/* Approval Tasks */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <TaskAltIcon sx={{ fontSize: 18, color: 'success.main' }} /> Approval Tasks
-                  </Typography>
-                </Box>
-                <Box sx={{ p: 3 }}>
-                  <EntityApprovalTasks
-                    entityId={selectedProgrammeId}
-                    moduleName={MODULE_NAMES.PROGRAMMES.value}
-                    entityLabel="Programme"
-                    tabValue={0}
-                    index={0}
-                  />
                 </Box>
               </Paper>
 
@@ -1173,7 +1283,7 @@ export default function ProgrammesPage() {
                     <TableCell><StatusChip status={p.pm_programmephase} type="prog_phase" size="small" /></TableCell>
                     <TableCell><StatusChip status={p.pm_ragstatus} type="rag" size="small" /></TableCell>
                     <TableCell><Typography variant="body2" color="text.secondary">{p.pm_programmemanagername || '—'}</Typography></TableCell>
-                    <TableCell><StatusTag label={p.pm_portfolioname || '—'} size="small" variant="outlined" color="primary" /></TableCell>
+                    <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{p.pm_portfolioname || '—'}</Typography></TableCell>
                     <TableCell align="right"><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{currencyFormatter.format(p.pm_budgeteur ?? 0)}</Typography></TableCell>
                     <TableCell align="right"><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{currencyFormatter.format(p.pm_actualspendeur ?? 0)}</Typography></TableCell>
                     <TableCell align="center" onClick={(e) => e.stopPropagation()}>

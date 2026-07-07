@@ -251,6 +251,8 @@ export interface TimesheetEntryModel {
 export interface BudgetLineModel {
   pm_budgetlineid?: string
   pm_budgetlinename?: string
+  pm_budgetlinestatus?: number | string
+  pm_budgetlinestatusname?: string
   pm_approvedbudgeteur?: number
   pm_revisedbudgeteur?: number
   pm_actualspendeur?: number

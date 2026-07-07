@@ -33,6 +33,9 @@ import type { WorkflowInstanceModel, WorkflowApprovalStepModel } from '@/types/d
 import { useUser } from '@/context/UserContext'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 
+const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+const formatDate = (d?: string | null): string => d ? dateFormatter.format(new Date(d)).replace(/ /g, '-') : '—'
+
 // ─── Styled Step Connector ────────────────────────────────────────────────
 
 const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
@@ -277,7 +280,8 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
           (s) => String(s.pm_decisionstatus) === '1' || String(s.pm_decisionstatus) === '2'
         )
         const isCompleted = String(instance.pm_status) === '0'
-        const currentStep = activeStepIndex >= 0 ? activeStepIndex : (isCompleted ? steps.length : 0)
+        const currentStep = activeStepIndex >= 0 ? activeStepIndex : steps.length
+        const hasActionableSteps = steps.some(s => String(s.pm_decisionstatus) === '2')
 
         return (
           <Paper key={instance.pm_workflowinstanceid} variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
@@ -305,26 +309,16 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
               </Box>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 {instance.pm_startdate && (
-                  <Tooltip title={`Started: ${new Date(instance.pm_startdate).toLocaleDateString()}`}>
+                  <Tooltip title={`Started: ${formatDate(instance.pm_startdate)}`}>
                     <Chip
                       icon={<EventIcon sx={{ fontSize: 14 }} />}
-                      label={new Date(instance.pm_startdate).toLocaleDateString()}
+                      label={formatDate(instance.pm_startdate)}
                       size="small"
                       variant="outlined"
                       sx={{ borderRadius: 1 }}
                     />
                   </Tooltip>
                 )}
-                <Chip
-                  label={
-                    isCompleted
-                      ? 'Completed'
-                      : String(instance.pm_statusname || instance.pm_status || 'Active')
-                  }
-                  size="small"
-                  color={isCompleted ? 'success' : 'primary'}
-                  sx={{ fontWeight: 600, borderRadius: 1 }}
-                />
               </Box>
             </Box>
 
@@ -414,9 +408,9 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                                 sx={{ display: 'block', mt: 0.5, fontSize: '0.6rem' }}
                               >
                                 {step.pm_decisiondate
-                                  ? `Decided: ${new Date(step.pm_decisiondate).toLocaleDateString()}`
+                                  ? `Decided: ${formatDate(step.pm_decisiondate)}`
                                   : step.pm_duedate
-                                    ? `Due: ${new Date(step.pm_duedate).toLocaleDateString()}`
+                                    ? `Due: ${formatDate(step.pm_duedate)}`
                                     : ''}
                               </Typography>
                             )}
@@ -429,7 +423,7 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
               )}
             </Box>
 
-            {!isCompleted && (
+            {!isCompleted && hasActionableSteps && (
               <Box sx={{ px: 3, pb: 3, borderTop: `1px solid ${theme.palette.divider}`, pt: 2 }}>
                 <EntityApprovalTasks
                   entityId={entityId || instance.pm_entityid!}

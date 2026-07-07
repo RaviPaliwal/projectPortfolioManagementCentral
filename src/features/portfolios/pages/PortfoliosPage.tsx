@@ -70,6 +70,7 @@ import type { ExportColumn } from '@/utils/exportUtils'
 import { currencyFormatter } from '@/utils/formatters'
 import { navigateToProgramme, navigateToProject } from '@/utils/navigation'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
+import { colors } from '@/styles'
 
 // Sub-components
 import { PortfolioGrid } from '../components/PortfolioGrid'
@@ -299,6 +300,12 @@ export default function PortfoliosPage() {
     const detailProgrammes = programmesByPortfolio[selectedPortfolio.pm_portfolioid ?? ''] ?? []
     const detailProjects = projectsByPortfolio[selectedPortfolio.pm_portfolioid ?? ''] ?? []
 
+    const RAG_COLORS: Record<string, string> = {
+      '1': theme.palette.success.main,
+      '0': theme.palette.warning.main,
+      '2': theme.palette.error.main,
+    }
+
     const STATUS_LABELS: Record<string, string> = {
       '0': 'Active',
       '1': 'Under Approval',
@@ -491,50 +498,84 @@ export default function PortfoliosPage() {
                         <StatusChip status={selectedPortfolio.pm_ragstatus} type="rag" size="small" />
                       </Box>
                     </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Programmes</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{detailProgrammes.length}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Projects</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{detailProjects.length}</Typography>
-                    </Box>
-                    <Box sx={{ gridColumn: 'span 2' }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Timeline</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>
-                        {selectedPortfolio.pm_startdate ? new Date(selectedPortfolio.pm_startdate).toLocaleDateString() : '—'} — {selectedPortfolio.pm_enddate ? new Date(selectedPortfolio.pm_enddate).toLocaleDateString() : '—'}
-                      </Typography>
-                    </Box>
-
-                    {/* Budget & Balance boxes */}
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5, gridColumn: 'span 4', mt: 1 }}>
-                      <Paper variant="outlined" sx={{ p: 2.25, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', gap: 2, border: '1px solid', borderColor: 'divider' }}>
-                        <Avatar sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08), color: 'primary.main', width: 44, height: 44, border: '1px solid', borderColor: (theme) => alpha(theme.palette.primary.main, 0.15) }}>
-                          <AccountBalanceWalletIcon sx={{ fontSize: 20 }} />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Approved Budget</Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 900, color: 'primary.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{currencyFormatter.format(selectedPortfolio.pm_approvedbudgeteur ?? 0)}</Typography>
+                    {/* Visual Milestone Timeline */}
+                    <Box sx={{ gridColumn: 'span 4', mt: 1.5 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', mb: 1 }}>Timeline Pathway</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative', px: 1, py: 1 }}>
+                        {/* Connecting Line */}
+                        <Box sx={{
+                          position: 'absolute',
+                          left: 30,
+                          right: 30,
+                          top: 14,
+                          height: 4,
+                          bgcolor: 'action.hover',
+                          borderRadius: 2,
+                          zIndex: 1
+                        }}>
+                          <Box sx={{
+                            width: `${(() => {
+                              const start = selectedPortfolio.pm_startdate ? new Date(selectedPortfolio.pm_startdate) : null;
+                              const end = selectedPortfolio.pm_enddate ? new Date(selectedPortfolio.pm_enddate) : null;
+                              if (!start || !end) return 0;
+                              const total = end.getTime() - start.getTime();
+                              if (total <= 0) return 0;
+                              const elapsed = new Date().getTime() - start.getTime();
+                              return Math.min(100, Math.max(0, (elapsed / total) * 100));
+                            })()}%`,
+                            height: '100%',
+                            bgcolor: 'success.main',
+                            borderRadius: 2
+                          }} />
                         </Box>
-                      </Paper>
 
-                      <Paper variant="outlined" sx={{ p: 2.25, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', gap: 2, border: '1px solid', borderColor: 'divider' }}>
-                        <Avatar sx={{ bgcolor: (theme) => alpha(theme.palette.success.main, 0.08), color: 'success.main', width: 44, height: 44, border: '1px solid', borderColor: (theme) => alpha(theme.palette.success.main, 0.15) }}>
-                          <TrendingUpIcon sx={{ fontSize: 20 }} />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Approved Balance</Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 900, color: 'success.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{currencyFormatter.format((selectedPortfolio.pm_approvedbudgeteur ?? 0) - (selectedPortfolio.pm_actualspendeur ?? 0))}</Typography>
+                        {/* Start Node */}
+                        <Box sx={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'success.main', border: '2px solid', borderColor: 'background.paper', ml: 1.5 }} />
+                          <Typography variant="caption" sx={{ fontWeight: 700, mt: 1, color: 'text.secondary', fontSize: '0.72rem' }}>
+                            Start: {selectedPortfolio.pm_startdate ? new Date(selectedPortfolio.pm_startdate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                          </Typography>
                         </Box>
-                      </Paper>
-                    </Box>
 
-                    <Box sx={{ gridColumn: 'span 4' }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', mb: 0.5 }}>Budget Utilization</Typography>
-                      <StatusProgressBar value={selectedPortfolio.pm_actualspendeur ?? 0} total={selectedPortfolio.pm_approvedbudgeteur ?? 0} label="" />
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'right', fontWeight: 700, fontSize: '0.75rem' }}>
-                        {selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0 ? `${((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100).toFixed(1)}% consumed` : '—'}
-                      </Typography>
+                        <Box sx={{ flexGrow: 1 }} />
+
+                        {/* Today Node */}
+                        {(() => {
+                          const start = selectedPortfolio.pm_startdate ? new Date(selectedPortfolio.pm_startdate) : null;
+                          const end = selectedPortfolio.pm_enddate ? new Date(selectedPortfolio.pm_enddate) : null;
+                          const today = new Date();
+                          if (start && end && today >= start && today <= end) {
+                            const total = end.getTime() - start.getTime();
+                            const elapsed = today.getTime() - start.getTime();
+                            const percent = (elapsed / total) * 100;
+                            return (
+                              <Box sx={{
+                                position: 'absolute',
+                                left: `calc(${percent}% + ${30 - percent*0.6}px)`,
+                                top: 4,
+                                zIndex: 3,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center'
+                              }}>
+                                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'primary.main', border: '2px solid', borderColor: 'background.paper' }} />
+                                <Typography variant="caption" sx={{ fontWeight: 800, mt: 0.5, color: 'primary.main', fontSize: '0.62rem', whiteSpace: 'nowrap' }}>
+                                  Today
+                                </Typography>
+                              </Box>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                        {/* End Node */}
+                        <Box sx={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'divider', border: '2px solid', borderColor: 'background.paper', mr: 1.5 }} />
+                          <Typography variant="caption" sx={{ fontWeight: 700, mt: 1, color: 'text.secondary', fontSize: '0.72rem' }}>
+                            End: {selectedPortfolio.pm_enddate ? new Date(selectedPortfolio.pm_enddate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                          </Typography>
+                        </Box>
+                      </Box>
                     </Box>
                   </Box>
                   <Divider />
@@ -545,7 +586,7 @@ export default function PortfoliosPage() {
                     </Box>
                   )}
                   {selectedPortfolio.pm_strategicobjective && (
-                    <Box sx={{ mt: 'auto' }}>
+                    <Box sx={{ mt: 2 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'warning.main', display: 'block', mb: 0.5 }}>Strategic Objective</Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', lineHeight: 1.6, fontSize: '0.825rem' }}>"{selectedPortfolio.pm_strategicobjective}"</Typography>
                     </Box>
@@ -571,7 +612,7 @@ export default function PortfoliosPage() {
                             <PieChart>
                               <Pie
                                 data={[
-                                  { name: 'Low Risk', value: specificGreen, color: '#22c55e' },
+                                  { name: 'Low Risk', value: specificGreen, color: theme.palette.success.main },
                                   { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
                                   { name: 'High Risk', value: specificRed, color: '#ef4444' },
                                 ].filter(d => d.value > 0)}
@@ -584,7 +625,7 @@ export default function PortfoliosPage() {
                                 stroke="none"
                               >
                                 {[
-                                  { name: 'Low Risk', value: specificGreen, color: '#22c55e' },
+                                  { name: 'Low Risk', value: specificGreen, color: theme.palette.success.main },
                                   { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
                                   { name: 'High Risk', value: specificRed, color: '#ef4444' },
                                 ].filter(d => d.value > 0).map((entry, idx) => (
@@ -604,11 +645,11 @@ export default function PortfoliosPage() {
                           </Box>
                         </Box>
                         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(34,197,94,0.08)' : '#f0fdf4', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.2)' }}>
-                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#166534', fontWeight: 800 }}>
-                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#22c55e' }} /> Low
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.success.main, 0.08) : alpha(theme.palette.success.main, 0.05), border: '1px solid', borderColor: (theme) => alpha(theme.palette.success.main, 0.2) }}>
+                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: 'success.dark', fontWeight: 800 }}>
+                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'success.main' }} /> Low
                             </Typography>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#166534', fontFamily: '"Outfit", sans-serif' }}>{specificGreen}</Typography>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'success.dark', fontFamily: '"Outfit", sans-serif' }}>{specificGreen}</Typography>
                           </Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.08)' : '#fffbeb', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.2)' }}>
                             <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#92400e', fontWeight: 800 }}>
@@ -630,7 +671,7 @@ export default function PortfoliosPage() {
                           Delivery Confidence
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 0.5, height: 10, borderRadius: '5px', overflow: 'hidden', bgcolor: 'action.disabledBackground' }}>
-                          {specificGreen > 0 && <Box sx={{ width: `${(specificGreen / detailProjects.length) * 100}%`, bgcolor: '#22c55e' }} />}
+                          {specificGreen > 0 && <Box sx={{ width: `${(specificGreen / detailProjects.length) * 100}%`, bgcolor: theme.palette.success.main }} />}
                           {specificAmber > 0 && <Box sx={{ width: `${(specificAmber / detailProjects.length) * 100}%`, bgcolor: '#f59e0b' }} />}
                           {specificRed > 0 && <Box sx={{ width: `${(specificRed / detailProjects.length) * 100}%`, bgcolor: '#ef4444' }} />}
                         </Box>
@@ -700,64 +741,6 @@ export default function PortfoliosPage() {
 
             {/* Right Column: Financials, Approval Tasks, Documents */}
             <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Financials Card */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'success.main' }} /> Financials
-                  </Typography>
-                </Box>
-                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Approved Budget</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>{currencyFormatter.format(selectedPortfolio.pm_approvedbudgeteur ?? 0)}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>{currencyFormatter.format(selectedPortfolio.pm_actualspendeur ?? 0)}</Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <StatusProgressBar value={selectedPortfolio.pm_actualspendeur ?? 0} total={selectedPortfolio.pm_approvedbudgeteur ?? 0} label="Budget Utilization" />
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'right' }}>
-                      {selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0 ? `${((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100).toFixed(1)}% consumed` : ''}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ height: 135, mt: -1.5, mb: -1.5 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={[
-                          { name: 'Approved', amount: selectedPortfolio.pm_approvedbudgeteur ?? 0, color: theme.palette.primary.main },
-                          { name: 'Spend', amount: selectedPortfolio.pm_actualspendeur ?? 0, color: theme.palette.warning.main },
-                          { name: 'Variance', amount: Math.max(0, (selectedPortfolio.pm_approvedbudgeteur ?? 0) - (selectedPortfolio.pm_actualspendeur ?? 0)), color: theme.palette.success.main }
-                        ]}
-                        margin={{ top: 10, right: 10, left: -25, bottom: 5 }}
-                      >
-                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} stroke={theme.palette.divider} />
-                        <YAxis tick={{ fontSize: 9, fontFamily: 'monospace' }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
-                        <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
-                        <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={20}>
-                          {[
-                            { color: theme.palette.primary.main },
-                            { color: theme.palette.warning.main },
-                            { color: theme.palette.success.main }
-                          ].map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Variance</Typography>
-                    <VarianceDisplay budget={selectedPortfolio.pm_approvedbudgeteur} consumed={selectedPortfolio.pm_actualspendeur} />
-                  </Box>
-                </Box>
-              </Paper>
-
               {/* Approval Tasks */}
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
                 <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
@@ -773,6 +756,71 @@ export default function PortfoliosPage() {
                     tabValue={0}
                     index={0}
                   />
+                </Box>
+              </Paper>
+
+              {/* Financials Card */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'success.main' }} /> Financials
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Approved Budget</Typography>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'primary.main', mt: 0.5 }}>{currencyFormatter.format(selectedPortfolio.pm_approvedbudgeteur ?? 0)}</Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Actual Spend</Typography>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'warning.main', mt: 0.5 }}>{currencyFormatter.format(selectedPortfolio.pm_actualspendeur ?? 0)}</Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Variance</Typography>
+                      <Typography variant="subtitle1" sx={{
+                        fontWeight: 800,
+                        color: 'info.main',
+                        mt: 0.5
+                      }}>
+                        {currencyFormatter.format((selectedPortfolio.pm_approvedbudgeteur ?? 0) - (selectedPortfolio.pm_actualspendeur ?? 0))}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                  <Box>
+                    <StatusProgressBar value={selectedPortfolio.pm_actualspendeur ?? 0} total={selectedPortfolio.pm_approvedbudgeteur ?? 0} label="Budget Utilization" />
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'right' }}>
+                      {selectedPortfolio.pm_approvedbudgeteur && selectedPortfolio.pm_approvedbudgeteur > 0 ? `${((selectedPortfolio.pm_actualspendeur ?? 0) / selectedPortfolio.pm_approvedbudgeteur * 100).toFixed(1)}% consumed` : ''}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ height: 135, mt: -1.5, mb: -1.5 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { name: 'Approved', amount: selectedPortfolio.pm_approvedbudgeteur ?? 0, color: theme.palette.primary.main },
+                          { name: 'Spend', amount: selectedPortfolio.pm_actualspendeur ?? 0, color: theme.palette.warning.main },
+                          { name: 'Variance', amount: Math.max(0, (selectedPortfolio.pm_approvedbudgeteur ?? 0) - (selectedPortfolio.pm_actualspendeur ?? 0)), color: theme.palette.info.main }
+                        ]}
+                        margin={{ top: 10, right: 10, left: -25, bottom: 20 }}
+                      >
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: theme.palette.text.secondary }} stroke={theme.palette.divider} />
+                        <YAxis tick={{ fontSize: 9, fontFamily: 'monospace' }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
+                        <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
+                        <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={20}>
+                          {[
+                            { color: theme.palette.primary.main },
+                            { color: theme.palette.warning.main },
+                            { color: theme.palette.info.main }
+                          ].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+
+
                 </Box>
               </Paper>
 

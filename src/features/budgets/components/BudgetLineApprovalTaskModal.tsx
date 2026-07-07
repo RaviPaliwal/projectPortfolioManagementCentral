@@ -266,12 +266,19 @@ export const BudgetLineApprovalTaskModal: React.FC<BudgetLineApprovalTaskModalPr
               setSaving(true)
               try {
                 const decisionLabel = decision === 0 ? 'Approved' : 'Rejected'
-                if (decision === 0 && budgetLineId && budgetLine) {
-                  const total = budgetLine.pm_totalamounteur || 0
-                  await updateBudgetLine(budgetLineId, {
-                    pm_approvedbudgeteur: total,
-                    pm_revisedbudgeteur: total,
-                  })
+                if (budgetLineId && budgetLine) {
+                  if (decision === 0) {
+                    const total = budgetLine.pm_totalamounteur || 0
+                    await updateBudgetLine(budgetLineId, {
+                      pm_approvedbudgeteur: total,
+                      pm_revisedbudgeteur: total,
+                      pm_budgetlinestatus: 2 // Approved
+                    })
+                  } else {
+                    await updateBudgetLine(budgetLineId, {
+                      pm_budgetlinestatus: 3 // Rejected
+                    })
+                  }
                 }
                 onSuccess('Budget line review completed. Decision: ' + decisionLabel + '.')
                 return true
