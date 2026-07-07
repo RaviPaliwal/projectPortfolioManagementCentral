@@ -1,0 +1,1190 @@
+// =====================================================================
+// Power Platform / Dataverse PPM Solution -- Entity Relationship Model
+// Auto-generated from Dataverse-generated TypeScript model definitions
+// Default/OOB Dataverse columns (audit fields, ownership, state, currency,
+// routing, etc.) have been excluded -- only business-relevant columns and
+// custom (pm_*) fields, plus core identity fields on Systemusers/Teams, remain.
+// =====================================================================
+
+Enum pm_agentinsightspm_actionstatus {
+  "Unreviewed"
+  "Accepted"
+}
+
+Enum pm_agentinsightspm_insighttype {
+  "Alert"
+  "Suggestion"
+}
+
+Enum pm_agentinsightspm_priority {
+  "Low"
+  "Medium"
+  "High"
+}
+
+Enum pm_benefitspm_benefitcategory {
+  "Financial"
+  "Non_Financial"
+  "Strategic"
+}
+
+Enum pm_benefitspm_benefitstatus {
+  "OnTrack"
+  "Planned"
+  "AtRisk"
+}
+
+Enum pm_benefitspm_benefittype {
+  "Cashable"
+  "Non_Cashable"
+  "AvoidedCost"
+}
+
+Enum pm_benefitspm_ragstatus {
+  "Green"
+  "NotSet"
+  "Amber"
+}
+
+Enum pm_budgetlinespm_budgetlinestatus {
+  "UnderApproval"
+  "Approved"
+  "Rejected"
+}
+
+Enum pm_budgetlinespm_costcategory {
+  "Staff"
+  "Contractors"
+  "Licences"
+  "Infrastructure"
+}
+
+Enum pm_budgetlinespm_expencecatagory {
+  "CapEx"
+  "OpEx"
+}
+
+Enum pm_cashflowentriespm_category {
+  "Staff"
+  "Contractors"
+  "Licences"
+  "Grants"
+  "Infrastructure"
+}
+
+Enum pm_cashflowentriespm_transactiondirection {
+  "Outflow"
+  "Inflow"
+}
+
+Enum pm_cashflowentriespm_transactiontype {
+  "Actual"
+  "Forecast"
+  "Planned"
+}
+
+Enum pm_changelogentriespm_actiontype {
+  "StatusChange"
+  "Update"
+  "Create"
+}
+
+Enum pm_changerequestimpactspm_impactcategory {
+  "ImpactArea"
+  "Schedule"
+  "Cost"
+  "Dependencies"
+  "Resources"
+}
+
+Enum pm_changerequestimpactspm_severityrating {
+  "SeverityRating"
+  "Medium"
+  "High"
+  "Low"
+}
+
+Enum pm_changerequestspm_changetype {
+  "Scope"
+  "Schedule"
+  "Resource"
+}
+
+Enum pm_changerequestspm_prioritylevel {
+  "Medium"
+  "High"
+}
+
+Enum pm_changerequestspm_status {
+  "Approved"
+  "UnderReview"
+  "Rejected"
+}
+
+Enum pm_financialreportconfigspm_charttype {
+  "BarChart"
+  "LineChart"
+  "AreaChart"
+  "StackedBarChart"
+}
+
+Enum pm_financialreportconfigspm_groupby {
+  "Project"
+  "CostCatagory"
+  "FiscalPeriod"
+  "FundingSource"
+}
+
+Enum pm_financialreportconfigspm_hierarchylevel {
+  "Global"
+  "Portfolio"
+  "Programme"
+  "Project"
+}
+
+Enum pm_fundingsourcespm_fundingstatus {
+  "Active"
+  "Exhausted"
+}
+
+Enum pm_fundingsourcespm_fundingtype {
+  "Capital"
+  "EU"
+  "Revenue"
+  "Grant"
+}
+
+Enum pm_initiativespm_initiativetype {
+  "Project"
+  "Programme"
+  "Portfolio"
+}
+
+Enum pm_initiativespm_pipelinestatus {
+  "Approved"
+  "UnderReview"
+  "Deferred"
+  "Rejected"
+  "Converted"
+}
+
+Enum pm_issuespm_impactlevel {
+  "_3_Moderate"
+  "_4_Major"
+  "_2_Minor"
+}
+
+Enum pm_issuespm_issuecategory {
+  "Dependency"
+  "Technical"
+}
+
+Enum pm_issuespm_issuestatus {
+  "InProgress"
+  "Resolved"
+}
+
+Enum pm_issuespm_prioritylevel {
+  "High"
+  "Critical"
+  "Medium"
+}
+
+Enum pm_issuespm_ragstatus {
+  "Amber"
+  "Green"
+  "Red"
+}
+
+Enum pm_performancemeasurespm_evidenced {
+  "Yes"
+  "No"
+}
+
+Enum pm_portfoliospm_portfoliostatus {
+  "Active"
+  "UnderApproval"
+  "Rejected"
+}
+
+Enum pm_portfoliospm_ragstatus {
+  "Amber"
+  "Green"
+  "Red"
+}
+
+Enum pm_programmespm_programmephase {
+  "Delivery"
+  "Planning"
+  "Initiation"
+  "UnderApproval"
+}
+
+Enum pm_programmespm_ragstatus {
+  "Amber"
+  "Green"
+  "Red"
+}
+
+Enum pm_projectapprovalrequestspm_approvalstage {
+  "BusinessCaseApproval"
+  "BudgetRelease"
+  "ChangeApproval"
+  "RemediationApproval"
+  "PipelineApproval"
+}
+
+Enum pm_projectapprovalrequestspm_decisionstatus {
+  "Approved"
+  "Pending"
+  "Rejected"
+}
+
+Enum pm_projectapprovalrequestspm_entitytype {
+  "Project"
+  "ChangeRequest"
+}
+
+Enum pm_projectapprovalrequestspm_prioritylevel {
+  "High"
+  "Medium"
+  "Critical"
+}
+
+Enum pm_projectgatereviewspm_gatestage {
+  "Gate1"
+  "Gate2"
+  "Gate3"
+  "Gate4"
+}
+
+Enum pm_projectgatereviewspm_reviewoutcome {
+  "Approved"
+  "ConditionalApproval"
+  "NotYetReviewed"
+  "UnderReview"
+  "Rejected"
+}
+
+Enum pm_projectgatereviewspm_reviewstatus {
+  "Complete"
+  "Scheduled"
+}
+
+Enum pm_projectmilestonespm_milestonetype {
+  "Delivery"
+  "Governance"
+}
+
+Enum pm_projectmilestonespm_ragstatus {
+  "Amber"
+  "Green"
+  "NotSet"
+}
+
+Enum pm_projectmilestonespm_status {
+  "AtRisk"
+  "NotStarted"
+  "Achieved"
+}
+
+Enum pm_projectspm_benefitsragstatus {
+  "Green"
+  "Amber"
+  "NotSet"
+}
+
+Enum pm_projectspm_costragstatus {
+  "Green"
+  "Amber"
+  "Red"
+}
+
+Enum pm_projectspm_projectphase {
+  "Execution"
+  "Planning"
+  "Closure"
+  "Initiation"
+  "Rejected"
+  "Completed"
+}
+
+Enum pm_projectspm_ragstatus {
+  "Amber"
+  "Green"
+  "Red"
+}
+
+Enum pm_projectspm_scheduleragstatus {
+  "Amber"
+  "Green"
+  "Red"
+}
+
+Enum pm_projectstatussnapshotspm_approvalstatus {
+  "Yes"
+}
+
+Enum pm_projectstatussnapshotspm_benefitsragstatus {
+  "Green"
+  "NotSet"
+}
+
+Enum pm_projectstatussnapshotspm_costragstatus {
+  "Green"
+  "Amber"
+}
+
+Enum pm_projectstatussnapshotspm_overallragstatus {
+  "Amber"
+  "Green"
+  "Red"
+}
+
+Enum pm_projectstatussnapshotspm_resourceragstatus {
+  "Green"
+  "Amber"
+}
+
+Enum pm_projectstatussnapshotspm_riskragstatus {
+  "Amber"
+  "Green"
+  "Red"
+}
+
+Enum pm_projectstatussnapshotspm_scheduleragstatus {
+  "Amber"
+  "Green"
+  "Red"
+}
+
+Enum pm_projecttaskspm_taskstatus {
+  "Complete"
+  "InProgress"
+}
+
+Enum pm_resourceallocationspm_assignmentstatus {
+  "Active"
+  "Complete"
+}
+
+Enum pm_resourceskillspm_proficiencylevel {
+  "_5_Expert"
+  "_4_Proficient"
+  "_3_Competent"
+}
+
+Enum pm_resourcespm_employmentstatus {
+  "Active"
+}
+
+Enum pm_resourcespm_resourcecategory {
+  "InternalStaff"
+  "Contractor"
+  "Supplier"
+}
+
+Enum pm_riskmitigationactionspm_effectiveness {
+  "High"
+  "Medium"
+  "NotAssessed"
+}
+
+Enum pm_riskmitigationactionspm_status {
+  "Complete"
+  "InProgress"
+}
+
+Enum pm_riskspm_inherentimpact {
+  "_4_Major"
+  "_3_Moderate"
+  "_5_Catastrophic"
+}
+
+Enum pm_riskspm_inherentprobability {
+  "_3_Possible"
+  "_4_Likely"
+  "_2_Unlikely"
+  "_1_Rare"
+}
+
+Enum pm_riskspm_ragstatus {
+  "Amber"
+  "Green"
+  "Red"
+}
+
+Enum pm_riskspm_residualimpact {
+  "_3_Moderate"
+  "_2_Minor"
+  "_4_Major"
+}
+
+Enum pm_riskspm_residualprobability {
+  "_2_Unlikely"
+  "_3_Possible"
+  "_1_Rare"
+}
+
+Enum pm_riskspm_responsestrategy {
+  "Mitigate"
+  "Accept"
+}
+
+Enum pm_riskspm_riskcategory {
+  "Resource"
+  "Financial"
+  "Legal"
+  "Technical"
+  "External"
+}
+
+Enum pm_riskspm_riskstatus {
+  "InMitigation"
+  "Open"
+}
+
+Enum pm_skillspm_skillcategory {
+  "Functional"
+  "Technical"
+  "Certification"
+}
+
+Enum pm_timesheetspm_timesheetstatus {
+  "Approved"
+  "Submitted"
+  "Rejected"
+  "Draft"
+}
+
+Enum pm_workflowapprovalstepspm_assigneetype {
+  "User"
+  "Team"
+}
+
+Enum pm_workflowapprovalstepspm_decisionstatus {
+  "Approved"
+  "Pending"
+  "Assigned"
+  "Rejected"
+}
+
+Enum pm_workflowinstancespm_status {
+  "Completed"
+  "Active"
+}
+
+Enum pm_workflowsteptemplatespm_assignetype {
+  "User"
+  "Team"
+}
+
+Enum pm_workflowsteptemplatespm_tasktype {
+  "Custom"
+  "Checklist"
+}
+
+Enum teamsmembershiptype {
+  "Membersandguests"
+  "Members"
+  "Owners"
+  "Guests"
+}
+
+Enum teamsteamtype {
+  "Owner"
+  "Access"
+  "SecurityGroup"
+  "OfficeGroup"
+}
+
+Table "pm_agentinsights" {
+  "pm_agentinsightid" uuid [pk, note: "Primary key"]
+  "pm_actionstatus" pm_agentinsightspm_actionstatus
+  "pm_confidencescore" decimal
+  "pm_insightdescription" varchar
+  "pm_insighttitle" varchar
+  "pm_insighttype" pm_agentinsightspm_insighttype
+  "pm_priority" pm_agentinsightspm_priority
+  "pm_sourceagent" varchar
+  "pm_portfolio_id" uuid
+  "pm_programme_id" uuid
+  "pm_project_id" uuid
+  "pm_risk_id" uuid
+}
+
+Table "pm_benefits" {
+  "pm_benefitid" uuid [pk, note: "Primary key"]
+  "pm_baselinevalue" decimal
+  "pm_benefitcategory" pm_benefitspm_benefitcategory
+  "pm_benefitdescription" varchar
+  "pm_benefitname" varchar
+  "pm_benefitreference" varchar
+  "pm_benefitstatus" pm_benefitspm_benefitstatus
+  "pm_benefittype" pm_benefitspm_benefittype
+  "pm_ragstatus" pm_benefitspm_ragstatus
+  "pm_realisationenddate" varchar
+  "pm_realisationstartdate" varchar
+  "pm_targetvalue" decimal
+  "pm_unitofmeasure" varchar
+  "pm_benifitowner_id" uuid
+  "pm_programmelookup_id" uuid
+  "pm_project_id" uuid
+}
+
+Table "pm_budgetlines" {
+  "pm_budgetlineid" uuid [pk, note: "Primary key"]
+  "pm_actualspendeur" decimal
+  "pm_approvedbudgeteur" decimal
+  "pm_budgetlinename" varchar
+  "pm_budgetlinestatus" pm_budgetlinespm_budgetlinestatus
+  "pm_committedspendeur" decimal
+  "pm_costcategory" pm_budgetlinespm_costcategory
+  "pm_estimateatcompletioneur" decimal
+  "pm_estimatetocompleteeur" decimal
+  "pm_expencecatagory" pm_budgetlinespm_expencecatagory
+  "pm_forecastspendeur" decimal
+  "pm_jsonrawcalculation" varchar
+  "pm_notes" varchar
+  "pm_revisedbudgeteur" decimal
+  "pm_varianceeur" decimal
+  "pm_fiscalperiod_id" uuid
+  "pm_fundingsource_id" uuid
+  "pm_portfoliolookup_id" uuid
+  "pm_programmelookup_id" uuid
+  "pm_project_id" uuid
+}
+
+Table "pm_cashflowentries" {
+  "pm_cashflowentryid" uuid [pk, note: "Primary key"]
+  "pm_amounteur" decimal
+  "pm_category" pm_cashflowentriespm_category
+  "pm_description" varchar
+  "pm_entryname" varchar
+  "pm_invoicenumber" varchar
+  "pm_transactiondate" varchar
+  "pm_transactiondirection" pm_cashflowentriespm_transactiondirection
+  "pm_transactiontype" pm_cashflowentriespm_transactiontype
+  "pm_budgetline_id" uuid
+  "pm_fiscalperiod_id" uuid
+  "pm_programmelookup_id" uuid
+  "pm_project_id" uuid
+}
+
+Table "pm_changelogentries" {
+  "pm_changelogentryid" uuid [pk, note: "Primary key"]
+  "pm_actiontype" pm_changelogentriespm_actiontype
+  "pm_changetimestamp" varchar
+  "pm_description" varchar
+  "pm_entityname" varchar
+  "pm_fieldname" varchar
+  "pm_ipaddress" varchar
+  "pm_modulename" varchar
+  "pm_newvalue" varchar
+  "pm_oldvalue" varchar
+  "pm_recordidentifier" varchar
+  "pm_recordname" varchar
+  "pm_sessionid" varchar
+  "pm_changeby_id" uuid
+}
+
+Table "pm_changerequestimpacts" {
+  "pm_changerequestimpactid" uuid [pk, note: "Primary key"]
+  "pm_affectedentities" varchar
+  "pm_changerequestid" varchar
+  "pm_impactareaname" varchar
+  "pm_impactcategory" pm_changerequestimpactspm_impactcategory
+  "pm_impactdescription" varchar
+  "pm_severityrating" pm_changerequestimpactspm_severityrating
+}
+
+Table "pm_changerequests" {
+  "pm_changerequestid" uuid [pk, note: "Primary key"]
+  "pm_baselineupdated" boolean
+  "pm_benefitsimpact" varchar
+  "pm_changedescription" varchar
+  "pm_changerequestreference" varchar
+  "pm_changerequesttitle" varchar
+  "pm_changetype" pm_changerequestspm_changetype
+  "pm_costimpacteur" decimal
+  "pm_decisiondate" varchar
+  "pm_decisionmaker" varchar
+  "pm_justification" varchar
+  "pm_prioritylevel" pm_changerequestspm_prioritylevel
+  "pm_programmename" varchar
+  "pm_projectcode" varchar
+  "pm_requestorname" varchar
+  "pm_scheduleimpactdays" decimal
+  "pm_status" pm_changerequestspm_status
+  "pm_submissiondate" varchar
+  "pm_versionnumber" decimal
+  "pm_changerequest_id" uuid
+  "pm_programmelookup_id" uuid
+  "pm_project_id" uuid
+}
+
+Table "pm_checklistresponses" {
+  "pm_checklistresponseid" uuid [pk, note: "Primary key"]
+  "pm_checklistitem" varchar
+  "pm_name" varchar [not null]
+  "pm_responseflag" boolean
+  "pm_checklistconfiguration_id" uuid
+  "pm_workflowapprovalstep_id" uuid
+}
+
+Table "pm_documents" {
+  "pm_documentid" uuid [pk, note: "Primary key"]
+  "pm_documenttitle" varchar [not null]
+  "pm_entityguid" varchar
+  "pm_module" varchar
+}
+
+Table "pm_financialreportconfigs" {
+  "pm_financialreportconfigid" uuid [pk, note: "Primary key"]
+  "pm_categoriesfilter" varchar
+  "pm_charttype" pm_financialreportconfigspm_charttype
+  "pm_description" varchar
+  "pm_fiscalyearsfilter" varchar
+  "pm_groupby" pm_financialreportconfigspm_groupby
+  "pm_hierarchylevel" pm_financialreportconfigspm_hierarchylevel
+  "pm_ispublic" boolean
+  "pm_name" varchar [not null]
+  "pm_selectedcolumns" varchar
+  "pm_selectedfilters" varchar
+}
+
+Table "pm_fiscalperiods" {
+  "pm_fiscalperiodid" uuid [pk, note: "Primary key"]
+  "pm_enddate" varchar
+  "pm_fiscalyear" decimal
+  "pm_isclosed" boolean
+  "pm_iscurrentperiod" boolean
+  "pm_periodname" varchar
+  "pm_periodnumber" decimal
+  "pm_startdate" varchar
+}
+
+Table "pm_fundingsources" {
+  "pm_fundingsourceid" uuid [pk, note: "Primary key"]
+  "pm_allocatedamounteur" decimal
+  "pm_availableamounteur" decimal
+  "pm_effectivefromdate" varchar
+  "pm_effectivetodate" varchar
+  "pm_fundingbody" varchar
+  "pm_fundingsourcename" varchar
+  "pm_fundingstatus" pm_fundingsourcespm_fundingstatus
+  "pm_fundingtype" pm_fundingsourcespm_fundingtype
+  "pm_totalamounteur" decimal
+  "pm_portfolio_id" uuid
+  "pm_programmelookup_id" uuid
+}
+
+Table "pm_holidaies" {
+  "pm_holidayid" uuid [pk, note: "Primary key"]
+  "pm_country" varchar
+  "pm_holidaydate" varchar
+  "pm_holidayname" varchar
+  "pm_isfixeddate" boolean
+  "pm_notes" varchar
+  "pm_year" decimal
+}
+
+Table "pm_initiatives" {
+  "pm_initiativeid" uuid [pk, note: "Primary key"]
+  "pm_businesscasedescription" varchar
+  "pm_convertedtoreference" varchar
+  "pm_decisiondate" varchar
+  "pm_estimatedbenefitseur" decimal
+  "pm_estimatedcosteur" decimal
+  "pm_initiativename" varchar
+  "pm_initiativetype" pm_initiativespm_initiativetype
+  "pm_pipelinestatus" pm_initiativespm_pipelinestatus
+  "pm_priorityscore" decimal
+  "pm_requestorname" varchar
+  "pm_strategicalignmentscore" decimal
+  "pm_submissiondate" varchar
+  "pm_portfolio_id" uuid
+  "pm_programme_id" uuid
+  "pm_requestedby_id" uuid
+}
+
+Table "pm_issues" {
+  "pm_issueid" uuid [pk, note: "Primary key"]
+  "pm_actualresolutiondate" varchar
+  "pm_dateraised" varchar
+  "pm_escalationstatus" boolean
+  "pm_impactlevel" pm_issuespm_impactlevel
+  "pm_issuecategory" pm_issuespm_issuecategory
+  "pm_issuedescription" varchar
+  "pm_issuereference" varchar
+  "pm_issuestatus" pm_issuespm_issuestatus
+  "pm_issuetitle" varchar
+  "pm_linkedrisk" varchar
+  "pm_prioritylevel" pm_issuespm_prioritylevel
+  "pm_programmename" varchar
+  "pm_projectcode" varchar
+  "pm_ragstatus" pm_issuespm_ragstatus
+  "pm_resolutiondetails" varchar
+  "pm_targetresolutiondate" varchar
+  "pm_issueowner_id" uuid
+  "pm_programmefk_id" uuid
+  "pm_project_id" uuid
+  "pm_risk_id" uuid
+}
+
+Table "pm_performancemeasures" {
+  "pm_performancemeasureid" uuid [pk, note: "Primary key"]
+  "pm_actualvalue" decimal
+  "pm_benefitcode" varchar
+  "pm_cumulativeactual" decimal
+  "pm_cumulativeplanned" decimal
+  "pm_evidenced" pm_performancemeasurespm_evidenced
+  "pm_measurename" varchar
+  "pm_notes" varchar
+  "pm_plannedvalue" decimal
+  "pm_reportingperiod" varchar
+  "pm_variance" decimal
+  "pm_benefit_id" uuid
+}
+
+Table "pm_portfolios" {
+  "pm_portfolioid" uuid [pk, note: "Primary key"]
+  "pm_actualspendeur" decimal
+  "pm_approvedbudgeteur" decimal
+  "pm_businessunit" varchar
+  "pm_createdon" varchar
+  "pm_enddate" varchar
+  "pm_portfoliodescription" varchar
+  "pm_portfolioname" varchar
+  "pm_portfoliostatus" pm_portfoliospm_portfoliostatus
+  "pm_prioritylevel" decimal
+  "pm_ragstatus" pm_portfoliospm_ragstatus
+  "pm_startdate" varchar
+  "pm_strategicobjective" varchar
+  "pm_ownerlookup_id" uuid
+}
+
+Table "pm_programmes" {
+  "pm_programmeid" uuid [pk, note: "Primary key"]
+  "pm_actualspendeur" decimal
+  "pm_budgeteur" decimal
+  "pm_businessunit" varchar
+  "pm_enddate" varchar
+  "pm_portfoliocode" varchar
+  "pm_programmedescription" varchar
+  "pm_programmename" varchar
+  "pm_programmephase" pm_programmespm_programmephase
+  "pm_ragstatus" pm_programmespm_ragstatus
+  "pm_sponsorname" varchar
+  "pm_startdate" varchar
+  "pm_portfolio_id" uuid
+  "pm_programmemanager_id" uuid
+}
+
+Table "pm_projectapprovalrequests" {
+  "pm_projectapprovalrequestid" uuid [pk, note: "Primary key"]
+  "pm_approvalstage" pm_projectapprovalrequestspm_approvalstage
+  "pm_approvername" varchar
+  "pm_decisiondate" varchar
+  "pm_decisionnotes" varchar
+  "pm_decisionstatus" pm_projectapprovalrequestspm_decisionstatus
+  "pm_duedate" varchar
+  "pm_entityid" varchar
+  "pm_entitytype" pm_projectapprovalrequestspm_entitytype
+  "pm_prioritylevel" pm_projectapprovalrequestspm_prioritylevel
+  "pm_requestorname" varchar
+  "pm_requesttitle" varchar
+}
+
+Table "pm_projectgatereviews" {
+  "pm_projectgatereviewid" uuid [pk, note: "Primary key"]
+  "pm_actualreviewdate" varchar
+  "pm_documentsurl" varchar
+  "pm_gatename" varchar
+  "pm_gatestage" pm_projectgatereviewspm_gatestage
+  "pm_leadreviewer" varchar
+  "pm_plannedreviewdate" varchar
+  "pm_programmename" varchar
+  "pm_projectcode" varchar
+  "pm_reviewconditions" varchar
+  "pm_reviewnotes" varchar
+  "pm_reviewoutcome" pm_projectgatereviewspm_reviewoutcome
+  "pm_reviewstatus" pm_projectgatereviewspm_reviewstatus
+  "pm_programmelookup_id" uuid
+  "pm_project_id" uuid
+}
+
+Table "pm_projectmilestones" {
+  "pm_projectmilestoneid" uuid [pk, note: "Primary key"]
+  "pm_actualdate" varchar
+  "pm_baselinedate" varchar
+  "pm_description" varchar
+  "pm_milestonename" varchar
+  "pm_milestonetype" pm_projectmilestonespm_milestonetype
+  "pm_planneddate" varchar
+  "pm_ragstatus" pm_projectmilestonespm_ragstatus
+  "pm_status" pm_projectmilestonespm_status
+  "pm_project_id" uuid
+  "pm_responsible_id" uuid
+}
+
+Table "pm_projects" {
+  "pm_projectid" uuid [pk, note: "Primary key"]
+  "pm_actualcosteur" decimal
+  "pm_actualenddate" varchar
+  "pm_actualstartdate" varchar
+  "pm_approvedbudgeteur" decimal
+  "pm_benefitsragstatus" pm_projectspm_benefitsragstatus
+  "pm_businessunit" varchar
+  "pm_costragstatus" pm_projectspm_costragstatus
+  "pm_isactive" boolean
+  "pm_percentcomplete" decimal
+  "pm_plannedenddate" varchar
+  "pm_plannedstartdate" varchar
+  "pm_portfoliocode" varchar
+  "pm_programmecode" varchar
+  "pm_projectcode" varchar
+  "pm_projectname" varchar
+  "pm_projectphase" pm_projectspm_projectphase
+  "pm_projectpriority" decimal
+  "pm_projectsponsor" varchar
+  "pm_ragstatus" pm_projectspm_ragstatus
+  "pm_scheduleragstatus" pm_projectspm_scheduleragstatus
+  "pm_portfolio_id" uuid
+  "pm_programme_id" uuid
+  "pm_projectmanager_id" uuid
+}
+
+Table "pm_projectstatussnapshots" {
+  "pm_projectstatussnapshotid" uuid [pk, note: "Primary key"]
+  "pm_actionitems" varchar
+  "pm_approvalstatus" pm_projectstatussnapshotspm_approvalstatus
+  "pm_benefitsragstatus" pm_projectstatussnapshotspm_benefitsragstatus
+  "pm_costragstatus" pm_projectstatussnapshotspm_costragstatus
+  "pm_entitytype" varchar
+  "pm_overallragstatus" pm_projectstatussnapshotspm_overallragstatus
+  "pm_portfolio" varchar
+  "pm_programme" varchar
+  "pm_projectcode" varchar
+  "pm_projecthighlights" varchar
+  "pm_projectlowlights" varchar
+  "pm_reportingperiod" varchar
+  "pm_resourceragstatus" pm_projectstatussnapshotspm_resourceragstatus
+  "pm_riskragstatus" pm_projectstatussnapshotspm_riskragstatus
+  "pm_scheduleragstatus" pm_projectstatussnapshotspm_scheduleragstatus
+  "pm_snapshotname" varchar
+  "pm_submissiondate" varchar
+  "pm_submittedby" varchar
+  "pm_portfoliolookup_id" uuid
+  "pm_programmename_id" uuid
+  "pm_project_id" uuid
+  "pm_reportingfiscalperiod_id" uuid
+}
+
+Table "pm_projecttasks" {
+  "pm_projecttaskid" uuid [pk, note: "Primary key"]
+  "pm_actualenddate" varchar
+  "pm_actualstartdate" varchar
+  "pm_baselineenddate" varchar
+  "pm_baselinestartdate" varchar
+  "pm_durationdays" decimal
+  "pm_lagdays" decimal
+  "pm_oncriticalpath" boolean
+  "pm_percentcomplete" decimal
+  "pm_plannedenddate" varchar
+  "pm_plannedstartdate" varchar
+  "pm_tasklevel" decimal
+  "pm_taskname" varchar
+  "pm_taskstatus" pm_projecttaskspm_taskstatus
+  "pm_wbsnumber" varchar
+  "pm_assignedtoresource_id" uuid
+  "pm_predecessortask_id" uuid
+  "pm_project_id" uuid
+  "pm_projecttask_id" uuid
+}
+
+Table "pm_resourceallocations" {
+  "pm_resourceallocationid" uuid [pk, note: "Primary key"]
+  "pm_actualhours" decimal
+  "pm_allocatedhours" decimal
+  "pm_allocationpercentage" decimal
+  "pm_assignmentrole" varchar
+  "pm_assignmentstatus" pm_resourceallocationspm_assignmentstatus
+  "pm_enddate" varchar
+  "pm_notes" varchar
+  "pm_resourceid" varchar
+  "pm_startdate" varchar
+  "pm_taskid" varchar
+  "pm_project_id" uuid
+  "pm_projecttask_id" uuid
+  "pm_resource_id" uuid
+}
+
+Table "pm_resources" {
+  "pm_resourceid" uuid [pk, note: "Primary key"]
+  "pm_contractenddate" varchar
+  "pm_contractstartdate" varchar
+  "pm_dailycostrate" decimal
+  "pm_dailyworkcapacity" decimal
+  "pm_departmentname" varchar
+  "pm_employmentstatus" pm_resourcespm_employmentstatus
+  "pm_fullname" varchar
+  "pm_positiontitle" varchar
+  "pm_primaryrole" varchar
+  "pm_resourcecategory" pm_resourcespm_resourcecategory
+  "pm_suppliercompany" varchar
+  "pm_systemuser_id" uuid
+}
+
+Table "pm_resourceskills" {
+  "pm_resourceskillid" uuid [pk, note: "Primary key"]
+  "pm_certificationexpirydate" varchar
+  "pm_certificationname" varchar
+  "pm_certified" boolean
+  "pm_primaryskill" boolean
+  "pm_proficiencylevel" pm_resourceskillspm_proficiencylevel
+  "pm_resourceid" varchar
+  "pm_skillid" varchar
+  "pm_yearsofexperience" decimal
+  "pm_resource_id" uuid
+  "pm_skill_id" uuid
+}
+
+Table "pm_riskmitigationactions" {
+  "pm_riskmitigationactionid" uuid [pk, note: "Primary key"]
+  "pm_actiondescription" varchar
+  "pm_actiontitle" varchar
+  "pm_completiondate" varchar
+  "pm_duedate" varchar
+  "pm_effectiveness" pm_riskmitigationactionspm_effectiveness
+  "pm_notes" varchar
+  "pm_status" pm_riskmitigationactionspm_status
+  "pm_risk_id" uuid
+}
+
+Table "pm_risks" {
+  "pm_riskid" uuid [pk, note: "Primary key"]
+  "pm_escalated" boolean
+  "pm_identifieddate" varchar
+  "pm_inherentimpact" pm_riskspm_inherentimpact
+  "pm_inherentprobability" pm_riskspm_inherentprobability
+  "pm_inherentscore" decimal
+  "pm_ragstatus" pm_riskspm_ragstatus
+  "pm_residualimpact" pm_riskspm_residualimpact
+  "pm_residualprobability" pm_riskspm_residualprobability
+  "pm_residualscore" decimal
+  "pm_responsestrategy" pm_riskspm_responsestrategy
+  "pm_riskcategory" pm_riskspm_riskcategory
+  "pm_riskcause" varchar
+  "pm_riskdescription" varchar
+  "pm_riskeffect" varchar
+  "pm_riskstatus" pm_riskspm_riskstatus
+  "pm_risktitle" varchar
+  "pm_targetclosedate" varchar
+  "pm_project_id" uuid
+  "pm_riskowner_id" uuid
+}
+
+Table "pm_skills" {
+  "pm_skillid" uuid [pk, note: "Primary key"]
+  "pm_isactive" boolean
+  "pm_skillcategory" pm_skillspm_skillcategory
+  "pm_skilldescription" varchar
+  "pm_skillname" varchar
+}
+
+Table "pm_timesheetentries" {
+  "pm_timesheetentryid" uuid [pk, note: "Primary key"]
+  "pm_hoursworked" decimal
+  "pm_isapproved" boolean
+  "pm_ischargeable" boolean
+  "pm_isovertime" boolean
+  "pm_nonchargeablereason" varchar
+  "pm_timesheetid" varchar
+  "pm_workdate" varchar
+  "pm_worknotes" varchar
+  "pm_project_id" uuid
+  "pm_projecttask_id" uuid
+  "pm_timesheet_id" uuid
+}
+
+Table "pm_timesheets" {
+  "pm_timesheetid" uuid [pk, note: "Primary key"]
+  "pm_approvaldate" varchar
+  "pm_approvedby" varchar
+  "pm_periodenddate" varchar
+  "pm_periodstartdate" varchar
+  "pm_rejectionreason" varchar
+  "pm_reportingperiod" varchar
+  "pm_submissiondate" varchar
+  "pm_submittedby" varchar
+  "pm_timesheetname" varchar
+  "pm_timesheetstatus" pm_timesheetspm_timesheetstatus
+  "pm_totalchargeablehours" decimal
+  "pm_totalhours" decimal
+  "pm_totalnonchargeablehours" decimal
+  "pm_fiscalperiod1_id" uuid
+  "pm_resource_id" uuid
+}
+
+Table "pm_workflowapprovalsteps" {
+  "pm_workflowapprovalstepid" uuid [pk, note: "Primary key"]
+  "new_formkey" varchar
+  "pm_approvername" varchar
+  "pm_assigneedisplayname" varchar
+  "pm_assigneetype" pm_workflowapprovalstepspm_assigneetype
+  "pm_decisiondate" varchar
+  "pm_decisionnotes" varchar
+  "pm_decisionstatus" pm_workflowapprovalstepspm_decisionstatus
+  "pm_duedate" varchar
+  "pm_isparallelstep" boolean
+  "pm_notificationtimestamp" varchar
+  "pm_stepname" varchar
+  "pm_steporder" decimal
+  "pm_workflowinstancelookup_id" uuid
+  "pm_workflowtemplate_id" uuid
+}
+
+Table "pm_workflowchecklistconfigurations" {
+  "pm_workflowchecklistconfigurationid" uuid [pk, note: "Primary key"]
+  "pm_isrequired" boolean
+  "pm_itemname" varchar
+  "pm_name" varchar [not null]
+  "pm_workflowsteptemplate_id" uuid
+}
+
+Table "pm_workflowinstances" {
+  "pm_workflowinstanceid" uuid [pk, note: "Primary key"]
+  "pm_completeddate" varchar
+  "pm_currentstep" decimal
+  "pm_entityid" varchar
+  "pm_entityname" varchar
+  "pm_entitytype" varchar
+  "pm_instancename" varchar
+  "pm_startdate" varchar
+  "pm_status" pm_workflowinstancespm_status
+  "pm_initiatedbylookup_id" uuid
+  "pm_workflowlookup_id" uuid
+}
+
+Table "pm_workflows" {
+  "pm_workflowid" uuid [pk, note: "Primary key"]
+  "pm_description" varchar
+  "pm_isactive" boolean
+  "pm_module" varchar
+  "pm_version" decimal
+  "pm_workflowname" varchar
+}
+
+Table "pm_workflowsteptemplates" {
+  "pm_workflowsteptemplateid" uuid [pk, note: "Primary key"]
+  "new_formkey" varchar
+  "pm_assigneeid" varchar
+  "pm_assignetype" pm_workflowsteptemplatespm_assignetype
+  "pm_description" varchar
+  "pm_sladays" decimal
+  "pm_steporder" decimal
+  "pm_tasktype" pm_workflowsteptemplatespm_tasktype
+  "pm_workflowname" varchar [not null]
+  "pm_workflowlookup_id" uuid
+}
+
+Table "systemusers" {
+  "systemuserid" uuid [pk, note: "Primary key"]
+  "domainname" varchar [not null]
+  "firstname" varchar [not null]
+  "internalemailaddress" varchar [not null]
+  "isdisabled" boolean
+  "lastname" varchar [not null]
+  "title" varchar
+  "parentsystemuserid" uuid
+}
+
+Table "teammemberships" {
+  "teammembershipid" uuid [pk, note: "Primary key"]
+  "systemuserid" varchar [not null]
+  "teamid" varchar [not null]
+}
+
+Table "teams" {
+  "teamid" uuid [pk, note: "Primary key"]
+  "description" varchar
+  "emailaddress" varchar
+  "membershiptype" teamsmembershiptype [not null]
+  "name" varchar [not null]
+  "teamtype" teamsteamtype [not null]
+}
+
+// ---------------------------------------------------------------------
+// Relationships
+// ---------------------------------------------------------------------
+Ref: "pm_agentinsights"."pm_portfolio_id" > "pm_portfolios"."pm_portfolioid"
+Ref: "pm_agentinsights"."pm_programme_id" > "pm_programmes"."pm_programmeid"
+Ref: "pm_agentinsights"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_agentinsights"."pm_risk_id" > "pm_risks"."pm_riskid"
+Ref: "pm_benefits"."pm_benifitowner_id" > "pm_resources"."pm_resourceid"
+Ref: "pm_benefits"."pm_programmelookup_id" > "pm_programmes"."pm_programmeid"
+Ref: "pm_benefits"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_budgetlines"."pm_fiscalperiod_id" > "pm_fiscalperiods"."pm_fiscalperiodid"
+Ref: "pm_budgetlines"."pm_fundingsource_id" > "pm_fundingsources"."pm_fundingsourceid"
+Ref: "pm_budgetlines"."pm_portfoliolookup_id" > "pm_portfolios"."pm_portfolioid"
+Ref: "pm_budgetlines"."pm_programmelookup_id" > "pm_programmes"."pm_programmeid"
+Ref: "pm_budgetlines"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_cashflowentries"."pm_budgetline_id" > "pm_budgetlines"."pm_budgetlineid"
+Ref: "pm_cashflowentries"."pm_fiscalperiod_id" > "pm_fiscalperiods"."pm_fiscalperiodid"
+Ref: "pm_cashflowentries"."pm_programmelookup_id" > "pm_programmes"."pm_programmeid"
+Ref: "pm_cashflowentries"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_changelogentries"."pm_changeby_id" > "systemusers"."systemuserid"
+Ref: "pm_changerequests"."pm_changerequest_id" > "pm_changerequests"."pm_changerequestid"
+Ref: "pm_changerequests"."pm_programmelookup_id" > "pm_programmes"."pm_programmeid"
+Ref: "pm_changerequests"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_checklistresponses"."pm_checklistconfiguration_id" > "pm_workflowchecklistconfigurations"."pm_workflowchecklistconfigurationid"
+Ref: "pm_checklistresponses"."pm_workflowapprovalstep_id" > "pm_workflowapprovalsteps"."pm_workflowapprovalstepid"
+Ref: "pm_fundingsources"."pm_portfolio_id" > "pm_portfolios"."pm_portfolioid"
+Ref: "pm_fundingsources"."pm_programmelookup_id" > "pm_programmes"."pm_programmeid"
+Ref: "pm_initiatives"."pm_portfolio_id" > "pm_portfolios"."pm_portfolioid"
+Ref: "pm_initiatives"."pm_programme_id" > "pm_programmes"."pm_programmeid"
+Ref: "pm_initiatives"."pm_requestedby_id" > "systemusers"."systemuserid"
+Ref: "pm_issues"."pm_issueowner_id" > "pm_resources"."pm_resourceid"
+Ref: "pm_issues"."pm_programmefk_id" > "pm_programmes"."pm_programmeid"
+Ref: "pm_issues"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_issues"."pm_risk_id" > "pm_risks"."pm_riskid"
+Ref: "pm_performancemeasures"."pm_benefit_id" > "pm_benefits"."pm_benefitid"
+Ref: "pm_portfolios"."pm_ownerlookup_id" > "pm_resources"."pm_resourceid"
+Ref: "pm_programmes"."pm_portfolio_id" > "pm_portfolios"."pm_portfolioid"
+Ref: "pm_programmes"."pm_programmemanager_id" > "pm_resources"."pm_resourceid"
+Ref: "pm_projectgatereviews"."pm_programmelookup_id" > "pm_programmes"."pm_programmeid"
+Ref: "pm_projectgatereviews"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_projectmilestones"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_projectmilestones"."pm_responsible_id" > "pm_resources"."pm_resourceid"
+Ref: "pm_projects"."pm_portfolio_id" > "pm_portfolios"."pm_portfolioid"
+Ref: "pm_projects"."pm_programme_id" > "pm_programmes"."pm_programmeid"
+Ref: "pm_projects"."pm_projectmanager_id" > "pm_resources"."pm_resourceid"
+Ref: "pm_projectstatussnapshots"."pm_portfoliolookup_id" > "pm_portfolios"."pm_portfolioid"
+Ref: "pm_projectstatussnapshots"."pm_programmename_id" > "pm_programmes"."pm_programmeid"
+Ref: "pm_projectstatussnapshots"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_projectstatussnapshots"."pm_reportingfiscalperiod_id" > "pm_fiscalperiods"."pm_fiscalperiodid"
+Ref: "pm_projecttasks"."pm_assignedtoresource_id" > "pm_resources"."pm_resourceid"
+Ref: "pm_projecttasks"."pm_predecessortask_id" > "pm_projecttasks"."pm_projecttaskid"
+Ref: "pm_projecttasks"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_projecttasks"."pm_projecttask_id" > "pm_projecttasks"."pm_projecttaskid"
+Ref: "pm_resourceallocations"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_resourceallocations"."pm_projecttask_id" > "pm_projecttasks"."pm_projecttaskid"
+Ref: "pm_resourceallocations"."pm_resource_id" > "pm_resources"."pm_resourceid"
+Ref: "pm_resources"."pm_systemuser_id" > "systemusers"."systemuserid"
+Ref: "pm_resourceskills"."pm_resource_id" > "pm_resources"."pm_resourceid"
+Ref: "pm_resourceskills"."pm_skill_id" > "pm_skills"."pm_skillid"
+Ref: "pm_riskmitigationactions"."pm_risk_id" > "pm_risks"."pm_riskid"
+Ref: "pm_risks"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_risks"."pm_riskowner_id" > "pm_resources"."pm_resourceid"
+Ref: "pm_timesheetentries"."pm_project_id" > "pm_projects"."pm_projectid"
+Ref: "pm_timesheetentries"."pm_projecttask_id" > "pm_projecttasks"."pm_projecttaskid"
+Ref: "pm_timesheetentries"."pm_timesheet_id" > "pm_timesheets"."pm_timesheetid"
+Ref: "pm_timesheets"."pm_fiscalperiod1_id" > "pm_fiscalperiods"."pm_fiscalperiodid"
+Ref: "pm_timesheets"."pm_resource_id" > "pm_resources"."pm_resourceid"
+Ref: "pm_workflowapprovalsteps"."pm_workflowinstancelookup_id" > "pm_workflowinstances"."pm_workflowinstanceid"
+Ref: "pm_workflowapprovalsteps"."pm_workflowtemplate_id" > "pm_workflowsteptemplates"."pm_workflowsteptemplateid"
+Ref: "pm_workflowchecklistconfigurations"."pm_workflowsteptemplate_id" > "pm_workflowsteptemplates"."pm_workflowsteptemplateid"
+Ref: "pm_workflowinstances"."pm_initiatedbylookup_id" > "systemusers"."systemuserid"
+Ref: "pm_workflowinstances"."pm_workflowlookup_id" > "pm_workflows"."pm_workflowid"
+Ref: "pm_workflowsteptemplates"."pm_workflowlookup_id" > "pm_workflows"."pm_workflowid"
