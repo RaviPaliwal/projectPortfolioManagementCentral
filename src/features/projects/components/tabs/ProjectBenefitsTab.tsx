@@ -14,10 +14,22 @@ import DescriptionIcon from '@mui/icons-material/Description'
 import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import TimelineIcon from '@mui/icons-material/Timeline'
 
-import { StatusTag } from '@/components/common'
+import { StatusTag, KpiCardRow } from '@/components/common'
 import type { BenefitModel } from '@/types/dataverse'
 import { RiskDetailView } from '@/features/risks/components/RiskDetailView'
 import { BenefitsGrid } from '@/features/benefits/components/BenefitsGrid'
+import PieChartIcon from '@mui/icons-material/PieChart'
+import VerifiedIcon from '@mui/icons-material/Verified'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import SpeedIcon from '@mui/icons-material/Speed'
+import { LinearProgress } from '@mui/material'
+import {
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from 'recharts'
 
 interface ProjectBenefitsTabProps {
   benefits: BenefitModel[]
@@ -72,6 +84,47 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const achievedBenefits = benefits.filter(b => String(b.pm_benefitstatus) === '2' || b.pm_benefitstatus === 2).length
+  const achievementRate = benefits.length > 0 ? Math.round((achievedBenefits / benefits.length) * 100) : 0
+
+  const kpiItems = React.useMemo(() => [
+    {
+      label: 'Total Benefits (Defined)',
+      value: benefits.length,
+      subtitle: 'Key business case metrics',
+      icon: <StarIcon />,
+      color: 'primary.main',
+      valueColor: 'primary.main'
+    },
+    {
+      label: 'Benefits Realized',
+      value: achievedBenefits,
+      subtitle: `${achievementRate}% realisation rate`,
+      icon: <EmojiEventsIcon />,
+      color: achievedBenefits > 0 ? 'success.main' : 'warning.main',
+      valueColor: achievedBenefits > 0 ? 'success.main' : 'warning.main'
+    }
+  ], [benefits.length, achievedBenefits, achievementRate])
+
+  const categorySummary = React.useMemo(() => {
+    const summaryMap: Record<string, { name: string; value: number; color: string }> = {
+      '1': { name: 'Financial', value: 0, color: theme.palette.primary.main },
+      '2': { name: 'Strategic', value: 0, color: theme.palette.secondary.main },
+      '3': { name: 'Operational', value: 0, color: theme.palette.warning.main }
+    }
+    
+    for (const b of benefits) {
+      const cat = String(b.pm_benefitcategory ?? '')
+      if (summaryMap[cat]) {
+        summaryMap[cat].value += 1
+      }
+    }
+    
+    return Object.values(summaryMap).filter(c => c.value > 0)
+  }, [benefits, theme])
+
+  const criticalCount = React.useMemo(() => {
+    return benefits.filter(b => String(b.pm_ragstatus) === '2' || b.pm_ragstatus === 2).length
+  }, [benefits])
 
   // Number formatter for values
   const numberFormatter = new Intl.NumberFormat('en-GB')
@@ -218,43 +271,110 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Benefit KPI Row */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
-          <StarIcon sx={{ fontSize: 20, color: 'success.main', mb: 0.5 }} />
-          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
-            {benefits.length}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Total Benefits (Defined in business case)
-          </Typography>
-        </Paper>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
-          <EmojiEventsIcon sx={{ fontSize: 20, color: 'primary.main', mb: 0.5 }} />
-          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
-            {achievedBenefits}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Benefits Realized ({((achievedBenefits / (benefits.length || 1)) * 100).toFixed(0)}% achievement)
-          </Typography>
-        </Paper>
-      </Box>
+      <KpiCardRow items={kpiItems} />
 
-      <Box>
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Planned Benefits
-        </Typography>
-        
-        <BenefitsGrid
-          benefits={benefits}
-          loading={false}
-          onRowClick={setSelectedBenefit}
-          onCreateClick={onAddBenefit || (() => {})}
-          statusFilter={benefitStatusFilter}
-          onStatusFilterChange={setBenefitStatusFilter}
-          categoryFilter={benefitCategoryFilter}
-          onCategoryFilterChange={setBenefitCategoryFilter}
-        />
-      </Box>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Planned Benefits
+      </Typography>
+
+      {/* 2-Column Side-by-Side Benefits Grid */}
+      <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch' }}>
+        <Grid size={{ xs: 12, md: 8.5 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+          <BenefitsGrid
+            benefits={benefits}
+            loading={false}
+            onRowClick={setSelectedBenefit}
+            onCreateClick={onAddBenefit || (() => {})}
+            statusFilter={benefitStatusFilter}
+            onStatusFilterChange={setBenefitStatusFilter}
+            categoryFilter={benefitCategoryFilter}
+            onCategoryFilterChange={setBenefitCategoryFilter}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 3.5 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 3,
+              borderRadius: '24px',
+              bgcolor: isDark ? 'background.paper' : '#fff',
+              height: 'calc(100% - 24px)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              gap: 3
+            }}
+          >
+            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Category Breakdown
+              </Typography>
+              
+              <Box sx={{ height: 180, width: '100%', mb: 2, flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                {categorySummary.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie
+                        data={categorySummary}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {categorySummary.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip formatter={(value) => [`${value} Benefit(s)`]} />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%', border: '1px dashed', borderColor: 'divider', borderRadius: 2 }}>
+                    <Typography variant="caption" color="text.secondary">No category data</Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Summary Indicators
+              </Typography>
+              
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
+                  <VerifiedIcon fontSize="small" sx={{ color: 'primary.main' }} /> Realisation Progress
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: 120 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={achievementRate}
+                    sx={{ flexGrow: 1, height: 6, borderRadius: 3 }}
+                    color={achievementRate >= 100 ? 'success' : 'primary'}
+                  />
+                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                    {achievementRate}%
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
+                  <WarningAmberIcon fontSize="small" sx={{ color: criticalCount > 0 ? 'error.main' : 'success.main' }} /> Benefits RAG
+                </Typography>
+                <StatusTag
+                  label={criticalCount > 0 ? `${criticalCount} Critical` : 'On Track'}
+                  color={criticalCount > 0 ? 'error' : 'success'}
+                  size="small"
+                />
+              </Box>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
     </Box>
   )
 }

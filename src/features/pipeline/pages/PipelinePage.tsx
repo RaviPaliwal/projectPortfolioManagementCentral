@@ -371,6 +371,40 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
     },
   ]
 
+  const detailKpiItems = useMemo(() => {
+    if (!selectedInitiative) return []
+    return [
+      {
+        label: "Estimated Cost",
+        value: selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—',
+        subtitle: "Est. budget required",
+        icon: <MonetizationOnIcon />,
+        color: theme.palette.primary.main
+      },
+      {
+        label: "Estimated Benefits",
+        value: selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—',
+        subtitle: "Est. return on investment",
+        icon: <TrendingUpIcon />,
+        color: theme.palette.success.main
+      },
+      {
+        label: "Priority Score",
+        value: selectedInitiative.pm_priorityscore ?? '—',
+        subtitle: "Calculated intake score",
+        icon: <LightbulbIcon />,
+        color: theme.palette.secondary.main
+      },
+      {
+        label: "Strategic Alignment",
+        value: selectedInitiative.pm_strategicalignmentscore ? `${selectedInitiative.pm_strategicalignmentscore.toFixed(1)} / 5.0` : '—',
+        subtitle: "Portfolio strategic alignment",
+        icon: <AccountTreeIcon />,
+        color: theme.palette.warning.main
+      }
+    ]
+  }, [selectedInitiative, theme])
+
   // ── Sort Handler ─────────────────────────────────────────────────────────
   const handleSort = useCallback((field: SortField) => {
     setSort((prev) => ({
@@ -1077,122 +1111,10 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
           )}
 
           {/* KPI Ribbon */}
-          <Grid container spacing={2.5} sx={{ mb: 1 }}>
-            {[
-              {
-                label: "Estimated Cost",
-                value: selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—',
-                subtitle: "Est. budget required",
-                icon: <MonetizationOnIcon />,
-                color: theme.palette.primary.main
-              },
-              {
-                label: "Estimated Benefits",
-                value: selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—',
-                subtitle: "Est. return on investment",
-                icon: <TrendingUpIcon />,
-                color: theme.palette.success.main
-              },
-              {
-                label: "Priority Score",
-                value: selectedInitiative.pm_priorityscore ?? '—',
-                subtitle: "Calculated intake score",
-                icon: <LightbulbIcon />,
-                color: theme.palette.secondary.main
-              },
-              {
-                label: "Strategic Alignment",
-                value: selectedInitiative.pm_strategicalignmentscore ? `${selectedInitiative.pm_strategicalignmentscore.toFixed(1)} / 5.0` : '—',
-                subtitle: "Portfolio strategic alignment",
-                icon: <AccountTreeIcon />,
-                color: theme.palette.warning.main
-              }
-            ].map((kpi, idx) => (
-              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 2.5,
-                    height: '100%',
-                    borderRadius: '20px',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    bgcolor: isDark ? 'background.paper' : '#fff',
-                    border: `1px solid ${alpha(kpi.color, 0.15)}`,
-                    boxShadow: isDark
-                      ? `0 8px 30px ${alpha(kpi.color, 0.05)}`
-                      : `0 8px 30px ${alpha(kpi.color, 0.03)}`,
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: `0 12px 40px ${alpha(kpi.color, 0.12)}`,
-                      borderColor: kpi.color,
-                    },
-                  }}
-                >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 800,
-                        color: 'text.secondary',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        fontSize: '0.68rem',
-                      }}
-                    >
-                      {kpi.label}
-                    </Typography>
-                    <Avatar
-                      sx={{
-                        width: 34,
-                        height: 34,
-                        bgcolor: alpha(kpi.color, 0.1),
-                        color: kpi.color,
-                        border: `1px solid ${alpha(kpi.color, 0.2)}`,
-                        '& .MuiSvgIcon-root': { fontSize: 18 }
-                      }}
-                    >
-                      {kpi.icon}
-                    </Avatar>
-                  </Box>
-
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 900,
-                      letterSpacing: '-0.02em',
-                      color: isDark ? '#fff' : '#0f172a',
-                      fontFamily: '"Outfit", sans-serif',
-                      mb: 0.5,
-                      whiteSpace: 'nowrap',
-                      textOverflow: 'ellipsis',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {kpi.value}
-                  </Typography>
-
-                  {kpi.subtitle && (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', opacity: 0.8 }}>
-                      {kpi.subtitle}
-                    </Typography>
-                  )}
-
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '4px',
-                      background: `linear-gradient(90deg, ${kpi.color}, ${alpha(kpi.color, 0.3)})`,
-                    }}
-                  />
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+          <KpiCardRow
+            variant="compact"
+            items={detailKpiItems}
+          />
 
           {/* Unified Overview Block */}
           <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', mb: 3.5, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
