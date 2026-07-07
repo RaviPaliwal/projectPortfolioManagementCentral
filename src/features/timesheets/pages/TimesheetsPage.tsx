@@ -423,6 +423,40 @@ export default function TimesheetsPage() {
     ]
   }, [timesheets])
 
+  const detailKpiItems = useMemo(() => {
+    if (!selectedTimesheet) return []
+    return [
+      {
+        label: "Total Hours Logged",
+        value: `${selectedTimesheet.pm_totalhours ?? 0}h`,
+        subtitle: "Total logged time",
+        icon: <AccessTimeIcon />,
+        color: theme.palette.primary.main
+      },
+      {
+        label: "Chargeable Hours",
+        value: `${selectedTimesheet.pm_totalchargeablehours ?? 0}h`,
+        subtitle: "Billing/Chargeable hours",
+        icon: <CheckCircleIcon />,
+        color: theme.palette.success.main
+      },
+      {
+        label: "Non-Chargeable Hours",
+        value: `${selectedTimesheet.pm_totalnonchargeablehours ?? 0}h`,
+        subtitle: "Internal/Non-chargeable",
+        icon: <CancelIcon />,
+        color: theme.palette.error.main
+      },
+      {
+        label: "Reporting Period",
+        value: selectedTimesheet.pm_reportingperiod || '—',
+        subtitle: "Target calendar period",
+        icon: <EventNoteIcon />,
+        color: theme.palette.secondary.main
+      }
+    ]
+  }, [selectedTimesheet, theme])
+
   const currentStatus = String(selectedTimesheet?.pm_timesheetstatus ?? '')
   const isDraft = currentStatus === '3'
 
@@ -486,122 +520,10 @@ export default function TimesheetsPage() {
           />
 
           {/* KPI Ribbon */}
-          <Grid container spacing={2.5} sx={{ mb: 1 }}>
-            {[
-              {
-                label: "Total Hours Logged",
-                value: `${selectedTimesheet.pm_totalhours ?? 0}h`,
-                subtitle: "Total logged time",
-                icon: <AccessTimeIcon />,
-                color: theme.palette.primary.main
-              },
-              {
-                label: "Chargeable Hours",
-                value: `${selectedTimesheet.pm_totalchargeablehours ?? 0}h`,
-                subtitle: "Billing/Chargeable hours",
-                icon: <CheckCircleIcon />,
-                color: theme.palette.success.main
-              },
-              {
-                label: "Non-Chargeable Hours",
-                value: `${selectedTimesheet.pm_totalnonchargeablehours ?? 0}h`,
-                subtitle: "Internal/Non-chargeable",
-                icon: <CancelIcon />,
-                color: theme.palette.error.main
-              },
-              {
-                label: "Reporting Period",
-                value: selectedTimesheet.pm_reportingperiod || '—',
-                subtitle: "Target calendar period",
-                icon: <EventNoteIcon />,
-                color: theme.palette.secondary.main
-              }
-            ].map((kpi, idx) => (
-              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 2.5,
-                    height: '100%',
-                    borderRadius: '20px',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    bgcolor: isDark ? 'background.paper' : '#fff',
-                    border: `1px solid ${alpha(kpi.color, 0.15)}`,
-                    boxShadow: isDark
-                      ? `0 8px 30px ${alpha(kpi.color, 0.05)}`
-                      : `0 8px 30px ${alpha(kpi.color, 0.03)}`,
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: `0 12px 40px ${alpha(kpi.color, 0.12)}`,
-                      borderColor: kpi.color,
-                    },
-                  }}
-                >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 800,
-                        color: 'text.secondary',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        fontSize: '0.68rem',
-                      }}
-                    >
-                      {kpi.label}
-                    </Typography>
-                    <Avatar
-                      sx={{
-                        width: 34,
-                        height: 34,
-                        bgcolor: alpha(kpi.color, 0.1),
-                        color: kpi.color,
-                        border: `1px solid ${alpha(kpi.color, 0.2)}`,
-                        '& .MuiSvgIcon-root': { fontSize: 18 }
-                      }}
-                    >
-                      {kpi.icon}
-                    </Avatar>
-                  </Box>
-
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 900,
-                      letterSpacing: '-0.02em',
-                      color: isDark ? '#fff' : '#0f172a',
-                      fontFamily: '"Outfit", sans-serif',
-                      mb: 0.5,
-                      whiteSpace: 'nowrap',
-                      textOverflow: 'ellipsis',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {kpi.value}
-                  </Typography>
-
-                  {kpi.subtitle && (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', opacity: 0.8 }}>
-                      {kpi.subtitle}
-                    </Typography>
-                  )}
-
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '4px',
-                      background: `linear-gradient(90deg, ${kpi.color}, ${alpha(kpi.color, 0.3)})`,
-                    }}
-                  />
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+          <KpiCardRow
+            variant="compact"
+            items={detailKpiItems}
+          />
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>

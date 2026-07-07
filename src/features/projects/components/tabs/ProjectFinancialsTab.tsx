@@ -21,7 +21,16 @@ import VerifiedIcon from '@mui/icons-material/Verified'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import NotesIcon from '@mui/icons-material/Notes'
 
-import { StatusTag, VarianceDisplay } from '@/components/common'
+import { StatusTag, VarianceDisplay, KpiCardRow } from '@/components/common'
+import {
+  BarChart,
+  Bar,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from 'recharts'
 import type { BudgetLineModel, ProjectModel } from '@/types/dataverse'
 import { currency } from '../../constants'
 import { fontSizes } from '@/styles'
@@ -73,6 +82,59 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
   const earnedValue = totalBudget * (percentComplete / 100)
   const cpi = totalSpent > 0 ? earnedValue / totalSpent : 1.0
   const costVariance = earnedValue - totalSpent
+
+  const kpiItems = React.useMemo(() => [
+    {
+      label: 'Approved Budget (BAC)',
+      value: currency(totalBudget),
+      subtitle: 'Total authorized budget',
+      icon: <AccountBalanceWalletIcon />,
+      color: 'primary.main',
+      valueColor: 'primary.main'
+    },
+    {
+      label: 'Actual Cost (AC)',
+      value: currency(totalSpent),
+      subtitle: 'Total expenditure to date',
+      icon: <AttachMoneyIcon />,
+      color: 'success.main',
+      valueColor: 'success.main'
+    },
+    {
+      label: 'CPI Index (BAC/EAC)',
+      value: cpi.toFixed(2),
+      subtitle: 'Cost Performance Index',
+      icon: <QueryStatsIcon />,
+      color: cpi >= 1.0 ? 'success.main' : cpi >= 0.85 ? 'warning.main' : 'error.main'
+    },
+    {
+      label: 'Cost Variance (CV)',
+      value: `${costVariance >= 0 ? '+' : ''}${currency(costVariance)}`,
+      subtitle: 'Earned Value vs Actual Cost',
+      icon: <CurrencyExchangeIcon />,
+      color: costVariance >= 0 ? 'success.main' : 'error.main',
+      valueColor: costVariance >= 0 ? 'success.main' : 'error.main'
+    }
+  ], [totalBudget, totalSpent, cpi, costVariance])
+
+  const categorySummary = React.useMemo(() => {
+    const summaryMap: Record<string, { name: string; budget: number; spend: number; color: string }> = {
+      '0': { name: 'Staff', budget: 0, spend: 0, color: theme.palette.primary.main },
+      '1': { name: 'Contractors', budget: 0, spend: 0, color: theme.palette.secondary.main },
+      '2': { name: 'Licences', budget: 0, spend: 0, color: theme.palette.warning.main },
+      '3': { name: 'Infrastructure', budget: 0, spend: 0, color: theme.palette.error.main }
+    }
+    
+    for (const b of budgetLines) {
+      const cat = String(b.pm_costcategory ?? '')
+      if (summaryMap[cat]) {
+        summaryMap[cat].budget += b.pm_approvedbudgeteur ?? 0
+        summaryMap[cat].spend += b.pm_actualspendeur ?? 0
+      }
+    }
+    
+    return Object.values(summaryMap).filter(c => c.budget > 0 || c.spend > 0)
+  }, [budgetLines, theme])
 
   // Helper helpers
   const budgetUtilization = (b: BudgetLineModel) => {
@@ -284,62 +346,103 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* EVM KPI Cards Summary Row */}
-      <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' }, mb: 2 }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: '1fr 1fr 1fr 1fr' }, gap: 2, width: '100%' }}>
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, flex: 1 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
-              {currency(totalBudget)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Approved Budget (BAC)
-            </Typography>
-          </Paper>
+      <KpiCardRow items={kpiItems} />
 
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, flex: 1 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: 'success.main' }}>
-              {currency(totalSpent)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Actual Cost (AC)
-            </Typography>
-          </Paper>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <PieChartIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Budget Breakdown
+      </Typography>
 
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, flex: 1 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
-              {cpi.toFixed(2)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              CPI Index (BAC/EAC)
-            </Typography>
-          </Paper>
+      <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch' }}>
+        <Grid size={{ xs: 12, md: 8.5 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+          <BudgetTable
+            budgetLines={budgetLines}
+            loading={false}
+            onSelect={setSelectedBudgetLine}
+            onEdit={onEditBudgetLine}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            openCreate={onAddBudgetLine}
+            canEdit={canEdit}
+          />
+        </Grid>
 
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, flex: 1 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: costVariance >= 0 ? 'success.main' : 'error.main' }}>
-              {costVariance >= 0 ? '+' : ''}{currency(costVariance)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Cost Variance (CV)
-            </Typography>
-          </Paper>
-        </Box>
-      </Box>
+        <Grid size={{ xs: 12, md: 3.5 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 3,
+              borderRadius: '24px',
+              bgcolor: isDark ? 'background.paper' : '#fff',
+              height: 'calc(100% - 24px)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              gap: 3
+            }}
+          >
+            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Financial Analysis
+              </Typography>
+              
+              <Box sx={{ height: 180, width: '100%', mb: 2, flexGrow: 1 }}>
+                {categorySummary.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={categorySummary}
+                      margin={{ top: 10, right: 10, left: -25, bottom: 5 }}
+                    >
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} stroke={theme.palette.divider} />
+                      <YAxis tick={{ fontSize: 9, fontFamily: 'monospace' }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
+                      <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
+                      <Bar dataKey="budget" name="Budget" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} barSize={16} />
+                      <Bar dataKey="spend" name="Spend" fill={theme.palette.success.main} radius={[4, 4, 0, 0]} barSize={16} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', border: '1px dashed', borderColor: 'divider', borderRadius: 2 }}>
+                    <Typography variant="caption" color="text.secondary">No category data to display</Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
 
-      <Box>
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <PieChartIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Budget Breakdown
-        </Typography>
-        
-        <BudgetTable
-          budgetLines={budgetLines}
-          loading={false}
-          onSelect={setSelectedBudgetLine}
-          onEdit={onEditBudgetLine}
-          categoryFilter={categoryFilter}
-          setCategoryFilter={setCategoryFilter}
-          openCreate={onAddBudgetLine}
-          canEdit={canEdit}
-        />
-      </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Summary Indicators
+              </Typography>
+              
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
+                  <VerifiedIcon fontSize="small" sx={{ color: 'primary.main' }} /> Budget Utilisation
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: 120 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={totalBudget > 0 ? Math.min(100, Math.round((totalSpent / totalBudget) * 100)) : 0}
+                    sx={{ flexGrow: 1, height: 6, borderRadius: 3 }}
+                    color={totalSpent > totalBudget ? 'error' : 'primary'}
+                  />
+                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                    {totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0}%
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
+                  <WarningAmberIcon fontSize="small" sx={{ color: costVariance >= 0 ? 'success.main' : 'error.main' }} /> Cost Health
+                </Typography>
+                <StatusTag
+                  label={costVariance >= 0 ? 'Under Budget' : 'Over Budget'}
+                  color={costVariance >= 0 ? 'success' : 'error'}
+                  size="small"
+                />
+              </Box>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
     </Box>
   )
 }

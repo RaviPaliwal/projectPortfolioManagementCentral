@@ -1564,7 +1564,7 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
   return (
     <Box>
       {/* Forecasting KPIs */}
-      <KpiCardRow items={forecasterKpis} />
+      <KpiCardRow items={forecasterKpis} variant="compact" />
 
       {/* Two-column chart layout */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 3, mb: 3 }}>
