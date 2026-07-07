@@ -60,7 +60,7 @@ export const StatusProgressBar = ({
         sx={{
           height,
           borderRadius: height / 2,
-          bgcolor: isDark ? '#334155' : '#e2e8f0',
+          bgcolor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#cbd5e1',
           '& .MuiLinearProgress-bar': {
             borderRadius: height / 2,
             bgcolor: getBarColor(),

@@ -802,10 +802,10 @@ export default function PortfoliosPage() {
                           { name: 'Spend', amount: selectedPortfolio.pm_actualspendeur ?? 0, color: theme.palette.warning.main },
                           { name: 'Variance', amount: Math.max(0, (selectedPortfolio.pm_approvedbudgeteur ?? 0) - (selectedPortfolio.pm_actualspendeur ?? 0)), color: theme.palette.info.main }
                         ]}
-                        margin={{ top: 10, right: 10, left: -25, bottom: 20 }}
+                        margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
                       >
                         <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: theme.palette.text.secondary }} stroke={theme.palette.divider} />
-                        <YAxis tick={{ fontSize: 9, fontFamily: 'monospace' }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
+                        <YAxis tick={{ fontSize: 9, fontFamily: 'monospace', fill: theme.palette.text.secondary }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
                         <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
                         <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={20}>
                           {[
