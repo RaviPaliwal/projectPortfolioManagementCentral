@@ -267,27 +267,66 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
   const [showConvertDialog, setShowConvertDialog] = useState(false)
   const [showBudgetWarningDialog, setShowBudgetWarningDialog] = useState(false)
 
-  // ── Portfolio budget info for create modal ──────────────────────────────
-  const portfolioBudgetInfo = useMemo(() => {
-    if (!createForm._pm_portfolio_value) return null
-    const selectedPortfolio = portfolios.find((p) => p.pm_portfolioid === createForm._pm_portfolio_value)
-    if (!selectedPortfolio) return null
+  // ── Parent budget info for create modal ─────────────────────────────────
+  const parentBudgetInfo = useMemo(() => {
+    const { pm_initiativetype, _pm_programme_value, _pm_portfolio_value } = createForm
 
-    const portfolioBudget = selectedPortfolio.pm_approvedbudgeteur ?? 0
-    // Sum of programme budgets under this portfolio
-    const programmeBudgets = programmes
-      .filter((p) => p._pm_portfolio_value === createForm._pm_portfolio_value)
-      .reduce((s, p) => s + (p.pm_budgeteur ?? 0), 0)
-    // Sum of other initiative estimated costs under this portfolio (exclude current if being edited)
-    const initiativeCosts = initiatives
-      .filter((i) => i._pm_portfolio_value === createForm._pm_portfolio_value)
-      .reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)
-    const usedBudget = programmeBudgets + initiativeCosts
-    const availableBudget = Math.max(0, portfolioBudget - usedBudget)
-    return { portfolioBudget, usedBudget, availableBudget }
-  }, [createForm._pm_portfolio_value, portfolios, programmes, initiatives])
+    if (pm_initiativetype === 0) {
+      // Initiative is a Project: parent is a Programme
+      if (!_pm_programme_value) return null
+      const selectedProg = programmes.find((p) => p.pm_programmeid === _pm_programme_value)
+      if (!selectedProg) return null
 
-  const hasBudgetError = portfolioBudgetInfo !== null && createForm.pm_estimatedcosteur > portfolioBudgetInfo.availableBudget
+      const parentBudget = selectedProg.pm_budgeteur ?? 0
+      // Sum of child projects under this programme
+      const childProjectBudgets = projects
+        .filter((p) => p._pm_programme_value === _pm_programme_value)
+        .reduce((s, p) => s + (p.pm_approvedbudgeteur ?? 0), 0)
+      // Sum of other Project initiatives under this programme
+      const childInitiativeCosts = initiatives
+        .filter((i) => i.pm_initiativetype === 0 && i._pm_programme_value === _pm_programme_value)
+        .reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)
+
+      const usedBudget = childProjectBudgets + childInitiativeCosts
+      const availableBudget = Math.max(0, parentBudget - usedBudget)
+
+      return {
+        label: 'Programme',
+        parentBudget,
+        usedBudget,
+        availableBudget,
+      }
+    } else if (pm_initiativetype === 1) {
+      // Initiative is a Programme: parent is a Portfolio
+      if (!_pm_portfolio_value) return null
+      const selectedPortfolio = portfolios.find((p) => p.pm_portfolioid === _pm_portfolio_value)
+      if (!selectedPortfolio) return null
+
+      const parentBudget = selectedPortfolio.pm_approvedbudgeteur ?? 0
+      // Sum of child programmes under this portfolio
+      const childProgrammeBudgets = programmes
+        .filter((p) => p._pm_portfolio_value === _pm_portfolio_value)
+        .reduce((s, p) => s + (p.pm_budgeteur ?? 0), 0)
+      // Sum of other Programme initiatives under this portfolio
+      const childInitiativeCosts = initiatives
+        .filter((i) => i.pm_initiativetype === 1 && i._pm_portfolio_value === _pm_portfolio_value)
+        .reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)
+
+      const usedBudget = childProgrammeBudgets + childInitiativeCosts
+      const availableBudget = Math.max(0, parentBudget - usedBudget)
+
+      return {
+        label: 'Portfolio',
+        parentBudget,
+        usedBudget,
+        availableBudget,
+      }
+    }
+
+    return null
+  }, [createForm.pm_initiativetype, createForm._pm_programme_value, createForm._pm_portfolio_value, portfolios, programmes, projects, initiatives])
+
+  const hasBudgetError = parentBudgetInfo !== null && createForm.pm_estimatedcosteur > parentBudgetInfo.availableBudget
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -365,7 +404,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
     {
       label: 'Converted',
       value: initiatives.filter((i) => String(i.pm_pipelinestatus) === '4').length,
-      subtitle: 'Became projects',
+      subtitle: 'Successfully converted',
       icon: <TransformIcon />,
       color: 'secondary.main',
     },
@@ -1563,7 +1602,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
                     value={createForm.pm_estimatedcosteur}
                     onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedcosteur: Number(e.target.value) }))}
                     error={hasBudgetError}
-                    helperText={hasBudgetError ? `Exceeds remaining portfolio budget by ${currencyFormatter.format(createForm.pm_estimatedcosteur - portfolioBudgetInfo!.availableBudget)}` : ''}
+                    helperText={hasBudgetError && parentBudgetInfo ? `Exceeds remaining ${parentBudgetInfo.label.toLowerCase()} budget by ${currencyFormatter.format(createForm.pm_estimatedcosteur - parentBudgetInfo.availableBudget)}` : ''}
                     slotProps={{
                       input: { startAdornment: <CurrencyExchangeIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} /> },
                     }}
@@ -1586,32 +1625,32 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
             </>
           )}
 
-          {portfolioBudgetInfo && (() => {
-            const allocatedPct = Math.min(100, Math.round((portfolioBudgetInfo.usedBudget / portfolioBudgetInfo.portfolioBudget) * 100))
-            const isOverBudget = portfolioBudgetInfo.availableBudget <= 0
+          {parentBudgetInfo && (() => {
+            const allocatedPct = Math.min(100, Math.round((parentBudgetInfo.usedBudget / parentBudgetInfo.parentBudget) * 100))
+            const isOverBudget = parentBudgetInfo.availableBudget <= 0
             return (
               <Paper variant="outlined" sx={{ p: 2.5, mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: '16px', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'grey.50' }}>
                 <Typography variant="body2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.primary' }}>
-                  <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Portfolio Budget Allocation
+                  <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> {parentBudgetInfo.label} Budget Allocation
                 </Typography>
 
                 <Grid container spacing={2} sx={{ mb: 2 }}>
                   <Grid size={{ xs: 12, sm: 4 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Portfolio Budget</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>{parentBudgetInfo.label} Budget</Typography>
                     <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.md }}>
-                      {currencyFormatter.format(portfolioBudgetInfo.portfolioBudget)}
+                      {currencyFormatter.format(parentBudgetInfo.parentBudget)}
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 4 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Allocated</Typography>
                     <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'warning.main', fontSize: fontSizes.md }}>
-                      {currencyFormatter.format(portfolioBudgetInfo.usedBudget)}
+                      {currencyFormatter.format(parentBudgetInfo.usedBudget)}
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 4 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Available Remaining</Typography>
                     <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: isOverBudget ? 'error.main' : 'success.main', fontSize: fontSizes.lg }}>
-                      {currencyFormatter.format(portfolioBudgetInfo.availableBudget)}
+                      {currencyFormatter.format(parentBudgetInfo.availableBudget)}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -1631,18 +1670,18 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
 
                 {isOverBudget && (
                   <Typography variant="caption" color="error.main" sx={{ display: 'block', mt: 1, fontWeight: 700 }}>
-                    ⚠️ No remaining budget in this portfolio.
+                    ⚠️ No remaining budget in this {parentBudgetInfo.label.toLowerCase()}.
                   </Typography>
                 )}
               </Paper>
             )
           })()}
 
-          {hasBudgetError && (
+          {hasBudgetError && parentBudgetInfo && (
             <Box sx={{ mb: 2, p: 1.25, bgcolor: alpha(theme.palette.error.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.error.main, 0.2), display: 'flex', alignItems: 'center', gap: 1 }}>
               <WarningAmberIcon sx={{ fontSize: 18, color: 'error.main', flexShrink: 0 }} />
               <Typography variant="caption" color="error.dark" sx={{ fontWeight: 600 }}>
-                Estimated cost exceeds available portfolio budget by {currencyFormatter.format(createForm.pm_estimatedcosteur - portfolioBudgetInfo!.availableBudget)}.
+                Estimated cost exceeds available {parentBudgetInfo.label.toLowerCase()} budget by {currencyFormatter.format(createForm.pm_estimatedcosteur - parentBudgetInfo.availableBudget)}.
               </Typography>
             </Box>
           )}
@@ -1850,7 +1889,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 1.5 }}>
-            The estimated cost of this initiative exceeds the available portfolio budget by <strong>{portfolioBudgetInfo ? currencyFormatter.format(createForm.pm_estimatedcosteur - portfolioBudgetInfo.availableBudget) : ''}</strong>.
+            The estimated cost of this initiative exceeds the available {parentBudgetInfo ? parentBudgetInfo.label.toLowerCase() : 'parent'} budget by <strong>{parentBudgetInfo ? currencyFormatter.format(createForm.pm_estimatedcosteur - parentBudgetInfo.availableBudget) : ''}</strong>.
           </Typography>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
             Do you still want to proceed and create this initiative?

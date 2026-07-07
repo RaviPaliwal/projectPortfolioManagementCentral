@@ -545,191 +545,118 @@ export default function ProgrammesPage() {
         </Tabs>
 
         {detailTab === 0 && (
-          <Grid container spacing={3.5} sx={{ mt: 1, display: 'flex', alignItems: 'stretch' }}>
-            {/* Overview - 6/12 Width */}
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <DescriptionIcon sx={{ fontSize: 18, color: 'success.main' }} /> Overview
-                  </Typography>
-                </Box>
-                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5, flexGrow: 1 }}>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr 1fr 1fr' }, gap: 2.5 }}>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Manager</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_programmemanagername || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Sponsor</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_sponsorname || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Unit</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_businessunit || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Portfolio</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_portfolioname || '—'}</Typography>
-                    </Box>
-
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Phase</Typography>
-                      <Box sx={{ mt: 0.25 }}>
-                        <StatusChip status={prog?.pm_programmephase} type="prog_phase" size="small" />
-                      </Box>
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>RAG Status</Typography>
-                      <Box sx={{ mt: 0.25 }}>
-                        <StatusChip status={prog?.pm_ragstatus} type="rag" size="small" />
-                      </Box>
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Projects Count</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{detailProjects.length}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Escalated Risks/Issues</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: (escalatedRisks.length > 0 || escalatedIssues.length > 0) ? 'error.main' : 'success.main', mt: 0.25, fontSize: '0.825rem' }}>
-                        {escalatedRisks.length} R / {escalatedIssues.length} I
-                      </Typography>
-                    </Box>
-
-                    {/* Budget & Balance boxes */}
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5, gridColumn: 'span 4', mt: 1 }}>
-                      <Paper variant="outlined" sx={{ p: 2.25, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', gap: 2, border: '1px solid', borderColor: 'divider' }}>
-                        <Avatar sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08), color: 'primary.main', width: 44, height: 44, border: '1px solid', borderColor: (theme) => alpha(theme.palette.primary.main, 0.15) }}>
-                          <AccountBalanceWalletIcon sx={{ fontSize: 20 }} />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Approved Budget</Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 900, color: 'primary.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
-                        </Box>
-                      </Paper>
-
-                      <Paper variant="outlined" sx={{ p: 2.25, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', gap: 2, border: '1px solid', borderColor: 'divider' }}>
-                        <Avatar sx={{ bgcolor: (theme) => alpha(theme.palette.success.main, 0.08), color: 'success.main', width: 44, height: 44, border: '1px solid', borderColor: (theme) => alpha(theme.palette.success.main, 0.15) }}>
-                          <TrendingUpIcon sx={{ fontSize: 20 }} />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Approved Balance</Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 900, color: 'success.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}</Typography>
-                        </Box>
-                      </Paper>
-                    </Box>
-
-                    <Box sx={{ gridColumn: 'span 4' }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', mb: 0.5 }}>Budget Utilization</Typography>
-                      <StatusProgressBar value={prog?.pm_actualspendeur ?? 0} total={prog?.pm_budgeteur ?? 0} label="" />
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'right', fontWeight: 700, fontSize: '0.75rem' }}>
-                        {(prog?.pm_budgeteur ?? 0) > 0 ? `${(((prog?.pm_actualspendeur ?? 0) / (prog?.pm_budgeteur ?? 0)) * 100).toFixed(1)}% consumed` : '—'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Divider />
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', display: 'block', mb: 0.5 }}>Objectives</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, fontSize: '0.825rem' }}>{prog?.pm_programmedescription || 'No description provided.'}</Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
-
-            {/* Overall Health - 6/12 Width */}
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <LightbulbIcon sx={{ fontSize: 18, color: 'success.main' }} /> Overall Health
-                  </Typography>
-                </Box>
-                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1, gap: 2 }}>
-                  {detailProjects.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, py: 1.5, justifyContent: 'center' }}>
-                        <Box sx={{ width: 160, height: 160, position: 'relative', flexShrink: 0 }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={[
-                                  { name: 'Low Risk', value: specificGreen, color: '#22c55e' },
-                                  { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
-                                  { name: 'High Risk', value: specificRed, color: '#ef4444' },
-                                ].filter(d => d.value > 0)}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={45}
-                                outerRadius={68}
-                                paddingAngle={3}
-                                dataKey="value"
-                                stroke="none"
-                              >
-                                {[
-                                  { name: 'Low Risk', value: specificGreen, color: '#22c55e' },
-                                  { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
-                                  { name: 'High Risk', value: specificRed, color: '#ef4444' },
-                                ].filter(d => d.value > 0).map((entry, idx) => (
-                                  <Cell key={`cell-${idx}`} fill={entry.color} />
-                                ))}
-                              </Pie>
-                              <RechartsTooltip formatter={(value) => [value, 'Projects']} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                          <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-                            <Typography variant="h4" sx={{ fontWeight: 900, lineHeight: 1, fontFamily: '"Outfit", sans-serif' }}>
-                              {detailProjects.length}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                              Projects
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(34,197,94,0.08)' : '#f0fdf4', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.2)' }}>
-                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#166534', fontWeight: 800 }}>
-                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#22c55e' }} /> Low
-                            </Typography>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#166534', fontFamily: '"Outfit", sans-serif' }}>{specificGreen}</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.08)' : '#fffbeb', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.2)' }}>
-                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#92400e', fontWeight: 800 }}>
-                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f59e0b' }} /> Medium
-                            </Typography>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#92400e', fontFamily: '"Outfit", sans-serif' }}>{specificAmber}</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.08)' : '#fef2f2', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.2)' }}>
-                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#991b1b', fontWeight: 800 }}>
-                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ef4444' }} /> High
-                            </Typography>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#991b1b', fontFamily: '"Outfit", sans-serif' }}>{specificRed}</Typography>
-                          </Box>
-                        </Box>
-                      </Box>
-
-                      <Box sx={{ p: 2, borderRadius: '16px', border: '1px dashed', borderColor: 'divider', bgcolor: 'background.default' }}>
-                        <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                          Delivery Confidence
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 0.5, height: 10, borderRadius: '5px', overflow: 'hidden', bgcolor: 'action.disabledBackground' }}>
-                          {specificGreen > 0 && <Box sx={{ width: `${(specificGreen/detailProjects.length)*100}%`, bgcolor: '#22c55e' }} />}
-                          {specificAmber > 0 && <Box sx={{ width: `${(specificAmber/detailProjects.length)*100}%`, bgcolor: '#f59e0b' }} />}
-                          {specificRed > 0 && <Box sx={{ width: `${(specificRed/detailProjects.length)*100}%`, bgcolor: '#ef4444' }} />}
-                        </Box>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1, fontSize: '0.7rem', textAlign: 'center', fontWeight: 700 }}>
-                          {specificGreen === detailProjects.length ? '100% on track' : `${Math.round((specificGreen / detailProjects.length) * 100)}% of projects are on track`}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" color="text.disabled" sx={{ py: 2, textAlign: 'center' }}>
-                      No project data to analyze health
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            {/* Overview - Full Width */}
+            <Grid size={{ xs: 12 }}>
+              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 8 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Overview
                     </Typography>
-                  )}
-                  <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 1.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
-                    {detailProjects.length} entities tracked
-                  </Typography>
-                </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Phase</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>
+                            {prog?.pm_programmephase !== undefined && prog?.pm_programmephase !== null
+                              ? ({ 0: 'Delivery', 1: 'Planning', 2: 'Initiation', 3: 'Under Approval' }[prog.pm_programmephase as number] ?? '—')
+                              : '—'}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Manager</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_programmemanagername || '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Sponsor</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_sponsorname || '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Unit</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_businessunit || '—'}</Typography>
+                        </Box>
+                      </Box>
+                      <Divider />
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', display: 'block', mb: 0.5 }}>Objectives</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, fontSize: '0.825rem' }}>{prog?.pm_programmedescription || 'No description provided.'}</Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <Box sx={{ p: 2, borderRadius: '16px', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        OVERALL HEALTH
+                      </Typography>
+                      {detailProjects.length > 0 ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minHeight: 120 }}>
+                          <Box sx={{ width: 120, height: 120, position: 'relative', flexShrink: 0 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={[
+                                    { name: 'Low Risk', value: specificGreen, color: '#22c55e' },
+                                    { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
+                                    { name: 'High Risk', value: specificRed, color: '#ef4444' },
+                                  ].filter(d => d.value > 0)}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={30}
+                                  outerRadius={45}
+                                  paddingAngle={3}
+                                  dataKey="value"
+                                  stroke="none"
+                                >
+                                  {[
+                                    { name: 'Low Risk', value: specificGreen, color: '#22c55e' },
+                                    { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
+                                    { name: 'High Risk', value: specificRed, color: '#ef4444' },
+                                  ].filter(d => d.value > 0).map((entry, idx) => (
+                                    <Cell key={`cell-${idx}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <RechartsTooltip formatter={(value) => [value, 'Projects']} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                            <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1 }}>
+                                {detailProjects.length}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', fontWeight: 600 }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#22c55e' }} /> Low Risk
+                              </Typography>
+                              <Typography variant="caption" sx={{ fontWeight: 800 }}>{specificGreen}</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', fontWeight: 600 }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f59e0b' }} /> Medium Risk
+                              </Typography>
+                              <Typography variant="caption" sx={{ fontWeight: 800 }}>{specificAmber}</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', fontWeight: 600 }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444' }} /> High Risk
+                              </Typography>
+                              <Typography variant="caption" sx={{ fontWeight: 800 }}>{specificRed}</Typography>
+                            </Box>
+                          </Box>
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.disabled" sx={{ py: 2, textAlign: 'center' }}>
+                          No project data to analyze health
+                        </Typography>
+                      )}
+                      <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 2, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                        {detailProjects.length} entities tracked
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
               </Paper>
             </Grid>
 

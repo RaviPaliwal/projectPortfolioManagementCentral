@@ -20,7 +20,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import { fetchInitiativeById, updateInitiative, fetchInitiatives, updateInitiativeStatus } from '@/services/initiative.service'
 import { fetchPortfolioHierarchy } from '@/services'
 import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
-import type { InitiativeModel, PortfolioModel, ProgrammeModel } from '@/types/dataverse'
+import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import { StatusTag, Button } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
@@ -65,6 +65,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
   // Hierarchy & All Initiatives for Budget computation
   const [portfolios, setPortfolios] = useState<PortfolioModel[]>([])
   const [programmes, setProgrammes] = useState<ProgrammeModel[]>([])
+  const [projects, setProjects] = useState<ProjectModel[]>([])
   const [allInitiatives, setAllInitiatives] = useState<InitiativeModel[]>([])
   
   // Warning Dialog State & Promise Resolver
@@ -89,12 +90,13 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
       setEstCost(init.pm_estimatedcost ?? 0)
       setEstBenefits(init.pm_estimatedbenefits ?? 0)
       setPriorityScore(init.pm_priorityscore ?? 0)
-      setStrategicAlignment(init.pm_strategicalignmentscore ?? 0)
+      setStrategicAlignment((init.pm_strategicalignmentscore ?? 0) / 20)
       setChosenPortfolioId(init._pm_portfolio_value ?? '')
       setChosenProgrammeId(init._pm_programme_value ?? '')
       
       setPortfolios(hierarchy.portfolios)
       setProgrammes(hierarchy.programmes)
+      setProjects(hierarchy.projects)
       setAllInitiatives(inits)
     } catch (err) {
       onError('Failed to load initiative details.')
@@ -115,23 +117,66 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
     }
   }, [open, loadData])
 
-  const portfolioBudgetInfo = useMemo(() => {
-    if (!chosenPortfolioId) return null
-    const portfolio = portfolios.find((p) => p.pm_portfolioid === chosenPortfolioId)
-    if (!portfolio) return null
-    const portfolioBudget = portfolio.pm_approvedbudgeteur ?? 0
-    const programmeBudgets = programmes
-      .filter((p) => p._pm_portfolio_value === chosenPortfolioId)
-      .reduce((s, p) => s + (p.pm_budgeteur ?? 0), 0)
-    const initiativeCosts = allInitiatives
-      .filter((i) => i._pm_portfolio_value === chosenPortfolioId && i.pm_initiativeid !== initiative?.pm_initiativeid)
-      .reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)
-    const usedBudget = programmeBudgets + initiativeCosts
-    const availableBudget = Math.max(0, portfolioBudget - usedBudget)
-    return { portfolioBudget, usedBudget, availableBudget }
-  }, [chosenPortfolioId, portfolios, programmes, allInitiatives, initiative?.pm_initiativeid])
+  const parentBudgetInfo = useMemo(() => {
+    if (!initiative) return null
+    const type = initiative.pm_initiativetype
 
-  const hasBudgetError = portfolioBudgetInfo !== null && estCost > portfolioBudgetInfo.availableBudget
+    if (type === 0) {
+      // Initiative is a Project: parent is a Programme
+      if (!chosenProgrammeId) return null
+      const selectedProg = programmes.find((p) => p.pm_programmeid === chosenProgrammeId)
+      if (!selectedProg) return null
+
+      const parentBudget = selectedProg.pm_budgeteur ?? 0
+      // Sum of child projects under this programme
+      const childProjectBudgets = projects
+        .filter((p) => p._pm_programme_value === chosenProgrammeId)
+        .reduce((s, p) => s + (p.pm_approvedbudgeteur ?? 0), 0)
+      // Sum of other Project initiatives under this programme (exclude current initiative)
+      const childInitiativeCosts = allInitiatives
+        .filter((i) => i.pm_initiativetype === 0 && i._pm_programme_value === chosenProgrammeId && i.pm_initiativeid !== initiative.pm_initiativeid)
+        .reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)
+
+      const usedBudget = childProjectBudgets + childInitiativeCosts
+      const availableBudget = Math.max(0, parentBudget - usedBudget)
+
+      return {
+        label: 'Programme',
+        parentBudget,
+        usedBudget,
+        availableBudget,
+      }
+    } else if (type === 1) {
+      // Initiative is a Programme: parent is a Portfolio
+      if (!chosenPortfolioId) return null
+      const selectedPortfolio = portfolios.find((p) => p.pm_portfolioid === chosenPortfolioId)
+      if (!selectedPortfolio) return null
+
+      const parentBudget = selectedPortfolio.pm_approvedbudgeteur ?? 0
+      // Sum of child programmes under this portfolio
+      const childProgrammeBudgets = programmes
+        .filter((p) => p._pm_portfolio_value === chosenPortfolioId)
+        .reduce((s, p) => s + (p.pm_budgeteur ?? 0), 0)
+      // Sum of other Programme initiatives under this portfolio (exclude current initiative)
+      const childInitiativeCosts = allInitiatives
+        .filter((i) => i.pm_initiativetype === 1 && i._pm_portfolio_value === chosenPortfolioId && i.pm_initiativeid !== initiative.pm_initiativeid)
+        .reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)
+
+      const usedBudget = childProgrammeBudgets + childInitiativeCosts
+      const availableBudget = Math.max(0, parentBudget - usedBudget)
+
+      return {
+        label: 'Portfolio',
+        parentBudget,
+        usedBudget,
+        availableBudget,
+      }
+    }
+
+    return null
+  }, [initiative, chosenProgrammeId, chosenPortfolioId, portfolios, programmes, projects, allInitiatives])
+
+  const hasBudgetError = parentBudgetInfo !== null && estCost > parentBudgetInfo.availableBudget
 
   const filteredProgrammes = useMemo(() => {
     if (!chosenPortfolioId) return programmes
@@ -153,7 +198,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
         pm_estimatedcost: estCost,
         pm_estimatedbenefits: estBenefits,
         pm_priorityscore: priorityScore,
-        pm_strategicalignmentscore: strategicAlignment,
+        pm_strategicalignmentscore: Math.round(strategicAlignment * 20),
       }
       if (chosenPortfolioId !== (initiative?._pm_portfolio_value ?? '')) {
         payload._pm_portfolio_value = chosenPortfolioId || undefined
@@ -199,7 +244,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
         pm_estimatedcost: estCost,
         pm_estimatedbenefits: estBenefits,
         pm_priorityscore: priorityScore,
-        pm_strategicalignmentscore: strategicAlignment,
+        pm_strategicalignmentscore: Math.round(strategicAlignment * 20),
       }
       if (chosenPortfolioId !== (initiative?._pm_portfolio_value ?? '')) {
         payload._pm_portfolio_value = chosenPortfolioId || undefined
@@ -276,7 +321,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                     <Box sx={{ mt: 0.5 }}>
                       {initiative?.pm_initiativetype != null ? (
                         <StatusTag
-                          label={initiative.pm_initiativetype === 0 ? 'Project' : initiative.pm_initiativetype === 1 ? 'Programme' : initiative.pm_initiativetype === 2 ? 'Initiative' : 'Unknown'}
+                          label={initiative.pm_initiativetype === 0 ? 'Project' : initiative.pm_initiativetype === 1 ? 'Programme' : initiative.pm_initiativetype === 2 ? 'Portfolio' : 'Unknown'}
                           color={initiative.pm_initiativetype === 0 ? 'primary' : initiative.pm_initiativetype === 1 ? 'secondary' : 'info'}
                           size="small"
                           sx={{ fontWeight: 600 }}
@@ -288,51 +333,57 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                   </Grid>
                 </Grid>
 
-                <Divider sx={{ my: 2.5 }} />
+                {initiative?.pm_initiativetype !== 2 && (
+                  <>
+                    <Divider sx={{ my: 2.5 }} />
+                    {/* Target Portfolio & Programme Selectors */}
+                    <Grid container spacing={2.5}>
+                      <Grid size={{ xs: 12, sm: initiative?.pm_initiativetype === 1 ? 12 : 6 }}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel id="decision-portfolio-label">Target Portfolio</InputLabel>
+                          <Select
+                            labelId="decision-portfolio-label"
+                            label="Target Portfolio"
+                            value={chosenPortfolioId}
+                            onChange={(e) => handlePortfolioChange(e.target.value)}
+                          >
+                            <MenuItem value="">
+                              <em>None</em>
+                            </MenuItem>
+                            {portfolios.map((p) => (
+                              <MenuItem key={p.pm_portfolioid} value={p.pm_portfolioid}>
+                                {p.pm_portfolioname}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Grid>
 
-                {/* Target Portfolio & Programme Selectors */}
-                <Grid container spacing={2.5}>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="decision-portfolio-label">Target Portfolio</InputLabel>
-                      <Select
-                        labelId="decision-portfolio-label"
-                        label="Target Portfolio"
-                        value={chosenPortfolioId}
-                        onChange={(e) => handlePortfolioChange(e.target.value)}
-                      >
-                        <MenuItem value="">
-                          <em>None</em>
-                        </MenuItem>
-                        {portfolios.map((p) => (
-                          <MenuItem key={p.pm_portfolioid} value={p.pm_portfolioid}>
-                            {p.pm_portfolioname}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="decision-programme-label">Target Programme</InputLabel>
-                      <Select
-                        labelId="decision-programme-label"
-                        label="Target Programme"
-                        value={chosenProgrammeId}
-                        onChange={(e) => setChosenProgrammeId(e.target.value)}
-                      >
-                        <MenuItem value="">
-                          <em>None</em>
-                        </MenuItem>
-                        {filteredProgrammes.map((p) => (
-                          <MenuItem key={p.pm_programmeid} value={p.pm_programmeid}>
-                            {p.pm_programmename}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
+                      {initiative?.pm_initiativetype === 0 && (
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <FormControl fullWidth size="small">
+                            <InputLabel id="decision-programme-label">Target Programme</InputLabel>
+                            <Select
+                              labelId="decision-programme-label"
+                              label="Target Programme"
+                              value={chosenProgrammeId}
+                              onChange={(e) => setChosenProgrammeId(e.target.value)}
+                            >
+                              <MenuItem value="">
+                                <em>None</em>
+                              </MenuItem>
+                              {filteredProgrammes.map((p) => (
+                                <MenuItem key={p.pm_programmeid} value={p.pm_programmeid}>
+                                  {p.pm_programmename}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                      )}
+                    </Grid>
+                  </>
+                )}
               </Paper>
 
               {/* Scoring & Evaluation Card */}
@@ -432,33 +483,33 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                 </Box>
               </Paper>
 
-              {/* Portfolio Budget Allocation Card */}
-              {portfolioBudgetInfo && (() => {
-                const allocatedPct = Math.min(100, Math.round((portfolioBudgetInfo.usedBudget / portfolioBudgetInfo.portfolioBudget) * 100))
-                const isOverBudget = portfolioBudgetInfo.availableBudget <= 0
+              {/* Parent Budget Allocation Card */}
+              {parentBudgetInfo && (() => {
+                const allocatedPct = Math.min(100, Math.round((parentBudgetInfo.usedBudget / parentBudgetInfo.parentBudget) * 100))
+                const isOverBudget = parentBudgetInfo.availableBudget <= 0
                 return (
                   <Paper variant="outlined" sx={{ p: 2.5, border: '1px solid', borderColor: 'divider', borderRadius: '16px', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'grey.50' }}>
                     <Typography variant="body2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.primary' }}>
-                      <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Portfolio Budget Allocation
+                      <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> {parentBudgetInfo.label} Budget Allocation
                     </Typography>
                     
                     <Grid container spacing={2} sx={{ mb: 2 }}>
                       <Grid size={{ xs: 12, sm: 4 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Portfolio Budget</Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>{parentBudgetInfo.label} Budget</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.md }}>
-                          {currencyFormatter.format(portfolioBudgetInfo.portfolioBudget)}
+                          {currencyFormatter.format(parentBudgetInfo.parentBudget)}
                         </Typography>
                       </Grid>
                       <Grid size={{ xs: 12, sm: 4 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Allocated</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'warning.main', fontSize: fontSizes.md }}>
-                          {currencyFormatter.format(portfolioBudgetInfo.usedBudget)}
+                          {currencyFormatter.format(parentBudgetInfo.usedBudget)}
                         </Typography>
                       </Grid>
                       <Grid size={{ xs: 12, sm: 4 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Available Remaining</Typography>
                         <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: isOverBudget ? 'error.main' : 'success.main', fontSize: fontSizes.lg }}>
-                          {currencyFormatter.format(portfolioBudgetInfo.availableBudget)}
+                          {currencyFormatter.format(parentBudgetInfo.availableBudget)}
                         </Typography>
                       </Grid>
                     </Grid>
@@ -478,7 +529,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
 
                     {isOverBudget && (
                       <Typography variant="caption" color="error.main" sx={{ display: 'block', mt: 1, fontWeight: 700 }}>
-                        ⚠️ No remaining budget in this portfolio.
+                        ⚠️ No remaining budget in this {parentBudgetInfo.label.toLowerCase()}.
                       </Typography>
                     )}
                   </Paper>
@@ -597,7 +648,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 1.5 }}>
-            The edited estimated cost of this initiative exceeds the available portfolio budget by <strong>{portfolioBudgetInfo ? currencyFormatter.format(estCost - portfolioBudgetInfo.availableBudget) : ''}</strong>.
+            The edited estimated cost of this initiative exceeds the available {parentBudgetInfo ? parentBudgetInfo.label.toLowerCase() : 'parent'} budget by <strong>{parentBudgetInfo ? currencyFormatter.format(estCost - parentBudgetInfo.availableBudget) : ''}</strong>.
           </Typography>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
             Do you still want to proceed and submit your decision?

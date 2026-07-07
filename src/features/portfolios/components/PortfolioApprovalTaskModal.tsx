@@ -1,24 +1,23 @@
 import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
-  Button, IconButton, CircularProgress, Divider, Chip, Paper,
+  Button, IconButton, CircularProgress, Chip, Paper, TextField, Avatar,
+  Select, MenuItem, FormControl, InputLabel, useTheme,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import DescriptionIcon from '@mui/icons-material/Description'
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
-import PersonIcon from '@mui/icons-material/Person'
-import BusinessIcon from '@mui/icons-material/Business'
-import AccountTreeIcon from '@mui/icons-material/AccountTree'
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import TrendingDownIcon from '@mui/icons-material/TrendingDown'
-import { fetchPortfolioHierarchy, updatePortfolioStatus } from '@/services/portfolio.service'
+import LightbulbIcon from '@mui/icons-material/Lightbulb'
+import { fetchPortfolioHierarchy, updatePortfolioStatus, updatePortfolio } from '@/services/portfolio.service'
+import { fetchSystemUsers } from '@/services/team.service'
 import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { PortfolioModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
+import { useUser } from '@/context/UserContext'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
+import { alpha } from '@mui/material/styles'
 
 interface PortfolioApprovalTaskModalProps {
   open: boolean
@@ -40,27 +39,59 @@ export const PortfolioApprovalTaskModal: React.FC<PortfolioApprovalTaskModalProp
   open, onClose, entityId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
 }) => {
+  const theme = useTheme()
+  const { users: contextUsers } = useUser()
+  const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [portfolio, setPortfolio] = useState<PortfolioModel | null>(null)
-  const [programmeCount, setProgrammeCount] = useState<number>(0)
+
+  // Form states for editable fields
+  const [ownerId, setOwnerId] = useState<string>('')
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
+  const [description, setDescription] = useState<string>('')
+  const [strategicObjective, setStrategicObjective] = useState<string>('')
+  const [businessUnit, setBusinessUnit] = useState<string>('')
+  const [priorityLevel, setPriorityLevel] = useState<number>(2) // Default: Medium (2)
+
+  // Sync users state when context users resolve
+  useEffect(() => {
+    if (contextUsers && contextUsers.length > 0) {
+      setUsers(contextUsers)
+    }
+  }, [contextUsers])
 
   const loadData = useCallback(async () => {
     if (!entityId) return
     setLoading(true)
     try {
-      const hierarchy = await fetchPortfolioHierarchy()
+      const [hierarchy, directUsers] = await Promise.all([
+        fetchPortfolioHierarchy(),
+        (!contextUsers || contextUsers.length === 0) ? fetchSystemUsers() : Promise.resolve(null)
+      ])
+      
+      if (directUsers) {
+        setUsers(directUsers)
+      }
+
       const found = hierarchy.portfolios.find(p => p.pm_portfolioid === entityId)
       if (!found) { onError('Portfolio not found.'); setLoading(false); return }
       setPortfolio(found)
-      // Count programmes linked to this portfolio
-      const linkedProgrammes = hierarchy.programmes.filter(p => p._pm_portfolio_value === entityId)
-      setProgrammeCount(linkedProgrammes.length)
+      
+      // Initialize form fields
+      setOwnerId(found.pm_ownerlookup ? found.pm_ownerlookup.replace(/[{}]/g, '').toLowerCase() : '')
+      setStartDate(found.pm_startdate ? found.pm_startdate.split('T')[0] : '')
+      setEndDate(found.pm_enddate ? found.pm_enddate.split('T')[0] : '')
+      setDescription(found.pm_portfoliodescription || '')
+      setStrategicObjective(found.pm_strategicobjective || '')
+      setBusinessUnit(found.pm_businessunit || '')
+      setPriorityLevel(found.pm_prioritylevel != null ? Number(found.pm_prioritylevel) : 2)
     } catch (err) {
       console.error('Failed to load portfolio', err)
       onError('Failed to load portfolio details.')
     } finally { setLoading(false) }
-  }, [entityId, onError])
+  }, [entityId, contextUsers, onError])
 
   useEffect(() => {
     if (open) { loadData() }
@@ -72,7 +103,19 @@ export const PortfolioApprovalTaskModal: React.FC<PortfolioApprovalTaskModalProp
     try {
       // DecisionBox values: 0 = Approve, 3 = Reject
       const targetStatus = workflowDecision === 0 ? 0 : 2
-      await updatePortfolioStatus(entityId, targetStatus)
+
+      // Save all updated details and the target status to Dataverse in a single update call
+      await updatePortfolio(entityId, {
+        pm_ownerlookup: ownerId || undefined,
+        pm_startdate: startDate || undefined,
+        pm_enddate: endDate || undefined,
+        pm_portfoliodescription: description || undefined,
+        pm_strategicobjective: strategicObjective || undefined,
+        pm_businessunit: businessUnit || undefined,
+        pm_prioritylevel: priorityLevel,
+        pm_portfoliostatus: targetStatus,
+      })
+
       const outcomeLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'
       onSuccess('Portfolio Approval completed. Outcome: ' + outcomeLabel + '.')
       return true
@@ -81,172 +124,225 @@ export const PortfolioApprovalTaskModal: React.FC<PortfolioApprovalTaskModalProp
       onError('Failed to record portfolio decision.')
       return false
     } finally { setSaving(false) }
-  }, [entityId, onSuccess, onError])
+  }, [entityId, ownerId, startDate, endDate, description, strategicObjective, businessUnit, priorityLevel, onSuccess, onError])
 
   if (!open) return null
 
   const currentStatus = portfolio?.pm_portfoliostatus != null ? PORTFOLIO_STATUS_MAP[Number(portfolio.pm_portfoliostatus)] : null
-  const actualSpendPct = portfolio?.pm_approvedbudgeteur && portfolio.pm_approvedbudgeteur > 0
-    ? Math.min(100, ((portfolio.pm_actualspendeur ?? 0) / portfolio.pm_approvedbudgeteur) * 100)
-    : 0
 
   return (
     <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.dark', color: 'primary.contrastText', py: 1.5, pr: 1 }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', py: 2, px: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <AccountBalanceWalletIcon />
+          <AccountBalanceWalletIcon sx={{ color: 'primary.main' }} />
           <Typography variant="h6" sx={{ fontWeight: 700 }}>Portfolio Approval</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip label="Pending Approval" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'white' }}>
+          <Chip label="Pending Approval" color="warning" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'text.secondary' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
       </DialogTitle>
-      <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
+      <DialogContent sx={{ p: 3, pt: '24px !important', bgcolor: 'background.default' }}>
         {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
         ) : (
-          <Grid container sx={{ height: '100%' }}>
-            <Grid size={{ xs: 12, md: 4 }} sx={{ borderRight: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', p: 3 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1 }}>Portfolio Summary</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{portfolio?.pm_portfolioname || 'Loading...'}</Typography>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Current Status</Typography>
-                  <Box sx={{ mt: 0.5 }}>
-                    {currentStatus ? (
-                      <StatusTag label={currentStatus.label} color={currentStatus.color} size="small" sx={{ fontWeight: 600 }} />
-                    ) : (
-                      <Typography variant="body2" color="text.disabled">Unknown</Typography>
-                    )}
-                  </Box>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <PersonIcon sx={{ fontSize: 14 }} /> Owner
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{portfolio?.pm_ownerlookupname || 'Unassigned'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <BusinessIcon sx={{ fontSize: 14 }} /> Business Unit
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{portfolio?.pm_businessunit || '-'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Priority</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {portfolio?.pm_prioritylevel != null
-                      ? portfolio.pm_prioritylevel === 1 ? 'High'
-                        : portfolio.pm_prioritylevel === 2 ? 'Medium'
-                          : portfolio.pm_prioritylevel === 3 ? 'Low'
-                            : 'Very Low'
-                      : '-'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <AttachMoneyIcon sx={{ fontSize: 14 }} /> Approved Budget
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {portfolio?.pm_approvedbudgeteur != null ? currencyFormatter.format(portfolio.pm_approvedbudgeteur) : '-'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <CalendarTodayIcon sx={{ fontSize: 14 }} /> Period
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {portfolio?.pm_startdate
-                      ? new Date(portfolio.pm_startdate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                      : '-'}
-                    {portfolio?.pm_enddate
-                      ? ' - ' + new Date(portfolio.pm_enddate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                      : ''}
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ mt: 4, p: 2, bgcolor: 'primary.50', borderRadius: 1.5, border: '1px solid', borderColor: 'primary.100' }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <FactCheckIcon sx={{ fontSize: 16 }} /> Authority Required
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.8rem' }}>
-                  As the approving authority, your decision will set the portfolio status. Approved portfolios become Active; rejected portfolios are marked as Rejected.
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12, md: 8 }} sx={{ p: 3 }}>
-              {/* Description */}
-              {portfolio?.pm_portfoliodescription && (
-                <>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <DescriptionIcon sx={{ fontSize: 16 }} /> Description
-                  </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, mb: 3, bgcolor: 'background.paper', maxHeight: 100, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
-                    {portfolio.pm_portfoliodescription}
-                  </Paper>
-                </>
-              )}
-
-              {/* Strategic Objective */}
-              {portfolio?.pm_strategicobjective && (
-                <>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <FactCheckIcon sx={{ fontSize: 16 }} /> Strategic Objective
-                  </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, mb: 3, bgcolor: 'background.paper', maxHeight: 100, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
-                    {portfolio.pm_strategicobjective}
-                  </Paper>
-                </>
-              )}
-
-              {/* Quick Stats */}
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <AccountBalanceWalletIcon sx={{ fontSize: 16 }} /> Portfolio at a Glance
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Portfolio Context details Card */}
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1, display: 'block', mb: 1.5 }}>
+                Portfolio Context
               </Typography>
-              <Grid container spacing={1.5} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, textAlign: 'center' }}>
-                    <AccountTreeIcon sx={{ fontSize: 20, color: 'primary.main', mb: 0.5 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{programmeCount}</Typography>
-                    <Typography variant="caption" color="text.secondary">Programmes</Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, textAlign: 'center' }}>
-                    <AttachMoneyIcon sx={{ fontSize: 20, color: 'primary.main', mb: 0.5 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'monospace', lineHeight: 1.2, fontSize: '1rem' }}>
-                      {portfolio?.pm_approvedbudgeteur != null ? currencyFormatter.format(portfolio.pm_approvedbudgeteur) : '-'}
+              <Typography variant="h5" sx={{ fontWeight: 800, mb: 2.5 }}>
+                {portfolio?.pm_portfolioname || 'Loading...'}
+              </Typography>
+
+              <Grid container spacing={2.5}>
+                {/* Row 1: Non-editable fields */}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Approved Budget</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
+                      {portfolio?.pm_approvedbudgeteur != null ? currencyFormatter.format(portfolio.pm_approvedbudgeteur) : '—'}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">Budget</Typography>
-                  </Paper>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, textAlign: 'center' }}>
-                    <TrendingDownIcon sx={{ fontSize: 20, color: actualSpendPct > 90 ? 'warning.main' : 'primary.main', mb: 0.5 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'monospace', lineHeight: 1.2, fontSize: '1rem' }}>
-                      {actualSpendPct.toFixed(0)}%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">Utilisation</Typography>
-                  </Paper>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Overall RAG</Typography>
+                    <Box sx={{ mt: 0.5 }}>
+                      {portfolio?.pm_ragstatus != null ? (
+                        <StatusTag
+                          label={portfolio.pm_ragstatus === 1 ? 'Green' : portfolio.pm_ragstatus === 0 ? 'Amber' : 'Red'}
+                          color={portfolio.pm_ragstatus === 1 ? 'success' : portfolio.pm_ragstatus === 0 ? 'warning' : 'error'}
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontWeight: 600 }}
+                        />
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">Not specified</Typography>
+                      )}
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Portfolio Status</Typography>
+                    <Box sx={{ mt: 0.5 }}>
+                      {currentStatus ? (
+                        <StatusTag label={currentStatus.label} color={currentStatus.color} size="small" sx={{ fontWeight: 600 }} />
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">Not specified</Typography>
+                      )}
+                    </Box>
+                  </Box>
+                </Grid>
+
+                {/* Row 2: Editable fields */}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField
+                    fullWidth
+                    label="Business Unit"
+                    size="small"
+                    value={businessUnit}
+                    onChange={(e) => setBusinessUnit(e.target.value)}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="approve-priority-label">Priority</InputLabel>
+                    <Select
+                      labelId="approve-priority-label"
+                      label="Priority"
+                      value={priorityLevel}
+                      onChange={(e) => setPriorityLevel(Number(e.target.value))}
+                    >
+                      <MenuItem value={1}>High</MenuItem>
+                      <MenuItem value={2}>Medium</MenuItem>
+                      <MenuItem value={3}>Low</MenuItem>
+                      <MenuItem value={4}>Very Low</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="approve-owner-label">Portfolio Owner</InputLabel>
+                    <Select
+                      labelId="approve-owner-label"
+                      label="Portfolio Owner"
+                      value={ownerId ? ownerId.replace(/[{}]/g, '').toLowerCase() : ''}
+                      onChange={(e) => setOwnerId(e.target.value ? e.target.value.replace(/[{}]/g, '').toLowerCase() : '')}
+                      renderValue={(selected) => {
+                        const normSel = selected ? selected.replace(/[{}]/g, '').toLowerCase() : ''
+                        const user = users.find((u) => u.systemuserid?.replace(/[{}]/g, '').toLowerCase() === normSel)
+                        return (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
+                              {user?.fullname?.charAt(0) || '?'}
+                            </Avatar>
+                            {user?.fullname || 'Select Owner'}
+                          </Box>
+                        )
+                      }}
+                    >
+                      <MenuItem value="">— Select —</MenuItem>
+                      {users.map((user) => {
+                        const normId = user.systemuserid ? user.systemuserid.replace(/[{}]/g, '').toLowerCase() : ''
+                        return (
+                          <MenuItem key={normId} value={normId}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
+                                {user.fullname?.charAt(0) || '?'}
+                              </Avatar>
+                              <Typography variant="body2">{user.fullname}</Typography>
+                            </Box>
+                          </MenuItem>
+                        )
+                      })}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Row 3: Editable fields */}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField
+                    fullWidth
+                    label="Start Date"
+                    size="small"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField
+                    fullWidth
+                    label="End Date"
+                    size="small"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  {/* Spacer */}
                 </Grid>
               </Grid>
+            </Paper>
 
-              {/* What happens next */}
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, display: 'block', mb: 0.75 }}>After Your Decision</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.6 }}>
-                  <strong>Approved:</strong> Portfolio status changes to <em>Active</em>, enabling programme creation and budget allocation.
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.6 }}>
-                  <strong>Rejected:</strong> Portfolio status set to <em>Rejected</em>. The portfolio owner will be notified with the decision notes.
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
+            {/* Description */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <DescriptionIcon sx={{ fontSize: 16 }} /> Description & Objectives
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                size="small"
+                placeholder="Enter description or objectives..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </Box>
+
+            {/* Strategic Objective */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <LightbulbIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Strategic Objectives
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                size="small"
+                placeholder="Enter strategic objectives..."
+                value={strategicObjective}
+                onChange={(e) => setStrategicObjective(e.target.value)}
+              />
+            </Box>
+
+            {/* Decision Instruction Banner */}
+            <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: alpha(theme.palette.info.main, 0.05), border: '1px solid', borderColor: alpha(theme.palette.info.main, 0.1) }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5, color: 'info.main' }}>
+                <FactCheckIcon sx={{ fontSize: 16 }} /> After Your Decision
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.8rem' }}>
+                <strong>Approved:</strong> Portfolio status changes to <em>Active</em>, enabling programme creation and budget allocation.
+                <br />
+                <strong>Rejected:</strong> Portfolio status set to <em>Rejected</em>. The portfolio owner will be notified with the decision notes.
+              </Typography>
+            </Box>
+          </Box>
         )}
       </DialogContent>
       <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
