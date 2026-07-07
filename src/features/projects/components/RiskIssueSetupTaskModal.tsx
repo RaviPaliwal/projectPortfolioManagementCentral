@@ -12,7 +12,7 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import PersonIcon from '@mui/icons-material/Person'
-import { fetchProjectDetails, createRisk, createIssue, fetchAllocatedResourcesByProject } from '@/services'
+import { fetchProjectDetails, createRisk, createIssue, fetchAllocatedResourcesByProject, updateProject } from '@/services'
 import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ProjectModel, ResourceModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
@@ -159,7 +159,13 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
         const payload = { ...issues[i], pm_projectid: projectId }
         await createIssue(payload as any)
       }
-      onSuccess(`Risk & Issue Register Setup completed. ${risks.length} risk(s) and ${issues.length} issue(s) logged.`)
+      // Transition project phase from Initiation (3) to Planning (1)
+      try {
+        await updateProject(projectId, { pm_projectphase: 1 })
+      } catch (phaseErr) {
+        console.error('[RiskIssueSetupTaskModal] Phase transition failed:', phaseErr)
+      }
+      onSuccess(`Risk & Issue Register Setup completed. ${risks.length} risk(s) and ${issues.length} issue(s) logged. Project transitioned to Planning phase.`)
       return true
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save one or more risks or issues.'
