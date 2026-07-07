@@ -265,13 +265,15 @@ export default function TasksPage() {
           </TableShell>
 
           {!loading && filteredSteps.length > 0 && (
-            <>
-              <TableFooter filteredCount={filteredSteps.length} totalCount={steps.length} itemLabel="pending step" />
-              <TablePagination component="div" count={filteredSteps.length} page={myPage}
-                onPageChange={(_, p) => setMyPage(p)} rowsPerPage={myRowsPerPage}
-                onRowsPerPageChange={(e) => { setMyRowsPerPage(parseInt(e.target.value, 10)); setMyPage(0) }}
-                rowsPerPageOptions={[10, 25, 50, 100]} />
-            </>
+            <TableFooter
+              filteredCount={filteredSteps.length}
+              totalCount={steps.length}
+              itemLabel="pending step"
+              page={myPage}
+              onPageChange={(_, p) => setMyPage(p)}
+              rowsPerPage={myRowsPerPage}
+              onRowsPerPageChange={(e) => { setMyRowsPerPage(parseInt(e.target.value, 10)); setMyPage(0) }}
+            />
           )}
         </Paper>
       )}
@@ -344,16 +346,18 @@ export default function TasksPage() {
             )}
           </TableShell>
           {!loading && projectTasks.length > 0 && (
-            <TablePagination component="div" 
-              count={projectTasks.filter(t => (t.pm_taskname ?? '').toLowerCase().includes(projectTasksSearch.toLowerCase())).length}
+            <TableFooter
+              filteredCount={projectTasks.filter(t => (t.pm_taskname ?? '').toLowerCase().includes(projectTasksSearch.toLowerCase())).length}
+              totalCount={projectTasks.length}
+              itemLabel="task"
               page={projectTasksPage}
-              rowsPerPage={projectTasksRowsPerPage}
               onPageChange={(_, p) => setProjectTasksPage(p)}
+              rowsPerPage={projectTasksRowsPerPage}
               onRowsPerPageChange={(e) => {
                 setProjectTasksRowsPerPage(parseInt(e.target.value, 10))
                 setProjectTasksPage(0)
               }}
-              rowsPerPageOptions={[10, 25, 50, 100]} />
+            />
           )}
         </Paper>
       )}
@@ -471,13 +475,15 @@ function TeamTasksView({ isDark, teamSteps, loading }: { isDark: boolean, teamSt
       </TableShell>
 
       {!loading && filtered.length > 0 && (
-        <>
-          <TableFooter filteredCount={filtered.length} totalCount={teamSteps.length} itemLabel="pending step" />
-          <TablePagination component="div" count={filtered.length} page={page}
-            onPageChange={(_, p) => setPage(p)} rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0) }}
-            rowsPerPageOptions={[10, 25, 50, 100]} />
-        </>
+        <TableFooter
+          filteredCount={filtered.length}
+          totalCount={teamSteps.length}
+          itemLabel="pending step"
+          page={page}
+          onPageChange={(_, p) => setPage(p)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0) }}
+        />
       )}
     </Paper>
   )

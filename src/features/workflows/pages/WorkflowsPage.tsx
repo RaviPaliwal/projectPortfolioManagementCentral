@@ -363,10 +363,15 @@ export default function WorkflowsPage() {
             </Table>
           </TableShell>
           {!loading && filteredWorkflows.length > 0 && (
-            <>
-              <TableFooter filteredCount={filteredWorkflows.length} totalCount={workflows.length} itemLabel="template" />
-              <TablePagination component="div" count={filteredWorkflows.length} page={wfPage} onPageChange={(_, p) => setWfPage(p)} rowsPerPage={wfRowsPerPage} onRowsPerPageChange={(e) => { setWfRowsPerPage(parseInt(e.target.value, 10)); setWfPage(0) }} rowsPerPageOptions={[10, 25, 50, 100]} />
-            </>
+            <TableFooter
+              filteredCount={filteredWorkflows.length}
+              totalCount={workflows.length}
+              itemLabel="template"
+              page={wfPage}
+              onPageChange={(_, p) => setWfPage(p)}
+              rowsPerPage={wfRowsPerPage}
+              onRowsPerPageChange={(e) => { setWfRowsPerPage(parseInt(e.target.value, 10)); setWfPage(0) }}
+            />
           )}
         </Paper>
       </TabPanel>
@@ -450,10 +455,15 @@ export default function WorkflowsPage() {
             </Table>
           </TableShell>
           {!loading && filteredInstances.length > 0 && (
-            <>
-              <TableFooter filteredCount={filteredInstances.length} totalCount={instances.length} itemLabel="instance" />
-              <TablePagination component="div" count={filteredInstances.length} page={instPage} onPageChange={(_, p) => setInstPage(p)} rowsPerPage={instRowsPerPage} onRowsPerPageChange={(e) => { setInstRowsPerPage(parseInt(e.target.value, 10)); setInstPage(0) }} rowsPerPageOptions={[10, 25, 50, 100]} />
-            </>
+            <TableFooter
+              filteredCount={filteredInstances.length}
+              totalCount={instances.length}
+              itemLabel="instance"
+              page={instPage}
+              onPageChange={(_, p) => setInstPage(p)}
+              rowsPerPage={instRowsPerPage}
+              onRowsPerPageChange={(e) => { setInstRowsPerPage(parseInt(e.target.value, 10)); setInstPage(0) }}
+            />
           )}
         </Paper>
       </TabPanel>

@@ -740,26 +740,22 @@ export default function ChangeRequestsPage() {
         </TableShell>
 
         {!loading && filteredCRs.length > 0 && (
-          <>
-            <TableFooter
-              filteredCount={filteredCRs.length}
-              totalCount={changeRequests.length}
-              itemLabel="change request"
-              totals={[
-                { label: 'Total cost impact', value: '\u20AC' + numberFormatter.format(filteredCRs.reduce((s, cr) => s + (cr.pm_costimpacteur ?? 0), 0)) },
-                { label: 'Total schedule impact', value: filteredCRs.reduce((s, cr) => s + (cr.pm_scheduleimpactdays ?? 0), 0) + ' days' },
-              ]}
-            />
-            <TablePagination
-              component="div"
-              count={filteredCRs.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+          <TableFooter
+            filteredCount={filteredCRs.length}
+            totalCount={changeRequests.length}
+            itemLabel="change request"
+            totals={[
+              { label: 'Total cost impact', value: '\u20AC' + numberFormatter.format(filteredCRs.reduce((s, cr) => s + (cr.pm_costimpacteur ?? 0), 0)) },
+              { label: 'Total schedule impact', value: filteredCRs.reduce((s, cr) => s + (cr.pm_scheduleimpactdays ?? 0), 0) + ' days' },
+            ]}
+            page={page}
+            onPageChange={(_, p) => setPage(p)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10))
+              setPage(0)
+            }}
+          />
         )}
       </Paper>
       ) : (

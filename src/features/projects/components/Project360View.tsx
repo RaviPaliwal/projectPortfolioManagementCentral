@@ -38,6 +38,7 @@ import { RAG_COLORS, phaseLabel, currency } from '../constants'
 import { fontSizes } from '@/styles'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
+import { useAuthorization } from '@/hooks/useAuthorization'
 
 import { ProjectOverviewTab } from './tabs/ProjectOverviewTab'
 import { ProjectFinancialsTab } from './tabs/ProjectFinancialsTab'
@@ -81,6 +82,16 @@ interface Project360ViewProps {
   onDeleteTask?: (taskId: string) => Promise<void>
   onDeleteMilestone?: (milestoneId: string) => Promise<void>
   onEditBudgetLine?: (budget: BudgetLineModel) => void
+  onDeleteBudgetLine?: (budgetId: string) => Promise<void>
+  onEditRisk?: (risk: RiskModel) => void
+  onDeleteRisk?: (riskId: string) => Promise<void>
+  onEditIssue?: (issue: IssueModel) => void
+  onDeleteIssue?: (issueId: string) => Promise<void>
+  onEditBenefit?: (benefit: BenefitModel) => void
+  onDeleteBenefit?: (benefitId: string) => Promise<void>
+  onEditGateReview?: (gateReview: GateReviewModel) => void
+  onDeleteGateReview?: (gateReviewId: string) => void
+  onAddGateReview?: () => void
   onRefresh?: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
@@ -119,13 +130,50 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   onDeleteTask,
   onDeleteMilestone,
   onEditBudgetLine,
+  onDeleteBudgetLine,
+  onEditRisk,
+  onDeleteRisk,
+  onEditIssue,
+  onDeleteIssue,
+  onEditBenefit,
+  onDeleteBenefit,
+  onEditGateReview,
+  onDeleteGateReview,
+  onAddGateReview,
   onRefresh,
   onSuccess,
   onError,
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
-  const [activeTab, setActiveTab] = useState(0)
+
+  // Module Authorization hooks for detailed sections
+  const { allowed: canReadBudgets } = useAuthorization('BUDGETS', 'read')
+  const { allowed: canCreateBudgets } = useAuthorization('BUDGETS', 'create')
+  const { allowed: canUpdateBudgets } = useAuthorization('BUDGETS', 'update')
+  const { allowed: canDeleteBudgets } = useAuthorization('BUDGETS', 'delete')
+
+  const { allowed: canReadBenefits } = useAuthorization('BENEFITS', 'read')
+  const { allowed: canCreateBenefits } = useAuthorization('BENEFITS', 'create')
+  const { allowed: canUpdateBenefits } = useAuthorization('BENEFITS', 'update')
+  const { allowed: canDeleteBenefits } = useAuthorization('BENEFITS', 'delete')
+
+  const { allowed: canReadRisks } = useAuthorization('RISKS', 'read')
+  const { allowed: canCreateRisks } = useAuthorization('RISKS', 'create')
+  const { allowed: canUpdateRisks } = useAuthorization('RISKS', 'update')
+  const { allowed: canDeleteRisks } = useAuthorization('RISKS', 'delete')
+
+  const { allowed: canReadIssues } = useAuthorization('ISSUES', 'read')
+  const { allowed: canCreateIssues } = useAuthorization('ISSUES', 'create')
+  const { allowed: canUpdateIssues } = useAuthorization('ISSUES', 'update')
+  const { allowed: canDeleteIssues } = useAuthorization('ISSUES', 'delete')
+
+  const { allowed: canReadGateReviews } = useAuthorization('GATE_REVIEWS', 'read')
+  const { allowed: canCreateGateReviews } = useAuthorization('GATE_REVIEWS', 'create')
+  const { allowed: canUpdateGateReviews } = useAuthorization('GATE_REVIEWS', 'update')
+  const { allowed: canDeleteGateReviews } = useAuthorization('GATE_REVIEWS', 'delete')
+
+  const [activeTab, setActiveTab] = useState<string>('overview')
   const [activeRisk, setActiveRisk] = useState<RiskModel | null>(null)
   const [activeIssue, setActiveIssue] = useState<IssueModel | null>(null)
   const [activeBenefit, setActiveBenefit] = useState<BenefitModel | null>(null)
@@ -140,26 +188,28 @@ export const Project360View: React.FC<Project360ViewProps> = ({
     setActiveGateReview(null)
   }, [activeTab])
 
-  const tabs = [
-    { label: 'Overview', icon: <AnalyticsIcon fontSize="small" /> },
-    { label: 'Schedule', icon: <FlagIcon fontSize="small" /> },
-    { label: 'Financials', icon: <AccountBalanceWalletIcon fontSize="small" /> },
-    { label: 'Risks & Issues', icon: <BugReportIcon fontSize="small" /> },
-    { label: 'Team', icon: <PersonAddIcon fontSize="small" /> },
-    { label: 'Benefits', icon: <EmojiEventsIcon fontSize="small" /> },
-    { label: 'Governance', icon: <HowToRegIcon fontSize="small" /> },
-    { label: 'Tasks', icon: <AssignmentIcon fontSize="small" /> },
-    { label: 'Documents', icon: <InsertDriveFileIcon fontSize="small" /> },
+  const allTabs = [
+    { id: 'overview', label: 'Overview', icon: <AnalyticsIcon fontSize="small" /> },
+    { id: 'schedule', label: 'Schedule', icon: <FlagIcon fontSize="small" /> },
+    { id: 'financials', label: 'Financials', icon: <AccountBalanceWalletIcon fontSize="small" />, visible: canReadBudgets },
+    { id: 'risks', label: 'Risks & Issues', icon: <BugReportIcon fontSize="small" />, visible: canReadRisks || canReadIssues },
+    { id: 'team', label: 'Team', icon: <PersonAddIcon fontSize="small" /> },
+    { id: 'benefits', label: 'Benefits', icon: <EmojiEventsIcon fontSize="small" />, visible: canReadBenefits },
+    { id: 'governance', label: 'Governance', icon: <HowToRegIcon fontSize="small" />, visible: canReadGateReviews },
+    { id: 'tasks', label: 'Tasks', icon: <AssignmentIcon fontSize="small" /> },
+    { id: 'documents', label: 'Documents', icon: <InsertDriveFileIcon fontSize="small" /> },
   ]
+
+  const tabs = allTabs.filter(t => t.visible !== false)
 
   // RAG color for accent bar
   const ragVal = project.pm_ragstatus?.toString()
   const accentColor = ragVal === '2' ? 'error.main' : ragVal === '0' ? 'warning.main' : 'success.main'
 
-  const isInspectingRiskOrIssue = activeTab === 3 && (activeRisk || activeIssue)
-  const isInspectingBenefit = activeTab === 5 && activeBenefit
-  const isInspectingBudget = activeTab === 2 && activeBudgetLine
-  const isInspectingGateReview = activeTab === 6 && activeGateReview
+  const isInspectingRiskOrIssue = activeTab === 'risks' && (activeRisk || activeIssue)
+  const isInspectingBenefit = activeTab === 'benefits' && activeBenefit
+  const isInspectingBudget = activeTab === 'financials' && activeBudgetLine
+  const isInspectingGateReview = activeTab === 'governance' && activeGateReview
   const breadcrumbItems = isInspectingRiskOrIssue
     ? [
         { label: 'Project Portfolio', path: 'list' },
@@ -269,7 +319,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
           }}
         >
           {tabs.map((tab) => (
-            <Tab key={tab.label} label={tab.label} icon={tab.icon} iconPosition="start" />
+            <Tab key={tab.id} value={tab.id} label={tab.label} icon={tab.icon} iconPosition="start" />
           ))}
         </Tabs>
 
@@ -280,7 +330,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
             </Box>
           ) : (
             <>
-              {activeTab === 0 && (
+              {activeTab === 'overview' && (
                 <ProjectOverviewTab 
                   project={project} 
                   milestones={milestones}
@@ -290,7 +340,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   benefits={benefits}
                 />
               )}
-              {activeTab === 1 && (
+              {activeTab === 'schedule' && (
                 <ProjectScheduleTab 
                   projectId={project.pm_projectid}
                   milestones={milestones} 
@@ -305,31 +355,39 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   onAddMilestone={canEdit ? onAddMilestone : undefined}
                 />
               )}
-              {activeTab === 2 && (
+              {activeTab === 'financials' && (
                 <ProjectFinancialsTab 
                   budgetLines={budgetLines} 
                   project={project}
-                  onEditBudgetLine={onEditBudgetLine}
-                  canEdit={canEdit}
-                  onAddBudgetLine={canEdit ? onAddBudgetLine : undefined}
+                  onEditBudgetLine={canUpdateBudgets ? onEditBudgetLine : undefined}
+                  canEdit={canUpdateBudgets}
+                  onAddBudgetLine={canCreateBudgets ? onAddBudgetLine : undefined}
                   selectedBudgetLine={activeBudgetLine}
                   setSelectedBudgetLine={setActiveBudgetLine}
                 />
               )}
-              {activeTab === 3 && (
+              {activeTab === 'risks' && (
                 <ProjectRisksIssuesTab 
                   risks={risks} 
                   issues={issues}
                   project={project}
-                  onLogRisk={canEdit ? onLogRisk : undefined}
-                  onLogIssue={canEdit ? onLogIssue : undefined}
+                  onLogRisk={canCreateRisks ? onLogRisk : undefined}
+                  onLogIssue={canCreateIssues ? onLogIssue : undefined}
                   selectedRisk={activeRisk}
                   setSelectedRisk={setActiveRisk}
                   selectedIssue={activeIssue}
                   setSelectedIssue={setActiveIssue}
+                  canEditRisks={canUpdateRisks}
+                  canDeleteRisks={canDeleteRisks}
+                  canEditIssues={canUpdateIssues}
+                  canDeleteIssues={canDeleteIssues}
+                  onEditRisk={onEditRisk}
+                  onDeleteRisk={onDeleteRisk}
+                  onEditIssue={onEditIssue}
+                  onDeleteIssue={onDeleteIssue}
                 />
               )}
-              {activeTab === 4 && (
+              {activeTab === 'team' && (
                 <ProjectTeamTab 
                   resources={resources} 
                   tasks={tasks} 
@@ -340,24 +398,32 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   onAssignResource={canEdit ? onAssignResource : undefined}
                 />
               )}
-              {activeTab === 5 && (
+              {activeTab === 'benefits' && (
                 <ProjectBenefitsTab 
                   benefits={benefits} 
-                  onAddBenefit={canEdit ? onAddBenefit : undefined}
+                  onAddBenefit={canCreateBenefits ? onAddBenefit : undefined}
                   selectedBenefit={activeBenefit}
                   setSelectedBenefit={setActiveBenefit}
+                  canEdit={canUpdateBenefits}
+                  canDelete={canDeleteBenefits}
+                  onEditBenefit={onEditBenefit}
+                  onDeleteBenefit={onDeleteBenefit}
                 />
               )}
-              {activeTab === 6 && (
+              {activeTab === 'governance' && (
                 <ProjectGovernanceTab 
                   gateReviews={gateReviews} 
-                  onNavigateToGateReview={(gr) => setActiveGateReview(gr || null)} 
-                  onAddGateReview={canEdit ? onNavigateToGateReview : undefined}
+                  onNavigateToGateReview={onNavigateToGateReview} 
+                  onAddGateReview={canCreateGateReviews ? onAddGateReview : undefined}
                   selectedGateReview={activeGateReview}
                   setSelectedGateReview={setActiveGateReview}
+                  canEdit={canUpdateGateReviews}
+                  canDelete={canDeleteGateReviews}
+                  onEditGateReview={onEditGateReview}
+                  onDeleteGateReview={onDeleteGateReview}
                 />
               )}
-              {activeTab === 7 && (
+              {activeTab === 'tasks' && (
                 <ProjectTasksTab
                   project={project}
                   tasks={tasks}
@@ -368,7 +434,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   onAddTask={canEdit ? onAddTask : undefined}
                 />
               )}
-              {activeTab === 8 && project.pm_projectid && (
+              {activeTab === 'documents' && project.pm_projectid && (
                 <EntityDocumentsTab
                   entityId={project.pm_projectid}
                   moduleName={MODULE_NAMES.PROJECTS.value}

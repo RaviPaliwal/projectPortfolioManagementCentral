@@ -35,6 +35,14 @@ interface ProjectRisksIssuesTabProps {
   setSelectedRisk: (risk: RiskModel | null) => void
   selectedIssue: IssueModel | null
   setSelectedIssue: (issue: IssueModel | null) => void
+  canEditRisks?: boolean
+  canDeleteRisks?: boolean
+  canEditIssues?: boolean
+  canDeleteIssues?: boolean
+  onEditRisk?: (risk: RiskModel) => void
+  onDeleteRisk?: (riskId: string) => void
+  onEditIssue?: (issue: IssueModel) => void
+  onDeleteIssue?: (issueId: string) => void
 }
 
 // Issue Constants matching global layout for the detail view
@@ -79,7 +87,15 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({
   selectedRisk,
   setSelectedRisk,
   selectedIssue,
-  setSelectedIssue
+  setSelectedIssue,
+  canEditRisks = false,
+  canDeleteRisks = false,
+  canEditIssues = false,
+  canDeleteIssues = false,
+  onEditRisk,
+  onDeleteRisk,
+  onEditIssue,
+  onDeleteIssue
 }) => {
   const theme = useTheme()
 
@@ -256,11 +272,11 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({
       {/* ── SECTION 1: ORIGINAL STYLE RISK GRID ── */}
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
             <BugReportIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Project Risks
           </Typography>
           {onLogRisk && (
-            <Button size="small" variant="contained" color="error" startIcon={<BugReportIcon />} onClick={onLogRisk}>
+            <Button size="small" variant="outlined" color="error" startIcon={<BugReportIcon />} onClick={onLogRisk}>
               Add Risk
             </Button>
           )}
@@ -269,8 +285,8 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({
         <RiskTable
           risks={risks}
           loading={false}
-          onEdit={() => {}}
-          onDelete={() => {}}
+          onEdit={onEditRisk || (() => {})}
+          onDelete={onDeleteRisk ? (risk) => onDeleteRisk(risk.pm_riskid!) : () => {}}
           onSelect={setSelectedRisk}
           categoryFilter={riskCategoryFilter}
           setCategoryFilter={setRiskCategoryFilter}
@@ -279,8 +295,8 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({
           statusFilter={riskStatusFilter}
           setStatusFilter={setRiskStatusFilter}
           openCreate={onLogRisk || (() => {})}
-          canEdit={false}
-          canDelete={false}
+          canEdit={canEditRisks}
+          canDelete={canDeleteRisks}
         />
       </Box>
 
@@ -289,11 +305,11 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({
       {/* ── SECTION 2: ORIGINAL STYLE ISSUES GRID ── */}
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
             <WarningAmberIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Project Issues
           </Typography>
           {onLogIssue && (
-            <Button size="small" variant="contained" color="warning" startIcon={<WarningAmberIcon />} onClick={onLogIssue}>
+            <Button size="small" variant="outlined" color="warning" startIcon={<WarningAmberIcon />} onClick={onLogIssue}>
               Add Issue
             </Button>
           )}
@@ -302,8 +318,8 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({
         <IssueTable
           issues={issues}
           loading={false}
-          onEdit={() => {}}
-          onDelete={() => {}}
+          onEdit={onEditIssue || (() => {})}
+          onDelete={onDeleteIssue ? (issue) => onDeleteIssue(issue.pm_issueid!) : () => {}}
           onSelect={setSelectedIssue}
           categoryFilter={issueCategoryFilter}
           setCategoryFilter={setIssueCategoryFilter}
@@ -314,8 +330,8 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({
           statusFilter={issueStatusFilter}
           setStatusFilter={setIssueStatusFilter}
           openCreate={onLogIssue || (() => {})}
-          canEdit={false}
-          canDelete={false}
+          canEdit={canEditIssues}
+          canDelete={canDeleteIssues}
         />
       </Box>
     </Box>

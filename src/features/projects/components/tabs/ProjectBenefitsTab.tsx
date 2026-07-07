@@ -13,6 +13,8 @@ import StarIcon from '@mui/icons-material/Star'
 import DescriptionIcon from '@mui/icons-material/Description'
 import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import TimelineIcon from '@mui/icons-material/Timeline'
+import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 
 import { StatusTag, KpiCardRow } from '@/components/common'
 import type { BenefitModel } from '@/types/dataverse'
@@ -36,31 +38,35 @@ interface ProjectBenefitsTabProps {
   onAddBenefit?: () => void
   selectedBenefit: BenefitModel | null
   setSelectedBenefit: (benefit: BenefitModel | null) => void
+  canEdit?: boolean
+  canDelete?: boolean
+  onEditBenefit?: (benefit: BenefitModel) => void
+  onDeleteBenefit?: (benefitId: string) => void
 }
 
-// Mappings matching BenefitsPage.tsx
+// Mappings matching BenefitsPage.tsx and constants.ts
 const CATEGORY_LABELS: Record<string, string> = {
-  '1': 'Financial',
+  '0': 'Financial',
+  '1': 'Non Financial',
   '2': 'Strategic',
-  '3': 'Operational',
 }
 
-const CATEGORY_COLORS: Record<string, 'primary' | 'secondary' | 'warning' | 'default'> = {
+const CATEGORY_COLORS: Record<string, 'success' | 'primary' | 'secondary' | 'default'> = {
+  '0': 'success',
   '1': 'primary',
   '2': 'secondary',
-  '3': 'warning',
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  '0': 'Not Started',
-  '1': 'In Progress',
-  '2': 'Achieved',
+  '0': 'On Track',
+  '1': 'Planned',
+  '2': 'At Risk',
 }
 
-const STATUS_COLORS: Record<string, 'default' | 'info' | 'success'> = {
-  '0': 'default',
+const STATUS_COLORS: Record<string, 'success' | 'info' | 'warning'> = {
+  '0': 'success',
   '1': 'info',
-  '2': 'success',
+  '2': 'warning',
 }
 
 const RAG_LABELS: Record<string, string> = {
@@ -79,37 +85,24 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
   benefits,
   onAddBenefit,
   selectedBenefit,
-  setSelectedBenefit
+  setSelectedBenefit,
+  canEdit = false,
+  canDelete = false,
+  onEditBenefit,
+  onDeleteBenefit
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
-  const achievedBenefits = benefits.filter(b => String(b.pm_benefitstatus) === '2' || b.pm_benefitstatus === 2).length
+  
+  // Realized is status "0" (On Track) or whatever matches realization status
+  const achievedBenefits = benefits.filter(b => String(b.pm_benefitstatus) === '0' || b.pm_benefitstatus === 0).length
   const achievementRate = benefits.length > 0 ? Math.round((achievedBenefits / benefits.length) * 100) : 0
-
-  const kpiItems = React.useMemo(() => [
-    {
-      label: 'Total Benefits (Defined)',
-      value: benefits.length,
-      subtitle: 'Key business case metrics',
-      icon: <StarIcon />,
-      color: 'primary.main',
-      valueColor: 'primary.main'
-    },
-    {
-      label: 'Benefits Realized',
-      value: achievedBenefits,
-      subtitle: `${achievementRate}% realisation rate`,
-      icon: <EmojiEventsIcon />,
-      color: achievedBenefits > 0 ? 'success.main' : 'warning.main',
-      valueColor: achievedBenefits > 0 ? 'success.main' : 'warning.main'
-    }
-  ], [benefits.length, achievedBenefits, achievementRate])
 
   const categorySummary = React.useMemo(() => {
     const summaryMap: Record<string, { name: string; value: number; color: string }> = {
-      '1': { name: 'Financial', value: 0, color: theme.palette.primary.main },
-      '2': { name: 'Strategic', value: 0, color: theme.palette.secondary.main },
-      '3': { name: 'Operational', value: 0, color: theme.palette.warning.main }
+      '0': { name: 'Financial', value: 0, color: theme.palette.success.main },
+      '1': { name: 'Non Financial', value: 0, color: theme.palette.primary.main },
+      '2': { name: 'Strategic', value: 0, color: theme.palette.secondary.main }
     }
     
     for (const b of benefits) {
@@ -141,6 +134,13 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 1.5 }}>
           <StatusTag label={CATEGORY_LABELS[String(selectedBenefit.pm_benefitcategory)] || 'General'} color={CATEGORY_COLORS[String(selectedBenefit.pm_benefitcategory)] || 'default'} />
           <StatusTag label={STATUS_LABELS[String(selectedBenefit.pm_benefitstatus)] || 'Open'} color={STATUS_COLORS[String(selectedBenefit.pm_benefitstatus)] || 'default'} />
+          <Box sx={{ flexGrow: 1 }} />
+          {canEdit && onEditBenefit && (
+            <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={() => onEditBenefit(selectedBenefit)}>Edit</Button>
+          )}
+          {canDelete && onDeleteBenefit && (
+            <Button size="small" variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => onDeleteBenefit(selectedBenefit.pm_benefitid!)}>Delete</Button>
+          )}
         </Box>
 
         <Grid container spacing={3}>
@@ -270,10 +270,7 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
   // Summary and Lists view
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Benefit KPI Row */}
-      <KpiCardRow items={kpiItems} />
-
-      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: -1, display: 'flex', alignItems: 'center', gap: 1 }}>
         <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Planned Benefits
       </Typography>
 
@@ -299,7 +296,7 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
               p: 3,
               borderRadius: '24px',
               bgcolor: isDark ? 'background.paper' : '#fff',
-              height: 'calc(100% - 24px)',
+              height: '100%',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -311,26 +308,45 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
                 Category Breakdown
               </Typography>
               
-              <Box sx={{ height: 180, width: '100%', mb: 2, flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <Box sx={{ height: 180, width: '100%', mb: 2, flexGrow: 1, display: 'block', position: 'relative' }}>
                 {categorySummary.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsPieChart>
-                      <Pie
-                        data={categorySummary}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {categorySummary.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip formatter={(value) => [`${value} Benefit(s)`]} />
-                    </RechartsPieChart>
-                  </ResponsiveContainer>
+                  <>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={categorySummary}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={4}
+                          dataKey="value"
+                        >
+                          {categorySummary.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip formatter={(value) => [`${value} Benefit(s)`]} />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        textAlign: 'center',
+                        pointerEvents: 'none'
+                      }}
+                    >
+                      <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"Outfit", sans-serif', color: 'text.primary', lineHeight: 1 }}>
+                        {benefits.length}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Total
+                      </Typography>
+                    </Box>
+                  </>
                 ) : (
                   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%', border: '1px dashed', borderColor: 'divider', borderRadius: 2 }}>
                     <Typography variant="caption" color="text.secondary">No category data</Typography>

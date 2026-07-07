@@ -641,17 +641,13 @@ export default function FundingSourcesPage() {
               { label: 'Active', value: `${fundingSources.filter((s) => String(s.pm_fundingstatus) === '0').length}` },
               { label: 'Exhausted', value: `${fundingSources.filter((s) => String(s.pm_fundingstatus) === '1').length}` },
             ]}
-          />
-        )}
-        {!loading && filteredSources.length > 0 && (
-          <TablePagination
-            component="div"
-            count={filteredSources.length}
             page={page}
-            onPageChange={handleChangePage}
+            onPageChange={(_, p) => setPage(p)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[10, 25, 50, 100]}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10))
+              setPage(0)
+            }}
           />
         )}
       </Paper>

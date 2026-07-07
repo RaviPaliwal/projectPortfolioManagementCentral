@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableRow, Paper, Box, TablePagination } from '@mui/material';
-import { TableShell, SearchFilterBar, ExportButton, TableHeader } from '@/components/common';
+import { TableShell, SearchFilterBar, ExportButton, TableHeader, TableFooter, type TableFooterTotal } from '@/components/common';
 import { useDataGrid, type SortState } from '@/hooks/useDataGrid';
 import type { ReactNode } from 'react';
 
@@ -30,6 +30,9 @@ export interface DataverseTableProps<T> {
   minHeight?: number | string;
   maxHeight?: string;
   variant?: 'elevation' | 'outlined' | 'flat';
+  totals?: TableFooterTotal[];
+  itemLabel?: string;
+  getRowSx?: (item: T) => Record<string, any>;
 }
 
 export function DataverseTable<T extends Record<string, any>>({
@@ -50,6 +53,9 @@ export function DataverseTable<T extends Record<string, any>>({
   minHeight,
   maxHeight,
   variant = 'elevation',
+  totals,
+  itemLabel = 'item',
+  getRowSx,
 }: DataverseTableProps<T>) {
   const {
     searchQuery,
@@ -135,7 +141,7 @@ export function DataverseTable<T extends Record<string, any>>({
                   key={id}
                   hover
                   onClick={() => onRowClick?.(item)}
-                  sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                  sx={{ cursor: onRowClick ? 'pointer' : 'default', ...getRowSx?.(item) }}
                 >
                   {columns.map((col) => (
                     <TableCell key={col.key as string} align={col.align}>
@@ -154,18 +160,15 @@ export function DataverseTable<T extends Record<string, any>>({
         </Table>
       </TableShell>
 
-      <TablePagination
-        component="div"
-        count={filteredCount}
+      <TableFooter
+        filteredCount={filteredCount}
+        totalCount={data.length}
+        itemLabel={itemLabel}
+        totals={totals}
         page={page}
+        onPageChange={(_, newPage) => setPage(null, newPage)}
         rowsPerPage={rowsPerPage}
-        onPageChange={(_, newPage) => setPage(_, newPage)}
-        onRowsPerPageChange={(event) => setRowsPerPage(event as React.ChangeEvent<HTMLInputElement>)}
-        rowsPerPageOptions={[10, 25, 50, 100]}
-        sx={{
-          '.MuiTablePagination-toolbar': { minHeight: 48 },
-          '.MuiTablePagination-select': { py: 0 },
-        }}
+        onRowsPerPageChange={(event) => setRowsPerPage(event)}
       />
     </Paper>
   );

@@ -695,17 +695,13 @@ export default function IssuesPage() {
             filteredCount={filteredIssues.length}
             totalCount={issues.length}
             itemLabel="issue"
-          />
-        )}
-        {!loading && filteredIssues.length > 0 && (
-          <TablePagination
-            component="div"
-            count={filteredIssues.length}
             page={page}
-            onPageChange={handleChangePage}
+            onPageChange={(_, p) => setPage(p)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[10, 25, 50, 100]}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10))
+              setPage(0)
+            }}
           />
         )}
       </Paper>

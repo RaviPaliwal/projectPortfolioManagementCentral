@@ -363,18 +363,15 @@ export default function PendingApprovalsPage() {
         </TableShell>
 
         {!loading && filteredSteps.length > 0 && (
-          <>
-            <TableFooter filteredCount={filteredSteps.length} totalCount={steps.length} itemLabel="pending step" />
-            <TablePagination
-              component="div"
-              count={filteredSteps.length}
-              page={page}
-              onPageChange={(_, p) => setPage(p)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0) }}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+          <TableFooter
+            filteredCount={filteredSteps.length}
+            totalCount={steps.length}
+            itemLabel="pending step"
+            page={page}
+            onPageChange={(_, p) => setPage(p)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0) }}
+          />
         )}
       </Paper>
 

@@ -24,6 +24,10 @@ interface ProjectGovernanceTabProps {
   onAddGateReview?: () => void
   selectedGateReview: GateReviewModel | null
   setSelectedGateReview: (gateReview: GateReviewModel | null) => void
+  canEdit?: boolean
+  canDelete?: boolean
+  onEditGateReview?: (gateReview: GateReviewModel) => void
+  onDeleteGateReview?: (gateReviewId: string) => void
 }
 
 export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({
@@ -31,7 +35,11 @@ export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({
   onNavigateToGateReview,
   onAddGateReview,
   selectedGateReview,
-  setSelectedGateReview
+  setSelectedGateReview,
+  canEdit = false,
+  canDelete = false,
+  onEditGateReview,
+  onDeleteGateReview
 }) => {
   if (selectedGateReview) {
     return (
@@ -41,10 +49,10 @@ export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({
         onPmoCheck={() => {}}
         onFinanceReview={() => {}}
         onBoardDecision={() => {}}
-        onEdit={() => {}}
-        onDelete={() => {}}
-        canEdit={false}
-        canDelete={false}
+        onEdit={onEditGateReview ? () => onEditGateReview(selectedGateReview) : () => {}}
+        onDelete={onDeleteGateReview ? () => onDeleteGateReview(selectedGateReview.pm_projectgatereviewid!) : () => {}}
+        canEdit={canEdit}
+        canDelete={canDelete}
       />
     )
   }
@@ -54,7 +62,7 @@ export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({
       {/* Action Buttons */}
       {onAddGateReview && (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -2 }}>
-          <Button size="small" variant="contained" color="success" startIcon={<HowToRegIcon />} onClick={onAddGateReview}>Gate Review</Button>
+          <Button size="small" variant="outlined" color="success" startIcon={<HowToRegIcon />} onClick={onAddGateReview}>Gate Review</Button>
         </Box>
       )}
 

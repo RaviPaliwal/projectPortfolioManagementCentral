@@ -740,17 +740,13 @@ export default function ResourcesPage() {
                 filteredCount={filteredResources.length}
                 totalCount={resources.length}
                 itemLabel="resource"
-              />
-            )}
-            {!loading && filteredResources.length > 0 && (
-              <TablePagination
-                component="div"
-                count={filteredResources.length}
                 page={page}
-                onPageChange={handleChangePage}
+                onPageChange={(_, p) => setPage(p)}
                 rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[10, 25, 50, 100]}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10))
+                  setPage(0)
+                }}
               />
             )}
           </Paper>

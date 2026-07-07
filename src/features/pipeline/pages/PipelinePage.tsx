@@ -988,14 +988,17 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
             </TableShell>
 
             {filteredInitiatives.length > 0 && (
-              <TablePagination
-                component="div"
-                count={filteredInitiatives.length}
+              <TableFooter
+                filteredCount={filteredInitiatives.length}
+                totalCount={initiatives.length}
+                itemLabel="initiative"
                 page={page}
-                onPageChange={handleChangePage}
+                onPageChange={(_, p) => setPage(p)}
                 rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[10, 25, 50, 100]}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10))
+                  setPage(0)
+                }}
               />
             )}
           </Paper>

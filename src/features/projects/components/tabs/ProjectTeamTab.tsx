@@ -101,14 +101,12 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Allocated Resources</Typography>
-      
-      {/* Action Buttons */}
-      {onAssignResource && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Allocated Resources</Typography>
+        {onAssignResource && (
           <Button size="small" variant="outlined" startIcon={<PersonAddIcon />} onClick={onAssignResource}>Resource</Button>
-        </Box>
-      )}
+        )}
+      </Box>
 
       {resources.length > 0 ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
