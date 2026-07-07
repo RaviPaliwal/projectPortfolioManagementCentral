@@ -33,6 +33,7 @@ const PROG_PHASE_LABELS: Record<string, { label: string; color: string }> = {
   '0': { label: 'Delivery', color: 'primary' },
   '1': { label: 'Planning', color: 'info' },
   '2': { label: 'Initiation', color: 'secondary' },
+  '3': { label: 'Under Approval', color: 'warning' },
 }
 
 export const StatusChip: React.FC<StatusChipProps> = ({ status, type = 'rag', size = 'small' }) => {

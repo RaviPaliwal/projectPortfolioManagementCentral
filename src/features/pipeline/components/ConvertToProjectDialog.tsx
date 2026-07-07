@@ -127,7 +127,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
         _pm_programme_value: initiative._pm_programme_value ?? '',
         pm_projectmanager: '',
         pm_projectsponsor: initiative.pm_requestedbyname ?? '',
-        pm_projectphase: '3',
+        pm_projectphase: initiative.pm_initiativetype === 2 ? '1' : '3',
         pm_ragstatus: '1',
         pm_approvedbudgeteur: initiative.pm_estimatedcost ?? 0,
         pm_actualcosteur: 0,
@@ -296,47 +296,45 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
 
             {initiative?.pm_initiativetype !== 2 && (
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Portfolio"
-                  size="small"
-                  value={selectedPortfolio?.pm_portfolioname ?? 'No portfolio'}
-                  disabled
-                />
+                <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Portfolio</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                    {selectedPortfolio?.pm_portfolioname ?? 'No portfolio'}
+                  </Typography>
+                </Box>
               </Grid>
             )}
 
-            <Grid size={{ xs: 12, sm: initiative?.pm_initiativetype === 2 ? 12 : 6 }}>
-              <TextField
-                fullWidth
-                label={initiative?.pm_initiativetype === 2 ? "Portfolio Owner / Sponsor" : "Sponsor"}
-                size="small"
-                value={form.pm_projectsponsor || '—'}
-                disabled
-              />
-            </Grid>
+            {initiative?.pm_initiativetype !== 2 && (
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                    Sponsor
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                    {form.pm_projectsponsor || '—'}
+                  </Typography>
+                </Box>
+              </Grid>
+            )}
 
             {initiative?.pm_initiativetype !== 2 && (
               <>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Estimated Cost (from initiative)"
-                    size="small"
-                    value={initiative?.pm_estimatedcost ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
-                    disabled
-                    slotProps={{ input: { sx: { fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 } } }}
-                  />
+                  <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Estimated Cost (from initiative)</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
+                      {initiative?.pm_estimatedcost ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
+                    </Typography>
+                  </Box>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Estimated Benefits (from initiative)"
-                    size="small"
-                    value={initiative?.pm_estimatedbenefits ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '—'}
-                    disabled
-                    slotProps={{ input: { sx: { fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 } } }}
-                  />
+                  <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Estimated Benefits (from initiative)</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
+                      {initiative?.pm_estimatedbenefits ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '—'}
+                    </Typography>
+                  </Box>
                 </Grid>
               </>
             )}
@@ -546,22 +544,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                     <MenuItem value="2">Red</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    select
-                    fullWidth
-                    label="Programme Phase"
-                    size="small"
-                    value={form.pm_projectphase}
-                    onChange={handleChange('pm_projectphase')}
-                  >
-                    <MenuItem value="2">Initiation</MenuItem>
-                    <MenuItem value="1">Planning</MenuItem>
-                    <MenuItem value="0">Delivery</MenuItem>
-                    <MenuItem value="3">Under Approval</MenuItem>
-                  </TextField>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, sm: 12 }}>
                   <TextField
                     fullWidth
                     label="Programme Description"
@@ -645,20 +628,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                     <MenuItem value="2">Red</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    select
-                    fullWidth
-                    label="Portfolio Status"
-                    size="small"
-                    value={form.pm_projectphase}
-                    onChange={handleChange('pm_projectphase')}
-                  >
-                    <MenuItem value="0">Active</MenuItem>
-                    <MenuItem value="1">Under Approval</MenuItem>
-                    <MenuItem value="2">Rejected</MenuItem>
-                  </TextField>
-                </Grid>
+
                 <Grid size={{ xs: 12, sm: 12 }}>
                   <TextField
                     fullWidth
@@ -696,19 +666,12 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
 
           <Grid container spacing={2.5} sx={{ mb: 4 }}>
             <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Approved Budget (EUR)"
-                size="small"
-                value={currencyFormatter.format(form.pm_approvedbudgeteur)}
-                disabled
-                slotProps={{
-                  input: {
-                    readOnly: true,
-                    sx: { fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 },
-                  },
-                }}
-              />
+              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Approved Budget (EUR)</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
+                  {currencyFormatter.format(form.pm_approvedbudgeteur)}
+                </Typography>
+              </Box>
             </Grid>
           </Grid>
 
