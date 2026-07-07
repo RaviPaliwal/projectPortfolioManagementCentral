@@ -7,7 +7,7 @@ import {
   alpha,
   Tooltip as MuiTooltip,
 } from '@mui/material'
-import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward'
+
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import FolderIcon from '@mui/icons-material/Folder'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
@@ -244,7 +244,6 @@ export const MockupOverviewCard: React.FC<MockupOverviewCardProps> = ({ metrics,
         <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '15px' }}>
           Portfolio RAG Overview
         </Typography>
-        <ArrowOutwardIcon sx={{ fontSize: 16, color: 'text.secondary', opacity: 0.6 }} />
       </Box>
 
       {/* Grid of Sub-items */}
@@ -399,7 +398,6 @@ export const MockupFinancialsCard: React.FC<MockupFinancialsCardProps> = ({
               <option key={y} value={y}>FY {y}</option>
             ))}
           </select>
-          <ArrowOutwardIcon sx={{ fontSize: 16, color: 'text.secondary', opacity: 0.6 }} />
         </Box>
       </Box>
 
@@ -509,7 +507,6 @@ export const MockupTrendCard: React.FC<MockupTrendCardProps> = ({ portfolioTrend
         <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '15px' }}>
           Portfolio Lifecycles & Trends
         </Typography>
-        <ArrowOutwardIcon sx={{ fontSize: 16, color: 'text.secondary', opacity: 0.6 }} />
       </Box>
 
       {/* Area Chart in Theme Colors */}
@@ -613,7 +610,6 @@ export const MockupPipelineCard: React.FC<MockupPipelineCardProps> = ({ initiati
         <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '13px' }}>
           Pipeline Funnel Status
         </Typography>
-        <ArrowOutwardIcon sx={{ fontSize: 14, color: 'text.secondary', opacity: 0.6 }} />
       </Box>
 
       {/* Horizontal Split Progress Bar */}
@@ -768,7 +764,6 @@ export const MockupBudgetGaugeCard: React.FC<MockupBudgetGaugeCardProps> = ({ to
         <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '13px' }}>
           Budget Consumption
         </Typography>
-        <ArrowOutwardIcon sx={{ fontSize: 14, color: 'text.secondary', opacity: 0.6 }} />
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -881,7 +876,6 @@ export const MockupSeverityCard: React.FC<MockupSeverityCardProps> = ({ risks = 
         <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '13px' }}>
           Active Threat Levels
         </Typography>
-        <ArrowOutwardIcon sx={{ fontSize: 14, color: 'text.secondary', opacity: 0.6 }} />
       </Box>
 
       {/* Columns color-coded to theme error (red), warning (amber), and primary (green) */}
