@@ -59,6 +59,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import AssignmentIcon from '@mui/icons-material/Assignment'
+import FolderIcon from '@mui/icons-material/Folder'
 
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
@@ -250,9 +251,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
   const [deleteTarget, setDeleteTarget] = useState<InitiativeModel | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // ── Score Edit State ───────────────────────────────────────────────────────
-  const [editScoreMode, setEditScoreMode] = useState(false)
-  const [editScore, setEditScore] = useState(0)
+
 
   const { currentUser } = useUser()
 
@@ -410,39 +409,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
     },
   ]
 
-  const detailKpiItems = useMemo(() => {
-    if (!selectedInitiative) return []
-    return [
-      {
-        label: "Estimated Cost",
-        value: selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—',
-        subtitle: "Est. budget required",
-        icon: <MonetizationOnIcon />,
-        color: theme.palette.primary.main
-      },
-      {
-        label: "Estimated Benefits",
-        value: selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—',
-        subtitle: "Est. return on investment",
-        icon: <TrendingUpIcon />,
-        color: theme.palette.success.main
-      },
-      {
-        label: "Priority Score",
-        value: selectedInitiative.pm_priorityscore ?? '—',
-        subtitle: "Calculated intake score",
-        icon: <LightbulbIcon />,
-        color: theme.palette.secondary.main
-      },
-      {
-        label: "Strategic Alignment",
-        value: selectedInitiative.pm_strategicalignmentscore ? `${selectedInitiative.pm_strategicalignmentscore.toFixed(1)} / 5.0` : '—',
-        subtitle: "Portfolio strategic alignment",
-        icon: <AccountTreeIcon />,
-        color: theme.palette.warning.main
-      }
-    ]
-  }, [selectedInitiative, theme])
+
 
   // ── Sort Handler ─────────────────────────────────────────────────────────
   const handleSort = useCallback((field: SortField) => {
@@ -514,13 +481,11 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
   const handleRowClick = useCallback((initiative: InitiativeModel) => {
     setSelectedInitiative(initiative)
     setDetailTab(0)
-    setEditScoreMode(false)
   }, [])
 
   const handleCloseDetail = useCallback(() => {
     setSelectedInitiative(null)
     setDetailTab(0)
-    setEditScoreMode(false)
   }, [])
 
   const executeCreateInitiative = async () => {
@@ -580,24 +545,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
     }
   }
 
-  const handleSaveScore = async () => {
-    if (!selectedInitiative?.pm_initiativeid) return
-    setActionLoading(true)
-    try {
-      await updateInitiative(selectedInitiative.pm_initiativeid, {
-        pm_strategicalignmentscore: editScore,
-      } as any)
-      setSelectedInitiative({ ...selectedInitiative, pm_strategicalignmentscore: editScore })
-      setEditScoreMode(false)
-      setSuccessMsg('Strategic alignment score updated.')
-      await loadData()
-      setTimeout(() => setSuccessMsg(null), 3000)
-    } catch {
-      setError('Unable to update score.')
-    } finally {
-      setActionLoading(false)
-    }
-  }
+
 
   const handleResubmitForApproval = async () => {
     if (!selectedInitiative?.pm_initiativeid) return
@@ -1149,198 +1097,124 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
             </Paper>
           )}
 
-          {/* KPI Ribbon */}
-          <KpiCardRow
-            variant="compact"
-            items={detailKpiItems}
-          />
-
-          {/* Unified Overview Block */}
-          <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', mb: 3.5, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-            <Grid container spacing={4}>
-              {/* Left Column: Business Case & Details */}
-              <Grid size={{ xs: 12, md: 8 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.primary' }}>
-                  <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Overview
-                </Typography>
-
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 2.5 }}>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Sponsor</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_requestedbyname || '—'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Target Portfolio</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_portfolioname || '—'}</Typography>
-                  </Box>
-                </Box>
-
-                <Divider sx={{ mb: 2.5 }} />
-
-                <Box sx={{ mb: selectedInitiative.pm_submissiondate ? 2.5 : 0 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', display: 'block', mb: 0.5 }}>Business Case</Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8, fontSize: '0.825rem' }}>
-                    {selectedInitiative.pm_businesscase || 'No business case provided.'}
+          {/* Main Grid Layout: Left Column (70%) and Right Column (30%) */}
+          <Grid container spacing={3}>
+            {/* Left Column: 70% Width */}
+            <Grid size={{ xs: 12, lg: 8.4 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Overview Card */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <DescriptionIcon sx={{ fontSize: 18, color: 'success.main' }} /> Overview
                   </Typography>
                 </Box>
-
-                {selectedInitiative.pm_submissiondate && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-                    <CalendarTodayIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                      Submitted on: {new Date(selectedInitiative.pm_submissiondate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </Typography>
-                  </Box>
-                )}
-              </Grid>
-
-              {/* Right Column: Financials & Metrics */}
-              <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <Box sx={{ p: 2.5, borderRadius: '16px', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Financials & Alignment</Typography>
-
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
-                        <MonetizationOnIcon fontSize="small" sx={{ color: 'primary.main', opacity: 0.8 }} /> Est. Cost
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>
-                        {selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—'}
+                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5, flexGrow: 1 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr 1fr 1fr' }, gap: 2.5 }}>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Sponsor</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_requestedbyname || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Target Portfolio</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_portfolioname || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Initiative Type</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>
+                        {selectedInitiative.pm_initiativetype === 0 ? 'Project' : selectedInitiative.pm_initiativetype === 1 ? 'Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Portfolio' : '—'}
                       </Typography>
                     </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>RAG Status</Typography>
+                      <Box sx={{ mt: 0.25 }}>
+                        <StatusTag
+                          label={STATUS_CONFIG[String(selectedInitiative?.pm_pipelinestatus ?? '')]?.label ?? 'Draft'}
+                          color={STATUS_CONFIG[String(selectedInitiative?.pm_pipelinestatus ?? '')]?.color ?? 'default'}
+                          size="small"
+                        />
+                      </Box>
+                    </Box>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
-                        <TrendingUpIcon fontSize="small" sx={{ color: 'success.main', opacity: 0.8 }} /> Est. Benefits
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 800, color: 'success.main' }}>
-                        {selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—'}
-                      </Typography>
+                    {/* Cost, Benefits, Priority & Alignment boxes */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr 1fr' }, gap: 2, gridColumn: 'span 4', mt: 1 }}>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', gap: 1.5, border: '1px solid', borderColor: 'divider' }}>
+                        <Avatar sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08), color: 'primary.main', width: 40, height: 40, border: '1px solid', borderColor: (theme) => alpha(theme.palette.primary.main, 0.15) }}>
+                          <MonetizationOnIcon sx={{ fontSize: 18 }} />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem' }}>Est. Cost</Typography>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'primary.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—'}</Typography>
+                        </Box>
+                      </Paper>
+
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', gap: 1.5, border: '1px solid', borderColor: 'divider' }}>
+                        <Avatar sx={{ bgcolor: (theme) => alpha(theme.palette.success.main, 0.08), color: 'success.main', width: 40, height: 40, border: '1px solid', borderColor: (theme) => alpha(theme.palette.success.main, 0.15) }}>
+                          <TrendingUpIcon sx={{ fontSize: 18 }} />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem' }}>Est. Benefits</Typography>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'success.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{selectedInitiative.pm_estimatedbenefits ? currencyFormatter.format(selectedInitiative.pm_estimatedbenefits) : '—'}</Typography>
+                        </Box>
+                      </Paper>
+
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', gap: 1.5, border: '1px solid', borderColor: 'divider' }}>
+                        <Avatar sx={{ bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08), color: 'warning.main', width: 40, height: 40, border: '1px solid', borderColor: (theme) => alpha(theme.palette.warning.main, 0.15) }}>
+                          <LightbulbIcon sx={{ fontSize: 18 }} />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem' }}>Priority Score</Typography>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'warning.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{selectedInitiative.pm_priorityscore ?? '—'}</Typography>
+                        </Box>
+                      </Paper>
+
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', gap: 1.5, border: '1px solid', borderColor: 'divider' }}>
+                        <Avatar sx={{ bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.08), color: 'secondary.main', width: 40, height: 40, border: '1px solid', borderColor: (theme) => alpha(theme.palette.secondary.main, 0.15) }}>
+                          <AccountTreeIcon sx={{ fontSize: 18 }} />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem' }}>Strategic Alignment</Typography>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'secondary.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{selectedInitiative.pm_strategicalignmentscore ?? '—'} / 100</Typography>
+                        </Box>
+                      </Paper>
                     </Box>
                   </Box>
-
-                  {(selectedInitiative.pm_estimatedcost || selectedInitiative.pm_estimatedbenefits) && (
-                    <Box sx={{ height: 130, mt: -1, mb: -1 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={[
-                            { name: 'Est. Cost', amount: selectedInitiative.pm_estimatedcost ?? 0, color: theme.palette.primary.main },
-                            { name: 'Est. Benefits', amount: selectedInitiative.pm_estimatedbenefits ?? 0, color: theme.palette.success.main }
-                          ]}
-                          margin={{ top: 10, right: 10, left: -25, bottom: 5 }}
-                        >
-                          <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} stroke={theme.palette.divider} />
-                          <YAxis tick={{ fontSize: 9, fontFamily: 'monospace' }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
-                          <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
-                          <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={24}>
-                            {[
-                              { color: theme.palette.primary.main },
-                              { color: theme.palette.success.main }
-                            ].map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                  <Divider />
+                  {selectedInitiative.pm_businesscase && (
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', display: 'block', mb: 0.5 }}>Business Case</Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, fontSize: '0.825rem' }}>{selectedInitiative.pm_businesscase}</Typography>
                     </Box>
                   )}
-
-                  <Divider />
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
-                      <LightbulbIcon fontSize="small" sx={{ color: 'warning.main', opacity: 0.8 }} /> Priority Score
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                      {selectedInitiative.pm_priorityscore ?? '—'}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
-                      <AccountTreeIcon fontSize="small" sx={{ color: 'secondary.main', opacity: 0.8 }} /> Alignment
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <StrategicScoreDisplay score={selectedInitiative.pm_strategicalignmentscore} />
-                    </Box>
-                  </Box>
                 </Box>
-              </Grid>
-            </Grid>
-          </Paper>
+              </Paper>
 
-          {/* 2-2 Equally Divided Blocks Grid */}
-          <Grid container spacing={3.5}>
-            {/* Row 1, Block 1: Score & Triage */}
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2.5, display: 'flex', alignItems: 'center', gap: 0.75, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  <ThumbsUpDownIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Score & Triage Details
-                </Typography>
-                <Grid container spacing={2} sx={{ flexGrow: 1 }}>
-                  <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
-                    <Paper variant="outlined" sx={{ p: 2.5, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                          <TrendingUpIcon sx={{ fontSize: 16, color: 'primary.main' }} /> Strategic Alignment
-                        </Typography>
-                        {editScoreMode ? (
-                          <Box>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>Rate strategic pillars (1–5).</Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                              <Rating value={editScore} onChange={(_, v) => setEditScore(v ?? 0)} precision={0.5} max={5} size="small" />
-                              <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>{editScore.toFixed(1)}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              <Button variant="contained" size="small" onClick={handleSaveScore} disabled={actionLoading}>
-                                Save
-                              </Button>
-                              <Button variant="outlined" size="small" onClick={() => setEditScoreMode(false)}>Cancel</Button>
-                            </Box>
-                          </Box>
-                        ) : (
-                          <Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                              <Rating value={selectedInitiative.pm_strategicalignmentscore ?? 0} readOnly precision={0.5} max={5} size="small" />
-                              <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                                {selectedInitiative.pm_strategicalignmentscore?.toFixed(1) ?? '—'}
-                              </Typography>
-                            </Box>
-                            {canEdit && (
-                              <Button variant="outlined" size="small" startIcon={<EditIcon sx={{ fontSize: 12 }} />}
-                                onClick={() => { setEditScore(selectedInitiative.pm_strategicalignmentscore ?? 0); setEditScoreMode(true) }}>
-                                Edit Score
-                              </Button>
-                            )}
-                          </Box>
-                        )}
-                      </Box>
-                    </Paper>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
-                    <Paper variant="outlined" sx={{ p: 2.5, width: '100%', display: 'flex', flexDirection: 'column' }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        <LightbulbIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Priority Score
-                      </Typography>
-                      <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', mb: 1 }}>
-                        {selectedInitiative.pm_priorityscore ?? '—'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.4 }}>
-                        Higher priority score indicates greater urgency.
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                </Grid>
+              {/* Supporting Documents */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <FolderIcon sx={{ fontSize: 18, color: 'success.main' }} /> Supporting Documents
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3 }}>
+                  <EntityDocumentsTab
+                    entityId={selectedInitiative.pm_initiativeid || ''}
+                    moduleName={MODULE_NAMES.PIPELINE.value}
+                    canEdit={canEdit}
+                  />
+                </Box>
               </Paper>
             </Grid>
 
-            {/* Row 1, Block 2: Actions */}
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.75, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  <TransformIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Available Actions
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1, justifyContent: 'center' }}>
+            {/* Right Column: 30% Width */}
+            <Grid size={{ xs: 12, lg: 3.6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Available Actions */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1.5, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.75, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} /> Available Actions
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {[
                     { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
                     {
@@ -1358,7 +1232,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
                     .filter((a) => !a.btnDisabled)
                     .map((action, idx) => (
                       <Paper key={idx} variant="outlined" sx={{ p: 2, borderLeft: `3px solid ${action.color}`, transition: 'all 0.2s', '&:hover': { bgcolor: 'action.selected' } }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                           <Box>
                             <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
                               {action.icon} {action.title}
@@ -1367,7 +1241,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
                           </Box>
                           <Button variant={action.btnVariant} size="small" color={action.btnColor}
                             onClick={action.onClick} disabled={actionLoading}
-                            sx={{ whiteSpace: 'nowrap', ml: 2 }}>
+                            sx={{ width: '100%' }}>
                             {actionLoading ? 'Processing...' : action.btnLabel}
                           </Button>
                         </Box>
@@ -1387,43 +1261,31 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
                       btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0'
                     },
                   ].filter((a) => a.btnDisabled).length === 2 && (
-                      <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          No actions available for this initiative in its current status.
-                        </Typography>
-                      </Paper>
-                    )}
+                    <Box sx={{ p: 2, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No actions available for this initiative.
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               </Paper>
-            </Grid>
 
-            {/* Row 2, Block 1: Approval Tasks */}
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', height: '100%', minHeight: 350, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  <TaskAltIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Approval Tasks
-                </Typography>
-                <EntityApprovalTasks
-                  entityId={selectedInitiative.pm_initiativeid ?? null}
-                  moduleName={MODULE_NAMES.PIPELINE.value}
-                  entityLabel="Initiative"
-                  tabValue={0}
-                  index={0}
-                />
-              </Paper>
-            </Grid>
-
-            {/* Row 2, Block 2: Supporting Documents */}
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Paper sx={{ p: 3, borderRadius: '24px', border: 'none', height: '100%', minHeight: 350, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Supporting Documents
-                </Typography>
-                <EntityDocumentsTab
-                  entityId={selectedInitiative.pm_initiativeid || ''}
-                  moduleName={MODULE_NAMES.PIPELINE.value}
-                  canEdit={canEdit}
-                />
+              {/* Approval Tasks */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <TaskAltIcon sx={{ fontSize: 18, color: 'success.main' }} /> Approval Tasks
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
+                  <EntityApprovalTasks
+                    entityId={selectedInitiative.pm_initiativeid ?? null}
+                    moduleName={MODULE_NAMES.PIPELINE.value}
+                    entityLabel="Initiative"
+                    tabValue={0}
+                    index={0}
+                  />
+                </Box>
               </Paper>
             </Grid>
           </Grid>
