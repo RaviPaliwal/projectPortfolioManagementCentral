@@ -164,7 +164,7 @@ export const FORM_REGISTRY: FormRegistryEntry[] = [
   {
     key: 'resource_budget_planning',
     moduleName: MODULE_NAMES.PROJECTS.label,
-    displayName: 'Resource & Budget Planning',
+    displayName: 'Budget Planning',
     description: 'Review resource allocation and budget requirements for project execution',
     modalComponent: ResourceBudgetPlanningTaskModalWrapper,
   },
