@@ -732,7 +732,7 @@ export default function PortfoliosPage() {
                     emptyIcon={<AccountTreeIcon />}
                     emptyTitle="No projects linked to this portfolio."
                     searchPlaceholder="Search projects..."
-                    searchFields={['pm_projectname', 'pm_projectcode']}
+                    searchFields={['pm_projectname']}
                     showExport={false}
                   />
                 </Box>

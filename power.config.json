@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "appId": "91951220-8a65-422c-9810-d19d4496d6be",
+  "appId": "406f2304-cf35-4e3a-af34-5279ebde491d",
   "appDisplayName": "Project Portfolio Management Central",
   "region": "prod",
   "environmentId": "b13877a6-5201-e4ef-8d74-878957333982",
@@ -218,11 +218,6 @@
         "performancemeasure": {
           "entitySetName": "pm_performancemeasures",
           "logicalName": "pm_performancemeasure",
-          "isHidden": false
-        },
-        "projectapprovalrequest": {
-          "entitySetName": "pm_projectapprovalrequests",
-          "logicalName": "pm_projectapprovalrequest",
           "isHidden": false
         },
         "projectgatereview": {

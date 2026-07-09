@@ -320,12 +320,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
             >
               {themeMode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
             </IconButton>
-            <IconButton
-              sx={{ color: 'text.secondary' }}
-              aria-label="Documentation guide"
-            >
-              <MenuBookIcon />
-            </IconButton>
+            {/* Documentation icon removed as per UI update request */}
           </Toolbar>
         </AppBar>
 

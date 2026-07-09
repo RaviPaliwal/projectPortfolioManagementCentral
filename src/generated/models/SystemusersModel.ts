@@ -104,7 +104,8 @@ export const Systemuserssystemmanagedusertype = {
   0: 'EntraUser',
   1: 'C2User',
   2: 'ImpersonableStubUser',
-  3: 'AgenticUser'
+  3: 'AgenticUser',
+  4: 'NonLicensed'
 } as const;
 export type Systemuserssystemmanagedusertype = keyof typeof Systemuserssystemmanagedusertype;
 
@@ -153,6 +154,7 @@ export interface SystemusersBase {
   address2_upszone?: string;
   address2_utcoffset?: number;
   applicationid?: string;
+  azureactivedirectoryobjectid?: string;
   azurestate: Systemusersazurestate;
   "BusinessUnitId@odata.bind": string;
   "CalendarId@odata.bind"?: string;
@@ -226,7 +228,6 @@ export interface Systemusers extends SystemusersBase {
   address2_composite?: string;
   address2_shippingmethodcodename?: string;
   applicationiduri?: string;
-  azureactivedirectoryobjectid?: string;
   azuredeletedon?: string;
   azurestatename?: string;
   businessunitidname: string;

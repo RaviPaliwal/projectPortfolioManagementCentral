@@ -342,7 +342,7 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
 
     const projectsResult = await Pm_projectsService.getAll({
       filter: `_pm_programme_value eq '${normalizedId}'`,
-      select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_percentcomplete', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudgeteur', 'pm_actualcosteur'],
+      select: ['pm_projectid', 'pm_projectname', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_percentcomplete', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudget', 'pm_actualcost'],
       top: 200,
     })
     if (!projectsResult.success) {

@@ -60,7 +60,7 @@ FK_MAP = {
     "pm_changelogentry": "pm_changelogentries",
     "pm_changerequestimpact": "pm_changerequestimpacts",
     "pm_checklistresponse": "pm_checklistresponses",
-    "pm_projectapprovalrequest": "pm_projectapprovalrequests",
+
     "pm_projectgatereview": "pm_projectgatereviews",
     "pm_projectmilestone": "pm_projectmilestones",
     "pm_projectstatussnapshot": "pm_projectstatussnapshots",

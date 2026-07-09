@@ -15,8 +15,7 @@ export const Pm_changerequestspm_prioritylevel = {
 export type Pm_changerequestspm_prioritylevel = keyof typeof Pm_changerequestspm_prioritylevel;
 export const Pm_changerequestspm_status = {
   0: 'Approved',
-  1: 'UnderReview',
-  3: 'Rejected'
+  1: 'UnderReview'
 } as const;
 export type Pm_changerequestspm_status = keyof typeof Pm_changerequestspm_status;
 export const Pm_changerequestsstatecode = {

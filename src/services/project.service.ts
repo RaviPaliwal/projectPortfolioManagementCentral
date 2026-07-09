@@ -25,7 +25,6 @@ export const mapProject = (item: Pm_projects): ProjectModel => {
     const mapped: ProjectModel = {
         pm_projectid: item.pm_projectid,
         pm_projectname: item.pm_projectname,
-        pm_projectcode: item.pm_projectcode,
         _pm_portfolio_value: item._pm_portfolio_value,
         _pm_programme_value: item._pm_programme_value,
         pm_projectmanager: item._pm_projectmanager_value,
@@ -37,8 +36,8 @@ export const mapProject = (item: Pm_projects): ProjectModel => {
         pm_plannedenddate: item.pm_plannedenddate,
         pm_actualstartdate: item.pm_actualstartdate,
         pm_actualenddate: item.pm_actualenddate,
-        pm_approvedbudgeteur: item.pm_approvedbudgeteur,
-        pm_actualcosteur: item.pm_actualcosteur,
+        pm_approvedbudget: item.pm_approvedbudget,
+        pm_actualcost: item.pm_actualcost,
         pm_percentcomplete: item.pm_percentcomplete,
         pm_businessunit: item.pm_businessunit,
         pm_projectsponsor: item.pm_projectsponsor,
@@ -62,7 +61,7 @@ export const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => {
         pm_parenttaskid: item._pm_projecttask_value || undefined,
         pm_wbsnumber: item.pm_wbsnumber,
         pm_durationdays: item.pm_durationdays,
-        pm_lagdays: item.pm_lagdays,
+        pm_lagdays: (item as any).pm_lagdays,
         pm_plannedstartdate: item.pm_plannedstartdate,
         pm_plannedenddate: item.pm_plannedenddate,
         pm_actualstartdate: item.pm_actualstartdate,
@@ -101,13 +100,15 @@ export async function fetchMyActiveProjects(): Promise<ProjectModel[]> {
     const selectFields = [
         'pm_projectid',
         'pm_projectname',
-        'pm_projectcode',
         'pm_ragstatus',
         'pm_projectphase',
         '_pm_portfolio_value',
         '_pm_programme_value',
         '_pm_projectmanager_value',
         'pm_projectmanagername',
+        'pm_costragstatus',
+        'pm_scheduleragstatus',
+        'pm_benefitsragstatus',
     ]
     const options = {
         select: selectFields,
@@ -131,12 +132,12 @@ export async function fetchProjectDetails(projectId: string): Promise<ProjectMod
         // Incrementally adding fields to find the one breaking the query
         const result = await Pm_projectsService.get(normalizedId, {
             select: [
-                'pm_projectid', 'pm_projectname', 'pm_projectcode',
+                'pm_projectid', 'pm_projectname',
                 '_pm_portfolio_value', '_pm_programme_value',
                 '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus',
                 'pm_plannedstartdate', 'pm_plannedenddate',
                 'pm_actualstartdate', 'pm_actualenddate',
-                'pm_approvedbudgeteur', 'pm_actualcosteur',
+                'pm_approvedbudget', 'pm_actualcost',
                 'pm_percentcomplete', 'pm_businessunit',
                 'pm_projectsponsor', 'pm_costragstatus',
                 'pm_scheduleragstatus', 'pm_benefitsragstatus',
@@ -182,13 +183,14 @@ export async function fetchProjectsFull(): Promise<ProjectModel[]> {
     const result = await Pm_projectsService.getAll({
         filter: "statecode eq 0",
         select: [
-            'pm_projectid', 'pm_projectname', 'pm_projectcode',
+            'pm_projectid', 'pm_projectname',
             '_pm_portfolio_value', '_pm_programme_value',
             '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus',
             'pm_plannedstartdate', 'pm_plannedenddate',
             'pm_actualstartdate', 'pm_actualenddate',
-            'pm_approvedbudgeteur', 'pm_actualcosteur',
+            'pm_approvedbudget', 'pm_actualcost',
             'pm_percentcomplete', 'pm_businessunit', 'pm_projectsponsor',
+            'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus',
         ],
         orderBy: ['pm_projectname asc'],
         top: 500,
@@ -197,13 +199,14 @@ export async function fetchProjectsFull(): Promise<ProjectModel[]> {
     if (projects.length === 0) {
         const fallbackResult = await Pm_projectsService.getAll({
             select: [
-                'pm_projectid', 'pm_projectname', 'pm_projectcode',
+                'pm_projectid', 'pm_projectname',
                 '_pm_portfolio_value', '_pm_programme_value',
                 '_pm_projectmanager_value', 'pm_projectmanagername', 'pm_projectphase', 'pm_ragstatus',
                 'pm_plannedstartdate', 'pm_plannedenddate',
                 'pm_actualstartdate', 'pm_actualenddate',
-                'pm_approvedbudgeteur', 'pm_actualcosteur',
+                'pm_approvedbudget', 'pm_actualcost',
                 'pm_percentcomplete', 'pm_businessunit', 'pm_projectsponsor',
+                'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus',
             ],
             orderBy: ['pm_projectname asc'],
             top: 500,
@@ -285,11 +288,12 @@ export async function createProject(payload: Partial<ProjectModel>): Promise<Pro
     const exclude = ['_pm_portfolio_value', '_pm_programme_value', 'pm_projectmanager', 'pm_projectid']
     for (const [key, value] of Object.entries(payload)) {
         if (value !== undefined && value !== null && value !== '' && !exclude.includes(key)) {
-            cleanPayload[key] = value
+            let parsedValue = value
+            if (['pm_ragstatus', 'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus', 'pm_projectphase'].includes(key)) {
+                parsedValue = Number(value)
+            }
+            cleanPayload[key] = parsedValue
         }
-    }
-    if (!cleanPayload.pm_projectcode) {
-        cleanPayload.pm_projectcode = await generateNextProjectCode()
     }
     if (payload._pm_portfolio_value) cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${normalizeLookupId(payload._pm_portfolio_value)})`
     if (payload._pm_programme_value) cleanPayload['pm_programme@odata.bind'] = `/pm_programmes(${normalizeLookupId(payload._pm_programme_value)})`
@@ -354,7 +358,11 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
     for (const [key, value] of Object.entries(changes)) {
         if (value !== undefined && value !== null && !exclude.includes(key)) {
             if (hasChanged(key, value)) {
-                cleanPayload[key] = value
+                let parsedValue = value
+                if (['pm_ragstatus', 'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus', 'pm_projectphase'].includes(key)) {
+                    parsedValue = Number(value)
+                }
+                cleanPayload[key] = parsedValue
             }
         }
     }
@@ -838,8 +846,8 @@ export async function recalculateProjectFinancials(projectId: string): Promise<P
             actual: acc.actual + Number(line.pm_actualspendeur || 0),
         }), { budget: 0, actual: 0 })
         const updated = await Pm_projectsService.update(projectId, {
-            pm_approvedbudgeteur: totals.budget,
-            pm_actualcosteur: totals.actual,
+            pm_approvedbudget: totals.budget,
+            pm_actualcost: totals.actual,
         } as any)
 
         const item = unwrapSingle<Pm_projects>(updated)

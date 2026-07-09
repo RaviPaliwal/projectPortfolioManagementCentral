@@ -20,9 +20,8 @@ import { useUser } from '@/context/UserContext'
 import { StatusTag } from '@/components/common'
 import {
   fetchPendingApprovalRequests,
-  fetchApprovalRequests,
 } from '@/services'
-import type { InitiativeModel, ApprovalRequestModel } from '@/types/dataverse'
+import type { InitiativeModel } from '@/types/dataverse'
 
 interface TaskGroup {
   label: string
@@ -39,7 +38,6 @@ export default function MyTasksWidget() {
   const isDark = theme.palette.mode === 'dark'
   const { currentUser } = useUser()
   const [pendingApprovals, setPendingApprovals] = useState<InitiativeModel[]>([])
-  const [approvalRequests, setApprovalRequests] = useState<ApprovalRequestModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -50,13 +48,9 @@ export default function MyTasksWidget() {
     }
     setLoading(true)
     setError(null)
-    Promise.all([
-      fetchPendingApprovalRequests(),
-      fetchApprovalRequests(),
-    ])
-      .then(([initiativesResult, requestsResult]) => {
+    fetchPendingApprovalRequests()
+      .then((initiativesResult) => {
         setPendingApprovals(initiativesResult)
-        setApprovalRequests(requestsResult)
       })
       .catch(() => setError('Unable to load task data.'))
       .finally(() => setLoading(false))
@@ -70,17 +64,7 @@ export default function MyTasksWidget() {
     )
   }, [pendingApprovals, currentUser?.fullname])
 
-  const myApprovalRequests = useMemo(() => {
-    if (!currentUser?.fullname) return []
-    const name = currentUser.fullname.toLowerCase()
-    return approvalRequests.filter(
-      (r) =>
-        r.pm_approvername?.toLowerCase() === name &&
-        String(r.pm_decisionstatus ?? '') === '1'
-    )
-  }, [approvalRequests, currentUser?.fullname])
-
-  const totalTasks = myInitiatives.length + myApprovalRequests.length
+  const totalTasks = myInitiatives.length
 
   const taskGroups: TaskGroup[] = [
     {
@@ -88,12 +72,6 @@ export default function MyTasksWidget() {
       count: myInitiatives.length,
       icon: <LightbulbIcon sx={{ fontSize: 14 }} />,
       color: '#f59e0b',
-    },
-    {
-      label: 'Approvals awaiting decision',
-      count: myApprovalRequests.length,
-      icon: <ScheduleIcon sx={{ fontSize: 14 }} />,
-      color: '#6366f1',
     },
   ]
 
@@ -219,48 +197,6 @@ export default function MyTasksWidget() {
                 </Box>
               </Paper>
             ))}
-
-            {/* Approval requests pending decision */}
-            {myApprovalRequests.slice(0, 3).map((req) => (
-              <Paper
-                key={req.pm_projectapprovalrequestid}
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  borderRadius: 1.15,
-                  borderLeft: '3px solid #6366f1',
-                  transition: 'all 0.15s ease',
-                  '&:hover': { bgcolor: isDark ? '#1e293b' : '#f8fafc' },
-                }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.25 }}>
-                      {req.pm_requesttitle || 'Untitled Request'}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <StatusTag
-                        icon={<ScheduleIcon sx={{ fontSize: 13 }} />}
-                        label="Awaiting Decision"
-                        size="small"
-                        color="info"
-                        variant="outlined"
-                        sx={{ fontWeight: 600, height: 22, fontSize: 11 }}
-                      />
-                      {req.pm_entitytypename && (
-                        <StatusTag
-                          label={req.pm_entitytypename}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontWeight: 600, height: 22, fontSize: 11 }}
-                        />
-                      )}
-                    </Box>
-                  </Box>
-                  <ScheduleIcon sx={{ fontSize: 20, color: '#6366f1', flexShrink: 0 }} />
-                </Box>
-              </Paper>
-            ))}
           </Box>
 
           {/* More tasks indicator */}
@@ -278,7 +214,7 @@ export default function MyTasksWidget() {
             </Box>
           )}
 
-          {myInitiatives.length + myApprovalRequests.length > 6 && (
+          {myInitiatives.length > 6 && (
             <Box sx={{ textAlign: 'center', mt: 1 }}>
               <Button
                 size="small"

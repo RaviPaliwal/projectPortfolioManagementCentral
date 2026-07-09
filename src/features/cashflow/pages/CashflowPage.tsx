@@ -11,7 +11,6 @@ import ReceiptIcon from '@mui/icons-material/Receipt'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 import {
-  fetchProgrammesForLookup,
   fetchProjectsForLookup,
   fetchFinancialPeriods,
   fetchCashflowEntries,
@@ -21,7 +20,7 @@ import {
   fetchBudgetLines,
 } from '@/services'
 import type { CashflowEntryModel, FinancialPeriodModel, BudgetLineModel } from '@/types/dataverse'
-import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
+import type { ProjectLookupItem } from '@/services'
 import { 
   PageHeader, 
   KpiCardRow, 
@@ -52,7 +51,6 @@ export default function CashflowPage() {
   // Filter state (Table state is managed by DataverseTable but we keep filters here for cross-component visibility)
   const [directionFilter, setDirectionFilter] = useState('')
   const [txnTypeFilter, setTxnTypeFilter] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
   const [selectedEntry, setSelectedEntry] = useState<CashflowEntryModel | null>(null)
 
   // Dialog state
@@ -61,7 +59,6 @@ export default function CashflowPage() {
   const [formData, setFormData] = useState<Partial<CashflowEntryModel>>({})
 
   // Lookup data state
-  const [programmes, setProgrammes] = useState<ProgrammeLookupItem[]>([])
   const [projects, setProjects] = useState<ProjectLookupItem[]>([])
   const [fiscalPeriods, setFiscalPeriods] = useState<FinancialPeriodModel[]>([])
   const [budgetLines, setBudgetLines] = useState<BudgetLineModel[]>([])
@@ -85,12 +82,10 @@ export default function CashflowPage() {
 
   useEffect(() => {
     Promise.all([
-      fetchProgrammesForLookup(),
       fetchProjectsForLookup(),
       fetchFinancialPeriods(),
       fetchBudgetLines(),
-    ]).then(([progs, projs, periods, bls]) => {
-      setProgrammes(progs)
+    ]).then(([projs, periods, bls]) => {
       setProjects(projs)
       setFiscalPeriods(periods)
       setBudgetLines(bls)
@@ -103,13 +98,12 @@ export default function CashflowPage() {
     let list = [...entries]
     if (directionFilter) list = list.filter(e => String(e.pm_transactiondirection) === directionFilter)
     if (txnTypeFilter) list = list.filter(e => String(e.pm_transactiontype) === txnTypeFilter)
-    if (categoryFilter) list = list.filter(e => String(e.pm_category) === categoryFilter)
     return list
-  }, [entries, directionFilter, txnTypeFilter, categoryFilter])
+  }, [entries, directionFilter, txnTypeFilter])
 
   const kpiCards: KpiCardItem[] = useMemo(() => {
-    const totalInflow = entries.filter(e => String(e.pm_transactiondirection) === '1').reduce((acc, curr) => acc + (curr.pm_amounteur ?? 0), 0)
-    const totalOutflow = entries.filter(e => String(e.pm_transactiondirection) === '0').reduce((acc, curr) => acc + (curr.pm_amounteur ?? 0), 0)
+    const totalInflow = entries.filter(e => String(e.pm_transactiondirection) === '1').reduce((acc, curr) => acc + (curr.pm_amount ?? 0), 0)
+    const totalOutflow = entries.filter(e => String(e.pm_transactiondirection) === '0').reduce((acc, curr) => acc + (curr.pm_amount ?? 0), 0)
     return [
       { label: 'Total Inflow', value: `\u20AC${(totalInflow / 1000).toFixed(0)}K`, icon: <ReceiptIcon />, color: 'success.main' },
       { label: 'Total Outflow', value: `\u20AC${(totalOutflow / 1000).toFixed(0)}K`, icon: <ReceiptIcon />, color: 'error.main' },
@@ -203,8 +197,6 @@ export default function CashflowPage() {
           onDirectionFilterChange={setDirectionFilter}
           txnTypeFilter={txnTypeFilter}
           onTxnTypeFilterChange={setTxnTypeFilter}
-          categoryFilter={categoryFilter}
-          onCategoryFilterChange={setCategoryFilter}
           onSelectEntry={setSelectedEntry}
           onEditEntry={(entry) => { setFormData(entry); setDialogMode('edit') }}
           onDeleteEntry={setDeleteTarget}
@@ -260,7 +252,6 @@ export default function CashflowPage() {
         formErrors={{}}
         onFieldChange={(field, val) => setFormData(f => ({ ...f, [field]: val }))}
         loading={saving}
-        programmes={programmes}
         projects={projects}
         fiscalPeriods={fiscalPeriods}
         budgetLines={budgetLines}

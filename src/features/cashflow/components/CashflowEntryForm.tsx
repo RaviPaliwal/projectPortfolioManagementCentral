@@ -15,12 +15,11 @@ import {
   MenuItem,
   Divider,
 } from '@mui/material'
-import CategoryIcon from '@mui/icons-material/Category'
 import DescriptionIcon from '@mui/icons-material/Description'
 import BusinessIcon from '@mui/icons-material/Business'
 import type { CashflowEntryModel, FinancialPeriodModel, BudgetLineModel } from '@/types/dataverse'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
-import { DIRECTION_FILTERS, TXN_TYPE_FILTERS, CATEGORY_FILTERS } from '../constants'
+import { DIRECTION_FILTERS, TXN_TYPE_FILTERS } from '../constants'
 
 interface CashflowEntryFormProps {
   open: boolean
@@ -30,7 +29,6 @@ interface CashflowEntryFormProps {
   onFieldChange: (field: keyof CashflowEntryModel, value: any) => void
   formErrors: Record<string, string>
   loading: boolean
-  programmes: ProgrammeLookupItem[]
   projects: ProjectLookupItem[]
   fiscalPeriods: FinancialPeriodModel[]
   budgetLines: BudgetLineModel[]
@@ -45,7 +43,6 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
   onFieldChange,
   formErrors,
   loading,
-  programmes,
   projects,
   fiscalPeriods,
   budgetLines,
@@ -53,10 +50,6 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
 }) => {
   const filteredProjects = useMemo(() => {
     let list = projects
-    if (formData._pm_programmelookup_value) {
-      const normalizedProgId = formData._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
-      list = projects.filter((proj) => proj._pm_programme_value?.replace(/[{}]/g, '').trim().toLowerCase() === normalizedProgId)
-    }
     // Always include the currently selected project if it exists
     if (formData._pm_project_value) {
       const currentProjId = formData._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
@@ -68,13 +61,12 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
           list = [...list, {
             pm_projectid: currentProjId,
             pm_projectname: formData.pm_projectname || 'Inactive Project',
-            _pm_programme_value: formData._pm_programmelookup_value
           }]
         }
       }
     }
     return list
-  }, [projects, formData._pm_programmelookup_value, formData._pm_project_value, formData.pm_projectname])
+  }, [projects, formData._pm_project_value, formData.pm_projectname])
 
   const filteredBudgetLines = useMemo(() => {
     let list = budgetLines
@@ -101,24 +93,7 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
     return list
   }, [budgetLines, formData._pm_project_value, formData._pm_budgetline_value, formData.pm_budgetlinename])
 
-  const resolvedProgrammes = useMemo(() => {
-    let list = programmes
-    if (formData._pm_programmelookup_value) {
-      const currentProgId = formData._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
-      if (!list.some(p => p.pm_programmeid.replace(/[{}]/g, '').trim().toLowerCase() === currentProgId)) {
-        const found = programmes.find(p => p.pm_programmeid.replace(/[{}]/g, '').trim().toLowerCase() === currentProgId)
-        if (found) {
-          list = [...list, found]
-        } else {
-          list = [...list, {
-            pm_programmeid: currentProgId,
-            pm_programmename: formData.pm_programmelookupname || 'Inactive Programme'
-          }]
-        }
-      }
-    }
-    return list
-  }, [programmes, formData._pm_programmelookup_value, formData.pm_programmelookupname])
+
 
   const resolvedFiscalPeriods = useMemo(() => {
     let list = fiscalPeriods
@@ -158,7 +133,7 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
           {/* Basic Info Section */}
           <Grid size={{ xs: 12 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CategoryIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+              <DescriptionIcon sx={{ fontSize: 16, color: 'primary.main' }} />
               Basic Information
             </Typography>
             <Divider sx={{ mb: 2 }} />
@@ -181,14 +156,14 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
               type="number"
               fullWidth
               size="small"
-              value={formData.pm_amounteur ?? ''}
-              onChange={(e) => onFieldChange('pm_amounteur', parseFloat(e.target.value) || 0)}
-              error={!!formErrors.pm_amounteur}
-              helperText={formErrors.pm_amounteur}
+              value={formData.pm_amount ?? ''}
+              onChange={(e) => onFieldChange('pm_amount', parseFloat(e.target.value) || 0)}
+              error={!!formErrors.pm_amount}
+              helperText={formErrors.pm_amount}
               slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
             />
           </Grid>
-          <Grid size={{ xs: 4 }}>
+          <Grid size={{ xs: 6 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Direction</InputLabel>
               <Select
@@ -203,7 +178,7 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 4 }}>
+          <Grid size={{ xs: 6 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Transaction Type</InputLabel>
               <Select
@@ -213,21 +188,6 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
                 sx={{ borderRadius: 1.5 }}
               >
                 {TXN_TYPE_FILTERS.filter((o) => o.value !== '').map((o) => (
-                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 4 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={String(formData.pm_category ?? '0')}
-                label="Category"
-                onChange={(e) => onFieldChange('pm_category', e.target.value)}
-                sx={{ borderRadius: 1.5 }}
-              >
-                {CATEGORY_FILTERS.filter((o) => o.value !== '').map((o) => (
                   <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
                 ))}
               </Select>
@@ -302,24 +262,7 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
             </Typography>
             <Divider sx={{ mb: 2 }} />
           </Grid>
-          <Grid size={{ xs: 6 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Programme</InputLabel>
-              <Select
-                value={formData._pm_programmelookup_value || ''}
-                label="Programme"
-                onChange={(e) => onFieldChange('_pm_programmelookup_value', e.target.value)}
-                sx={{ borderRadius: 1.5 }}
-              >
-                <MenuItem value=""><em>None</em></MenuItem>
-                {resolvedProgrammes.map((prog) => (
-                  <MenuItem key={prog.pm_programmeid} value={prog.pm_programmeid}>
-                    {prog.pm_programmename}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
+
           <Grid size={{ xs: 6 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Project</InputLabel>
@@ -351,18 +294,6 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
                 onChange={(e) => {
                   const val = e.target.value
                   onFieldChange('_pm_budgetline_value', val)
-                  if (val) {
-                    const selectedBL = budgetLines.find((bl) => bl.pm_budgetlineid === val)
-                    if (selectedBL) {
-                      const blCat = Number(selectedBL.pm_costcategory)
-                      let cashflowCat: string | number = '0'
-                      if (blCat === 0) cashflowCat = '0' // Staff -> Staff
-                      else if (blCat === 1) cashflowCat = '1' // Contractors -> Contractors
-                      else if (blCat === 2) cashflowCat = '2' // Licences -> Licences
-                      else if (blCat === 3) cashflowCat = '4' // Infrastructure -> Infrastructure
-                      onFieldChange('pm_category', cashflowCat)
-                    }
-                  }
                 }}
                 sx={{ borderRadius: 1.5 }}
               >

@@ -226,19 +226,19 @@
           "x-ms-schema-name": "OwningUser",
           "x-ms-read-only": true
         },
-        "pm_amounteur": {
+        "pm_amount": {
           "type": "string",
-          "title": "Amount (EUR)",
-          "x-ms-dataverse-attribute": "pm_amounteur",
+          "title": "Amount",
+          "x-ms-dataverse-attribute": "pm_amount",
           "x-ms-dataverse-type": "MoneyType",
-          "x-ms-schema-name": "pm_amounteur"
+          "x-ms-schema-name": "pm_Amount"
         },
-        "pm_amounteur_base": {
+        "pm_amount_base": {
           "type": "string",
-          "title": "Amount (EUR) (Base)",
-          "x-ms-dataverse-attribute": "pm_amounteur_base",
+          "title": "Amount (Base)",
+          "x-ms-dataverse-attribute": "pm_amount_base",
           "x-ms-dataverse-type": "MoneyType",
-          "x-ms-schema-name": "pm_amounteur_Base",
+          "x-ms-schema-name": "pm_amount_Base",
           "x-ms-read-only": true
         },
         "pm_budgetline": {
@@ -266,46 +266,6 @@
           "x-ms-dataverse-primary-id": true,
           "required": true,
           "x-ms-keyType": "primary"
-        },
-        "pm_category": {
-          "type": "string",
-          "title": "Category",
-          "x-ms-dataverse-attribute": "pm_category",
-          "x-ms-dataverse-type": "PicklistType",
-          "x-ms-schema-name": "pm_category",
-          "enum": [
-            "Staff",
-            "Contractors",
-            "Licences",
-            "Grants",
-            "Infrastructure"
-          ],
-          "x-ms-enum-values": [
-            0,
-            1,
-            2,
-            3,
-            4
-          ],
-          "Color": [
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "x-ms-optionsetmetadataid": "77d06d15-7934-48ae-86c7-dd71cb09b689",
-          "x-ms-isGlobal": false,
-          "x-ms-optionsetdisplayname": "Category",
-          "x-ms-optionSetType": "Picklist"
-        },
-        "pm_categoryname": {
-          "type": "string",
-          "title": "pm_categoryname",
-          "x-ms-dataverse-attribute": "pm_categoryname",
-          "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_categoryName",
-          "x-ms-read-only": true
         },
         "pm_description": {
           "type": "string",
@@ -347,22 +307,6 @@
           "x-ms-dataverse-type": "StringType",
           "x-ms-schema-name": "pm_invoicenumber",
           "maxLength": 100
-        },
-        "pm_programmelookup": {
-          "type": "string",
-          "title": "Programme",
-          "x-ms-dataverse-attribute": "pm_programmelookup",
-          "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_programmeLookup"
-        },
-        "pm_programmelookupname": {
-          "type": "string",
-          "title": "pm_programmelookupname",
-          "x-ms-dataverse-attribute": "pm_programmelookupname",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_programmeLookupName",
-          "x-ms-read-only": true,
-          "maxLength": 850
         },
         "pm_project": {
           "type": "string",

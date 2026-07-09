@@ -34,13 +34,12 @@ const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', cu
 
 const defaultProjectForm: Partial<ProjectModel> = {
   pm_projectname: '',
-  pm_projectcode: '',
   pm_projectmanager: '',
   pm_projectsponsor: '',
   pm_projectphase: '1',
   pm_ragstatus: '1',
-  pm_approvedbudgeteur: 0,
-  pm_actualcosteur: 0,
+  pm_approvedbudget: 0,
+  pm_actualcost: 0,
   pm_plannedstartdate: '',
   pm_plannedenddate: '',
   pm_actualstartdate: '',
@@ -92,8 +91,8 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
     // In edit mode, add back the current project's own budget since it was
     // subtracted from availableBudget in the parent's calculation and shouldn't
     // be counted against itself.
-    if (initialData?.pm_projectid && (initialData.pm_approvedbudgeteur ?? 0) > 0) {
-      available += initialData.pm_approvedbudgeteur ?? 0
+    if (initialData?.pm_projectid && (initialData.pm_approvedbudget ?? 0) > 0) {
+      available += initialData.pm_approvedbudget ?? 0
     }
     return { programmeBudget: progBudget, availableBudget: available }
   }, [selectedProgramme, initialData])
@@ -117,7 +116,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
   }, [form.pm_plannedstartdate, form.pm_plannedenddate, selectedProgramme])
 
   const hasDateErrors = !!dateErrors.startDate || !!dateErrors.endDate
-  const hasBudgetError = programmeBudgetInfo !== null && (form.pm_approvedbudgeteur ?? 0) > programmeBudgetInfo.availableBudget
+  const hasBudgetError = programmeBudgetInfo !== null && (form.pm_approvedbudget ?? 0) > programmeBudgetInfo.availableBudget
   const canSave = !!form.pm_projectname?.trim() && !hasDateErrors && !hasBudgetError
 
   // ── Filter programmes by selected portfolio ────────────────────────────
@@ -180,21 +179,9 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
         </Box>
 
         <Grid container spacing={2.5} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 8 }}>
+          <Grid size={{ xs: 12 }}>
             <TextField fullWidth label="Project name *" size="small" value={form.pm_projectname ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, pm_projectname: e.target.value }))} />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField
-              fullWidth
-              label="Project code"
-              size="small"
-              value={initialData?.pm_projectid ? (form.pm_projectcode ?? '') : '(Auto-generated)'}
-              disabled
-              slotProps={{
-                input: { readOnly: true },
-              }}
-            />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
@@ -370,15 +357,17 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
 
         <Grid container spacing={2.5} sx={{ mb: 4 }}>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth type="number" label="Approved Budget (EUR)" size="small" value={form.pm_approvedbudgeteur ?? 0}
-              onChange={(e) => setForm((p) => ({ ...p, pm_approvedbudgeteur: Number(e.target.value) }))}
+            <TextField fullWidth type="number" label="Approved Budget (EUR)" size="small" value={form.pm_approvedbudget ?? 0}
+              onChange={(e) => setForm((p) => ({ ...p, pm_approvedbudget: Number(e.target.value) }))}
               error={hasBudgetError}
-              helperText={hasBudgetError ? `Exceeds programme budget by ${currencyFormatter.format((form.pm_approvedbudgeteur ?? 0) - programmeBudgetInfo!.availableBudget)}` : ''}
+              helperText={hasBudgetError ? `Exceeds programme budget by ${currencyFormatter.format((form.pm_approvedbudget ?? 0) - programmeBudgetInfo!.availableBudget)}` : ''}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth type="number" label="Actual Cost (EUR)" size="small" value={form.pm_actualcosteur ?? 0}
-              onChange={(e) => setForm((p) => ({ ...p, pm_actualcosteur: Number(e.target.value) }))} />
+            <TextField fullWidth type="number" label="Actual Cost (EUR)" size="small" value={form.pm_actualcost ?? 0}
+              disabled
+              slotProps={{ input: { readOnly: true } }}
+            />
           </Grid>
         </Grid>
 
@@ -409,7 +398,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           <Box sx={{ mb: 2, p: 1.25, bgcolor: 'error.50', border: '1px solid', borderColor: 'error.200', display: 'flex', alignItems: 'center', gap: 1 }}>
             <WarningAmberIcon sx={{ fontSize: 18, color: 'error.main', flexShrink: 0 }} />
             <Typography variant="caption" color="error.dark" sx={{ fontWeight: 600 }}>
-              Approved budget exceeds programme budget by {currencyFormatter.format((form.pm_approvedbudgeteur ?? 0) - programmeBudgetInfo!.availableBudget)}.
+              Approved budget exceeds programme budget by {currencyFormatter.format((form.pm_approvedbudget ?? 0) - programmeBudgetInfo!.availableBudget)}.
             </Typography>
           </Box>
         )}

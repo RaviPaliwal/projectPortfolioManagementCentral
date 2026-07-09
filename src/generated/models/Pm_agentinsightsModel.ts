@@ -44,6 +44,9 @@ export interface Pm_agentinsightsBase {
   pm_priority?: Pm_agentinsightspm_priority;
   "pm_programme@odata.bind"?: string;
   "pm_project@odata.bind"?: string;
+  "pm_RegardingId@odata.bind"?: string;
+  pm_regardingidtype?: string;
+  "pm_Resource@odata.bind"?: string;
   "pm_risk@odata.bind"?: string;
   pm_sourceagent?: string;
   statecode: Pm_agentinsightsstatecode;
@@ -72,6 +75,9 @@ export interface Pm_agentinsights extends Pm_agentinsightsBase {
   pm_priorityname?: string;
   pm_programmename?: string;
   pm_projectname?: string;
+  pm_regardingidname?: string;
+  pm_regardingidyominame?: string;
+  pm_resourcename?: string;
   pm_riskname?: string;
   statecodename?: string;
   statuscodename?: string;
@@ -96,6 +102,10 @@ export interface Pm_agentinsights extends Pm_agentinsightsBase {
   _pm_programme_value?: string;
   pm_project?: object;
   _pm_project_value?: string;
+  pm_regardingid?: object;
+  _pm_regardingid_value?: string;
+  pm_resource?: object;
+  _pm_resource_value?: string;
   pm_risk?: object;
   _pm_risk_value?: string;
 }

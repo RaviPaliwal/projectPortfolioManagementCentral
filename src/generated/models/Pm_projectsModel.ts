@@ -51,10 +51,10 @@ export interface Pm_projectsBase {
   overriddencreatedon?: string;
   ownerid: string;
   owneridtype: string;
-  pm_actualcosteur?: number;
+  pm_actualcost?: number;
   pm_actualenddate?: string;
   pm_actualstartdate?: string;
-  pm_approvedbudgeteur?: number;
+  pm_approvedbudget?: number;
   pm_benefitsragstatus?: Pm_projectspm_benefitsragstatus;
   pm_businessunit?: string;
   pm_costragstatus?: Pm_projectspm_costragstatus;
@@ -63,9 +63,7 @@ export interface Pm_projectsBase {
   pm_plannedenddate?: string;
   pm_plannedstartdate?: string;
   "pm_portfolio@odata.bind"?: string;
-  pm_portfoliocode?: string;
   "pm_programme@odata.bind"?: string;
-  pm_programmecode?: string;
   pm_projectcode?: string;
   pm_projectid: string;
   "pm_ProjectManager@odata.bind"?: string;
@@ -97,8 +95,8 @@ export interface Pm_projects extends Pm_projectsBase {
   owneridname: string;
   owneridyominame: string;
   owningbusinessunitname: string;
-  pm_actualcosteur_base?: number;
-  pm_approvedbudgeteur_base?: number;
+  pm_actualcost_base?: number;
+  pm_approvedbudget_base?: number;
   pm_benefitsragstatusname?: string;
   pm_costragstatusname?: string;
   pm_isactivename?: string;

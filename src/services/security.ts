@@ -25,9 +25,8 @@ export function applySecurityMasking<T = any>(record: T, entityType: 'project' |
 
   if (entityType === 'project') {
     if (persona === 'TeamMember' || persona === 'Planner') {
-      result.pm_approvedbudgeteur = 0
-      result.pm_actualcosteur = 0
-      result.pm_contingencyamount = 0
+      result.pm_approvedbudget = 0
+      result.pm_actualcost = 0
     }
   }
 

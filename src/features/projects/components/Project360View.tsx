@@ -264,7 +264,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
 
       <PageHeader
         title={project.pm_projectname ?? 'Project Detail'}
-        subtitle={project.pm_projectmanager ? `Manager: ${project.pm_projectmanagername}` : project.pm_projectcode ? `Code: ${project.pm_projectcode}` : undefined}
+        subtitle={project.pm_projectmanager ? `Manager: ${project.pm_projectmanagername}` : undefined}
         actionElement={
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
             {canEdit && (
@@ -285,15 +285,6 @@ export const Project360View: React.FC<Project360ViewProps> = ({
             )}
             <StatusChip status={project.pm_ragstatus} type="rag" size="small" />
             <StatusTag label={phaseLabel(project.pm_projectphase)} size="small" variant="outlined" />
-            {project.pm_projectcode && (
-              <StatusTag
-                label={project.pm_projectcode}
-                size="small"
-                color="primary"
-                variant="outlined"
-                sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}
-              />
-            )}
           </Box>
         }
       />

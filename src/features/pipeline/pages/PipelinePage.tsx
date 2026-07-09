@@ -280,7 +280,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
       // Sum of child projects under this programme
       const childProjectBudgets = projects
         .filter((p) => p._pm_programme_value === _pm_programme_value)
-        .reduce((s, p) => s + (p.pm_approvedbudgeteur ?? 0), 0)
+        .reduce((s, p) => s + (p.pm_approvedbudget ?? 0), 0)
       // Sum of other Project initiatives under this programme
       const childInitiativeCosts = initiatives
         .filter((i) => i.pm_initiativetype === 0 && i._pm_programme_value === _pm_programme_value)
@@ -580,15 +580,14 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
       if (type === 0) {
         const projPayload = {
           pm_projectname: entityData.pm_projectname,
-          pm_projectcode: entityData.pm_projectcode,
           _pm_portfolio_value: entityData._pm_portfolio_value,
           _pm_programme_value: entityData._pm_programme_value,
           pm_projectmanager: entityData.pm_projectmanager,
           pm_projectsponsor: entityData.pm_projectsponsor,
           pm_projectphase: entityData.pm_projectphase,
           pm_ragstatus: entityData.pm_ragstatus,
-          pm_approvedbudgeteur: entityData.pm_approvedbudgeteur,
-          pm_actualcosteur: entityData.pm_actualcosteur,
+          pm_approvedbudget: entityData.pm_approvedbudget,
+          pm_actualcost: entityData.pm_actualcost,
           pm_plannedstartdate: entityData.pm_plannedstartdate,
           pm_plannedenddate: entityData.pm_plannedenddate,
           pm_actualstartdate: entityData.pm_actualstartdate,

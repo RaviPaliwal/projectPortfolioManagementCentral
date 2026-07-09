@@ -2,7 +2,7 @@ import { Box, Typography, Grid, Divider, Paper } from '@mui/material'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import { formatDate } from '@/utils/formatters'
 import type { CashflowEntryModel } from '@/types/dataverse'
-import { DIRECTION_LABELS, TXN_TYPE_LABELS, CATEGORY_LABELS } from '../constants'
+import { DIRECTION_LABELS, TXN_TYPE_LABELS } from '../constants'
 
 interface CashflowDetailProps {
   entry: CashflowEntryModel
@@ -31,7 +31,7 @@ export const CashflowDetail: React.FC<CashflowDetailProps> = ({ entry }) => {
             fontFamily: '"JetBrains Mono", monospace',
             color: String(entry.pm_transactiondirection) === '1' ? 'success.main' : 'error.main'
           }}>
-            {euroFormatter.format(entry.pm_amounteur ?? 0)}
+            {euroFormatter.format(entry.pm_amount ?? 0)}
           </Typography>
         </Grid>
         <Grid size={{ xs: 6 }}>
@@ -54,12 +54,6 @@ export const CashflowDetail: React.FC<CashflowDetailProps> = ({ entry }) => {
           </Typography>
         </Grid>
         <Grid size={{ xs: 6 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Category</Typography>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {CATEGORY_LABELS[String(entry.pm_category ?? '')] || '—'}
-          </Typography>
-        </Grid>
-        <Grid size={{ xs: 6 }}>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Invoice Number</Typography>
           <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>{entry.pm_invoicenumber || '—'}</Typography>
         </Grid>
@@ -75,10 +69,7 @@ export const CashflowDetail: React.FC<CashflowDetailProps> = ({ entry }) => {
 
         <Grid size={{ xs: 12 }}><Divider /></Grid>
 
-        <Grid size={{ xs: 6 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Programme</Typography>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>{entry.pm_programmelookupname || '—'}</Typography>
-        </Grid>
+
         <Grid size={{ xs: 6 }}>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Project</Typography>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>{entry.pm_projectname || '—'}</Typography>

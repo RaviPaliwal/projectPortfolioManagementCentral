@@ -131,7 +131,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
       // Sum of child projects under this programme
       const childProjectBudgets = projects
         .filter((p) => p._pm_programme_value === chosenProgrammeId)
-        .reduce((s, p) => s + (p.pm_approvedbudgeteur ?? 0), 0)
+        .reduce((s, p) => s + (p.pm_approvedbudget ?? 0), 0)
       // Sum of other Project initiatives under this programme (exclude current initiative)
       const childInitiativeCosts = allInitiatives
         .filter((i) => i.pm_initiativetype === 0 && i._pm_programme_value === chosenProgrammeId && i.pm_initiativeid !== initiative.pm_initiativeid)

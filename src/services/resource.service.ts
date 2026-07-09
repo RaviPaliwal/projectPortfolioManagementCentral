@@ -359,9 +359,10 @@ export async function fetchProjectsForSystemUser(systemUserId: string): Promise<
     const projectResult = await Pm_projectsService.getAll({
       filter: projectIds.map((id) => `pm_projectid eq '${id}'`).join(' or '),
       select: [
-        'pm_projectid', 'pm_projectname', 'pm_projectcode',
+        'pm_projectid', 'pm_projectname',
         '_pm_programme_value', '_pm_portfolio_value',
         'pm_ragstatus', 'pm_projectphase',
+        'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus',
       ],
       top: 200,
     })

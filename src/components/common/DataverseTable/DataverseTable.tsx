@@ -1,6 +1,10 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableRow, Paper, Box, TablePagination } from '@mui/material';
-import { TableShell, SearchFilterBar, ExportButton, TableHeader, TableFooter, type TableFooterTotal } from '@/components/common';
+import { TableShell } from '../TableShell/TableShell';
+import { SearchFilterBar } from '../SearchFilterBar/SearchFilterBar';
+import { ExportButton } from '../ExportButton/ExportButton';
+import { TableHeader } from '../TableHeader/TableHeader';
+import { TableFooter, type TableFooterTotal } from '../TableFooter/TableFooter';
 import { useDataGrid, type SortState } from '@/hooks/useDataGrid';
 import type { ReactNode } from 'react';
 

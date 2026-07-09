@@ -92,7 +92,6 @@ export interface IssueModel {
 export interface ProjectModel {
   pm_projectid?: string
   pm_projectname?: string
-  pm_projectcode?: string
   _pm_portfolio_value?: string
   _pm_programme_value?: string
   pm_projectmanager?: string
@@ -104,8 +103,8 @@ export interface ProjectModel {
   pm_plannedenddate?: string
   pm_actualstartdate?: string
   pm_actualenddate?: string
-  pm_approvedbudgeteur?: number
-  pm_actualcosteur?: number
+  pm_approvedbudget?: number
+  pm_actualcost?: number
   pm_percentcomplete?: number
   pm_businessunit?: string
   pm_projectsponsor?: string
@@ -306,19 +305,16 @@ export interface FundingSourceModel {
 export interface CashflowEntryModel {
   pm_cashflowentryid?: string
   pm_entryname?: string
-  pm_amounteur?: number
+  pm_amount?: number
   pm_transactiondate?: string
   pm_transactiondirection?: number | string
   pm_transactiontype?: number | string
-  pm_category?: number | string
   pm_description?: string
   pm_invoicenumber?: string
   pm_fiscalperiodname?: string
-  pm_programmelookupname?: string
   pm_projectname?: string
   pm_budgetlinename?: string
   _pm_fiscalperiod_value?: string
-  _pm_programmelookup_value?: string
   _pm_project_value?: string
   _pm_budgetline_value?: string
   statecode?: number
@@ -429,26 +425,6 @@ export interface ChangeRequestModel {
   _pm_changerequest_value?: string
   statecode?: number
   ownerid?: string
-}
-
-export interface ApprovalRequestModel {
-  pm_projectapprovalrequestid?: string
-  pm_requesttitle?: string
-  pm_approvalstage?: number | string
-  pm_approvalstagename?: string
-  pm_decisionstatus?: number | string
-  pm_decisionstatusname?: string
-  pm_entitytype?: number | string
-  pm_entitytypename?: string
-  pm_prioritylevel?: number | string
-  pm_prioritylevelname?: string
-  pm_approvername?: string
-  pm_decisiondate?: string
-  pm_decisionnotes?: string
-  pm_duedate?: string
-  pm_entityid?: string
-  pm_requestorname?: string
-  statecode?: number
 }
 
 export interface SkillModel {

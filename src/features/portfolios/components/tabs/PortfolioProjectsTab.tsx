@@ -38,8 +38,7 @@ export const PortfolioProjectsTab: React.FC<PortfolioProjectsTabProps> = ({
                     <OpenInNewIcon sx={{ fontSize: 14, color: 'primary.main', opacity: 0.6 }} />
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {proj.pm_projectcode ?? '—'}
-                    {proj.pm_projectmanager ? ` · ${proj.pm_projectmanager}` : ''}
+                    {proj.pm_projectmanager ? `Manager: ${proj.pm_projectmanager}` : ''}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 0.75 }}>

@@ -344,6 +344,14 @@
           "required": true,
           "maxLength": 850
         },
+        "pm_workflowphase": {
+          "type": "string",
+          "title": "Workflow Phase",
+          "x-ms-dataverse-attribute": "pm_workflowphase",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_WorkflowPhase",
+          "maxLength": 100
+        },
         "pm_workflowsteptemplateid": {
           "type": "string",
           "title": "Workflow Step Template",

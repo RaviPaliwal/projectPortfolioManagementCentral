@@ -278,14 +278,6 @@
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_portfolio"
         },
-        "pm_portfoliocode": {
-          "type": "string",
-          "title": "Portfolio",
-          "x-ms-dataverse-attribute": "pm_portfoliocode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_portfoliocode",
-          "maxLength": 100
-        },
         "pm_portfolioname": {
           "type": "string",
           "title": "pm_portfolioname",

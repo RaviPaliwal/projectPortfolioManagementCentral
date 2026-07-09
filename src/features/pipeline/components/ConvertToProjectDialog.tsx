@@ -84,15 +84,14 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
   // ── Form State ──────────────────────────────────────────────────────────
   const [form, setForm] = useState({
     pm_projectname: '',
-    pm_projectcode: '',
     _pm_portfolio_value: '',
     _pm_programme_value: '',
     pm_projectmanager: '',
     pm_projectsponsor: '',
     pm_projectphase: '3',
     pm_ragstatus: '1',
-    pm_approvedbudgeteur: 0,
-    pm_actualcosteur: 0,
+    pm_approvedbudget: 0,
+    pm_actualcost: 0,
     pm_plannedstartdate: '',
     pm_plannedenddate: '',
     pm_actualstartdate: '',
@@ -122,15 +121,14 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
     if (open && initiative) {
       setForm({
         pm_projectname: initiative.pm_name ?? '',
-        pm_projectcode: '',
         _pm_portfolio_value: initiative._pm_portfolio_value ?? '',
         _pm_programme_value: initiative._pm_programme_value ?? '',
         pm_projectmanager: '',
         pm_projectsponsor: initiative.pm_requestedbyname ?? '',
         pm_projectphase: initiative.pm_initiativetype === 2 ? '1' : '3',
         pm_ragstatus: '1',
-        pm_approvedbudgeteur: initiative.pm_estimatedcost ?? 0,
-        pm_actualcosteur: 0,
+        pm_approvedbudget: initiative.pm_estimatedcost ?? 0,
+        pm_actualcost: 0,
         pm_plannedstartdate: '',
         pm_plannedenddate: '',
         pm_actualstartdate: '',
@@ -168,7 +166,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
     const progBudget = selectedProgramme.pm_budgeteur ?? 0
     const usedByProjects = allProjects
       .filter(pj => normalizeLookupId(pj._pm_programme_value) === normalizeLookupId(selectedProgramme.pm_programmeid))
-      .reduce((s, pj) => s + (pj.pm_approvedbudgeteur ?? 0), 0)
+      .reduce((s, pj) => s + (pj.pm_approvedbudget ?? 0), 0)
     const availableBudget = Math.max(0, progBudget - usedByProjects)
     return { programmeBudget: progBudget, availableBudget }
   }, [selectedProgramme, allProjects])
@@ -193,7 +191,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
   }, [form.pm_plannedstartdate, form.pm_plannedenddate, selectedProgramme])
 
   const hasDateErrors = !!dateErrors.startDate || !!dateErrors.endDate
-  const hasBudgetError = programmeBudgetInfo !== null && form.pm_approvedbudgeteur > programmeBudgetInfo.availableBudget
+  const hasBudgetError = programmeBudgetInfo !== null && form.pm_approvedbudget > programmeBudgetInfo.availableBudget
   
   // Conditionally determine canSubmit based on Initiative Type
   const canSubmit = useMemo(() => {
@@ -669,7 +667,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Approved Budget (EUR)</Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
-                  {currencyFormatter.format(form.pm_approvedbudgeteur)}
+                  {currencyFormatter.format(form.pm_approvedbudget)}
                 </Typography>
               </Box>
             </Grid>
@@ -731,7 +729,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
             <Box sx={{ mb: 2, p: 1.25, bgcolor: alpha(theme.palette.error.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.error.main, 0.2), display: 'flex', alignItems: 'center', gap: 1 }}>
               <WarningAmberIcon sx={{ fontSize: 18, color: 'error.main', flexShrink: 0 }} />
               <Typography variant="caption" color="error.dark" sx={{ fontWeight: 600 }}>
-                Approved budget exceeds programme budget by {currencyFormatter.format(form.pm_approvedbudgeteur - programmeBudgetInfo!.availableBudget)}.
+                Approved budget exceeds programme budget by {currencyFormatter.format(form.pm_approvedbudget - programmeBudgetInfo!.availableBudget)}.
               </Typography>
             </Box>
           )}

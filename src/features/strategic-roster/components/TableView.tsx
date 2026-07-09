@@ -14,6 +14,7 @@ import {
   useTheme,
   alpha,
   Avatar,
+  IconButton,
 } from '@mui/material'
 import BusinessIcon from '@mui/icons-material/Business'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
@@ -21,6 +22,7 @@ import FolderIcon from '@mui/icons-material/Folder'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import { currencyFormatter } from '@/utils/formatters'
 import { normalizeLookupId } from '@/services'
+import LaunchIcon from '@mui/icons-material/Launch'
 
 const RAG_LABELS: Record<string, string> = {
   '0': 'Low',
@@ -117,7 +119,7 @@ const TableView: React.FC<TableViewProps> = ({ portfolios, programmes, projects,
           normalizeLookupId(pj._pm_programme_value) === normalizedProgId
         )
         // Compute programme-level allocated budget (sum of project budgets)
-        const progAllocated = progProjects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur ?? 0), 0)
+        const progAllocated = progProjects.reduce((sum, p) => sum + (p.pm_approvedbudget ?? 0), 0)
         if (progAllocated > 0) result[result.length - 1].allocatedBudget = progAllocated
 
         for (const proj of progProjects) {
@@ -127,9 +129,9 @@ const TableView: React.FC<TableViewProps> = ({ portfolios, programmes, projects,
             type: 'Project',
             parentName: prog.pm_programmename,
             ragStatus: proj.pm_ragstatus?.toString(),
-            allottedBudget: proj.pm_approvedbudgeteur ?? 0,
+            allottedBudget: proj.pm_approvedbudget ?? 0,
             allocatedBudget: 0,
-            actual: proj.pm_actualcosteur ?? 0,
+            actual: proj.pm_actualcost ?? 0,
             startDate: proj.pm_plannedstartdate,
             endDate: proj.pm_plannedenddate,
             level: 2,
@@ -217,16 +219,14 @@ const TableView: React.FC<TableViewProps> = ({ portfolios, programmes, projects,
           )}
           {rows.map((row, idx) => (
             <TableRow
-              key={row.id}
-              hover
-              onClick={() => onItemClick?.(row.id, row.type.toLowerCase(), row.name)}
-              sx={{
-                cursor: onItemClick ? 'pointer' : 'default',
-                bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
-                '&:hover': { bgcolor: 'action.selected' },
-                '& td': { px: 2.5, py: 1.25 },
-              }}
-            >
+                key={row.id}
+                hover
+                sx={{
+                  bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                  '&:hover': { bgcolor: 'action.selected' },
+                  '& td': { px: 2.5, py: 1.25 },
+                }}
+              >
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pl: row.level * 3 }}>
                   {getIcon(row.type)}
@@ -288,6 +288,15 @@ const TableView: React.FC<TableViewProps> = ({ portfolios, programmes, projects,
                 <Typography variant="caption" color="text.secondary">
                   {row.endDate ? new Date(row.endDate).toLocaleDateString() : '—'}
                 </Typography>
+              </TableCell>
+              <TableCell align="right" sx={{ px: 2.5, py: 1.25 }}>
+                {onItemClick ? (
+                  <Tooltip title={`Open ${row.name} details`}>
+                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); onItemClick?.(row.id, row.type.toLowerCase(), row.name) }} sx={{ color: 'text.disabled' }}>
+                      <LaunchIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Tooltip>
+                ) : '—'}
               </TableCell>
             </TableRow>
           ))}

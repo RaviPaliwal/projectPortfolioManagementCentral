@@ -108,8 +108,8 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
   }, [risks, issues])
 
   // Financial Stats
-  const budget = project.pm_approvedbudgeteur ?? 0
-  const actual = project.pm_actualcosteur ?? 0
+  const budget = project.pm_approvedbudget ?? 0
+  const actual = project.pm_actualcost ?? 0
   const variance = budget - actual
   const percentSpent = budget > 0 ? Math.round((actual / budget) * 100) : 0
 

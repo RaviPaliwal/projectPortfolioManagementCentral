@@ -534,6 +534,38 @@
           "x-ms-schema-name": "pm_ragstatusName",
           "x-ms-read-only": true
         },
+        "pm_regardingid": {
+          "type": "string",
+          "title": "Regarding",
+          "x-ms-dataverse-attribute": "pm_regardingid",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_RegardingId"
+        },
+        "pm_regardingidname": {
+          "type": "string",
+          "title": "pm_regardingidname",
+          "x-ms-dataverse-attribute": "pm_regardingidname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_RegardingIdName",
+          "x-ms-read-only": true,
+          "maxLength": 1000
+        },
+        "pm_regardingidtype": {
+          "type": "string",
+          "title": "pm_regardingidtype",
+          "x-ms-dataverse-attribute": "pm_regardingidtype",
+          "x-ms-dataverse-type": "EntityNameType",
+          "x-ms-schema-name": "pm_RegardingIdType"
+        },
+        "pm_regardingidyominame": {
+          "type": "string",
+          "title": "pm_regardingidyominame",
+          "x-ms-dataverse-attribute": "pm_regardingidyominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_RegardingIdYomiName",
+          "x-ms-read-only": true,
+          "maxLength": 1000
+        },
         "pm_resolutiondetails": {
           "type": "string",
           "title": "Resolution",

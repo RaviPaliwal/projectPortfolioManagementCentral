@@ -33,7 +33,6 @@ import {
   fetchDashboardMetrics,
   fetchProjectsFull,
   fetchPortfolioHierarchy,
-  fetchApprovalRequests,
   fetchCapacityAllocationData,
   fetchPlannedVsActualData,
   fetchUtilizationByProjectData,
@@ -53,7 +52,7 @@ import {
   KpiCardRow,
 } from '@/components/common'
 import { fontSizes } from '@/styles'
-import type { InitiativeModel, ApprovalRequestModel, PortfolioModel, ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
+import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
 import type { PipelineKpis } from '@/services'
 import { DashboardTasksWidget, BudgetHealthPanel, PipelineStageSummary, PortfolioHealthSnapshot } from '../components'
 import {
@@ -109,7 +108,6 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   // New data
   const [pipelineKpis, setPipelineKpis] = useState<PipelineKpis>({ totalActiveInitiatives: 0, pendingApprovals: 0, totalEstimatedCost: 0, approvedThisMonth: 0 })
   const [initiatives, setInitiatives] = useState<InitiativeModel[]>([])
-  const [approvalRequests, setApprovalRequests] = useState<ApprovalRequestModel[]>([])
   const [milestonesDue, setMilestonesDue] = useState(0)
   const [risks, setRisks] = useState<RiskModel[]>([])
   const [issues, setIssues] = useState<IssueModel[]>([])
@@ -135,7 +133,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     if (isRefresh) setRefreshing(true)
     try {
       // Global metrics for the whole dashboard (non-filtered)
-      const [dashboard, activeProjects, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData, periods, portfolioTrend] = await Promise.all([
+      const [dashboard, activeProjects, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, milestones, risksData, issuesData, periods, portfolioTrend] = await Promise.all([
         fetchDashboardMetrics({}),
         fetchProjectsFull(),
         fetchPortfolioHierarchy(),
@@ -145,7 +143,6 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         fetchDepartmentDemandData(),
         fetchPipelineKpis(),
         fetchInitiatives(),
-        fetchApprovalRequests(),
         fetchMilestonesDueThisMonth(),
         fetchAllRisks(),
         fetchAllIssues(),
@@ -178,7 +175,6 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       setProgrammeSnapshot(hierarchy.programmes.slice().sort(sortByRag).slice(0, 4))
       setPipelineKpis(pipeline)
       setInitiatives(initiativesData)
-      setApprovalRequests(allApprovalRequests)
       setMilestonesDue(milestones)
       setRisks(risksData)
       setIssues(issuesData)
@@ -358,7 +354,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{project.pm_projectname ?? 'Untitled'}</Typography>
                       <StatusChip status={project.pm_ragstatus} type="rag" />
                     </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{project.pm_projectcode ?? '—'}</Typography>
+
                     <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                       <StatusChip status={project.pm_projectphase} type="phase" />
                     </Box>

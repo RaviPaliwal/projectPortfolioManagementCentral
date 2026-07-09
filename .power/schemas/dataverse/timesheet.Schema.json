@@ -271,14 +271,6 @@
           "x-ms-schema-name": "pm_rejectionreason",
           "maxLength": 100
         },
-        "pm_reportingperiod": {
-          "type": "string",
-          "title": "Reporting Period",
-          "x-ms-dataverse-attribute": "pm_reportingperiod",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_reportingperiod",
-          "maxLength": 100
-        },
         "pm_resource": {
           "type": "string",
           "title": "Resource",

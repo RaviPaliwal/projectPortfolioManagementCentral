@@ -212,11 +212,7 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
               <Typography variant="h5" sx={{ fontWeight: 800 }}>
                 {project?.pm_projectname || 'Loading...'}
               </Typography>
-              {project?.pm_projectcode && (
-                <Typography variant="caption" color="text.secondary" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600, display: 'block', mt: 0.5, mb: 2.5 }}>
-                  {project.pm_projectcode}
-                </Typography>
-              )}
+
 
               <Grid container spacing={2.5}>
                 {/* Row 1: Non-editable fields */}

@@ -247,7 +247,7 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Actual Cost</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
-                      {project?.pm_actualcosteur != null ? currencyFormatter.format(project.pm_actualcosteur) : '—'}
+                      {project?.pm_actualcost != null ? currencyFormatter.format(project.pm_actualcost) : '—'}
                     </Typography>
                   </Box>
                 </Grid>
@@ -270,7 +270,7 @@ export const ResourceBudgetPlanningTaskModal: React.FC<ResourceBudgetPlanningTas
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Approved Budget</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
-                      {project?.pm_approvedbudgeteur != null ? currencyFormatter.format(project.pm_approvedbudgeteur) : '—'}
+                      {project?.pm_approvedbudget != null ? currencyFormatter.format(project.pm_approvedbudget) : '—'}
                     </Typography>
                   </Box>
                 </Grid>

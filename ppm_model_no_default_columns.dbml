@@ -64,13 +64,6 @@ Enum pm_budgetlinespm_expencecatagory {
   "OpEx"
 }
 
-Enum pm_cashflowentriespm_category {
-  "Staff"
-  "Contractors"
-  "Licences"
-  "Grants"
-  "Infrastructure"
-}
 
 Enum pm_cashflowentriespm_transactiondirection {
   "Outflow"
@@ -226,30 +219,6 @@ Enum pm_programmespm_ragstatus {
   "Red"
 }
 
-Enum pm_projectapprovalrequestspm_approvalstage {
-  "BusinessCaseApproval"
-  "BudgetRelease"
-  "ChangeApproval"
-  "RemediationApproval"
-  "PipelineApproval"
-}
-
-Enum pm_projectapprovalrequestspm_decisionstatus {
-  "Approved"
-  "Pending"
-  "Rejected"
-}
-
-Enum pm_projectapprovalrequestspm_entitytype {
-  "Project"
-  "ChangeRequest"
-}
-
-Enum pm_projectapprovalrequestspm_prioritylevel {
-  "High"
-  "Medium"
-  "Critical"
-}
 
 Enum pm_projectgatereviewspm_gatestage {
   "Gate1"
@@ -557,8 +526,7 @@ Table "pm_budgetlines" {
 
 Table "pm_cashflowentries" {
   "pm_cashflowentryid" uuid [pk, note: "Primary key"]
-  "pm_amounteur" decimal
-  "pm_category" pm_cashflowentriespm_category
+  "pm_amount" decimal
   "pm_description" varchar
   "pm_entryname" varchar
   "pm_invoicenumber" varchar
@@ -781,20 +749,6 @@ Table "pm_programmes" {
   "pm_programmemanager_id" uuid
 }
 
-Table "pm_projectapprovalrequests" {
-  "pm_projectapprovalrequestid" uuid [pk, note: "Primary key"]
-  "pm_approvalstage" pm_projectapprovalrequestspm_approvalstage
-  "pm_approvername" varchar
-  "pm_decisiondate" varchar
-  "pm_decisionnotes" varchar
-  "pm_decisionstatus" pm_projectapprovalrequestspm_decisionstatus
-  "pm_duedate" varchar
-  "pm_entityid" varchar
-  "pm_entitytype" pm_projectapprovalrequestspm_entitytype
-  "pm_prioritylevel" pm_projectapprovalrequestspm_prioritylevel
-  "pm_requestorname" varchar
-  "pm_requesttitle" varchar
-}
 
 Table "pm_projectgatereviews" {
   "pm_projectgatereviewid" uuid [pk, note: "Primary key"]
@@ -830,10 +784,10 @@ Table "pm_projectmilestones" {
 
 Table "pm_projects" {
   "pm_projectid" uuid [pk, note: "Primary key"]
-  "pm_actualcosteur" decimal
+  "pm_actualcost" decimal
   "pm_actualenddate" varchar
   "pm_actualstartdate" varchar
-  "pm_approvedbudgeteur" decimal
+  "pm_approvedbudget" decimal
   "pm_benefitsragstatus" pm_projectspm_benefitsragstatus
   "pm_businessunit" varchar
   "pm_costragstatus" pm_projectspm_costragstatus
@@ -841,9 +795,6 @@ Table "pm_projects" {
   "pm_percentcomplete" decimal
   "pm_plannedenddate" varchar
   "pm_plannedstartdate" varchar
-  "pm_portfoliocode" varchar
-  "pm_programmecode" varchar
-  "pm_projectcode" varchar
   "pm_projectname" varchar
   "pm_projectphase" pm_projectspm_projectphase
   "pm_projectpriority" decimal

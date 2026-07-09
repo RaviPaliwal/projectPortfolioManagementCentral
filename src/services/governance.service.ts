@@ -102,7 +102,7 @@ export async function fetchGateReviewById(id: string): Promise<GateReviewModel |
       if (projId) {
         const proj = await fetchProjectDetails(projId)
         if (proj) {
-          review.pm_projectcode = proj.pm_projectcode ? `[${proj.pm_projectcode}] ${proj.pm_projectname || ''}` : proj.pm_projectname
+          review.pm_projectcode = proj.pm_projectname
           review.pm_projectname = proj.pm_projectname
           review.pm_programmename = proj.pm_programmename
           review.pm_portfolioname = proj.pm_portfolioname
@@ -152,7 +152,7 @@ export async function fetchGateReviews(): Promise<GateReviewModel[]> {
         const projId = normalizeLookupId(r._pm_project_value)
         if (projId && projectMap.has(projId)) {
           const p = projectMap.get(projId)!
-          r.pm_projectcode = p.pm_projectcode ? `[${p.pm_projectcode}] ${p.pm_projectname || ''}` : p.pm_projectname
+          r.pm_projectcode = p.pm_projectname
           r.pm_projectname = p.pm_projectname
           r.pm_programmename = p.pm_programmename
           r.pm_portfolioname = p.pm_portfolioname
@@ -669,7 +669,7 @@ export async function evaluateGateTransitionPrerequisites(projectId: string, tar
     } 
     // Gate 2 (Planning -> Execution) Checks
     else if (stage.includes('gate 2') || stage.includes('execution')) {
-      const budgetVal = Number(project.pm_approvedbudgeteur ?? 0)
+      const budgetVal = Number(project.pm_approvedbudget ?? 0)
       if (budgetVal <= 0) {
         blockers.push('Approved Budget must be greater than €0.')
       }
@@ -714,16 +714,20 @@ export async function autoSubmitGateReviewRequest(projectId: string, currentPhas
   try {
     let gateStageName = ''
     let nextPhaseName = ''
+    let gateStageValue = 0
 
     if (currentPhase === 3) { // Initiation -> Planning
       gateStageName = 'Gate 1: Initiation to Planning'
       nextPhaseName = 'Planning'
+      gateStageValue = 0
     } else if (currentPhase === 1) { // Planning -> Execution
       gateStageName = 'Gate 2: Planning to Execution'
       nextPhaseName = 'Execution'
+      gateStageValue = 1
     } else if (currentPhase === 0) { // Execution -> Closure
       gateStageName = 'Gate 3: Execution to Closeout'
       nextPhaseName = 'Closure'
+      gateStageValue = 2
     } else {
       return null // Already complete or in invalid phase for gate submit
     }
@@ -736,21 +740,21 @@ export async function autoSubmitGateReviewRequest(projectId: string, currentPhas
 
     // Check if a request for this gate already exists in a pending or approved state
     const existingResult = await Pm_projectgatereviewsService.getAll({
-      filter: `_pm_project_value eq '${projectId}' and pm_gatestage eq '${gateStageName}' and statecode eq 0`,
+      filter: `_pm_project_value eq '${projectId}' and pm_gatestage eq ${gateStageValue} and statecode eq 0`,
       select: ['pm_projectgatereviewid', 'pm_reviewstatus'],
     })
     const existingList = unwrapList<any>(existingResult)
-    const hasAlreadySubmitted = existingList.some(g => g.pm_reviewstatus === 3 || g.pm_reviewstatus === 0 || g.pm_reviewstatus === '3' || g.pm_reviewstatus === '0')
+    const hasAlreadySubmitted = existingList.some(g => g.pm_reviewstatus === 1 || g.pm_reviewstatus === 0 || g.pm_reviewstatus === '1' || g.pm_reviewstatus === '0')
     if (hasAlreadySubmitted) {
       console.log(`[GovernanceService] Gate review request for ${gateStageName} already exists. Skipping auto-submit.`)
       return null
     }
 
-    // Create the Gate Review Request in "Pending Review" (value: 3)
+    // Create the Gate Review Request in "Scheduled" (value: 1)
     const newGateRequest = await createGateReview({
       pm_gatename: `${gateStageName} Request (Auto-Submitted)`,
-      pm_gatestage: gateStageName,
-      pm_reviewstatus: 3, // Pending Review
+      pm_gatestage: gateStageValue,
+      pm_reviewstatus: 1, // Scheduled
       pm_reviewnotes: 'Auto-submitted by the System Quality/Readiness Engine. All stage prerequisites met.',
       _pm_project_value: projectId,
     })

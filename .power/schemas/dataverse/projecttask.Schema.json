@@ -269,13 +269,6 @@
           "x-ms-dataverse-type": "IntegerType",
           "x-ms-schema-name": "pm_durationdays"
         },
-        "pm_lagdays": {
-          "type": "string",
-          "title": "Lag (Days)",
-          "x-ms-dataverse-attribute": "pm_lagdays",
-          "x-ms-dataverse-type": "IntegerType",
-          "x-ms-schema-name": "pm_lagdays"
-        },
         "pm_oncriticalpath": {
           "type": "string",
           "title": "On Critical Path",

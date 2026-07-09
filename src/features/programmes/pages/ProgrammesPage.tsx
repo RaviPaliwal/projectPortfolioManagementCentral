@@ -782,7 +782,7 @@ export default function ProgrammesPage() {
                     emptyIcon={<AccountTreeIcon />}
                     emptyTitle="No projects linked to this programme."
                     searchPlaceholder="Search projects..."
-                    searchFields={['pm_projectname', 'pm_projectcode']}
+                    searchFields={['pm_projectname']}
                   />
                 </Box>
               </Paper>

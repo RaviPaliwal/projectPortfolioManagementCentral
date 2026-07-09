@@ -234,6 +234,38 @@
           "x-ms-schema-name": "pm_businesscasedescription",
           "maxLength": 2000
         },
+        "pm_convertedtoid": {
+          "type": "string",
+          "title": "Converted To",
+          "x-ms-dataverse-attribute": "pm_convertedtoid",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_ConvertedToId"
+        },
+        "pm_convertedtoidname": {
+          "type": "string",
+          "title": "pm_convertedtoidname",
+          "x-ms-dataverse-attribute": "pm_convertedtoidname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_ConvertedToIdName",
+          "x-ms-read-only": true,
+          "maxLength": 1000
+        },
+        "pm_convertedtoidtype": {
+          "type": "string",
+          "title": "pm_convertedtoidtype",
+          "x-ms-dataverse-attribute": "pm_convertedtoidtype",
+          "x-ms-dataverse-type": "EntityNameType",
+          "x-ms-schema-name": "pm_ConvertedToIdType"
+        },
+        "pm_convertedtoidyominame": {
+          "type": "string",
+          "title": "pm_convertedtoidyominame",
+          "x-ms-dataverse-attribute": "pm_convertedtoidyominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_ConvertedToIdYomiName",
+          "x-ms-read-only": true,
+          "maxLength": 1000
+        },
         "pm_convertedtoreference": {
           "type": "string",
           "title": "Converted To",
@@ -436,13 +468,30 @@
           "x-ms-read-only": true,
           "maxLength": 200
         },
-        "pm_requestorname": {
+        "pm_sponsor": {
           "type": "string",
-          "title": "Requestor",
-          "x-ms-dataverse-attribute": "pm_requestorname",
+          "title": "Sponsor",
+          "x-ms-dataverse-attribute": "pm_sponsor",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_Sponsor"
+        },
+        "pm_sponsorname": {
+          "type": "string",
+          "title": "pm_sponsorname",
+          "x-ms-dataverse-attribute": "pm_sponsorname",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_requestorname",
-          "maxLength": 100
+          "x-ms-schema-name": "pm_SponsorName",
+          "x-ms-read-only": true,
+          "maxLength": 200
+        },
+        "pm_sponsoryominame": {
+          "type": "string",
+          "title": "pm_sponsoryominame",
+          "x-ms-dataverse-attribute": "pm_sponsoryominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_SponsorYomiName",
+          "x-ms-read-only": true,
+          "maxLength": 200
         },
         "pm_strategicalignmentscore": {
           "type": "string",

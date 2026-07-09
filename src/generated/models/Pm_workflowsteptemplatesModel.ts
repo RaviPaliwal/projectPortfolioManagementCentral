@@ -37,6 +37,7 @@ export interface Pm_workflowsteptemplatesBase {
   pm_tasktype?: Pm_workflowsteptemplatespm_tasktype;
   "pm_workflowLookup@odata.bind"?: string;
   pm_workflowname: string;
+  pm_workflowphase?: string;
   pm_workflowsteptemplateid: string;
   statecode: Pm_workflowsteptemplatesstatecode;
   statuscode?: Pm_workflowsteptemplatesstatuscode;

@@ -38,14 +38,13 @@ export const currency = (val?: number): string => {
 
 export const projectExportColumns: ExportColumn[] = [
   { key: 'pm_projectname', label: 'Project Name' },
-  { key: 'pm_projectcode', label: 'Code' },
   { key: 'pm_projectmanager', label: 'Manager' },
   { key: 'pm_projectsponsor', label: 'Sponsor' },
   { key: 'pm_businessunit', label: 'Business Unit' },
   { key: 'pm_projectphase', label: 'Phase', format: (v) => phaseLabel(v) },
   { key: 'pm_ragstatus', label: 'RAG', format: (v) => ['Medium', 'Low', 'High'][Number(v)] ?? '' },
-  { key: 'pm_approvedbudgeteur', label: 'Budget', format: (v) => v?.toLocaleString() ?? '' },
-  { key: 'pm_actualcosteur', label: 'Actual Cost', format: (v) => v?.toLocaleString() ?? '' },
+  { key: 'pm_approvedbudget', label: 'Budget', format: (v) => v?.toLocaleString() ?? '' },
+  { key: 'pm_actualcost', label: 'Actual Cost', format: (v) => v?.toLocaleString() ?? '' },
   { key: 'pm_percentcomplete', label: '% Complete', format: (v) => `${v ?? 0}%` },
   { key: 'pm_plannedstartdate', label: 'Start Date', format: (v) => v ? new Date(v).toLocaleDateString() : '' },
   { key: 'pm_plannedenddate', label: 'End Date', format: (v) => v ? new Date(v).toLocaleDateString() : '' },

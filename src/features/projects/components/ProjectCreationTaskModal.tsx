@@ -96,11 +96,7 @@ export const ProjectCreationTaskModal: React.FC<ProjectCreationTaskModalProps> =
               <Typography variant="h5" sx={{ fontWeight: 800 }}>
                 {project?.pm_projectname || 'Loading...'}
               </Typography>
-              {project?.pm_projectcode && (
-                <Typography variant="caption" color="text.secondary" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600, display: 'block', mt: 0.5, mb: 2.5 }}>
-                  {project.pm_projectcode}
-                </Typography>
-              )}
+
 
               <Grid container spacing={2.5}>
                 {/* Row 1: Non-editable fields */}
@@ -137,7 +133,7 @@ export const ProjectCreationTaskModal: React.FC<ProjectCreationTaskModalProps> =
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Approved Budget</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
-                      {project?.pm_approvedbudgeteur != null ? currencyFormatter.format(project.pm_approvedbudgeteur) : '—'}
+                      {project?.pm_approvedbudget != null ? currencyFormatter.format(project.pm_approvedbudget) : '—'}
                     </Typography>
                   </Box>
                 </Grid>
@@ -146,7 +142,7 @@ export const ProjectCreationTaskModal: React.FC<ProjectCreationTaskModalProps> =
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Actual Cost</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
-                      {project?.pm_actualcosteur != null ? currencyFormatter.format(project.pm_actualcosteur) : '—'}
+                      {project?.pm_actualcost != null ? currencyFormatter.format(project.pm_actualcost) : '—'}
                     </Typography>
                   </Box>
                 </Grid>

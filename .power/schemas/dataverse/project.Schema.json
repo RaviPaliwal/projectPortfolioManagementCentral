@@ -226,19 +226,19 @@
           "x-ms-schema-name": "OwningUser",
           "x-ms-read-only": true
         },
-        "pm_actualcosteur": {
+        "pm_actualcost": {
           "type": "string",
-          "title": "Actual Cost (EUR)",
-          "x-ms-dataverse-attribute": "pm_actualcosteur",
+          "title": "Actual Cost",
+          "x-ms-dataverse-attribute": "pm_actualcost",
           "x-ms-dataverse-type": "MoneyType",
-          "x-ms-schema-name": "pm_actualcosteur"
+          "x-ms-schema-name": "pm_ActualCost"
         },
-        "pm_actualcosteur_base": {
+        "pm_actualcost_base": {
           "type": "string",
-          "title": "Actual Cost (EUR) (Base)",
-          "x-ms-dataverse-attribute": "pm_actualcosteur_base",
+          "title": "Actual Cost (Base)",
+          "x-ms-dataverse-attribute": "pm_actualcost_base",
           "x-ms-dataverse-type": "MoneyType",
-          "x-ms-schema-name": "pm_actualcosteur_Base",
+          "x-ms-schema-name": "pm_actualcost_Base",
           "x-ms-read-only": true
         },
         "pm_actualenddate": {
@@ -255,19 +255,19 @@
           "x-ms-dataverse-type": "DateTimeType",
           "x-ms-schema-name": "pm_actualstartdate"
         },
-        "pm_approvedbudgeteur": {
+        "pm_approvedbudget": {
           "type": "string",
-          "title": "Approved Budget (EUR)",
-          "x-ms-dataverse-attribute": "pm_approvedbudgeteur",
+          "title": "Approved Budget",
+          "x-ms-dataverse-attribute": "pm_approvedbudget",
           "x-ms-dataverse-type": "MoneyType",
-          "x-ms-schema-name": "pm_approvedbudgeteur"
+          "x-ms-schema-name": "pm_ApprovedBudget"
         },
-        "pm_approvedbudgeteur_base": {
+        "pm_approvedbudget_base": {
           "type": "string",
-          "title": "Approved Budget (EUR) (Base)",
-          "x-ms-dataverse-attribute": "pm_approvedbudgeteur_base",
+          "title": "Approved Budget (Base)",
+          "x-ms-dataverse-attribute": "pm_approvedbudget_base",
           "x-ms-dataverse-type": "MoneyType",
-          "x-ms-schema-name": "pm_approvedbudgeteur_Base",
+          "x-ms-schema-name": "pm_approvedbudget_Base",
           "x-ms-read-only": true
         },
         "pm_benefitsragstatus": {
@@ -405,14 +405,6 @@
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_portfolio"
         },
-        "pm_portfoliocode": {
-          "type": "string",
-          "title": "Portfolio",
-          "x-ms-dataverse-attribute": "pm_portfoliocode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_portfoliocode",
-          "maxLength": 100
-        },
         "pm_portfolioname": {
           "type": "string",
           "title": "pm_portfolioname",
@@ -428,14 +420,6 @@
           "x-ms-dataverse-attribute": "pm_programme",
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_programme"
-        },
-        "pm_programmecode": {
-          "type": "string",
-          "title": "Programme",
-          "x-ms-dataverse-attribute": "pm_programmecode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_programmecode",
-          "maxLength": 100
         },
         "pm_programmename": {
           "type": "string",

@@ -78,8 +78,8 @@ export const mapRisk = (item: Pm_risks): RiskModel => {
     pm_responsestrategy: item.pm_responsestrategy,
     pm_riskcause: item.pm_riskcause,
     pm_riskeffect: item.pm_riskeffect,
-    pm_projectname: rawItem['_pm_project_value@OData.Community.Display.V1.FormattedValue'] as string | undefined,
-    _pm_project_value: rawItem._pm_project_value as string | undefined,
+    pm_projectname: rawItem['_pm_regardingid_value@OData.Community.Display.V1.FormattedValue'] as string | undefined,
+    _pm_project_value: rawItem._pm_regardingid_value as string | undefined,
     _pm_riskowner_value: item._pm_riskowner_value,
     statecode: item.statecode,
   }
@@ -135,7 +135,7 @@ export async function createRisk(payload: Partial<RiskModel> & { pm_projectid: s
       pm_riskstatus: 1,
       pm_identifieddate: new Date().toISOString().split('T')[0],
       pm_targetclosedate: payload.pm_targetclosedate,
-      "pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
+      "pm_regardingid_pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
       statecode: 0,
       statuscode: 1,
     }
@@ -274,7 +274,7 @@ export async function fetchAllRisks(): Promise<RiskModel[]> {
       'pm_inherentprobability', 'pm_inherentimpact', 'pm_inherentscore',
       'pm_residualprobability', 'pm_residualimpact', 'pm_residualscore',
       'pm_responsestrategy', 'pm_riskcause', 'pm_riskeffect',
-      '_pm_project_value', '_pm_riskowner_value',
+      '_pm_regardingid_value', '_pm_riskowner_value',
     ]
     const options: IGetAllOptions = {
       select: selectFields,
@@ -321,7 +321,7 @@ export async function fetchRisksForSystemUser(systemUserId: string): Promise<Ris
     // 2. Build filters: (projects allocated) OR (owned risks)
     const conditions: string[] = [`_pm_riskowner_value eq '${resourceId}'`]
     if (projectIds.length > 0) {
-      const projectConditions = projectIds.map(id => `_pm_project_value eq '${id}'`).join(' or ')
+      const projectConditions = projectIds.map(id => `_pm_regardingid_value eq '${id}'`).join(' or ')
       conditions.push(`(${projectConditions})`)
     }
     const filterStr = `statecode eq 0 and (${conditions.join(' or ')})`
@@ -333,7 +333,7 @@ export async function fetchRisksForSystemUser(systemUserId: string): Promise<Ris
       'pm_inherentprobability', 'pm_inherentimpact', 'pm_inherentscore',
       'pm_residualprobability', 'pm_residualimpact', 'pm_residualscore',
       'pm_responsestrategy', 'pm_riskcause', 'pm_riskeffect',
-      '_pm_project_value', '_pm_riskowner_value',
+      '_pm_regardingid_value', '_pm_riskowner_value',
     ]
 
     const result = await Pm_risksService.getAll({
@@ -370,7 +370,7 @@ export async function createRiskFull(payload: Partial<RiskModel>): Promise<RiskM
     if (payload._pm_project_value) {
       const projectId = normalizeLookupId(payload._pm_project_value)
       if (projectId) {
-        cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+        cleanPayload['pm_regardingid_pm_project@odata.bind'] = `/pm_projects(${projectId})`
       }
     }
     if (payload._pm_riskowner_value) {

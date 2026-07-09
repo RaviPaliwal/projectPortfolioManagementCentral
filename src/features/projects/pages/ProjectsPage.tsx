@@ -130,7 +130,7 @@ export default function ProjectsPage() {
         const progBudget = p.pm_budgeteur ?? 0
         const allocatedToProjects = projList
           .filter(pj => normalizeLookupId(pj._pm_programme_value) === normalizeLookupId(p.pm_programmeid!))
-          .reduce((sum, pj) => sum + (pj.pm_approvedbudgeteur ?? 0), 0)
+          .reduce((sum, pj) => sum + (pj.pm_approvedbudget ?? 0), 0)
         return {
           id: p.pm_programmeid!,
           name: p.pm_programmename!,
@@ -254,13 +254,22 @@ export default function ProjectsPage() {
     // Determine the ID: either from the updated form data or the state
     const targetId = form.pm_projectid || editingProject?.pm_projectid
     
+    const sanitizedForm = {
+      ...form,
+      pm_ragstatus: form.pm_ragstatus != null ? Number(form.pm_ragstatus) : undefined,
+      pm_costragstatus: form.pm_costragstatus != null ? Number(form.pm_costragstatus) : undefined,
+      pm_scheduleragstatus: form.pm_scheduleragstatus != null ? Number(form.pm_scheduleragstatus) : undefined,
+      pm_benefitsragstatus: form.pm_benefitsragstatus != null ? Number(form.pm_benefitsragstatus) : undefined,
+      pm_projectphase: form.pm_projectphase != null ? Number(form.pm_projectphase) : undefined,
+    }
+
     setIsSavingProject(true)
     try {
       let projectId = targetId
       if (targetId) {
         // Perform update — persist to server
         try {
-          await updateProject(targetId, form)
+          await updateProject(targetId, sanitizedForm)
         } catch (err) {
           // updateProject can throw even when the Dataverse update itself succeeded
           // (e.g. the follow-up fetchProjectDetails fails). We still update the UI
@@ -277,7 +286,7 @@ export default function ProjectsPage() {
             normalizeLookupId(p.pm_projectid) === normalizeLookupId(targetId)
               ? {
                   ...p,
-                  ...form,
+                  ...sanitizedForm,
                   pm_projectmanagername: selectedUser ? selectedUser.fullname : p.pm_projectmanagername,
                   _pm_projectmanager_value: form.pm_projectmanager,
                 }
@@ -289,7 +298,7 @@ export default function ProjectsPage() {
         if (selectedProject && normalizeLookupId(targetId) === normalizeLookupId(selectedProject.pm_projectid)) {
            setSelectedProject((prev) => prev ? {
              ...prev,
-             ...form,
+             ...sanitizedForm,
              pm_projectmanagername: selectedUser ? selectedUser.fullname : prev.pm_projectmanagername,
              _pm_projectmanager_value: form.pm_projectmanager,
            } : prev)
@@ -299,7 +308,7 @@ export default function ProjectsPage() {
         loadData()
       } else {
         // Perform creation
-        const created = await createProject(form)
+        const created = await createProject(sanitizedForm)
         if (created) {
           projectId = created.pm_projectid
           setSuccessMsg('Project created successfully.')
@@ -582,7 +591,7 @@ export default function ProjectsPage() {
     },
     {
       label: 'Total Active Budget',
-      value: currency(projects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur ?? 0), 0)),
+      value: currency(projects.reduce((sum, p) => sum + (p.pm_approvedbudget ?? 0), 0)),
       icon: <AttachMoneyIcon />,
       color: 'primary.main',
     },

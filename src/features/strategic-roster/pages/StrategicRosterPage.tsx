@@ -38,6 +38,7 @@ import ZoomOutIcon from '@mui/icons-material/ZoomOut'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import LaunchIcon from '@mui/icons-material/Launch'
+import CrisisAlertIcon from '@mui/icons-material/CrisisAlert'
 import FilterAltIcon from '@mui/icons-material/FilterAlt'
 import DownloadIcon from '@mui/icons-material/Download'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
@@ -45,7 +46,6 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import CancelIcon from '@mui/icons-material/Cancel'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import GridViewIcon from '@mui/icons-material/GridView'
-import TableChartIcon from '@mui/icons-material/TableChart'
 import AccountTreeIconOutlined from '@mui/icons-material/AccountTreeOutlined'
 
 import { fetchPortfolioHierarchy, normalizeLookupId } from '@/services'
@@ -56,7 +56,7 @@ import { currencyFormatter } from '@/utils/formatters'
 import { navigateToModule } from '@/utils/navigation'
 import { fontSizes } from '@/styles'
 import CardView from '../components/CardView'
-import TableView from '../components/TableView'
+// TableView removed per request (table view is no longer available)
 import TreeView from '../components/TreeView'
 
 // ── Components ──────────────────────────────────────────────────────────────
@@ -442,8 +442,10 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
     return [
       { label: 'Strategic Portfolios', value: data.portfolios.length, icon: <BusinessIcon />, color: theme.palette.primary.main },
       { label: 'Active Programmes', value: data.programmes.length, icon: <AccountTreeIcon />, color: theme.palette.secondary.main },
+      { label: 'Total Projects', value: data.projects.length, icon: <FolderIcon />, color: theme.palette.info.main },
       // FIX 3 (continued): currencyFormatter.format() instead of currencyFormatter()
       { label: 'Asset Under Management', value: currencyFormatter.format(totalBudget), icon: <TrendingUpIcon />, color: theme.palette.success.main },
+      { label: 'At-risk Projects', value: atRisk, icon: <CrisisAlertIcon />, color: theme.palette.error.main },
       // FIX 1 (continued): CalendarTodayIcon now imported above
       { label: 'Delivery Completion', value: `${Math.round(avgComplete)}%`, icon: <CalendarTodayIcon />, color: theme.palette.info.main },
     ]
@@ -533,7 +535,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
       <Box sx={{ pb: 4 }}>
         <Grid container spacing={3} sx={{ mb: 2 }}>
           {kpis.map((kpi, idx) => (
-            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
+            <Grid size={{ xs: 12, sm: 6, md: 2 }} key={idx}>
               <Paper
                 variant="outlined"
                 sx={{
@@ -759,9 +761,6 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
               <ToggleButton value="cards" aria-label="Card view">
                 <Tooltip title="Cards"><GridViewIcon fontSize="small" /></Tooltip>
               </ToggleButton>
-              <ToggleButton value="table" aria-label="Table view">
-                <Tooltip title="Table"><TableChartIcon fontSize="small" /></Tooltip>
-              </ToggleButton>
               <ToggleButton value="tree" aria-label="Tree view">
                 <Tooltip title="Tree"><AccountTreeIconOutlined fontSize="small" /></Tooltip>
               </ToggleButton>
@@ -921,7 +920,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                               (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
                             )
                             const isProgExpanded = expandedItems.has(progId)
-                            const progAllocated = projects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur ?? 0), 0)
+                            const progAllocated = projects.reduce((sum, p) => sum + (p.pm_approvedbudget ?? 0), 0)
 
                             return (
                               <Box key={progId}>
@@ -953,8 +952,8 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                                       plannedStartDate={proj.pm_plannedstartdate}
                                       plannedEndDate={proj.pm_plannedenddate}
                                       ragStatus={proj.pm_ragstatus?.toString()}
-                                      allottedBudget={proj.pm_approvedbudgeteur}
-                                      actual={proj.pm_actualcosteur}
+                                      allottedBudget={proj.pm_approvedbudget}
+                                      actual={proj.pm_actualcost}
                                       level={2}
                                       minDate={minDate}
                                       totalDays={totalDays}
@@ -992,23 +991,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
             />
           )}
 
-          {viewMode === 'table' && (
-            <TableView
-              portfolios={filteredPortfolios}
-              programmes={data.programmes.filter(pr => 
-                (!selectedYear || isEntityInYear(pr.pm_startdate, pr.pm_enddate, selectedYear)) &&
-                (!ragFilter || String(pr.pm_ragstatus ?? '') === ragFilter || data.projects.some(pj => normalizeLookupId(pj._pm_programme_value) === normalizeLookupId(pr.pm_programmeid) && String(pj.pm_ragstatus ?? '') === ragFilter))
-              )}
-              projects={data.projects.filter(pj => 
-                (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
-                (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
-              )}
-              onItemClick={(id, type, name) => {
-                const modMap: Record<string, string> = { portfolio: 'Portfolio', programme: 'Programme', project: 'Project' }
-                navigateToModule(modMap[type], id)
-              }}
-            />
-          )}
+          {/* Table view removed per user request */}
 
           {viewMode === 'tree' && (
             <TreeView

@@ -44,9 +44,6 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
       format: (val: any, project: ProjectModel) => (
         <Box>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>{val}</Typography>
-          {project.pm_projectcode && (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{project.pm_projectcode}</Typography>
-          )}
         </Box>
       )
     },
@@ -106,7 +103,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
   }, [projects, phaseFilter])
 
   const totals = useMemo(() => [
-    { label: 'Total budget', value: currency(filteredProjects.reduce((s, p) => s + (p.pm_approvedbudgeteur ?? 0), 0)) }
+    { label: 'Total budget', value: currency(filteredProjects.reduce((s, p) => s + (p.pm_approvedbudget ?? 0), 0)) }
   ], [filteredProjects])
 
   const actions = useCallback((project: ProjectModel) => (
@@ -148,7 +145,7 @@ export const ProjectGrids: React.FC<ProjectGridsProps> = ({
       columns={columns}
       loading={loading}
       searchPlaceholder="Search projects..."
-      searchFields={['pm_projectname', 'pm_projectmanagername', 'pm_projectcode', 'pm_businessunit']}
+      searchFields={['pm_projectname', 'pm_projectmanagername', 'pm_businessunit']}
       emptyIcon={<AccountTreeIcon />}
       emptyTitle="No projects found"
       onRowClick={onRowClick}
