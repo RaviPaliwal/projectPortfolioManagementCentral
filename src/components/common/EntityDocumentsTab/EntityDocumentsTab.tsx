@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react'
 import {
   Box,
   Typography,
@@ -64,13 +64,29 @@ const getFileColor = (fileName: string): string => {
   }
 }
 
+export interface EntityDocumentsTabRef {
+  triggerUpload: () => void
+}
+
 interface EntityDocumentsTabProps {
   entityId: string
   moduleName: string
   canEdit?: boolean
+  hideUploadIfNotEmpty?: boolean
+  onDocumentsChange?: (docs: Pm_documents[]) => void
 }
 
-export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: EntityDocumentsTabProps) {
+export const EntityDocumentsTab = forwardRef<EntityDocumentsTabRef, EntityDocumentsTabProps>(
+  (
+    {
+      entityId,
+      moduleName,
+      canEdit = true,
+      hideUploadIfNotEmpty = false,
+      onDocumentsChange,
+    },
+    ref
+  ) => {
   const theme = useTheme()
   const { currentUser } = useUser()
   const isDark = theme.palette.mode === 'dark'
@@ -84,6 +100,12 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
   // Drag and drop state
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useImperativeHandle(ref, () => ({
+    triggerUpload: () => {
+      triggerFileBrowser()
+    },
+  }))
 
   // Delete modal state
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; docId: string | null; docName: string }>({
@@ -116,12 +138,13 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
     try {
       const docs = await fetchDocumentsForEntity(moduleName, entityId)
       setDocuments(docs)
+      onDocumentsChange?.(docs)
     } catch (err) {
       setError('Unable to load documents.')
     } finally {
       setLoading(false)
     }
-  }, [entityId, moduleName])
+  }, [entityId, moduleName, onDocumentsChange])
 
   useEffect(() => {
     loadDocuments()
@@ -272,8 +295,18 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
       {error && <Alert severity="error" sx={{ borderRadius: 1.5 }} onClose={() => setError(null)}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ borderRadius: 1.5 }} onClose={() => setSuccess(null)}>{success}</Alert>}
 
-      {/* ── 1. Premium Drag & Drop Area ── */}
       {canEdit && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          style={{ display: 'none' }}
+          onChange={handleFileInputChange}
+        />
+      )}
+
+      {/* ── 1. Premium Drag & Drop Area ── */}
+      {canEdit && (!hideUploadIfNotEmpty || documents.length === 0) && (
         <Paper
           variant="outlined"
           onDragEnter={handleDrag}
@@ -304,13 +337,6 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
             justifyContent: 'center',
           }}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            style={{ display: 'none' }}
-            onChange={handleFileInputChange}
-          />
           <Box
             sx={{
               width: 56,
@@ -349,9 +375,13 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
 
       {/* ── 2. Files List ── */}
       <Box sx={{ flex: 1 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
-          Documents ({documents.length})
-        </Typography>
+        {!hideUploadIfNotEmpty && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              Documents ({documents.length})
+            </Typography>
+          </Box>
+        )}
 
         {loading && documents.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -510,7 +540,7 @@ export function EntityDocumentsTab({ entityId, moduleName, canEdit = true }: Ent
       />
     </Box>
   )
-}
+})
 
 EntityDocumentsTab.displayName = 'EntityDocumentsTab'
 export default EntityDocumentsTab

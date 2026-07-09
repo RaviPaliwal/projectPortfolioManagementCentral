@@ -184,7 +184,7 @@ export function TimesheetGrid({
           label="Status"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          slotProps={{ select: { native: true } }}
+          slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
           sx={{ minWidth: 150 }}
         >
           {STATUS_FILTER_OPTIONS.map((opt) => (

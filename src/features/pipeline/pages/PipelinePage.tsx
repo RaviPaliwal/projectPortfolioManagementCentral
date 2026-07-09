@@ -1014,6 +1014,31 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
           <PageHeader
             title={selectedInitiative?.pm_name ?? ''}
             subtitle={selectedInitiative?.pm_requestedbyname ? `Sponsor: ${selectedInitiative.pm_requestedbyname}` : undefined}
+            action={selectedInitiative.pm_convertedtoreference ? {
+              label: `Go to Converted ${selectedInitiative.pm_initiativetype === 1 ? 'Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Portfolio' : 'Project'}`,
+              onClick: () => {
+                const targetRef = selectedInitiative.pm_convertedtoreference;
+                if (!targetRef) return;
+                if (selectedInitiative.pm_initiativetype === 1) {
+                  sessionStorage.setItem('preselectProgrammeId', targetRef);
+                  if (onNavigate) onNavigate('programmes');
+                } else if (selectedInitiative.pm_initiativetype === 2) {
+                  sessionStorage.setItem('preselectPortfolioId', targetRef);
+                  if (onNavigate) onNavigate('portfolios');
+                } else {
+                  sessionStorage.setItem('preselectProjectId', targetRef);
+                  if (onNavigate) onNavigate('projects');
+                }
+              },
+              variant: 'contained',
+              color: 'success'
+            } : String(selectedInitiative.pm_pipelinestatus) === '2' ? {
+              label: 'Submit for Approval',
+              onClick: handleResubmitForApproval,
+              disabled: actionLoading,
+              variant: 'contained',
+              color: 'primary'
+            } : undefined}
           />
 
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: -2, mb: 1.5 }}>
@@ -1044,8 +1069,10 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
             moduleName={MODULE_NAMES.PIPELINE.value}
           />
 
-          {/* Converted Entity Banner */}
-          {selectedInitiative.pm_convertedtoreference && (
+
+
+          {/* Approved Info Bar */}
+          {String(selectedInitiative.pm_pipelinestatus) === '0' && !selectedInitiative.pm_convertedtoreference && (
             <Paper
               variant="outlined"
               sx={{
@@ -1058,19 +1085,20 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
                 gap: 2,
-                mb: 3
+                mb: 3,
+                boxShadow: (theme) => `0 2px 12px ${alpha(theme.palette.success.main, 0.08)}`
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>
-                  <TransformIcon sx={{ color: '#fff' }} />
+                <Avatar sx={{ bgcolor: 'success.main', color: '#fff', width: 40, height: 40 }}>
+                  <TransformIcon sx={{ fontSize: 20 }} />
                 </Avatar>
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'success.main' }}>
-                    Converted to {selectedInitiative.pm_initiativetype === 1 ? 'Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Portfolio' : 'Project'}
+                    Pipeline Approved
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    This pipeline initiative has been successfully converted.
+                    This initiative is approved. You can now execute it by converting it to a full {selectedInitiative.pm_initiativetype === 1 ? 'Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Portfolio' : 'Project'}.
                   </Typography>
                 </Box>
               </Box>
@@ -1078,40 +1106,71 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
                 variant="contained"
                 color="success"
                 size="small"
-                onClick={() => {
-                  const targetRef = selectedInitiative.pm_convertedtoreference;
-                  if (!targetRef) return;
-                  if (selectedInitiative.pm_initiativetype === 1) {
-                    sessionStorage.setItem('preselectProgrammeId', targetRef);
-                    if (onNavigate) onNavigate('programmes');
-                  } else if (selectedInitiative.pm_initiativetype === 2) {
-                    sessionStorage.setItem('preselectPortfolioId', targetRef);
-                    if (onNavigate) onNavigate('portfolios');
-                  } else {
-                    sessionStorage.setItem('preselectProjectId', targetRef);
-                    if (onNavigate) onNavigate('projects');
-                  }
-                }}
+                onClick={handleConvertToProject}
+                disabled={actionLoading}
                 sx={{ fontWeight: 600 }}
               >
-                Go to Converted {selectedInitiative.pm_initiativetype === 1 ? 'Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Portfolio' : 'Project'}
+                {actionLoading ? 'Processing...' : selectedInitiative.pm_initiativetype === 1 ? 'Convert to Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Convert to Portfolio' : 'Convert to Project'}
               </Button>
             </Paper>
           )}
 
-          {/* Main Grid Layout: Left Column (70%) and Right Column (30%) */}
-          <Grid container spacing={3}>
-            {/* Left Column: 70% Width */}
-            <Grid size={{ xs: 12, lg: 8.4 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Overview Card */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+          {/* Deferred/Draft Info Bar */}
+          {String(selectedInitiative.pm_pipelinestatus) === '2' && (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2.5,
+                borderRadius: '16px',
+                borderColor: 'primary.main',
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.05)' : 'rgba(25, 118, 210, 0.02)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 2,
+                mb: 3,
+                boxShadow: (theme) => `0 2px 12px ${alpha(theme.palette.primary.main, 0.08)}`
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ bgcolor: 'primary.main', color: '#fff', width: 40, height: 40 }}>
+                  <RateReviewIcon sx={{ fontSize: 20 }} />
+                </Avatar>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                    Submission Ready
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    This initiative is currently in deferred/draft status. Submit it to the board to start the workflow review process.
+                  </Typography>
+                </Box>
+              </Box>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={handleResubmitForApproval}
+                disabled={actionLoading}
+                sx={{ fontWeight: 600 }}
+              >
+                {actionLoading ? 'Submitting...' : 'Submit for Approval'}
+              </Button>
+            </Paper>
+          )}
+
+          {/* Main Grid Layout: Overview, Approval Tasks side-by-side; Supporting Documents below */}
+          <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch', mt: 1.5 }}>
+            {/* Overview - 6/12 Width */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
                 <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     <DescriptionIcon sx={{ fontSize: 18, color: 'success.main' }} /> Overview
                   </Typography>
                 </Box>
                 <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5, flexGrow: 1 }}>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr 1fr 1fr' }, gap: 2.5 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr' }, gap: 2.5 }}>
                     <Box>
                       <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Sponsor</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_requestedbyname || '—'}</Typography>
@@ -1138,7 +1197,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
                     </Box>
 
                     {/* Cost, Benefits, Priority & Alignment boxes */}
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr 1fr' }, gap: 2, gridColumn: 'span 4', mt: 1 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, gridColumn: 'span 2', mt: 1 }}>
                       <Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', gap: 1.5, border: '1px solid', borderColor: 'divider' }}>
                         <Avatar sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08), color: 'primary.main', width: 40, height: 40, border: '1px solid', borderColor: (theme) => alpha(theme.palette.primary.main, 0.15) }}>
                           <MonetizationOnIcon sx={{ fontSize: 18 }} />
@@ -1189,91 +1248,11 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
                   )}
                 </Box>
               </Paper>
-
-              {/* Supporting Documents */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <FolderIcon sx={{ fontSize: 18, color: 'success.main' }} /> Supporting Documents
-                  </Typography>
-                </Box>
-                <Box sx={{ p: 3 }}>
-                  <EntityDocumentsTab
-                    entityId={selectedInitiative.pm_initiativeid || ''}
-                    moduleName={MODULE_NAMES.PIPELINE.value}
-                    canEdit={canEdit}
-                  />
-                </Box>
-              </Paper>
             </Grid>
 
-            {/* Right Column: 30% Width */}
-            <Grid size={{ xs: 12, lg: 3.6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Available Actions */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1.5, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.75, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} /> Available Actions
-                  </Typography>
-                </Box>
-                <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {[
-                    { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
-                    {
-                      icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />,
-                      title: selectedInitiative.pm_initiativetype === 1 ? 'Convert to Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Convert to Portfolio' : 'Convert to Project',
-                      desc: selectedInitiative.pm_initiativetype === 1 ? 'Create programme from initiative.' : selectedInitiative.pm_initiativetype === 2 ? 'Create portfolio from initiative.' : 'Create project from initiative.',
-                      color: 'success.main',
-                      btnLabel: selectedInitiative.pm_initiativetype === 1 ? 'Convert to Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Convert to Portfolio' : 'Convert to Project',
-                      btnVariant: 'contained' as const,
-                      btnColor: 'success' as const,
-                      onClick: handleConvertToProject,
-                      btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0'
-                    },
-                  ]
-                    .filter((a) => !a.btnDisabled)
-                    .map((action, idx) => (
-                      <Paper key={idx} variant="outlined" sx={{ p: 2, borderLeft: `3px solid ${action.color}`, transition: 'all 0.2s', '&:hover': { bgcolor: 'action.selected' } }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                              {action.icon} {action.title}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">{action.desc}</Typography>
-                          </Box>
-                          <Button variant={action.btnVariant} size="small" color={action.btnColor}
-                            onClick={action.onClick} disabled={actionLoading}
-                            sx={{ width: '100%' }}>
-                            {actionLoading ? 'Processing...' : action.btnLabel}
-                          </Button>
-                        </Box>
-                      </Paper>
-                    ))}
-                  {[
-                    { icon: <RateReviewIcon sx={{ fontSize: 18, color: 'primary.main' }} />, title: 'Request Approval', desc: 'Submit to board for review.', color: 'primary.main', btnLabel: 'Submit for Approval', btnVariant: 'contained' as const, btnColor: 'primary' as const, onClick: handleResubmitForApproval, btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '2' },
-                    {
-                      icon: <TransformIcon sx={{ fontSize: 18, color: 'success.main' }} />,
-                      title: selectedInitiative.pm_initiativetype === 1 ? 'Convert to Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Convert to Portfolio' : 'Convert to Project',
-                      desc: selectedInitiative.pm_initiativetype === 1 ? 'Create programme from initiative.' : selectedInitiative.pm_initiativetype === 2 ? 'Create portfolio from initiative.' : 'Create project from initiative.',
-                      color: 'success.main',
-                      btnLabel: selectedInitiative.pm_initiativetype === 1 ? 'Convert to Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Convert to Portfolio' : 'Convert to Project',
-                      btnVariant: 'contained' as const,
-                      btnColor: 'success' as const,
-                      onClick: handleConvertToProject,
-                      btnDisabled: String(selectedInitiative.pm_pipelinestatus) !== '0'
-                    },
-                  ].filter((a) => a.btnDisabled).length === 2 && (
-                    <Box sx={{ p: 2, textAlign: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        No actions available for this initiative.
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              </Paper>
-
-              {/* Approval Tasks */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
+            {/* Approval Tasks - 6/12 Width */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
                 <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     <TaskAltIcon sx={{ fontSize: 18, color: 'success.main' }} /> Approval Tasks
@@ -1286,6 +1265,24 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
                     entityLabel="Initiative"
                     tabValue={0}
                     index={0}
+                  />
+                </Box>
+              </Paper>
+            </Grid>
+
+            {/* Supporting Documents - Full Width */}
+            <Grid size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <FolderIcon sx={{ fontSize: 18, color: 'success.main' }} /> Supporting Documents
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3 }}>
+                  <EntityDocumentsTab
+                    entityId={selectedInitiative.pm_initiativeid || ''}
+                    moduleName={MODULE_NAMES.PIPELINE.value}
+                    canEdit={canEdit}
                   />
                 </Box>
               </Paper>
