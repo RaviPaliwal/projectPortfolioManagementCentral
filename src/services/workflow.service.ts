@@ -97,6 +97,7 @@ export const mapWorkflowStepTemplate = (item: Pm_workflowsteptemplates): Workflo
     pm_tasktype: item.pm_tasktype,
     new_formkey: item.new_formkey,
     _pm_workflowlookup_value: rawItem._pm_workflowlookup_value as string | undefined,
+    pm_workflowphase: item.pm_workflowphase,
     statecode: item.statecode,
   }
 }
@@ -227,7 +228,7 @@ export async function deleteWorkflow(id: string): Promise<void> {
 export async function fetchWorkflowStepTemplates(workflowId?: string): Promise<WorkflowStepTemplateModel[]> {
   try {
     const options: IGetAllOptions = {
-      select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assigneeid', 'pm_description', 'pm_sladays', 'pm_tasktype', 'new_formkey', '_pm_workflowlookup_value'],
+      select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assigneeid', 'pm_description', 'pm_sladays', 'pm_tasktype', 'new_formkey', '_pm_workflowlookup_value', 'pm_workflowphase'],
       orderBy: ['pm_steporder asc'],
       top: 200,
     }
@@ -350,7 +351,7 @@ export async function deleteWorkflowStepTemplate(id: string): Promise<void> {
 export async function fetchStepTemplateById(id: string): Promise<WorkflowStepTemplateModel | null> {
   try {
     const result = await Pm_workflowsteptemplatesService.get(id, {
-      select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assigneeid', 'pm_description', 'pm_sladays', 'pm_tasktype', 'new_formkey', '_pm_workflowlookup_value'],
+      select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assigneeid', 'pm_description', 'pm_sladays', 'pm_tasktype', 'new_formkey', '_pm_workflowlookup_value', 'pm_workflowphase'],
     })
     if (!result.success) {
       console.error('[WorkflowService] fetchStepTemplateById failed:', result.error)

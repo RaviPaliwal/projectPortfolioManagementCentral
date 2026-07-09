@@ -236,7 +236,7 @@ export const BudgetTable: React.FC<BudgetTableProps> = ({
           label="Category"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          slotProps={{ select: { native: true } }}
+          slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
           sx={{ minWidth: 155 }}
         >
           <option value="">All Categories</option>

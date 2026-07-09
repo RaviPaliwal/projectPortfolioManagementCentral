@@ -571,6 +571,7 @@ export interface WorkflowStepTemplateModel {
   pm_tasktype?: number | string
   new_formkey?: string
   _pm_workflowlookup_value?: string
+  pm_workflowphase?: string
   statecode?: number
 }
 

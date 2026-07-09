@@ -23,33 +23,33 @@ export const ALL_PERSONAS: Persona[] = [
 
 export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
   SystemAdministrator: [
-    'dashboard', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline', 'resources',
+    'dashboard', 'aiagent', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline', 'resources',
     'timesheets', 'budgets', 'gatereviews', 'benefits', 'risks',
     'issues', 'changerequests', 'cashflow', 'tasks', 'fundingsources',
     'statussnapshots', 'configurations', 'workflows', 'teamadmin', 'skills', 'holidays', 'calendar', 'activitylog',
     'reportConfigs'
   ],
   PortfolioExecutive: [
-    'dashboard', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
+    'dashboard', 'aiagent', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
     'gatereviews', 'benefits', 'changerequests', 'statussnapshots', 'calendar'
   ],
   PMO: [
-    'dashboard', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
+    'dashboard', 'aiagent', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
     'gatereviews', 'changerequests', 'tasks', 'statussnapshots',
     'workflows', 'teamadmin', 'calendar', 'activitylog', 'resources', 'reportConfigs'
   ],
   ProjectManager: [
-    'dashboard', 'strategicRoster', 'projects', 'resources', 'timesheets', 'gatereviews',
+    'dashboard', 'aiagent', 'strategicRoster', 'projects', 'resources', 'timesheets', 'gatereviews',
     'risks', 'issues', 'changerequests', 'tasks', 'statussnapshots', 'calendar'
   ],
   FinancialController: [
-    'dashboard', 'projects', 'budgets', 'cashflow', 'fundingsources', 'calendar'
+    'dashboard', 'aiagent', 'projects', 'budgets', 'cashflow', 'fundingsources', 'calendar'
   ],
   Planner: [
-    'dashboard', 'projects', 'tasks', 'calendar'
+    'dashboard', 'aiagent', 'projects', 'tasks', 'calendar'
   ],
   TeamMember: [
-    'timesheets', 'tasks', 'risks', 'issues', 'calendar'
+    'timesheets', 'aiagent', 'tasks', 'risks', 'issues', 'calendar'
   ]
 }
 

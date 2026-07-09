@@ -94,6 +94,7 @@ export interface PmoReadinessTaskModalWrapperProps {
   onClose: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
+  DecisionBox?: ComponentType<DecisionBoxProps>
 }
 
 export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapperProps> = ({
@@ -101,6 +102,7 @@ export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapper
   onClose,
   onSuccess,
   onError,
+  DecisionBox,
 }) => {
   const [open, setOpen] = useState(true)
 
@@ -116,14 +118,15 @@ export const PmoReadinessTaskModalWrapper: React.FC<PmoReadinessTaskModalWrapper
       onSuccess={onSuccess}
       onError={onError}
     >
-      {(gateReviewId) => (
+      {(resolvedId, entityType) => (
         <PmoReadinessTaskModal
           open={open}
           onClose={handleClose}
-          gateReviewId={gateReviewId}
+          {...(entityType === 'Pipeline' ? { gateReviewId: resolvedId } : { projectId: resolvedId })}
           onSuccess={onSuccess || (() => { })}
           onError={onError || (() => { })}
           approvalStepId={approvalStepId}
+          DecisionBox={DecisionBox}
         />
       )}
     </ApprovalStepResolver>
@@ -137,6 +140,7 @@ export interface FinancialReviewTaskModalWrapperProps {
   onClose: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
+  DecisionBox?: ComponentType<DecisionBoxProps>
 }
 
 export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalWrapperProps> = ({
@@ -144,6 +148,7 @@ export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalW
   onClose,
   onSuccess,
   onError,
+  DecisionBox,
 }) => {
   const [open, setOpen] = useState(true)
 
@@ -159,15 +164,16 @@ export const FinancialReviewTaskModalWrapper: React.FC<FinancialReviewTaskModalW
       onSuccess={onSuccess}
       onError={onError}
     >
-      {(gateReviewId, entityType) => (
+      {(resolvedId, entityType) => (
         <FinancialReviewTaskModal
           open={open}
           onClose={handleClose}
-          gateReviewId={gateReviewId}
+          {...(entityType === 'Pipeline' ? { gateReviewId: resolvedId } : { projectId: resolvedId })}
           entityType={entityType}
           onSuccess={onSuccess || (() => { })}
           onError={onError || (() => { })}
           approvalStepId={approvalStepId}
+          DecisionBox={DecisionBox}
         />
       )}
     </ApprovalStepResolver>
@@ -180,6 +186,7 @@ export interface BoardDecisionTaskModalWrapperProps {
   onClose: () => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
+  DecisionBox?: ComponentType<DecisionBoxProps>
 }
 
 export const BoardDecisionTaskModalWrapper: React.FC<BoardDecisionTaskModalWrapperProps> = ({
@@ -187,6 +194,7 @@ export const BoardDecisionTaskModalWrapper: React.FC<BoardDecisionTaskModalWrapp
   onClose,
   onSuccess,
   onError,
+  DecisionBox,
 }) => {
   const [open, setOpen] = useState(true)
 
@@ -202,14 +210,15 @@ export const BoardDecisionTaskModalWrapper: React.FC<BoardDecisionTaskModalWrapp
       onSuccess={onSuccess}
       onError={onError}
     >
-      {(gateReviewId) => (
+      {(resolvedId, entityType) => (
         <BoardDecisionTaskModal
           open={open}
           onClose={handleClose}
-          gateReviewId={gateReviewId}
+          {...(entityType === 'Pipeline' ? { gateReviewId: resolvedId } : { projectId: resolvedId })}
           onSuccess={onSuccess || (() => { })}
           onError={onError || (() => { })}
           approvalStepId={approvalStepId}
+          DecisionBox={DecisionBox}
         />
       )}
     </ApprovalStepResolver>

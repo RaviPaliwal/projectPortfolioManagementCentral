@@ -61,7 +61,7 @@ const CATEGORY_COLORS: Record<string, 'primary' | 'secondary' | 'warning' | 'err
   '3': 'error',
 }
 
-export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({ 
+export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
   budgetLines,
   project,
   onEditBudgetLine,
@@ -124,7 +124,7 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
       '2': { name: 'Licences', budget: 0, spend: 0, color: theme.palette.warning.main },
       '3': { name: 'Infrastructure', budget: 0, spend: 0, color: theme.palette.error.main }
     }
-    
+
     for (const b of budgetLines) {
       const cat = String(b.pm_costcategory ?? '')
       if (summaryMap[cat]) {
@@ -132,7 +132,7 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
         summaryMap[cat].spend += b.pm_actualspendeur ?? 0
       }
     }
-    
+
     return Object.values(summaryMap).filter(c => c.budget > 0 || c.spend > 0)
   }, [budgetLines, theme])
 
@@ -227,9 +227,9 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
                 </Grid>
 
                 {/* Right sub-column: Variance Analysis */}
-                <Grid 
+                <Grid
                   size={{ xs: 12, md: 6 }}
-                  sx={{ 
+                  sx={{
                     borderLeft: { md: `1px solid ${theme.palette.divider}` },
                     pl: { md: 3 },
                     pt: { xs: 2, md: 0 },
@@ -256,7 +256,7 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
                           {varianceVal >= 0
                             ? <VerifiedIcon sx={{ fontSize: 20, color: 'success.main', mb: 0.25 }} />
                             : <WarningAmberIcon sx={{ fontSize: 20, color: 'error.main', mb: 0.25 }}
-                          />}
+                            />}
                           <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: getVarianceColor(varianceVal) }}>
                             {varianceVal >= 0 ? '+' : ''}{currency(varianceVal)}
                           </Typography>
@@ -384,7 +384,7 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Financial Analysis
               </Typography>
-              
+
               <Box sx={{ height: 180, width: '100%', mb: 2, flexGrow: 1 }}>
                 {categorySummary.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -411,7 +411,7 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
               <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Summary Indicators
               </Typography>
-              
+
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
                   <VerifiedIcon fontSize="small" sx={{ color: 'primary.main' }} /> Budget Utilisation

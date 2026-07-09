@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { TabKey } from '@/components/layout/PrimaryShell'
 import DashboardPage from '@/features/dashboard/pages/DashboardPage'
+import AIAgentPage from '@/features/dashboard/pages/AIAgentPage'
 import PortfoliosPage from '@/features/portfolios/pages/PortfoliosPage'
 import ProgrammesPage from '@/features/programmes/pages/ProgrammesPage'
 import ProjectsPage from '@/features/projects/pages/ProjectsPage'
@@ -31,6 +32,7 @@ import ReportConfigsPage from '@/features/financialreports/pages/ReportConfigsPa
 
 export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, ReactNode> => ({
   dashboard: <DashboardPage onNavigate={onNavigate} />,
+  aiagent: <AIAgentPage />,
   cashflow: <CashflowPage />,
   portfolios: <PortfoliosPage />,
   programmes: <ProgrammesPage />,

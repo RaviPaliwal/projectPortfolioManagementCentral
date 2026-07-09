@@ -155,6 +155,7 @@ export const getTheme = (mode: PaletteMode) =>
             },
           },
           outlined: {
+            transform: 'translate(14px, 8px) scale(1)',
             '&.MuiInputLabel-shrink': {
               transform: 'translate(14px, -9px) scale(0.75)',
               backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
@@ -162,6 +163,7 @@ export const getTheme = (mode: PaletteMode) =>
             },
           },
           sizeSmall: {
+            transform: 'translate(14px, 8px) scale(1)',
             '&.MuiInputLabel-shrink': {
               transform: 'translate(14px, -9px) scale(0.75)',
               backgroundColor: mode === 'light' ? '#ffffff' : '#111827',

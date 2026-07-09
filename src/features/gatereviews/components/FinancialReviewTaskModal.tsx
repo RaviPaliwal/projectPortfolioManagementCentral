@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
-  Dialog, DialogTitle, DialogContent, Grid, Box, Typography,
+  Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
   CircularProgress, TextField, Chip, Paper, IconButton, useTheme, alpha
 } from '@mui/material'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
@@ -9,7 +9,9 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import BusinessIcon from '@mui/icons-material/Business'
 
-import { fetchProjectDetails, fetchGateReviewById, fetchInitiativeById } from '@/services'
+import { fetchProjectDetails, fetchGateReviewById, fetchInitiativeById, createGateReview, updateGateReview, unwrapList } from '@/services'
+import { Pm_projectgatereviewsService } from '@/generated'
+import type { Pm_projectgatereviews } from '@/generated/models/Pm_projectgatereviewsModel'
 import type { ProjectModel, GateReviewModel, InitiativeModel } from '@/types/dataverse'
 import { currencyFormatter } from '@/utils/formatters'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
@@ -18,7 +20,8 @@ import { fontSizes } from '@/styles/fontSizes'
 interface FinancialReviewTaskModalProps {
   open: boolean
   onClose: () => void
-  gateReviewId: string
+  gateReviewId?: string
+  projectId?: string
   entityType?: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
@@ -27,7 +30,7 @@ interface FinancialReviewTaskModalProps {
 }
 
 export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> = ({
-  open, onClose, gateReviewId, entityType, onSuccess, onError,
+  open, onClose, gateReviewId, projectId, entityType, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
 }) => {
   const theme = useTheme()
@@ -36,6 +39,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
   const [gateReview, setGateReview] = useState<GateReviewModel | null>(null)
   const [project, setProject] = useState<ProjectModel | null>(null)
   const [initiative, setInitiative] = useState<InitiativeModel | null>(null)
+  const [gateStage, setGateStage] = useState<number>(0)
 
   const [financeNotes, setFinanceNotes] = useState('')
 
@@ -45,25 +49,42 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
     setLoading(true)
     try {
       if (isInitiative) {
-        const init = await fetchInitiativeById(gateReviewId)
+        const init = await fetchInitiativeById(gateReviewId || projectId || '')
         if (!init) { onError('Initiative not found.'); setLoading(false); return }
         setInitiative(init)
-      } else {
+      } else if (gateReviewId) {
         const gr = await fetchGateReviewById(gateReviewId)
         if (!gr) { onError('Gate review not found.'); setLoading(false); return }
         setGateReview(gr)
 
-        const projectId = gr._pm_project_value || (gr as any)._pm_projectlookup_value || (gr as any).pm_project || gr.pm_projectcode
-        if (projectId) {
-          const proj = await fetchProjectDetails(projectId)
+        const projId = gr._pm_project_value || (gr as any)._pm_projectlookup_value || (gr as any).pm_project || gr.pm_projectcode
+        if (projId) {
+          const proj = await fetchProjectDetails(projId)
           setProject(proj)
         }
+        setGateStage(Number(gr.pm_gatestage ?? 0))
+      } else if (projectId) {
+        const proj = await fetchProjectDetails(projectId)
+        if (!proj) { onError('Project not found.'); setLoading(false); return }
+        setProject(proj)
+
+        const reviewsResult = await Pm_projectgatereviewsService.getAll({
+          filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+          select: ['pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage']
+        })
+        const existingReviews = unwrapList<Pm_projectgatereviews>(reviewsResult)
+        
+        const finCount = existingReviews.filter(r => 
+          r.pm_gatename?.toLowerCase().includes('financial review')
+        ).length
+        const currentGateStage = Math.min(3, finCount)
+        setGateStage(currentGateStage)
       }
     } catch (err) {
       console.error('Failed to load data for financial review', err)
       onError('Failed to load data for financial review.')
     } finally { setLoading(false) }
-  }, [gateReviewId, entityType, onError, isInitiative])
+  }, [gateReviewId, projectId, entityType, onError, isInitiative])
 
   useEffect(() => {
     if (open) { loadData(); setFinanceNotes('') }
@@ -73,14 +94,39 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
     setSaving(true)
     try {
       const decisionLabel = workflowDecision === 0 ? 'Endorsed' : 'Rejected'
-      // Instead of manual API updates for notes, we rely on the workflow DecisionBox to capture them natively.
-      onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
+      
+      if (isInitiative) {
+        onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
+      } else if (gateReviewId) {
+        await updateGateReview(gateReviewId, {
+          pm_reviewoutcome: workflowDecision === 0 ? 0 : 4,
+          pm_reviewstatus: 0,
+          pm_reviewnotes: financeNotes,
+          pm_actualreviewdate: new Date().toISOString(),
+        })
+        onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
+      } else if (projectId) {
+        const gateNumber = gateStage + 1
+        const newReviewPayload: Partial<GateReviewModel> = {
+          pm_gatename: `Financial Review - Gate ${gateNumber}`,
+          pm_gatestage: gateStage as any,
+          pm_reviewoutcome: workflowDecision === 0 ? 0 : 4,
+          pm_reviewstatus: 0,
+          pm_actualreviewdate: new Date().toISOString(),
+          pm_plannedreviewdate: new Date().toISOString(),
+          pm_reviewnotes: financeNotes,
+          _pm_project_value: projectId,
+        }
+        const createdReview = await createGateReview(newReviewPayload)
+        if (!createdReview) throw new Error('Failed to create gate review')
+        onSuccess(`Financial Task completed. Decision: ${decisionLabel}. Gate review entry created.`)
+      }
       return true
     } catch (err) {
       onError('Failed to save Financial decision.')
       return false
     } finally { setSaving(false) }
-  }, [onSuccess, onError])
+  }, [isInitiative, gateReviewId, projectId, gateStage, financeNotes, onSuccess, onError])
 
   if (!open) return null
 
@@ -138,22 +184,28 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                   </>
                 ) : (
                   <>
-                    <Grid size={{ xs: 12, sm: 4 }}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Approved Budget</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
                         {currencyFormatter.format(budget)}
                       </Typography>
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 4 }}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Actual Cost</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
                         {currencyFormatter.format(spend)}
                       </Typography>
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 4 }}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Remaining Budget</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace', color: remaining < 0 ? 'error.main' : 'success.main' }}>
                         {currencyFormatter.format(remaining)}
+                      </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 3 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Gate Stage</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                        {gateReview?.pm_gatename || `Financial Review - Gate ${gateStage + 1} (New)`}
                       </Typography>
                     </Grid>
                   </>
@@ -187,16 +239,18 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
 
       {/* Decision Box */}
       {!loading && DecisionBoxProp && approvalStepId && (
-        <DecisionBoxProp 
-          approvalStepId={approvalStepId} 
-          onBeforeDecision={saveTaskData}
-          onDecisionComplete={(decision) => {
-            onSuccess(`Financial Task completed.`)
-            onClose()
-          }}
-          onDecisionError={(msg) => onError(msg)}
-          disabled={saving}
-        />
+        <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+          <DecisionBoxProp 
+            approvalStepId={approvalStepId} 
+            onBeforeDecision={saveTaskData}
+            onDecisionComplete={(decision) => {
+              onSuccess(`Financial Task completed.`)
+              onClose()
+            }}
+            onDecisionError={(msg) => onError(msg)}
+            disabled={saving}
+          />
+        </DialogActions>
       )}
     </Dialog>
   )

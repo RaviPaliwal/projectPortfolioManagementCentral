@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
-  Dialog, DialogTitle, DialogContent, Grid, Box, Typography,
+  Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
   CircularProgress, TextField, Chip, Paper, IconButton, useTheme, alpha
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
@@ -9,7 +9,9 @@ import PersonIcon from '@mui/icons-material/Person'
 import BusinessIcon from '@mui/icons-material/Business'
 import HistoryIcon from '@mui/icons-material/History'
 
-import { fetchProjectDetails, fetchGateReviewById } from '@/services'
+import { fetchProjectDetails, fetchGateReviewById, createGateReview, updateGateReview, unwrapList } from '@/services'
+import { Pm_projectgatereviewsService } from '@/generated'
+import type { Pm_projectgatereviews } from '@/generated/models/Pm_projectgatereviewsModel'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
@@ -18,7 +20,8 @@ import { fontSizes } from '@/styles/fontSizes'
 interface BoardDecisionTaskModalProps {
   open: boolean
   onClose: () => void
-  gateReviewId: string
+  gateReviewId?: string
+  projectId?: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
   DecisionBox?: ComponentType<DecisionBoxProps>
@@ -26,7 +29,7 @@ interface BoardDecisionTaskModalProps {
 }
 
 export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
-  open, onClose, gateReviewId, onSuccess, onError,
+  open, onClose, gateReviewId, projectId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
 }) => {
   const theme = useTheme()
@@ -34,25 +37,45 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
   const [saving, setSaving] = useState(false)
   const [gateReview, setGateReview] = useState<GateReviewModel | null>(null)
   const [project, setProject] = useState<ProjectModel | null>(null)
+  const [gateStage, setGateStage] = useState<number>(0)
 
   const [boardNotes, setBoardNotes] = useState('')
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const gr = await fetchGateReviewById(gateReviewId)
-      if (!gr) { onError('Gate review not found.'); setLoading(false); return }
-      setGateReview(gr)
+      if (gateReviewId) {
+        const gr = await fetchGateReviewById(gateReviewId)
+        if (!gr) { onError('Gate review not found.'); setLoading(false); return }
+        setGateReview(gr)
 
-      const projectId = gr._pm_project_value || (gr as any)._pm_projectlookup_value || (gr as any).pm_project || gr.pm_projectcode
-      if (projectId) {
+        const projId = gr._pm_project_value || (gr as any)._pm_projectlookup_value || (gr as any).pm_project || gr.pm_projectcode
+        if (projId) {
+          const proj = await fetchProjectDetails(projId)
+          setProject(proj)
+        }
+        setGateStage(Number(gr.pm_gatestage ?? 0))
+      } else if (projectId) {
         const proj = await fetchProjectDetails(projectId)
+        if (!proj) { onError('Project not found.'); setLoading(false); return }
         setProject(proj)
+
+        const reviewsResult = await Pm_projectgatereviewsService.getAll({
+          filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+          select: ['pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage']
+        })
+        const existingReviews = unwrapList<Pm_projectgatereviews>(reviewsResult)
+        
+        const boardCount = existingReviews.filter(r => 
+          r.pm_gatename?.toLowerCase().includes('board decision') || r.pm_gatename?.toLowerCase().includes('governance board')
+        ).length
+        const currentGateStage = Math.min(3, boardCount)
+        setGateStage(currentGateStage)
       }
     } catch (err) {
       onError('Failed to load project details for board decision.')
     } finally { setLoading(false) }
-  }, [gateReviewId, onError])
+  }, [gateReviewId, projectId, onError])
 
   useEffect(() => {
     if (open) { loadData(); setBoardNotes('') }
@@ -62,14 +85,37 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
     setSaving(true)
     try {
       const decisionLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'
-      // Instead of manual API updates for notes, we rely on the workflow DecisionBox to capture them natively.
-      onSuccess(`Final Board Decision recorded. Outcome: ${decisionLabel}`)
+
+      if (gateReviewId) {
+        await updateGateReview(gateReviewId, {
+          pm_reviewoutcome: workflowDecision === 0 ? 0 : 4,
+          pm_reviewstatus: 0,
+          pm_reviewnotes: boardNotes,
+          pm_actualreviewdate: new Date().toISOString(),
+        })
+        onSuccess(`Final Board Decision recorded. Outcome: ${decisionLabel}`)
+      } else if (projectId) {
+        const gateNumber = gateStage + 1
+        const newReviewPayload: Partial<GateReviewModel> = {
+          pm_gatename: `Governance Board Decision - Gate ${gateNumber}`,
+          pm_gatestage: gateStage as any,
+          pm_reviewoutcome: workflowDecision === 0 ? 0 : 4,
+          pm_reviewstatus: 0,
+          pm_actualreviewdate: new Date().toISOString(),
+          pm_plannedreviewdate: new Date().toISOString(),
+          pm_reviewnotes: boardNotes,
+          _pm_project_value: projectId,
+        }
+        const createdReview = await createGateReview(newReviewPayload)
+        if (!createdReview) throw new Error('Failed to create gate review')
+        onSuccess(`Final Board Decision recorded. Outcome: ${decisionLabel}. Gate review entry created.`)
+      }
       return true
     } catch (err) {
       onError('Unable to record board decision.')
       return false
     } finally { setSaving(false) }
-  }, [onSuccess, onError])
+  }, [gateReviewId, projectId, gateStage, boardNotes, onSuccess, onError])
 
   if (!open) return null
 
@@ -112,7 +158,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
                     {project?.pm_projectname || 'Loading...'}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600, display: 'block', mt: 0.5 }}>
-                    {gateReview?.pm_gatename}
+                    {gateReview?.pm_gatename || `Governance Board Decision - Gate ${gateStage + 1} (New)`}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
@@ -186,16 +232,18 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
 
       {/* Decision Box */}
       {!loading && DecisionBoxProp && approvalStepId && (
-        <DecisionBoxProp 
-          approvalStepId={approvalStepId} 
-          onBeforeDecision={saveTaskData}
-          onDecisionComplete={(decision) => {
-            onSuccess(`Final Board Decision recorded.`)
-            onClose()
-          }}
-          onDecisionError={(msg) => onError(msg)}
-          disabled={saving}
-        />
+        <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+          <DecisionBoxProp 
+            approvalStepId={approvalStepId} 
+            onBeforeDecision={saveTaskData}
+            onDecisionComplete={(decision) => {
+              onSuccess(`Final Board Decision recorded.`)
+              onClose()
+            }}
+            onDecisionError={(msg) => onError(msg)}
+            disabled={saving}
+          />
+        </DialogActions>
       )}
     </Dialog>
   )

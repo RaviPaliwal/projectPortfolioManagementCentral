@@ -40,16 +40,19 @@ import PsychologyIcon from '@mui/icons-material/Psychology'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import AccountTreeWorkflowIcon from '@mui/icons-material/AccountTree'
 import SettingsIcon from '@mui/icons-material/Settings'
+import SmartToyIcon from '@mui/icons-material/SmartToy'
 import { UserSelector, useUser } from '@/context/UserContext'
 import { useEffect, useState } from 'react'
 import type { BreadcrumbItem } from '@/components/common/Breadcrumbs/Breadcrumbs'
 import NotificationCenter from './NotificationCenter'
 import { PERSONA_PERMISSIONS } from '@/constants/permissions'
+import { AgentBotWidget } from '@/features/dashboard/components'
 
-export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'calendar' | 'strategicRoster' | 'activitylog' | 'reportConfigs'
+export type TabKey = 'dashboard' | 'aiagent' | 'portfolios' | 'programmes' | 'projects' | 'pipeline' | 'resources' | 'configurations' | 'teamadmin' | 'timesheets' | 'budgets' | 'gatereviews' | 'benefits' | 'risks' | 'issues' | 'changerequests' | 'cashflow' | 'tasks' | 'fundingsources' | 'skills' | 'workflows' | 'holidays' | 'statussnapshots' | 'calendar' | 'strategicRoster' | 'activitylog' | 'reportConfigs'
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?: boolean }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
+  { key: 'aiagent', label: 'AI Agent', icon: <SmartToyIcon /> },
   { key: 'strategicRoster', label: 'Strategic Roster', icon: <SchemaIcon /> },
   { key: 'portfolios', label: 'Portfolios', icon: <AccountTreeIcon /> },
   { key: 'programmes', label: 'Programmes', icon: <FolderOpenIcon /> },
@@ -330,6 +333,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
             {children}
           </Box>
         </Box>
+        <AgentBotWidget />
       </Box>
     </Box>
   )

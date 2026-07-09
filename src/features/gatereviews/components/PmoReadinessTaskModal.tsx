@@ -11,7 +11,9 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
 import UndoIcon from '@mui/icons-material/Undo'
 
-import { fetchProjectDetails, fetchGateReviewById, GovernanceReadinessService } from '@/services'
+import { fetchProjectDetails, fetchGateReviewById, GovernanceReadinessService, createGateReview, updateGateReview, unwrapList } from '@/services'
+import { Pm_projectgatereviewsService } from '@/generated'
+import type { Pm_projectgatereviews } from '@/generated/models/Pm_projectgatereviewsModel'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import type { ProjectReadinessReport } from '@/services/governance-readiness.service'
 import { StatusTag, Button } from '@/components/common'
@@ -22,7 +24,8 @@ import { fontSizes } from '@/styles/fontSizes'
 interface PmoReadinessTaskModalProps {
   open: boolean
   onClose: () => void
-  gateReviewId: string
+  gateReviewId?: string
+  projectId?: string
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
   DecisionBox?: ComponentType<DecisionBoxProps>
@@ -30,7 +33,7 @@ interface PmoReadinessTaskModalProps {
 }
 
 export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
-  open, onClose, gateReviewId, onSuccess, onError,
+  open, onClose, gateReviewId, projectId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
 }) => {
   const theme = useTheme()
@@ -39,6 +42,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
   const [gateReview, setGateReview] = useState<GateReviewModel | null>(null)
   const [project, setProject] = useState<ProjectModel | null>(null)
   const [readiness, setReadiness] = useState<ProjectReadinessReport | null>(null)
+  const [gateStage, setGateStage] = useState<number>(0)
   
   const [overrides, setOverrides] = useState<Record<string, string>>({})
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -47,28 +51,50 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const gr = await fetchGateReviewById(gateReviewId)
-      if (!gr) { onError('Gate review not found.'); setLoading(false); return }
-      setGateReview(gr)
+      if (gateReviewId) {
+        const gr = await fetchGateReviewById(gateReviewId)
+        if (!gr) { onError('Gate review not found.'); setLoading(false); return }
+        setGateReview(gr)
 
-      const projectId = gr._pm_project_value ||
-                        (gr as any)._pm_projectlookup_value ||
-                        (gr as any).pm_project ||
-                        gr.pm_projectcode
+        const projId = gr._pm_project_value ||
+                          (gr as any)._pm_projectlookup_value ||
+                          (gr as any).pm_project ||
+                          gr.pm_projectcode
 
-      if (projectId) {
-        const [proj, report] = await Promise.all([
-          fetchProjectDetails(projectId),
-          GovernanceReadinessService.checkProjectReadiness(projectId, Number(gr.pm_gatestage ?? 0)),
-        ])
+        if (projId) {
+          const [proj, report] = await Promise.all([
+            fetchProjectDetails(projId),
+            GovernanceReadinessService.checkProjectReadiness(projId, Number(gr.pm_gatestage ?? 0)),
+          ])
+          setProject(proj)
+          setReadiness(report)
+          setGateStage(Number(gr.pm_gatestage ?? 0))
+        }
+      } else if (projectId) {
+        const proj = await fetchProjectDetails(projectId)
+        if (!proj) { onError('Project not found.'); setLoading(false); return }
         setProject(proj)
+
+        const reviewsResult = await Pm_projectgatereviewsService.getAll({
+          filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+          select: ['pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage']
+        })
+        const existingReviews = unwrapList<Pm_projectgatereviews>(reviewsResult)
+        
+        const pmoCount = existingReviews.filter(r => 
+          r.pm_gatename?.toLowerCase().includes('pmo readiness')
+        ).length
+        const currentGateStage = Math.min(3, pmoCount)
+        setGateStage(currentGateStage)
+
+        const report = await GovernanceReadinessService.checkProjectReadiness(projectId, currentGateStage)
         setReadiness(report)
       }
     } catch (err) {
       console.error('Failed to load project details for readiness check', err)
       onError('Failed to load project details.')
     } finally { setLoading(false) }
-  }, [gateReviewId, onError])
+  }, [gateReviewId, projectId, onError])
 
   useEffect(() => {
     if (open) { loadData(); setOverrides({}); setExpanded(null); setOverrideInput(''); }
@@ -111,14 +137,36 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
         })
       }
 
-      // If we needed to save notes directly to Gate Review, we could do it here
-      onSuccess(`PMO Readiness Review completed. Decision: ${decisionLabel}.`)
+      if (gateReviewId) {
+        await updateGateReview(gateReviewId, {
+          pm_reviewoutcome: workflowDecision === 0 ? 0 : 4,
+          pm_reviewstatus: 0,
+          pm_reviewnotes: notes,
+          pm_actualreviewdate: new Date().toISOString(),
+        })
+        onSuccess(`PMO Readiness Review completed. Decision: ${decisionLabel}.`)
+      } else if (projectId) {
+        const gateNumber = gateStage + 1
+        const newReviewPayload: Partial<GateReviewModel> = {
+          pm_gatename: `PMO Readiness - Gate ${gateNumber}`,
+          pm_gatestage: gateStage as any,
+          pm_reviewoutcome: workflowDecision === 0 ? 0 : 4,
+          pm_reviewstatus: 0,
+          pm_actualreviewdate: new Date().toISOString(),
+          pm_plannedreviewdate: new Date().toISOString(),
+          pm_reviewnotes: notes,
+          _pm_project_value: projectId,
+        }
+        const createdReview = await createGateReview(newReviewPayload)
+        if (!createdReview) throw new Error('Failed to create gate review')
+        onSuccess(`PMO Readiness Review completed. Decision: ${decisionLabel}. Gate review entry created.`)
+      }
       return true
     } catch (err) {
       onError('Failed to save review decision.')
       return false
     } finally { setSaving(false) }
-  }, [allClear, overrides, readiness, onSuccess, onError])
+  }, [allClear, overrides, readiness, gateReviewId, projectId, gateStage, onSuccess, onError])
 
   if (!open) return null
 
@@ -194,7 +242,7 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Gate Review</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                      {gateReview?.pm_gatename || '—'}
+                      {gateReview?.pm_gatename || `PMO Readiness - Gate ${gateStage + 1} (New)`}
                     </Typography>
                   </Box>
                 </Grid>
@@ -330,16 +378,18 @@ export const PmoReadinessTaskModal: React.FC<PmoReadinessTaskModalProps> = ({
 
       {/* Decision Box at bottom */}
       {!loading && DecisionBoxProp && approvalStepId && (
-        <DecisionBoxProp 
-          approvalStepId={approvalStepId} 
-          onBeforeDecision={saveTaskData}
-          onDecisionComplete={(decision) => {
-            onSuccess(`PMO Readiness Review completed.`)
-            onClose()
-          }}
-          onDecisionError={(msg) => onError(msg)}
-          disabled={saving}
-        />
+        <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+          <DecisionBoxProp 
+            approvalStepId={approvalStepId} 
+            onBeforeDecision={saveTaskData}
+            onDecisionComplete={(decision) => {
+              onSuccess(`PMO Readiness Review completed.`)
+              onClose()
+            }}
+            onDecisionError={(msg) => onError(msg)}
+            disabled={saving}
+          />
+        </DialogActions>
       )}
     </Dialog>
   )
