@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef, Fragment } from 'react'
 import {
   Box,
   Paper,
@@ -28,6 +28,7 @@ import {
   Divider,
   Avatar,
   alpha,
+  Collapse,
 } from '@mui/material'
 import ErrorIcon from '@mui/icons-material/Error'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
@@ -48,7 +49,9 @@ import AssignmentLateIcon from '@mui/icons-material/AssignmentLate'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import FolderIcon from '@mui/icons-material/Folder'
-
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
+import SearchIcon from '@mui/icons-material/Search'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 
@@ -97,6 +100,98 @@ import { MODULE_NAMES } from '@/constants/moduleNames'
 import { normalizeLookupId } from '@/services'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+
+// ── Programme Hierarchy Table ────────────────────────────────────────────────
+interface ProgrammeHierarchyTableProps {
+  projects: ProjectModel[]
+  searchTerm: string
+  loading: boolean
+}
+
+function ProgrammeHierarchyTable({ projects, searchTerm, loading }: ProgrammeHierarchyTableProps) {
+  const theme = useTheme()
+
+  const filteredProjects = useMemo(() => {
+    if (!searchTerm) return projects
+    const term = searchTerm.toLowerCase()
+    return projects.filter((p) => p.pm_projectname?.toLowerCase().includes(term))
+  }, [projects, searchTerm])
+
+  return (
+    <TableContainer sx={{ maxHeight: 600, overflow: 'auto' }}>
+      <Table stickyHeader size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ fontWeight: 800, bgcolor: 'background.paper', borderBottom: '2px solid', borderColor: 'divider', width: '40%' }}>
+              Project Name
+            </TableCell>
+            <TableCell sx={{ fontWeight: 800, bgcolor: 'background.paper', borderBottom: '2px solid', borderColor: 'divider', width: '15%' }}>
+              Phase
+            </TableCell>
+            <TableCell sx={{ fontWeight: 800, bgcolor: 'background.paper', borderBottom: '2px solid', borderColor: 'divider', width: '15%' }}>
+              RAG
+            </TableCell>
+            <TableCell sx={{ fontWeight: 800, bgcolor: 'background.paper', borderBottom: '2px solid', borderColor: 'divider', width: '15%', textAlign: 'center' }}>
+              % Complete
+            </TableCell>
+            <TableCell sx={{ fontWeight: 800, bgcolor: 'background.paper', borderBottom: '2px solid', borderColor: 'divider', width: '15%', textAlign: 'right' }}>
+              Budget
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {filteredProjects.map((proj) => (
+            <TableRow
+              key={proj.pm_projectid}
+              hover
+              sx={{
+                '& td': { borderBottom: '1px solid', borderColor: 'divider' },
+              }}
+            >
+              <TableCell sx={{ pl: 3, py: 1.25 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AccountTreeIcon sx={{ color: theme.palette.primary.main, fontSize: 16 }} />
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      color: 'primary.main',
+                      '&:hover': { textDecoration: 'underline' },
+                    }}
+                    onClick={() => proj.pm_projectid && navigateToProject(proj.pm_projectid)}
+                  >
+                    {proj.pm_projectname}
+                  </Typography>
+                </Box>
+              </TableCell>
+              <TableCell>
+                <StatusChip status={proj.pm_projectphase} type="phase" size="small" />
+              </TableCell>
+              <TableCell>
+                <StatusChip status={proj.pm_ragstatus} type="rag" size="small" />
+              </TableCell>
+              <TableCell sx={{ textAlign: 'center' }}>
+                {proj.pm_percentcomplete !== undefined ? `${proj.pm_percentcomplete}%` : '0%'}
+              </TableCell>
+              <TableCell sx={{ textAlign: 'right' }}>
+                {currencyFormatter.format(proj.pm_approvedbudget ?? 0)}
+              </TableCell>
+            </TableRow>
+          ))}
+
+          {filteredProjects.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={5} sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
+                No projects linked to this programme.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  )
+}
 
 // ── Export Columns ────────────────────────────────────────────────────────────────
 const programmeExportColumns: ExportColumn[] = [
@@ -166,6 +261,10 @@ export default function ProgrammesPage() {
   } | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailTab, setDetailTab] = useState(0)
+  const [programmeDocCount, setProgrammeDocCount] = useState(0)
+  const [projectsSearch, setProjectsSearch] = useState('')
+  const [todayHover, setTodayHover] = useState(false)
+  const documentsTabRef = useRef<{ triggerUpload: () => void } | null>(null)
 
   // ── Create/Edit Modal State ────────────────────────────────────────────────
   const [showFormModal, setShowFormModal] = useState(false)
@@ -542,6 +641,7 @@ export default function ProgrammesPage() {
         >
           <Tab label="Overview & Projects" sx={{ textTransform: 'none', fontWeight: 600 }} />
           <Tab label="Master Schedule" sx={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab label="Documents" sx={{ textTransform: 'none', fontWeight: 600 }} />
         </Tabs>
 
         {detailTab === 0 && (
@@ -579,82 +679,170 @@ export default function ProgrammesPage() {
 
                     {/* Visual Milestone Timeline */}
                     <Box sx={{ gridColumn: 'span 4', mt: 1.5 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', mb: 1 }}>Timeline Pathway</Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative', px: 1, py: 1 }}>
-                        {/* Connecting Line */}
-                        <Box sx={{
-                          position: 'absolute',
-                          left: 30,
-                          right: 30,
-                          top: 14,
-                          height: 4,
-                          bgcolor: 'action.hover',
-                          borderRadius: 2,
-                          zIndex: 1
-                        }}>
-                          <Box sx={{
-                            width: `${(() => {
-                              const start = prog?.pm_startdate ? new Date(prog.pm_startdate) : null;
-                              const end = prog?.pm_enddate ? new Date(prog.pm_enddate) : null;
-                              if (!start || !end) return 0;
-                              const total = end.getTime() - start.getTime();
-                              if (total <= 0) return 0;
-                              const elapsed = new Date().getTime() - start.getTime();
-                              return Math.min(100, Math.max(0, (elapsed / total) * 100));
-                            })()}%`,
-                            height: '100%',
-                            bgcolor: 'success.main',
-                            borderRadius: 2
-                          }} />
-                        </Box>
+                      {(() => {
+                        const start = prog?.pm_startdate ? new Date(prog.pm_startdate) : null;
+                        const end = prog?.pm_enddate ? new Date(prog.pm_enddate) : null;
+                        if (!start || !end) {
+                          return (
+                            <Typography variant="body2" color="text.disabled" sx={{ py: 1 }}>
+                              Start and End dates are required for timeline pathway
+                            </Typography>
+                          );
+                        }
+                        const today = new Date();
+                        const totalDuration = end.getTime() - start.getTime();
+                        if (totalDuration <= 0) return null;
+                        const elapsed = today.getTime() - start.getTime();
+                        const percent = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+                        
+                        const totalDays = Math.ceil(totalDuration / (1000 * 60 * 60 * 24));
+                        const elapsedDays = Math.max(0, Math.ceil(elapsed / (1000 * 60 * 60 * 24)));
+                        const remainingDays = Math.max(0, totalDays - elapsedDays);
+                        
+                        const startStr = start.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+                        const endStr = end.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+                        const todayStr = today.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+                        const isEnded = today > end;
+                        const isNotStarted = today < start;
+                        
+                        return (
+                          <Box sx={{ width: '100%' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>
+                                Timeline Pathway
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', px: 1.25, py: 0.5, borderRadius: '20px', border: '1px solid', borderColor: 'divider' }}>
+                                {isEnded ? 'Completed' : isNotStarted ? 'Not Started' : `${remainingDays} days remaining`}
+                              </Typography>
+                            </Box>
 
-                        {/* Start Node */}
-                        <Box sx={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'success.main', border: '2px solid', borderColor: 'background.paper', ml: 1.5 }} />
-                          <Typography variant="caption" sx={{ fontWeight: 700, mt: 1, color: 'text.secondary', fontSize: '0.72rem' }}>
-                            Start: {prog?.pm_startdate ? new Date(prog.pm_startdate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                          </Typography>
-                        </Box>
+                            {/* Pathway Line container */}
+                            <Box sx={{ position: 'relative', height: 28, display: 'flex', alignItems: 'center', px: 1.5, mb: 1 }}>
+                              {/* Track Line */}
+                              <Box sx={{ position: 'absolute', left: 16, right: 16, height: 6, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)', borderRadius: 3 }}>
+                                {/* Filled Progress Line */}
+                                <Box sx={{ 
+                                  width: `${percent}%`, 
+                                  height: '100%', 
+                                  borderRadius: 3, 
+                                  background: (theme) => `linear-gradient(90deg, ${theme.palette.success.main} 0%, ${theme.palette.primary.main} 100%)`,
+                                  transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                                  boxShadow: (theme) => `0 0 8px ${alpha(theme.palette.primary.main, 0.4)}`
+                                }} />
+                              </Box>
 
-                        <Box sx={{ flexGrow: 1 }} />
+                              {/* Start Dot */}
+                              <Box sx={{ position: 'absolute', left: 16, transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
+                                <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: 'success.main', border: '3px solid', borderColor: 'background.paper', boxShadow: (theme) => theme.shadows[1] }} />
+                              </Box>
 
-                        {/* Today Node */}
-                        {(() => {
-                          const start = prog?.pm_startdate ? new Date(prog.pm_startdate) : null;
-                          const end = prog?.pm_enddate ? new Date(prog.pm_enddate) : null;
-                          const today = new Date();
-                          if (start && end && today >= start && today <= end) {
-                            const total = end.getTime() - start.getTime();
-                            const elapsed = today.getTime() - start.getTime();
-                            const percent = (elapsed / total) * 100;
-                            return (
-                              <Box sx={{
-                                position: 'absolute',
-                                left: `calc(${percent}% + ${30 - percent*0.6}px)`,
-                                top: 4,
-                                zIndex: 3,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center'
-                              }}>
-                                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'primary.main', border: '2px solid', borderColor: 'background.paper' }} />
-                                <Typography variant="caption" sx={{ fontWeight: 800, mt: 0.5, color: 'primary.main', fontSize: '0.62rem', whiteSpace: 'nowrap' }}>
-                                  Today
+                              {/* Current Node Pin */}
+                              {!isEnded && !isNotStarted && (() => {
+                                const visualPercent = Math.min(94, Math.max(6, percent));
+                                return (
+                                  <Box sx={{ 
+                                    position: 'absolute', 
+                                    left: `calc(16px + ${visualPercent}% - ${visualPercent * 0.32}px)`,
+                                    transform: 'translateX(-50%)', 
+                                    display: 'flex', 
+                                    flexDirection: 'column', 
+                                    alignItems: 'center', 
+                                    zIndex: 3
+                                  }}>
+                                    {/* Pulsing Outer Ring */}
+                                    <Box sx={{
+                                      position: 'absolute',
+                                      width: 24,
+                                      height: 24,
+                                      borderRadius: '50%',
+                                      border: '2px solid',
+                                      borderColor: 'primary.main',
+                                      animation: 'pulse 2s infinite ease-in-out',
+                                      '@keyframes pulse': {
+                                        '0%': { transform: 'scale(0.6)', opacity: 0.8 },
+                                        '100%': { transform: 'scale(1.3)', opacity: 0 }
+                                      }
+                                    }} />
+                                    {/* Center Thumb */}
+                                    <Tooltip 
+                                      title={`Today: ${todayStr} (${percent.toFixed(1)}% elapsed)`} 
+                                      arrow
+                                      open={todayHover ? true : undefined}
+                                    >
+                                      <Box 
+                                        onMouseEnter={() => setTodayHover(true)}
+                                        onMouseLeave={() => setTodayHover(false)}
+                                        sx={{ 
+                                          width: 14, 
+                                          height: 14, 
+                                          borderRadius: '50%', 
+                                          bgcolor: 'primary.main', 
+                                          border: '3px solid', 
+                                          borderColor: 'background.paper', 
+                                          boxShadow: (theme) => `0 2px 8px ${alpha(theme.palette.primary.main, 0.4)}`,
+                                          transition: 'transform 0.15s ease',
+                                          cursor: 'pointer',
+                                          transform: todayHover ? 'scale(1.2)' : 'scale(1)',
+                                          '&:hover': {
+                                            transform: 'scale(1.2)'
+                                          }
+                                        }} 
+                                      />
+                                    </Tooltip>
+                                  </Box>
+                                );
+                              })()}
+
+                              {/* End Dot */}
+                              <Box sx={{ position: 'absolute', right: 16, transform: 'translateX(50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
+                                <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: isEnded ? 'primary.main' : 'action.disabled', border: '3px solid', borderColor: 'background.paper', boxShadow: (theme) => theme.shadows[1] }} />
+                              </Box>
+                            </Box>
+
+                            {/* Grid details under pathway */}
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: 1, mt: 0.5, borderTop: '1px solid', borderColor: 'divider', pt: 1 }}>
+                              {/* Start Date Card */}
+                              <Box sx={{ textAlign: 'left' }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', display: 'block', letterSpacing: 0.3, fontSize: '0.62rem' }}>
+                                  Start Date
+                                </Typography>
+                                <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.primary', mt: 0.25, display: 'block' }}>
+                                  {startStr}
                                 </Typography>
                               </Box>
-                            );
-                          }
-                          return null;
-                        })()}
 
-                        {/* End Node */}
-                        <Box sx={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'divider', border: '2px solid', borderColor: 'background.paper', mr: 1.5 }} />
-                          <Typography variant="caption" sx={{ fontWeight: 700, mt: 1, color: 'text.secondary', fontSize: '0.72rem' }}>
-                            End: {prog?.pm_enddate ? new Date(prog.pm_enddate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                          </Typography>
-                        </Box>
-                      </Box>
+                              {/* Today/Progress Card */}
+                              <Box 
+                                onMouseEnter={() => setTodayHover(true)}
+                                onMouseLeave={() => setTodayHover(false)}
+                                sx={{ 
+                                  textAlign: 'center', 
+                                  cursor: 'pointer', 
+                                  transition: 'transform 0.2s', 
+                                  transform: todayHover ? 'scale(1.05)' : 'scale(1)' 
+                                }}
+                              >
+                                <Typography variant="caption" color="primary.main" sx={{ fontWeight: 800, textTransform: 'uppercase', display: 'block', letterSpacing: 0.3, fontSize: '0.62rem' }}>
+                                  Today ({todayStr})
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', display: 'block', mt: 0.25, fontWeight: 700 }}>
+                                  {percent.toFixed(1)}% elapsed
+                                </Typography>
+                              </Box>
+
+                              {/* Target Date Card */}
+                              <Box sx={{ textAlign: 'right' }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', display: 'block', letterSpacing: 0.3, fontSize: '0.62rem' }}>
+                                  Target Date
+                                </Typography>
+                                <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.primary', mt: 0.25, display: 'block' }}>
+                                  {endStr}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Box>
+                        );
+                      })()}
                     </Box>
                   </Box>
                   <Divider />
@@ -666,19 +854,74 @@ export default function ProgrammesPage() {
               </Paper>
             </Grid>
 
-            {/* Overall Health - 6/12 Width */}
+            {/* Approval Tasks */}
             <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <TaskAltIcon sx={{ fontSize: 18, color: 'success.main' }} /> Approval Tasks
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 2, flexGrow: 1 }}>
+                  <EntityApprovalTasks
+                    entityId={selectedProgrammeId}
+                    moduleName={MODULE_NAMES.PROGRAMMES.value}
+                    entityLabel="Programme"
+                    tabValue={0}
+                    index={0}
+                  />
+                </Box>
+              </Paper>
+            </Grid>
+
+            {/* Left Column: Linked Projects */}
+            <Grid size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2, px: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <AccountTreeIcon sx={{ color: 'success.main', fontSize: 18 }} /> Linked Projects
+                  </Typography>
+                  <TextField
+                    size="small"
+                    placeholder="Search projects..."
+                    value={projectsSearch}
+                    onChange={(e) => setProjectsSearch(e.target.value)}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+                          </InputAdornment>
+                        ),
+                        sx: { borderRadius: 1.5, height: 36, width: 240, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#fff' }
+                      },
+                    }}
+                  />
+                </Box>
+                <Box sx={{ flexGrow: 1, py: 1.5 }}>
+                  <ProgrammeHierarchyTable
+                    projects={detailProjects}
+                    searchTerm={projectsSearch}
+                    loading={detailLoading}
+                  />
+                </Box>
+              </Paper>
+            </Grid>
+
+            {/* Row 3: Detail Cards (3 columns side-by-side to avoid whitespace/empty grid columns) */}
+            {/* Overall Health - 4/12 Width */}
+            <Grid size={{ xs: 12, lg: 4 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
                 <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     <LightbulbIcon sx={{ fontSize: 18, color: 'success.main' }} /> Overall Health
                   </Typography>
                 </Box>
-                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1, gap: 2 }}>
+                <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1, gap: 1.5 }}>
                   {detailProjects.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, py: 1.5, justifyContent: 'center' }}>
-                        <Box sx={{ width: 160, height: 160, position: 'relative', flexShrink: 0 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1, justifyContent: 'center' }}>
+                        <Box sx={{ width: 140, height: 140, position: 'relative', flexShrink: 0 }}>
                           <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                               <Pie
@@ -689,8 +932,8 @@ export default function ProgrammesPage() {
                                 ].filter(d => d.value > 0)}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={45}
-                                outerRadius={68}
+                                innerRadius={35}
+                                outerRadius={58}
                                 paddingAngle={3}
                                 dataKey="value"
                                 stroke="none"
@@ -707,147 +950,73 @@ export default function ProgrammesPage() {
                             </PieChart>
                           </ResponsiveContainer>
                           <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-                            <Typography variant="h4" sx={{ fontWeight: 900, lineHeight: 1, fontFamily: '"Outfit", sans-serif' }}>
+                            <Typography variant="h5" sx={{ fontWeight: 900, lineHeight: 1, fontFamily: '"Outfit", sans-serif' }}>
                               {detailProjects.length}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                               Projects
                             </Typography>
                           </Box>
                         </Box>
-                        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.success.main, 0.08) : alpha(theme.palette.success.main, 0.05), border: '1px solid', borderColor: (theme) => alpha(theme.palette.success.main, 0.2) }}>
-                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: 'success.dark', fontWeight: 800 }}>
-                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'success.main' }} /> Low
+                        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1, py: 0.75, borderRadius: '8px', bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.success.main, 0.08) : alpha(theme.palette.success.main, 0.05), border: '1px solid', borderColor: (theme) => alpha(theme.palette.success.main, 0.2) }}>
+                            <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'success.dark', fontWeight: 800 }}>
+                              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main' }} /> Low
                             </Typography>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'success.dark', fontFamily: '"Outfit", sans-serif' }}>{specificGreen}</Typography>
+                            <Typography variant="caption" sx={{ fontWeight: 900, color: 'success.dark', fontFamily: '"Outfit", sans-serif' }}>{specificGreen}</Typography>
                           </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.08)' : '#fffbeb', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.2)' }}>
-                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#92400e', fontWeight: 800 }}>
-                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f59e0b' }} /> Medium
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1, py: 0.75, borderRadius: '8px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.08)' : '#fffbeb', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.2)' }}>
+                            <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#92400e', fontWeight: 800 }}>
+                              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f59e0b' }} /> Med
                             </Typography>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#92400e', fontFamily: '"Outfit", sans-serif' }}>{specificAmber}</Typography>
+                            <Typography variant="caption" sx={{ fontWeight: 900, color: '#92400e', fontFamily: '"Outfit", sans-serif' }}>{specificAmber}</Typography>
                           </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.08)' : '#fef2f2', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.2)' }}>
-                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#991b1b', fontWeight: 800 }}>
-                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ef4444' }} /> High
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1, py: 0.75, borderRadius: '8px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.08)' : '#fef2f2', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.2)' }}>
+                            <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#991b1b', fontWeight: 800 }}>
+                              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444' }} /> High
                             </Typography>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#991b1b', fontFamily: '"Outfit", sans-serif' }}>{specificRed}</Typography>
+                            <Typography variant="caption" sx={{ fontWeight: 900, color: '#991b1b', fontFamily: '"Outfit", sans-serif' }}>{specificRed}</Typography>
                           </Box>
                         </Box>
                       </Box>
 
-                      <Box sx={{ p: 2, borderRadius: '16px', border: '1px dashed', borderColor: 'divider', bgcolor: 'background.default' }}>
-                        <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      <Box sx={{ p: 1.5, borderRadius: '12px', border: '1px dashed', borderColor: 'divider', bgcolor: 'background.default' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                           Delivery Confidence
                         </Typography>
-                        <Box sx={{ display: 'flex', gap: 0.5, height: 10, borderRadius: '5px', overflow: 'hidden', bgcolor: 'action.disabledBackground' }}>
+                        <Box sx={{ display: 'flex', gap: 0.5, height: 8, borderRadius: '4px', overflow: 'hidden', bgcolor: 'action.disabledBackground' }}>
                           {specificGreen > 0 && <Box sx={{ width: `${(specificGreen / detailProjects.length) * 100}%`, bgcolor: theme.palette.success.main }} />}
                           {specificAmber > 0 && <Box sx={{ width: `${(specificAmber / detailProjects.length) * 100}%`, bgcolor: '#f59e0b' }} />}
                           {specificRed > 0 && <Box sx={{ width: `${(specificRed / detailProjects.length) * 100}%`, bgcolor: '#ef4444' }} />}
                         </Box>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1, fontSize: '0.7rem', textAlign: 'center', fontWeight: 700 }}>
-                          {specificGreen === detailProjects.length ? '100% on track' : `${Math.round((specificGreen / detailProjects.length) * 100)}% of projects are on track`}
-                        </Typography>
                       </Box>
                     </Box>
-                  ) : (
-                    <Typography variant="body2" color="text.disabled" sx={{ py: 2, textAlign: 'center' }}>
-                      No project data to analyze health
-                    </Typography>
-                  )}
-                  <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 1.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
-                    {detailProjects.length} entities tracked
-                  </Typography>
+                  ) : null}
                 </Box>
               </Paper>
             </Grid>
 
-            {/* Left Column: Tables and Risks */}
-            <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Projects Table */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <AccountTreeIcon sx={{ color: 'success.main', fontSize: 18 }} /> Linked Projects
-                  </Typography>
-                </Box>
-                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', '& .MuiPaper-root': { boxShadow: 'none', border: 'none', bgcolor: 'transparent', backgroundImage: 'none', borderRadius: 0, mb: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' } }}>
-                  <DataverseTable
-                    showExport={false}
-                    minHeight={"auto"}
-                    data={detailProjects}
-                    columns={projectColumns}
-                    loading={detailLoading}
-                    emptyIcon={<AccountTreeIcon />}
-                    emptyTitle="No projects linked to this programme."
-                    searchPlaceholder="Search projects..."
-                    searchFields={['pm_projectname']}
-                  />
-                </Box>
-              </Paper>
-
-              {/* Documents */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <FolderIcon sx={{ fontSize: 18, color: 'success.main' }} /> Documents
-                  </Typography>
-                </Box>
-                <Box sx={{ p: 3 }}>
-                  <EntityDocumentsTab
-                    entityId={selectedProgrammeId}
-                    moduleName={MODULE_NAMES.PROGRAMMES.value}
-                    canEdit={canEdit}
-                  />
-                </Box>
-              </Paper>
-            </Grid>
-
-            {/* Right Column: Cards */}
-            <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Approval Tasks */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <TaskAltIcon sx={{ fontSize: 18, color: 'success.main' }} /> Approval Tasks
-                  </Typography>
-                </Box>
-                <Box sx={{ p: 3 }}>
-                  <EntityApprovalTasks
-                    entityId={selectedProgrammeId}
-                    moduleName={MODULE_NAMES.PROGRAMMES.value}
-                    entityLabel="Programme"
-                    tabValue={0}
-                    index={0}
-                  />
-                </Box>
-              </Paper>
-
+            <Grid size={{ xs: 12, lg: 4 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               {/* Financials Card */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
                 <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'success.main' }} /> Financials
                   </Typography>
                 </Box>
-                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1 }}>
+                    <Paper variant="outlined" sx={{ p: 1, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Total Budget</Typography>
                       <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'primary.main', mt: 0.5 }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                    <Paper variant="outlined" sx={{ p: 1, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Actual Spend</Typography>
                       <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'warning.main', mt: 0.5 }}>{currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}</Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                    <Paper variant="outlined" sx={{ p: 1, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Variance</Typography>
-                      <Typography variant="subtitle1" sx={{
-                        fontWeight: 800,
-                        color: 'info.main',
-                        mt: 0.5
-                      }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'info.main', mt: 0.5 }}>
                         {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
                       </Typography>
                     </Paper>
@@ -855,12 +1024,12 @@ export default function ProgrammesPage() {
 
                   <Box>
                     <StatusProgressBar value={prog?.pm_actualspendeur ?? 0} total={prog?.pm_budgeteur ?? 0} label="Budget Utilization" />
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'right' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, display: 'block', textAlign: 'right' }}>
                       {prog?.pm_budgeteur && prog?.pm_budgeteur > 0 ? `${((prog?.pm_actualspendeur ?? 0) / prog?.pm_budgeteur * 100).toFixed(1)}% consumed` : ''}
                     </Typography>
                   </Box>
 
-                  <Box sx={{ height: 135, mt: -1.5, mb: -1.5 }}>
+                  <Box sx={{ height: 110, mt: -1.5, mb: -1.5, flexGrow: 1 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={[
@@ -885,38 +1054,38 @@ export default function ProgrammesPage() {
                       </BarChart>
                     </ResponsiveContainer>
                   </Box>
-
-
                 </Box>
               </Paper>
+            </Grid>
 
+            <Grid size={{ xs: 12, lg: 4 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               {/* Escalated Risks & Issues */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
                 <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     <GppMaybeIcon sx={{ fontSize: 18, color: 'success.main' }} /> Escalated Risks & Issues
                   </Typography>
                 </Box>
-                <Box sx={{ p: 3 }}>
-                  <Box sx={{ mb: 3 }}>
+                <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5, flexGrow: 1 }}>
+                  <Box>
                     <Typography variant="caption" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary', display: 'block', textTransform: 'uppercase' }}>
                       Severity Distribution
                     </Typography>
                     <Grid container spacing={2}>
                       <Grid size={{ xs: 4 }}>
-                        <Paper sx={{ p: 1.5, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(211,47,47,0.1)' : '#fee2e2', textAlign: 'center' }}>
+                        <Paper sx={{ p: 1, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(211,47,47,0.1)' : '#fee2e2', textAlign: 'center' }}>
                           <Typography variant="caption" sx={{ fontWeight: 600, color: 'error.main' }}>High</Typography>
                           <Typography variant="h6" sx={{ fontWeight: 700, color: 'error.main' }}>{severityDistribution.high}</Typography>
                         </Paper>
                       </Grid>
                       <Grid size={{ xs: 4 }}>
-                        <Paper sx={{ p: 1.5, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(237,108,2,0.1)' : '#fef3c7', textAlign: 'center' }}>
+                        <Paper sx={{ p: 1, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(237,108,2,0.1)' : '#fef3c7', textAlign: 'center' }}>
                           <Typography variant="caption" sx={{ fontWeight: 600, color: 'warning.main' }}>Medium</Typography>
                           <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>{severityDistribution.medium}</Typography>
                         </Paper>
                       </Grid>
                       <Grid size={{ xs: 4 }}>
-                        <Paper sx={{ p: 1.5, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(46,125,50,0.1)' : '#dcfce7', textAlign: 'center' }}>
+                        <Paper sx={{ p: 1, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(46,125,50,0.1)' : '#dcfce7', textAlign: 'center' }}>
                           <Typography variant="caption" sx={{ fontWeight: 600, color: 'success.main' }}>Low</Typography>
                           <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>{severityDistribution.low}</Typography>
                         </Paper>
@@ -924,58 +1093,90 @@ export default function ProgrammesPage() {
                     </Grid>
                   </Box>
 
-                  <Grid container spacing={3}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'error.main' }}>
-                        Risks ({escalatedRisks.length})
-                      </Typography>
-                      {escalatedRisks.length > 0 ? (
-                        escalatedRisks.map(r => (
-                          <Paper
-                            key={r.pm_riskid}
-                            sx={{ p: 1.5, mb: 1, borderRadius: '12px', border: '1px solid', borderColor: 'divider', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'error.main' } }}
-                            onClick={() => r.pm_riskid && navigateToRisk(r.pm_riskid)}
-                          >
-                            <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              {r.pm_risktitle} <OpenInNewIcon sx={{ fontSize: 12 }} />
-                            </Typography>
-                          </Paper>
-                        ))
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">No escalated risks.</Typography>
-                      )}
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'warning.main' }}>
-                        Issues ({escalatedIssues.length})
-                      </Typography>
-                      {escalatedIssues.length > 0 ? (
-                        escalatedIssues.map(i => (
-                          <Paper
-                            key={i.pm_issueid}
-                            sx={{ p: 1.5, mb: 1, borderRadius: '12px', border: '1px solid', borderColor: 'divider', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'warning.main' } }}
-                            onClick={() => i.pm_issueid && navigateToIssue(i.pm_issueid)}
-                          >
-                            <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              {i.pm_issuetitle} <OpenInNewIcon sx={{ fontSize: 12 }} />
-                            </Typography>
-                          </Paper>
-                        ))
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">No escalated issues.</Typography>
-                      )}
-                    </Grid>
-                  </Grid>
+                  <Divider />
+
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary', display: 'block', textTransform: 'uppercase' }}>
+                      Escalated Risks
+                    </Typography>
+                    {escalatedRisks.length > 0 ? (
+                      escalatedRisks.map((r) => (
+                        <Paper
+                          key={r.pm_riskid}
+                          sx={{ p: 1, mb: 1, borderRadius: '12px', border: '1px solid', borderColor: 'divider', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'error.main' } }}
+                          onClick={() => r.pm_riskid && navigateToRisk(r.pm_riskid)}
+                        >
+                          <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.8rem' }}>
+                            {r.pm_risktitle} <OpenInNewIcon sx={{ fontSize: 11 }} />
+                          </Typography>
+                        </Paper>
+                      ))
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">No escalated risks.</Typography>
+                    )}
+                  </Box>
+
+                  <Divider />
+
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary', display: 'block', textTransform: 'uppercase' }}>
+                      Escalated Issues
+                    </Typography>
+                    {escalatedIssues.length > 0 ? (
+                      escalatedIssues.map((i) => (
+                        <Paper
+                          key={i.pm_issueid}
+                          sx={{ p: 1, mb: 1, borderRadius: '12px', border: '1px solid', borderColor: 'divider', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'warning.main' } }}
+                          onClick={() => i.pm_issueid && navigateToIssue(i.pm_issueid)}
+                        >
+                          <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.8rem' }}>
+                            {i.pm_issuetitle} <OpenInNewIcon sx={{ fontSize: 11 }} />
+                          </Typography>
+                        </Paper>
+                      ))
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">No escalated issues.</Typography>
+                    )}
+                  </Box>
                 </Box>
               </Paper>
-
-
             </Grid>
           </Grid>
         )}
 
         {detailTab === 1 && (
           <MasterScheduleTab projects={detailProjects} />
+        )}
+
+        {detailTab === 2 && (
+          <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+            <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <FolderIcon sx={{ fontSize: 18, color: 'success.main' }} /> Documents
+              </Typography>
+              {canEdit && programmeDocCount > 0 && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => documentsTabRef.current?.triggerUpload()}
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  Add Document
+                </Button>
+              )}
+            </Box>
+            <Box sx={{ p: 3 }}>
+              <EntityDocumentsTab
+                ref={documentsTabRef}
+                entityId={selectedProgrammeId ?? ''}
+                moduleName={MODULE_NAMES.PROGRAMMES.value}
+                canEdit={canEdit}
+                hideUploadIfNotEmpty={true}
+                onDocumentsChange={(docs) => setProgrammeDocCount(docs.length)}
+              />
+            </Box>
+          </Paper>
         )}
 
         <ProgrammeFormDialog
