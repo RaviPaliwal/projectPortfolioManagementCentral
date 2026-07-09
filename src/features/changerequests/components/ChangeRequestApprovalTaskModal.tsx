@@ -140,14 +140,14 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
 
   return (
     <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'warning.main', color: 'warning.contrastText', py: 1.5, pr: 1 }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', py: 2, px: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <ChangeCircleIcon />
+          <ChangeCircleIcon sx={{ color: 'primary.main' }} />
           <Typography variant="h6" sx={{ fontWeight: 700 }}>Change Request Review</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip label="Pending Review" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'white' }}>
+          <Chip label="Pending Review" color="warning" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'text.secondary' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>

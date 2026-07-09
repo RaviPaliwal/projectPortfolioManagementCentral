@@ -28,6 +28,8 @@ import {
   deleteRisk,
   fetchMitigationActions,
 } from '@/services'
+import { unwrapSingle } from '@/services/common'
+import { Pm_projectsService, Pm_programmesService, Pm_portfoliosService } from '@/generated'
 import type { RiskModel, RiskMitigationActionModel } from '@/types/dataverse'
 import { PageHeader, Breadcrumbs, KpiCardRow } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
@@ -84,9 +86,78 @@ export default function RisksPage() {
 
   // Mitigation Action dialog
   const [actionDialogOpen, setActionDialogOpen] = useState(false)
+  const [actionTargetRisk, setActionTargetRisk] = useState<RiskModel | null>(null)
 
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState<RiskModel | null>(null)
+  const [escalateConfirmOpen, setEscalateConfirmOpen] = useState(false)
+  const [notifiedRole, setNotifiedRole] = useState<string>('Project Manager')
+  const [notifiedPersonName, setNotifiedPersonName] = useState<string>('')
+  const [notifiedEntityName, setNotifiedEntityName] = useState<string>('')
+
+  useEffect(() => {
+    if (escalateConfirmOpen && selectedRisk?._pm_regardingid_value && selectedRisk.pm_regardingidtype) {
+      const type = selectedRisk.pm_regardingidtype
+      const id = selectedRisk._pm_regardingid_value
+
+      setNotifiedEntityName(selectedRisk.pm_projectname || '')
+
+      if (type === 'pm_projects') {
+        setNotifiedRole('Project Manager')
+        setNotifiedPersonName('')
+        Pm_projectsService.get(id, {
+          select: ['pm_projectid', 'pm_projectname', 'pm_projectmanagername']
+        }).then(res => {
+          if (res.success && res.data) {
+            const proj = unwrapSingle<any>(res)
+            setNotifiedPersonName(proj?.pm_projectmanagername || 'the Project Manager')
+            if (proj?.pm_projectname) setNotifiedEntityName(proj.pm_projectname)
+          } else {
+            setNotifiedPersonName('the Project Manager')
+          }
+        }).catch(() => {
+          setNotifiedPersonName('the Project Manager')
+        })
+      } else if (type === 'pm_programmes') {
+        setNotifiedRole('Programme Manager')
+        setNotifiedPersonName('')
+        Pm_programmesService.get(id, {
+          select: ['pm_programmeid', 'pm_programmename', 'pm_programmemanagername']
+        }).then(res => {
+          if (res.success && res.data) {
+            const prog = unwrapSingle<any>(res)
+            setNotifiedPersonName(prog?.pm_programmemanagername || 'the Programme Manager')
+            if (prog?.pm_programmename) setNotifiedEntityName(prog.pm_programmename)
+          } else {
+            setNotifiedPersonName('the Programme Manager')
+          }
+        }).catch(() => {
+          setNotifiedPersonName('the Programme Manager')
+        })
+      } else if (type === 'pm_portfolios') {
+        setNotifiedRole('Portfolio Owner')
+        setNotifiedPersonName('')
+        Pm_portfoliosService.get(id, {
+          select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value']
+        }).then(res => {
+          if (res.success && res.data) {
+            const port = unwrapSingle<any>(res)
+            const ownerName = port.pm_ownerlookupname || port['_pm_ownerlookup_value@OData.Community.Display.V1.FormattedValue'] || 'the Portfolio Owner'
+            setNotifiedPersonName(ownerName)
+            if (port?.pm_portfolioname) setNotifiedEntityName(port.pm_portfolioname)
+          } else {
+            setNotifiedPersonName('the Portfolio Owner')
+          }
+        }).catch(() => {
+          setNotifiedPersonName('the Portfolio Owner')
+        })
+      }
+    } else {
+      setNotifiedRole('Project Manager')
+      setNotifiedPersonName('')
+      setNotifiedEntityName('')
+    }
+  }, [escalateConfirmOpen, selectedRisk])
 
   // Mitigation actions
   const [mitigationActions, setMitigationActions] = useState<RiskMitigationActionModel[]>([])
@@ -128,18 +199,18 @@ export default function RisksPage() {
     }
   }, [loading, risks])
 
-  // ── Fetch mitigation actions when detail tab changes ────────────────────────
+  // ── Fetch mitigation actions when selectedRisk changes ──────────────────────
   useEffect(() => {
-    if (selectedRisk?.pm_riskid && detailTab === 1) {
+    if (selectedRisk?.pm_riskid) {
       setMitigationLoading(true)
       fetchMitigationActions(selectedRisk.pm_riskid)
         .then((actions) => setMitigationActions(actions))
         .catch(() => setMitigationActions([]))
         .finally(() => setMitigationLoading(false))
-    } else if (detailTab !== 1) {
+    } else {
       setMitigationActions([])
     }
-  }, [selectedRisk?.pm_riskid, detailTab])
+  }, [selectedRisk?.pm_riskid])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const openCreate = () => {
@@ -184,6 +255,29 @@ export default function RisksPage() {
     }
   }
 
+  const handleEscalateToggle = async () => {
+    if (!selectedRisk?.pm_riskid) return
+    setError(null)
+    setSaving(true)
+    const newStatus = !selectedRisk.pm_escalated
+    try {
+      const updated = await updateRiskFull(selectedRisk.pm_riskid, {
+        pm_escalated: newStatus
+      })
+      if (updated) {
+        setSuccessMsg(newStatus ? 'Risk escalated successfully.' : 'Risk de-escalated successfully.')
+        setSelectedRisk(updated)
+        setRisks(prev => prev.map(r => r.pm_riskid === selectedRisk.pm_riskid ? updated : r))
+        setEscalateConfirmOpen(false)
+        setTimeout(() => setSuccessMsg(null), 3000)
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to update escalation status.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleDelete = async () => {
     if (!deleteTarget?.pm_riskid) return
     setError(null)
@@ -202,7 +296,8 @@ export default function RisksPage() {
   }
 
   const handleSaveAction = async (data: Record<string, any>) => {
-    if (!selectedRisk?.pm_riskid) return
+    const targetRisk = actionTargetRisk || selectedRisk
+    if (!targetRisk?.pm_riskid) return
     setError(null)
     try {
       const { Pm_riskmitigationactionsService } = await import('@/generated')
@@ -211,7 +306,7 @@ export default function RisksPage() {
         pm_actiondescription: data.pm_actiondescription,
         pm_notes: data.pm_notes,
         pm_status: Number(data.pm_actionstatus),
-        'pm_risk@odata.bind': `/pm_risks(${selectedRisk.pm_riskid})`,
+        'pm_risk@odata.bind': `/pm_risks(${targetRisk.pm_riskid})`,
       }
       if (data.pm_duedate) {
         payload.pm_duedate = data.pm_duedate
@@ -222,12 +317,15 @@ export default function RisksPage() {
       await Pm_riskmitigationactionsService.create(payload as any)
       setSuccessMsg('Action saved.')
       setActionDialogOpen(false)
-      // Reload actions
-      setMitigationLoading(true)
-      fetchMitigationActions(selectedRisk.pm_riskid)
-        .then((actions) => setMitigationActions(actions))
-        .catch(() => setMitigationActions([]))
-        .finally(() => setMitigationLoading(false))
+      setActionTargetRisk(null)
+      // Reload actions if we are currently looking at the same selected risk detail drawer
+      if (selectedRisk && selectedRisk.pm_riskid === targetRisk.pm_riskid) {
+        setMitigationLoading(true)
+        fetchMitigationActions(selectedRisk.pm_riskid)
+          .then((actions) => setMitigationActions(actions))
+          .catch(() => setMitigationActions([]))
+          .finally(() => setMitigationLoading(false))
+      }
     } catch (err) {
       setError('Unable to save mitigation action.')
     }
@@ -276,7 +374,7 @@ export default function RisksPage() {
       )}
 
       {selectedRisk ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
           <Breadcrumbs
             items={[
               { label: 'Risk Matrix', path: 'list' },
@@ -287,35 +385,31 @@ export default function RisksPage() {
           <PageHeader
             title={selectedRisk?.pm_risktitle ?? 'Risk Detail'}
             subtitle={
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: 1 }}>
-                <Box component="span" sx={{
-                  px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600,
-                  bgcolor: `${RISK_CATEGORY_COLORS[String(selectedRisk.pm_riskcategory ?? '')] ?? 'text.disabled'}20`,
-                  color: RISK_CATEGORY_COLORS[String(selectedRisk.pm_riskcategory ?? '')] ?? 'text.disabled'
-                }}>
-                  {RISK_CATEGORY_LABELS[String(selectedRisk.pm_riskcategory ?? '')] ?? '—'}
-                </Box>
-                <Box component="span" sx={{
-                  px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600,
-                  border: '1px solid',
-                  borderColor: RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'error' ? 'error.main' : RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'warning' ? 'warning.main' : 'success.main',
-                  color: RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'error' ? 'error.main' : RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'warning' ? 'warning.main' : 'success.main',
-                }}>
-                  {RAG_LABELS[String(selectedRisk.pm_ragstatus ?? '')] ?? '—'}
-                </Box>
-                {selectedRisk.pm_escalated && (
+              selectedRisk?.pm_escalated ? (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: 1 }}>
                   <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600, bgcolor: 'error.main', color: 'white', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <FlagIcon sx={{ fontSize: 12 }} /> Escalated
                   </Box>
-                )}
-              </Box>
+                </Box>
+              ) : undefined
             }
             actionElement={
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 {canEdit && (
-                  <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedRisk && openEdit(selectedRisk)} sx={{ borderRadius: 1.5 }}>
-                    Edit Risk
-                  </Button>
+                  <>
+                    <Button
+                      variant="outlined"
+                      color={selectedRisk.pm_escalated ? "warning" : "error"}
+                      startIcon={<FlagIcon />}
+                      onClick={() => setEscalateConfirmOpen(true)}
+                      sx={{ borderRadius: 1.5 }}
+                    >
+                      {selectedRisk.pm_escalated ? 'De-escalate Risk' : 'Escalate Risk'}
+                    </Button>
+                    <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedRisk && openEdit(selectedRisk)} sx={{ borderRadius: 1.5 }}>
+                      Edit Risk
+                    </Button>
+                  </>
                 )}
                 {canDelete && (
                   <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedRisk)} sx={{ borderRadius: 1.5 }}>
@@ -358,12 +452,16 @@ export default function RisksPage() {
           />
 
           {/* Heatmap & Charts Section */}
-          <RiskDistributionCharts risks={risks} />
-          <Box sx={{ mb: 3 }}>
-            <Suspense fallback={<Box sx={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading heatmap…</Box>}>
-              <RiskHeatmap risks={risks} />
-            </Suspense>
-          </Box>
+          {currentUserPersona !== 'TeamMember' && (
+            <>
+              <RiskDistributionCharts risks={risks} />
+              <Box sx={{ mb: 3 }}>
+                <Suspense fallback={<Box sx={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading heatmap…</Box>}>
+                  <RiskHeatmap risks={risks} />
+                </Suspense>
+              </Box>
+            </>
+          )}
 
 
           {/* Search, Filter & Table */}
@@ -382,6 +480,10 @@ export default function RisksPage() {
             openCreate={openCreate}
             canEdit={canEdit}
             canDelete={canDelete}
+            onAddMitigationAction={(risk) => {
+              setActionTargetRisk(risk)
+              setActionDialogOpen(true)
+            }}
           />
         </>
       )}
@@ -396,9 +498,12 @@ export default function RisksPage() {
 
       <MitigationActionDialog
         open={actionDialogOpen}
-        onClose={() => setActionDialogOpen(false)}
+        onClose={() => {
+          setActionDialogOpen(false)
+          setActionTargetRisk(null)
+        }}
         onSave={handleSaveAction}
-        projectId={selectedRisk?._pm_project_value}
+        projectId={actionTargetRisk?._pm_project_value || selectedRisk?._pm_project_value}
       />
 
       {/* Delete Confirmation */}
@@ -410,6 +515,20 @@ export default function RisksPage() {
         confirmColor="error"
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
+      />
+
+      {/* Escalate Confirmation */}
+      <ConfirmDialog
+        open={escalateConfirmOpen}
+        title={selectedRisk?.pm_escalated ? "De-escalate Risk" : "Escalate Risk"}
+        message={selectedRisk?.pm_escalated 
+          ? `Are you sure you want to de-escalate the risk "${selectedRisk?.pm_risktitle}"?` 
+          : `Are you sure you want to escalate the risk "${selectedRisk?.pm_risktitle}"? This will send a Microsoft Teams notification to the ${notifiedRole} (${notifiedPersonName || 'Loading...'}) of the ${selectedRisk?.pm_regardingidtype === 'pm_programmes' ? 'programme' : selectedRisk?.pm_regardingidtype === 'pm_portfolios' ? 'portfolio' : 'project'} "${notifiedEntityName || 'Loading...'}"`
+        }
+        confirmLabel={selectedRisk?.pm_escalated ? "De-escalate" : "Escalate"}
+        confirmColor={selectedRisk?.pm_escalated ? "warning" : "error"}
+        onClose={() => setEscalateConfirmOpen(false)}
+        onConfirm={handleEscalateToggle}
       />
     </Box>
   )

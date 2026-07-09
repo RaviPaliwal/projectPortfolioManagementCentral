@@ -14,6 +14,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import ErrorIcon from '@mui/icons-material/Error'
 import BugReportIcon from '@mui/icons-material/BugReport'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
 import NewReleasesIcon from '@mui/icons-material/NewReleases'
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
 import LowPriorityIcon from '@mui/icons-material/LowPriority'
@@ -171,11 +172,72 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
-                    <BugReportIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description
+                    <BugReportIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description / PMO Summary
                   </Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', lineHeight: 1.6 }}>
-                    {selectedIssue.pm_issuedescription || 'No description provided.'}
-                  </Typography>
+                  {(() => {
+                    const desc = selectedIssue.pm_issuedescription || '';
+                    const rootCauseRegex = /(?:Root\s*Cause\s*\/\s*Context|Context)\s*:?\s*([\s\S]*?)(?=(?:Business\s*\/\s*Project\s*Impact|Impact|Recommended\s*Mitigation|Mitigation)\s*:?|$)/i;
+                    const impactRegex = /(?:Business\s*\/\s*Project\s*Impact|Impact)\s*:?\s*([\s\S]*?)(?=(?:Root\s*Cause\s*\/\s*Context|Context|Recommended\s*Mitigation|Mitigation)\s*:?|$)/i;
+                    const mitigationRegex = /(?:Recommended\s*Mitigation|Mitigation)\s*:?\s*([\s\S]*?)(?=(?:Root\s*Cause\s*\/\s*Context|Context|Business\s*\/\s*Project\s*Impact|Impact)\s*:?|$)/i;
+
+                    const rootCauseMatch = desc.match(rootCauseRegex);
+                    const impactMatch = desc.match(impactRegex);
+                    const mitigationMatch = desc.match(mitigationRegex);
+
+                    const isStructured = rootCauseMatch || impactMatch || mitigationMatch;
+
+                    if (!isStructured) {
+                      return (
+                        <Box sx={{
+                          p: 2.5,
+                          borderRadius: '8px',
+                          bgcolor: mode => mode.palette.mode === 'light' ? '#f8fafc' : '#1e293b',
+                          border: '1px solid',
+                          borderColor: mode => mode.palette.mode === 'light' ? '#e2e8f0' : '#334155',
+                          boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                        }}>
+                          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.primary', lineHeight: 1.6 }}>
+                            {desc || 'No description provided.'}
+                          </Typography>
+                        </Box>
+                      );
+                    }
+
+                    return (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                        {rootCauseMatch && (
+                          <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: 'action.hover', borderLeft: '4px solid', borderColor: 'info.main' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: 'info.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                              Root Cause / Context
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                              {rootCauseMatch[1].trim()}
+                            </Typography>
+                          </Box>
+                        )}
+                        {impactMatch && (
+                          <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: mode => mode.palette.mode === 'light' ? 'rgba(239, 68, 68, 0.04)' : 'rgba(239, 68, 68, 0.08)', borderLeft: '4px solid', borderColor: 'error.main' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: 'error.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                              Business / Project Impact
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                              {impactMatch[1].trim()}
+                            </Typography>
+                          </Box>
+                        )}
+                        {mitigationMatch && (
+                          <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: mode => mode.palette.mode === 'light' ? 'rgba(33, 124, 53, 0.04)' : 'rgba(33, 124, 53, 0.08)', borderLeft: '4px solid', borderColor: 'primary.main' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                              Recommended Mitigation
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                              {mitigationMatch[1].trim()}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    );
+                  })()}
                 </Box>
 
                 <Divider />
@@ -184,9 +246,36 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
                     <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} /> Resolution Details
                   </Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', lineHeight: 1.6 }}>
-                    {selectedIssue.pm_resolutiondetails || 'No resolution details recorded yet.'}
-                  </Typography>
+                  {selectedIssue.pm_resolutiondetails ? (
+                    <Box sx={{
+                      p: 2.5,
+                      borderRadius: '8px',
+                      bgcolor: mode => mode.palette.mode === 'light' ? '#f0fdf4' : '#14532d',
+                      border: '1px solid',
+                      borderColor: mode => mode.palette.mode === 'light' ? '#bbf7d0' : '#166534',
+                      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                    }}>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.primary', lineHeight: 1.6 }}>
+                        {selectedIssue.pm_resolutiondetails}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Box sx={{
+                      p: 2.5,
+                      borderRadius: '8px',
+                      bgcolor: mode => mode.palette.mode === 'light' ? '#fffbeb' : '#2d2217',
+                      border: '1px dashed',
+                      borderColor: mode => mode.palette.mode === 'light' ? '#fde68a' : '#5f3e1a',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5
+                    }}>
+                      <HourglassEmptyIcon sx={{ color: 'warning.main', fontSize: 20 }} />
+                      <Typography variant="body2" sx={{ color: 'warning.main', fontWeight: 500 }}>
+                        Active issue. Resolution steps and outcomes are currently pending.
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               </Box>
             </Grid>

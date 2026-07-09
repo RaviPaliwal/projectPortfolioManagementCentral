@@ -28,11 +28,12 @@ export const percentFormatter = new Intl.NumberFormat('en-US', {
 export const formatDate = (date: string | Date | null | undefined): string => {
   if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
-  return d.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
-  })
+  if (isNaN(d.getTime())) return '—'
+  const day = String(d.getDate()).padStart(2, '0')
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const month = months[d.getMonth()]
+  const year = d.getFullYear()
+  return `${day}-${month}-${year}`
 }
 
 export const formatDateShort = (date: string | Date | null | undefined): string => {

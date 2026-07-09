@@ -2,8 +2,10 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import {
   Box, Paper, Typography, Tabs, Tab, useTheme,
   Table, TableBody, TableCell, TableHead, TableRow,
-  TableSortLabel, TablePagination, Button,
-  TextField, Avatar, Alert, LinearProgress
+  TableSortLabel, TablePagination, Button, IconButton,
+  TextField, Avatar, Alert, LinearProgress,
+  Dialog, DialogTitle, DialogContent, DialogActions,
+  FormControl, InputLabel, Select, MenuItem, Slider
 } from '@mui/material'
 import ScheduleIcon from '@mui/icons-material/Schedule'
 import AssignmentIcon from '@mui/icons-material/Assignment'
@@ -12,6 +14,7 @@ import PersonIcon from '@mui/icons-material/Person'
 import RateReviewIcon from '@mui/icons-material/RateReview'
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
+import EditIcon from '@mui/icons-material/Edit'
 
 import { useUser } from '@/context/UserContext'
 import {
@@ -22,7 +25,7 @@ import { Pm_projecttasksService } from '@/generated/services/Pm_projecttasksServ
 import { unwrapList } from '@/services/common'
 import type { WorkflowApprovalStepModel, InitiativeModel, ProjectTaskModel } from '@/types/dataverse'
 import { fetchResourceBySystemUserId } from '@/services/resource.service'
-import { fetchProjectTasksForResource } from '@/services/project.service'
+import { fetchProjectTasksForResource, updateProjectTask } from '@/services/project.service'
 import { PageHeader, TableShell, TableFooter, StatusTag, TaskLink, TableHeader } from '@/components/common'
 import { FORM_DIALOG_DECISION_EVENT } from '@/utils/formDialogEvents'
 
@@ -68,6 +71,81 @@ export default function TasksPage() {
   const [projectTasksPage, setProjectTasksPage] = useState(0)
   const [projectTasksRowsPerPage, setProjectTasksRowsPerPage] = useState(25)
   const [projectTasksSearch, setProjectTasksSearch] = useState('')
+
+  // Edit Project Task states
+  const [selectedEditTask, setSelectedEditTask] = useState<ProjectTaskModel | null>(null)
+  const [editPercentComplete, setEditPercentComplete] = useState<number>(0)
+  const [editTaskStatus, setEditTaskStatus] = useState<number | string>(2)
+  const [editActualStartDate, setEditActualStartDate] = useState<string>('')
+  const [editActualEndDate, setEditActualEndDate] = useState<string>('')
+  const [savingTask, setSavingTask] = useState<boolean>(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
+  const validationErrors = useMemo(() => {
+    const errors: { start?: string; end?: string } = {}
+    if (!selectedEditTask) return errors
+
+    const pct = Number(editPercentComplete)
+    if (pct > 0 && !editActualStartDate) {
+      errors.start = 'Actual Start Date is required when progress has started.'
+    }
+    if (pct === 100 && !editActualEndDate) {
+      errors.end = 'Actual End Date is required when progress is 100%.'
+    }
+
+    if (editActualStartDate && editActualEndDate) {
+      const start = new Date(editActualStartDate)
+      const end = new Date(editActualEndDate)
+      if (end < start) {
+        errors.end = 'Actual End Date cannot be before Actual Start Date.'
+      }
+    }
+
+    if (editActualStartDate && selectedEditTask.pm_plannedstartdate) {
+      const start = new Date(editActualStartDate)
+      const baselineStart = new Date(selectedEditTask.pm_plannedstartdate)
+      start.setHours(0, 0, 0, 0)
+      baselineStart.setHours(0, 0, 0, 0)
+      if (start < baselineStart) {
+        errors.start = `Actual Start Date cannot be before Planned Start Date (${formatDate(selectedEditTask.pm_plannedstartdate)}).`
+      }
+    }
+
+    if (editActualEndDate && selectedEditTask.pm_plannedstartdate) {
+      const end = new Date(editActualEndDate)
+      const baselineStart = new Date(selectedEditTask.pm_plannedstartdate)
+      end.setHours(0, 0, 0, 0)
+      baselineStart.setHours(0, 0, 0, 0)
+      if (end < baselineStart) {
+        errors.end = `Actual End Date cannot be before Planned Start Date (${formatDate(selectedEditTask.pm_plannedstartdate)}).`
+      }
+    }
+
+    return errors
+  }, [editPercentComplete, editActualStartDate, editActualEndDate, selectedEditTask])
+
+  const hasValidationError = Object.keys(validationErrors).length > 0
+
+  const handleSaveTaskProgress = async () => {
+    if (!selectedEditTask?.pm_projecttaskid || hasValidationError) return
+    setSavingTask(true)
+    setEditError(null)
+    try {
+      await updateProjectTask(selectedEditTask.pm_projecttaskid, {
+        pm_percentcomplete: Number(editPercentComplete),
+        pm_taskstatus: Number(editTaskStatus),
+        pm_actualstartdate: editActualStartDate || undefined,
+        pm_actualenddate: editActualEndDate || undefined,
+      })
+      await loadData()
+      setSelectedEditTask(null)
+    } catch (err: any) {
+      console.error('Failed to update project task progress:', err)
+      setEditError(err?.message || 'Failed to update task progress.')
+    } finally {
+      setSavingTask(false)
+    }
+  }
 
   const loadData = useCallback(async () => {
     if (!currentUser?.fullname) return
@@ -305,7 +383,8 @@ export default function TasksPage() {
                   { label: 'Status' },
                   { label: 'Start Date' },
                   { label: 'End Date' },
-                  { label: 'Complete %' },
+                  { label: 'Completion' },
+                  { label: 'Action' },
                 ]} />
                 <TableBody>
                   {projectTasks
@@ -321,9 +400,9 @@ export default function TasksPage() {
                         </TableCell>
                         <TableCell>
                           <StatusTag 
-                            label={task.pm_taskstatus === 0 ? 'Complete' : task.pm_taskstatus === 1 ? 'In Progress' : 'Pending'} 
-                            color={task.pm_taskstatus === 0 ? 'success' : task.pm_taskstatus === 1 ? 'info' : 'default'} 
-                            size="small" 
+                             label={task.pm_taskstatus === 0 ? 'Complete' : task.pm_taskstatus === 1 ? 'In Progress' : 'Pending'} 
+                             color={task.pm_taskstatus === 0 ? 'success' : task.pm_taskstatus === 1 ? 'info' : 'default'} 
+                             size="small" 
                           />
                         </TableCell>
                         <TableCell>
@@ -338,6 +417,19 @@ export default function TasksPage() {
                             <LinearProgress variant="determinate" value={task.pm_percentcomplete ?? 0} sx={{ flexGrow: 1, borderRadius: 1, height: 6 }} 
                               color={(task.pm_percentcomplete ?? 0) === 100 ? 'success' : (task.pm_percentcomplete ?? 0) >= 75 ? 'primary' : (task.pm_percentcomplete ?? 0) >= 25 ? 'warning' : 'error'} />
                           </Box>
+                        </TableCell>
+                        <TableCell>
+                          <IconButton size="small" color="primary"
+                            onClick={() => {
+                              setSelectedEditTask(task)
+                              setEditPercentComplete(task.pm_percentcomplete ?? 0)
+                              setEditTaskStatus(task.pm_taskstatus ?? 2)
+                              setEditActualStartDate(task.pm_actualstartdate ? task.pm_actualstartdate.split('T')[0] : '')
+                              setEditActualEndDate(task.pm_actualenddate ? task.pm_actualenddate.split('T')[0] : '')
+                              setEditError(null)
+                            }}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -359,6 +451,106 @@ export default function TasksPage() {
               }}
             />
           )}
+
+          {/* Edit Task Progress Dialog */}
+          <Dialog open={!!selectedEditTask} onClose={() => !savingTask && setSelectedEditTask(null)} maxWidth="sm" fullWidth>
+            <DialogTitle sx={{ borderBottom: '1px solid', borderColor: 'divider', py: 2 }}>
+              Edit Task Progress
+            </DialogTitle>
+            <DialogContent sx={{ p: 3, pt: '24px !important', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              {editError && <Alert severity="error">{editError}</Alert>}
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  {selectedEditTask?.pm_taskname}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  Project: {selectedEditTask?.pm_projectname}
+                </Typography>
+              </Box>
+
+              <FormControl fullWidth size="small">
+                <InputLabel id="edit-task-status-label">Status</InputLabel>
+                <Select
+                  labelId="edit-task-status-label"
+                  label="Status"
+                  value={editTaskStatus}
+                  onChange={(e) => {
+                    const val = Number(e.target.value)
+                    setEditTaskStatus(val)
+                    if (val === 0) {
+                      setEditPercentComplete(100)
+                    } else if (val === 1 && editPercentComplete === 100) {
+                      setEditPercentComplete(50)
+                    } else if (val === 2) {
+                      setEditPercentComplete(0)
+                    }
+                  }}
+                >
+                  <MenuItem value={2}>Pending</MenuItem>
+                  <MenuItem value={1}>In Progress</MenuItem>
+                  <MenuItem value={0}>Complete</MenuItem>
+                </Select>
+              </FormControl>
+
+              <Box sx={{ px: 1 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 1 }}>
+                  Completion: {editPercentComplete}%
+                </Typography>
+                <Slider
+                  value={editPercentComplete}
+                  onChange={(_, val) => {
+                    const pct = val as number
+                    setEditPercentComplete(pct)
+                    if (pct === 100) {
+                      setEditTaskStatus(0)
+                    } else if (pct > 0) {
+                      setEditTaskStatus(1)
+                    } else {
+                      setEditTaskStatus(2)
+                    }
+                  }}
+                  min={0}
+                  max={100}
+                  step={1}
+                  valueLabelDisplay="auto"
+                />
+              </Box>
+
+              <TextField
+                label={editPercentComplete > 0 ? "Actual Start Date *" : "Actual Start Date"}
+                required={editPercentComplete > 0}
+                type="date"
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+                value={editActualStartDate}
+                onChange={(e) => setEditActualStartDate(e.target.value)}
+                error={!!validationErrors.start}
+                helperText={validationErrors.start}
+              />
+
+              <TextField
+                label={editPercentComplete === 100 ? "Actual End Date *" : "Actual End Date"}
+                required={editPercentComplete === 100}
+                type="date"
+                size="small"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+                value={editActualEndDate}
+                onChange={(e) => setEditActualEndDate(e.target.value)}
+                error={!!validationErrors.end}
+                helperText={validationErrors.end}
+              />
+            </DialogContent>
+            <DialogActions sx={{ p: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Button onClick={() => setSelectedEditTask(null)} disabled={savingTask}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveTaskProgress} variant="contained" disabled={savingTask || hasValidationError} sx={{ fontWeight: 600 }}>
+                {savingTask ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Paper>
       )}
 

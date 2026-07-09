@@ -62,6 +62,8 @@ export interface RiskModel {
   pm_projectname?: string
   _pm_project_value?: string
   _pm_riskowner_value?: string
+  _pm_regardingid_value?: string
+  pm_regardingidtype?: string
   statecode?: number
 }
 
@@ -87,6 +89,9 @@ export interface IssueModel {
   _pm_risk_value?: string
   _pm_issueowner_value?: string
   statecode?: number
+  modifiedon?: string
+  _pm_regardingid_value?: string
+  pm_regardingidtype?: string
 }
 
 export interface ProjectModel {

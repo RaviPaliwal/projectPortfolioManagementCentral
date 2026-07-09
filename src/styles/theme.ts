@@ -102,30 +102,44 @@ export const getTheme = (mode: PaletteMode) =>
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            borderRadius: '12px',
-            backgroundColor: mode === 'light' ? '#f3f4f6' : '#1f2937',
-            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            borderRadius: '6px',
+            backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
+            transition: 'all 0.2s ease-in-out',
+            '&.MuiOutlinedInput-multiline': {
+              padding: '8px 16px',
+            },
+            '& textarea': {
+              padding: '0 !important',
+            },
             '& .MuiOutlinedInput-notchedOutline': {
               borderWidth: '1px',
-              borderColor: 'transparent',
+              borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.23)' : 'rgba(255, 255, 255, 0.23)',
             },
             '&:hover': {
-              backgroundColor: mode === 'light' ? '#e5e7eb' : '#2d3748',
+              backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
               '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'transparent',
+                borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.87)' : 'rgba(255, 255, 255, 0.87)',
               },
             },
             '&.Mui-focused': {
               backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
-              boxShadow: mode === 'light' ? '0 0 0 3px rgba(33, 124, 53, 0.1)' : '0 0 0 3px rgba(33, 124, 53, 0.25)',
               '& .MuiOutlinedInput-notchedOutline': {
                 borderColor: '#217C35',
-                borderWidth: '1.5px',
+                borderWidth: '2px',
+              },
+            },
+            '&.Mui-disabled': {
+              backgroundColor: mode === 'light' ? '#f3f4f6' : '#1f2937',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: mode === 'light' ? '#cbd5e1' : '#374151',
               },
             },
           },
           input: {
-            padding: '8px 16px',
+            padding: '10px 14px !important',
+            '&.MuiOutlinedInput-inputMultiline': {
+              padding: 0,
+            },
           },
         },
       },
@@ -133,6 +147,9 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           root: {
             fontSize: fontSizes.base,
+            zIndex: 2,
+            pointerEvents: 'none',
+            overflow: 'visible !important',
             '&.Mui-focused': {
               color: '#217C35',
             },
@@ -169,6 +186,13 @@ export const getTheme = (mode: PaletteMode) =>
           },
           rounded: {
             borderRadius: '12px',
+          },
+        },
+      },
+      MuiAutocomplete: {
+        styleOverrides: {
+          inputRoot: {
+            padding: '4px 12px !important',
           },
         },
       },

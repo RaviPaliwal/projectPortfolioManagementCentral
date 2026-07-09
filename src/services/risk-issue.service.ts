@@ -3,6 +3,8 @@ import {
   Pm_issuesService,
   Pm_riskmitigationactionsService,
   Pm_projectsService,
+  Pm_programmesService,
+  Pm_portfoliosService,
 } from '@/generated'
 import { sendNotificationToUser } from './notification.service'
 import { writeAuditLog } from './changelog.service'
@@ -58,6 +60,17 @@ import { applySecurityMasking } from './security'
 
 export const mapRisk = (item: Pm_risks): RiskModel => {
   const rawItem = item as unknown as Record<string, unknown>
+  const logicalName = rawItem['_pm_regardingid_value@Microsoft.Dynamics.CRM.lookuplogicalname'] as string | undefined
+  const navProp = rawItem['_pm_regardingid_value@Microsoft.Dynamics.CRM.associatednavigationproperty'] as string | undefined
+  const targetType = logicalName || navProp
+  const regardingType = (targetType === 'pm_project' || targetType === 'pm_projects')
+    ? 'pm_projects'
+    : (targetType === 'pm_programme' || targetType === 'pm_programmes' || targetType === 'pm_ProgrammeFK')
+    ? 'pm_programmes'
+    : (targetType === 'pm_portfolio' || targetType === 'pm_portfolios')
+    ? 'pm_portfolios'
+    : undefined
+
   const mapped: RiskModel = {
     pm_riskid: item.pm_riskid,
     pm_risktitle: item.pm_risktitle,
@@ -79,36 +92,54 @@ export const mapRisk = (item: Pm_risks): RiskModel => {
     pm_riskcause: item.pm_riskcause,
     pm_riskeffect: item.pm_riskeffect,
     pm_projectname: rawItem['_pm_regardingid_value@OData.Community.Display.V1.FormattedValue'] as string | undefined,
-    _pm_project_value: rawItem._pm_regardingid_value as string | undefined,
+    _pm_project_value: item._pm_regardingid_value && regardingType === 'pm_projects' ? item._pm_regardingid_value : item._pm_project_value,
+    _pm_regardingid_value: item._pm_regardingid_value,
+    pm_regardingidtype: regardingType,
     _pm_riskowner_value: item._pm_riskowner_value,
     statecode: item.statecode,
   }
   return applySecurityMasking(mapped, 'risk')
 }
 
-export const mapIssue = (item: Pm_issues): IssueModel => ({
-  pm_issueid: item.pm_issueid,
-  pm_issuetitle: item.pm_issuetitle,
-  pm_issuedescription: item.pm_issuedescription,
-  pm_issuecategory: item.pm_issuecategory,
-  pm_ragstatus: item.pm_ragstatus,
-  pm_issueowner: item.pm_issueownername ?? (typeof item.pm_issueowner === 'string' ? item.pm_issueowner : undefined),
-  pm_issuestatus: item.pm_issuestatus,
-  pm_escalationstatus: item.pm_escalationstatus,
-  pm_prioritylevel: item.pm_prioritylevel,
-  pm_impactlevel: item.pm_impactlevel,
-  pm_issuereference: item.pm_issuereference,
-  pm_dateraised: item.pm_dateraised,
-  pm_targetresolutiondate: item.pm_targetresolutiondate,
-  pm_actualresolutiondate: item.pm_actualresolutiondate,
-  pm_resolutiondetails: item.pm_resolutiondetails,
-  pm_linkedrisk: item.pm_linkedrisk,
-  _pm_project_value: item._pm_project_value,
-  _pm_programmefk_value: item._pm_programmefk_value,
-  _pm_risk_value: item._pm_risk_value,
-  _pm_issueowner_value: item._pm_issueowner_value,
-  statecode: item.statecode,
-})
+export const mapIssue = (item: Pm_issues): IssueModel => {
+  const rawItem = item as unknown as Record<string, unknown>
+  const logicalName = rawItem['_pm_regardingid_value@Microsoft.Dynamics.CRM.lookuplogicalname'] as string | undefined
+  const navProp = rawItem['_pm_regardingid_value@Microsoft.Dynamics.CRM.associatednavigationproperty'] as string | undefined
+  const targetType = logicalName || navProp
+  const regardingType = (targetType === 'pm_project' || targetType === 'pm_projects')
+    ? 'pm_projects'
+    : (targetType === 'pm_programme' || targetType === 'pm_programmes' || targetType === 'pm_ProgrammeFK')
+    ? 'pm_programmes'
+    : (targetType === 'pm_portfolio' || targetType === 'pm_portfolios')
+    ? 'pm_portfolios'
+    : undefined
+
+  return {
+    pm_issueid: item.pm_issueid,
+    pm_issuetitle: item.pm_issuetitle,
+    pm_issuedescription: item.pm_issuedescription,
+    pm_issuecategory: item.pm_issuecategory,
+    pm_ragstatus: item.pm_ragstatus,
+    pm_issueowner: item.pm_issueownername ?? (typeof item.pm_issueowner === 'string' ? item.pm_issueowner : undefined),
+    pm_issuestatus: item.pm_issuestatus,
+    pm_escalationstatus: item.pm_escalationstatus,
+    pm_prioritylevel: item.pm_prioritylevel,
+    pm_impactlevel: item.pm_impactlevel,
+    pm_issuereference: item.pm_issuereference,
+    pm_dateraised: item.pm_dateraised,
+    pm_targetresolutiondate: item.pm_targetresolutiondate,
+    pm_actualresolutiondate: item.pm_actualresolutiondate,
+    pm_resolutiondetails: item.pm_resolutiondetails,
+    pm_linkedrisk: item.pm_linkedrisk,
+    _pm_project_value: item._pm_regardingid_value && regardingType === 'pm_projects' ? item._pm_regardingid_value : item._pm_project_value,
+    _pm_programmefk_value: item._pm_regardingid_value && regardingType === 'pm_programmes' ? item._pm_regardingid_value : item._pm_programmefk_value,
+    _pm_regardingid_value: item._pm_regardingid_value,
+    pm_regardingidtype: regardingType,
+    _pm_issueowner_value: item._pm_issueowner_value,
+    statecode: item.statecode,
+    modifiedon: item.modifiedon,
+  }
+}
 
 export const mapMitigationAction = (item: Pm_riskmitigationactions): RiskMitigationActionModel => ({
   pm_riskmitigationactionid: item.pm_riskmitigationactionid,
@@ -194,7 +225,7 @@ export async function createIssue(payload: Partial<IssueModel> & { pm_projectid:
       pm_issuestatus: 0,
       pm_dateraised: new Date().toISOString().split('T')[0],
       pm_targetresolutiondate: payload.pm_targetresolutiondate,
-      "pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
+      "pm_RegardingId_pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
       statecode: 0,
       statuscode: 1,
     } as unknown as Pm_issues)
@@ -358,7 +389,8 @@ export async function createRiskFull(payload: Partial<RiskModel>): Promise<RiskM
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(payload)) {
       if (value !== undefined && value !== null && value !== '' &&
-        key !== '_pm_project_value' && key !== '_pm_riskowner_value' && key !== 'pm_riskowner') {
+        key !== '_pm_project_value' && key !== '_pm_riskowner_value' && key !== 'pm_riskowner' &&
+        key !== '_pm_regardingid_value' && key !== 'pm_regardingidtype') {
         cleanPayload[key] = value
       }
     }
@@ -367,11 +399,12 @@ export async function createRiskFull(payload: Partial<RiskModel>): Promise<RiskM
       statuscode: 1,
       pm_riskstatus: 1,
     }
-    if (payload._pm_project_value) {
-      const projectId = normalizeLookupId(payload._pm_project_value)
-      if (projectId) {
-        cleanPayload['pm_regardingid_pm_project@odata.bind'] = `/pm_projects(${projectId})`
-      }
+    const regardingId = normalizeLookupId(payload._pm_regardingid_value || payload._pm_project_value)
+    const regardingType = payload.pm_regardingidtype || 'pm_projects'
+    if (regardingId) {
+      const typeSuffix = regardingType === 'pm_projects' ? 'pm_project' :
+                         regardingType === 'pm_programmes' ? 'pm_programme' : 'pm_portfolio'
+      cleanPayload[`pm_RegardingId_${typeSuffix}@odata.bind`] = `/${regardingType}(${regardingId})`
     }
     if (payload._pm_riskowner_value) {
       const ownerId = normalizeLookupId(payload._pm_riskowner_value)
@@ -411,7 +444,7 @@ export async function updateRiskFull(id: string, changes: Partial<RiskModel>): P
     let original: RiskModel | null = null
     try {
       const details = await Pm_risksService.get(id, {
-        select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskstatus', 'pm_escalated', 'pm_identifieddate', 'pm_targetclosedate', '_pm_riskowner_value']
+        select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskstatus', 'pm_escalated', 'pm_identifieddate', 'pm_targetclosedate', '_pm_riskowner_value', '_pm_regardingid_value']
       })
       if (details.success) {
         const uItem = unwrapSingle<Pm_risks>(details)
@@ -423,6 +456,7 @@ export async function updateRiskFull(id: string, changes: Partial<RiskModel>): P
 
     const SKIP_READONLY = new Set([
       'pm_riskid', '_pm_project_value', '_pm_riskowner_value', 'pm_riskowner',
+      '_pm_regardingid_value', 'pm_regardingidtype',
       // Read-only display names that Dataverse rejects on update
       'pm_riskownername', 'pm_projectname', 'pm_riskcategoryname', 'pm_ragstatusname',
       'pm_riskstatusname', 'pm_inherentprobabilityname', 'pm_inherentimpactname',
@@ -434,6 +468,13 @@ export async function updateRiskFull(id: string, changes: Partial<RiskModel>): P
       if (value !== undefined && value !== null && !SKIP_READONLY.has(key)) {
         cleanPayload[key] = value
       }
+    }
+    const regardingId = normalizeLookupId(changes._pm_regardingid_value || changes._pm_project_value)
+    const regardingType = changes.pm_regardingidtype || (changes._pm_project_value ? 'pm_projects' : undefined)
+    if (regardingId && regardingType) {
+      const typeSuffix = regardingType === 'pm_projects' ? 'pm_project' :
+                         regardingType === 'pm_programmes' ? 'pm_programme' : 'pm_portfolio'
+      cleanPayload[`pm_RegardingId_${typeSuffix}@odata.bind`] = `/${regardingType}(${regardingId})`
     }
     if (changes._pm_riskowner_value) {
       const ownerId = normalizeLookupId(changes._pm_riskowner_value)
@@ -478,6 +519,58 @@ export async function updateRiskFull(id: string, changes: Partial<RiskModel>): P
             newValue: formatVal(value)
           })
         }
+      }
+    }
+
+    if (changes.pm_escalated === true && original && original.pm_escalated !== true) {
+      try {
+        const regardingId = normalizeLookupId(original._pm_regardingid_value)
+        const regardingType = original.pm_regardingidtype
+
+        if (regardingId && regardingType) {
+          if (regardingType === 'pm_projects') {
+            const projRes = await Pm_projectsService.get(regardingId, { select: ['pm_projectid', 'pm_projectname', '_pm_projectmanager_value'] })
+            if (projRes.success) {
+              const proj = unwrapSingle<any>(projRes)
+              if (proj && proj._pm_projectmanager_value) {
+                await sendNotificationToUser(
+                  proj._pm_projectmanager_value,
+                  'Teams',
+                  'CRITICAL: Risk Escalation Alert',
+                  `CRITICAL: Risk "${original.pm_risktitle || 'Risk'}" has been escalated for project "${proj.pm_projectname || ''}". Please review details immediately.`
+                )
+              }
+            }
+          } else if (regardingType === 'pm_programmes') {
+            const progRes = await Pm_programmesService.get(regardingId, { select: ['pm_programmeid', 'pm_programmename', '_pm_programmemanager_value'] })
+            if (progRes.success) {
+              const prog = unwrapSingle<any>(progRes)
+              if (prog && prog._pm_programmemanager_value) {
+                await sendNotificationToUser(
+                  prog._pm_programmemanager_value,
+                  'Teams',
+                  'CRITICAL: Risk Escalation Alert',
+                  `CRITICAL: Risk "${original.pm_risktitle || 'Risk'}" has been escalated for programme "${prog.pm_programmename || ''}". Please review details immediately.`
+                )
+              }
+            }
+          } else if (regardingType === 'pm_portfolios') {
+            const portRes = await Pm_portfoliosService.get(regardingId, { select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value'] })
+            if (portRes.success) {
+              const port = unwrapSingle<any>(portRes)
+              if (port && port._pm_ownerlookup_value) {
+                await sendNotificationToUser(
+                  port._pm_ownerlookup_value,
+                  'Teams',
+                  'CRITICAL: Risk Escalation Alert',
+                  `CRITICAL: Risk "${original.pm_risktitle || 'Risk'}" has been escalated for portfolio "${port.pm_portfolioname || ''}". Please review details immediately.`
+                )
+              }
+            }
+          }
+        }
+      } catch (notifErr) {
+        console.error('[RiskIssueService] Failed to send risk escalation notification:', notifErr)
       }
     }
 
@@ -549,7 +642,7 @@ export async function fetchIssuesForSystemUser(systemUserId: string): Promise<Is
       'pm_impactlevel', 'pm_issuereference',
       'pm_dateraised', 'pm_targetresolutiondate',
       'pm_actualresolutiondate', 'pm_resolutiondetails',
-      'pm_linkedrisk', '_pm_project_value', '_pm_programmefk_value',
+      'pm_linkedrisk', '_pm_regardingid_value',
       '_pm_issueowner_value',
     ]
     const result = await Pm_issuesService.getAll({
@@ -577,7 +670,8 @@ export async function fetchAllIssues(): Promise<IssueModel[]> {
       'pm_issuestatus', 'pm_escalationstatus', 'pm_prioritylevel',
       'pm_impactlevel', 'pm_issuereference',
       'pm_dateraised', 'pm_targetresolutiondate',
-      'pm_actualresolutiondate', 'pm_resolutiondetails', 'pm_linkedrisk', '_pm_project_value', '_pm_programmefk_value',
+      'pm_actualresolutiondate', 'pm_resolutiondetails', 'pm_linkedrisk',
+      '_pm_regardingid_value',
       '_pm_issueowner_value',
     ]
     const options: IGetAllOptions = {
@@ -609,24 +703,27 @@ export async function createIssueFull(payload: Partial<IssueModel>): Promise<Iss
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(payload)) {
       if (value !== undefined && value !== null && value !== '' &&
-        key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner') {
-        cleanPayload[key] = value
+        key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner' && key !== '_pm_regardingid_value' && key !== 'pm_regardingidtype') {
+        if (['pm_issuecategory', 'pm_issuestatus', 'pm_prioritylevel', 'pm_impactlevel', 'pm_ragstatus'].includes(key)) {
+          cleanPayload[key] = typeof value === 'string' ? Number(value) : value
+        } else {
+          cleanPayload[key] = value
+        }
       }
     }
     const defaults: Record<string, unknown> = {
       statecode: 0,
       statuscode: 1,
     }
-    if (payload._pm_project_value) {
-      const projectId = normalizeLookupId(payload._pm_project_value)
-      if (projectId) {
-        cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
-      }
-    }
-    if (payload._pm_programmefk_value) {
-      const programmeId = normalizeLookupId(payload._pm_programmefk_value)
-      if (programmeId) {
-        cleanPayload['pm_ProgrammeFK@odata.bind'] = `/pm_programmes(${programmeId})`
+    if (payload._pm_regardingid_value && payload.pm_regardingidtype) {
+      const regardingId = normalizeLookupId(payload._pm_regardingid_value)
+      if (regardingId) {
+        const typeSuffix = payload.pm_regardingidtype === 'pm_projects'
+          ? 'pm_project'
+          : payload.pm_regardingidtype === 'pm_programmes'
+          ? 'pm_programme'
+          : 'pm_portfolio'
+        cleanPayload[`pm_RegardingId_${typeSuffix}@odata.bind`] = `/${payload.pm_regardingidtype}(${regardingId})`
       }
     }
     if (payload._pm_issueowner_value) {
@@ -681,20 +778,23 @@ export async function updateIssueFull(id: string, changes: Partial<IssueModel>):
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(changes)) {
       if (value !== undefined && value !== null &&
-        key !== 'pm_issueid' && key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner') {
-        cleanPayload[key] = value
+        key !== 'pm_issueid' && key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner' && key !== '_pm_regardingid_value' && key !== 'pm_regardingidtype') {
+        if (['pm_issuecategory', 'pm_issuestatus', 'pm_prioritylevel', 'pm_impactlevel', 'pm_ragstatus'].includes(key)) {
+          cleanPayload[key] = typeof value === 'string' ? Number(value) : value
+        } else {
+          cleanPayload[key] = value
+        }
       }
     }
-    if (changes._pm_project_value) {
-      const projectId = normalizeLookupId(changes._pm_project_value)
-      if (projectId) {
-        cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
-      }
-    }
-    if (changes._pm_programmefk_value) {
-      const programmeId = normalizeLookupId(changes._pm_programmefk_value)
-      if (programmeId) {
-        cleanPayload['pm_ProgrammeFK@odata.bind'] = `/pm_programmes(${programmeId})`
+    if (changes._pm_regardingid_value && changes.pm_regardingidtype) {
+      const regardingId = normalizeLookupId(changes._pm_regardingid_value)
+      if (regardingId) {
+        const typeSuffix = changes.pm_regardingidtype === 'pm_projects'
+          ? 'pm_project'
+          : changes.pm_regardingidtype === 'pm_programmes'
+          ? 'pm_programme'
+          : 'pm_portfolio'
+        cleanPayload[`pm_RegardingId_${typeSuffix}@odata.bind`] = `/${changes.pm_regardingidtype}(${regardingId})`
       }
     }
     if (changes._pm_issueowner_value) {
@@ -745,18 +845,48 @@ export async function updateIssueFull(id: string, changes: Partial<IssueModel>):
 
     if (changes.pm_escalationstatus === true && original && original.pm_escalationstatus !== true) {
       try {
-        const projId = normalizeLookupId(item?._pm_project_value || original?._pm_project_value)
-        if (projId) {
-          const projRes = await Pm_projectsService.get(projId, { select: ['pm_projectid', 'pm_projectname', '_pm_projectmanager_value'] })
-          if (projRes.success) {
-            const proj = unwrapSingle<any>(projRes)
-            if (proj && proj._pm_projectmanager_value) {
-              await sendNotificationToUser(
-                proj._pm_projectmanager_value,
-                'Teams',
-                'CRITICAL: Issue Escalation Alert',
-                `CRITICAL: Issue "${original.pm_issuetitle || 'Issue'}" has been escalated for project "${proj.pm_projectname || ''}". Please review details immediately.`
-              )
+        const regardingId = normalizeLookupId(original._pm_regardingid_value)
+        const regardingType = original.pm_regardingidtype
+
+        if (regardingId && regardingType) {
+          if (regardingType === 'pm_projects') {
+            const projRes = await Pm_projectsService.get(regardingId, { select: ['pm_projectid', 'pm_projectname', '_pm_projectmanager_value'] })
+            if (projRes.success) {
+              const proj = unwrapSingle<any>(projRes)
+              if (proj && proj._pm_projectmanager_value) {
+                await sendNotificationToUser(
+                  proj._pm_projectmanager_value,
+                  'Teams',
+                  'CRITICAL: Issue Escalation Alert',
+                  `CRITICAL: Issue "${original.pm_issuetitle || 'Issue'}" has been escalated for project "${proj.pm_projectname || ''}". Please review details immediately.`
+                )
+              }
+            }
+          } else if (regardingType === 'pm_programmes') {
+            const progRes = await Pm_programmesService.get(regardingId, { select: ['pm_programmeid', 'pm_programmename', '_pm_programmemanager_value'] })
+            if (progRes.success) {
+              const prog = unwrapSingle<any>(progRes)
+              if (prog && prog._pm_programmemanager_value) {
+                await sendNotificationToUser(
+                  prog._pm_programmemanager_value,
+                  'Teams',
+                  'CRITICAL: Issue Escalation Alert',
+                  `CRITICAL: Issue "${original.pm_issuetitle || 'Issue'}" has been escalated for programme "${prog.pm_programmename || ''}". Please review details immediately.`
+                )
+              }
+            }
+          } else if (regardingType === 'pm_portfolios') {
+            const portRes = await Pm_portfoliosService.get(regardingId, { select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value'] })
+            if (portRes.success) {
+              const port = unwrapSingle<any>(portRes)
+              if (port && port._pm_ownerlookup_value) {
+                await sendNotificationToUser(
+                  port._pm_ownerlookup_value,
+                  'Teams',
+                  'CRITICAL: Issue Escalation Alert',
+                  `CRITICAL: Issue "${original.pm_issuetitle || 'Issue'}" has been escalated for portfolio "${port.pm_portfolioname || ''}". Please review details immediately.`
+                )
+              }
             }
           }
         }

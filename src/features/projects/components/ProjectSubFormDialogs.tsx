@@ -15,7 +15,13 @@ import {
   Alert,
   AlertTitle,
   LinearProgress,
+  Card,
+  CircularProgress,
+  IconButton,
+  Autocomplete,
 } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+import AddIcon from '@mui/icons-material/Add'
 import HowToRegIcon from '@mui/icons-material/HowToReg'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
@@ -40,10 +46,13 @@ import {
 import { DynamicFormDialog, Dialog as CommonDialog } from '@/components/common'
 import type { FormField } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
+import { useUser } from '@/context/UserContext'
 import { BudgetLineFormDialog } from '@/features/budgets/components'
+import { formatDate } from '@/utils/formatters'
 import type { BudgetLineModel } from '@/types/dataverse'
 import { updateRiskFull, updateIssueFull } from '@/services/risk-issue.service'
 import { updateBenefitFull, updateGateReview } from '@/services/governance.service'
+import { MitigationActionDialog } from '@/features/risks/components'
 
 interface SubDialogProps {
   open: boolean
@@ -145,9 +154,35 @@ export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, proje
 }
 
 export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
+  const isEdit = !!initialData
   const [resources, setResources] = useState<{ value: string, label: string }[]>([])
   const [resourcesLoaded, setResourcesLoaded] = useState(false)
 
+  // Form State
+  const [title, setTitle] = useState('')
+  const [category, setCategory] = useState('')
+  const [rag, setRag] = useState('1')
+  const [status, setStatus] = useState('1')
+  const [ownerId, setOwnerId] = useState('')
+  const [identifiedDate, setIdentifiedDate] = useState('')
+  const [targetCloseDate, setTargetCloseDate] = useState('')
+  const [cause, setCause] = useState('')
+  const [effect, setEffect] = useState('')
+  const [description, setDescription] = useState('')
+  const [inherentProbability, setInherentProbability] = useState('')
+  const [inherentImpact, setInherentImpact] = useState('')
+  const [residualProbability, setResidualProbability] = useState('')
+  const [residualImpact, setResidualImpact] = useState('')
+  const [responseStrategy, setResponseStrategy] = useState('')
+
+  const [saving, setSaving] = useState(false)
+
+  // Mitigation Actions State
+  const [mitigationActions, setMitigationActions] = useState<any[]>([])
+  const [mitigationLoading, setMitigationLoading] = useState(false)
+  const [actionDialogOpen, setActionDialogOpen] = useState(false)
+
+  // Load resources
   useEffect(() => {
     if (open) {
       setResourcesLoaded(false)
@@ -167,70 +202,82 @@ export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
     }
   }, [open])
 
-  const fields: FormField[] = [
-    { name: 'pm_risktitle', label: 'Risk title', type: 'text', required: true, gridSize: 8 },
-    { name: 'pm_riskcategory', label: 'Category', type: 'select', gridSize: 4, options: [
-      { value: '0', label: 'Resource' }, { value: '1', label: 'Financial' }, { value: '2', label: 'Legal' }, { value: '3', label: 'Technical' }, { value: '4', label: 'External' }
-    ]},
-    { name: 'pm_ragstatus', label: 'RAG Status', type: 'select', gridSize: 4, options: [
-      { value: '1', label: 'Low' }, { value: '0', label: 'Medium' }, { value: '2', label: 'High' }
-    ]},
-    { 
-      name: '_pm_riskowner_value', 
-      label: 'Risk owner', 
-      type: 'select', 
-      gridSize: 4,
-      options: resources 
-    },
-    { name: 'pm_identifieddate', label: 'Identified Date', type: 'date', gridSize: 6 },
-    { name: 'pm_targetclosedate', label: 'Target close date', type: 'date', gridSize: 6 },
-    { name: 'pm_riskcause', label: 'Cause', type: 'text', gridSize: 6 },
-    { name: 'pm_riskeffect', label: 'Effect', type: 'text', gridSize: 6 },
-    { name: 'pm_riskdescription', label: 'Description', type: 'multiline', rows: 2 },
-    { name: 'pm_inherentprobability', label: 'Inherent Probability', type: 'select', gridSize: 4, options: [
-      { value: '3', label: 'Rare' }, { value: '2', label: 'Unlikely' }, { value: '0', label: 'Possible' }, { value: '1', label: 'Likely' }
-    ]},
-    { name: 'pm_inherentimpact', label: 'Inherent Impact', type: 'select', gridSize: 4, options: [
-      { value: '1', label: 'Moderate' }, { value: '0', label: 'Major' }, { value: '2', label: 'Catastrophic' }
-    ]},
-    { name: 'pm_residualprobability', label: 'Residual Probability', type: 'select', gridSize: 4, options: [
-      { value: '0', label: 'Unlikely' }, { value: '1', label: 'Possible' }, { value: '2', label: 'Rare' }
-    ]},
-    { name: 'pm_residualimpact', label: 'Residual Impact', type: 'select', gridSize: 4, options: [
-      { value: '0', label: 'Moderate' }, { value: '1', label: 'Minor' }, { value: '2', label: 'Major' }
-    ]},
-    { name: 'pm_responsestrategy', label: 'Response Strategy', type: 'select', gridSize: 4, options: [
-      { value: '0', label: 'Mitigate' }, { value: '1', label: 'Accept' }
-    ]},
-  ]
-
-  const mappedInitialData = useMemo(() => {
-    if (!initialData) return undefined
-    return {
-      ...initialData,
-      pm_riskcategory: initialData.pm_riskcategory != null ? String(initialData.pm_riskcategory) : undefined,
-      pm_ragstatus: initialData.pm_ragstatus != null ? String(initialData.pm_ragstatus) : '1',
-      pm_inherentprobability: initialData.pm_inherentprobability != null ? String(initialData.pm_inherentprobability) : undefined,
-      pm_inherentimpact: initialData.pm_inherentimpact != null ? String(initialData.pm_inherentimpact) : undefined,
-      pm_residualprobability: initialData.pm_residualprobability != null ? String(initialData.pm_residualprobability) : undefined,
-      pm_residualimpact: initialData.pm_residualimpact != null ? String(initialData.pm_residualimpact) : undefined,
-      pm_responsestrategy: initialData.pm_responsestrategy != null ? String(initialData.pm_responsestrategy) : undefined,
+  // Load mitigation actions if editing
+  useEffect(() => {
+    if (open && initialData?.pm_riskid) {
+      setMitigationLoading(true)
+      import('@/services').then(({ fetchMitigationActions }) => {
+        fetchMitigationActions(initialData.pm_riskid!)
+          .then(actions => setMitigationActions(actions))
+          .catch(() => setMitigationActions([]))
+          .finally(() => setMitigationLoading(false))
+      })
+    } else {
+      setMitigationActions([])
     }
-  }, [initialData])
+  }, [open, initialData])
 
-  const handleSubmit = async (data: Record<string, any>) => {
+  // Populate fields
+  useEffect(() => {
+    if (open) {
+      if (initialData) {
+        setTitle(initialData.pm_risktitle || '')
+        setCategory(initialData.pm_riskcategory != null ? String(initialData.pm_riskcategory) : '')
+        setRag(initialData.pm_ragstatus != null ? String(initialData.pm_ragstatus) : '1')
+        setStatus(initialData.pm_riskstatus != null ? String(initialData.pm_riskstatus) : '1')
+        setOwnerId(initialData._pm_riskowner_value || '')
+        setIdentifiedDate(initialData.pm_identifieddate?.split('T')[0] || '')
+        setTargetCloseDate(initialData.pm_targetclosedate?.split('T')[0] || '')
+        setCause(initialData.pm_riskcause || '')
+        setEffect(initialData.pm_riskeffect || '')
+        setDescription(initialData.pm_riskdescription || '')
+        setInherentProbability(initialData.pm_inherentprobability != null ? String(initialData.pm_inherentprobability) : '')
+        setInherentImpact(initialData.pm_inherentimpact != null ? String(initialData.pm_inherentimpact) : '')
+        setResidualProbability(initialData.pm_residualprobability != null ? String(initialData.pm_residualprobability) : '')
+        setResidualImpact(initialData.pm_residualimpact != null ? String(initialData.pm_residualimpact) : '')
+        setResponseStrategy(initialData.pm_responsestrategy != null ? String(initialData.pm_responsestrategy) : '')
+      } else {
+        setTitle('')
+        setCategory('')
+        setRag('1')
+        setStatus('1')
+        setOwnerId('')
+        setIdentifiedDate('')
+        setTargetCloseDate('')
+        setCause('')
+        setEffect('')
+        setDescription('')
+        setInherentProbability('')
+        setInherentImpact('')
+        setResidualProbability('')
+        setResidualImpact('')
+        setResponseStrategy('')
+      }
+    }
+  }, [open, initialData])
+
+  const handleSubmit = async () => {
+    if (!title.trim()) return
+    setSaving(true)
     try {
       const payload = {
-        ...data,
-        pm_riskcategory: data.pm_riskcategory !== '' ? Number(data.pm_riskcategory) : undefined,
-        pm_ragstatus: data.pm_ragstatus !== '' ? Number(data.pm_ragstatus) : undefined,
-        pm_inherentprobability: data.pm_inherentprobability !== '' ? Number(data.pm_inherentprobability) : undefined,
-        pm_inherentimpact: data.pm_inherentimpact !== '' ? Number(data.pm_inherentimpact) : undefined,
-        pm_residualprobability: data.pm_residualprobability !== '' ? Number(data.pm_residualprobability) : undefined,
-        pm_residualimpact: data.pm_residualimpact !== '' ? Number(data.pm_residualimpact) : undefined,
-        pm_responsestrategy: data.pm_responsestrategy !== '' ? Number(data.pm_responsestrategy) : undefined,
+        pm_risktitle: title.trim(),
+        pm_riskcategory: category !== '' ? Number(category) : undefined,
+        pm_ragstatus: rag !== '' ? Number(rag) : undefined,
+        pm_riskstatus: status !== '' ? Number(status) : undefined,
+        _pm_riskowner_value: ownerId || undefined,
+        pm_identifieddate: identifiedDate || undefined,
+        pm_targetclosedate: targetCloseDate || undefined,
+        pm_riskcause: cause.trim() || undefined,
+        pm_riskeffect: effect.trim() || undefined,
+        pm_riskdescription: description.trim() || undefined,
+        pm_inherentprobability: inherentProbability !== '' ? Number(inherentProbability) : undefined,
+        pm_inherentimpact: inherentImpact !== '' ? Number(inherentImpact) : undefined,
+        pm_residualprobability: residualProbability !== '' ? Number(residualProbability) : undefined,
+        pm_residualimpact: residualImpact !== '' ? Number(residualImpact) : undefined,
+        pm_responsestrategy: responseStrategy !== '' ? Number(responseStrategy) : undefined,
       }
-      
+
       if (initialData?.pm_riskid) {
         await updateRiskFull(initialData.pm_riskid, payload)
         onSuccess('Risk updated successfully.')
@@ -242,37 +289,387 @@ export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
     } catch (err) {
       console.error('[RiskDialog] handleSubmit failed:', err)
       onError(initialData?.pm_riskid ? 'Unable to update risk.' : 'Unable to log risk.')
+    } finally {
+      setSaving(false)
     }
   }
 
-  if (open && !resourcesLoaded) return null
+  const handleSaveMitigationAction = async (data: Record<string, any>) => {
+    if (!initialData?.pm_riskid) return
+    try {
+      const { Pm_riskmitigationactionsService } = await import('@/generated')
+      const payload: Record<string, any> = {
+        pm_actiontitle: data.pm_actiontitle,
+        pm_actiondescription: data.pm_actiondescription,
+        pm_notes: data.pm_notes,
+        pm_status: Number(data.pm_actionstatus),
+        'pm_risk@odata.bind': `/pm_risks(${initialData.pm_riskid})`,
+      }
+      if (data.pm_duedate) {
+        payload.pm_duedate = data.pm_duedate
+      }
+      if (data.ownerid) {
+        payload['ownerid@odata.bind'] = `/systemusers(${data.ownerid})`
+      }
+      await Pm_riskmitigationactionsService.create(payload as any)
+      
+      // Reload actions
+      setMitigationLoading(true)
+      const { fetchMitigationActions } = await import('@/services')
+      const actions = await fetchMitigationActions(initialData.pm_riskid)
+      setMitigationActions(actions)
+    } catch (err) {
+      console.error('[RiskDialog] Failed to save mitigation action:', err)
+    } finally {
+      setMitigationLoading(false)
+    }
+  }
+
+  if (open && !resourcesLoaded) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogContent sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+          <CircularProgress />
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
   return (
-    <DynamicFormDialog 
-      open={open} 
-      title={initialData ? "Edit Risk" : "Log Risk"} 
-      fields={fields} 
-      initialData={mappedInitialData} 
-      onClose={onClose} 
-      onSubmit={handleSubmit} 
-      submitText={initialData ? "Save Changes" : "Log Risk"} 
-    />
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
+      <DialogTitle sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          {isEdit ? 'Edit Risk' : 'Log Risk'}
+        </Typography>
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent sx={{ p: 3, mt: 1.5 }}>
+        <Grid container spacing={2}>
+          {/* Risk Title */}
+          <Grid size={{ xs: 12, sm: 8 }}>
+            <TextField
+              fullWidth
+              label="Risk Title *"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+            />
+          </Grid>
+
+          {/* Category */}
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              select
+              fullWidth
+              label="Category"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+            >
+              <MenuItem value="">— None —</MenuItem>
+              <MenuItem value="0">Resource</MenuItem>
+              <MenuItem value="1">Financial</MenuItem>
+              <MenuItem value="2">Legal</MenuItem>
+              <MenuItem value="3">Technical</MenuItem>
+              <MenuItem value="4">External</MenuItem>
+            </TextField>
+          </Grid>
+
+          {/* RAG Status */}
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              select
+              fullWidth
+              label="RAG Status"
+              value={rag}
+              onChange={e => setRag(e.target.value)}
+            >
+              <MenuItem value="1">Low</MenuItem>
+              <MenuItem value="0">Medium</MenuItem>
+              <MenuItem value="2">High</MenuItem>
+            </TextField>
+          </Grid>
+
+          {/* Risk Status */}
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              select
+              fullWidth
+              label="Risk Status"
+              value={status}
+              onChange={e => setStatus(e.target.value)}
+            >
+              <MenuItem value="1">Open</MenuItem>
+              <MenuItem value="0">In Mitigation</MenuItem>
+            </TextField>
+          </Grid>
+
+          {/* Risk Owner */}
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              select
+              fullWidth
+              label="Risk Owner"
+              value={ownerId}
+              onChange={e => setOwnerId(e.target.value)}
+            >
+              {resources.map(r => (
+                <MenuItem key={r.value} value={r.value}>
+                  {r.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          {/* Identified Date */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Identified Date"
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={identifiedDate}
+              onChange={e => setIdentifiedDate(e.target.value)}
+            />
+          </Grid>
+
+          {/* Target Close Date */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Target Close Date"
+              slotProps={{ inputLabel: { shrink: true } }}
+              value={targetCloseDate}
+              onChange={e => setTargetCloseDate(e.target.value)}
+            />
+          </Grid>
+
+          {/* Cause */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              label="Cause"
+              value={cause}
+              onChange={e => setCause(e.target.value)}
+            />
+          </Grid>
+
+          {/* Effect */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              label="Effect"
+              value={effect}
+              onChange={e => setEffect(e.target.value)}
+            />
+          </Grid>
+
+          {/* Description */}
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              label="Description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+            />
+          </Grid>
+
+          {/* Inherent Probability */}
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              select
+              fullWidth
+              label="Inherent Probability"
+              value={inherentProbability}
+              onChange={e => setInherentProbability(e.target.value)}
+            >
+              <MenuItem value="">— None —</MenuItem>
+              <MenuItem value="3">Rare</MenuItem>
+              <MenuItem value="2">Unlikely</MenuItem>
+              <MenuItem value="0">Possible</MenuItem>
+              <MenuItem value="1">Likely</MenuItem>
+            </TextField>
+          </Grid>
+
+          {/* Inherent Impact */}
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              select
+              fullWidth
+              label="Inherent Impact"
+              value={inherentImpact}
+              onChange={e => setInherentImpact(e.target.value)}
+            >
+              <MenuItem value="">— None —</MenuItem>
+              <MenuItem value="1">Moderate</MenuItem>
+              <MenuItem value="0">Major</MenuItem>
+              <MenuItem value="2">Catastrophic</MenuItem>
+            </TextField>
+          </Grid>
+
+          {/* Residual Probability */}
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              select
+              fullWidth
+              label="Residual Probability"
+              value={residualProbability}
+              onChange={e => setResidualProbability(e.target.value)}
+            >
+              <MenuItem value="">— None —</MenuItem>
+              <MenuItem value="2">Rare</MenuItem>
+              <MenuItem value="0">Unlikely</MenuItem>
+              <MenuItem value="1">Possible</MenuItem>
+            </TextField>
+          </Grid>
+
+          {/* Residual Impact */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              select
+              fullWidth
+              label="Residual Impact"
+              value={residualImpact}
+              onChange={e => setResidualImpact(e.target.value)}
+            >
+              <MenuItem value="">— None —</MenuItem>
+              <MenuItem value="1">Minor</MenuItem>
+              <MenuItem value="0">Moderate</MenuItem>
+              <MenuItem value="2">Major</MenuItem>
+            </TextField>
+          </Grid>
+
+          {/* Response Strategy */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              select
+              fullWidth
+              label="Response Strategy"
+              value={responseStrategy}
+              onChange={e => setResponseStrategy(e.target.value)}
+            >
+              <MenuItem value="">— None —</MenuItem>
+              <MenuItem value="0">Mitigate</MenuItem>
+              <MenuItem value="1">Accept</MenuItem>
+            </TextField>
+          </Grid>
+        </Grid>
+
+        {isEdit && (
+          <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Mitigation Actions ({mitigationActions.length})
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={() => setActionDialogOpen(true)}
+              >
+                Add Action
+              </Button>
+            </Box>
+
+            {mitigationLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : mitigationActions.length > 0 ? (
+              <Grid container spacing={1.5}>
+                {mitigationActions.map(action => (
+                  <Grid size={{ xs: 12 }} key={action.pm_riskmitigationactionid}>
+                    <Card variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {action.pm_actiontitle}
+                        </Typography>
+                        {action.pm_actiondescription && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {action.pm_actiondescription}
+                          </Typography>
+                        )}
+                        <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                          {action.pm_duedate && (
+                            <Typography variant="caption" color="text.secondary">
+                              Due: {new Date(action.pm_duedate).toLocaleDateString()}
+                            </Typography>
+                          )}
+                          <Typography variant="caption" color="text.secondary">
+                            Status: {action.pm_status === 0 ? 'Complete' : 'In Progress'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', py: 1 }}>
+                No mitigation actions recorded.
+              </Typography>
+            )}
+          </Box>
+        )}
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+        <Button onClick={onClose} disabled={saving}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={saving || !title.trim()}
+          sx={{ ml: 1 }}
+        >
+          {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Log Risk'}
+        </Button>
+      </DialogActions>
+
+      <MitigationActionDialog
+        open={actionDialogOpen}
+        onClose={() => setActionDialogOpen(false)}
+        onSave={handleSaveMitigationAction}
+        projectId={projectId}
+      />
+    </Dialog>
   )
 }
 
 export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
-  const fields: FormField[] = [
-    { name: 'pm_issuetitle', label: 'Issue title', type: 'text', required: true },
-    { name: 'pm_issuedescription', label: 'Description', type: 'multiline', rows: 3 },
-    { name: 'pm_issuecategory', label: 'Category', type: 'select', defaultValue: '0', gridSize: 6, options: [
-      { value: '0', label: 'Dependency' }, { value: '1', label: 'Technical' }
-    ]},
-    { name: 'pm_prioritylevel', label: 'Priority', type: 'select', defaultValue: '0', gridSize: 6, options: [
-      { value: '0', label: 'Normal' }, { value: '1', label: 'High' }, { value: '2', label: 'Critical' }
-    ]},
-    { name: 'pm_issueowner', label: 'Issue owner', type: 'user-select' },
-    { name: 'pm_targetresolutiondate', label: 'Target resolution date', type: 'date' }
-  ]
+  const { currentUserPersona } = useUser()
+  const isTeamMember = currentUserPersona === 'TeamMember'
+
+  const fields: FormField[] = useMemo(() => {
+    if (initialData && isTeamMember) {
+      return [
+        { name: 'pm_issuestatus', label: 'Status', type: 'select', defaultValue: '0', gridSize: 6, options: [
+          { value: '0', label: 'Open' }, { value: '1', label: 'In Progress' }, { value: '2', label: 'Resolved' }, { value: '3', label: 'Closed' }
+        ]},
+        { name: 'pm_escalationstatus', label: 'Escalate', type: 'select', defaultValue: '0', gridSize: 6, options: [
+          { value: '0', label: 'Not Escalated' }, { value: '1', label: 'Escalated' }
+        ]},
+        { name: 'pm_resolutiondetails', label: 'Resolution Details / Comments', type: 'multiline', rows: 4 },
+      ]
+    }
+    return [
+      { name: 'pm_issuetitle', label: 'Issue title', type: 'text', required: true },
+      { name: 'pm_issuedescription', label: 'Description', type: 'multiline', rows: 3 },
+      { name: 'pm_issuecategory', label: 'Category', type: 'select', defaultValue: '0', gridSize: 6, options: [
+        { value: '0', label: 'Dependency' }, { value: '1', label: 'Technical' }
+      ]},
+      { name: 'pm_prioritylevel', label: 'Priority', type: 'select', defaultValue: '0', gridSize: 6, options: [
+        { value: '0', label: 'Normal' }, { value: '1', label: 'High' }, { value: '2', label: 'Critical' }
+      ]},
+      { name: 'pm_issueowner', label: 'Issue owner', type: 'user-select' },
+      { name: 'pm_targetresolutiondate', label: 'Target resolution date', type: 'date' }
+    ]
+  }, [initialData, isTeamMember])
 
   const mappedInitialData = useMemo(() => {
     if (!initialData) return undefined
@@ -280,16 +677,24 @@ export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId
       ...initialData,
       pm_issuecategory: initialData.pm_issuecategory != null ? String(initialData.pm_issuecategory) : '0',
       pm_prioritylevel: initialData.pm_prioritylevel != null ? String(initialData.pm_prioritylevel) : '0',
+      pm_issuestatus: initialData.pm_issuestatus != null ? String(initialData.pm_issuestatus) : '0',
+      pm_escalationstatus: initialData.pm_escalationstatus ? '1' : '0',
     }
   }, [initialData])
 
   const handleSubmit = async (data: Record<string, any>) => {
     try {
-      const payload = {
-        ...data,
-        pm_issuecategory: data.pm_issuecategory !== '' ? Number(data.pm_issuecategory) : undefined,
-        pm_prioritylevel: data.pm_prioritylevel !== '' ? Number(data.pm_prioritylevel) : undefined,
-      }
+      const payload = isTeamMember && initialData
+        ? {
+            pm_issuestatus: data.pm_issuestatus !== '' ? Number(data.pm_issuestatus) : undefined,
+            pm_escalationstatus: data.pm_escalationstatus === '1',
+            pm_resolutiondetails: data.pm_resolutiondetails,
+          }
+        : {
+            ...data,
+            pm_issuecategory: data.pm_issuecategory !== '' ? Number(data.pm_issuecategory) : undefined,
+            pm_prioritylevel: data.pm_prioritylevel !== '' ? Number(data.pm_prioritylevel) : undefined,
+          }
       
       if (initialData?.pm_issueid) {
         await updateIssueFull(initialData.pm_issueid, payload)

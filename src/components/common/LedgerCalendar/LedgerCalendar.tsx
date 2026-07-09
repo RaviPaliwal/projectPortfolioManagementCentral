@@ -28,7 +28,7 @@ export interface LedgerCalendarProps {
 }
 
 const DEFAULT_COLORS: Record<string, string> = {
-  chargeable: '#22c55e',
+  chargeable: '#217C35',
   admin: '#6b7280',
   leave: '#f59e0b',
   sick: '#ef4444',
@@ -231,11 +231,11 @@ export const LedgerCalendar: React.FC<LedgerCalendarProps> = ({
         })}
       </Box>
       {!hideLegend && (
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 1 }}>
+        <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', mt: 2 }}>
           {Object.entries(DEFAULT_COLORS).map(([id, color]) => (
-            <Box key={id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: color }} />
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+            <Box key={id} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: color }} />
+              <Typography color="text.secondary" sx={{ fontSize: '0.825rem', fontWeight: 600 }}>
                 {id.charAt(0).toUpperCase() + id.slice(1)}
               </Typography>
             </Box>

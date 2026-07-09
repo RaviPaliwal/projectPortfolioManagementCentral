@@ -16,12 +16,17 @@ import {
   Tooltip,
   Grid,
   Divider,
+  LinearProgress,
 } from '@mui/material'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import BugReportIcon from '@mui/icons-material/BugReport'
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
+import LayersIcon from '@mui/icons-material/Layers'
+import PersonIcon from '@mui/icons-material/Person'
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import ErrorIcon from '@mui/icons-material/Error'
 import FlagIcon from '@mui/icons-material/Flag'
 import EditIcon from '@mui/icons-material/Edit'
@@ -61,9 +66,9 @@ import {
   fetchAllRisks,
   fetchResources,
 } from '@/services'
-import { Pm_programmesService, Pm_projectsService } from '@/generated'
+import { Pm_programmesService, Pm_projectsService, Pm_risksService, Pm_portfoliosService } from '@/generated'
 import type { IssueModel } from '@/types/dataverse'
-import { unwrapList } from '@/services/common'
+import { unwrapList, unwrapSingle } from '@/services/common'
 import { formatDate } from '@/utils/formatters'
 import { useUser } from '@/context/UserContext'
 import { IssueDialog } from '../components'
@@ -135,9 +140,10 @@ export default function IssuesPage() {
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
-  // Project / programme / risk state for the dialog
+  // Project / programme / risk / portfolio state for the dialog
   const [myProjects, setMyProjects] = useState<ProjectOption[]>([])
   const [programmes, setProgrammes] = useState<ProgrammeOption[]>([])
+  const [portfolios, setPortfolios] = useState<any[]>([])
   const [projectsLoading, setProjectsLoading] = useState(false)
   const [allRisks, setAllRisks] = useState<RiskOption[]>([])
   const [resources, setResources] = useState<ResourceOption[]>([])
@@ -145,6 +151,27 @@ export default function IssuesPage() {
 
   // Detail View
   const [selectedIssue, setSelectedIssue] = useState<IssueModel | null>(null)
+  const [linkedRiskDetails, setLinkedRiskDetails] = useState<any>(null)
+  const [linkedRiskLoading, setLinkedRiskLoading] = useState(false)
+
+  useEffect(() => {
+    if (selectedIssue?._pm_risk_value) {
+      setLinkedRiskLoading(true)
+      setLinkedRiskDetails(null)
+      Pm_risksService.get(selectedIssue._pm_risk_value, {
+        select: ['pm_riskid', 'pm_risktitle', 'pm_riskdescription', 'pm_riskcategory', 'pm_ragstatus', 'pm_riskstatus', 'pm_prioritylevel', 'pm_impactlevel']
+      })
+      .then(res => {
+        if (res.success && res.data) {
+          setLinkedRiskDetails(res.data)
+        }
+      })
+      .catch(err => console.error('Failed to load linked risk:', err))
+      .finally(() => setLinkedRiskLoading(false))
+    } else {
+      setLinkedRiskDetails(null)
+    }
+  }, [selectedIssue])
 
   // Create/Edit dialog
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -159,6 +186,18 @@ export default function IssuesPage() {
     myProjects.forEach(p => { map[p.id.toLowerCase()] = p.name })
     return map
   }, [myProjects])
+
+  const programmeNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    programmes.forEach(p => { map[p.id.toLowerCase()] = p.name })
+    return map
+  }, [programmes])
+
+  const portfolioNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    portfolios.forEach(p => { map[p.id.toLowerCase()] = p.name })
+    return map
+  }, [portfolios])
 
   const resourceNameMap = useMemo(() => {
     const map: Record<string, string> = {}
@@ -178,6 +217,68 @@ export default function IssuesPage() {
 
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState<IssueModel | null>(null)
+  // Escalate confirm
+  const [escalateTarget, setEscalateTarget] = useState<IssueModel | null>(null)
+  const [notifiedRole, setNotifiedRole] = useState<string>('Project Manager')
+  const [notifiedPersonName, setNotifiedPersonName] = useState<string>('')
+
+  useEffect(() => {
+    if (escalateTarget?._pm_regardingid_value && escalateTarget.pm_regardingidtype) {
+      const type = escalateTarget.pm_regardingidtype
+      const id = escalateTarget._pm_regardingid_value
+
+      if (type === 'pm_projects') {
+        setNotifiedRole('Project Manager')
+        setNotifiedPersonName('')
+        Pm_projectsService.get(id, {
+          select: ['pm_projectid', 'pm_projectname', 'pm_projectmanagername']
+        }).then(res => {
+          if (res.success && res.data) {
+            const proj = unwrapSingle<any>(res)
+            setNotifiedPersonName(proj?.pm_projectmanagername || 'the Project Manager')
+          } else {
+            setNotifiedPersonName('the Project Manager')
+          }
+        }).catch(() => {
+          setNotifiedPersonName('the Project Manager')
+        })
+      } else if (type === 'pm_programmes') {
+        setNotifiedRole('Programme Manager')
+        setNotifiedPersonName('')
+        Pm_programmesService.get(id, {
+          select: ['pm_programmeid', 'pm_programmename', 'pm_programmemanagername']
+        }).then(res => {
+          if (res.success && res.data) {
+            const prog = unwrapSingle<any>(res)
+            setNotifiedPersonName(prog?.pm_programmemanagername || 'the Programme Manager')
+          } else {
+            setNotifiedPersonName('the Programme Manager')
+          }
+        }).catch(() => {
+          setNotifiedPersonName('the Programme Manager')
+        })
+      } else if (type === 'pm_portfolios') {
+        setNotifiedRole('Portfolio Owner')
+        setNotifiedPersonName('')
+        Pm_portfoliosService.get(id, {
+          select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value']
+        }).then(res => {
+          if (res.success && res.data) {
+            const port = unwrapSingle<any>(res)
+            const ownerName = port.pm_ownerlookupname || port['_pm_ownerlookup_value@OData.Community.Display.V1.FormattedValue'] || 'the Portfolio Owner'
+            setNotifiedPersonName(ownerName)
+          } else {
+            setNotifiedPersonName('the Portfolio Owner')
+          }
+        }).catch(() => {
+          setNotifiedPersonName('the Portfolio Owner')
+        })
+      }
+    } else {
+      setNotifiedRole('Project Manager')
+      setNotifiedPersonName('')
+    }
+  }, [escalateTarget])
 
   // ── Load issues ───────────────────────────────────────────────────────────
   const loadIssues = useCallback(async () => {
@@ -278,12 +379,31 @@ export default function IssuesPage() {
     }
   }, [])
 
+  const loadPortfolios = useCallback(async () => {
+    try {
+      const res = await Pm_portfoliosService.getAll({
+        select: ['pm_portfolioid', 'pm_portfolioname'],
+        orderBy: ['pm_portfolioname asc'],
+        top: 100
+      })
+      if (res.success && res.data) {
+        setPortfolios(unwrapList<any>(res).map(p => ({
+          id: p.pm_portfolioid || '',
+          name: p.pm_portfolioname || ''
+        })))
+      }
+    } catch (err) {
+      console.error('[IssuesPage] loadPortfolios error:', err)
+    }
+  }, [])
+
   useEffect(() => {
     loadIssues()
     loadUserProjects()
     loadRisks()
     loadResources()
-  }, [loadIssues, loadUserProjects, loadRisks, loadResources])
+    loadPortfolios()
+  }, [loadIssues, loadUserProjects, loadRisks, loadResources, loadPortfolios])
 
   // Cross-linking
   useEffect(() => {
@@ -311,7 +431,7 @@ export default function IssuesPage() {
   }
 
   const handleSave = async (data: Record<string, any>) => {
-    if (!data.pm_issuetitle?.trim()) return
+    if (!editingIssue && !data.pm_issuetitle?.trim()) return
     setSaving(true)
     setError(null)
     try {
@@ -369,6 +489,7 @@ export default function IssuesPage() {
         setSuccessMsg('Issue escalated successfully.')
         setSelectedIssue(updated)
         setIssues(prev => prev.map(i => i.pm_issueid === issue.pm_issueid ? updated : i))
+        setEscalateTarget(null)
         setTimeout(() => setSuccessMsg(null), 3000)
       }
     } catch (err: any) {
@@ -601,7 +722,7 @@ export default function IssuesPage() {
           <Table stickyHeader size="small" sx={{ minWidth: 1200 }}>
             <TableHeader cells={[
               { label: 'Issue Title', sortable: true, active: sort.field === 'pm_issuetitle', dir: sort.direction, onClick: () => handleSort('pm_issuetitle') },
-              { label: 'Project' },
+              { label: 'Linked To' },
               { label: 'Category', sortable: true, active: sort.field === 'pm_issuecategory', dir: sort.direction, onClick: () => handleSort('pm_issuecategory') },
               { label: 'RAG', sortable: true, active: sort.field === 'pm_ragstatus', dir: sort.direction, onClick: () => handleSort('pm_ragstatus') },
               { label: 'Priority', sortable: true, active: sort.field === 'pm_prioritylevel', dir: sort.direction, onClick: () => handleSort('pm_prioritylevel') },
@@ -629,9 +750,29 @@ export default function IssuesPage() {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {projectNameMap[(issue._pm_project_value || '').toLowerCase()] || '—'}
-                    </Typography>
+                    {(() => {
+                      const id = (issue._pm_regardingid_value || '').toLowerCase()
+                      const type = issue.pm_regardingidtype || (projectNameMap[id] ? 'pm_projects' : programmeNameMap[id] ? 'pm_programmes' : portfolioNameMap[id] ? 'pm_portfolios' : undefined)
+                      if (!id || !type) return <Typography variant="body2" color="text.disabled">—</Typography>
+
+                      const isProj = type === 'pm_projects'
+                      const isProg = type === 'pm_programmes'
+                      const isPort = type === 'pm_portfolios'
+                      const name = isProj ? projectNameMap[id] : isProg ? programmeNameMap[id] : isPort ? portfolioNameMap[id] : '—'
+                      const color = isProj ? '#2e7d32' : isProg ? '#e65100' : '#1976d2'
+                      const label = isProj ? 'Project' : isProg ? 'Programme' : 'Portfolio'
+                      
+                      return (
+                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                          <Typography variant="caption" sx={{ color: color, fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                            {label}
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {name || '—'}
+                          </Typography>
+                        </Box>
+                      )
+                    })()}
                   </TableCell>
                   <TableCell>
                     <StatusTag
@@ -709,7 +850,7 @@ export default function IssuesPage() {
       
         </>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
           <Breadcrumbs
             items={[
               { label: 'Issues', path: 'list' },
@@ -719,17 +860,6 @@ export default function IssuesPage() {
           />
           <PageHeader
             title={selectedIssue?.pm_issuetitle ?? 'Issue Detail'}
-            subtitle={
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-                <StatusTag label={ISSUE_CATEGORY_LABELS[String(selectedIssue.pm_issuecategory ?? '')] ?? '—'} variant="outlined" />
-                <StatusTag label={RAG_LABELS[String(selectedIssue.pm_ragstatus ?? '')] ?? '—'} color={RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] || 'default'} />
-                {selectedIssue.pm_escalationstatus && (
-                  <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600, bgcolor: 'error.main', color: 'white', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <FlagIcon sx={{ fontSize: 12 }} /> Escalated
-                  </Box>
-                )}
-              </Box>
-            }
             actionElement={
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 {selectedIssue && !selectedIssue.pm_escalationstatus && canEdit && (
@@ -738,7 +868,7 @@ export default function IssuesPage() {
                     color="error"
                     size="small"
                     startIcon={<FlagIcon />}
-                    onClick={() => handleEscalateIssue(selectedIssue)}
+                    onClick={() => setEscalateTarget(selectedIssue)}
                     sx={{ mr: 1, borderRadius: 1.5 }}
                   >
                     Escalate Issue
@@ -757,110 +887,337 @@ export default function IssuesPage() {
               </Box>
             }
           />
+          <Paper variant="outlined" sx={{ p: 4, borderRadius: 1.5 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+              
+              {/* 1. Description / PMO Summary */}
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                  <BugReportIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description / PMO Summary
+                </Typography>
+                {(() => {
+                  const desc = selectedIssue.pm_issuedescription || '';
+                  const rootCauseRegex = /(?:Root\s*Cause\s*\/\s*Context|Context)\s*:?\s*([\s\S]*?)(?=(?:Business\s*\/\s*Project\s*Impact|Impact|Recommended\s*Mitigation|Mitigation)\s*:?|$)/i;
+                  const impactRegex = /(?:Business\s*\/\s*Project\s*Impact|Impact)\s*:?\s*([\s\S]*?)(?=(?:Root\s*Cause\s*\/\s*Context|Context|Recommended\s*Mitigation|Mitigation)\s*:?|$)/i;
+                  const mitigationRegex = /(?:Recommended\s*Mitigation|Mitigation)\s*:?\s*([\s\S]*?)(?=(?:Root\s*Cause\s*\/\s*Context|Context|Business\s*\/\s*Project\s*Impact|Impact)\s*:?|$)/i;
 
-          <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5 }}>
-            <Grid container spacing={4} sx={{ alignItems: 'stretch' }}>
-              {/* Left Column: Description & Resolution details */}
-              <Grid size={{ xs: 12, md: 8 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
-                      <BugReportIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description
-                    </Typography>
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', lineHeight: 1.6 }}>
-                      {selectedIssue.pm_issuedescription || 'No description provided.'}
+                  const rootCauseMatch = desc.match(rootCauseRegex);
+                  const impactMatch = desc.match(impactRegex);
+                  const mitigationMatch = desc.match(mitigationRegex);
+
+                  const isStructured = rootCauseMatch || impactMatch || mitigationMatch;
+
+                  if (!isStructured) {
+                    return (
+                      <Box sx={{
+                        p: 2.5,
+                        borderRadius: '8px',
+                        bgcolor: mode => mode.palette.mode === 'light' ? '#f8fafc' : '#1e293b',
+                        border: '1px solid',
+                        borderColor: mode => mode.palette.mode === 'light' ? '#e2e8f0' : '#334155',
+                        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                      }}>
+                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.primary', lineHeight: 1.6 }}>
+                          {desc || 'No description provided.'}
+                        </Typography>
+                      </Box>
+                    );
+                  }
+
+                  return (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                      {rootCauseMatch && (
+                        <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: 'action.hover', borderLeft: '4px solid', borderColor: 'info.main' }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: 'info.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            Root Cause / Context
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                            {rootCauseMatch[1].trim()}
+                          </Typography>
+                        </Box>
+                      )}
+                      {impactMatch && (
+                        <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: mode => mode.palette.mode === 'light' ? 'rgba(239, 68, 68, 0.04)' : 'rgba(239, 68, 68, 0.08)', borderLeft: '4px solid', borderColor: 'error.main' }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: 'error.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            Business / Project Impact
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                            {impactMatch[1].trim()}
+                          </Typography>
+                        </Box>
+                      )}
+                      {mitigationMatch && (
+                        <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: mode => mode.palette.mode === 'light' ? 'rgba(33, 124, 53, 0.04)' : 'rgba(33, 124, 53, 0.08)', borderLeft: '4px solid', borderColor: 'primary.main' }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            Recommended Mitigation
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                            {mitigationMatch[1].trim()}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  );
+                })()}
+              </Box>
+
+              {/* 2. Resolution Details */}
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                  <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} /> Resolution Details
+                </Typography>
+                {selectedIssue.pm_resolutiondetails ? (
+                  <Box sx={{
+                    p: 2.5,
+                    borderRadius: '8px',
+                    bgcolor: mode => mode.palette.mode === 'light' ? '#f0fdf4' : '#14532d',
+                    border: '1px solid',
+                    borderColor: mode => mode.palette.mode === 'light' ? '#bbf7d0' : '#166534',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                  }}>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.primary', lineHeight: 1.6 }}>
+                      {selectedIssue.pm_resolutiondetails}
                     </Typography>
                   </Box>
-
-                  <Divider />
-
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
-                      <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} /> Resolution Details
-                    </Typography>
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', lineHeight: 1.6 }}>
-                      {selectedIssue.pm_resolutiondetails || 'No resolution details recorded yet.'}
+                ) : (
+                  <Box sx={{
+                    p: 2.5,
+                    borderRadius: '8px',
+                    bgcolor: mode => mode.palette.mode === 'light' ? '#fffbeb' : '#2d2217',
+                    border: '1px dashed',
+                    borderColor: mode => mode.palette.mode === 'light' ? '#fde68a' : '#5f3e1a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5
+                  }}>
+                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'warning.main', mr: 0.5 }} />
+                    <Typography variant="body2" sx={{ color: 'warning.main', fontWeight: 500 }}>
+                      Pending — this issue is active. Resolution steps and outcomes will populate here once remediation work begins.
                     </Typography>
                   </Box>
-                </Box>
-              </Grid>
+                )}
+              </Box>
 
-              {/* Right Column: Metadata Overview */}
-              <Grid 
-                size={{ xs: 12, md: 4 }}
-                sx={{ 
-                  borderLeft: { md: `1px solid ${useTheme().palette.divider}` },
-                  pl: { md: 4 },
-                  pt: { xs: 3, md: 0 },
-                  borderTop: { xs: `1px solid ${useTheme().palette.divider}`, md: 'none' },
-                }}
-              >
+              <Divider />
+
+              {/* 3. Issue Context */}
+              <Box>
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
                   Issue Context
                 </Typography>
 
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Associated Project</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {projectNameMap[(selectedIssue._pm_project_value || '').toLowerCase()] || '—'}
-                    </Typography>
-                  </Box>
+                <Grid container spacing={3.5}>
+                  <Grid size={{ xs: 12 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                        <LayersIcon sx={{ fontSize: 16, color: 'text.secondary' }} /> Associated Entity
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mt: 0.25 }}>
+                        {(() => {
+                          const id = (selectedIssue._pm_regardingid_value || '').toLowerCase()
+                          const type = selectedIssue.pm_regardingidtype || (projectNameMap[id] ? 'pm_projects' : programmeNameMap[id] ? 'pm_programmes' : portfolioNameMap[id] ? 'pm_portfolios' : undefined)
+                          if (!id || !type) return <Typography variant="body2" color="text.secondary">—</Typography>
 
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Issue Owner</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {resourceNameMap[(selectedIssue._pm_issueowner_value || '').toLowerCase()] || selectedIssue.pm_issueowner || '—'}
-                    </Typography>
-                  </Box>
+                          const isProj = type === 'pm_projects'
+                          const isProg = type === 'pm_programmes'
+                          const label = isProj ? 'Project' : isProg ? 'Programme' : 'Portfolio'
+                          const color = isProj ? '#2e7d32' : isProg ? '#e65100' : '#1976d2'
+                          const name = isProj ? projectNameMap[id] : isProg ? programmeNameMap[id] : portfolioNameMap[id]
 
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Category</Typography>
-                      <StatusTag 
-                        label={ISSUE_CATEGORY_LABELS[String(selectedIssue.pm_issuecategory ?? '')] ?? '—'} 
-                        variant="outlined" 
-                        sx={{ mt: 0.5, borderColor: ISSUE_CATEGORY_COLORS[String(selectedIssue.pm_issuecategory ?? '')], color: ISSUE_CATEGORY_COLORS[String(selectedIssue.pm_issuecategory ?? '')] }}
-                      />
+                          return (
+                            <>
+                              <Box sx={{
+                                px: 1.5,
+                                py: 0.5,
+                                borderRadius: '16px',
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                bgcolor: `${color}12`,
+                                color: color,
+                                border: `1px solid ${color}30`,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                lineHeight: 1
+                              }}>
+                                {label}
+                              </Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {name || '—'}
+                              </Typography>
+                            </>
+                          )
+                        })()}
+                      </Box>
                     </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Priority</Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                        {String(selectedIssue.pm_prioritylevel ?? '') === '1' && <NewReleasesIcon fontSize="small" sx={{ color: 'error.main' }} />}
-                        {String(selectedIssue.pm_prioritylevel ?? '') === '0' && <PriorityHighIcon fontSize="small" sx={{ color: 'warning.main' }} />}
-                        {String(selectedIssue.pm_prioritylevel ?? '') === '2' && <LowPriorityIcon fontSize="small" sx={{ color: 'info.main' }} />}
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {PRIORITY_LABELS[String(selectedIssue.pm_prioritylevel ?? '')] ?? '—'}
+                  </Grid>
+
+                  <Grid size={{ xs: 12 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                        <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} /> Issue owner
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {resourceNameMap[(selectedIssue._pm_issueowner_value || '').toLowerCase()] || selectedIssue.pm_issueowner || '—'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                        Category
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {ISSUE_CATEGORY_LABELS[String(selectedIssue.pm_issuecategory ?? '')] || '—'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                        Priority
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          bgcolor: String(selectedIssue.pm_prioritylevel) === '1' ? 'error.main' : String(selectedIssue.pm_prioritylevel) === '0' ? 'warning.main' : 'info.main' 
+                        }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: String(selectedIssue.pm_prioritylevel) === '1' ? 'error.main' : 'text.primary' }}>
+                          {PRIORITY_LABELS[String(selectedIssue.pm_prioritylevel ?? '')] || '—'}
                         </Typography>
                       </Box>
                     </Box>
-                  </Box>
+                  </Grid>
 
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>RAG Status</Typography>
-                      <Box sx={{ mt: 0.5 }}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                        RAG status
+                      </Typography>
+                      <Box sx={{ mt: 0.25 }}>
                         <StatusTag 
                           label={RAG_LABELS[String(selectedIssue.pm_ragstatus ?? '')] ?? '—'} 
                           color={RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] || 'default'} 
                         />
                       </Box>
                     </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Target Date</Typography>
-                      <Typography variant="body2" sx={{ mt: 0.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
-                        {formatDate(selectedIssue.pm_targetresolutiondate) || '—'}
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                        Target date
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <CalendarTodayIcon sx={{ fontSize: 16, color: 'text.secondary' }} /> {selectedIssue.pm_targetresolutiondate ? new Date(selectedIssue.pm_targetresolutiondate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                       </Typography>
                     </Box>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                        Escalation Status
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <FlagIcon sx={{ fontSize: 16, color: selectedIssue.pm_escalationstatus ? 'error.main' : 'text.disabled' }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: selectedIssue.pm_escalationstatus ? 'error.main' : 'text.primary' }}>
+                          {selectedIssue.pm_escalationstatus ? 'Yes — Escalated' : 'No'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
+
+              {/* 3.5. Linked Risk Details */}
+              {selectedIssue._pm_risk_value && (
+                <>
+                  <Divider />
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                      Linked Risk Details
+                    </Typography>
+                    {linkedRiskLoading ? (
+                      <LinearProgress sx={{ mt: 1, borderRadius: 1 }} />
+                    ) : linkedRiskDetails ? (
+                      <Box sx={{
+                        p: 2.5,
+                        borderRadius: '8px',
+                        bgcolor: mode => mode.palette.mode === 'light' ? '#f8fafc' : '#1e293b',
+                        border: '1px solid',
+                        borderColor: mode => mode.palette.mode === 'light' ? '#e2e8f0' : '#334155',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2
+                      }}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Risk Title</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{linkedRiskDetails.pm_risktitle || '—'}</Typography>
+                        </Box>
+                        {linkedRiskDetails.pm_riskdescription && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Risk Description</Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{linkedRiskDetails.pm_riskdescription}</Typography>
+                          </Box>
+                        )}
+                        <Grid container spacing={2}>
+                          <Grid size={{ xs: 6, sm: 3 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>RAG Status</Typography>
+                            <Box sx={{ mt: 0.25 }}>
+                              <StatusTag 
+                                label={RAG_LABELS[String(linkedRiskDetails.pm_ragstatus ?? '')] ?? '—'} 
+                                color={RAG_COLORS[String(linkedRiskDetails.pm_ragstatus ?? '')] || 'default'} 
+                              />
+                            </Box>
+                          </Grid>
+                          <Grid size={{ xs: 6, sm: 3 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Priority</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {PRIORITY_LABELS[String(linkedRiskDetails.pm_prioritylevel ?? '')] || '—'}
+                            </Typography>
+                          </Grid>
+                          <Grid size={{ xs: 6, sm: 3 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Impact Level</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {linkedRiskDetails.pm_impactlevel !== undefined ? ['Moderate', 'Major', 'Minor'][linkedRiskDetails.pm_impactlevel] || '—' : '—'}
+                            </Typography>
+                          </Grid>
+                          <Grid size={{ xs: 6, sm: 3 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Risk Status</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {linkedRiskDetails.pm_riskstatus !== undefined ? ['Open', 'Mitigated', 'Closed'][linkedRiskDetails.pm_riskstatus] || '—' : '—'}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">Failed to load risk details.</Typography>
+                    )}
                   </Box>
-                </Box>
-              </Grid>
-            </Grid>
+                </>
+              )}
+
+              {/* 4. Footer Last Updated Info */}
+              <Box sx={{ pt: 2, borderTop: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                <Typography variant="caption" color="text.secondary">
+                  Last updated {(() => {
+                    const mod = selectedIssue.modifiedon ? new Date(selectedIssue.modifiedon) : new Date();
+                    const diff = Math.max(0, Math.floor((new Date().getTime() - mod.getTime()) / (1000 * 60 * 60 * 24)));
+                    return diff === 0 ? 'today' : diff === 1 ? 'yesterday' : `${diff} days ago`;
+                  })()}
+                </Typography>
+              </Box>
+
+            </Box>
           </Paper>
         </Box>
       )}
-
-      {/* Create / Edit Dialog */}
       <IssueDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
@@ -868,6 +1225,7 @@ export default function IssuesPage() {
         onSave={handleSave}
         projects={myProjects}
         programmes={programmes}
+        portfolios={portfolios}
         projectsLoading={projectsLoading}
         risks={allRisks}
         resources={resources}
@@ -885,6 +1243,18 @@ export default function IssuesPage() {
         loading={saving}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
+      />
+
+      {/* Escalate Confirmation */}
+      <ConfirmDialog
+        open={!!escalateTarget}
+        title="Escalate Issue"
+        message={`Are you sure you want to escalate the issue "${escalateTarget?.pm_issuetitle}"? This will send a Microsoft Teams notification to the ${notifiedRole} (${notifiedPersonName || 'Loading...'}) of the ${notifiedRole ? notifiedRole.split(' ')[0].toLowerCase() : 'project'}.`}
+        confirmLabel="Escalate"
+        confirmColor="error"
+        loading={saving}
+        onClose={() => setEscalateTarget(null)}
+        onConfirm={() => escalateTarget && handleEscalateIssue(escalateTarget)}
       />
     </Box>
   )

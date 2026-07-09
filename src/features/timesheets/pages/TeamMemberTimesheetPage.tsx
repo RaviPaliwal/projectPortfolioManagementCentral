@@ -8,6 +8,8 @@ import WarningIcon from "@mui/icons-material/Warning";
 import CommentIcon from "@mui/icons-material/Comment";
 import SendIcon from "@mui/icons-material/Send";
 import DateRangeIcon from "@mui/icons-material/DateRange";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useTheme, Box, Avatar as MuiAvatar, Typography, CircularProgress, Alert, MenuItem, TextField, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
 import {
   fetchResourceBySystemUserId,
@@ -409,7 +411,9 @@ const TeamMemberTimesheetPage = () => {
       setHolidays(hList);
       setProjects(pList);
       if (tsList.length > 0) {
-        setSelectedId(prev => prev ?? tsList[0].pm_timesheetid!);
+        const draftTimesheet = tsList.find(ts => Number(ts.pm_timesheetstatus) === 3);
+        const defaultSelect = draftTimesheet || tsList[0];
+        setSelectedId(prev => prev ?? defaultSelect.pm_timesheetid!);
       }
     } catch (err) {
       console.error("Failed to load timesheet data:", err);
@@ -632,13 +636,23 @@ const TeamMemberTimesheetPage = () => {
   if (!resource) {
     return <Alert severity="warning">No resource profile found for your account. Please contact your administrator.</Alert>;
   }
+  const currentIndex = timesheets.findIndex(t => t.pm_timesheetid === selectedId);
   const editable = selectedTimesheet ? isEditable(Number(selectedTimesheet.pm_timesheetstatus)) : false;
   return (
     <div className="ts-app">
       <style>{generateCSS(theme)}</style>
       <PageHeader
         title="My Timesheets"
-        subtitle={resource.pm_positiontitle || "Team Member"}
+        subtitle={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              {resource.pm_positiontitle || "Team Member"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              • Select one or more days on the calendar to log time
+            </Typography>
+          </Box>
+        }
         action={canCreate ? {
           label: 'New Timesheet',
           icon: <AddIcon />,
@@ -647,31 +661,58 @@ const TeamMemberTimesheetPage = () => {
         } : undefined}
       />
       <div className="ts-shell">
-        {timesheets.length > 0 && (
-          <div className="ts-sidebar">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <p className="ts-sidebar-label" style={{ margin: 0 }}>Recent periods</p>
-            </div>
-            {timesheets.map((p) => (
-              <button
-                key={p.pm_timesheetid}
-                className={cls("ts-period-row", p.pm_timesheetid === selectedId && "ts-period-row-active")}
-                onClick={() => setSelectedId(p.pm_timesheetid!)}
-              >
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p className="ts-period-label" title={p.pm_timesheetname}>{getTimesheetPeriodLabel(p)}</p>
-                  <p className="ts-mono ts-period-hours">{p.pm_totalhours || 0}h logged</p>
-                </div>
-                <StatusFlap status={Number(p.pm_timesheetstatus)} />
-              </button>
-            ))}
-          </div>
-        )}
         {selectedTimesheet ? (
           <div className="ts-detail">
             <div className="ts-detail-head">
-              <div>
-                <h1>{getTimesheetPeriodLabel(selectedTimesheet)}</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <IconButton
+                    disabled={currentIndex === timesheets.length - 1}
+                    onClick={() => {
+                      if (currentIndex < timesheets.length - 1) {
+                        setSelectedId(timesheets[currentIndex + 1].pm_timesheetid!);
+                      }
+                    }}
+                    size="small"
+                    title="Previous Period"
+                  >
+                    <ChevronLeftIcon />
+                  </IconButton>
+                  <IconButton
+                    disabled={currentIndex <= 0}
+                    onClick={() => {
+                      if (currentIndex > 0) {
+                        setSelectedId(timesheets[currentIndex - 1].pm_timesheetid!);
+                      }
+                    }}
+                    size="small"
+                    title="Next Period"
+                  >
+                    <ChevronRightIcon />
+                  </IconButton>
+                </Box>
+
+                <TextField
+                  select
+                  size="small"
+                  value={selectedId || ''}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  sx={{ 
+                    minWidth: 280,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                    }
+                  }}
+                >
+                  {timesheets.map((ts) => {
+                    const statusLabel = TIMESHEET_STATUS_LABELS[Number(ts.pm_timesheetstatus)] || 'Draft';
+                    return (
+                      <MenuItem key={ts.pm_timesheetid} value={ts.pm_timesheetid}>
+                        {getTimesheetPeriodLabel(ts)} — {statusLabel}
+                      </MenuItem>
+                    );
+                  })}
+                </TextField>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {canDelete && editable && (
@@ -730,11 +771,6 @@ const TeamMemberTimesheetPage = () => {
               <div className="ts-entry-list-head">
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <span>Entries</span>
-                  {editable && selectedDates.length === 0 && (
-                    <span className="ts-hint" style={{ fontWeight: 400, marginLeft: '12px', marginTop: 0, color: 'var(--ink-soft)' }}>
-                      👆 Select one or more days on the calendar to log time
-                    </span>
-                  )}
                   {editable && selectedDates.length > 0 && (
                     <span className="ts-hint" style={{ fontWeight: 600, marginLeft: '12px', marginTop: 0, color: 'var(--charge)' }}>
                       ✓ {selectedDates.length} day{selectedDates.length > 1 ? 's' : ''} selected
@@ -783,8 +819,8 @@ const TeamMemberTimesheetPage = () => {
                     : <span />}
                   {editable && !e.isReadOnly ? (
                     <div style={{ display: 'flex', gap: '4px' }}>
-                      {canEdit && <button className="ts-iconbtn" onClick={() => handleOpenEdit(e)}><EditIcon sx={{ fontSize: 14 }} /></button>}
-                      {canDelete && <button className="ts-iconbtn" onClick={() => handleRemoveEntry(e.id)}><DeleteIcon sx={{ fontSize: 14 }} /></button>}
+                      <button className="ts-iconbtn" onClick={() => handleOpenEdit(e)} title="Edit Entry"><EditIcon sx={{ fontSize: 14 }} /></button>
+                      <button className="ts-iconbtn" onClick={() => handleRemoveEntry(e.id)} title="Delete Entry"><DeleteIcon sx={{ fontSize: 14 }} /></button>
                     </div>
                   ) : <span />}
                 </div>
@@ -959,7 +995,7 @@ function generateCSS(theme: any) {
   gap: 12px;
   height: 100%;
   overflow-y: auto;
-  padding-right: 6px;
+  padding: 6px;
 }
 .ts-sidebar-label {
   font-size: 11px;

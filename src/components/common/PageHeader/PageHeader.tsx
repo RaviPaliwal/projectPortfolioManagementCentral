@@ -20,11 +20,13 @@ export interface PageHeaderProps {
   actionElement?: ReactNode
   /** Optional breadcrumb or caption above title */
   caption?: string
+  /** Style overrides */
+  sx?: any
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, action, actionElement, caption }) => {
+export const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, action, actionElement, caption, sx }) => {
   return (
-    <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', ...sx }}>
       <Box>
         {caption && (
           <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: '10px', color: 'text.secondary', display: 'block', mb: 0.5 }}>
@@ -35,7 +37,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, action,
           {title}
         </Typography>
         {subtitle && (
-          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+          <Typography component="div" variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
             {subtitle}
           </Typography>
         )}

@@ -21,6 +21,7 @@ import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { ProjectModel, ProjectMilestoneModel } from '@/types/dataverse'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 import { alpha } from '@mui/material/styles'
+import { currencyFormatter } from '@/utils/formatters'
 
 interface MilestoneDefinitionTaskModalProps {
   open: boolean
@@ -135,6 +136,11 @@ export const MilestoneDefinitionTaskModal: React.FC<MilestoneDefinitionTaskModal
 
   if (!open) return null
 
+  const phaseLabels: Record<number, string> = { 0: 'Execution', 1: 'Planning', 2: 'Closure', 3: 'Initiation', 4: 'Rejected', 5: 'Completed' }
+  const phaseLabel = project?.pm_projectphase != null
+    ? phaseLabels[Number(project.pm_projectphase)] ?? `Phase ${project.pm_projectphase}`
+    : '—'
+
   return (
     <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', py: 2, px: 3 }}>
@@ -161,6 +167,88 @@ export const MilestoneDefinitionTaskModal: React.FC<MilestoneDefinitionTaskModal
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Project Context card */}
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1, display: 'block', mb: 1.5 }}>
+                Project Context
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                {project?.pm_projectname || 'Loading...'}
+              </Typography>
+
+              <Grid container spacing={2.5}>
+                {/* Row 1: Non-editable fields */}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Portfolio</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{project?.pm_portfolioname || '—'}</Typography>
+                  </Box>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Programme</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{project?.pm_programmename || '—'}</Typography>
+                  </Box>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Project Manager</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{project?.pm_projectmanagername || '—'}</Typography>
+                  </Box>
+                </Grid>
+
+                {/* Row 2: Non-editable fields */}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Phase</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{phaseLabel}</Typography>
+                  </Box>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Approved Budget</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
+                      {project?.pm_approvedbudget != null ? currencyFormatter.format(project.pm_approvedbudget) : '—'}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Actual Cost</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
+                      {project?.pm_actualcost != null ? currencyFormatter.format(project.pm_actualcost) : '—'}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                {/* Row 3: Non-editable fields */}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Planned Start</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                      {project?.pm_plannedstartdate ? new Date(project.pm_plannedstartdate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Planned End</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                      {project?.pm_plannedenddate ? new Date(project.pm_plannedenddate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  {/* Spacer */}
+                </Grid>
+              </Grid>
+            </Paper>
             {/* WBS Table list of milestones */}
             <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>

@@ -147,7 +147,7 @@ export const CRUD_PERMISSIONS: Record<CrudModule, Partial<Record<CrudAction, Per
   RISKS: {
     create: ['ProjectManager', 'TeamMember', 'SystemAdministrator'],
     read: ALL_PERSONAS,
-    update: ['ProjectManager', 'SystemAdministrator'],
+    update: ['ProjectManager', 'SystemAdministrator', 'TeamMember'],
     delete: ['SystemAdministrator'],
   },
   ISSUES: {

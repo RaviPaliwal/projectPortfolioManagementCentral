@@ -11,6 +11,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import FlagIcon from '@mui/icons-material/Flag'
+import AddIcon from '@mui/icons-material/Add'
 import type { RiskModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 import { DataverseTable, StatusTag, type Column } from '@/components/common'
@@ -43,6 +44,7 @@ interface RiskTableProps {
   openCreate: () => void
   canEdit?: boolean
   canDelete?: boolean
+  onAddMitigationAction?: (risk: RiskModel) => void
 }
 
 export const RiskTable = ({
@@ -60,6 +62,7 @@ export const RiskTable = ({
   openCreate,
   canEdit = true,
   canDelete = true,
+  onAddMitigationAction,
 }: RiskTableProps) => {
   const columns: Column<RiskModel>[] = useMemo(() => [
     {
@@ -68,16 +71,16 @@ export const RiskTable = ({
       format: (val: any, risk: RiskModel) => {
         const scoreVal = riskScore(risk.pm_inherentprobability, risk.pm_inherentimpact)
         return (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: getScoreColor(scoreVal), fontSize: fontSizes.sm, fontWeight: 700, color: '#fff' }}>
-              {scoreVal}
-            </Avatar>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                 {val || 'Unnamed Risk'}
               </Typography>
               {risk.pm_projectname && (
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  {risk.pm_regardingidtype === 'pm_projects' ? 'Project: ' :
+                   risk.pm_regardingidtype === 'pm_programmes' ? 'Programme: ' :
+                   risk.pm_regardingidtype === 'pm_portfolios' ? 'Portfolio: ' : ''}
                   {risk.pm_projectname}
                 </Typography>
               )}
