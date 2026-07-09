@@ -607,3 +607,24 @@ export interface ChecklistResponseModel {
   _pm_workflowapprovalstep_value?: string
   statecode?: number
 }
+
+export interface ApprovalRequestModel {
+  pm_projectapprovalrequestid?: string
+  pm_requesttitle?: string
+  pm_approvalstage?: number | string
+  pm_approvalstagename?: string
+  pm_decisionstatus?: number | string
+  pm_decisionstatusname?: string
+  pm_entitytype?: number | string
+  pm_entitytypename?: string
+  pm_prioritylevel?: number | string
+  pm_prioritylevelname?: string
+  pm_approvername?: string
+  pm_decisiondate?: string
+  pm_decisionnotes?: string
+  pm_duedate?: string
+  pm_entityid?: string
+  pm_requestorname?: string
+  statecode?: number
+}
+
