@@ -38,6 +38,11 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
+import SpeedIcon from '@mui/icons-material/Speed'
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
+import ScheduleIcon from '@mui/icons-material/Schedule'
+import PeopleIcon from '@mui/icons-material/People'
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import AssessmentIcon from '@mui/icons-material/Assessment'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
@@ -58,7 +63,7 @@ import { Pm_projectstatussnapshotsService } from '../../../generated'
 import type { ProjectStatusSnapshotModel } from '@/types/dataverse'
 import type { ExportColumn } from '@/components/common'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, SearchFilterBar, DetailDrawer, TabPanel, ExportButton, StatusTag, ActionIcon } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, Breadcrumbs } from '@/components/common'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import { SnapshotDialogs } from '../components/SnapshotDialogs'
 
@@ -231,6 +236,54 @@ function RagChip({ field, value }: { field: string; value?: number | string | nu
   )
 }
 
+const getRagStatusConfig = (field: string, value: any, theme: any) => {
+  const v = Number(value)
+  const isRev = field === 'pm_costragstatus' || field === 'pm_resourceragstatus'
+  
+  let type: 'success' | 'warning' | 'error' | 'default' = 'default'
+  let label = 'Not Set'
+  
+  if (isRev) {
+    if (v === 0) { type = 'success'; label = 'Low' }
+    else if (v === 1) { type = 'warning'; label = 'Medium' }
+  } else if (field === 'pm_benefitsragstatus') {
+    if (v === 0) { type = 'success'; label = 'Low' }
+  } else {
+    if (v === 1) { type = 'success'; label = 'Low' }
+    else if (v === 0) { type = 'warning'; label = 'Medium' }
+    else if (v === 2) { type = 'error'; label = 'High' }
+  }
+
+  const isDark = theme.palette.mode === 'dark'
+  let colorCode = theme.palette.text.secondary
+  let bg = isDark ? 'rgba(255, 255, 255, 0.02)' : '#f8fafc'
+  let border = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)'
+
+  if (type === 'success') {
+    colorCode = theme.palette.success.main
+    bg = isDark ? 'rgba(46, 125, 50, 0.06)' : 'rgba(46, 125, 50, 0.04)'
+    border = theme.palette.success.main
+  } else if (type === 'warning') {
+    colorCode = theme.palette.warning.main
+    bg = isDark ? 'rgba(237, 108, 2, 0.06)' : 'rgba(237, 108, 2, 0.04)'
+    border = theme.palette.warning.main
+  } else if (type === 'error') {
+    colorCode = theme.palette.error.main
+    bg = isDark ? 'rgba(211, 47, 47, 0.06)' : 'rgba(211, 47, 47, 0.04)'
+    border = theme.palette.error.main
+  }
+
+  let IconComponent = ChecklistIcon
+  if (field === 'pm_overallragstatus') IconComponent = SpeedIcon
+  else if (field === 'pm_costragstatus') IconComponent = AttachMoneyIcon
+  else if (field === 'pm_scheduleragstatus') IconComponent = ScheduleIcon
+  else if (field === 'pm_riskragstatus') IconComponent = WarningAmberIcon
+  else if (field === 'pm_resourceragstatus') IconComponent = PeopleIcon
+  else if (field === 'pm_benefitsragstatus') IconComponent = EmojiEventsIcon
+
+  return { type, label, colorCode, bg, border, IconComponent }
+}
+
 type SortField = 'name' | 'period' | 'entity' | 'overallrag' | 'date'
 type SortDir = 'asc' | 'desc'
 interface SortState { field: SortField; dir: SortDir }
@@ -262,7 +315,7 @@ export default function StatusSnapshotsPage() {
   const [ragFilter, setRagFilter] = useState('')
   const [sort, setSort] = useState<SortState>({ field: 'name', dir: 'asc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [selectedSnapshot, setSelectedSnapshot] = useState<ProjectStatusSnapshotModel | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingSnapshot, setEditingSnapshot] = useState<ProjectStatusSnapshotModel | null>(null)
@@ -337,6 +390,24 @@ export default function StatusSnapshotsPage() {
       })
       .catch((err) => console.error('Failed to load portfolio hierarchy for status snapshots:', err))
   }, [])
+
+  const getProjectName = (id?: string) => {
+    if (!id) return '\u2014'
+    const found = activeHierarchy.projects.find(p => p.pm_projectid === id)
+    return found ? found.pm_projectname : id
+  }
+
+  const getProgrammeName = (id?: string) => {
+    if (!id) return '\u2014'
+    const found = activeHierarchy.programmes.find(p => p.pm_programmeid === id)
+    return found ? found.pm_programmename : id
+  }
+
+  const getPortfolioName = (id?: string) => {
+    if (!id) return '\u2014'
+    const found = activeHierarchy.portfolios.find(p => p.pm_portfolioid === id)
+    return found ? found.pm_portfolioname : id
+  }
 
   const kpiItems = useMemo((): KpiCardItem[] => {
     const total = snapshots.length
@@ -557,427 +628,612 @@ export default function StatusSnapshotsPage() {
 
   return (
     <Box>
-      <PageHeader
-        title="Status Snapshots"
-        subtitle="Track project, programme, and portfolio status across 13-period fiscal years with multi-dimensional RAG ratings."
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <ExportButton data={filteredSnapshots} columns={exportColumns} filename={'StatusSnapshots_' + new Date().toISOString().slice(0, 10)} />
-            {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-                Add Snapshot
-              </Button>
-            )}
-          </Box>
-        }
-      />
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-      {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
-      {!loading && <KpiCardRow items={kpiItems} />}
-
-      <Tabs
-        value={pageTab}
-        onChange={(_, v) => { setPageTab(v); setError(null) }}
-        sx={{
-          mb: 3,
-          borderBottom: 1,
-          borderColor: 'divider',
-          '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40, px: 3 },
-          '& .Mui-selected': { color: 'primary.main' },
-        }}
-      >
-        <Tab icon={<AssessmentIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="RAG Overview" />
-        <Tab icon={<ChecklistIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="List View" />
-      </Tabs>
-
-      {/* TAB 0: RAG Overview */}
-      <TabPanel value={pageTab} index={0} pt={0}>
-        {loading ? (
-          <TableShell loading={true} empty={false}>
-            <Table size="small"><TableHead><TableRow><TableCell /></TableRow></TableHead></Table>
-          </TableShell>
-        ) : (
-          <Grid container spacing={3}>
-            {/* Summary Cards */}
-            <Grid size={{ xs: 12 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AssessmentIcon sx={{ color: 'primary.main' }} />
-                Multi-Dimensional RAG Status Overview
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Overview of RAG status distribution across {snapshots.length} snapshot(s) for each performance dimension.
-              </Typography>
-            </Grid>
-
-            {RAG_DIMENSIONS.map((dim) => {
-              const dist = ragDistribution[dim.key]
-              const total = dist.green + dist.amber + dist.red + dist.notset
-              const greenPct = total > 0 ? (dist.green / total) * 100 : 0
-              const amberPct = total > 0 ? (dist.amber / total) * 100 : 0
-              const redPct = total > 0 ? (dist.red / total) * 100 : 0
-              return (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dim.key}>
-                  <Card variant="outlined" sx={{
-                    borderRadius: 2,
-                    height: '100%',
-                    transition: 'box-shadow 0.2s ease, transform 0.2s ease',
-                    '&:hover': {
-                      boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.08)',
-                      transform: 'translateY(-2px)',
-                    },
-                  }}>
-                    <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                          {dim.label} RAG
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                        <Box sx={{ flex: 1, height: 12, borderRadius: 2, overflow: 'hidden', bgcolor: isDark ? 'background.paper' : '#f1f5f9', display: 'flex' }}>
-                          <Box sx={{ width: greenPct + '%', bgcolor: 'success.main', transition: 'width 0.5s ease' }} />
-                          <Box sx={{ width: amberPct + '%', bgcolor: 'warning.main', transition: 'width 0.5s ease' }} />
-                          <Box sx={{ width: redPct + '%', bgcolor: 'error.main', transition: 'width 0.5s ease' }} />
-                        </Box>
-                      </Box>
-                      <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-                        <StatusTag icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={dist.green + ' Green'} size="small" sx={{ fontWeight: 600, bgcolor: isDark ? '#052e16' : '#f0fdf4', color: 'success.main' }} />
-                        <StatusTag icon={<WarningAmberIcon sx={{ fontSize: 14 }} />} label={dist.amber + ' Amber'} size="small" sx={{ fontWeight: 600, bgcolor: isDark ? '#1c1917' : '#fffbeb', color: 'warning.main' }} />
-                        <StatusTag icon={<ErrorIcon sx={{ fontSize: 14 }} />} label={dist.red + ' Red'} size="small" sx={{ fontWeight: 600, bgcolor: isDark ? '#450a0a' : '#fef2f2', color: 'error.main' }} />
-                        {dist.notset > 0 && (
-                          <StatusTag label={dist.notset + ' Not Set'} size="small" sx={{ fontWeight: 600 }} />
-                        )}
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              )
-            })}
-
-            {/* Fiscal Period Distribution */}
-            {snapshots.length > 0 && (
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CalendarMonthIcon sx={{ color: 'primary.main' }} />
-                  13-Period Fiscal Year Distribution
-                </Typography>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-                  <Grid container spacing={1.5}>
-                    {FISCAL_PERIOD_OPTIONS.filter((o) => o.value).map((period) => {
-                      const count = snapshots.filter((s) => s.pm_reportingperiod === period.value).length
-                      const maxCount = Math.max(1, ...FISCAL_PERIOD_OPTIONS.filter(o => o.value).map(p => snapshots.filter((s) => s.pm_reportingperiod === p.value).length))
-                      const pct = (count / maxCount) * 100
-                      return (
-                        <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={period.value}>
-                          <Box
-                            sx={{
-                              p: 1.5,
-                              borderRadius: 2,
-                              border: '1px solid',
-                              borderColor: isDark ? '#334155' : '#e2e8f0',
-                              bgcolor: isDark ? '#1a2332' : 'background.default',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                              '&:hover': { borderColor: 'primary.main' },
-                            }}
-                            onClick={() => { setPeriodFilter(period.value!); setPageTab(1) }}
-                          >
-                            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', fontSize: 11 }}>
-                              {period.label}
-                            </Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 700, fontSize: fontSizes.lg, mt: 0.5 }}>
-                              {count}
-                            </Typography>
-                            <LinearProgress
-                              variant="determinate"
-                              value={pct}
-                              sx={{ mt: 1, borderRadius: 2, height: 4, bgcolor: isDark ? 'background.paper' : '#e2e8f0' }}
-                            />
-                          </Box>
-                        </Grid>
-                      )
-                    })}
-                  </Grid>
-                </Paper>
-              </Grid>
-            )}
-          </Grid>
-        )}
-      </TabPanel>
-
-      {/* TAB 1: List View */}
-      <TabPanel value={pageTab} index={1} pt={0}>
-        <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-          <SearchFilterBar
-            searchQuery={searchQuery}
-            onSearchChange={(v) => { setSearchQuery(v); setPage(0) }}
-            searchPlaceholder="Search by name, project, period..."
-            filterValue={entityFilter}
-            onFilterChange={(v) => { setEntityFilter(v); setPage(0) }}
-            filterLabel="Entity Type"
-            filterOptions={ENTITY_TYPE_OPTIONS}
-            secondaryFilterValue={periodFilter}
-            onSecondaryFilterChange={(v) => { setPeriodFilter(v); setPage(0) }}
-            secondaryFilterLabel="Fiscal Period"
-            secondaryFilterOptions={FISCAL_PERIOD_OPTIONS}
-            onClear={() => { setSearchQuery(''); setEntityFilter(''); setPeriodFilter(''); setRagFilter(''); setPage(0) }}
+      {selectedSnapshot ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Snapshots', path: 'list' },
+              { label: selectedSnapshot.pm_snapshotname ?? 'Detail' }
+            ]}
+            onNavigate={() => setSelectedSnapshot(null)}
           />
-          <TableShell
-            loading={loading}
-            empty={filteredSnapshots.length === 0}
-            emptyIcon={<AssessmentIcon />}
-            emptyTitle={searchQuery || entityFilter || periodFilter ? 'No snapshots match your criteria.' : 'No status snapshots yet.'}
-            emptyAction={!searchQuery && !entityFilter && !periodFilter ? (
-              <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreate}>
-                Add your first snapshot
-              </Button>
-            ) : undefined}
-          >
-            <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700 }}>Snapshot</TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'entity'} direction={sort.field === 'entity' ? sort.dir : 'asc'} onClick={() => handleSort('entity')} sx={{ fontWeight: 700 }}>Entity</TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'period'} direction={sort.field === 'period' ? sort.dir : 'asc'} onClick={() => handleSort('period')} sx={{ fontWeight: 700 }}>Fiscal Period</TableSortLabel>
-                  </TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'overallrag'} direction={sort.field === 'overallrag' ? sort.dir : 'asc'} onClick={() => handleSort('overallrag')} sx={{ fontWeight: 700 }}>RAG Status</TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
-                    <TableSortLabel active={sort.field === 'date'} direction={sort.field === 'date' ? sort.dir : 'asc'} onClick={() => handleSort('date')} sx={{ fontWeight: 700 }}>Submitted</TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>Dimensions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedSnapshots.map((snapshot, idx) => (
-                  <TableRow
-                    key={snapshot.pm_projectstatussnapshotid}
-                    hover
-                    onClick={() => setSelectedSnapshot(snapshot)}
-                    sx={{
-                      cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                      transition: 'background-color 0.15s ease',
-                      '& td': { px: 2.5, py: 1.25 },
-                    }}
-                  >
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
-                          <AssessmentIcon sx={{ fontSize: 16 }} />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {snapshot.pm_snapshotname || 'Unnamed'}
-                          </Typography>
-                          {snapshot.pm_projectcode && (
-                            <Typography variant="caption" color="text.secondary">
-                              {snapshot.pm_projectcode}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <StatusTag label={snapshot.pm_entitytype || '\u2014'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>
-                        {snapshot.pm_reportingperiod || '\u2014'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <RagChip field="pm_overallragstatus" value={snapshot.pm_overallragstatus} />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontSize: fontSizes.sm }}>
-                        {formatDate(snapshot.pm_submissiondate)}
-                      </Typography>
-                      {snapshot.pm_submittedby && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                          {snapshot.pm_submittedby}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5}>
-                        <Tooltip title="Cost" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_costragstatus', snapshot.pm_costragstatus) }} />
-                        </Tooltip>
-                        <Tooltip title="Schedule" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_scheduleragstatus', snapshot.pm_scheduleragstatus) }} />
-                        </Tooltip>
-                        <Tooltip title="Risk" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_riskragstatus', snapshot.pm_riskragstatus) }} />
-                        </Tooltip>
-                        <Tooltip title="Resource" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_resourceragstatus', snapshot.pm_resourceragstatus) }} />
-                        </Tooltip>
-                        <Tooltip title="Benefits" arrow>
-                          <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_benefitsragstatus', snapshot.pm_benefitsragstatus) }} />
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <PageHeader
+            title={selectedSnapshot?.pm_snapshotname ?? 'Snapshot Detail'}
+            subtitle={
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1 }}>
+                <StatusTag label={selectedSnapshot.pm_entitytype || '\u2014'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+              </Box>
+            }
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                {canEdit && (
+                  <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedSnapshot && openEdit(selectedSnapshot)} sx={{ borderRadius: 1.5 }}>
+                    Edit Snapshot
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => selectedSnapshot?.pm_projectstatussnapshotid && setDeleteConfirm(selectedSnapshot.pm_projectstatussnapshotid)} sx={{ borderRadius: 1.5 }}>
+                    Delete Snapshot
+                  </Button>
+                )}
+              </Box>
+            }
+          />
 
-          </TableShell>
-        </Paper>
-      </TabPanel>
-
-      {/* Detail Drawer */}
-      <DetailDrawer
-        open={!!selectedSnapshot}
-        onClose={() => setSelectedSnapshot(null)}
-        icon={<AssessmentIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
-        title={selectedSnapshot?.pm_snapshotname ?? ''}
-        subtitle={selectedSnapshot && (
-          <StatusTag label={selectedSnapshot.pm_entitytype || '\u2014'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {canDelete && (
-              <ActionIcon
-                icon={<DeleteIcon />}
-                onClick={() => selectedSnapshot?.pm_projectstatussnapshotid && setDeleteConfirm(selectedSnapshot.pm_projectstatussnapshotid)}
-                label="Delete Snapshot"
-                color="error"
-              />
-            )}
-            {canEdit && (
-              <ActionIcon
-                icon={<EditIcon />}
-                onClick={() => selectedSnapshot && openEdit(selectedSnapshot)}
-                label="Edit Snapshot"
-              />
-            )}
-          </Box>
-        }
-      >
-        {selectedSnapshot && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {/* RAG Status Cards */}
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <AutoAwesomeIcon sx={{ fontSize: 16 }} /> RAG Status Ratings
-              </Typography>
-              <Grid container spacing={1.5}>
-                {RAG_DIMENSIONS.map((dim) => (
-                  <Grid size={{ xs: 6, sm: 4 }} key={dim.key}>
-                    <Box sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      bgcolor: isDark ? '#1a2332' : 'background.default',
-                      border: '1px solid',
-                      borderColor: isDark ? '#334155' : '#e2e8f0',
-                    }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>
-                        {dim.label}
-                      </Typography>
-                      <RagChip field={dim.field} value={(selectedSnapshot as any)[dim.field]} />
-                    </Box>
+            <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+                {/* RAG Status Ratings */}
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2.5, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                    <AutoAwesomeIcon sx={{ fontSize: 16 }} /> RAG Status Ratings
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {/* Overall Health Card (Prominent left block) */}
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      {(() => {
+                        const config = getRagStatusConfig('pm_overallragstatus', selectedSnapshot.pm_overallragstatus, theme)
+                        const Icon = config.IconComponent
+                        return (
+                          <Paper
+                            variant="outlined"
+                            sx={{
+                              p: 3,
+                              borderRadius: 1.5,
+                              height: '100%',
+                              textAlign: 'center',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              bgcolor: config.bg,
+                              border: '1.5px solid',
+                              borderColor: config.border,
+                              transition: 'transform 0.2s, box-shadow 0.2s',
+                              '&:hover': {
+                                transform: 'translateY(-2px)',
+                                boxShadow: theme.shadows[2],
+                              }
+                            }}
+                          >
+                            <Avatar sx={{ width: 48, height: 48, bgcolor: 'background.paper', color: config.colorCode, border: '2px solid', borderColor: config.border, mb: 2 }}>
+                              <Icon sx={{ fontSize: 24 }} />
+                            </Avatar>
+                            <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                              Overall Health
+                            </Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 850, color: config.colorCode }}>
+                              {config.label}
+                            </Typography>
+                          </Paper>
+                        )
+                      })()}
+                    </Grid>
+
+                    {/* Other 5 Dimensions (Right side grid) */}
+                    <Grid size={{ xs: 12, md: 8 }}>
+                      <Grid container spacing={2}>
+                        {RAG_DIMENSIONS.filter(d => d.key !== 'OVERALL').map((dim) => {
+                          const config = getRagStatusConfig(dim.field, (selectedSnapshot as any)[dim.field], theme)
+                          const Icon = config.IconComponent
+                          return (
+                            <Grid size={{ xs: 12, sm: 6 }} key={dim.key}>
+                              <Paper
+                                variant="outlined"
+                                sx={{
+                                  p: 2,
+                                  borderRadius: 1.5,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 2,
+                                  bgcolor: config.bg,
+                                  borderLeft: '4px solid',
+                                  borderLeftColor: config.border,
+                                  transition: 'transform 0.2s, box-shadow 0.2s',
+                                  '&:hover': {
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: theme.shadows[1],
+                                  }
+                                }}
+                              >
+                                <Avatar sx={{ width: 36, height: 36, bgcolor: 'background.paper', color: config.colorCode, border: '1px solid', borderColor: 'divider' }}>
+                                  <Icon sx={{ fontSize: 18 }} />
+                                </Avatar>
+                                <Box>
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                    {dim.label}
+                                  </Typography>
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 850, color: config.colorCode, fontSize: '0.9rem' }}>
+                                    {config.label}
+                                  </Typography>
+                                </Box>
+                              </Paper>
+                            </Grid>
+                          )
+                        })}
+                      </Grid>
+                    </Grid>
                   </Grid>
-                ))}
-              </Grid>
-            </Paper>
+                </Box>
 
-            {/* Highlights & Lowlights */}
-            {(selectedSnapshot.pm_projecthighlights || selectedSnapshot.pm_projectlowlights) && (
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <VisibilityIcon sx={{ fontSize: 16 }} /> Highlights & Lowlights
-                </Typography>
-                <Grid container spacing={2}>
-                  {selectedSnapshot.pm_projecthighlights && (
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Highlights</Typography>
-                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: isDark ? '#052e16' : '#f0fdf4', borderColor: 'success.main' }}>
-                        <Typography variant="body2">{selectedSnapshot.pm_projecthighlights}</Typography>
-                      </Paper>
-                    </Grid>
-                  )}
-                  {selectedSnapshot.pm_projectlowlights && (
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Lowlights</Typography>
-                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: isDark ? '#450a0a' : '#fef2f2', borderColor: 'error.main' }}>
-                        <Typography variant="body2">{selectedSnapshot.pm_projectlowlights}</Typography>
-                      </Paper>
-                    </Grid>
-                  )}
-                </Grid>
-              </Paper>
-            )}
+                {/* Highlights & Lowlights */}
+                {(selectedSnapshot.pm_projecthighlights || selectedSnapshot.pm_projectlowlights) && (
+                  <>
+                    <Divider />
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                        <VisibilityIcon sx={{ fontSize: 16 }} /> Highlights & Lowlights
+                      </Typography>
+                      <Grid container spacing={2}>
+                        {selectedSnapshot.pm_projecthighlights && (
+                          <Grid size={{ xs: 12, sm: 6 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Highlights</Typography>
+                            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, bgcolor: isDark ? '#052e16' : '#f0fdf4', borderColor: 'success.main' }}>
+                              <Typography variant="body2">{selectedSnapshot.pm_projecthighlights}</Typography>
+                            </Paper>
+                          </Grid>
+                        )}
+                        {selectedSnapshot.pm_projectlowlights && (
+                          <Grid size={{ xs: 12, sm: 6 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.5 }}>Lowlights</Typography>
+                            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, bgcolor: isDark ? '#450a0a' : '#fef2f2', borderColor: 'error.main' }}>
+                              <Typography variant="body2">{selectedSnapshot.pm_projectlowlights}</Typography>
+                            </Paper>
+                          </Grid>
+                        )}
+                      </Grid>
+                    </Box>
+                  </>
+                )}
 
-            {/* Details */}
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <AssignmentIcon sx={{ fontSize: 16 }} /> Snapshot Details
-              </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                <Divider />
+
+                {/* Snapshot Details */}
                 <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Entity Type</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedSnapshot.pm_entitytype || '\u2014'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project Code</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedSnapshot.pm_projectcode || '\u2014'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Reporting Period</Typography>
-                  <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>{selectedSnapshot.pm_reportingperiod || '\u2014'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Submitted Date</Typography>
-                  <Typography variant="body2">{formatDate(selectedSnapshot.pm_submissiondate)}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Submitted By</Typography>
-                  <Typography variant="body2">{selectedSnapshot.pm_submittedby || '\u2014'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Approval Status</Typography>
-                  <StatusTag label={Number(selectedSnapshot.pm_approvalstatus) === 0 ? 'Approved' : 'Pending'} color={Number(selectedSnapshot.pm_approvalstatus) === 0 ? 'success' : 'warning'} size="small" sx={{ fontWeight: 600 }} />
-                </Box>
-                {selectedSnapshot._pm_project_value && (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project Ref</Typography>
-                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>{selectedSnapshot._pm_project_value}</Typography>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                    <AssignmentIcon sx={{ fontSize: 16 }} /> Snapshot Details
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Entity Type</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedSnapshot.pm_entitytype || '\u2014'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project Code</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedSnapshot.pm_projectcode || '\u2014'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Reporting Period</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>{selectedSnapshot.pm_reportingperiod || '\u2014'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Submitted Date</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatDate(selectedSnapshot.pm_submissiondate)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Submitted By</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedSnapshot.pm_submittedby || '\u2014'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Approval Status</Typography>
+                      <StatusTag label={Number(selectedSnapshot.pm_approvalstatus) === 0 ? 'Approved' : 'Pending'} color={Number(selectedSnapshot.pm_approvalstatus) === 0 ? 'success' : 'warning'} size="small" sx={{ fontWeight: 600 }} />
+                    </Box>
+                    {selectedSnapshot._pm_project_value && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project</Typography>
+                        <Tooltip title={`ID: ${selectedSnapshot._pm_project_value}`} arrow>
+                          <Typography variant="body2" sx={{ fontWeight: 600, cursor: 'help' }}>
+                            {getProjectName(selectedSnapshot._pm_project_value)}
+                          </Typography>
+                        </Tooltip>
+                      </Box>
+                    )}
+                    {selectedSnapshot._pm_portfoliolookup_value && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Portfolio</Typography>
+                        <Tooltip title={`ID: ${selectedSnapshot._pm_portfoliolookup_value}`} arrow>
+                          <Typography variant="body2" sx={{ fontWeight: 600, cursor: 'help' }}>
+                            {getPortfolioName(selectedSnapshot._pm_portfoliolookup_value)}
+                          </Typography>
+                        </Tooltip>
+                      </Box>
+                    )}
+                    {selectedSnapshot._pm_programmename_value && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme</Typography>
+                        <Tooltip title={`ID: ${selectedSnapshot._pm_programmename_value}`} arrow>
+                          <Typography variant="body2" sx={{ fontWeight: 600, cursor: 'help' }}>
+                            {getProgrammeName(selectedSnapshot._pm_programmename_value)}
+                          </Typography>
+                        </Tooltip>
+                      </Box>
+                    )}
                   </Box>
-                )}
-                {selectedSnapshot._pm_portfoliolookup_value && (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Portfolio Ref</Typography>
-                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>{selectedSnapshot._pm_portfoliolookup_value}</Typography>
-                  </Box>
-                )}
-                {selectedSnapshot._pm_programmename_value && (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme Ref</Typography>
-                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>{selectedSnapshot._pm_programmename_value}</Typography>
-                  </Box>
+                </Box>
+
+                {selectedSnapshot.pm_actionitems && (
+                  <>
+                    <Divider />
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                        <ReportIcon sx={{ fontSize: 16 }} /> Action Items
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selectedSnapshot.pm_actionitems}</Typography>
+                    </Box>
+                  </>
                 )}
               </Box>
             </Paper>
-
-            {selectedSnapshot.pm_actionitems && (
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <ReportIcon sx={{ fontSize: 16 }} /> Action Items
-                </Typography>
-                <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary', whiteSpace: 'pre-wrap' }}>{selectedSnapshot.pm_actionitems}</Typography>
-              </Paper>
-            )}
           </Box>
-        )}
-      </DetailDrawer>
+        </Box>
+      ) : (
+        <>
+          <PageHeader
+            title="Status Snapshots"
+            subtitle="Track health, highlights, and lowlights across all your projects in discrete reporting periods."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <ExportButton data={snapshots} columns={exportColumns} filename="status_snapshots" />
+                {canCreate && (
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+                    Create Snapshot
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+          <KpiCardRow items={kpiItems} loading={loading} />
+          
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tabs value={pageTab} onChange={(e, v) => setPageTab(v)} sx={{ minHeight: 48 }}>
+              <Tab icon={<HubIcon />} iconPosition="start" label="Dashboard" sx={{ minHeight: 48, fontWeight: 600 }} />
+              <Tab icon={<AssignmentIcon />} iconPosition="start" label="All Snapshots" sx={{ minHeight: 48, fontWeight: 600 }} />
+            </Tabs>
+          </Box>
+
+          <TabPanel value={pageTab} index={0} pt={0}>
+            {loading ? (
+              <TableShell loading={true} empty={false}>
+                <Table size="small"><TableHead><TableRow><TableCell /></TableRow></TableHead></Table>
+              </TableShell>
+            ) : (
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AssessmentIcon sx={{ color: 'primary.main' }} />
+                    Multi-Dimensional RAG Status Overview
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    Overview of RAG status distribution across {snapshots.length} snapshot(s) for each performance dimension.
+                  </Typography>
+                </Grid>
+
+                {RAG_DIMENSIONS.map((dim) => {
+                  const dist = ragDistribution[dim.key]
+                  const total = dist.green + dist.amber + dist.red + dist.notset
+                  const greenPct = total > 0 ? (dist.green / total) * 100 : 0
+                  const amberPct = total > 0 ? (dist.amber / total) * 100 : 0
+                  const redPct = total > 0 ? (dist.red / total) * 100 : 0
+
+                  let DimensionIcon = ChecklistIcon
+                  let accentColor = 'primary.main'
+                  if (dim.key === 'OVERALL') { DimensionIcon = SpeedIcon; accentColor = 'primary.main' }
+                  else if (dim.key === 'COST') { DimensionIcon = AttachMoneyIcon; accentColor = 'success.main' }
+                  else if (dim.key === 'SCHEDULE') { DimensionIcon = ScheduleIcon; accentColor = 'info.main' }
+                  else if (dim.key === 'RISK') { DimensionIcon = WarningAmberIcon; accentColor = 'error.main' }
+                  else if (dim.key === 'RESOURCE') { DimensionIcon = PeopleIcon; accentColor = 'warning.main' }
+                  else if (dim.key === 'BENEFITS') { DimensionIcon = EmojiEventsIcon; accentColor = 'secondary.main' }
+
+                  let dominantLabel = 'Not Set'
+                  let dominantColor = 'text.secondary'
+                  if (total > 0) {
+                    const maxVal = Math.max(dist.green, dist.amber, dist.red)
+                    if (maxVal === dist.green) { dominantLabel = 'Mostly Low / Green'; dominantColor = 'success.main' }
+                    else if (maxVal === dist.amber) { dominantLabel = 'Mostly Medium / Amber'; dominantColor = 'warning.main' }
+                    else if (maxVal === dist.red) { dominantLabel = 'Mostly High / Red'; dominantColor = 'error.main' }
+                  }
+
+                  return (
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dim.key}>
+                      <Card
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 2,
+                          height: '100%',
+                          border: '1px solid',
+                          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                          '&:hover': {
+                            boxShadow: isDark ? '0 12px 28px rgba(0,0,0,0.45)' : '0 12px 28px rgba(0,0,0,0.08)',
+                            transform: 'translateY(-3px)',
+                            borderColor: accentColor,
+                          },
+                        }}
+                      >
+                        <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Stack direction="row" spacing={1.2} sx={{ alignItems: 'center' }}>
+                              <Avatar
+                                sx={{
+                                  width: 32,
+                                  height: 32,
+                                  bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                                  color: accentColor,
+                                  border: '1px solid',
+                                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                                }}
+                              >
+                                <DimensionIcon sx={{ fontSize: 18 }} />
+                              </Avatar>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '0.95rem', color: 'text.primary' }}>
+                                {dim.label} RAG
+                              </Typography>
+                            </Stack>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: dominantColor, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                              {dominantLabel}
+                            </Typography>
+                          </Box>
+
+                          <Box sx={{ mb: 2.5 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75 }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Distribution</Typography>
+                              <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                                {total} Snapshot{total !== 1 ? 's' : ''}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ width: '100%', height: 10, borderRadius: 2, overflow: 'hidden', bgcolor: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9', display: 'flex', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)' }}>
+                              <Tooltip title={`Green/Low: ${greenPct.toFixed(0)}%`} arrow>
+                                <Box sx={{ width: greenPct + '%', bgcolor: 'success.main', transition: 'width 0.5s ease', cursor: 'help' }} />
+                              </Tooltip>
+                              <Tooltip title={`Amber/Medium: ${amberPct.toFixed(0)}%`} arrow>
+                                <Box sx={{ width: amberPct + '%', bgcolor: 'warning.main', transition: 'width 0.5s ease', cursor: 'help' }} />
+                              </Tooltip>
+                              <Tooltip title={`Red/High: ${redPct.toFixed(0)}%`} arrow>
+                                <Box sx={{ width: redPct + '%', bgcolor: 'error.main', transition: 'width 0.5s ease', cursor: 'help' }} />
+                              </Tooltip>
+                            </Box>
+                          </Box>
+
+                          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                            <StatusTag icon={<CheckCircleIcon sx={{ fontSize: 13 }} />} label={`${dist.green} Green`} size="small" sx={{ fontWeight: 700, bgcolor: isDark ? 'rgba(46, 125, 50, 0.15)' : 'rgba(46, 125, 50, 0.05)', color: 'success.main' }} />
+                            <StatusTag icon={<WarningAmberIcon sx={{ fontSize: 13 }} />} label={`${dist.amber} Amber`} size="small" sx={{ fontWeight: 700, bgcolor: isDark ? 'rgba(237, 108, 2, 0.15)' : 'rgba(237, 108, 2, 0.05)', color: 'warning.main' }} />
+                            <StatusTag icon={<ErrorIcon sx={{ fontSize: 13 }} />} label={`${dist.red} Red`} size="small" sx={{ fontWeight: 700, bgcolor: isDark ? 'rgba(211, 47, 47, 0.15)' : 'rgba(211, 47, 47, 0.05)', color: 'error.main' }} />
+                            {dist.notset > 0 && (
+                              <StatusTag label={`${dist.notset} Not Set`} size="small" sx={{ fontWeight: 700 }} />
+                            )}
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  )
+                })}
+
+                {snapshots.length > 0 && (
+                  <Grid size={{ xs: 12 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, mt: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.85rem', color: 'text.secondary' }}>
+                      <CalendarMonthIcon sx={{ color: 'primary.main', fontSize: 18 }} />
+                      13-Period Fiscal Year Distribution
+                    </Typography>
+                    <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fafafa' }}>
+                      <Grid container spacing={2}>
+                        {FISCAL_PERIOD_OPTIONS.filter((o) => o.value).map((period) => {
+                          const periodSnapshots = snapshots.filter((s) => s.pm_reportingperiod === period.value)
+                          const count = periodSnapshots.length
+                          const green = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 1).length
+                          const amber = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 0).length
+                          const red = periodSnapshots.filter(s => Number(s.pm_overallragstatus) === 2).length
+                          const hasData = count > 0
+                          
+                          return (
+                            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={period.value}>
+                              <Box
+                                sx={{
+                                  p: 2,
+                                  borderRadius: 1.5,
+                                  border: '1.5px solid',
+                                  borderColor: hasData
+                                    ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0, 0, 0, 0.08)')
+                                    : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0, 0, 0, 0.04)'),
+                                  bgcolor: hasData
+                                    ? (isDark ? 'rgba(255, 255, 255, 0.02)' : '#ffffff')
+                                    : 'transparent',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                  opacity: hasData ? 1 : 0.65,
+                                  '&:hover': {
+                                    borderColor: 'primary.main',
+                                    boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.35)' : '0 8px 24px rgba(0,0,0,0.06)',
+                                    transform: 'translateY(-2px)',
+                                    opacity: 1,
+                                  },
+                                }}
+                                onClick={() => { setPeriodFilter(period.value!); setPageTab(1) }}
+                              >
+                                <Typography variant="caption" sx={{ fontWeight: 850, color: 'text.secondary', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                  {period.label}
+                                </Typography>
+                                
+                                <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', mt: 1.5 }}>
+                                  <Typography variant="body1" sx={{ fontWeight: 900, fontSize: '1.3rem', lineHeight: 1, fontFamily: '"JetBrains Mono", monospace' }}>
+                                    {count} <Typography component="span" variant="caption" color="text.secondary" sx={{ fontWeight: 700, fontSize: '0.65rem' }}>reports</Typography>
+                                  </Typography>
+                                  {hasData && (
+                                    <Box sx={{ display: 'flex', gap: 0.8, mb: 0.25 }}>
+                                      {green > 0 && (
+                                        <Tooltip title={`${green} Green`} arrow>
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'success.main' }} />
+                                          </Box>
+                                        </Tooltip>
+                                      )}
+                                      {amber > 0 && (
+                                        <Tooltip title={`${amber} Amber`} arrow>
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'warning.main' }} />
+                                          </Box>
+                                        </Tooltip>
+                                      )}
+                                      {red > 0 && (
+                                        <Tooltip title={`${red} Red`} arrow>
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'error.main' }} />
+                                          </Box>
+                                        </Tooltip>
+                                      )}
+                                    </Box>
+                                  )}
+                                </Box>
+                                
+                                {hasData ? (
+                                  <Box sx={{ display: 'flex', width: '100%', height: 4, borderRadius: 2, overflow: 'hidden', mt: 2 }}>
+                                    {green > 0 && <Box sx={{ width: `${(green / count) * 100}%`, bgcolor: 'success.main' }} />}
+                                    {amber > 0 && <Box sx={{ width: `${(amber / count) * 100}%`, bgcolor: 'warning.main' }} />}
+                                    {red > 0 && <Box sx={{ width: `${(red / count) * 100}%`, bgcolor: 'error.main' }} />}
+                                  </Box>
+                                ) : (
+                                  <Box sx={{ width: '100%', height: 4, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : '#e2e8f0', mt: 2 }} />
+                                )}
+                              </Box>
+                            </Grid>
+                          )
+                        })}
+                      </Grid>
+                    </Paper>
+                  </Grid>
+                )}
+              </Grid>
+            )}
+          </TabPanel>
+
+          <TabPanel value={pageTab} index={1} pt={0}>
+            <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+              <SearchFilterBar
+                searchQuery={searchQuery}
+                onSearchChange={(v) => { setSearchQuery(v); setPage(0) }}
+                searchPlaceholder="Search by name, project, period..."
+                filterValue={entityFilter}
+                onFilterChange={(v) => { setEntityFilter(v); setPage(0) }}
+                filterLabel="Entity Type"
+                filterOptions={ENTITY_TYPE_OPTIONS}
+                secondaryFilterValue={periodFilter}
+                onSecondaryFilterChange={(v) => { setPeriodFilter(v); setPage(0) }}
+                secondaryFilterLabel="Fiscal Period"
+                secondaryFilterOptions={FISCAL_PERIOD_OPTIONS}
+                onClear={() => { setSearchQuery(''); setEntityFilter(''); setPeriodFilter(''); setRagFilter(''); setPage(0) }}
+              />
+              <TableShell
+                loading={loading}
+                empty={filteredSnapshots.length === 0}
+                emptyIcon={<AssessmentIcon />}
+                emptyTitle={searchQuery || entityFilter || periodFilter ? 'No snapshots match your criteria.' : 'No status snapshots yet.'}
+                emptyAction={!searchQuery && !entityFilter && !periodFilter ? (
+                  <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreate}>
+                    Add your first snapshot
+                  </Button>
+                ) : undefined}
+              >
+                <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                        <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700 }}>Snapshot</TableSortLabel>
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                        <TableSortLabel active={sort.field === 'entity'} direction={sort.field === 'entity' ? sort.dir : 'asc'} onClick={() => handleSort('entity')} sx={{ fontWeight: 700 }}>Entity</TableSortLabel>
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                        <TableSortLabel active={sort.field === 'period'} direction={sort.field === 'period' ? sort.dir : 'asc'} onClick={() => handleSort('period')} sx={{ fontWeight: 700 }}>Fiscal Period</TableSortLabel>
+                      </TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                        <TableSortLabel active={sort.field === 'overallrag'} direction={sort.field === 'overallrag' ? sort.dir : 'asc'} onClick={() => handleSort('overallrag')} sx={{ fontWeight: 700 }}>RAG Status</TableSortLabel>
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>
+                        <TableSortLabel active={sort.field === 'date'} direction={sort.field === 'date' ? sort.dir : 'asc'} onClick={() => handleSort('date')} sx={{ fontWeight: 700 }}>Submitted</TableSortLabel>
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: '2px solid ' + theme.palette.divider, px: 2.5, py: 1.5 }}>Dimensions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedSnapshots.map((snapshot, idx) => (
+                      <TableRow
+                        key={snapshot.pm_projectstatussnapshotid}
+                        hover
+                        onClick={() => setSelectedSnapshot(snapshot)}
+                        sx={{
+                          cursor: 'pointer',
+                          bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                          '&:hover': { bgcolor: 'action.selected' },
+                          transition: 'background-color 0.15s ease',
+                          '& td': { px: 2.5, py: 1.25 },
+                        }}
+                      >
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
+                              <AssessmentIcon sx={{ fontSize: 16 }} />
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {snapshot.pm_snapshotname || 'Unnamed'}
+                              </Typography>
+                              {snapshot.pm_projectcode && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {snapshot.pm_projectcode}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <StatusTag label={snapshot.pm_entitytype || '\u2014'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.sm }}>
+                            {snapshot.pm_reportingperiod || '\u2014'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <RagChip field="pm_overallragstatus" value={snapshot.pm_overallragstatus} />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontSize: fontSizes.sm }}>
+                            {formatDate(snapshot.pm_submissiondate)}
+                          </Typography>
+                          {snapshot.pm_submittedby && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              {snapshot.pm_submittedby}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={0.5}>
+                            <Tooltip title="Cost" arrow>
+                              <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_costragstatus', snapshot.pm_costragstatus) }} />
+                            </Tooltip>
+                            <Tooltip title="Schedule" arrow>
+                              <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_scheduleragstatus', snapshot.pm_scheduleragstatus) }} />
+                            </Tooltip>
+                            <Tooltip title="Risk" arrow>
+                              <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_riskragstatus', snapshot.pm_riskragstatus) }} />
+                            </Tooltip>
+                            <Tooltip title="Resource" arrow>
+                              <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_resourceragstatus', snapshot.pm_resourceragstatus) }} />
+                            </Tooltip>
+                            <Tooltip title="Benefits" arrow>
+                              <Box sx={{ width: 14, height: 14, borderRadius: '50%', bgcolor: getRagColor('pm_benefitsragstatus', snapshot.pm_benefitsragstatus) }} />
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableShell>
+            </Paper>
+          </TabPanel>
+        </>
+      )}
 
       <SnapshotDialogs
         showForm={showForm}

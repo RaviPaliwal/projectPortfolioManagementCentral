@@ -50,7 +50,7 @@ import {
 } from '@/services'
 import type { FundingSourceModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, ExportButton, StatusTag, ActionIcon, WorkflowMilestone, TabPanel } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, Breadcrumbs, SearchFilterBar, ExportButton, StatusTag, ActionIcon, WorkflowMilestone, TabPanel } from '@/components/common'
 import type { KpiCardItem, FilterOption, ExportColumn } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 
@@ -140,11 +140,14 @@ export default function FundingSourcesPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [sort, setSort] = useState<SortState>({ field: 'name', dir: 'asc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Detail panel state
   const [selectedSource, setSelectedSource] = useState<FundingSourceModel | null>(null)
   const [detailTab, setDetailTab] = useState(0)
+
+  // Handlers
+  const handleCloseDetail = useCallback(() => setSelectedSource(null), [])
 
   // Create/Edit modal state
   const [showFormModal, setShowFormModal] = useState(false)
@@ -305,9 +308,7 @@ export default function FundingSourcesPage() {
     setDetailTab(0)
   }, [])
 
-  const handleCloseDetail = useCallback(() => {
-    setSelectedSource(null)
-  }, [])
+
 
   // ── Form open for create/edit ──
   const openCreateForm = useCallback(() => {
@@ -437,6 +438,7 @@ export default function FundingSourcesPage() {
       {!loading && <KpiCardRow items={kpiItems} />}
 
       {/* ── Funding Sources Grid ─────────────────────── */}
+      {!selectedSource ? (
       <Paper sx={{ overflow: 'hidden', mb: 3 }}>
         <SearchFilterBar
           searchQuery={searchQuery}
@@ -448,8 +450,10 @@ export default function FundingSourcesPage() {
           filterOptions={FUNDING_TYPE_FILTER_OPTIONS}
           extraFilters={
             <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Status</InputLabel>
+              <InputLabel id="funding-status-filter-label">Status</InputLabel>
               <Select
+                id="funding-status-filter-select"
+                labelId="funding-status-filter-label"
                 value={statusFilter}
                 label="Status"
                 onChange={(e) => handleStatusFilterChange(e.target.value)}
@@ -533,8 +537,8 @@ export default function FundingSourcesPage() {
                     onClick={() => handleRowClick(source)}
                     sx={{
                       cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                      bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                      '&:hover': { bgcolor: 'action.selected' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
                     }}
@@ -637,79 +641,67 @@ export default function FundingSourcesPage() {
               { label: 'Active', value: `${fundingSources.filter((s) => String(s.pm_fundingstatus) === '0').length}` },
               { label: 'Exhausted', value: `${fundingSources.filter((s) => String(s.pm_fundingstatus) === '1').length}` },
             ]}
-          />
-        )}
-        {!loading && filteredSources.length > 0 && (
-          <TablePagination
-            component="div"
-            count={filteredSources.length}
             page={page}
-            onPageChange={handleChangePage}
+            onPageChange={(_, p) => setPage(p)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[25, 50, 100]}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10))
+              setPage(0)
+            }}
           />
         )}
       </Paper>
+      ) : (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+        <Breadcrumbs
+          items={[
+            { label: 'Funding Sources', path: 'list' },
+            { label: selectedSource?.pm_fundingsourcename ?? 'Detail' }
+          ]}
+          onNavigate={() => handleCloseDetail()}
+        />
+        <PageHeader
+          title={selectedSource?.pm_fundingsourcename ?? ''}
+          subtitle={
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+              <StatusTag
+                label={FUNDING_TYPE_LABELS[String(selectedSource?.pm_fundingtype ?? '')]}
+                color={FUNDING_TYPE_COLORS[String(selectedSource?.pm_fundingtype ?? '')] ?? 'default'}
+              />
+              <StatusTag
+                label={STATUS_LABELS[String(selectedSource?.pm_fundingstatus ?? '')]}
+                color={STATUS_COLORS[String(selectedSource?.pm_fundingstatus ?? '')] ?? 'default'}
+              />
+              {selectedSource?.pm_fundingbody && (
+                <Typography variant="body2" color="text.secondary">
+                  {selectedSource.pm_fundingbody}
+                </Typography>
+              )}
+            </Box>
+          }
+          actionElement={
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {canEdit && (
+                <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedSource && openEditForm(selectedSource)} sx={{ borderRadius: 1.5 }}>
+                  Edit
+                </Button>
+              )}
+              {canDelete && (
+                <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => selectedSource?.pm_fundingsourceid && setDeleteConfirm(selectedSource.pm_fundingsourceid)} sx={{ borderRadius: 1.5 }}>
+                  Delete
+                </Button>
+              )}
+            </Box>
+          }
+        />
 
-      {/* ── Detail Drawer ────────────────────────────── */}
-      <DetailDrawer
-        open={!!selectedSource}
-        onClose={handleCloseDetail}
-        icon={<AccountBalanceIcon sx={{ color: 'secondary.main', fontSize: 22 }} />}
-        title={selectedSource?.pm_fundingsourcename ?? ''}
-        subtitle={selectedSource && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-            <StatusTag
-              label={FUNDING_TYPE_LABELS[String(selectedSource.pm_fundingtype ?? '')]}
-              color={FUNDING_TYPE_COLORS[String(selectedSource.pm_fundingtype ?? '')] ?? 'default'}
-            />
-            <StatusTag
-              label={STATUS_LABELS[String(selectedSource.pm_fundingstatus ?? '')]}
-              color={STATUS_COLORS[String(selectedSource.pm_fundingstatus ?? '')] ?? 'default'}
-            />
-            {selectedSource.pm_fundingbody && (
-              <Typography variant="body2" color="text.secondary">
-                {selectedSource.pm_fundingbody}
-              </Typography>
-            )}
-          </Box>
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {canDelete && (
-              <ActionIcon
-                label="Delete"
-                color="error"
-                onClick={() => selectedSource?.pm_fundingsourceid && setDeleteConfirm(selectedSource.pm_fundingsourceid)}
-                icon={<DeleteIcon />}
-              />
-            )}
-            {canEdit && (
-              <ActionIcon
-                label="Edit"
-                color="primary"
-                onClick={() => selectedSource && openEditForm(selectedSource)}
-                icon={<EditIcon />}
-              />
-            )}
-          </Box>
-        }
-        tabs={[
-          { label: 'Overview' },
-          { label: 'Approval' },
-        ]}
-        tabValue={detailTab}
-        onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
-      >
         {selectedSource && (
-          <>
-            {/* Overview Tab */}
-            <TabPanel value={detailTab} index={0} pt={0}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                {/* Funding Amounts */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+            <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+                {/* Funding Allocation */}
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
                     <SavingsIcon sx={{ fontSize: 16 }} /> Funding Allocation
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
@@ -721,130 +713,85 @@ export default function FundingSourcesPage() {
                         {currencyFormatter.format(selectedSource.pm_totalamounteur ?? 0)}
                       </Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'primary.main' }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
-                        Allocated
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: fontSizes.base, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {currencyFormatter.format(selectedSource.pm_allocatedamounteur ?? 0)}
-                      </Typography>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
-                        Available
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: fontSizes.base, fontFamily: '"JetBrains Mono", monospace' }}>
-                        {currencyFormatter.format(Math.max(0, (selectedSource.pm_totalamounteur ?? 0) - (selectedSource.pm_allocatedamounteur ?? 0)))}
-                      </Typography>
-                    </Paper>
-                  </Box>
-                  {selectedSource.pm_totalamounteur != null && selectedSource.pm_totalamounteur > 0 && (
-                    <Box sx={{ mt: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography variant="caption" color="text.secondary">Utilization</Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur * 100).toFixed(1)}%
-                        </Typography>
-                      </Box>
-                      <Box sx={{ width: '100%', height: 8, borderRadius: 1.5, bgcolor: isDark ? '#334155' : '#e2e8f0', overflow: 'hidden' }}>
-                        <Box
-                          sx={{
-                            width: `${Math.min(((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur) * 100, 100)}%`,
-                            height: '100%',
-                            bgcolor: ((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur) > 0.9 ? 'error.main' : ((selectedSource.pm_allocatedamounteur ?? 0) / selectedSource.pm_totalamounteur) > 0.7 ? 'warning.main' : 'success.main',
-                            borderRadius: 1.5,
-                            transition: 'width 0.3s ease',
-                          }}
-                        />
+                        <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'primary.main' }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
+                            Allocated
+                          </Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: fontSizes.base, fontFamily: '"JetBrains Mono", monospace' }}>
+                            {currencyFormatter.format(selectedSource.pm_allocatedamounteur ?? 0)}
+                          </Typography>
+                        </Paper>
+                        <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.25, textTransform: 'uppercase', fontSize: fontSizes.xs, letterSpacing: 0.3 }}>
+                            Available
+                          </Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: fontSizes.base, fontFamily: '"JetBrains Mono", monospace' }}>
+                            {currencyFormatter.format(Math.max(0, (selectedSource.pm_totalamounteur ?? 0) - (selectedSource.pm_allocatedamounteur ?? 0)))}
+                          </Typography>
+                        </Paper>
                       </Box>
                     </Box>
-                  )}
-                </Paper>
 
-                {/* Details */}
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <DescriptionIcon sx={{ fontSize: 16 }} /> Source Details
-                  </Typography>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Divider />
+
+                    {/* Source Details */}
                     <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Type</Typography>
-                      <Typography variant="body2">{FUNDING_TYPE_LABELS[String(selectedSource.pm_fundingtype ?? '')] ?? '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Status</Typography>
-                      <Typography variant="body2">{STATUS_LABELS[String(selectedSource.pm_fundingstatus ?? '')] ?? '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Funding Body</Typography>
-                      <Typography variant="body2">{selectedSource.pm_fundingbody || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Reference Code</Typography>
-                      <Typography variant="body2">{selectedSource.pm_fundingbody || '—'}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Effective From</Typography>
-                      <Typography variant="body2">
-                        {selectedSource.pm_effectivefromdate
-                          ? new Date(selectedSource.pm_effectivefromdate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                          : '—'}
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                        <DescriptionIcon sx={{ fontSize: 16 }} /> Source Details
                       </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Effective To</Typography>
-                      <Typography variant="body2">
-                        {selectedSource.pm_effectivetodate
-                          ? new Date(selectedSource.pm_effectivetodate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                          : '—'}
-                      </Typography>
-                    </Box>
-                    {selectedSource.pm_portfolioname && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Portfolio</Typography>
-                        <Typography variant="body2">{selectedSource.pm_portfolioname}</Typography>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Type</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{FUNDING_TYPE_LABELS[String(selectedSource.pm_fundingtype ?? '')] ?? '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Status</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{STATUS_LABELS[String(selectedSource.pm_fundingstatus ?? '')] ?? '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Funding Body</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedSource.pm_fundingbody || '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Reference Code</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedSource.pm_fundingbody || '—'}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Effective From</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {selectedSource.pm_effectivefromdate
+                              ? new Date(selectedSource.pm_effectivefromdate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                              : '—'}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Effective To</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {selectedSource.pm_effectivetodate
+                              ? new Date(selectedSource.pm_effectivetodate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                              : '—'}
+                          </Typography>
+                        </Box>
+                        {selectedSource.pm_portfolioname && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Portfolio</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedSource.pm_portfolioname}</Typography>
+                          </Box>
+                        )}
+                        {selectedSource.pm_programmelookupname && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedSource.pm_programmelookupname}</Typography>
+                          </Box>
+                        )}
                       </Box>
-                    )}
-                    {selectedSource.pm_programmelookupname && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme</Typography>
-                        <Typography variant="body2">{selectedSource.pm_programmelookupname}</Typography>
-                      </Box>
-                    )}
+                    </Box>
                   </Box>
                 </Paper>
               </Box>
-            </TabPanel>
-
-            {/* Approval Tab */}
-            <TabPanel value={detailTab} index={1} pt={0}>
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TimelineIcon sx={{ fontSize: 20 }} /> Approval Workflow Timeline
-              </Typography>
-              {selectedSource?.pm_fundingsourceid ? (
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <AccountBalanceIcon sx={{ fontSize: 16 }} />
-                    {selectedSource.pm_fundingsourcename || 'Funding Source'}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                    {selectedSource.pm_totalamounteur != null ? currencyFormatter.format(selectedSource.pm_totalamounteur) : ''}
-                    {selectedSource.pm_fundingbody ? ` · ${selectedSource.pm_fundingbody}` : ''}
-                  </Typography>
-                  <WorkflowMilestone
-                    moduleName={MODULE_NAMES.FUNDING_SOURCES.value}
-                    entityId={selectedSource.pm_fundingsourceid}
-                  />
-                </Paper>
-              ) : (
-                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
-                  No workflow tracking available for this funding source.
-                </Typography>
-              )}
-            </TabPanel>
-          </>
         )}
-      </DetailDrawer>
+      </Box>
+      )}
 
       {/* ── Create/Edit Modal ──────────────────────── */}
       <Dialog
@@ -890,8 +837,10 @@ export default function FundingSourcesPage() {
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Funding Type</InputLabel>
+                <InputLabel id="funding-type-label">Funding Type</InputLabel>
                 <Select
+                  id="funding-type-select"
+                  labelId="funding-type-label"
                   value={formData.pm_fundingtype}
                   label="Funding Type"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_fundingtype: e.target.value as number }))}
@@ -904,20 +853,7 @@ export default function FundingSourcesPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.pm_fundingstatus}
-                  label="Status"
-                  onChange={(e) => setFormData((f) => ({ ...f, pm_fundingstatus: e.target.value as number }))}
-                  sx={{ borderRadius: 1.5 }}
-                >
-                  <MenuItem value={0}>Active</MenuItem>
-                  <MenuItem value={1}>Exhausted</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Funding Body"
@@ -926,17 +862,6 @@ export default function FundingSourcesPage() {
                 value={formData.pm_fundingbody}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_fundingbody: e.target.value }))}
                 placeholder="e.g., European Commission"
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                label="Reference Code"
-                fullWidth
-                size="small"
-                value={formData.pm_fundingbody}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_fundingbody: e.target.value }))}
-                placeholder="e.g., FS-2026-001"
                 slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>

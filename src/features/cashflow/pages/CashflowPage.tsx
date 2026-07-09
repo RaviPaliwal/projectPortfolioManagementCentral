@@ -11,7 +11,6 @@ import ReceiptIcon from '@mui/icons-material/Receipt'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 import {
-  fetchProgrammesForLookup,
   fetchProjectsForLookup,
   fetchFinancialPeriods,
   fetchCashflowEntries,
@@ -21,11 +20,11 @@ import {
   fetchBudgetLines,
 } from '@/services'
 import type { CashflowEntryModel, FinancialPeriodModel, BudgetLineModel } from '@/types/dataverse'
-import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
+import type { ProjectLookupItem } from '@/services'
 import { 
   PageHeader, 
   KpiCardRow, 
-  DetailDrawer, 
+  Breadcrumbs,
   StatusTag, 
   ActionIcon, 
   Button, 
@@ -52,7 +51,6 @@ export default function CashflowPage() {
   // Filter state (Table state is managed by DataverseTable but we keep filters here for cross-component visibility)
   const [directionFilter, setDirectionFilter] = useState('')
   const [txnTypeFilter, setTxnTypeFilter] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
   const [selectedEntry, setSelectedEntry] = useState<CashflowEntryModel | null>(null)
 
   // Dialog state
@@ -61,7 +59,6 @@ export default function CashflowPage() {
   const [formData, setFormData] = useState<Partial<CashflowEntryModel>>({})
 
   // Lookup data state
-  const [programmes, setProgrammes] = useState<ProgrammeLookupItem[]>([])
   const [projects, setProjects] = useState<ProjectLookupItem[]>([])
   const [fiscalPeriods, setFiscalPeriods] = useState<FinancialPeriodModel[]>([])
   const [budgetLines, setBudgetLines] = useState<BudgetLineModel[]>([])
@@ -85,12 +82,10 @@ export default function CashflowPage() {
 
   useEffect(() => {
     Promise.all([
-      fetchProgrammesForLookup(),
       fetchProjectsForLookup(),
       fetchFinancialPeriods(),
       fetchBudgetLines(),
-    ]).then(([progs, projs, periods, bls]) => {
-      setProgrammes(progs)
+    ]).then(([projs, periods, bls]) => {
       setProjects(projs)
       setFiscalPeriods(periods)
       setBudgetLines(bls)
@@ -103,13 +98,12 @@ export default function CashflowPage() {
     let list = [...entries]
     if (directionFilter) list = list.filter(e => String(e.pm_transactiondirection) === directionFilter)
     if (txnTypeFilter) list = list.filter(e => String(e.pm_transactiontype) === txnTypeFilter)
-    if (categoryFilter) list = list.filter(e => String(e.pm_category) === categoryFilter)
     return list
-  }, [entries, directionFilter, txnTypeFilter, categoryFilter])
+  }, [entries, directionFilter, txnTypeFilter])
 
   const kpiCards: KpiCardItem[] = useMemo(() => {
-    const totalInflow = entries.filter(e => String(e.pm_transactiondirection) === '1').reduce((acc, curr) => acc + (curr.pm_amounteur ?? 0), 0)
-    const totalOutflow = entries.filter(e => String(e.pm_transactiondirection) === '0').reduce((acc, curr) => acc + (curr.pm_amounteur ?? 0), 0)
+    const totalInflow = entries.filter(e => String(e.pm_transactiondirection) === '1').reduce((acc, curr) => acc + (curr.pm_amount ?? 0), 0)
+    const totalOutflow = entries.filter(e => String(e.pm_transactiondirection) === '0').reduce((acc, curr) => acc + (curr.pm_amount ?? 0), 0)
     return [
       { label: 'Total Inflow', value: `\u20AC${(totalInflow / 1000).toFixed(0)}K`, icon: <ReceiptIcon />, color: 'success.main' },
       { label: 'Total Outflow', value: `\u20AC${(totalOutflow / 1000).toFixed(0)}K`, icon: <ReceiptIcon />, color: 'error.main' },
@@ -195,47 +189,60 @@ export default function CashflowPage() {
 
       <KpiCardRow items={kpiCards} loading={loading} />
 
-      <CashflowTable
-        loading={loading}
-        entries={filteredEntries}
-        directionFilter={directionFilter}
-        onDirectionFilterChange={setDirectionFilter}
-        txnTypeFilter={txnTypeFilter}
-        onTxnTypeFilterChange={setTxnTypeFilter}
-        categoryFilter={categoryFilter}
-        onCategoryFilterChange={setCategoryFilter}
-        onSelectEntry={setSelectedEntry}
-        onEditEntry={(entry) => { setFormData(entry); setDialogMode('edit') }}
-        onDeleteEntry={setDeleteTarget}
-        canEdit={canEdit}
-        canDelete={canDelete}
-      />
-
-      <DetailDrawer
-        open={!!selectedEntry}
-        onClose={() => setSelectedEntry(null)}
-        title={selectedEntry?.pm_entryname ?? ''}
-        subtitle={selectedEntry && (
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <StatusTag 
-              label={DIRECTION_LABELS[String(selectedEntry.pm_transactiondirection)] || '—'} 
-              color={DIRECTION_COLORS[String(selectedEntry.pm_transactiondirection)] || 'default'} 
-            />
-            <StatusTag label={TXN_TYPE_LABELS[String(selectedEntry.pm_transactiontype)] || '—'} variant="outlined" />
-          </Box>
-        )}            headerActions={
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
+      {!selectedEntry ? (
+        <CashflowTable
+          loading={loading}
+          entries={filteredEntries}
+          directionFilter={directionFilter}
+          onDirectionFilterChange={setDirectionFilter}
+          txnTypeFilter={txnTypeFilter}
+          onTxnTypeFilterChange={setTxnTypeFilter}
+          onSelectEntry={setSelectedEntry}
+          onEditEntry={(entry) => { setFormData(entry); setDialogMode('edit') }}
+          onDeleteEntry={setDeleteTarget}
+          canEdit={canEdit}
+          canDelete={canDelete}
+        />
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Cashflow', path: 'list' },
+              { label: selectedEntry.pm_entryname ?? 'Detail' }
+            ]}
+            onNavigate={() => setSelectedEntry(null)}
+          />
+          <PageHeader
+            title={selectedEntry?.pm_entryname ?? ''}
+            subtitle={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <StatusTag 
+                  label={DIRECTION_LABELS[String(selectedEntry.pm_transactiondirection)] || '—'} 
+                  color={DIRECTION_COLORS[String(selectedEntry.pm_transactiondirection)] || 'default'} 
+                />
+                <StatusTag label={TXN_TYPE_LABELS[String(selectedEntry.pm_transactiontype)] || '—'} variant="outlined" />
+              </Box>
+            }
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
                 {canEdit && (
-                  <ActionIcon icon={<EditIcon />} onClick={() => { setFormData(selectedEntry!); setDialogMode('edit') }} label="Edit" color="primary" />
+                  <Button variant="outlined" startIcon={<EditIcon />} onClick={() => { setFormData(selectedEntry!); setDialogMode('edit') }} sx={{ borderRadius: 1.5 }}>
+                    Edit
+                  </Button>
                 )}
                 {canDelete && (
-                  <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedEntry)} label="Delete" color="error" />
+                  <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedEntry)} sx={{ borderRadius: 1.5 }}>
+                    Delete
+                  </Button>
                 )}
               </Box>
             }
-      >
-        {selectedEntry && <CashflowDetail entry={selectedEntry} />}
-      </DetailDrawer>
+          />
+          <CashflowDetail entry={selectedEntry} />
+        </Box>
+      )}
+
+
 
       <CashflowEntryForm
         open={dialogMode !== null}
@@ -245,7 +252,6 @@ export default function CashflowPage() {
         formErrors={{}}
         onFieldChange={(field, val) => setFormData(f => ({ ...f, [field]: val }))}
         loading={saving}
-        programmes={programmes}
         projects={projects}
         fiscalPeriods={fiscalPeriods}
         budgetLines={budgetLines}

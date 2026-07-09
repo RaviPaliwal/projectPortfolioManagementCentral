@@ -30,13 +30,15 @@ export interface DecisionBoxProps {
   /** The workflow approval step ID to submit the decision for */
   approvalStepId: string
   /** Called BEFORE the workflow decision is submitted. Return false to cancel. */
-  onBeforeDecision?: (decision: number) => Promise<boolean | void> | boolean | void
+  onBeforeDecision?: (decision: number, notes: string) => Promise<boolean | void> | boolean | void
   /** Called after the workflow decision is successfully submitted */
   onDecisionComplete?: (decision: number) => void
   /** Called if the workflow decision submission fails */
   onDecisionError?: (message: string) => void
   /** Disable the buttons (e.g. while saving task data) */
   disabled?: boolean
+  /** Disable only the Approve button */
+  approveDisabled?: boolean
 }
 
 // ─── Component ──────────────────────────────────────────────────────────
@@ -47,6 +49,7 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
   onDecisionComplete,
   onDecisionError,
   disabled = false,
+  approveDisabled = false,
 }) => {
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -59,7 +62,7 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
     try {
       // Step 1: Allow the parent (task modal) to save its data first
       if (onBeforeDecision) {
-        const shouldContinue = await onBeforeDecision(decision)
+        const shouldContinue = await onBeforeDecision(decision, notes)
         if (shouldContinue === false) {
           setSubmitting(false)
           return // Parent cancelled the decision
@@ -124,7 +127,7 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
         <Button
           variant="contained"
           color="success"
-          disabled={isLoading || disabled}
+          disabled={isLoading || disabled || approveDisabled}
           onClick={() => handleDecision(0)}
           startIcon={isLoading ? <CircularProgress size={16} /> : <CheckCircleIcon />}
           sx={{ fontWeight: 600, minWidth: 140 }}

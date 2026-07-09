@@ -41,7 +41,8 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import AccountTreeWorkflowIcon from '@mui/icons-material/AccountTree'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { UserSelector, useUser } from '@/context/UserContext'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import type { BreadcrumbItem } from '@/components/common/Breadcrumbs/Breadcrumbs'
 import NotificationCenter from './NotificationCenter'
 import { PERSONA_PERMISSIONS } from '@/constants/permissions'
 
@@ -86,14 +87,26 @@ interface PrimaryShellProps {
   children: ReactNode
 }
 
-const DRAWER_WIDTH = 260
+const DRAWER_WIDTH = 240
 
 export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, themeMode, children }: PrimaryShellProps) {
   const theme = useTheme()
   const { currentUserPersona } = useUser()
-// RouteGuard in App.tsx handles persona-based redirect on mount/navigation
+  // RouteGuard in App.tsx handles persona-based redirect on mount/navigation
   const allowedTabs = PERSONA_PERMISSIONS[currentUserPersona] || []
   const sidebarTabs = tabs.filter(t => !t.hidden && allowedTabs.includes(t.key))
+
+  const [customBreadcrumbs, setCustomBreadcrumbs] = useState<{ items: BreadcrumbItem[], onNavigate?: (path: string) => void } | null>(null)
+
+  useEffect(() => {
+    const handleSetBreadcrumbs = (e: any) => setCustomBreadcrumbs(e.detail)
+    window.addEventListener('set-breadcrumbs', handleSetBreadcrumbs)
+    return () => window.removeEventListener('set-breadcrumbs', handleSetBreadcrumbs)
+  }, [])
+
+  useEffect(() => {
+    setCustomBreadcrumbs(null)
+  }, [activeTab])
 
   // Listen for custom navigation events (e.g. from MyTasksWidget)
   useEffect(() => {
@@ -111,49 +124,85 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
     return () => window.removeEventListener('navigate', handler)
   }, [activeTab, onChangeTab, allowedTabs])
 
-  
+
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      minHeight: '100vh', 
+      bgcolor: 'background.default',
+      backgroundImage: themeMode === 'light'
+        ? 'radial-gradient(circle at 80% 0%, rgba(33, 124, 53, 0.12), transparent 40%), radial-gradient(circle at 20% 100%, rgba(228, 98, 26, 0.08), transparent 40%)'
+        : 'radial-gradient(circle at 80% 0%, rgba(33, 124, 53, 0.2), transparent 40%), radial-gradient(circle at 20% 100%, rgba(228, 98, 26, 0.15), transparent 40%)',
+      backgroundAttachment: 'fixed',
+    }}>
       {/* Sidebar */}
       <Drawer
         variant="permanent"
+        aria-label="Navigation sidebar"
+        slotProps={{
+          paper: {
+            className: 'sidebar-scrollbar',
+          },
+        }}
         sx={{
           width: DRAWER_WIDTH,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,
             boxSizing: 'border-box',
-            borderRight: `1px solid ${theme.palette.divider}`,
+            borderRight: '1px solid',
+            borderColor: 'divider',
             bgcolor: 'background.paper',
+            color: 'text.secondary',
           },
         }}
       >
         {/* Navigation */}
-        <List sx={{ px: 1.5, py: 2 }}>
+        <List sx={{ px: 1.5, py: 2 }} aria-label="Primary navigation">
           {sidebarTabs.map((tab) => {
             const isActive = activeTab === tab.key
             return (
               <ListItemButton
                 key={tab.key}
                 selected={isActive}
+                aria-current={isActive ? 'page' : undefined}
                 onClick={() => onChangeTab(tab.key)}
                 sx={{
-                  borderRadius: 1.15,
+                  borderRadius: '12px',
                   mb: 0.5,
-                  py: 1.25,
+                  py: 1,
                   px: 2,
+                  color: 'text.secondary',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  '& .MuiListItemIcon-root': {
+                    color: 'inherit',
+                    minWidth: 40,
+                    transition: 'transform 0.2s ease',
+                  },
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                    color: 'text.primary',
+                    '& .MuiListItemIcon-root': {
+                      transform: 'translateX(2px)',
+                    },
+                  },
                   '&.Mui-selected': {
                     bgcolor: 'primary.main',
                     color: 'primary.contrastText',
-                    '&:hover': { bgcolor: 'primary.dark' },
-                    '& .MuiListItemIcon-root': { color: 'primary.contrastText' },
+                    boxShadow: '0 4px 12px rgba(33, 124, 53, 0.25)',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                    },
+                    '& .MuiListItemIcon-root': {
+                      color: 'inherit',
+                    },
                   },
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 40 }}>{tab.icon}</ListItemIcon>
+                <ListItemIcon>{tab.icon}</ListItemIcon>
                 <ListItemText
                   primary={tab.label}
-                  slotProps={{ primary: { sx: { fontWeight: isActive ? 700 : 500, fontSize: '0.875rem' } } }}
+                  slotProps={{ primary: { sx: { fontWeight: isActive ? 700 : 500, fontSize: '0.8125rem' } } }}
                 />
               </ListItemButton>
             )
@@ -168,12 +217,14 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
           position="sticky"
           elevation={0}
           sx={{
+            height: 64,
+            justifyContent: 'center',
             bgcolor: 'background.paper',
-            borderBottom: `1px solid ${theme.palette.divider}`,
+            borderBottom: `1px solid ${themeMode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`,
             color: 'text.primary',
           }}
         >
-          <Toolbar sx={{ px: 3, gap: 2 }}>
+          <Toolbar sx={{ px: 3, gap: 2, minHeight: '64px !important' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography
                 variant="caption"
@@ -193,7 +244,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
               {activeTab !== 'dashboard' && (
                 <>
                   <Typography variant="caption" color="text.disabled">/</Typography>
-                  {['workflows', 'teamadmin', 'skills', 'holidays'].includes(activeTab) && (
+                  {['workflows', 'teamadmin', 'skills', 'holidays', 'resources', 'reportConfigs'].includes(activeTab) && !customBreadcrumbs && (
                     <>
                       <Typography
                         variant="body2"
@@ -211,37 +262,73 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
                       <Typography variant="caption" color="text.disabled">/</Typography>
                     </>
                   )}
-                  <Typography
-                    variant="body2"
-                    onClick={() => onChangeTab(activeTab)}
-                    sx={{
-                      fontWeight: 600,
-                      color: 'text.primary',
-                      cursor: 'pointer',
-                      transition: 'color 0.15s ease',
-                      '&:hover': { color: 'primary.main' },
-                    }}
-                  >
-                    {tabs.find((tab) => tab.key === activeTab)?.label || activeTab}
-                  </Typography>
+                  {customBreadcrumbs && customBreadcrumbs.items.length > 0 ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {customBreadcrumbs.items.map((item, index) => {
+                        const isLast = index === customBreadcrumbs.items.length - 1
+                        return (
+                          <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {index > 0 && <Typography variant="caption" color="text.disabled">/</Typography>}
+                            <Typography
+                              variant={isLast ? 'body2' : 'caption'}
+                              onClick={() => {
+                                if (item.path && customBreadcrumbs.onNavigate) {
+                                  customBreadcrumbs.onNavigate(item.path)
+                                }
+                              }}
+                              sx={{
+                                fontWeight: 600,
+                                color: isLast ? 'text.primary' : 'text.secondary',
+                                cursor: (!isLast && item.path) ? 'pointer' : 'default',
+                                textTransform: isLast ? 'none' : 'uppercase',
+                                letterSpacing: isLast ? 'normal' : '0.03em',
+                                transition: 'color 0.15s ease',
+                                '&:hover': (!isLast && item.path) ? { color: 'primary.main' } : {},
+                              }}
+                            >
+                              {item.label}
+                            </Typography>
+                          </Box>
+                        )
+                      })}
+                    </Box>
+                  ) : (
+                    <Typography
+                      variant="body2"
+                      onClick={() => onChangeTab(activeTab)}
+                      sx={{
+                        fontWeight: 600,
+                        color: 'text.primary',
+                        cursor: 'pointer',
+                        transition: 'color 0.15s ease',
+                        '&:hover': { color: 'primary.main' },
+                      }}
+                    >
+                      {tabs.find((tab) => tab.key === activeTab)?.label || activeTab}
+                    </Typography>
+                  )}
                 </>
               )}
             </Box>
             <Box sx={{ flex: 1 }} />
             <UserSelector />
             <NotificationCenter />
-            <IconButton onClick={onToggleTheme} sx={{ color: 'text.secondary' }}>
+            <IconButton
+              onClick={onToggleTheme}
+              sx={{ color: 'text.secondary' }}
+              aria-label="Toggle light or dark theme"
+            >
               {themeMode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
             </IconButton>
-            <IconButton sx={{ color: 'text.secondary' }}>
-              <MenuBookIcon />
-            </IconButton>
+            {/* Documentation icon removed as per UI update request */}
           </Toolbar>
         </AppBar>
 
         {/* Page content */}
-        <Box sx={{ flex: 1, p: 3, overflow: 'auto' }}>
-          {children}
+        <Box component="main" sx={{ flex: 1, p: 3, overflow: 'auto' }}>
+          <Box key={activeTab} className="page-transition-wrapper">
+            {children}
+          </Box>
         </Box>
       </Box>
     </Box>

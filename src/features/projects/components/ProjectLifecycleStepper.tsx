@@ -63,7 +63,7 @@ export function buildPhaseDefs(
       substeps: [
         { label: 'Business case defined', icon: <EditNoteIcon fontSize="small" />, isDone: true, detail: 'Project created in system' },
         { label: 'Stakeholders identified', icon: <PeopleIcon fontSize="small" />, isDone: Boolean(project.pm_projectsponsor), detail: project.pm_projectsponsor ? `Sponsor: ${project.pm_projectsponsor}` : undefined },
-        { label: 'Project charter created', icon: <EditNoteIcon fontSize="small" />, isDone: Boolean(project.pm_projectcode), detail: project.pm_projectcode ? `Code: ${project.pm_projectcode}` : undefined },
+        { label: 'Project charter created', icon: <EditNoteIcon fontSize="small" />, isDone: Boolean(project.pm_projectname), detail: project.pm_projectname ? 'Project registered' : undefined },
         { label: 'Kickoff completed', icon: <RocketLaunchIcon fontSize="small" />, isDone: Boolean(project.pm_plannedstartdate), detail: project.pm_plannedstartdate ? `Planned: ${new Date(project.pm_plannedstartdate).toLocaleDateString()}` : undefined },
       ],
     },
@@ -75,7 +75,7 @@ export function buildPhaseDefs(
         { label: 'Requirements gathered', icon: <EditNoteIcon fontSize="small" />, isDone: tasks.length > 0, detail: tasks.length > 0 ? `${tasks.length} tasks defined` : undefined },
         { label: 'Resource planning', icon: <PeopleIcon fontSize="small" />, isDone: false },
         { label: 'Timeline & schedule', icon: <ScheduleIcon fontSize="small" />, isDone: Boolean(project.pm_plannedstartdate && project.pm_plannedenddate), detail: project.pm_plannedenddate ? `Target: ${new Date(project.pm_plannedenddate).toLocaleDateString()}` : undefined },
-        { label: 'Budget approved', icon: <AccountBalanceWalletIcon fontSize="small" />, isDone: (project.pm_approvedbudgeteur ?? 0) > 0, detail: (project.pm_approvedbudgeteur ?? 0) > 0 ? `Budget: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(project.pm_approvedbudgeteur??0)}` : undefined },
+        { label: 'Budget approved', icon: <AccountBalanceWalletIcon fontSize="small" />, isDone: (project.pm_approvedbudget ?? 0) > 0, detail: (project.pm_approvedbudget ?? 0) > 0 ? `Budget: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(project.pm_approvedbudget??0)}` : undefined },
         { label: 'Risk assessment', icon: <BugReportIcon fontSize="small" />, isDone: false },
         { label: 'Milestones defined', icon: <FlagIcon fontSize="small" />, isDone: milestones.length > 0, detail: milestones.length > 0 ? `${milestones.length} milestones` : undefined },
       ],
@@ -255,7 +255,7 @@ export const ProjectLifecycleStepper: React.FC<ProjectLifecycleStepperProps> = (
                         borderRadius: 1,
                         bgcolor: substep.isDone ? 'rgba(34, 197, 94, 0.08)' : 'transparent',
                         transition: 'background-color 0.15s',
-                        '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.025)' },
+                        '&:hover': { bgcolor: 'action.selected' },
                       }}
                     >
                       {substep.isDone ? (

@@ -22,7 +22,8 @@ import ShieldAlertIcon from '@mui/icons-material/Security'
 
 import type { ProjectModel, ProjectMilestoneModel, ProjectTaskModel, RiskModel, IssueModel, BenefitModel } from '@/types/dataverse'
 import { phaseLabel, currency } from '../../constants'
-import { StatusChip, MetricTile, StatusTag } from '@/components/common'
+import { StatusChip, MetricTile, StatusTag, WorkflowMilestone, KpiCardRow } from '@/components/common'
+import { MODULE_NAMES } from '@/constants/moduleNames'
 import { fontSizes } from '@/styles'
 
 interface ProjectOverviewTabProps {
@@ -107,8 +108,8 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
   }, [risks, issues])
 
   // Financial Stats
-  const budget = project.pm_approvedbudgeteur ?? 0
-  const actual = project.pm_actualcosteur ?? 0
+  const budget = project.pm_approvedbudget ?? 0
+  const actual = project.pm_actualcost ?? 0
   const variance = budget - actual
   const percentSpent = budget > 0 ? Math.round((actual / budget) * 100) : 0
 
@@ -117,50 +118,48 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
   const scheduleRag = getRagDetails(project.pm_scheduleragstatus)
   const benefitsRag = getBenefitsRagDetails(project.pm_benefitsragstatus)
 
+  const kpiItems = useMemo(() => [
+    {
+      label: 'Total Progress',
+      value: `${taskStats.avgProgress}%`,
+      subtitle: 'Average task completion',
+      icon: <SpeedIcon />,
+      color: taskStats.avgProgress >= 100 ? 'success.main' : 'primary.main',
+    },
+    {
+      label: 'Budget Burn Rate',
+      value: `${percentSpent}%`,
+      subtitle: 'Proportion of budget spent',
+      icon: <TrendingUpIcon />,
+      color: percentSpent > 100 ? 'error.main' : percentSpent > 85 ? 'warning.main' : 'success.main',
+    },
+    {
+      label: 'Active Risks & Issues',
+      value: riskStats.activeRisks + riskStats.openIssues,
+      subtitle: `${riskStats.criticalRisks + riskStats.criticalIssues} critical items`,
+      icon: <BugReportIcon />,
+      color: riskStats.criticalIssues + riskStats.criticalRisks > 0 ? 'error.main' : 'warning.main',
+    },
+    {
+      label: 'Milestones Achieved',
+      value: `${milestoneStats.completed}/${milestoneStats.total}`,
+      subtitle: `${milestoneStats.pending} pending milestone${milestoneStats.pending !== 1 ? 's' : ''}`,
+      icon: <FlagIcon />,
+      color: 'secondary.main',
+    }
+  ], [taskStats.avgProgress, percentSpent, riskStats.activeRisks, riskStats.openIssues, riskStats.criticalRisks, riskStats.criticalIssues, milestoneStats.completed, milestoneStats.total, milestoneStats.pending])
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* ── KPI Row ── */}
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile 
-            label="Total Progress" 
-            value={`${taskStats.avgProgress}%`} 
-            icon={<SpeedIcon />} 
-            color={taskStats.avgProgress >= 100 ? 'success.main' : 'primary.main'} 
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile 
-            label="Budget Burn Rate" 
-            value={`${percentSpent}%`} 
-            icon={<TrendingUpIcon />} 
-            color={percentSpent > 100 ? 'error.main' : percentSpent > 85 ? 'warning.main' : 'info.main'} 
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile 
-            label="Active Risks & Issues" 
-            value={riskStats.activeRisks + riskStats.openIssues} 
-            icon={<BugReportIcon />} 
-            color={riskStats.criticalIssues + riskStats.criticalRisks > 0 ? 'error.main' : 'warning.main'} 
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile 
-            label="Milestones Achieved" 
-            value={`${milestoneStats.completed}/${milestoneStats.total}`} 
-            icon={<FlagIcon />} 
-            color="success.main" 
-          />
-        </Grid>
-      </Grid>
+      <KpiCardRow items={kpiItems} />
 
       {/* ── Main Layout Grid ── */}
       <Grid container spacing={3}>
         {/* Left Column — Project Info, Business Summary */}
         <Grid size={{ xs: 12, md: 7.5 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            
+
             {/* Executive Summary */}
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
               <Box sx={{ position: 'absolute', right: -20, top: -20, opacity: 0.03 }}>
@@ -312,10 +311,10 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
         <Grid size={{ xs: 12, md: 4.5 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             
-            {/* Strategic RAG Health Check */}
+            {/* Strategic RAG Risk Check */}
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2.5, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5 }}>
-                Health Check Indicators
+                Risk Check Indicators
               </Typography>
               
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -332,7 +331,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
                 {/* Schedule */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 1.5, bgcolor: scheduleRag.bg, border: '1px solid', borderColor: scheduleRag.border }}>
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Schedule Health</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Schedule Risk</Typography>
                     <Typography variant="caption" color="text.secondary">Timeline & milestone alignment</Typography>
                   </Box>
                   <StatusTag label={scheduleRag.label} color={project.pm_scheduleragstatus === 1 ? 'success' : project.pm_scheduleragstatus === 0 ? 'warning' : project.pm_scheduleragstatus === 2 ? 'error' : 'default'} size="small" />
@@ -341,7 +340,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
                 {/* Cost */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 1.5, bgcolor: costRag.bg, border: '1px solid', borderColor: costRag.border }}>
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Cost Health</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Cost Risk</Typography>
                     <Typography variant="caption" color="text.secondary">Actual spend vs budget</Typography>
                   </Box>
                   <StatusTag label={costRag.label} color={project.pm_costragstatus === 1 ? 'success' : project.pm_costragstatus === 0 ? 'warning' : project.pm_costragstatus === 2 ? 'error' : 'default'} size="small" />
@@ -350,7 +349,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
                 {/* Benefits */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, borderRadius: 1.5, bgcolor: benefitsRag.bg, border: '1px solid', borderColor: benefitsRag.border }}>
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Benefits Health</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Benefits Risk</Typography>
                     <Typography variant="caption" color="text.secondary">Strategic value delivery</Typography>
                   </Box>
                   <StatusTag label={benefitsRag.label} color={project.pm_benefitsragstatus === 0 ? 'success' : project.pm_benefitsragstatus === 1 ? 'warning' : 'default'} size="small" />
@@ -396,24 +395,24 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
                 Governance & Metadata
               </Typography>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Phase</Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Phase</Typography>
                 <StatusChip status={project.pm_projectphase} type="phase" size="medium" />
               </Paper>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Project Manager</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>{project.pm_projectmanagername || 'Unassigned'}</Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Project Manager</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', fontSize: '0.825rem' }}>{project.pm_projectmanagername || 'Unassigned'}</Typography>
               </Paper>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Business Sponsor</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>{project.pm_projectsponsor || '—'}</Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Sponsor</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', fontSize: '0.825rem' }}>{project.pm_projectsponsor || '—'}</Typography>
               </Paper>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Portfolio</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>{project.pm_portfolioname || '—'}</Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Portfolio</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', fontSize: '0.825rem' }}>{project.pm_portfolioname || '—'}</Typography>
               </Paper>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Programme</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>{project.pm_programmename || '—'}</Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Programme</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', fontSize: '0.825rem' }}>{project.pm_programmename || '—'}</Typography>
               </Paper>
             </Box>
 

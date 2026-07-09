@@ -45,6 +45,7 @@ import type { WorkflowModel, WorkflowStepTemplateModel } from '@/types/dataverse
 import { StatusTag, Button } from '@/components/common'
 import { getModuleOptionsForWorkflow } from '@/constants/moduleNames'
 import { FORM_REGISTRY } from '@/constants/formRegistry'
+import { ChecklistConfigurationPanel } from './../components/ChecklistConfigurationPanel'
 
 const STEPS_CREATE = ['Basic Information', 'Approval Steps', 'Workflow Settings', 'Review & Create']
 const STEPS_EDIT = ['Basic Information', 'Approval Steps', 'Workflow Settings', 'Review & Save']
@@ -89,7 +90,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
   const [editingStepIdx, setEditingStepIdx] = useState<number | null>(null)
   const [stepFormData, setStepFormData] = useState({
     pm_workflowname: '', pm_steporder: 1, pm_assignetype: 0, pm_assigneeid: '',
-    pm_description: '', pm_sladays: 5, new_formkey: '',
+    pm_description: '', pm_sladays: 5, new_formkey: '', pm_tasktype: 1,
   })
   const u = useCallback((k: string, v: unknown) => setF((p) => ({ ...p, [k]: v })), [])
 
@@ -178,7 +179,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
     setEditingStepIdx(null)
     setStepFormData({
       pm_workflowname: '', pm_steporder: stepTemplates.length + 1, pm_assignetype: 0,
-      pm_assigneeid: '', pm_description: '', pm_sladays: 5, new_formkey: '',
+      pm_assigneeid: '', pm_description: '', pm_sladays: 5, new_formkey: '', pm_tasktype: 1,
     })
     setShowStepForm(true)
   }
@@ -194,6 +195,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
       pm_description: s.pm_description || '',
       pm_sladays: s.pm_sladays || 5,
       new_formkey: s.new_formkey || '',
+      pm_tasktype: Number(s.pm_tasktype) || 1,
     })
     setShowStepForm(true)
   }
@@ -232,7 +234,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
   const stepListContent = (
     <Stack spacing={2}>
       {(stepTemplates as any[]).map((step: any, idx: number) => (
-        <Paper key={idx} variant="outlined" sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 3, borderLeft: '4px solid', borderLeftColor: 'primary.main', bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fff' }}>
+        <Paper key={idx} variant="outlined" sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 3, borderLeft: '4px solid', borderLeftColor: 'primary.main', bgcolor: 'background.paper' }}>
           <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontWeight: 800, fontSize: fontSizes.base }}>{idx + 1}</Avatar>
           <Box sx={{ flex: 1 }}>
             <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>{step.pm_workflowname}</Typography>
@@ -271,8 +273,14 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
           <TextField label="Description" fullWidth multiline rows={2} size="small" value={stepFormData.pm_description} onChange={(e) => setStepFormData(p => ({ ...p, pm_description: e.target.value }))} placeholder="Optional step description" />
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <FormControl size="small">
-              <InputLabel>Assignee Type</InputLabel>
-              <Select label="Assignee Type" value={stepFormData.pm_assignetype} onChange={(e) => setStepFormData(p => ({ ...p, pm_assignetype: e.target.value as number, pm_assigneeid: '' }))}>
+              <InputLabel id="workflow-step-assignee-type-label">Assignee Type</InputLabel>
+              <Select
+                id="workflow-step-assignee-type-select"
+                labelId="workflow-step-assignee-type-label"
+                label="Assignee Type"
+                value={stepFormData.pm_assignetype}
+                onChange={(e) => setStepFormData(p => ({ ...p, pm_assignetype: e.target.value as number, pm_assigneeid: '' }))}
+              >
                 <MenuItem value={0}>Individual User</MenuItem>
                 <MenuItem value={1}>Team / Group</MenuItem>
               </Select>
@@ -299,7 +307,22 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
             )
           })()}
 
-          <Autocomplete
+          <FormControl fullWidth size="small">
+            <InputLabel id="workflow-form-tasktype-label">Task Type</InputLabel>
+            <Select
+              id="workflow-form-tasktype-select"
+              labelId="workflow-form-tasktype-label"
+              value={stepFormData.pm_tasktype}
+              label="Task Type"
+              onChange={(e) => setStepFormData(p => ({ ...p, pm_tasktype: Number(e.target.value) }))}
+            >
+              <MenuItem value={1}>Custom (Form)</MenuItem>
+              <MenuItem value={2}>Checklist</MenuItem>
+            </Select>
+          </FormControl>
+
+          {stepFormData.pm_tasktype === 1 && (
+            <Autocomplete
             size="small"
             options={FORM_REGISTRY}
             value={FORM_REGISTRY.find((f) => f.key === stepFormData.new_formkey) ?? null}
@@ -328,6 +351,19 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
             )}
             clearText="Clear"
           />
+          )}
+
+          {stepFormData.pm_tasktype === 2 && (
+            <Box sx={{ mt: 1 }}>
+              {editingStepIdx !== null && (stepTemplates[editingStepIdx] as any)?.pm_workflowsteptemplateid ? (
+                <ChecklistConfigurationPanel stepTemplateId={(stepTemplates[editingStepIdx] as any).pm_workflowsteptemplateid} />
+              ) : (
+                <Alert severity="info">
+                  Please save the workflow first to generate this step before configuring checklist items.
+                </Alert>
+              )}
+            </Box>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1 }}>
@@ -340,7 +376,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
     <Grid container spacing={3}>
       <Grid size={{ xs: 12, md: 5 }}>
         <Stack spacing={3}>
-          <Paper variant="outlined" sx={{ p: 3, bgcolor: isDark ? 'rgba(255,255,255,0.01)' : '#fcfcfc' }}>
+          <Paper variant="outlined" sx={{ p: 3, bgcolor: 'background.paper' }}>
             <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, color: 'text.disabled', mb: 2.5, display: 'block' }}>
               Template Details
             </Typography>
@@ -471,8 +507,15 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
                 autoFocus={!isEdit}
               />
               <FormControl fullWidth>
-                <InputLabel sx={{ fontWeight: 500 }}>Target Module</InputLabel>
-                <Select value={f.pm_module} label="Target Module" onChange={(e) => u('pm_module', e.target.value)} sx={{ fontWeight: 600 }}>
+                <InputLabel id="workflow-target-module-label" sx={{ fontWeight: 500 }}>Target Module</InputLabel>
+                <Select
+                  id="workflow-target-module-select"
+                  labelId="workflow-target-module-label"
+                  value={f.pm_module}
+                  label="Target Module"
+                  onChange={(e) => u('pm_module', e.target.value)}
+                  sx={{ fontWeight: 600 }}
+                >
                   {MODULES.map((o) => <MenuItem key={o.value} value={o.value} disabled={!o.value}>{o.label}</MenuItem>)}
                 </Select>
               </FormControl>
@@ -512,7 +555,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
             {loadingSteps ? (
               <Box sx={{ py: 10, textAlign: 'center' }}><CircularProgress /></Box>
             ) : stepTemplates.length === 0 ? (
-              <Box sx={{ py: 12, textAlign: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa', border: '2px dashed', borderColor: 'divider' }}>
+              <Box sx={{ py: 12, textAlign: 'center', bgcolor: 'background.default', border: '2px dashed', borderColor: 'divider' }}>
                 <LayersIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2, opacity: 0.3 }} />
                 <Typography color="text.secondary" variant="body2" sx={{ fontWeight: 500 }}>No approval steps defined yet.</Typography>
                 <Button size="small" onClick={openAddStep} sx={{ mt: 2, fontWeight: 700 }}>Add your first step</Button>
@@ -537,7 +580,7 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
             </Stack>
 
             <Stack spacing={3}>
-              <Paper variant="outlined" sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa' }}>
+              <Paper variant="outlined" sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'background.default' }}>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 800 }}>
                     {isEdit ? 'Version Update' : 'Initial Version'}

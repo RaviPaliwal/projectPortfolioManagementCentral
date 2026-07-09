@@ -24,7 +24,7 @@ export const TableShell: React.FC<TableShellProps> = ({
   emptyTitle = 'No data found',
   emptyMessage,
   emptyAction,
-  maxHeight = 'calc(100vh - 460px)',
+  maxHeight = 'auto',
   minHeight = 300,
   sx,
 }) => {
@@ -56,7 +56,14 @@ export const TableShell: React.FC<TableShellProps> = ({
   }
 
   return (
-    <TableContainer sx={{ maxHeight, minHeight, ...sx }}>
+    <TableContainer 
+      sx={{ 
+        maxHeight, 
+        minHeight, 
+        overflow: 'auto',
+        ...sx 
+      }}
+    >
       {children}
     </TableContainer>
   )

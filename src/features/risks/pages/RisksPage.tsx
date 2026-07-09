@@ -16,6 +16,8 @@ import FlagIcon from '@mui/icons-material/Flag'
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
 import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import HistoryIcon from '@mui/icons-material/History'
+import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 import {
@@ -27,7 +29,7 @@ import {
   fetchMitigationActions,
 } from '@/services'
 import type { RiskModel, RiskMitigationActionModel } from '@/types/dataverse'
-import { PageHeader, DetailDrawer, KpiCardRow } from '@/components/common'
+import { PageHeader, Breadcrumbs, KpiCardRow } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
 import {
   RiskDistributionCharts,
@@ -71,10 +73,9 @@ export default function RisksPage() {
   const [ragFilter, setRagFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
-  // Drawer
+  // Detail View
   const [selectedRisk, setSelectedRisk] = useState<RiskModel | null>(null)
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [drawerTab, setDrawerTab] = useState(0)
+  const [detailTab, setDetailTab] = useState(0)
 
   // Create/Edit dialog
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -121,25 +122,24 @@ export default function RisksPage() {
         const risk = risks.find(r => normalizeLookupId(r.pm_riskid) === normalizeLookupId(preselectedId))
         if (risk) {
           setSelectedRisk(risk)
-          setDrawerOpen(true)
-          setDrawerTab(0)
+          setDetailTab(0)
         }
       }
     }
   }, [loading, risks])
 
-  // ── Fetch mitigation actions when drawer tab changes ────────────────────────
+  // ── Fetch mitigation actions when detail tab changes ────────────────────────
   useEffect(() => {
-    if (selectedRisk?.pm_riskid && drawerTab === 1) {
+    if (selectedRisk?.pm_riskid && detailTab === 1) {
       setMitigationLoading(true)
       fetchMitigationActions(selectedRisk.pm_riskid)
         .then((actions) => setMitigationActions(actions))
         .catch(() => setMitigationActions([]))
         .finally(() => setMitigationLoading(false))
-    } else if (drawerTab !== 1) {
+    } else if (detailTab !== 1) {
       setMitigationActions([])
     }
-  }, [selectedRisk?.pm_riskid, drawerTab])
+  }, [selectedRisk?.pm_riskid, detailTab])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const openCreate = () => {
@@ -163,18 +163,22 @@ export default function RisksPage() {
         if (updated) {
           setRisks((prev) => prev.map((r) => (r.pm_riskid === updated.pm_riskid ? updated : r)))
           setSuccessMsg('Risk updated.')
+        } else {
+          throw new Error('Update returned empty response')
         }
       } else {
         const created = await createRiskFull(data)
         if (created) {
           setRisks((prev) => [...prev, created])
           setSuccessMsg('Risk created.')
+        } else {
+          throw new Error('Create returned empty response')
         }
       }
       setDialogOpen(false)
       setTimeout(() => setSuccessMsg(null), 3000)
-    } catch (err) {
-      setError('Unable to save risk.')
+    } catch (err: any) {
+      setError(err.message || 'Unable to save risk.')
     } finally {
       setSaving(false)
     }
@@ -189,7 +193,6 @@ export default function RisksPage() {
       setSuccessMsg('Risk deleted.')
       setDeleteTarget(null)
       if (selectedRisk?.pm_riskid === deleteTarget.pm_riskid) {
-        setDrawerOpen(false)
         setSelectedRisk(null)
       }
       setTimeout(() => setSuccessMsg(null), 3000)
@@ -272,97 +275,116 @@ export default function RisksPage() {
         </Alert>
       )}
 
-      <PageHeader
-        title="Risk Matrix"
-        subtitle="Identify, assess, and manage project risks with probability/impact scoring"
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <ExportButton data={risks} columns={riskExportColumns} filename="risks" />
-            {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-                Add Risk
-              </Button>
-            )}
-          </Box>
-        }
-      />
-
-      {/* KPI Cards using KpiCardRow */}
-      <KpiCardRow
-        items={kpiItems}
-        loading={loading}
-      />
-
-      {/* Heatmap & Charts Section */}
-      <RiskDistributionCharts risks={risks} />
-      <Box sx={{ mb: 3 }}>
-        <Suspense fallback={<Box sx={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading heatmap…</Box>}>
-          <RiskHeatmap risks={risks} />
-        </Suspense>
-      </Box>
-
-
-      {/* Search, Filter & Table */}
-      <RiskTable
-        risks={risks}
-        loading={loading}
-        onEdit={openEdit}
-        onDelete={setDeleteTarget}
-        onSelect={(risk) => { setSelectedRisk(risk); setDrawerOpen(true); setDrawerTab(0) }}
-        categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
-        ragFilter={ragFilter}
-        setRagFilter={setRagFilter}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        openCreate={openCreate}
-        canEdit={canEdit}
-        canDelete={canDelete}
-      />
-
-      {/* Detail Drawer */}
-      <DetailDrawer
-        open={drawerOpen}
-        onClose={() => { setDrawerOpen(false); setSelectedRisk(null) }}
-        title={selectedRisk?.pm_risktitle ?? ''}
-        subtitle={selectedRisk && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-            <Box component="span" sx={{
-              px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600,
-              bgcolor: `${RISK_CATEGORY_COLORS[String(selectedRisk.pm_riskcategory ?? '')] ?? 'text.disabled'}20`,
-              color: RISK_CATEGORY_COLORS[String(selectedRisk.pm_riskcategory ?? '')] ?? 'text.disabled'
-            }}>
-              {RISK_CATEGORY_LABELS[String(selectedRisk.pm_riskcategory ?? '')] ?? '—'}
-            </Box>
-            <Box component="span" sx={{
-              px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600,
-              border: '1px solid',
-              borderColor: RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'error' ? 'error.main' : RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'warning' ? 'warning.main' : 'success.main',
-              color: RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'error' ? 'error.main' : RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'warning' ? 'warning.main' : 'success.main',
-            }}>
-              {RAG_LABELS[String(selectedRisk.pm_ragstatus ?? '')] ?? '—'}
-            </Box>
-            {selectedRisk.pm_escalated && (
-              <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600, bgcolor: 'error.main', color: 'white', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <FlagIcon sx={{ fontSize: 12 }} /> Escalated
+      {selectedRisk ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Risk Matrix', path: 'list' },
+              { label: selectedRisk.pm_risktitle ?? 'Detail' }
+            ]}
+            onNavigate={() => setSelectedRisk(null)}
+          />
+          <PageHeader
+            title={selectedRisk?.pm_risktitle ?? 'Risk Detail'}
+            subtitle={
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: 1 }}>
+                <Box component="span" sx={{
+                  px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600,
+                  bgcolor: `${RISK_CATEGORY_COLORS[String(selectedRisk.pm_riskcategory ?? '')] ?? 'text.disabled'}20`,
+                  color: RISK_CATEGORY_COLORS[String(selectedRisk.pm_riskcategory ?? '')] ?? 'text.disabled'
+                }}>
+                  {RISK_CATEGORY_LABELS[String(selectedRisk.pm_riskcategory ?? '')] ?? '—'}
+                </Box>
+                <Box component="span" sx={{
+                  px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600,
+                  border: '1px solid',
+                  borderColor: RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'error' ? 'error.main' : RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'warning' ? 'warning.main' : 'success.main',
+                  color: RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'error' ? 'error.main' : RAG_COLORS[String(selectedRisk.pm_ragstatus ?? '')] === 'warning' ? 'warning.main' : 'success.main',
+                }}>
+                  {RAG_LABELS[String(selectedRisk.pm_ragstatus ?? '')] ?? '—'}
+                </Box>
+                {selectedRisk.pm_escalated && (
+                  <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600, bgcolor: 'error.main', color: 'white', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <FlagIcon sx={{ fontSize: 12 }} /> Escalated
+                  </Box>
+                )}
               </Box>
-            )}
-          </Box>
-        )}
-        tabs={[{ label: 'Overview' }, { label: 'Mitigation' }]}
-        tabValue={drawerTab}
-        onTabChange={setDrawerTab}
-      >
-        {selectedRisk && (
+            }
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                {canEdit && (
+                  <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedRisk && openEdit(selectedRisk)} sx={{ borderRadius: 1.5 }}>
+                    Edit Risk
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedRisk)} sx={{ borderRadius: 1.5 }}>
+                    Delete Risk
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+          
           <RiskDetailView
             selectedRisk={selectedRisk}
-            drawerTab={drawerTab}
+            drawerTab={detailTab}
             mitigationActions={mitigationActions}
             mitigationLoading={mitigationLoading}
             onAddActionClick={() => setActionDialogOpen(true)}
           />
-        )}
-      </DetailDrawer>
+        </Box>
+      ) : (
+        <>
+          <PageHeader
+            title="Risk Matrix"
+            subtitle="Identify, assess, and manage project risks with probability/impact scoring"
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <ExportButton data={risks} columns={riskExportColumns} filename="risks" />
+                {canCreate && (
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+                    Add Risk
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+
+          {/* KPI Cards using KpiCardRow */}
+          <KpiCardRow
+            items={kpiItems}
+            loading={loading}
+          />
+
+          {/* Heatmap & Charts Section */}
+          <RiskDistributionCharts risks={risks} />
+          <Box sx={{ mb: 3 }}>
+            <Suspense fallback={<Box sx={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading heatmap…</Box>}>
+              <RiskHeatmap risks={risks} />
+            </Suspense>
+          </Box>
+
+
+          {/* Search, Filter & Table */}
+          <RiskTable
+            risks={risks}
+            loading={loading}
+            onEdit={openEdit}
+            onDelete={setDeleteTarget}
+            onSelect={(risk) => { setSelectedRisk(risk); setDetailTab(0) }}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            ragFilter={ragFilter}
+            setRagFilter={setRagFilter}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            openCreate={openCreate}
+            canEdit={canEdit}
+            canDelete={canDelete}
+          />
+        </>
+      )}
 
       {/* Create / Edit Dialog */}
       <RiskDialog

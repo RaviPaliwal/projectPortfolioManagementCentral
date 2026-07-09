@@ -42,6 +42,8 @@ export const mapBudgetLine = (item: Pm_budgetlines): BudgetLineModel => {
   return {
     pm_budgetlineid: item.pm_budgetlineid ? item.pm_budgetlineid.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
     pm_budgetlinename: item.pm_budgetlinename,
+    pm_budgetlinestatus: item.pm_budgetlinestatus,
+    pm_budgetlinestatusname: item.pm_budgetlinestatusname,
     pm_approvedbudgeteur: item.pm_approvedbudgeteur,
     pm_revisedbudgeteur: item.pm_revisedbudgeteur,
     pm_actualspendeur: item.pm_actualspendeur,
@@ -96,19 +98,16 @@ export const mapFundingSource = (item: Pm_fundingsources): FundingSourceModel =>
 export const mapCashflowEntry = (item: Pm_cashflowentries): CashflowEntryModel => ({
   pm_cashflowentryid: item.pm_cashflowentryid,
   pm_entryname: item.pm_entryname,
-  pm_amounteur: item.pm_amounteur,
+  pm_amount: item.pm_amount,
   pm_transactiondate: item.pm_transactiondate,
   pm_transactiondirection: item.pm_transactiondirection,
   pm_transactiontype: item.pm_transactiontype,
-  pm_category: item.pm_category,
   pm_description: item.pm_description,
   pm_invoicenumber: item.pm_invoicenumber,
   pm_fiscalperiodname: item.pm_fiscalperiodname,
-  pm_programmelookupname: item.pm_programmelookupname,
   pm_projectname: item.pm_projectname,
   pm_budgetlinename: item.pm_budgetlinename,
   _pm_fiscalperiod_value: item._pm_fiscalperiod_value ? item._pm_fiscalperiod_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
-  _pm_programmelookup_value: item._pm_programmelookup_value ? item._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
   _pm_project_value: item._pm_project_value ? item._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
   _pm_budgetline_value: item._pm_budgetline_value ? item._pm_budgetline_value.replace(/[{}]/g, '').trim().toLowerCase() : undefined,
   statecode: item.statecode,
@@ -129,7 +128,7 @@ export const mapFinancialPeriod = (item: Pm_fiscalperiods): FinancialPeriodModel
 export async function fetchBudgetLines(): Promise<BudgetLineModel[]> {
   try {
     const selectFields = [
-      'pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur',
+      'pm_budgetlineid', 'pm_budgetlinename', 'pm_budgetlinestatus', 'pm_approvedbudgeteur',
       'pm_revisedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur',
       'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory', 'pm_expencecatagory',
       'pm_notes',
@@ -165,7 +164,7 @@ export async function fetchBudgetLineById(budgetLineId: string): Promise<BudgetL
   try {
     const result = await Pm_budgetlinesService.get(budgetLineId, {
       select: [
-        'pm_budgetlineid', 'pm_budgetlinename', 'pm_approvedbudgeteur',
+        'pm_budgetlineid', 'pm_budgetlinename', 'pm_budgetlinestatus', 'pm_approvedbudgeteur',
         'pm_revisedbudgeteur', 'pm_actualspendeur', 'pm_committedspendeur',
         'pm_forecastspendeur', 'pm_varianceeur', 'pm_costcategory', 'pm_expencecatagory',
         'pm_estimateatcompletioneur', 'pm_estimatetocompleteeur',
@@ -302,6 +301,7 @@ export async function createBudgetLine(payload: Partial<BudgetLineModel>): Promi
       if (id) cleanPayload['pm_fundingsource@odata.bind'] = `/pm_fundingsources(${id})`
     }
     const defaults: Record<string, unknown> = {
+      pm_budgetlinestatus: 1,
       statecode: 0,
       statuscode: 1,
     }
@@ -607,15 +607,11 @@ export async function fetchFinancialPeriods(): Promise<FinancialPeriodModel[]> {
 
 export async function resolveCashflowLookupNames(list: CashflowEntryModel[]): Promise<void> {
   try {
-    const programmeIds = Array.from(new Set(list.map((e) => e._pm_programmelookup_value).filter(Boolean))) as string[]
     const projectIds = Array.from(new Set(list.map((e) => e._pm_project_value).filter(Boolean))) as string[]
     const fiscalPeriodIds = Array.from(new Set(list.map((e) => e._pm_fiscalperiod_value).filter(Boolean))) as string[]
     const budgetLineIds = Array.from(new Set(list.map((e) => e._pm_budgetline_value).filter(Boolean))) as string[]
 
-    const [programmesResult, projectsResult, fiscalPeriodsResult, budgetLinesResult] = await Promise.all([
-      programmeIds.length > 0
-        ? Pm_programmesService.getAll({ filter: programmeIds.map((id) => `pm_programmeid eq '${id}'`).join(' or '), select: ['pm_programmeid', 'pm_programmename'], top: 500 })
-        : Promise.resolve(null),
+    const [projectsResult, fiscalPeriodsResult, budgetLinesResult] = await Promise.all([
       projectIds.length > 0
         ? Pm_projectsService.getAll({ filter: projectIds.map((id) => `pm_projectid eq '${id}'`).join(' or '), select: ['pm_projectid', 'pm_projectname'], top: 500 })
         : Promise.resolve(null),
@@ -626,14 +622,6 @@ export async function resolveCashflowLookupNames(list: CashflowEntryModel[]): Pr
         ? Pm_budgetlinesService.getAll({ filter: budgetLineIds.map((id) => `pm_budgetlineid eq '${id}'`).join(' or '), select: ['pm_budgetlineid', 'pm_budgetlinename'], top: 500 })
         : Promise.resolve(null),
     ])
-
-    const programmeNameById = new Map<string, string>()
-    if (programmesResult && programmesResult.success) {
-      const programmes = unwrapList<Pm_programmes>(programmesResult)
-      for (const p of programmes) {
-        if (p.pm_programmeid && p.pm_programmename) programmeNameById.set(p.pm_programmeid.replace(/[{}]/g, '').trim().toLowerCase(), p.pm_programmename)
-      }
-    }
 
     const projectNameById = new Map<string, string>()
     if (projectsResult && projectsResult.success) {
@@ -660,11 +648,9 @@ export async function resolveCashflowLookupNames(list: CashflowEntryModel[]): Pr
     }
 
     for (const entry of list) {
-      const normProgId = entry._pm_programmelookup_value?.replace(/[{}]/g, '').trim().toLowerCase()
       const normProjId = entry._pm_project_value?.replace(/[{}]/g, '').trim().toLowerCase()
       const normFiscId = entry._pm_fiscalperiod_value?.replace(/[{}]/g, '').trim().toLowerCase()
       const normBudgetLineId = entry._pm_budgetline_value?.replace(/[{}]/g, '').trim().toLowerCase()
-      if (normProgId && programmeNameById.has(normProgId)) entry.pm_programmelookupname = programmeNameById.get(normProgId)
       if (normProjId && projectNameById.has(normProjId)) entry.pm_projectname = projectNameById.get(normProjId)
       if (normFiscId && fiscalPeriodNameById.has(normFiscId)) entry.pm_fiscalperiodname = fiscalPeriodNameById.get(normFiscId)
       if (normBudgetLineId && budgetLineNameById.has(normBudgetLineId)) entry.pm_budgetlinename = budgetLineNameById.get(normBudgetLineId)
@@ -679,10 +665,10 @@ export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
     const result = await Pm_cashflowentriesService.getAll({
       filter: 'statecode eq 0',
       select: [
-        'pm_cashflowentryid', 'pm_entryname', 'pm_amounteur',
+        'pm_cashflowentryid', 'pm_entryname', 'pm_amount',
         'pm_transactiondate', 'pm_transactiondirection', 'pm_transactiontype',
-        'pm_category', 'pm_description', 'pm_invoicenumber',
-        '_pm_fiscalperiod_value', '_pm_programmelookup_value', '_pm_project_value',
+        'pm_description', 'pm_invoicenumber',
+        '_pm_fiscalperiod_value', '_pm_project_value',
         '_pm_budgetline_value',
       ],
       orderBy: ['pm_transactiondate desc'],
@@ -818,12 +804,7 @@ export async function createCashflowEntry(payload: Partial<CashflowEntryModel>):
         cleanPayload['pm_fiscalperiod@odata.bind'] = '/pm_fiscalperiods(' + fiscalPeriodId + ')'
       }
     }
-    if (payload._pm_programmelookup_value) {
-      const programmeId = payload._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
-      if (programmeId) {
-        cleanPayload['pm_programmeLookup@odata.bind'] = '/pm_programmes(' + programmeId + ')'
-      }
-    }
+
     if (payload._pm_project_value) {
       const projectId = payload._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
       if (projectId) {
@@ -871,10 +852,10 @@ export async function updateCashflowEntry(id: string, changes: Partial<CashflowE
     try {
       const details = await Pm_cashflowentriesService.get(id, {
         select: [
-          'pm_cashflowentryid', 'pm_entryname', 'pm_amounteur',
+          'pm_cashflowentryid', 'pm_entryname', 'pm_amount',
           'pm_transactiondate', 'pm_transactiondirection', 'pm_transactiontype',
-          'pm_category', 'pm_description', 'pm_invoicenumber',
-          '_pm_fiscalperiod_value', '_pm_programmelookup_value', '_pm_project_value',
+          'pm_description', 'pm_invoicenumber',
+          '_pm_fiscalperiod_value', '_pm_project_value',
           '_pm_budgetline_value',
         ]
       })
@@ -910,12 +891,7 @@ export async function updateCashflowEntry(id: string, changes: Partial<CashflowE
         cleanPayload['pm_fiscalperiod@odata.bind'] = `/pm_fiscalperiods(${fiscalPeriodId})`
       }
     }
-    if (changes._pm_programmelookup_value) {
-      const programmeId = changes._pm_programmelookup_value.replace(/[{}]/g, '').trim().toLowerCase()
-      if (programmeId) {
-        cleanPayload['pm_programmeLookup@odata.bind'] = `/pm_programmes(${programmeId})`
-      }
-    }
+
     if (changes._pm_project_value) {
       const projectId = changes._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
       if (projectId) {
@@ -937,10 +913,10 @@ export async function updateCashflowEntry(id: string, changes: Partial<CashflowE
 
     const details = await Pm_cashflowentriesService.get(id, {
       select: [
-        'pm_cashflowentryid', 'pm_entryname', 'pm_amounteur',
+        'pm_cashflowentryid', 'pm_entryname', 'pm_amount',
         'pm_transactiondate', 'pm_transactiondirection', 'pm_transactiontype',
-        'pm_category', 'pm_description', 'pm_invoicenumber',
-        '_pm_fiscalperiod_value', '_pm_programmelookup_value', '_pm_project_value',
+        'pm_description', 'pm_invoicenumber',
+        '_pm_fiscalperiod_value', '_pm_project_value',
         '_pm_budgetline_value',
       ]
     })
@@ -1042,7 +1018,7 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
     // 2. Fetch active cashflow outflow actual entries for this project
     const cashflowResult = await Pm_cashflowentriesService.getAll({
       filter: `_pm_project_value eq '${normProjId}' and statecode eq 0 and pm_transactiondirection eq 0 and pm_transactiontype eq 0`,
-      select: ['pm_cashflowentryid', 'pm_amounteur', 'pm_category'],
+      select: ['pm_cashflowentryid', 'pm_amount', '_pm_budgetline_value'],
       top: 500,
     })
     if (!cashflowResult.success) {
@@ -1077,12 +1053,13 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
 
       const category = String(bl.pm_costcategory ?? '')
 
-      // Calculate cashflow sum for this category
+      // Calculate cashflow sum for this budget line
       const blCashflows = projectCashflows.filter((cf) => {
-        const cfCategory = String(cf.pm_category ?? '')
-        return cfCategory === category
+        const cfBudgetlineId = cf._pm_budgetline_value ? cf._pm_budgetline_value.replace(/[{}]/g, '').trim().toLowerCase() : ''
+        const targetBudgetlineId = bl.pm_budgetlineid ? bl.pm_budgetlineid.replace(/[{}]/g, '').trim().toLowerCase() : ''
+        return cfBudgetlineId === targetBudgetlineId
       })
-      const cashflowsSum = blCashflows.reduce((sum, cf) => sum + (cf.pm_amounteur || 0), 0)
+      const cashflowsSum = blCashflows.reduce((sum, cf) => sum + (cf.pm_amount || 0), 0)
 
       // Calculate timesheet sum for this category
       const blTimesheets = projectTimesheets.filter((e) => {
@@ -1122,8 +1099,8 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
     const projectDetails = unwrapSingle<Pm_projects>(projectDetailsResult)
 
     const projUpdateRes = await Pm_projectsService.update(normProjId, {
-      pm_approvedbudgeteur: totalProjectBudget,
-      pm_actualcosteur: totalProjectActuals,
+      pm_approvedbudget: totalProjectBudget,
+      pm_actualcost: totalProjectActuals,
     } as unknown as Pm_projects)
     if (!projUpdateRes.success) {
       console.error(`[FinanceService] recalculateRealFinancialsForProject project update failed for ${normProjId}:`, projUpdateRes.error)
@@ -1135,12 +1112,12 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
       try {
         const progProjectsResult = await Pm_projectsService.getAll({
           filter: `_pm_programme_value eq '${programmeId}' and statecode eq 0`,
-          select: ['pm_projectid', 'pm_actualcosteur'],
+          select: ['pm_projectid', 'pm_actualcost'],
           top: 500,
         })
         if (progProjectsResult.success) {
           const progProjects = unwrapList<Pm_projects>(progProjectsResult)
-          const totalProgActuals = progProjects.reduce((sum, p) => sum + (p.pm_actualcosteur || 0), 0)
+          const totalProgActuals = progProjects.reduce((sum, p) => sum + (p.pm_actualcost || 0), 0)
 
           const progUpdateRes = await Pm_programmesService.update(programmeId, {
             pm_actualspendeur: totalProgActuals,
@@ -1160,13 +1137,13 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
       try {
         const portProjectsResult = await Pm_projectsService.getAll({
           filter: `_pm_portfolio_value eq '${portfolioId}' and statecode eq 0`,
-          select: ['pm_projectid', 'pm_approvedbudgeteur', 'pm_actualcosteur'],
+          select: ['pm_projectid', 'pm_approvedbudget', 'pm_actualcost'],
           top: 500,
         })
         if (portProjectsResult.success) {
           const portProjects = unwrapList<Pm_projects>(portProjectsResult)
-          const totalPortBudget = portProjects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur || 0), 0)
-          const totalPortActuals = portProjects.reduce((sum, p) => sum + (p.pm_actualcosteur || 0), 0)
+          const totalPortBudget = portProjects.reduce((sum, p) => sum + (p.pm_approvedbudget || 0), 0)
+          const totalPortActuals = portProjects.reduce((sum, p) => sum + (p.pm_actualcost || 0), 0)
 
           const portUpdateRes = await Pm_portfoliosService.update(portfolioId, {
             pm_approvedbudgeteur: totalPortBudget,

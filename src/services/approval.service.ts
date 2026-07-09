@@ -3,6 +3,7 @@ import type { Pm_projectapprovalrequests } from '@/generated/models/Pm_projectap
 import type { ApprovalRequestModel } from '@/types/dataverse'
 import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import { unwrapList, unwrapSingle } from './common'
+import { writeAuditLog } from './changelog.service'
 
 export const mapApprovalRequest = (item: Pm_projectapprovalrequests): ApprovalRequestModel => ({
   pm_projectapprovalrequestid: item.pm_projectapprovalrequestid,
@@ -72,6 +73,15 @@ export async function createApprovalRequest(payload: Partial<ApprovalRequestMode
       return null
     }
     const item = unwrapSingle<Pm_projectapprovalrequests>(result)
+    if (item) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_projectapprovalrequests',
+        recordId: item.pm_projectapprovalrequestid || payload.pm_projectapprovalrequestid || '',
+        recordName: item.pm_requesttitle || payload.pm_requesttitle,
+        moduleName: 'Approval Requests',
+      })
+    }
     return item ? mapApprovalRequest(item) : null
   } catch (err) {
     console.error('[ApprovalService] createApprovalRequest exception:', err)
@@ -81,6 +91,13 @@ export async function createApprovalRequest(payload: Partial<ApprovalRequestMode
 
 export async function updateApprovalRequest(id: string, changes: Partial<ApprovalRequestModel>): Promise<ApprovalRequestModel | null> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_projectapprovalrequests',
+      recordId: id,
+      recordName: changes.pm_requesttitle,
+      moduleName: 'Approval Requests',
+    })
     const result = await Pm_projectapprovalrequestsService.update(id, changes as any)
     if (!result.success) {
       console.error('[ApprovalService] updateApprovalRequest failed:', result.error)
@@ -96,6 +113,13 @@ export async function updateApprovalRequest(id: string, changes: Partial<Approva
 
 export async function deleteApprovalRequest(id: string): Promise<void> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_projectapprovalrequests',
+      recordId: id,
+      moduleName: 'Approval Requests',
+      description: `Deleted approval request ${id}`,
+    })
     await Pm_projectapprovalrequestsService.delete(id)
   } catch (err) {
     console.error('[ApprovalService] deleteApprovalRequest exception:', err)

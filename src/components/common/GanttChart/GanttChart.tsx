@@ -282,7 +282,6 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
         </Typography>
       </Box>
 
-      {/* Scrollable container */}
       <Box
         ref={scrollRef}
         sx={{
@@ -292,10 +291,9 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
           borderRadius: 2,
           bgcolor: isDark ? '#0f172a' : '#ffffff',
           height: (height ?? 0) || undefined,
-          // boxShadow removed - elevation handled by parent Paper
         }}
       >
-        <Box sx={{ display: 'flex', minHeight: totalHeight, position: 'relative' }}>
+        <Box sx={{ display: 'flex', minHeight: totalHeight, position: 'relative', width: 'max-content', minWidth: '100%' }}>
           
           {/* Name column (sticky left) */}
           <Box sx={{
@@ -411,9 +409,11 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
             {monthMarkers.map((m, i) => (
               <g key={`mh-${i}`}>
                 <rect x={m.x} y={0} width={m.width} height={HEADER_HEIGHT} fill="transparent" />
-                <text x={m.x + 12} y={24} fill={theme.palette.text.primary} fontSize={11} fontWeight={800} fontFamily="inherit">
-                  {m.label}
-                </text>
+                {m.width >= 55 && (
+                  <text x={m.x + 12} y={24} fill={theme.palette.text.primary} fontSize={11} fontWeight={800} fontFamily="inherit">
+                    {m.label}
+                  </text>
+                )}
                 {weekMarkers.filter((w) => w.x >= m.x && w.x < m.x + m.width).map((w, wi) => (
                   <text key={`d-${wi}`} x={w.x + 3} y={46} fill={theme.palette.text.secondary} fontSize={9} fontWeight={600} fontFamily="inherit">
                     {w.day}

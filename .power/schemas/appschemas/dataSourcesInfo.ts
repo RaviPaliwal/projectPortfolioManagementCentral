@@ -85,6 +85,13 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pm_checklistresponses": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_checklistresponseid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pm_documents": {
     "tableId": "",
     "version": "",
@@ -319,6 +326,13 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pm_workflowchecklistconfigurations": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_workflowchecklistconfigurationid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pm_workflowinstances": {
     "tableId": "",
     "version": "",
@@ -451,6 +465,43 @@ export const dataSourcesInfo = {
     }
   },
   "manageteams": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "",
+    "dataSourceType": "Connector",
+    "apis": {
+      "Run": {
+        "path": "/{connectionId}/triggers/manual/run",
+        "method": "POST",
+        "parameters": [
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "input",
+            "in": "body",
+            "required": true,
+            "type": "object"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responseInfo": {
+          "202": {
+            "type": "void"
+          }
+        }
+      }
+    }
+  },
+  "sendmessage": {
     "tableId": "",
     "version": "",
     "primaryKey": "",

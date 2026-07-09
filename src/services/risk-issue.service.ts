@@ -2,7 +2,9 @@ import {
   Pm_risksService,
   Pm_issuesService,
   Pm_riskmitigationactionsService,
+  Pm_projectsService,
 } from '@/generated'
+import { sendNotificationToUser } from './notification.service'
 import { writeAuditLog } from './changelog.service'
 import { fetchResourceBySystemUserId } from './resource.service'
 import type { Pm_risks } from '@/generated/models/Pm_risksModel'
@@ -52,9 +54,11 @@ async function resolveRiskOwnerResourceId(id: string): Promise<string | null> {
   return null
 }
 
+import { applySecurityMasking } from './security'
+
 export const mapRisk = (item: Pm_risks): RiskModel => {
   const rawItem = item as unknown as Record<string, unknown>
-  return {
+  const mapped: RiskModel = {
     pm_riskid: item.pm_riskid,
     pm_risktitle: item.pm_risktitle,
     pm_riskcategory: item.pm_riskcategory,
@@ -74,11 +78,12 @@ export const mapRisk = (item: Pm_risks): RiskModel => {
     pm_responsestrategy: item.pm_responsestrategy,
     pm_riskcause: item.pm_riskcause,
     pm_riskeffect: item.pm_riskeffect,
-    pm_projectname: rawItem['_pm_project_value@OData.Community.Display.V1.FormattedValue'] as string | undefined,
-    _pm_project_value: rawItem._pm_project_value as string | undefined,
+    pm_projectname: rawItem['_pm_regardingid_value@OData.Community.Display.V1.FormattedValue'] as string | undefined,
+    _pm_project_value: rawItem._pm_regardingid_value as string | undefined,
     _pm_riskowner_value: item._pm_riskowner_value,
     statecode: item.statecode,
   }
+  return applySecurityMasking(mapped, 'risk')
 }
 
 export const mapIssue = (item: Pm_issues): IssueModel => ({
@@ -130,7 +135,7 @@ export async function createRisk(payload: Partial<RiskModel> & { pm_projectid: s
       pm_riskstatus: 1,
       pm_identifieddate: new Date().toISOString().split('T')[0],
       pm_targetclosedate: payload.pm_targetclosedate,
-      "pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
+      "pm_regardingid_pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
       statecode: 0,
       statuscode: 1,
     }
@@ -269,7 +274,7 @@ export async function fetchAllRisks(): Promise<RiskModel[]> {
       'pm_inherentprobability', 'pm_inherentimpact', 'pm_inherentscore',
       'pm_residualprobability', 'pm_residualimpact', 'pm_residualscore',
       'pm_responsestrategy', 'pm_riskcause', 'pm_riskeffect',
-      '_pm_project_value', '_pm_riskowner_value',
+      '_pm_regardingid_value', '_pm_riskowner_value',
     ]
     const options: IGetAllOptions = {
       select: selectFields,
@@ -316,7 +321,7 @@ export async function fetchRisksForSystemUser(systemUserId: string): Promise<Ris
     // 2. Build filters: (projects allocated) OR (owned risks)
     const conditions: string[] = [`_pm_riskowner_value eq '${resourceId}'`]
     if (projectIds.length > 0) {
-      const projectConditions = projectIds.map(id => `_pm_project_value eq '${id}'`).join(' or ')
+      const projectConditions = projectIds.map(id => `_pm_regardingid_value eq '${id}'`).join(' or ')
       conditions.push(`(${projectConditions})`)
     }
     const filterStr = `statecode eq 0 and (${conditions.join(' or ')})`
@@ -328,7 +333,7 @@ export async function fetchRisksForSystemUser(systemUserId: string): Promise<Ris
       'pm_inherentprobability', 'pm_inherentimpact', 'pm_inherentscore',
       'pm_residualprobability', 'pm_residualimpact', 'pm_residualscore',
       'pm_responsestrategy', 'pm_riskcause', 'pm_riskeffect',
-      '_pm_project_value', '_pm_riskowner_value',
+      '_pm_regardingid_value', '_pm_riskowner_value',
     ]
 
     const result = await Pm_risksService.getAll({
@@ -365,7 +370,7 @@ export async function createRiskFull(payload: Partial<RiskModel>): Promise<RiskM
     if (payload._pm_project_value) {
       const projectId = normalizeLookupId(payload._pm_project_value)
       if (projectId) {
-        cleanPayload['pm_project@odata.bind'] = `/pm_projects(${projectId})`
+        cleanPayload['pm_regardingid_pm_project@odata.bind'] = `/pm_projects(${projectId})`
       }
     }
     if (payload._pm_riskowner_value) {
@@ -735,6 +740,28 @@ export async function updateIssueFull(id: string, changes: Partial<IssueModel>):
             newValue: formatVal(value)
           })
         }
+      }
+    }
+
+    if (changes.pm_escalationstatus === true && original && original.pm_escalationstatus !== true) {
+      try {
+        const projId = normalizeLookupId(item?._pm_project_value || original?._pm_project_value)
+        if (projId) {
+          const projRes = await Pm_projectsService.get(projId, { select: ['pm_projectid', 'pm_projectname', '_pm_projectmanager_value'] })
+          if (projRes.success) {
+            const proj = unwrapSingle<any>(projRes)
+            if (proj && proj._pm_projectmanager_value) {
+              await sendNotificationToUser(
+                proj._pm_projectmanager_value,
+                'Teams',
+                'CRITICAL: Issue Escalation Alert',
+                `CRITICAL: Issue "${original.pm_issuetitle || 'Issue'}" has been escalated for project "${proj.pm_projectname || ''}". Please review details immediately.`
+              )
+            }
+          }
+        }
+      } catch (notifErr) {
+        console.error('[RiskIssueService] Failed to send issue escalation notification:', notifErr)
       }
     }
 

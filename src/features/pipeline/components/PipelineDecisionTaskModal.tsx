@@ -1,22 +1,30 @@
-import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, type ComponentType } from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
   IconButton, CircularProgress, TextField, Divider, Chip, Paper,
-  FormControl, InputLabel, Select, MenuItem,
+  FormControl, InputLabel, Select, MenuItem, Rating, Slider,
   useTheme,
   alpha,
+  LinearProgress,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import GavelIcon from '@mui/icons-material/Gavel'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
-import { fetchInitiativeById, updateInitiativeStatus } from '@/services/initiative.service'
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
+import TrendingUpIcon from '@mui/icons-material/TrendingUp'
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
+import DescriptionIcon from '@mui/icons-material/Description'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+
+import { fetchInitiativeById, updateInitiative, fetchInitiatives, updateInitiativeStatus } from '@/services/initiative.service'
+import { fetchPortfolioHierarchy } from '@/services'
 import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
-import type { InitiativeModel } from '@/types/dataverse'
+import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import { StatusTag, Button } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
-import DescriptionIcon from '@mui/icons-material/Description'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
+import { fontSizes } from '@/styles'
 
 interface PipelineDecisionTaskModalProps {
   open: boolean
@@ -43,6 +51,28 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [initiative, setInitiative] = useState<InitiativeModel | null>(null)
+  
+  // Scoring & Budget Editing States
+  const [estCost, setEstCost] = useState(0)
+  const [estBenefits, setEstBenefits] = useState(0)
+  const [priorityScore, setPriorityScore] = useState(0)
+  const [strategicAlignment, setStrategicAlignment] = useState(0)
+  
+  // Target Portfolio & Programme Selection States
+  const [chosenPortfolioId, setChosenPortfolioId] = useState<string>('')
+  const [chosenProgrammeId, setChosenProgrammeId] = useState<string>('')
+  
+  // Hierarchy & All Initiatives for Budget computation
+  const [portfolios, setPortfolios] = useState<PortfolioModel[]>([])
+  const [programmes, setProgrammes] = useState<ProgrammeModel[]>([])
+  const [projects, setProjects] = useState<ProjectModel[]>([])
+  const [allInitiatives, setAllInitiatives] = useState<InitiativeModel[]>([])
+  
+  // Warning Dialog State & Promise Resolver
+  const [showBudgetWarningDialog, setShowBudgetWarningDialog] = useState(false)
+  const [warningResolver, setWarningResolver] = useState<((proceed: boolean) => void) | null>(null)
+  const [pendingLegacyDecision, setPendingLegacyDecision] = useState<'Approved' | 'Deferred' | 'Rejected' | null>(null)
+
   const [selectedOutcome, setSelectedOutcome] = useState<number>(0)
   const [decisionNotes, setDecisionNotes] = useState('')
   const [conditions, setConditions] = useState('')
@@ -50,279 +80,611 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const init = await fetchInitiativeById(initiativeId)
+      const [init, hierarchy, inits] = await Promise.all([
+        fetchInitiativeById(initiativeId),
+        fetchPortfolioHierarchy(),
+        fetchInitiatives()
+      ])
       if (!init) { onError('Initiative not found.'); setLoading(false); return }
       setInitiative(init)
+      setEstCost(init.pm_estimatedcost ?? 0)
+      setEstBenefits(init.pm_estimatedbenefits ?? 0)
+      setPriorityScore(init.pm_priorityscore ?? 0)
+      setStrategicAlignment((init.pm_strategicalignmentscore ?? 0) / 20)
+      setChosenPortfolioId(init._pm_portfolio_value ?? '')
+      setChosenProgrammeId(init._pm_programme_value ?? '')
+      
+      setPortfolios(hierarchy.portfolios)
+      setProgrammes(hierarchy.programmes)
+      setProjects(hierarchy.projects)
+      setAllInitiatives(inits)
     } catch (err) {
-      console.error('Failed to load initiative', err)
       onError('Failed to load initiative details.')
     } finally { setLoading(false) }
   }, [initiativeId, onError])
 
   useEffect(() => {
-    if (open) { loadData(); setSelectedOutcome(0); setDecisionNotes(''); setConditions('') }
+    if (open) { 
+      loadData()
+      setSelectedOutcome(0)
+      setDecisionNotes('')
+      setConditions('')
+      setChosenPortfolioId('')
+      setChosenProgrammeId('')
+      setShowBudgetWarningDialog(false)
+      setWarningResolver(null)
+      setPendingLegacyDecision(null) 
+    }
   }, [open, loadData])
 
-  const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
+  const parentBudgetInfo = useMemo(() => {
+    if (!initiative) return null
+    const type = initiative.pm_initiativetype
+
+    if (type === 0) {
+      // Initiative is a Project: parent is a Programme
+      if (!chosenProgrammeId) return null
+      const selectedProg = programmes.find((p) => p.pm_programmeid === chosenProgrammeId)
+      if (!selectedProg) return null
+
+      const parentBudget = selectedProg.pm_budgeteur ?? 0
+      // Sum of child projects under this programme
+      const childProjectBudgets = projects
+        .filter((p) => p._pm_programme_value === chosenProgrammeId)
+        .reduce((s, p) => s + (p.pm_approvedbudget ?? 0), 0)
+      // Sum of other Project initiatives under this programme (exclude current initiative)
+      const childInitiativeCosts = allInitiatives
+        .filter((i) => i.pm_initiativetype === 0 && i._pm_programme_value === chosenProgrammeId && i.pm_initiativeid !== initiative.pm_initiativeid)
+        .reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)
+
+      const usedBudget = childProjectBudgets + childInitiativeCosts
+      const availableBudget = Math.max(0, parentBudget - usedBudget)
+
+      return {
+        label: 'Programme',
+        parentBudget,
+        usedBudget,
+        availableBudget,
+      }
+    } else if (type === 1) {
+      // Initiative is a Programme: parent is a Portfolio
+      if (!chosenPortfolioId) return null
+      const selectedPortfolio = portfolios.find((p) => p.pm_portfolioid === chosenPortfolioId)
+      if (!selectedPortfolio) return null
+
+      const parentBudget = selectedPortfolio.pm_approvedbudgeteur ?? 0
+      // Sum of child programmes under this portfolio
+      const childProgrammeBudgets = programmes
+        .filter((p) => p._pm_portfolio_value === chosenPortfolioId)
+        .reduce((s, p) => s + (p.pm_budgeteur ?? 0), 0)
+      // Sum of other Programme initiatives under this portfolio (exclude current initiative)
+      const childInitiativeCosts = allInitiatives
+        .filter((i) => i.pm_initiativetype === 1 && i._pm_portfolio_value === chosenPortfolioId && i.pm_initiativeid !== initiative.pm_initiativeid)
+        .reduce((s, i) => s + (i.pm_estimatedcost ?? 0), 0)
+
+      const usedBudget = childProgrammeBudgets + childInitiativeCosts
+      const availableBudget = Math.max(0, parentBudget - usedBudget)
+
+      return {
+        label: 'Portfolio',
+        parentBudget,
+        usedBudget,
+        availableBudget,
+      }
+    }
+
+    return null
+  }, [initiative, chosenProgrammeId, chosenPortfolioId, portfolios, programmes, projects, allInitiatives])
+
+  const hasBudgetError = parentBudgetInfo !== null && estCost > parentBudgetInfo.availableBudget
+
+  const filteredProgrammes = useMemo(() => {
+    if (!chosenPortfolioId) return programmes
+    return programmes.filter((p) => p._pm_portfolio_value === chosenPortfolioId)
+  }, [chosenPortfolioId, programmes])
+
+  const handlePortfolioChange = (portfolioId: string) => {
+    setChosenPortfolioId(portfolioId)
+    const prog = programmes.find((p) => p.pm_programmeid === chosenProgrammeId)
+    if (prog && prog._pm_portfolio_value !== portfolioId) {
+      setChosenProgrammeId('')
+    }
+  }
+
+  const executeSaveTaskData = async (workflowDecision: number): Promise<boolean> => {
     setSaving(true)
     try {
+      const payload: Partial<InitiativeModel> = {
+        pm_estimatedcost: estCost,
+        pm_estimatedbenefits: estBenefits,
+        pm_priorityscore: priorityScore,
+        pm_strategicalignmentscore: Math.round(strategicAlignment * 20),
+      }
+      if (chosenPortfolioId !== (initiative?._pm_portfolio_value ?? '')) {
+        payload._pm_portfolio_value = chosenPortfolioId || undefined
+      }
+      if (chosenProgrammeId !== (initiative?._pm_programme_value ?? '')) {
+        payload._pm_programme_value = chosenProgrammeId || undefined
+      }
+
+      await updateInitiative(initiativeId, payload)
+
       await updateInitiativeStatus(initiativeId, selectedOutcome)
       const outcomeLabel = OUTCOME_OPTIONS.find(o => o.value === selectedOutcome)?.label ?? 'Unknown'
       onSuccess(`Pipeline Decision recorded. Outcome: ${outcomeLabel}.`)
       return true
     } catch (err) {
-      console.error('[PipelineDecisionTaskModal] saveTaskData error:', err)
       onError('Failed to record pipeline decision.')
       return false
     } finally { setSaving(false) }
-  }, [initiativeId, selectedOutcome, onSuccess, onError])
+  }
 
-  const handleLegacyDecision = useCallback(async () => {
+  const saveTaskData = useCallback((workflowDecision: number): Promise<boolean> => {
+    return new Promise<boolean>((resolve) => {
+      if (!hasBudgetError) {
+        executeSaveTaskData(workflowDecision).then(resolve)
+        return
+      }
+
+      setShowBudgetWarningDialog(true)
+      setWarningResolver(() => (proceed: boolean) => {
+        if (proceed) {
+          executeSaveTaskData(workflowDecision).then(resolve)
+        } else {
+          resolve(false)
+        }
+      })
+    })
+  }, [hasBudgetError, estCost, estBenefits, priorityScore, strategicAlignment, initiative?._pm_portfolio_value, initiative?._pm_programme_value, selectedOutcome, chosenPortfolioId, chosenProgrammeId])
+
+  const executeLegacyDecision = async (decision: 'Approved' | 'Deferred' | 'Rejected') => {
     setSaving(true)
     try {
-      await updateInitiativeStatus(initiativeId, selectedOutcome)
-      const outcomeLabel = OUTCOME_OPTIONS.find(o => o.value === selectedOutcome)?.label ?? 'Unknown'
-      onSuccess(`Pipeline Decision recorded. Outcome: ${outcomeLabel}.`)
+      const payload: Partial<InitiativeModel> = {
+        pm_estimatedcost: estCost,
+        pm_estimatedbenefits: estBenefits,
+        pm_priorityscore: priorityScore,
+        pm_strategicalignmentscore: Math.round(strategicAlignment * 20),
+      }
+      if (chosenPortfolioId !== (initiative?._pm_portfolio_value ?? '')) {
+        payload._pm_portfolio_value = chosenPortfolioId || undefined
+      }
+      if (chosenProgrammeId !== (initiative?._pm_programme_value ?? '')) {
+        payload._pm_programme_value = chosenProgrammeId || undefined
+      }
+
+      await updateInitiative(initiativeId, payload)
+      const outcomeVal = decision === 'Approved' ? 0 : (decision === 'Deferred' ? 2 : 3)
+      await updateInitiativeStatus(initiativeId, outcomeVal)
+      onSuccess(`Pipeline Decision recorded. Outcome: ${decision}.`)
       onClose()
     } catch (err) {
       onError('Failed to record pipeline decision.')
     } finally { setSaving(false) }
-  }, [initiativeId, selectedOutcome, onSuccess, onClose, onError])
+  }
+
+  const handleLegacyDecision = useCallback(async () => {
+    const outcomeLabel = OUTCOME_OPTIONS.find(o => o.value === selectedOutcome)?.label as 'Approved' | 'Deferred' | 'Rejected' || 'Approved'
+    if (hasBudgetError) {
+      setPendingLegacyDecision(outcomeLabel)
+      setShowBudgetWarningDialog(true)
+      return
+    }
+    executeLegacyDecision(outcomeLabel)
+  }, [hasBudgetError, estCost, estBenefits, priorityScore, strategicAlignment, initiative?._pm_portfolio_value, initiative?._pm_programme_value, selectedOutcome, chosenPortfolioId, chosenProgrammeId])
 
   if (!open) return null
 
   return (
-    <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'success.dark', color: 'success.contrastText', py: 1.5, pr: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <GavelIcon />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>Pipeline Decision</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip label="Pending Final Decision" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'white' }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
-        {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
-        ) : (
-          <Grid container sx={{ height: '100%' }}>
-            <Grid size={{ xs: 12, md: 4 }} sx={{ borderRight: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', p: 3 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1 }}>Initiative Summary</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{initiative?.pm_name || 'Loading...'}</Typography>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Requester</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{initiative?.pm_requestorname || '-'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Submitted</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {initiative?.pm_submissiondate ? new Date(initiative.pm_submissiondate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Initiative Type</Typography>
-                  <Box sx={{ mt: 0.5 }}>
-                    {initiative?.pm_initiativetype != null ? (
-                      <StatusTag
-                        label={initiative.pm_initiativetype === 0 ? 'Project' : initiative.pm_initiativetype === 1 ? 'Programme' : initiative.pm_initiativetype === 2 ? 'Initiative' : 'Unknown'}
-                        color={initiative.pm_initiativetype === 0 ? 'primary' : initiative.pm_initiativetype === 1 ? 'secondary' : 'info'}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                      />
-                    ) : (
-                      <Typography variant="body2" color="text.disabled">Not specified</Typography>
-                    )}
-                  </Box>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Portfolio</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{initiative?.pm_portfolioname || '-'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Est. Cost</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {initiative?.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Est. Benefits</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {initiative?.pm_estimatedbenefits != null ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '-'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Priority Score</Typography>
-                  <Box sx={{ mt: 0.5 }}>
-                    {initiative?.pm_priorityscore != null ? (
-                      <StatusTag
-                        label={`${initiative.pm_priorityscore.toFixed(1)} / 10.0`}
-                        color={initiative.pm_priorityscore >= 7 ? 'success' : initiative.pm_priorityscore >= 4 ? 'warning' : 'default'}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                      />
-                    ) : (
-                      <Typography variant="body2" color="text.disabled">Not scored</Typography>
-                    )}
-                  </Box>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Strategic Alignment</Typography>
-                  <Box sx={{ mt: 0.5 }}>
-                    {initiative?.pm_strategicalignmentscore != null ? (
-                      <StatusTag
-                        label={`${initiative.pm_strategicalignmentscore.toFixed(1)} / 5.0`}
-                        color={initiative.pm_strategicalignmentscore >= 4 ? 'success' : initiative.pm_strategicalignmentscore >= 2.5 ? 'warning' : 'default'}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                      />
-                    ) : (
-                      <Typography variant="body2" color="text.disabled">Not scored</Typography>
-                    )}
-                  </Box>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Current Status</Typography>
-                  <Box sx={{ mt: 0.5 }}>
-                    <StatusTag
-                      label={initiative?.pm_pipelinestatus === 0 ? 'Approved' : initiative?.pm_pipelinestatus === 1 ? 'Under Review' : initiative?.pm_pipelinestatus === 2 ? 'Deferred' : initiative?.pm_pipelinestatus === 3 ? 'Rejected' : initiative?.pm_pipelinestatus === 4 ? 'Converted' : 'Draft'}
-                      color={initiative?.pm_pipelinestatus === 0 ? 'success' : initiative?.pm_pipelinestatus === 1 ? 'info' : initiative?.pm_pipelinestatus === 2 ? 'warning' : initiative?.pm_pipelinestatus === 3 ? 'error' : 'secondary'}
-                      size="small"
-                      sx={{ fontWeight: 600 }}
-                    />
-                  </Box>
-                </Box>
-              </Box>
-              {initiative?.pm_decisiondate && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Previous Decision</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'warning.main' }}>
-                    {new Date(initiative.pm_decisiondate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </Typography>
-                </Box>
-              )}
-              <Box sx={{ mt: 4, p: 2, bgcolor: alpha(theme.palette.success.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.success.main, 0.2) }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <FactCheckIcon sx={{ fontSize: 16 }} /> Authority Required
+    <>
+      <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', py: 2, px: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <GavelIcon sx={{ color: 'primary.main' }} />
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>Pipeline Decision & Scoring</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip label="Pending Final Decision" color="warning" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+            <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'text.secondary' }}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 3, pt: '24px !important', bgcolor: 'background.default' }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Initiative Context Details Card */}
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1, display: 'block', mb: 1.5 }}>
+                  Initiative Context
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.8rem' }}>
-                  As the approving authority, your decision will set the initiative status. This determines whether it proceeds to project conversion.
+                <Typography variant="h5" sx={{ fontWeight: 800, mb: 2.5 }}>
+                  {initiative?.pm_name || 'Loading...'}
                 </Typography>
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12, md: 8 }} sx={{ p: 3 }}>
+
+                <Grid container spacing={2.5}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Sponsor</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{initiative?.pm_requestedbyname || 'Unassigned'}</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Submitted Date</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                      {initiative?.pm_submissiondate ? new Date(initiative.pm_submissiondate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                    </Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Initiative Type</Typography>
+                    <Box sx={{ mt: 0.5 }}>
+                      {initiative?.pm_initiativetype != null ? (
+                        <StatusTag
+                          label={initiative.pm_initiativetype === 0 ? 'Project' : initiative.pm_initiativetype === 1 ? 'Programme' : initiative.pm_initiativetype === 2 ? 'Portfolio' : 'Unknown'}
+                          color={initiative.pm_initiativetype === 0 ? 'primary' : initiative.pm_initiativetype === 1 ? 'secondary' : 'info'}
+                          size="small"
+                          sx={{ fontWeight: 600 }}
+                        />
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">Not specified</Typography>
+                      )}
+                    </Box>
+                  </Grid>
+                </Grid>
+
+                {initiative?.pm_initiativetype !== 2 && (
+                  <>
+                    <Divider sx={{ my: 2.5 }} />
+                    {/* Target Portfolio & Programme Selectors */}
+                    <Grid container spacing={2.5}>
+                      <Grid size={{ xs: 12, sm: initiative?.pm_initiativetype === 1 ? 12 : 6 }}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel id="decision-portfolio-label">Target Portfolio</InputLabel>
+                          <Select
+                            labelId="decision-portfolio-label"
+                            label="Target Portfolio"
+                            value={chosenPortfolioId}
+                            onChange={(e) => handlePortfolioChange(e.target.value)}
+                          >
+                            <MenuItem value="">
+                              <em>None</em>
+                            </MenuItem>
+                            {portfolios.map((p) => (
+                              <MenuItem key={p.pm_portfolioid} value={p.pm_portfolioid}>
+                                {p.pm_portfolioname}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      {initiative?.pm_initiativetype === 0 && (
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <FormControl fullWidth size="small">
+                            <InputLabel id="decision-programme-label">Target Programme</InputLabel>
+                            <Select
+                              labelId="decision-programme-label"
+                              label="Target Programme"
+                              value={chosenProgrammeId}
+                              onChange={(e) => setChosenProgrammeId(e.target.value)}
+                            >
+                              <MenuItem value="">
+                                <em>None</em>
+                              </MenuItem>
+                              {filteredProgrammes.map((p) => (
+                                <MenuItem key={p.pm_programmeid} value={p.pm_programmeid}>
+                                  {p.pm_programmename}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                      )}
+                    </Grid>
+                  </>
+                )}
+              </Paper>
+
+              {/* Scoring & Evaluation Card */}
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <LightbulbIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Scoring & Strategic Evaluation
+                </Typography>
+                <Grid container spacing={2.5}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 1 }}>
+                      Strategic Alignment (1-5 Stars)
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Rating
+                        value={strategicAlignment}
+                        onChange={(_, v) => setStrategicAlignment(v ?? 0)}
+                        precision={0.5}
+                        max={5}
+                      />
+                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
+                        {strategicAlignment.toFixed(1)} / 5.0
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 1.5 }}>
+                      Priority Score (0 - 100)
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, px: 1 }}>
+                      <Slider
+                        value={priorityScore}
+                        onChange={(_, v) => setPriorityScore(v as number)}
+                        min={0}
+                        max={100}
+                        step={1}
+                        valueLabelDisplay="auto"
+                        sx={{ flex: 1 }}
+                      />
+                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', minWidth: 40, textAlign: 'right' }}>
+                        {priorityScore}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* Business Case Paper */}
               {initiative?.pm_businesscase && (
-                <>
+                <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <DescriptionIcon sx={{ fontSize: 16 }} /> Business Case
                   </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'background.paper', maxHeight: 120, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
+                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.paper', maxHeight: 150, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
                     {initiative.pm_businesscase}
                   </Paper>
-                </>
+                </Box>
               )}
 
-              {initiative?.pm_estimatedbenefits != null && initiative?.pm_estimatedcost != null && (
-                <Paper variant="outlined" sx={{ p: 1.5, mb: 3, bgcolor: alpha(theme.palette.primary.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.primary.main, 0.2) }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main' }}>Net Business Value</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: initiative.pm_estimatedbenefits - initiative.pm_estimatedcost >= 0 ? 'success.main' : 'error.main' }}>
-                    {currencyFormatter.format(initiative.pm_estimatedbenefits - initiative.pm_estimatedcost)}
+              {/* Financial Editor */}
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <MonetizationOnIcon sx={{ fontSize: 16, color: 'success.main' }} /> Financial Summary
+                </Typography>
+                <Grid container spacing={2.5} sx={{ mb: 2 }}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      label="Estimated Cost (EUR)"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      value={estCost}
+                      onChange={(e) => setEstCost(Number(e.target.value))}
+                      slotProps={{
+                        input: { sx: { borderRadius: 1.5 } },
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      label="Estimated Benefits (EUR)"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      value={estBenefits}
+                      onChange={(e) => setEstBenefits(Number(e.target.value))}
+                      slotProps={{
+                        input: { sx: { borderRadius: 1.5 } },
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+                <Box sx={{ p: 2, bgcolor: alpha(theme.palette.success.main, 0.05), border: '1px dashed', borderColor: alpha(theme.palette.success.main, 0.2), borderRadius: 1.5 }}>
+                  <Typography variant="caption" color="success.main" sx={{ fontWeight: 700 }}>Computed Net Business Value</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5, fontFamily: '"JetBrains Mono", monospace', color: estBenefits - estCost >= 0 ? 'success.main' : 'error.main' }}>
+                    {currencyFormatter.format(estBenefits - estCost)}
                   </Typography>
+                </Box>
+              </Paper>
+
+              {/* Parent Budget Allocation Card */}
+              {parentBudgetInfo && (() => {
+                const allocatedPct = Math.min(100, Math.round((parentBudgetInfo.usedBudget / parentBudgetInfo.parentBudget) * 100))
+                const isOverBudget = parentBudgetInfo.availableBudget <= 0
+                return (
+                  <Paper variant="outlined" sx={{ p: 2.5, border: '1px solid', borderColor: 'divider', borderRadius: '16px', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'grey.50' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.primary' }}>
+                      <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> {parentBudgetInfo.label} Budget Allocation
+                    </Typography>
+                    
+                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>{parentBudgetInfo.label} Budget</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.md }}>
+                          {currencyFormatter.format(parentBudgetInfo.parentBudget)}
+                        </Typography>
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Allocated</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'warning.main', fontSize: fontSizes.md }}>
+                          {currencyFormatter.format(parentBudgetInfo.usedBudget)}
+                        </Typography>
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Available Remaining</Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: isOverBudget ? 'error.main' : 'success.main', fontSize: fontSizes.lg }}>
+                          {currencyFormatter.format(parentBudgetInfo.availableBudget)}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+
+                    <Box sx={{ mb: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Allocation Usage</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700 }}>{allocatedPct}%</Typography>
+                      </Box>
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={allocatedPct} 
+                        color={isOverBudget ? 'error' : allocatedPct > 80 ? 'warning' : 'success'} 
+                        sx={{ height: 10, borderRadius: 5 }} 
+                      />
+                    </Box>
+
+                    {isOverBudget && (
+                      <Typography variant="caption" color="error.main" sx={{ display: 'block', mt: 1, fontWeight: 700 }}>
+                        ⚠️ No remaining budget in this {parentBudgetInfo.label.toLowerCase()}.
+                      </Typography>
+                    )}
+                  </Paper>
+                )
+              })()}
+
+              {/* Legacy outcome inputs (when NOT rendered inside standard DecisionBox wrapper) */}
+              {!DecisionBoxProp && (
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Record Decision Outcome</Typography>
+                  <Grid container spacing={2.5}>
+                    <Grid size={{ xs: 12 }}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Outcome</InputLabel>
+                        <Select
+                          value={selectedOutcome}
+                          label="Outcome"
+                          onChange={(e) => setSelectedOutcome(Number(e.target.value))}
+                        >
+                          {OUTCOME_OPTIONS.map((opt) => (
+                            <MenuItem key={opt.value} value={opt.value}>
+                              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>{opt.label}</Typography>
+                                <Typography variant="caption" color="text.secondary">{opt.description}</Typography>
+                              </Box>
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <TextField
+                        label="Decision Notes"
+                        multiline rows={4}
+                        fullWidth
+                        size="small"
+                        value={decisionNotes}
+                        onChange={(e) => setDecisionNotes(e.target.value)}
+                        placeholder="Provide the rationale for this decision..."
+                      />
+                    </Grid>
+                    {selectedOutcome === 2 && (
+                      <Grid size={{ xs: 12 }}>
+                        <TextField
+                          label="Deferral Conditions"
+                          multiline rows={3}
+                          fullWidth
+                          size="small"
+                          value={conditions}
+                          onChange={(e) => setConditions(e.target.value)}
+                          placeholder="What conditions must be met before this initiative can be reconsidered?"
+                          sx={{ '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: 'warning.main' } } }}
+                        />
+                      </Grid>
+                    )}
+                    {selectedOutcome === 0 && (
+                      <Grid size={{ xs: 12 }}>
+                        <TextField
+                          label="Approval Conditions (optional)"
+                          multiline rows={2}
+                          fullWidth
+                          size="small"
+                          value={conditions}
+                          onChange={(e) => setConditions(e.target.value)}
+                          placeholder="Any conditions or prerequisites for conversion?"
+                        />
+                      </Grid>
+                    )}
+                  </Grid>
                 </Paper>
               )}
+            </Box>
+          )}
+        </DialogContent>
 
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Record Decision</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Select the outcome for this pipeline initiative. The status will be updated immediately upon submission.
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Outcome</InputLabel>
-                    <Select
-                      value={selectedOutcome}
-                      label="Outcome"
-                      onChange={(e) => setSelectedOutcome(Number(e.target.value))}
-                    >
-                      {OUTCOME_OPTIONS.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>
-                          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{opt.label}</Typography>
-                            <Typography variant="caption" color="text.secondary">{opt.description}</Typography>
-                          </Box>
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <TextField
-                    label="Decision Notes"
-                    multiline rows={4}
-                    fullWidth
-                    size="small"
-                    value={decisionNotes}
-                    onChange={(e) => setDecisionNotes(e.target.value)}
-                    placeholder="Provide the rationale for this decision..."
-                  />
-                </Grid>
-                {selectedOutcome === 2 && (
-                  <Grid size={{ xs: 12 }}>
-                    <TextField
-                      label="Deferral Conditions"
-                      multiline rows={3}
-                      fullWidth
-                      size="small"
-                      value={conditions}
-                      onChange={(e) => setConditions(e.target.value)}
-                      placeholder="What conditions must be met before this initiative can be reconsidered?"
-                      sx={{ '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: 'warning.main' } } }}
-                    />
-                  </Grid>
-                )}
-                {selectedOutcome === 0 && (
-                  <Grid size={{ xs: 12 }}>
-                    <TextField
-                      label="Approval Conditions (optional)"
-                      multiline rows={2}
-                      fullWidth
-                      size="small"
-                      value={conditions}
-                      onChange={(e) => setConditions(e.target.value)}
-                      placeholder="Any conditions or prerequisites for conversion?"
-                    />
-                  </Grid>
-                )}
-              </Grid>
-            </Grid>
-          </Grid>
-        )}
-      </DialogContent>
-      <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-        {DecisionBoxProp && approvalStepId ? (
-          <DecisionBoxProp
-            approvalStepId={approvalStepId}
-            onBeforeDecision={saveTaskData}
-            onDecisionComplete={(decision) => {
-              dispatchFormDialogDecision({ formKey: 'pipeline_decision', decision })
-              onClose()
+        <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+          {DecisionBoxProp && approvalStepId ? (
+            <DecisionBoxProp
+              approvalStepId={approvalStepId}
+              onBeforeDecision={saveTaskData}
+              onDecisionComplete={(decision) => {
+                dispatchFormDialogDecision({ formKey: 'pipeline_decision', decision })
+                onClose()
+              }}
+              onDecisionError={(msg) => onError(msg)}
+              disabled={loading || saving}
+            />
+          ) : (
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', width: '100%' }}>
+              <Button variant="outlined" onClick={onClose} disabled={saving}>
+                Cancel
+              </Button>
+              <Button variant="contained" color="success" disabled={loading || saving} onClick={handleLegacyDecision} sx={{ fontWeight: 600 }}>
+                {saving ? 'Processing...' : 'Submit Decision'}
+              </Button>
+            </Box>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Budget Warning Dialog */}
+      <Dialog
+        open={showBudgetWarningDialog}
+        onClose={() => {
+          setShowBudgetWarningDialog(false)
+          if (warningResolver) {
+            warningResolver(false)
+            setWarningResolver(null)
+          }
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'warning.main', fontWeight: 700 }}>
+          <WarningAmberIcon color="warning" /> Budget Limit Warning
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 1.5 }}>
+            The edited estimated cost of this initiative exceeds the available {parentBudgetInfo ? parentBudgetInfo.label.toLowerCase() : 'parent'} budget by <strong>{parentBudgetInfo ? currencyFormatter.format(estCost - parentBudgetInfo.availableBudget) : ''}</strong>.
+          </Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            Do you still want to proceed and submit your decision?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button
+            onClick={() => {
+              setShowBudgetWarningDialog(false)
+              if (warningResolver) {
+                warningResolver(false)
+                setWarningResolver(null)
+              }
             }}
-            onDecisionError={(msg) => onError(msg)}
-            disabled={loading}
-          />
-        ) : (
-          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', width: '100%' }}>
-            <Button variant="contained" color="success" disabled={loading || saving} onClick={handleLegacyDecision} sx={{ fontWeight: 600 }}>
-              {saving ? 'Processing...' : 'Submit Decision'}
-            </Button>
-          </Box>
-        )}
-      </DialogActions>
-    </Dialog>
+            variant="outlined"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              setShowBudgetWarningDialog(false)
+              if (warningResolver) {
+                warningResolver(true)
+                setWarningResolver(null)
+              } else if (pendingLegacyDecision !== null) {
+                executeLegacyDecision(pendingLegacyDecision)
+              }
+            }}
+            variant="contained"
+            color="warning"
+            sx={{ fontWeight: 600 }}
+          >
+            Proceed
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   )
 }

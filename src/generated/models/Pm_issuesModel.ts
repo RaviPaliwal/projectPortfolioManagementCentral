@@ -64,6 +64,8 @@ export interface Pm_issuesBase {
   "pm_project@odata.bind"?: string;
   pm_projectcode?: string;
   pm_ragstatus?: Pm_issuespm_ragstatus;
+  "pm_RegardingId@odata.bind"?: string;
+  pm_regardingidtype?: string;
   pm_resolutiondetails?: string;
   "pm_risk@odata.bind"?: string;
   pm_targetresolutiondate?: string;
@@ -96,6 +98,8 @@ export interface Pm_issues extends Pm_issuesBase {
   pm_programmefkname?: string;
   pm_projectname?: string;
   pm_ragstatusname?: string;
+  pm_regardingidname?: string;
+  pm_regardingidyominame?: string;
   pm_riskname?: string;
   statecodename?: string;
   statuscodename?: string;
@@ -120,6 +124,8 @@ export interface Pm_issues extends Pm_issuesBase {
   _pm_programmefk_value?: string;
   pm_project?: object;
   _pm_project_value?: string;
+  pm_regardingid?: object;
+  _pm_regardingid_value?: string;
   pm_risk?: object;
   _pm_risk_value?: string;
 }

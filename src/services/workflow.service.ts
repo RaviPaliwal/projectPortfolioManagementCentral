@@ -21,7 +21,9 @@ import type {
   WorkflowStepTemplateModel,
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle } from '@/services/common'
+import { writeAuditLog } from '@/services/changelog.service'
 import { MODULE_NAMES } from '@/constants/moduleNames'
+import { sendNotificationToUser, sendNotificationToUserName } from './notification.service'
 import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import type { ManualTriggerInputtext } from '@/generated/models/InitiateWorkflowModel'
 
@@ -92,6 +94,7 @@ export const mapWorkflowStepTemplate = (item: Pm_workflowsteptemplates): Workflo
     pm_assigneeid: item.pm_assigneeid,
     pm_description: item.pm_description,
     pm_sladays: item.pm_sladays,
+    pm_tasktype: item.pm_tasktype,
     new_formkey: item.new_formkey,
     _pm_workflowlookup_value: rawItem._pm_workflowlookup_value as string | undefined,
     statecode: item.statecode,
@@ -152,6 +155,15 @@ export async function createWorkflow(payload: Partial<WorkflowModel>): Promise<W
       throw new Error(`Failed to create workflow: ${result.error?.message || 'Unknown error'}`)
     }
     const item = unwrapSingle<Pm_workflows>(result)
+    if (item) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_workflows',
+        recordId: item.pm_workflowid!,
+        recordName: item.pm_workflowname,
+        moduleName: 'Workflows',
+      })
+    }
     return item ? mapWorkflow(item) : null
   } catch (err) {
     console.error('[WorkflowService] createWorkflow exception:', err)
@@ -161,6 +173,13 @@ export async function createWorkflow(payload: Partial<WorkflowModel>): Promise<W
 
 export async function updateWorkflow(id: string, changes: Partial<WorkflowModel>): Promise<WorkflowModel | null> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_workflows',
+      recordId: id,
+      recordName: changes.pm_workflowname,
+      moduleName: 'Workflows',
+    })
     const payload: Record<string, unknown> = { ...changes }
     if ('pm_workflowdescription' in payload) {
       payload.pm_description = payload.pm_workflowdescription
@@ -189,6 +208,13 @@ export async function updateWorkflow(id: string, changes: Partial<WorkflowModel>
 
 export async function deleteWorkflow(id: string): Promise<void> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_workflows',
+      recordId: id,
+      moduleName: 'Workflows',
+      description: `Deleted workflow ${id}`,
+    })
     await Pm_workflowsService.delete(id)
   } catch (err) {
     console.error('[WorkflowService] deleteWorkflow exception:', err)
@@ -201,7 +227,7 @@ export async function deleteWorkflow(id: string): Promise<void> {
 export async function fetchWorkflowStepTemplates(workflowId?: string): Promise<WorkflowStepTemplateModel[]> {
   try {
     const options: IGetAllOptions = {
-      select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assigneeid', 'pm_description', 'pm_sladays', 'new_formkey', '_pm_workflowlookup_value'],
+      select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assigneeid', 'pm_description', 'pm_sladays', 'pm_tasktype', 'new_formkey', '_pm_workflowlookup_value'],
       orderBy: ['pm_steporder asc'],
       top: 200,
     }
@@ -250,6 +276,15 @@ export async function createWorkflowStepTemplate(payload: Partial<WorkflowStepTe
       throw new Error(`Failed to create step template: ${result.error?.message || 'Unknown error'}`)
     }
     const item = unwrapSingle<Pm_workflowsteptemplates>(result)
+    if (item) {
+      writeAuditLog({
+        actionType: 'Create',
+        entityName: 'pm_workflowsteptemplates',
+        recordId: item.pm_workflowsteptemplateid,
+        recordName: item.pm_workflowname,
+        moduleName: 'Workflow Step Templates',
+      })
+    }
     return item ? mapWorkflowStepTemplate(item) : null
   } catch (err) {
     console.error('[WorkflowService] createWorkflowStepTemplate exception:', err)
@@ -259,6 +294,13 @@ export async function createWorkflowStepTemplate(payload: Partial<WorkflowStepTe
 
 export async function updateWorkflowStepTemplate(id: string, changes: Partial<WorkflowStepTemplateModel>): Promise<WorkflowStepTemplateModel | null> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_workflowsteptemplates',
+      recordId: id,
+      recordName: changes.pm_workflowname,
+      moduleName: 'Workflow Step Templates',
+    })
     const cleanPayload: Record<string, unknown> = {}
     let workflowBindValue: string | undefined
     for (const [key, value] of Object.entries(changes)) {
@@ -291,6 +333,13 @@ export async function updateWorkflowStepTemplate(id: string, changes: Partial<Wo
 
 export async function deleteWorkflowStepTemplate(id: string): Promise<void> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_workflowsteptemplates',
+      recordId: id,
+      moduleName: 'Workflow Step Templates',
+      description: `Deleted step template ${id}`,
+    })
     await Pm_workflowsteptemplatesService.delete(id)
   } catch (err) {
     console.error('[WorkflowService] deleteWorkflowStepTemplate exception:', err)
@@ -301,7 +350,7 @@ export async function deleteWorkflowStepTemplate(id: string): Promise<void> {
 export async function fetchStepTemplateById(id: string): Promise<WorkflowStepTemplateModel | null> {
   try {
     const result = await Pm_workflowsteptemplatesService.get(id, {
-      select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assigneeid', 'pm_description', 'pm_sladays', 'new_formkey', '_pm_workflowlookup_value'],
+      select: ['pm_workflowsteptemplateid', 'pm_workflowname', 'pm_steporder', 'pm_assignetype', 'pm_assigneeid', 'pm_description', 'pm_sladays', 'pm_tasktype', 'new_formkey', '_pm_workflowlookup_value'],
     })
     if (!result.success) {
       console.error('[WorkflowService] fetchStepTemplateById failed:', result.error)
@@ -348,8 +397,8 @@ export async function submitWorkflowDecision(
     // Trigger workflowrouter flow
     const result = await WorkflowRoutingHandlerService.Run({
       text_2: stepId,
-      text_3: '{}', // Teams config — empty per user request
-      text_4: '{}', // Email config — empty per user request
+      text_3: '', // Email config — empty string per user request
+      text_4: '', // Teams config — empty string per user request
       number: decision,
       text: decisionNotes || '',
     })
@@ -399,10 +448,41 @@ export async function fetchWorkflowInstances(): Promise<WorkflowInstanceModel[]>
 
 export async function deleteWorkflowInstance(id: string): Promise<void> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_workflowinstances',
+      recordId: id,
+      moduleName: 'Workflow Instances',
+      description: `Deleted workflow instance ${id}`,
+    })
     await Pm_workflowinstancesService.delete(id)
   } catch (err) {
     console.error('[WorkflowService] deleteWorkflowInstance exception:', err)
     throw err
+  }
+}
+
+export async function fetchWorkflowInstanceById(id: string): Promise<WorkflowInstanceModel | null> {
+  try {
+    const result = await Pm_workflowinstancesService.get(id, {
+      select: [
+        'pm_workflowinstanceid', 'pm_instancename',
+        'pm_entityid', 'pm_entitytype', 'pm_entityname',
+        'pm_status',
+        'pm_startdate', 'pm_completeddate',
+        'pm_currentstep',
+        '_pm_workflowlookup_value', '_pm_initiatedbylookup_value',
+      ]
+    })
+    if (!result.success) {
+      console.error('[WorkflowService] fetchWorkflowInstanceById failed:', result.error)
+      return null
+    }
+    const instance = unwrapSingle<Pm_workflowinstances>(result)
+    return instance ? mapWorkflowInstance(instance) : null
+  } catch (err) {
+    console.error('[WorkflowService] fetchWorkflowInstanceById exception:', err)
+    return null
   }
 }
 
@@ -441,6 +521,33 @@ export async function fetchWorkflowInstancesForEntity(
 }
 
 // ─── CRUD: Approval Steps ──────────────────────────────────────────────
+
+export async function fetchAllWorkflowApprovalSteps(): Promise<WorkflowApprovalStepModel[]> {
+  try {
+    const result = await Pm_workflowapprovalstepsService.getAll({
+      select: [
+        'pm_stepname',
+        'pm_workflowapprovalstepid', 'pm_steporder',
+        'pm_approvername', 'pm_assigneedisplayname', 'pm_assigneetype',
+        'pm_decisionstatus',
+        'pm_decisionnotes', 'pm_decisiondate',
+        'pm_duedate', 'pm_isparallelstep',
+        '_pm_workflowinstancelookup_value', '_pm_workflowtemplate_value',
+      ],
+      orderBy: ['pm_steporder asc'],
+      top: 5000,
+    })
+    if (!result.success) {
+      console.error('[WorkflowService] fetchAllWorkflowApprovalSteps failed:', result.error)
+      return []
+    }
+    const steps = unwrapList<Pm_workflowapprovalsteps>(result)
+    return steps.map(mapWorkflowApprovalStep)
+  } catch (err) {
+    console.error('[WorkflowService] fetchAllWorkflowApprovalSteps exception:', err)
+    return []
+  }
+}
 
 export async function fetchWorkflowApprovalSteps(instanceId: string): Promise<WorkflowApprovalStepModel[]> {
   try {
@@ -563,7 +670,41 @@ export async function createWorkflowApprovalStep(payload: Partial<WorkflowApprov
       throw new Error(`Failed to create workflow approval step: ${result.error?.message || 'Unknown error'}`)
     }
     const item = unwrapSingle<Pm_workflowapprovalsteps>(result)
-    return item ? mapWorkflowApprovalStep(item) : null
+    const mapped = item ? mapWorkflowApprovalStep(item) : null
+    
+    if (mapped) {
+      try {
+        const stepName = mapped.pm_stepname || 'Approval Step'
+        const instanceName = item?.pm_workflowinstancelookupname || 'Workflow Instance'
+        let success = false
+
+        if (item && item.ownerid) {
+          success = await sendNotificationToUser(
+            item.ownerid,
+            'Teams',
+            'New Workflow Task Assigned',
+            `You have been assigned a new approval task: "${stepName}" for "${instanceName}". Please review it in your dashboard.`
+          )
+        }
+
+        if (!success) {
+          const assigneeName = mapped.pm_assigneedisplayname || mapped.pm_approvername
+          if (assigneeName) {
+            console.log(`[WorkflowService] ownerid not resolved. Trying fallback by name: ${assigneeName}`)
+            await sendNotificationToUserName(
+              assigneeName,
+              'Teams',
+              'New Workflow Task Assigned',
+              `You have been assigned a new approval task: "${stepName}" for "${instanceName}". Please review it in your dashboard.`
+            )
+          }
+        }
+      } catch (notifErr) {
+        console.error('[WorkflowService] Failed to send step assignment notification:', notifErr)
+      }
+    }
+    
+    return mapped
   } catch (err) {
     console.error('[WorkflowService] createWorkflowApprovalStep exception:', err)
     throw err
@@ -643,8 +784,8 @@ export async function approveWorkflowStep(
     // Trigger workflowrouter flow
     const result = await WorkflowRoutingHandlerService.Run({
       text_2: stepId,
-      text_3: '{}', // Email config — managed by Power Automate
-      text_4: '{}', // Teams config — managed by Power Automate
+      text_3: '', // Email config — managed by Power Automate
+      text_4: '', // Teams config — managed by Power Automate
       number: 0,    // 0 = Approved
       text: notes || '',
     })
@@ -679,8 +820,8 @@ export async function rejectWorkflowStep(
     // Trigger workflowrouter flow
     const result = await WorkflowRoutingHandlerService.Run({
       text_2: stepId,
-      text_3: '{}', // Email config — managed by Power Automate
-      text_4: '{}', // Teams config — managed by Power Automate
+      text_3: '', // Email config — managed by Power Automate
+      text_4: '', // Teams config — managed by Power Automate
       number: 3,    // 3 = Rejected
       text: reason || '',
     })
@@ -702,6 +843,7 @@ function isGuid(value: string): boolean {
 export async function fetchPendingWorkflowApprovals(
   userId: string,
   userName?: string,
+  userTeams?: string[],
 ): Promise<WorkflowApprovalStepModel[]> {
   try {
     const allPendingResult = await Pm_workflowapprovalstepsService.getAll({
@@ -727,12 +869,15 @@ export async function fetchPendingWorkflowApprovals(
       const approver = (step.pm_approvername || '').toLowerCase()
       const assigneeDisplay = (step.pm_assigneedisplayname || '').toLowerCase()
       const userIdLower = userId.toLowerCase()
-      if (approver === userIdLower) return true
-      if (assigneeDisplay === userIdLower) return true
+      if (approver === userIdLower || assigneeDisplay === userIdLower) return true
       if (userName) {
         const nameLower = userName.toLowerCase()
-        if (approver === nameLower) return true
-        if (assigneeDisplay === nameLower) return true
+        if (approver === nameLower || assigneeDisplay === nameLower) return true
+      }
+      if (userTeams && userTeams.length > 0) {
+        if (userTeams.some(t => t.toLowerCase() === approver || t.toLowerCase() === assigneeDisplay)) {
+          return true
+        }
       }
       return false
     })
@@ -758,7 +903,7 @@ export async function fetchPendingWorkflowApprovals(
               stepRaw.pm_workflowname = workflowTemplateName || instance.pm_instancename
               stepRaw.pm_entityid = instance.pm_entityid
               stepRaw.pm_entitytype = instance.pm_entitytype
-              stepRaw.pm_initiatedby = instance.pm_initiatedbylookupname || instance._pm_initiatedbylookup_value
+              stepRaw.pm_initiatedby = instance.pm_initiatedbylookupname || (rawInstance['_pm_initiatedbylookup_value@OData.Community.Display.V1.FormattedValue'] as string) || instance._pm_initiatedbylookup_value
             }
           }
         } catch (err) {

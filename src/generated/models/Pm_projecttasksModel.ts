@@ -29,7 +29,6 @@ export interface Pm_projecttasksBase {
   pm_baselineenddate?: string;
   pm_baselinestartdate?: string;
   pm_durationdays?: number;
-  pm_lagdays?: number;
   pm_oncriticalpath?: boolean;
   pm_percentcomplete?: number;
   pm_plannedenddate?: string;

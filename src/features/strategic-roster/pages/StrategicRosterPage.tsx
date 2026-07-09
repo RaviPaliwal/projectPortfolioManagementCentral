@@ -23,6 +23,7 @@ import {
   InputAdornment,
   ToggleButtonGroup,
   ToggleButton,
+  Grid,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import FilterListIcon from '@mui/icons-material/FilterList'
@@ -37,6 +38,7 @@ import ZoomOutIcon from '@mui/icons-material/ZoomOut'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import LaunchIcon from '@mui/icons-material/Launch'
+import CrisisAlertIcon from '@mui/icons-material/CrisisAlert'
 import FilterAltIcon from '@mui/icons-material/FilterAlt'
 import DownloadIcon from '@mui/icons-material/Download'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
@@ -44,7 +46,6 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import CancelIcon from '@mui/icons-material/Cancel'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import GridViewIcon from '@mui/icons-material/GridView'
-import TableChartIcon from '@mui/icons-material/TableChart'
 import AccountTreeIconOutlined from '@mui/icons-material/AccountTreeOutlined'
 
 import { fetchPortfolioHierarchy, normalizeLookupId } from '@/services'
@@ -52,9 +53,10 @@ import { PageHeader, KpiCardRow } from '@/components/common'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import type { TabKey } from '@/components/layout/PrimaryShell'
 import { currencyFormatter } from '@/utils/formatters'
+import { navigateToModule } from '@/utils/navigation'
 import { fontSizes } from '@/styles'
 import CardView from '../components/CardView'
-import TableView from '../components/TableView'
+// TableView removed per request (table view is no longer available)
 import TreeView from '../components/TreeView'
 
 // ── Components ──────────────────────────────────────────────────────────────
@@ -122,6 +124,12 @@ const TimelineItem = ({
 
   const financialProgress = allottedBudget && allottedBudget > 0 ? Math.min(100, ((actual || 0) / allottedBudget) * 100) : 0
 
+  const gradient = type === 'portfolio'
+    ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.75)}, ${alpha(theme.palette.primary.light ?? theme.palette.primary.main, 0.65)})`
+    : type === 'programme'
+    ? `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.75)}, ${alpha(theme.palette.secondary.light ?? theme.palette.secondary.main, 0.65)})`
+    : `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.75)}, ${alpha(theme.palette.info.light ?? theme.palette.info.main, 0.65)})`
+
   return (
     <Box sx={{
       display: 'flex',
@@ -145,7 +153,8 @@ const TimelineItem = ({
         zIndex: 2,
         position: 'sticky',
         left: 0,
-      }}>            <Box sx={{ width: 32, display: 'flex', justifyContent: 'center', mr: 1 }}>
+      }}>
+        <Box sx={{ width: 32, display: 'flex', justifyContent: 'center', mr: 1 }}>
           {hasChildren && (
             <Tooltip title={expanded ? 'Collapse section' : 'Expand section'}>
               <IconButton size="small" onClick={onToggle} sx={{ color: 'text.secondary' }}>
@@ -235,7 +244,6 @@ const TimelineItem = ({
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5 }}>{name}</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
                 <Typography variant="caption" sx={{ opacity: 0.8 }}>📅 {start.toLocaleDateString()} — {end.toLocaleDateString()}</Typography>
-                {/* FIX 3 (continued): .format() on all currencyFormatter calls */}
                 <Typography variant="caption" sx={{ opacity: 0.8 }}>💰 Budget: {allottedBudget ? currencyFormatter.format(allottedBudget) : 'N/A'}</Typography>
                 <Typography variant="caption" sx={{ opacity: 0.8 }}>📉 Actual: {actual ? currencyFormatter.format(actual) : 'N/A'}</Typography>
               </Box>
@@ -244,38 +252,47 @@ const TimelineItem = ({
             <Box sx={{
               position: 'absolute',
               left: `${left}%`,
-              width: `${Math.max(1, width)}%`,
-              height: level === 0 ? 28 : level === 1 ? 22 : 16,
-              borderRadius: level === 0 ? 1.5 : level === 1 ? 1 : 0.75,
-              bgcolor: alpha(color, isDark ? 0.3 : 0.15),
-              borderLeft: `4px solid ${color}`,
-              border: `1px solid ${alpha(color, 0.4)}`,
+              width: `${Math.max(1.5, width)}%`,
+              height: 28,
+              borderRadius: '20px',
+              background: gradient,
+              boxShadow: `0 4px 12px ${alpha(color, 0.25)}`,
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: level === 0 ? `0 6px 15px ${alpha(color, 0.15)}` : 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              px: 1.5,
+              px: 2,
               overflow: 'hidden',
               '&:hover': {
-                bgcolor: alpha(color, isDark ? 0.5 : 0.3),
-                transform: 'scaleY(1.05)',
-                boxShadow: `0 8px 20px ${alpha(color, 0.25)}`,
+                transform: 'scale(1.02)',
+                boxShadow: `0 8px 24px ${alpha(color, 0.4)}`,
                 zIndex: 10,
               }
             }}>
-              {width > 12 && (
+              {width > 22 ? (
                 <Typography variant="caption" sx={{
-                  color: color,
-                  fontSize: level === 0 ? '0.7rem' : '0.6rem',
+                  color: '#fff',
+                  fontSize: '0.7rem',
                   fontWeight: 800,
                   whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                  overflow: 'hidden',
                   letterSpacing: 0.5,
                   textTransform: 'uppercase'
                 }}>
+                  {name} ({Math.round((width / 100) * totalDays)}d)
+                </Typography>
+              ) : width > 10 ? (
+                <Typography variant="caption" sx={{
+                  color: '#fff',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  whiteSpace: 'nowrap',
+                  letterSpacing: 0.5
+                }}>
                   {Math.round((width / 100) * totalDays)}d
                 </Typography>
-              )}
+              ) : null}
             </Box>
           </Tooltip>
         )}
@@ -314,7 +331,15 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
   const [ragFilter, setRagFilter] = useState('')
   const [minBudget, setMinBudget] = useState('')
   const [maxBudget, setMaxBudget] = useState('')
-  const [viewMode, setViewMode] = useState<'timeline' | 'cards' | 'table' | 'tree'>('timeline')
+  const [viewMode, setViewMode] = useState<'timeline' | 'cards' | 'table' | 'tree'>(() => {
+    try {
+      const stored = localStorage.getItem('ppm_strategic_roster_view_mode')
+      if (stored === 'timeline' || stored === 'cards' || stored === 'table' || stored === 'tree') {
+        return stored
+      }
+    } catch {}
+    return 'timeline'
+  })
   const [selectedYear, setSelectedYear] = useState<string>('')
 
   const availableYears = useMemo(() => {
@@ -417,8 +442,10 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
     return [
       { label: 'Strategic Portfolios', value: data.portfolios.length, icon: <BusinessIcon />, color: theme.palette.primary.main },
       { label: 'Active Programmes', value: data.programmes.length, icon: <AccountTreeIcon />, color: theme.palette.secondary.main },
+      { label: 'Total Projects', value: data.projects.length, icon: <FolderIcon />, color: theme.palette.info.main },
       // FIX 3 (continued): currencyFormatter.format() instead of currencyFormatter()
       { label: 'Asset Under Management', value: currencyFormatter.format(totalBudget), icon: <TrendingUpIcon />, color: theme.palette.success.main },
+      { label: 'At-risk Projects', value: atRisk, icon: <CrisisAlertIcon />, color: theme.palette.error.main },
       // FIX 1 (continued): CalendarTodayIcon now imported above
       { label: 'Delivery Completion', value: `${Math.round(avgComplete)}%`, icon: <CalendarTodayIcon />, color: theme.palette.info.main },
     ]
@@ -505,21 +532,91 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
         subtitle="Full-spectrum visibility from executive portfolios to project delivery milestones"
       />
 
-      <Box sx={{ px: 3, pb: 4 }}>
-        {/*
-          FIX 4: KpiCardRow prop name — your KpiCardRowProps likely uses a different
-          prop name than `kpis`. Check your component definition and replace `items`
-          below with the correct prop name (common alternatives: items, cards, data).
-          Example: if KpiCardRowProps has `items`, use <KpiCardRow items={kpis} />
-        */}
-        <KpiCardRow items={kpis} />
+      <Box sx={{ pb: 4 }}>
+        <Grid container spacing={3} sx={{ mb: 2 }}>
+          {kpis.map((kpi, idx) => (
+            <Grid size={{ xs: 12, sm: 6, md: 2 }} key={idx}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 3,
+                  height: '100%',
+                  borderRadius: '20px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  bgcolor: isDark ? 'background.paper' : '#fff',
+                  border: `1px solid ${alpha(kpi.color, 0.15)}`,
+                  boxShadow: isDark
+                    ? `0 8px 30px ${alpha(kpi.color, 0.05)}`
+                    : `0 8px 30px ${alpha(kpi.color, 0.03)}`,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: `0 12px 40px ${alpha(kpi.color, 0.12)}`,
+                    borderColor: kpi.color,
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 800,
+                      color: 'text.secondary',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      fontSize: '0.72rem',
+                    }}
+                  >
+                    {kpi.label}
+                  </Typography>
+                  <Avatar
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      bgcolor: alpha(kpi.color, 0.1),
+                      color: kpi.color,
+                      border: `1px solid ${alpha(kpi.color, 0.2)}`,
+                    }}
+                  >
+                    {kpi.icon}
+                  </Avatar>
+                </Box>
+
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 900,
+                    letterSpacing: '-0.03em',
+                    color: isDark ? '#fff' : '#0f172a',
+                    fontFamily: '"Outfit", sans-serif',
+                    mb: 0.5,
+                  }}
+                >
+                  {kpi.value}
+                </Typography>
+
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '4px',
+                    background: `linear-gradient(90deg, ${kpi.color}, ${alpha(kpi.color, 0.3)})`,
+                  }}
+                />
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
 
         <Paper
           elevation={0}
           variant="outlined"
           sx={{
             mt: 4,
-            borderRadius: 5,
+            borderRadius: '24px',
             overflow: 'hidden',
             bgcolor: 'background.paper',
             boxShadow: '0 12px 40px rgba(0,0,0,0.06)',
@@ -541,7 +638,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
               alignItems: 'center',
               bgcolor: 'background.paper',
               border: `1px solid ${theme.palette.divider}`,
-              borderRadius: 4,
+              borderRadius: '16px',
               px: 2.5,
               py: 1,
               width: 320,
@@ -582,7 +679,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
             {/* Budget Range */}
             <TextField
               size="small"
-              placeholder="Min budget"
+              placeholder="Min"
               value={minBudget}
               onChange={(e) => {
                 const val = e.target.value
@@ -594,12 +691,12 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                   sx: { borderRadius: 1.15, fontSize: fontSizes.base },
                 },
               }}
-              sx={{ maxWidth: 130 }}
+              sx={{ width: 120 }}
             />
             <Typography variant="body2" color="text.secondary" sx={{ userSelect: 'none' }}>—</Typography>
             <TextField
               size="small"
-              placeholder="Max budget"
+              placeholder="Max"
               value={maxBudget}
               onChange={(e) => {
                 const val = e.target.value
@@ -611,7 +708,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                   sx: { borderRadius: 1.15, fontSize: fontSizes.base },
                 },
               }}
-              sx={{ maxWidth: 130 }}
+              sx={{ width: 120 }}
             />
 
             <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
@@ -635,7 +732,14 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
             <ToggleButtonGroup
               value={viewMode}
               exclusive
-              onChange={(_, val) => val && setViewMode(val)}
+              onChange={(_, val) => {
+                if (val) {
+                  setViewMode(val)
+                  try {
+                    localStorage.setItem('ppm_strategic_roster_view_mode', val)
+                  } catch {}
+                }
+              }}
               size="small"
               sx={{
                 '& .MuiToggleButton-root': {
@@ -656,9 +760,6 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
               </ToggleButton>
               <ToggleButton value="cards" aria-label="Card view">
                 <Tooltip title="Cards"><GridViewIcon fontSize="small" /></Tooltip>
-              </ToggleButton>
-              <ToggleButton value="table" aria-label="Table view">
-                <Tooltip title="Table"><TableChartIcon fontSize="small" /></Tooltip>
               </ToggleButton>
               <ToggleButton value="tree" aria-label="Tree view">
                 <Tooltip title="Tree"><AccountTreeIconOutlined fontSize="small" /></Tooltip>
@@ -805,7 +906,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                           hasChildren={programs.length > 0}
                           expanded={isExpanded}
                           onToggle={() => toggleExpand(portId)}
-                          onOpenDetails={() => onNavigate?.('portfolios')}
+                          onOpenDetails={() => navigateToModule('Portfolio', portId)}
                           minDate={minDate}
                           totalDays={totalDays}
                         />
@@ -819,7 +920,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                               (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
                             )
                             const isProgExpanded = expandedItems.has(progId)
-                            const progAllocated = projects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur ?? 0), 0)
+                            const progAllocated = projects.reduce((sum, p) => sum + (p.pm_approvedbudget ?? 0), 0)
 
                             return (
                               <Box key={progId}>
@@ -837,7 +938,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                                   hasChildren={projects.length > 0}
                                   expanded={isProgExpanded}
                                   onToggle={() => toggleExpand(progId)}
-                                  onOpenDetails={() => onNavigate?.('programmes')}
+                                  onOpenDetails={() => navigateToModule('Programme', progId)}
                                   minDate={minDate}
                                   totalDays={totalDays}
                                 />
@@ -851,12 +952,12 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                                       plannedStartDate={proj.pm_plannedstartdate}
                                       plannedEndDate={proj.pm_plannedenddate}
                                       ragStatus={proj.pm_ragstatus?.toString()}
-                                      allottedBudget={proj.pm_approvedbudgeteur}
-                                      actual={proj.pm_actualcosteur}
+                                      allottedBudget={proj.pm_approvedbudget}
+                                      actual={proj.pm_actualcost}
                                       level={2}
                                       minDate={minDate}
                                       totalDays={totalDays}
-                                      onOpenDetails={() => onNavigate?.('projects')}
+                                      onOpenDetails={() => navigateToModule('Project', proj.pm_projectid!)}
                                     />
                                   ))}
                                 </Collapse>
@@ -883,24 +984,14 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                 (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
                 (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
               )}
-              onItemClick={(id, type, name) => onNavigate?.(type === 'portfolio' ? 'portfolios' : type === 'programme' ? 'programmes' : 'projects')}
+              onItemClick={(id, type, name) => {
+                const modMap: Record<string, string> = { portfolio: 'Portfolio', programme: 'Programme', project: 'Project' }
+                navigateToModule(modMap[type], id)
+              }}
             />
           )}
 
-          {viewMode === 'table' && (
-            <TableView
-              portfolios={filteredPortfolios}
-              programmes={data.programmes.filter(pr => 
-                (!selectedYear || isEntityInYear(pr.pm_startdate, pr.pm_enddate, selectedYear)) &&
-                (!ragFilter || String(pr.pm_ragstatus ?? '') === ragFilter || data.projects.some(pj => normalizeLookupId(pj._pm_programme_value) === normalizeLookupId(pr.pm_programmeid) && String(pj.pm_ragstatus ?? '') === ragFilter))
-              )}
-              projects={data.projects.filter(pj => 
-                (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
-                (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
-              )}
-              onItemClick={(id, type, name) => onNavigate?.(type === 'portfolio' ? 'portfolios' : type === 'programme' ? 'programmes' : 'projects')}
-            />
-          )}
+          {/* Table view removed per user request */}
 
           {viewMode === 'tree' && (
             <TreeView
@@ -913,7 +1004,10 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
                 (!selectedYear || isEntityInYear(pj.pm_plannedstartdate, pj.pm_plannedenddate, selectedYear)) &&
                 (!ragFilter || String(pj.pm_ragstatus ?? '') === ragFilter)
               )}
-              onItemClick={(id, type, name) => onNavigate?.(type === 'portfolio' ? 'portfolios' : type === 'programme' ? 'programmes' : 'projects')}
+              onItemClick={(id, type, name) => {
+                const modMap: Record<string, string> = { portfolio: 'Portfolio', programme: 'Programme', project: 'Project' }
+                navigateToModule(modMap[type], id)
+              }}
             />
           )}
         </Paper>

@@ -33,6 +33,7 @@ const PROG_PHASE_LABELS: Record<string, { label: string; color: string }> = {
   '0': { label: 'Delivery', color: 'primary' },
   '1': { label: 'Planning', color: 'info' },
   '2': { label: 'Initiation', color: 'secondary' },
+  '3': { label: 'Under Approval', color: 'warning' },
 }
 
 export const StatusChip: React.FC<StatusChipProps> = ({ status, type = 'rag', size = 'small' }) => {
@@ -94,11 +95,24 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
       onClick={onClick}
       sx={{
         cursor: onClick ? 'pointer' : 'default',
-        transition: 'all 0.3s ease',
-        '&:hover': onClick ? {
-          transform: 'translateY(-4px)',
-          boxShadow: theme.shadows[4],
-        } : {},
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        backdropFilter: 'blur(12px)',
+        backgroundColor: theme.palette.mode === 'dark' 
+          ? 'rgba(30, 41, 59, 0.75)' 
+          : 'rgba(255, 255, 255, 0.85)',
+        border: `1px solid ${
+          theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'
+        }`,
+        borderRadius: 3,
+        boxShadow: theme.palette.mode === 'dark'
+          ? '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
+          : '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+        '&:hover': {
+          transform: 'translateY(-6px)',
+          boxShadow: theme.palette.mode === 'dark'
+            ? '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3)'
+            : '0 20px 25px -5px rgba(99, 102, 241, 0.15), 0 10px 10px -5px rgba(99, 102, 241, 0.1)',
+        },
         height: '100%',
       }}
     >

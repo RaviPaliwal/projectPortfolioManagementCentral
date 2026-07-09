@@ -697,52 +697,70 @@ export default function ActivityLogPage() {
                       <Divider sx={{ my: 1 }} />
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 4 }}>
-                      <Stack spacing={0.5}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700 }}>
-                          <ComputerIcon sx={{ fontSize: 14 }} /> Client IP Address
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'text.primary' }}>
-                          {selectedLog.pm_ipaddress || 'N/A'}
-                        </Typography>
-                      </Stack>
-                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <Box sx={{
+                        p: 2,
+                        borderRadius: 1.5,
+                        bgcolor: 'action.hover',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                      }}>
+                        <Grid container spacing={2.5}>
+                          <Grid size={{ xs: 12, md: 4 }}>
+                            <Stack spacing={0.5}>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                <ComputerIcon sx={{ fontSize: 14 }} /> Client IP Address
+                                {selectedLog.pm_ipaddress && (
+                                  <IconButton size="small" onClick={() => handleCopy(selectedLog.pm_ipaddress || '', 'Client IP')} sx={{ p: 0, ml: 0.5 }}>
+                                    {copiedField === 'Client IP' ? <CheckIcon sx={{ fontSize: 12, color: 'success.main' }} /> : <ContentCopyIcon sx={{ fontSize: 12 }} />}
+                                  </IconButton>
+                                )}
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'text.primary', wordBreak: 'break-all', lineHeight: 1.4 }}>
+                                {selectedLog.pm_ipaddress || 'N/A'}
+                              </Typography>
+                            </Stack>
+                          </Grid>
 
-                    <Grid size={{ xs: 12, sm: 4 }}>
-                      <Stack spacing={0.5}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700 }}>
-                          <CategoryIcon sx={{ fontSize: 14 }} /> Module Scope
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                          {selectedLog.pm_modulename || 'N/A'}
-                        </Typography>
-                      </Stack>
-                    </Grid>
+                          <Grid size={{ xs: 12, md: 4 }}>
+                            <Stack spacing={0.5}>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                <CategoryIcon sx={{ fontSize: 14 }} /> Module Scope
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', wordBreak: 'break-all', lineHeight: 1.4 }}>
+                                {selectedLog.pm_modulename || 'N/A'}
+                              </Typography>
+                            </Stack>
+                          </Grid>
 
-                    <Grid size={{ xs: 12, sm: 4 }}>
-                      <Stack spacing={0.5}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700 }}>
-                          <SettingsInputComponentIcon sx={{ fontSize: 14 }} /> Session ID
-                          {selectedLog.pm_sessionid && (
-                            <IconButton size="small" onClick={() => handleCopy(selectedLog.pm_sessionid || '', 'Session ID')} sx={{ p: 0 }}>
-                              {copiedField === 'Session ID' ? <CheckIcon sx={{ fontSize: 12, color: 'success.main' }} /> : <ContentCopyIcon sx={{ fontSize: 12 }} />}
-                            </IconButton>
-                          )}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontFamily: 'monospace',
-                            fontSize: fontSizes.sm,
-                            wordBreak: 'break-all',
-                            color: 'text.primary',
-                            fontWeight: 600
-                          }}
-                          title={selectedLog.pm_sessionid}
-                        >
-                          {selectedLog.pm_sessionid || 'N/A'}
-                        </Typography>
-                      </Stack>
+                          <Grid size={{ xs: 12, md: 4 }}>
+                            <Stack spacing={0.5}>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                <SettingsInputComponentIcon sx={{ fontSize: 14 }} /> Session ID
+                                {selectedLog.pm_sessionid && (
+                                  <IconButton size="small" onClick={() => handleCopy(selectedLog.pm_sessionid || '', 'Session ID')} sx={{ p: 0, ml: 0.5 }}>
+                                    {copiedField === 'Session ID' ? <CheckIcon sx={{ fontSize: 12, color: 'success.main' }} /> : <ContentCopyIcon sx={{ fontSize: 12 }} />}
+                                  </IconButton>
+                                )}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontFamily: 'monospace',
+                                  fontSize: fontSizes.sm,
+                                  wordBreak: 'break-all',
+                                  color: 'text.primary',
+                                  fontWeight: 600,
+                                  lineHeight: 1.4
+                                }}
+                                title={selectedLog.pm_sessionid}
+                              >
+                                {selectedLog.pm_sessionid || 'N/A'}
+                              </Typography>
+                            </Stack>
+                          </Grid>
+                        </Grid>
+                      </Box>
                     </Grid>
                   </>
                 )}

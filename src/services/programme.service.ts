@@ -342,7 +342,7 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
 
     const projectsResult = await Pm_projectsService.getAll({
       filter: `_pm_programme_value eq '${normalizedId}'`,
-      select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_percentcomplete', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudgeteur', 'pm_actualcosteur'],
+      select: ['pm_projectid', 'pm_projectname', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_percentcomplete', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudget', 'pm_actualcost'],
       top: 200,
     })
     if (!projectsResult.success) {
@@ -389,4 +389,69 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
     return { programme: null, projects: [], risks: [], issues: [] }
   }
 }
+
+export interface EscalatedRisksSummary {
+  escalatedRisks: RiskModel[]
+  severityDistribution: { high: number; medium: number; low: number }
+}
+
+export async function fetchEscalatedRisksByProgramme(programmeId: string): Promise<EscalatedRisksSummary> {
+  const normalizedId = normalizeLookupId(programmeId)
+  if (!normalizedId) {
+    return { escalatedRisks: [], severityDistribution: { high: 0, medium: 0, low: 0 } }
+  }
+
+  try {
+    const projectsResult = await Pm_projectsService.getAll({
+      filter: `_pm_programme_value eq '${normalizedId}'`,
+      select: ['pm_projectid'],
+      top: 200,
+    })
+    if (!projectsResult.success) {
+      console.error('[ProgrammeService] fetchEscalatedRisksByProgramme projects failed:', projectsResult.error)
+      return { escalatedRisks: [], severityDistribution: { high: 0, medium: 0, low: 0 } }
+    }
+    const projects = unwrapList<Pm_projects>(projectsResult)
+    const projectIds = projects.map(p => p.pm_projectid).filter(Boolean) as string[]
+
+    if (projectIds.length === 0) {
+      return { escalatedRisks: [], severityDistribution: { high: 0, medium: 0, low: 0 } }
+    }
+
+    const projectFilter = projectIds.map(id => `_pm_project_value eq '${id}'`).join(' or ')
+    const risksResult = await Pm_risksService.getAll({
+      filter: `(${projectFilter}) and pm_escalated eq true and statecode eq 0`,
+      select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskstatus', 'pm_escalated', 'pm_identifieddate', 'pm_targetclosedate', 'pm_inherentscore', 'pm_residualscore', '_pm_project_value', '_pm_riskowner_value'],
+      top: 200,
+    })
+
+    if (!risksResult.success) {
+      console.error('[ProgrammeService] fetchEscalatedRisksByProgramme risks failed:', risksResult.error)
+      return { escalatedRisks: [], severityDistribution: { high: 0, medium: 0, low: 0 } }
+    }
+
+    const escalatedRisks = unwrapList<Pm_risks>(risksResult).map(mapRisk)
+
+    const severityDistribution = { high: 0, medium: 0, low: 0 }
+    for (const risk of escalatedRisks) {
+      const rag = String(risk.pm_ragstatus ?? '')
+      if (rag === '2') {
+        severityDistribution.high++
+      } else if (rag === '0') {
+        severityDistribution.medium++
+      } else if (rag === '1') {
+        severityDistribution.low++
+      }
+    }
+
+    return {
+      escalatedRisks,
+      severityDistribution,
+    }
+  } catch (err) {
+    console.error('[ProgrammeService] fetchEscalatedRisksByProgramme exception:', err)
+    return { escalatedRisks: [], severityDistribution: { high: 0, medium: 0, low: 0 } }
+  }
+}
+
 

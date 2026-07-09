@@ -55,6 +55,9 @@ const ChangeRequestApprovalTaskModalWrapper = lazy(() =>
 const ProgrammeApprovalTaskModalWrapper = lazy(() =>
   import('@/features/programmes/components').then((m) => ({ default: m.ProgrammeApprovalTaskModalWrapper }))
 )
+const ChecklistTaskModal = lazy(() =>
+  import('@/features/dashboard/components').then((m) => ({ default: m.ChecklistTaskModal }))
+)
 
 /**
  * Registry of task forms that can be opened from workflow approval steps.
@@ -161,7 +164,7 @@ export const FORM_REGISTRY: FormRegistryEntry[] = [
   {
     key: 'resource_budget_planning',
     moduleName: MODULE_NAMES.PROJECTS.label,
-    displayName: 'Resource & Budget Planning',
+    displayName: 'Budget Planning',
     description: 'Review resource allocation and budget requirements for project execution',
     modalComponent: ResourceBudgetPlanningTaskModalWrapper,
   },
@@ -216,10 +219,17 @@ export const FORM_REGISTRY: FormRegistryEntry[] = [
   },
   {
     key: 'programme_approval',
-    moduleName: MODULE_NAMES.PROGRAMMES.label,
+    moduleName: 'Programmes',
     displayName: 'Programme Approval',
-    description: 'Approve or reject a newly created programme — set phase to Initiation or Planning',
+    description: 'Review and approve programme creation or stage transition.',
     modalComponent: ProgrammeApprovalTaskModalWrapper,
+  },
+  {
+    key: 'CHECKLIST_APPROVAL_TASK',
+    moduleName: 'System',
+    displayName: 'Checklist Task',
+    description: 'Dynamic checklist approval task based on step template configuration',
+    modalComponent: ChecklistTaskModal,
   },
 ]
 

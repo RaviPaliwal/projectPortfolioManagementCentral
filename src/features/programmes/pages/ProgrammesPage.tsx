@@ -25,6 +25,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Divider,
+  Avatar,
+  alpha,
 } from '@mui/material'
 import ErrorIcon from '@mui/icons-material/Error'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
@@ -33,6 +36,7 @@ import AddIcon from '@mui/icons-material/Add'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
+import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import DescriptionIcon from '@mui/icons-material/Description'
 import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
@@ -42,11 +46,24 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import GppMaybeIcon from '@mui/icons-material/GppMaybe'
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
+import TaskAltIcon from '@mui/icons-material/TaskAlt'
+import FolderIcon from '@mui/icons-material/Folder'
 
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 
-import { fetchProgrammeDetails, fetchPortfolioHierarchy, deleteProgramme } from '@/services'
+import { fetchProgrammeDetails, fetchPortfolioHierarchy, deleteProgramme, fetchEscalatedRisksByProgramme } from '@/services'
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from 'recharts'
 import {
   StatusChip,
   StatusTag,
@@ -65,6 +82,7 @@ import {
   DataverseTable,
   ConfirmDialog,
   MasterScheduleTab,
+  StatusProgressBar,
 } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { fontSizes } from '@/styles'
@@ -133,7 +151,7 @@ export default function ProgrammesPage() {
   const [minBudget, setMinBudget] = useState('')
   const [maxBudget, setMaxBudget] = useState('')
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   type SortField = 'name' | 'phase' | 'rag' | 'sponsor' | 'manager' | 'portfolio' | 'budget' | 'actual' | 'variance' | 'bizunit'
   const [sort, setSort] = useState<{ field: SortField; dir: 'asc' | 'desc' }>({ field: 'name', dir: 'asc' })
@@ -338,12 +356,77 @@ export default function ProgrammesPage() {
 
   const kpiItems: KpiCardItem[] = [
     { label: 'Total Programmes', value: kpiData.count, icon: <AccountTreeIcon />, color: 'primary.main' },
-    { label: 'Green Health', value: kpiData.green, icon: <CheckCircleIcon />, color: 'success.main' },
-    { label: 'Amber Health', value: kpiData.amber, icon: <GppMaybeIcon />, color: 'warning.main' },
-    { label: 'Red Health', value: kpiData.red, icon: <ErrorIcon />, color: 'error.main' },
+    { label: 'Low Risk', value: kpiData.green, icon: <CheckCircleIcon />, color: 'success.main' },
+    { label: 'Medium Risk', value: kpiData.amber, icon: <WarningAmberIcon />, color: 'warning.main' },
+    { label: 'High Risk', value: kpiData.red, icon: <ErrorIcon />, color: 'error.main' },
     { label: 'Total Budget', value: currencyFormatter.format(kpiData.totalBudget), icon: <AccountBalanceWalletIcon />, color: 'primary.main' },
     { label: 'Total Actual', value: currencyFormatter.format(kpiData.totalActual), icon: <TrendingDownIcon />, color: 'warning.main' },
   ]
+
+  const detailKpiItems = useMemo(() => {
+    if (!detailData) return []
+    const prog = detailData.programme
+    const detailProjects = detailData.projects
+    const detailRisks = detailData.risks
+    const detailIssues = detailData.issues
+
+    const escalatedRisks = detailRisks.filter((r) => r.pm_escalated)
+    const escalatedIssues = detailIssues.filter((i) => i.pm_escalationstatus)
+
+    let specificGreen = 0, specificAmber = 0, specificRed = 0
+    for (const p of detailProjects) {
+      if (String(p.pm_ragstatus) === '1') specificGreen++
+      else if (String(p.pm_ragstatus) === '0') specificAmber++
+      else if (String(p.pm_ragstatus) === '2') specificRed++
+    }
+
+    return [
+      {
+        label: "Projects",
+        value: detailProjects.length,
+        subtitle: "In this programme",
+        icon: <AccountTreeIcon />,
+        color: theme.palette.primary.main
+      },
+      {
+        label: "Escalated Risks",
+        value: escalatedRisks.length,
+        subtitle: "High priority risks",
+        icon: <WarningAmberIcon />,
+        color: escalatedRisks.length > 0 ? theme.palette.error.main : theme.palette.success.main
+      },
+      {
+        label: "Escalated Issues",
+        value: escalatedIssues.length,
+        subtitle: "Requires attention",
+        icon: <ErrorIcon />,
+        color: escalatedIssues.length > 0 ? theme.palette.error.main : theme.palette.success.main
+      },
+      {
+        label: "On Track Projects",
+        value: specificGreen,
+        subtitle: `${specificAmber} Amber, ${specificRed} Red`,
+        icon: <CheckCircleIcon />,
+        color: theme.palette.success.main
+      },
+      {
+        label: "Approved Budget",
+        value: currencyFormatter.format(prog?.pm_budgeteur ?? 0),
+        subtitle: "Total approved budget",
+        icon: <AccountBalanceWalletIcon />,
+        color: theme.palette.primary.main
+      },
+      {
+        label: "Actual Spend",
+        value: currencyFormatter.format(prog?.pm_actualspendeur ?? 0),
+        subtitle: (prog?.pm_budgeteur ?? 0) > 0
+          ? `${(((prog?.pm_actualspendeur ?? 0) / (prog?.pm_budgeteur ?? 0)) * 100).toFixed(1)}% consumed`
+          : 'No budget data',
+        icon: <TrendingDownIcon />,
+        color: theme.palette.warning.main
+      }
+    ]
+  }, [detailData, theme])
 
   // ── Render ───────────────────────────────────────────────────────────────────
   if (selectedProgrammeId && detailData) {
@@ -351,6 +434,22 @@ export default function ProgrammesPage() {
     const detailProjects = detailData.projects
     const detailRisks = detailData.risks
     const detailIssues = detailData.issues
+
+    const escalatedRisks = detailRisks.filter((r) => r.pm_escalated)
+    const escalatedIssues = detailIssues.filter((i) => i.pm_escalationstatus)
+
+    const severityDistribution = {
+      high: detailRisks.filter((r) => String(r.pm_ragstatus ?? '') === '2').length,
+      medium: detailRisks.filter((r) => String(r.pm_ragstatus ?? '') === '0').length,
+      low: detailRisks.filter((r) => String(r.pm_ragstatus ?? '') === '1').length,
+    }
+
+    let specificGreen = 0, specificAmber = 0, specificRed = 0
+    for (const p of detailProjects) {
+      if (String(p.pm_ragstatus) === '1') specificGreen++
+      else if (String(p.pm_ragstatus) === '0') specificAmber++
+      else if (String(p.pm_ragstatus) === '2') specificRed++
+    }
 
     const projectColumns = [
       {
@@ -436,134 +535,244 @@ export default function ProgrammesPage() {
           }
         />
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: -1.5 }}>
-          <StatusChip status={prog?.pm_ragstatus} type="rag" size="small" />
-          <StatusChip status={prog?.pm_programmephase} type="prog_phase" size="small" />
-          {prog?.pm_portfolioname && (
-            <StatusTag label={prog.pm_portfolioname} size="small" color="primary" variant="outlined" />
-          )}
-        </Box>
-
         <Tabs
           value={detailTab}
           onChange={(_, v) => setDetailTab(v)}
-          sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}
+          sx={{ borderBottom: 1, borderColor: 'divider', mt: -2, mb: 1 }}
         >
           <Tab label="Overview & Projects" sx={{ textTransform: 'none', fontWeight: 600 }} />
           <Tab label="Master Schedule" sx={{ textTransform: 'none', fontWeight: 600 }} />
-          <Tab label="Documents & Tasks" sx={{ textTransform: 'none', fontWeight: 600 }} />
         </Tabs>
 
         {detailTab === 0 && (
-          <>
-            {/* 1. Financials KPI Cards at the top */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Financials
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Total Budget</Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
-                      {currencyFormatter.format(prog?.pm_budgeteur ?? 0)}
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Actual Spend</Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
-                      {currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Variance</Typography>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 700,
-                        mt: 0.5,
-                        color: ((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) < 0 ? 'error.main' : 'success.main'
-                      }}
-                    >
-                      {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              </Grid>
-            </Box>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            {/* Overview - 6/12 Width */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <DescriptionIcon sx={{ fontSize: 18, color: 'success.main' }} /> Overview
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5, flexGrow: 1 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr 1fr 1fr' }, gap: 2.5 }}>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Phase</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>
+                        {prog?.pm_programmephase !== undefined && prog?.pm_programmephase !== null
+                          ? ({ 0: 'Delivery', 1: 'Planning', 2: 'Initiation', 3: 'Under Approval' }[prog.pm_programmephase as number] ?? '—')
+                          : '—'}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Manager</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_programmemanagername || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Sponsor</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_sponsorname || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Unit</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{prog?.pm_businessunit || '—'}</Typography>
+                    </Box>
 
-            {/* 2. Overview Grouping: Details & Objectives */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Overview
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Details
-                    </Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Phase</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                          {['Delivery', 'Planning', 'Initiation'][Number(prog?.pm_programmephase)] ?? '—'}
-                        </Typography>
+                    {/* Visual Milestone Timeline */}
+                    <Box sx={{ gridColumn: 'span 4', mt: 1.5 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', mb: 1 }}>Timeline Pathway</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative', px: 1, py: 1 }}>
+                        {/* Connecting Line */}
+                        <Box sx={{
+                          position: 'absolute',
+                          left: 30,
+                          right: 30,
+                          top: 14,
+                          height: 4,
+                          bgcolor: 'action.hover',
+                          borderRadius: 2,
+                          zIndex: 1
+                        }}>
+                          <Box sx={{
+                            width: `${(() => {
+                              const start = prog?.pm_startdate ? new Date(prog.pm_startdate) : null;
+                              const end = prog?.pm_enddate ? new Date(prog.pm_enddate) : null;
+                              if (!start || !end) return 0;
+                              const total = end.getTime() - start.getTime();
+                              if (total <= 0) return 0;
+                              const elapsed = new Date().getTime() - start.getTime();
+                              return Math.min(100, Math.max(0, (elapsed / total) * 100));
+                            })()}%`,
+                            height: '100%',
+                            bgcolor: 'success.main',
+                            borderRadius: 2
+                          }} />
+                        </Box>
+
+                        {/* Start Node */}
+                        <Box sx={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'success.main', border: '2px solid', borderColor: 'background.paper', ml: 1.5 }} />
+                          <Typography variant="caption" sx={{ fontWeight: 700, mt: 1, color: 'text.secondary', fontSize: '0.72rem' }}>
+                            Start: {prog?.pm_startdate ? new Date(prog.pm_startdate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                          </Typography>
+                        </Box>
+
+                        <Box sx={{ flexGrow: 1 }} />
+
+                        {/* Today Node */}
+                        {(() => {
+                          const start = prog?.pm_startdate ? new Date(prog.pm_startdate) : null;
+                          const end = prog?.pm_enddate ? new Date(prog.pm_enddate) : null;
+                          const today = new Date();
+                          if (start && end && today >= start && today <= end) {
+                            const total = end.getTime() - start.getTime();
+                            const elapsed = today.getTime() - start.getTime();
+                            const percent = (elapsed / total) * 100;
+                            return (
+                              <Box sx={{
+                                position: 'absolute',
+                                left: `calc(${percent}% + ${30 - percent*0.6}px)`,
+                                top: 4,
+                                zIndex: 3,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center'
+                              }}>
+                                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'primary.main', border: '2px solid', borderColor: 'background.paper' }} />
+                                <Typography variant="caption" sx={{ fontWeight: 800, mt: 0.5, color: 'primary.main', fontSize: '0.62rem', whiteSpace: 'nowrap' }}>
+                                  Today
+                                </Typography>
+                              </Box>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                        {/* End Node */}
+                        <Box sx={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'divider', border: '2px solid', borderColor: 'background.paper', mr: 1.5 }} />
+                          <Typography variant="caption" sx={{ fontWeight: 700, mt: 1, color: 'text.secondary', fontSize: '0.72rem' }}>
+                            End: {prog?.pm_enddate ? new Date(prog.pm_enddate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                          </Typography>
+                        </Box>
                       </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Manager</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                          {prog?.pm_programmemanagername || '—'}
-                        </Typography>
+                    </Box>
+                  </Box>
+                  <Divider />
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', display: 'block', mb: 0.5 }}>Objectives</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, fontSize: '0.825rem' }}>{prog?.pm_programmedescription || 'No description provided.'}</Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+
+            {/* Overall Health - 6/12 Width */}
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <LightbulbIcon sx={{ fontSize: 18, color: 'success.main' }} /> Overall Health
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1, gap: 2 }}>
+                  {detailProjects.length > 0 ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, py: 1.5, justifyContent: 'center' }}>
+                        <Box sx={{ width: 160, height: 160, position: 'relative', flexShrink: 0 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={[
+                                  { name: 'Low Risk', value: specificGreen, color: theme.palette.success.main },
+                                  { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
+                                  { name: 'High Risk', value: specificRed, color: '#ef4444' },
+                                ].filter(d => d.value > 0)}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={45}
+                                outerRadius={68}
+                                paddingAngle={3}
+                                dataKey="value"
+                                stroke="none"
+                              >
+                                {[
+                                  { name: 'Low Risk', value: specificGreen, color: theme.palette.success.main },
+                                  { name: 'Medium Risk', value: specificAmber, color: '#f59e0b' },
+                                  { name: 'High Risk', value: specificRed, color: '#ef4444' },
+                                ].filter(d => d.value > 0).map((entry, idx) => (
+                                  <Cell key={`cell-${idx}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <RechartsTooltip formatter={(value) => [value, 'Projects']} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                            <Typography variant="h4" sx={{ fontWeight: 900, lineHeight: 1, fontFamily: '"Outfit", sans-serif' }}>
+                              {detailProjects.length}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              Projects
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.success.main, 0.08) : alpha(theme.palette.success.main, 0.05), border: '1px solid', borderColor: (theme) => alpha(theme.palette.success.main, 0.2) }}>
+                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: 'success.dark', fontWeight: 800 }}>
+                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'success.main' }} /> Low
+                            </Typography>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'success.dark', fontFamily: '"Outfit", sans-serif' }}>{specificGreen}</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.08)' : '#fffbeb', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.2)' }}>
+                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#92400e', fontWeight: 800 }}>
+                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f59e0b' }} /> Medium
+                            </Typography>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#92400e', fontFamily: '"Outfit", sans-serif' }}>{specificAmber}</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1.25, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.08)' : '#fef2f2', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.2)' }}>
+                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#991b1b', fontWeight: 800 }}>
+                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ef4444' }} /> High
+                            </Typography>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#991b1b', fontFamily: '"Outfit", sans-serif' }}>{specificRed}</Typography>
+                          </Box>
+                        </Box>
                       </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Sponsor</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                          {prog?.pm_sponsorname || '—'}
+
+                      <Box sx={{ p: 2, borderRadius: '16px', border: '1px dashed', borderColor: 'divider', bgcolor: 'background.default' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          Delivery Confidence
                         </Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Business Unit</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-                          {prog?.pm_businessunit || '—'}
+                        <Box sx={{ display: 'flex', gap: 0.5, height: 10, borderRadius: '5px', overflow: 'hidden', bgcolor: 'action.disabledBackground' }}>
+                          {specificGreen > 0 && <Box sx={{ width: `${(specificGreen / detailProjects.length) * 100}%`, bgcolor: theme.palette.success.main }} />}
+                          {specificAmber > 0 && <Box sx={{ width: `${(specificAmber / detailProjects.length) * 100}%`, bgcolor: '#f59e0b' }} />}
+                          {specificRed > 0 && <Box sx={{ width: `${(specificRed / detailProjects.length) * 100}%`, bgcolor: '#ef4444' }} />}
+                        </Box>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1, fontSize: '0.7rem', textAlign: 'center', fontWeight: 700 }}>
+                          {specificGreen === detailProjects.length ? '100% on track' : `${Math.round((specificGreen / detailProjects.length) * 100)}% of projects are on track`}
                         </Typography>
                       </Box>
                     </Box>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LightbulbIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Objectives
+                  ) : (
+                    <Typography variant="body2" color="text.disabled" sx={{ py: 2, textAlign: 'center' }}>
+                      No project data to analyze health
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                      {prog?.pm_programmedescription || 'No description provided.'}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              </Grid>
-            </Box>
+                  )}
+                  <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 1.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                    {detailProjects.length} entities tracked
+                  </Typography>
+                </Box>
+              </Paper>
+            </Grid>
 
-            {/* 3. Projects block using the generic DataverseTable */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Projects
-              </Typography>
-              <Paper variant="outlined" sx={{ p: 0, borderRadius: 1.5, overflow: 'hidden' }}>
-                <Box sx={{
-                  '& .MuiPaper-root': {
-                    boxShadow: 'none',
-                    border: 'none',
-                    bgcolor: 'transparent',
-                    backgroundImage: 'none',
-                    borderRadius: 0,
-                    mb: 0
-                  }
-                }}>
+            {/* Left Column: Tables and Risks */}
+            <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Projects Table */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <AccountTreeIcon sx={{ color: 'success.main', fontSize: 18 }} /> Linked Projects
+                  </Typography>
+                </Box>
+                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', '& .MuiPaper-root': { boxShadow: 'none', border: 'none', bgcolor: 'transparent', backgroundImage: 'none', borderRadius: 0, mb: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' } }}>
                   <DataverseTable
                     showExport={false}
                     minHeight={"auto"}
@@ -573,121 +782,200 @@ export default function ProgrammesPage() {
                     emptyIcon={<AccountTreeIcon />}
                     emptyTitle="No projects linked to this programme."
                     searchPlaceholder="Search projects..."
-                    searchFields={['pm_projectname', 'pm_projectcode']}
+                    searchFields={['pm_projectname']}
                   />
                 </Box>
               </Paper>
-            </Box>
 
-            {/* 4. Risks & Issues */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Escalated Risks & Issues
-              </Typography>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'error.main' }}>
-                      Risks ({detailRisks.length})
-                    </Typography>
-                    {detailRisks.length > 0 ? (
-                      detailRisks.map(r => (
-                        <Paper
-                          key={r.pm_riskid}
-                          variant="outlined"
-                          sx={{
-                            p: 1.5,
-                            mb: 1,
-                            borderRadius: 1,
-                            borderLeft: '3px solid',
-                            borderLeftColor: 'error.main',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                            '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' }
-                          }}
-                          onClick={() => r.pm_riskid && navigateToRisk(r.pm_riskid)}
-                        >
-                          <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {r.pm_risktitle}
-                            <OpenInNewIcon sx={{ fontSize: 12 }} />
-                          </Typography>
-                        </Paper>
-                      ))
-                    ) : (
-                      <Typography variant="caption" color="text.secondary">No escalated risks.</Typography>
-                    )}
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'warning.main' }}>
-                      Issues ({detailIssues.length})
-                    </Typography>
-                    {detailIssues.length > 0 ? (
-                      detailIssues.map(i => (
-                        <Paper
-                          key={i.pm_issueid}
-                          variant="outlined"
-                          sx={{
-                            p: 1.5,
-                            mb: 1,
-                            borderRadius: 1,
-                            borderLeft: '3px solid',
-                            borderLeftColor: 'warning.main',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                            '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' }
-                          }}
-                          onClick={() => i.pm_issueid && navigateToIssue(i.pm_issueid)}
-                        >
-                          <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {i.pm_issuetitle}
-                            <OpenInNewIcon sx={{ fontSize: 12 }} />
-                          </Typography>
-                        </Paper>
-                      ))
-                    ) : (
-                      <Typography variant="caption" color="text.secondary">No escalated issues.</Typography>
-                    )}
-                  </Grid>
-                </Grid>
+              {/* Documents */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <FolderIcon sx={{ fontSize: 18, color: 'success.main' }} /> Documents
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3 }}>
+                  <EntityDocumentsTab
+                    entityId={selectedProgrammeId}
+                    moduleName={MODULE_NAMES.PROGRAMMES.value}
+                    canEdit={canEdit}
+                  />
+                </Box>
               </Paper>
-            </Box>
-          </>
+            </Grid>
+
+            {/* Right Column: Cards */}
+            <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Approval Tasks */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <TaskAltIcon sx={{ fontSize: 18, color: 'success.main' }} /> Approval Tasks
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3 }}>
+                  <EntityApprovalTasks
+                    entityId={selectedProgrammeId}
+                    moduleName={MODULE_NAMES.PROGRAMMES.value}
+                    entityLabel="Programme"
+                    tabValue={0}
+                    index={0}
+                  />
+                </Box>
+              </Paper>
+
+              {/* Financials Card */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'success.main' }} /> Financials
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Total Budget</Typography>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'primary.main', mt: 0.5 }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Actual Spend</Typography>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'warning.main', mt: 0.5 }}>{currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}</Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Variance</Typography>
+                      <Typography variant="subtitle1" sx={{
+                        fontWeight: 800,
+                        color: 'info.main',
+                        mt: 0.5
+                      }}>
+                        {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
+                      </Typography>
+                    </Paper>
+                  </Box>
+
+                  <Box>
+                    <StatusProgressBar value={prog?.pm_actualspendeur ?? 0} total={prog?.pm_budgeteur ?? 0} label="Budget Utilization" />
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'right' }}>
+                      {prog?.pm_budgeteur && prog?.pm_budgeteur > 0 ? `${((prog?.pm_actualspendeur ?? 0) / prog?.pm_budgeteur * 100).toFixed(1)}% consumed` : ''}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ height: 135, mt: -1.5, mb: -1.5 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { name: 'Approved', amount: prog?.pm_budgeteur ?? 0, color: theme.palette.primary.main },
+                          { name: 'Spend', amount: prog?.pm_actualspendeur ?? 0, color: theme.palette.warning.main },
+                          { name: 'Variance', amount: Math.max(0, (prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)), color: theme.palette.info.main }
+                        ]}
+                        margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
+                      >
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: theme.palette.text.secondary }} stroke={theme.palette.divider} />
+                        <YAxis tick={{ fontSize: 9, fontFamily: 'monospace', fill: theme.palette.text.secondary }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
+                        <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
+                        <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={20}>
+                          {[
+                            { color: theme.palette.primary.main },
+                            { color: theme.palette.warning.main },
+                            { color: theme.palette.info.main }
+                          ].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+
+
+                </Box>
+              </Paper>
+
+              {/* Escalated Risks & Issues */}
+              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    <GppMaybeIcon sx={{ fontSize: 18, color: 'success.main' }} /> Escalated Risks & Issues
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3 }}>
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary', display: 'block', textTransform: 'uppercase' }}>
+                      Severity Distribution
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid size={{ xs: 4 }}>
+                        <Paper sx={{ p: 1.5, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(211,47,47,0.1)' : '#fee2e2', textAlign: 'center' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: 'error.main' }}>High</Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 700, color: 'error.main' }}>{severityDistribution.high}</Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid size={{ xs: 4 }}>
+                        <Paper sx={{ p: 1.5, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(237,108,2,0.1)' : '#fef3c7', textAlign: 'center' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: 'warning.main' }}>Medium</Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>{severityDistribution.medium}</Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid size={{ xs: 4 }}>
+                        <Paper sx={{ p: 1.5, borderRadius: '16px', border: 'none', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(46,125,50,0.1)' : '#dcfce7', textAlign: 'center' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: 'success.main' }}>Low</Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>{severityDistribution.low}</Typography>
+                        </Paper>
+                      </Grid>
+                    </Grid>
+                  </Box>
+
+                  <Grid container spacing={3}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'error.main' }}>
+                        Risks ({escalatedRisks.length})
+                      </Typography>
+                      {escalatedRisks.length > 0 ? (
+                        escalatedRisks.map(r => (
+                          <Paper
+                            key={r.pm_riskid}
+                            sx={{ p: 1.5, mb: 1, borderRadius: '12px', border: '1px solid', borderColor: 'divider', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'error.main' } }}
+                            onClick={() => r.pm_riskid && navigateToRisk(r.pm_riskid)}
+                          >
+                            <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              {r.pm_risktitle} <OpenInNewIcon sx={{ fontSize: 12 }} />
+                            </Typography>
+                          </Paper>
+                        ))
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">No escalated risks.</Typography>
+                      )}
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'warning.main' }}>
+                        Issues ({escalatedIssues.length})
+                      </Typography>
+                      {escalatedIssues.length > 0 ? (
+                        escalatedIssues.map(i => (
+                          <Paper
+                            key={i.pm_issueid}
+                            sx={{ p: 1.5, mb: 1, borderRadius: '12px', border: '1px solid', borderColor: 'divider', cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { bgcolor: 'action.hover', borderColor: 'warning.main' } }}
+                            onClick={() => i.pm_issueid && navigateToIssue(i.pm_issueid)}
+                          >
+                            <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              {i.pm_issuetitle} <OpenInNewIcon sx={{ fontSize: 12 }} />
+                            </Typography>
+                          </Paper>
+                        ))
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">No escalated issues.</Typography>
+                      )}
+                    </Grid>
+                  </Grid>
+                </Box>
+              </Paper>
+
+
+            </Grid>
+          </Grid>
         )}
 
         {detailTab === 1 && (
           <MasterScheduleTab projects={detailProjects} />
-        )}
-
-        {detailTab === 2 && (
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                  Approval Tasks
-                </Typography>
-                <EntityApprovalTasks
-                  entityId={selectedProgrammeId}
-                  moduleName={MODULE_NAMES.PROGRAMMES.value}
-                  entityLabel="Programme"
-                  tabValue={0}
-                  index={0}
-                />
-              </Paper>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                  Documents
-                </Typography>
-                <EntityDocumentsTab
-                  entityId={selectedProgrammeId}
-                  moduleName={MODULE_NAMES.PROGRAMMES.value}
-                  canEdit={canEdit}
-                />
-              </Paper>
-            </Grid>
-          </Grid>
         )}
 
         <ProgrammeFormDialog
@@ -720,8 +1008,102 @@ export default function ProgrammesPage() {
       />
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-      {!loading && <KpiCardRow items={kpiItems} />}
-      {!loading && <HealthSplitBar green={kpiData.green} amber={kpiData.amber} red={kpiData.red} sx={{ mb: 3 }} />}
+      {!loading && (
+        <Grid container spacing={2.5} sx={{ mb: 4 }}>
+          {kpiItems.map((kpi, idx) => {
+            const themeColor = kpi.color === 'primary.main' ? theme.palette.primary.main
+              : kpi.color === 'success.main' ? theme.palette.success.main
+                : kpi.color === 'warning.main' ? theme.palette.warning.main
+                  : kpi.color === 'error.main' ? theme.palette.error.main
+                    : theme.palette.primary.main;
+            return (
+              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }} key={idx}>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2.5,
+                    height: '100%',
+                    borderRadius: '20px',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    bgcolor: isDark ? 'background.paper' : '#fff',
+                    border: `1px solid ${alpha(themeColor, 0.15)}`,
+                    boxShadow: isDark
+                      ? `0 8px 30px ${alpha(themeColor, 0.05)}`
+                      : `0 8px 30px ${alpha(themeColor, 0.03)}`,
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: `0 12px 40px ${alpha(themeColor, 0.12)}`,
+                      borderColor: themeColor,
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 800,
+                        color: 'text.secondary',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        fontSize: '0.68rem',
+                      }}
+                    >
+                      {kpi.label}
+                    </Typography>
+                    <Avatar
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        bgcolor: alpha(themeColor, 0.1),
+                        color: themeColor,
+                        border: `1px solid ${alpha(themeColor, 0.2)}`,
+                        '& .MuiSvgIcon-root': { fontSize: 18 }
+                      }}
+                    >
+                      {kpi.icon}
+                    </Avatar>
+                  </Box>
+
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 900,
+                      letterSpacing: '-0.02em',
+                      color: isDark ? '#fff' : '#0f172a',
+                      fontFamily: '"Outfit", sans-serif',
+                      mb: 0.5,
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {kpi.value}
+                  </Typography>
+
+                  {kpi.subtitle && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', opacity: 0.8 }}>
+                      {kpi.subtitle}
+                    </Typography>
+                  )}
+
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '4px',
+                      background: `linear-gradient(90deg, ${themeColor}, ${alpha(themeColor, 0.3)})`,
+                    }}
+                  />
+                </Paper>
+              </Grid>
+            )
+          })}
+        </Grid>
+      )}
 
       <Paper sx={{ overflow: 'hidden', mb: 3 }}>
         <SearchFilterBar
@@ -744,8 +1126,10 @@ export default function ProgrammesPage() {
           extraFilters={
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               <FormControl size="small" sx={{ minWidth: 130 }}>
-                <InputLabel>RAG</InputLabel>
+                <InputLabel id="programme-rag-filter-label">RAG</InputLabel>
                 <Select
+                  id="programme-rag-filter-select"
+                  labelId="programme-rag-filter-label"
                   value={ragFilter}
                   label="RAG"
                   onChange={(e) => { setRagFilter(e.target.value); setPage(0) }}
@@ -889,8 +1273,8 @@ export default function ProgrammesPage() {
                     onClick={() => p.pm_programmeid && openDetail(p.pm_programmeid)}
                     sx={{
                       cursor: 'pointer',
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                      bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                      '&:hover': { bgcolor: 'action.selected' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
                     }}
@@ -899,7 +1283,7 @@ export default function ProgrammesPage() {
                     <TableCell><StatusChip status={p.pm_programmephase} type="prog_phase" size="small" /></TableCell>
                     <TableCell><StatusChip status={p.pm_ragstatus} type="rag" size="small" /></TableCell>
                     <TableCell><Typography variant="body2" color="text.secondary">{p.pm_programmemanagername || '—'}</Typography></TableCell>
-                    <TableCell><StatusTag label={p.pm_portfolioname || '—'} size="small" variant="outlined" color="primary" /></TableCell>
+                    <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{p.pm_portfolioname || '—'}</Typography></TableCell>
                     <TableCell align="right"><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{currencyFormatter.format(p.pm_budgeteur ?? 0)}</Typography></TableCell>
                     <TableCell align="right"><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{currencyFormatter.format(p.pm_actualspendeur ?? 0)}</Typography></TableCell>
                     <TableCell align="center" onClick={(e) => e.stopPropagation()}>
@@ -933,9 +1317,12 @@ export default function ProgrammesPage() {
               { label: 'Total budget', value: currencyFormatter.format(filteredProgrammes.reduce((s, p) => s + (p.pm_budgeteur ?? 0), 0)) },
               { label: 'Total actual', value: currencyFormatter.format(filteredProgrammes.reduce((s, p) => s + (p.pm_actualspendeur ?? 0), 0)) },
             ]}
+            page={page}
+            onPageChange={(_, v) => setPage(v)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
           />
         )}
-        <TablePagination component="div" count={filteredProgrammes.length} page={page} onPageChange={(_, v) => setPage(v)} rowsPerPage={rowsPerPage} onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))} />
       </Paper>
 
       <ProgrammeFormDialog

@@ -36,7 +36,6 @@ export interface Pm_programmesBase {
   pm_businessunit?: string;
   pm_enddate?: string;
   "pm_portfolio@odata.bind"?: string;
-  pm_portfoliocode?: string;
   pm_programmedescription?: string;
   pm_programmeid: string;
   "pm_ProgrammeManager@odata.bind"?: string;

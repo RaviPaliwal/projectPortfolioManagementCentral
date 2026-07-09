@@ -23,7 +23,7 @@ import type { HolidayModel } from '@/types/dataverse'
 import { 
   PageHeader, 
   KpiCardRow, 
-  DetailDrawer, 
+  Breadcrumbs,
   TabPanel, 
   ExportButton, 
   StatusTag, 
@@ -200,7 +200,7 @@ export default function HolidaysPage() {
     setSaving(true)
     setError(null)
     try {
-      const result = await Pm_holidaiesService.delete(deleteConfirm)
+      await Pm_holidaiesService.delete(deleteConfirm)
       setHolidays(prev => prev.filter(h => h.pm_holidayid !== deleteConfirm))
       setSuccessMsg('Holiday removed successfully.')
       setDeleteConfirm(null)
@@ -235,6 +235,8 @@ export default function HolidaysPage() {
         if (result.success && result.data) {
           setHolidays(prev => [result.data!, ...prev])
           created++
+        } else if (result.error) {
+          console.warn('[HolidaysPage] Skipping holiday seed due to error:', result.error)
         }
       }
       setSuccessMsg(`${created} Irish public holidays added for ${calendarYear}.`)
@@ -249,65 +251,73 @@ export default function HolidaysPage() {
 
   return (
     <Box>
-      <PageHeader
-        title="Holiday Calendar"
-        subtitle="Manage public holidays and configure Irish public holiday dates."
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <ExportButton data={filteredHolidays} columns={holidayExportColumns} filename={'HolidayCalendar_' + calendarYear} />
-            {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingHoliday(null); setShowForm(true); }}>
-                Add Holiday
-              </Button>
-            )}
-            <Button variant="outlined" startIcon={<FlagIcon />} size="small" onClick={() => setShowSeedConfirm(true)}>
-              Seed Irish Holidays
-            </Button>
-          </Box>
-        }
-      />
+      {!selectedHoliday ? (
+        <>
+          <PageHeader
+            title="Holiday Calendar"
+            subtitle="Manage public holidays and configure Irish public holiday dates."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <ExportButton data={filteredHolidays} columns={holidayExportColumns} filename={'HolidayCalendar_' + calendarYear} />
+                {canCreate && (
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditingHoliday(null); setShowForm(true); }}>
+                    Add Holiday
+                  </Button>
+                )}
+                <Button variant="outlined" startIcon={<FlagIcon />} size="small" onClick={() => setShowSeedConfirm(true)}>
+                  Seed Irish Holidays
+                </Button>
+              </Box>
+            }
+          />
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
+          <KpiCardRow items={kpiItems} loading={loading} />
+
+          <Tabs value={pageTab} onChange={(_, v) => setPageTab(v)} sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+            <Tab icon={<CalendarMonthIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Calendar View" />
+            <Tab icon={<ChecklistIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="List View" />
+          </Tabs>
+
+          <TabPanel value={pageTab} index={0} pt={0}>
+            <HolidayCalendar calendarYear={calendarYear} onNavigateYear={(delta) => setCalendarYear(prev => prev + delta)} loading={loading} calendarMonthData={calendarMonthData} onSelectHoliday={setSelectedHoliday} />
+          </TabPanel>
+
+          <TabPanel value={pageTab} index={1} pt={0}>
+            <HolidayTable loading={loading} filteredHolidays={filteredHolidays} searchQuery={searchQuery} onSearchChange={setSearchQuery} countryFilter={countryFilter} onFilterChange={setCountryFilter} countryOptions={COUNTRY_OPTIONS} onSelectHoliday={setSelectedHoliday} />
+          </TabPanel>
+        </>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Holiday Calendar', path: 'list' },
+              { label: selectedHoliday.pm_holidayname ?? 'Detail' }
+            ]}
+            onNavigate={() => setSelectedHoliday(null)}
+          />
+          <PageHeader
+            title={selectedHoliday?.pm_holidayname ?? ''}
+            subtitle={<StatusTag icon={<PublicIcon sx={{ fontSize: 14 }} />} label={selectedHoliday.pm_country || '—'} variant="outlined" />}
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {canEdit && (
+                  <Button variant="outlined" startIcon={<EditIcon />} onClick={() => { setEditingHoliday(selectedHoliday); setShowForm(true); }} sx={{ borderRadius: 1.5 }}>
+                    Edit
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => selectedHoliday?.pm_holidayid && setDeleteConfirm(selectedHoliday.pm_holidayid)} sx={{ borderRadius: 1.5 }}>
+                    Delete
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+          <HolidayDetail holiday={selectedHoliday} />
+        </Box>
       )}
-      {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-      <KpiCardRow items={kpiItems} loading={loading} />
 
-      <Tabs value={pageTab} onChange={(_, v) => setPageTab(v)} sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
-        <Tab icon={<CalendarMonthIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Calendar View" />
-        <Tab icon={<ChecklistIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="List View" />
-      </Tabs>
-
-      <TabPanel value={pageTab} index={0} pt={0}>
-        <HolidayCalendar calendarYear={calendarYear} onNavigateYear={(delta) => setCalendarYear(prev => prev + delta)} loading={loading} calendarMonthData={calendarMonthData} onSelectHoliday={setSelectedHoliday} />
-      </TabPanel>
-
-      <TabPanel value={pageTab} index={1} pt={0}>
-        <HolidayTable loading={loading} filteredHolidays={filteredHolidays} searchQuery={searchQuery} onSearchChange={setSearchQuery} countryFilter={countryFilter} onFilterChange={setCountryFilter} countryOptions={COUNTRY_OPTIONS} onSelectHoliday={setSelectedHoliday} />
-      </TabPanel>
-
-      <DetailDrawer
-        open={!!selectedHoliday}
-        onClose={() => setSelectedHoliday(null)}
-        icon={<CelebrationIcon sx={{ color: 'warning.main', fontSize: 22 }} />}
-        title={selectedHoliday?.pm_holidayname ?? ''}
-        subtitle={selectedHoliday && <StatusTag icon={<PublicIcon sx={{ fontSize: 14 }} />} label={selectedHoliday.pm_country || '—'} variant="outlined" />}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {canEdit && (
-              <ActionIcon icon={<EditIcon />} onClick={() => { setEditingHoliday(selectedHoliday); setShowForm(true); }} label="Edit" color="primary" />
-            )}
-            {canDelete && (
-              <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteConfirm(selectedHoliday?.pm_holidayid!)} label="Delete" color="error" />
-            )}
-          </Box>
-        }
-      >
-        {selectedHoliday && <HolidayDetail holiday={selectedHoliday} />}
-      </DetailDrawer>
 
       <HolidayForm
         open={showForm}

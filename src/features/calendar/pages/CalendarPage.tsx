@@ -932,73 +932,77 @@ export default function CalendarPage() {
         <Paper
           elevation={0}
           sx={{
-            p: 2,
+            p: 2.5,
             borderRadius: 2,
             border: `1px solid ${theme.palette.divider}`,
             bgcolor: 'background.paper',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </Typography>
-            <Box>
-              <IconButton size="small" onClick={() => {
-                const prev = new Date(currentDate)
-                prev.setMonth(currentDate.getMonth() - 1)
-                setCurrentDate(prev)
-              }}>
-                <ChevronLeftIcon fontSize="small" />
-              </IconButton>
-              <IconButton size="small" onClick={() => {
-                const next = new Date(currentDate)
-                next.setMonth(currentDate.getMonth() + 1)
-                setCurrentDate(next)
-              }}>
-                <ChevronRightIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Box>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.75, textAlign: 'center', mb: 1 }}>
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-              <Typography key={idx} variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.7rem' }}>
-                {day}
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </Typography>
-            ))}
-            {miniCalDays.map((item, idx) => {
-              const isSelected = item.dateObj && formatDateString(item.dateObj) === formatDateString(currentDate)
-              const isToday = item.dateObj && formatDateString(item.dateObj) === formatDateString(new Date())
-              return (
-                <Box
-                  key={idx}
-                  onClick={() => handleMiniCalDayClick(item.dateObj)}
-                  sx={{
-                    height: 26,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '50%',
-                    cursor: item.dayNum ? 'pointer' : 'default',
-                    fontSize: '0.75rem',
-                    fontWeight: isSelected || isToday ? 700 : 500,
-                    bgcolor: isSelected ? 'primary.main' : 'transparent',
-                    color: isSelected
-                      ? 'primary.contrastText'
-                      : isToday
-                        ? 'primary.main'
-                        : item.dayNum
-                          ? 'text.primary'
-                          : 'text.disabled',
-                    border: isToday && !isSelected ? `1px solid ${theme.palette.primary.main}` : 'none',
-                    '&:hover': {
-                      bgcolor: item.dayNum && !isSelected ? 'action.hover' : undefined,
-                    },
-                  }}
-                >
-                  {item.dayNum}
-                </Box>
-              )
-            })}
+              <Box>
+                <IconButton size="small" onClick={() => {
+                  const prev = new Date(currentDate)
+                  prev.setMonth(currentDate.getMonth() - 1)
+                  setCurrentDate(prev)
+                }}>
+                  <ChevronLeftIcon fontSize="small" />
+                </IconButton>
+                <IconButton size="small" onClick={() => {
+                  const next = new Date(currentDate)
+                  next.setMonth(currentDate.getMonth() + 1)
+                  setCurrentDate(next)
+                }}>
+                  <ChevronRightIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, textAlign: 'center', mb: 1.5 }}>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                <Typography key={idx} variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.75rem' }}>
+                  {day}
+                </Typography>
+              ))}
+              {miniCalDays.map((item, idx) => {
+                const isSelected = item.dateObj && formatDateString(item.dateObj) === formatDateString(currentDate)
+                const isToday = item.dateObj && formatDateString(item.dateObj) === formatDateString(new Date())
+                return (
+                  <Box
+                    key={idx}
+                    onClick={() => handleMiniCalDayClick(item.dateObj)}
+                    sx={{
+                      height: 28,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '50%',
+                      cursor: item.dayNum ? 'pointer' : 'default',
+                      fontSize: '0.8rem',
+                      fontWeight: isSelected || isToday ? 700 : 500,
+                      bgcolor: isSelected ? 'primary.main' : 'transparent',
+                      color: isSelected
+                        ? 'primary.contrastText'
+                        : isToday
+                          ? 'primary.main'
+                          : item.dayNum
+                            ? 'text.primary'
+                            : 'text.disabled',
+                      border: isToday && !isSelected ? `1px solid ${theme.palette.primary.main}` : 'none',
+                      '&:hover': {
+                        bgcolor: item.dayNum && !isSelected ? 'action.hover' : undefined,
+                      },
+                    }}
+                  >
+                    {item.dayNum}
+                  </Box>
+                )
+              })}
+            </Box>
           </Box>
           <Button
             fullWidth
@@ -1012,7 +1016,7 @@ export default function CalendarPage() {
               setCreateError(null)
               setIsNewEventOpen(true)
             }}
-            sx={{ mt: 1.5, textTransform: 'none', borderRadius: 1.5 }}
+            sx={{ textTransform: 'none', borderRadius: 1.5, py: 0.75, mt: 1.5, fontWeight: 600 }}
           >
             Add calendar
           </Button>
@@ -1022,45 +1026,59 @@ export default function CalendarPage() {
         <Paper
           elevation={0}
           sx={{
-            p: 2,
+            p: 2.5,
             borderRadius: 2,
             border: `1px solid ${theme.palette.divider}`,
             bgcolor: 'background.paper',
-            flexGrow: 1,
-            overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
             My calendars
           </Typography>
-          <FormGroup>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {CALENDAR_TYPES.map((type) => (
-              <FormControlLabel
+              <Box
                 key={type.id}
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={activeCalendars[type.id]}
-                    onChange={(e) =>
-                      setActiveCalendars((prev) => ({ ...prev, [type.id]: e.target.checked }))
-                    }
-                    sx={{
-                      color: type.color,
-                      '&.Mui-checked': {
+                sx={{
+                  p: 1,
+                  borderRadius: '12px',
+                  border: '1px solid',
+                  borderColor: activeCalendars[type.id] ? `${type.color}40` : 'divider',
+                  bgcolor: activeCalendars[type.id] ? `${type.color}08` : 'transparent',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    bgcolor: activeCalendars[type.id] ? `${type.color}15` : 'action.hover',
+                  }
+                }}
+              >
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={activeCalendars[type.id]}
+                      onChange={(e) =>
+                        setActiveCalendars((prev) => ({ ...prev, [type.id]: e.target.checked }))
+                      }
+                      sx={{
                         color: type.color,
-                      },
-                    }}
-                  />
-                }
-                label={
-                  <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.825rem' }}>
-                    {type.label}
-                  </Typography>
-                }
-                sx={{ mb: 0.5 }}
-              />
+                        '&.Mui-checked': {
+                          color: type.color,
+                        },
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem', color: activeCalendars[type.id] ? 'text.primary' : 'text.secondary' }}>
+                      {type.label}
+                    </Typography>
+                  }
+                  sx={{ m: 0, width: '100%' }}
+                />
+              </Box>
             ))}
-          </FormGroup>
+          </Box>
         </Paper>
       </Box>
 

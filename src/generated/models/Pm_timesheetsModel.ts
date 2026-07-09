@@ -31,7 +31,6 @@ export interface Pm_timesheetsBase {
   pm_periodenddate?: string;
   pm_periodstartdate?: string;
   pm_rejectionreason?: string;
-  pm_reportingperiod?: string;
   "pm_resource@odata.bind"?: string;
   pm_submissiondate?: string;
   pm_submittedby?: string;

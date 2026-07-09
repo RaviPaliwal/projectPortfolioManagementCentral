@@ -34,13 +34,12 @@ const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', cu
 
 const defaultProjectForm: Partial<ProjectModel> = {
   pm_projectname: '',
-  pm_projectcode: '',
   pm_projectmanager: '',
   pm_projectsponsor: '',
   pm_projectphase: '1',
   pm_ragstatus: '1',
-  pm_approvedbudgeteur: 0,
-  pm_actualcosteur: 0,
+  pm_approvedbudget: 0,
+  pm_actualcost: 0,
   pm_plannedstartdate: '',
   pm_plannedenddate: '',
   pm_actualstartdate: '',
@@ -92,8 +91,8 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
     // In edit mode, add back the current project's own budget since it was
     // subtracted from availableBudget in the parent's calculation and shouldn't
     // be counted against itself.
-    if (initialData?.pm_projectid && (initialData.pm_approvedbudgeteur ?? 0) > 0) {
-      available += initialData.pm_approvedbudgeteur ?? 0
+    if (initialData?.pm_projectid && (initialData.pm_approvedbudget ?? 0) > 0) {
+      available += initialData.pm_approvedbudget ?? 0
     }
     return { programmeBudget: progBudget, availableBudget: available }
   }, [selectedProgramme, initialData])
@@ -117,7 +116,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
   }, [form.pm_plannedstartdate, form.pm_plannedenddate, selectedProgramme])
 
   const hasDateErrors = !!dateErrors.startDate || !!dateErrors.endDate
-  const hasBudgetError = programmeBudgetInfo !== null && (form.pm_approvedbudgeteur ?? 0) > programmeBudgetInfo.availableBudget
+  const hasBudgetError = programmeBudgetInfo !== null && (form.pm_approvedbudget ?? 0) > programmeBudgetInfo.availableBudget
   const canSave = !!form.pm_projectname?.trim() && !hasDateErrors && !hasBudgetError
 
   // ── Filter programmes by selected portfolio ────────────────────────────
@@ -166,7 +165,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
       <DialogContent sx={{ pt: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           {initialData?.pm_projectid 
-            ? 'Update project details, timelines, and health indicators.'
+            ? 'Update project details, timelines, and risk indicators.'
             : 'Register a new project and associate it with a portfolio and programme.'}
         </Typography>
 
@@ -180,18 +179,16 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
         </Box>
 
         <Grid container spacing={2.5} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 8 }}>
+          <Grid size={{ xs: 12 }}>
             <TextField fullWidth label="Project name *" size="small" value={form.pm_projectname ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, pm_projectname: e.target.value }))} />
           </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField fullWidth label="Project code" size="small" value={form.pm_projectcode ?? ''}
-              onChange={(e) => setForm((p) => ({ ...p, pm_projectcode: e.target.value }))} />
-          </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Portfolio</InputLabel>
+              <InputLabel id="project-portfolio-label">Portfolio</InputLabel>
               <Select
+                id="project-portfolio-select"
+                labelId="project-portfolio-label"
                 value={form._pm_portfolio_value || ''}
                 label="Portfolio"
                 onChange={(e) => setForm((p) => ({ ...p, _pm_portfolio_value: e.target.value, _pm_programme_value: '' }))}
@@ -203,8 +200,10 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Programme</InputLabel>
+              <InputLabel id="project-programme-label">Programme</InputLabel>
               <Select
+                id="project-programme-select"
+                labelId="project-programme-label"
                 value={form._pm_programme_value || ''}
                 label="Programme"
                 onChange={(e) => setForm((p) => ({ ...p, _pm_programme_value: e.target.value }))}
@@ -217,8 +216,10 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Project manager</InputLabel>
+              <InputLabel id="project-manager-label">Project manager</InputLabel>
               <Select
+                id="project-manager-select"
+                labelId="project-manager-label"
                 value={form.pm_projectmanager || ''}
                 label="Project manager"
                 onChange={(e) => {
@@ -265,25 +266,27 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Priority</InputLabel>
+              <InputLabel id="project-priority-label">Priority</InputLabel>
               <Select
+                id="project-priority-select"
+                labelId="project-priority-label"
                 value={form.pm_projectpriority ?? 2}
                 label="Priority"
                 onChange={(e) => setForm((p) => ({ ...p, pm_projectpriority: e.target.value as number }))}
               >
-                <MenuItem value={1}>1 - High</MenuItem>
-                <MenuItem value={2}>2 - Medium</MenuItem>
-                <MenuItem value={3}>3 - Low</MenuItem>
+                <MenuItem value={1}>High</MenuItem>
+                <MenuItem value={2}>Medium</MenuItem>
+                <MenuItem value={3}>Low</MenuItem>
               </Select>
             </FormControl>
           </Grid>
         </Grid>
 
-        {/* Section: Status & Health */}
+        {/* Section: Status & Risk */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           <GppGoodIcon sx={{ fontSize: 18, color: 'primary.main' }} />
           <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-            Status & Health
+            Status & Risk
           </Typography>
           <Divider sx={{ flex: 1 }} />
         </Box>
@@ -354,15 +357,17 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
 
         <Grid container spacing={2.5} sx={{ mb: 4 }}>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth type="number" label="Approved Budget (EUR)" size="small" value={form.pm_approvedbudgeteur ?? 0}
-              onChange={(e) => setForm((p) => ({ ...p, pm_approvedbudgeteur: Number(e.target.value) }))}
+            <TextField fullWidth type="number" label="Approved Budget (EUR)" size="small" value={form.pm_approvedbudget ?? 0}
+              onChange={(e) => setForm((p) => ({ ...p, pm_approvedbudget: Number(e.target.value) }))}
               error={hasBudgetError}
-              helperText={hasBudgetError ? `Exceeds programme budget by ${currencyFormatter.format((form.pm_approvedbudgeteur ?? 0) - programmeBudgetInfo!.availableBudget)}` : ''}
+              helperText={hasBudgetError ? `Exceeds programme budget by ${currencyFormatter.format((form.pm_approvedbudget ?? 0) - programmeBudgetInfo!.availableBudget)}` : ''}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth type="number" label="Actual Cost (EUR)" size="small" value={form.pm_actualcosteur ?? 0}
-              onChange={(e) => setForm((p) => ({ ...p, pm_actualcosteur: Number(e.target.value) }))} />
+            <TextField fullWidth type="number" label="Actual Cost (EUR)" size="small" value={form.pm_actualcost ?? 0}
+              disabled
+              slotProps={{ input: { readOnly: true } }}
+            />
           </Grid>
         </Grid>
 
@@ -393,7 +398,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           <Box sx={{ mb: 2, p: 1.25, bgcolor: 'error.50', border: '1px solid', borderColor: 'error.200', display: 'flex', alignItems: 'center', gap: 1 }}>
             <WarningAmberIcon sx={{ fontSize: 18, color: 'error.main', flexShrink: 0 }} />
             <Typography variant="caption" color="error.dark" sx={{ fontWeight: 600 }}>
-              Approved budget exceeds programme budget by {currencyFormatter.format((form.pm_approvedbudgeteur ?? 0) - programmeBudgetInfo!.availableBudget)}.
+              Approved budget exceeds programme budget by {currencyFormatter.format((form.pm_approvedbudget ?? 0) - programmeBudgetInfo!.availableBudget)}.
             </Typography>
           </Box>
         )}

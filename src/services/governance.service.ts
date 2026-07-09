@@ -13,7 +13,9 @@ import type {
 } from '@/types/dataverse'
 import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
-import { fetchProjectDetails, fetchProjectsFull } from './project.service'
+import { fetchProjectDetails, fetchProjectsFull, updateProject, fetchProjectMilestones } from './project.service'
+import { fetchAllocatedResourcesByProject } from './resource.service'
+import { fetchWorkflows, startWorkflowForEntity } from './workflow.service'
 import { writeAuditLog } from './changelog.service'
 
 export const mapGateReview = (item: Pm_projectgatereviews): GateReviewModel => ({
@@ -100,7 +102,7 @@ export async function fetchGateReviewById(id: string): Promise<GateReviewModel |
       if (projId) {
         const proj = await fetchProjectDetails(projId)
         if (proj) {
-          review.pm_projectcode = proj.pm_projectcode ? `[${proj.pm_projectcode}] ${proj.pm_projectname || ''}` : proj.pm_projectname
+          review.pm_projectcode = proj.pm_projectname
           review.pm_projectname = proj.pm_projectname
           review.pm_programmename = proj.pm_programmename
           review.pm_portfolioname = proj.pm_portfolioname
@@ -150,7 +152,7 @@ export async function fetchGateReviews(): Promise<GateReviewModel[]> {
         const projId = normalizeLookupId(r._pm_project_value)
         if (projId && projectMap.has(projId)) {
           const p = projectMap.get(projId)!
-          r.pm_projectcode = p.pm_projectcode ? `[${p.pm_projectcode}] ${p.pm_projectname || ''}` : p.pm_projectname
+          r.pm_projectcode = p.pm_projectname
           r.pm_projectname = p.pm_projectname
           r.pm_programmename = p.pm_programmename
           r.pm_portfolioname = p.pm_portfolioname
@@ -239,6 +241,32 @@ export async function updateGateReview(id: string, changes: Partial<GateReviewMo
           })
         }
       })
+
+      // Auto-transition project phase when gate review is Approved (statuscode/reviewstatus = 0)
+      // reviewstatus option set values: 0 = Approved, 1 = Deferred, 2 = Rejected, 3 = Pending Review
+      if (changes.pm_reviewstatus === 0 && mapped._pm_project_value) {
+        const projectId = normalizeLookupId(mapped._pm_project_value)
+        if (projectId) {
+          // Gate Stage options: e.g. "Gate 1: Initiation to Planning" -> Move Project to Planning
+          // "Gate 2: Planning to Execution" -> Move Project to Execution
+          // "Gate 3: Execution to Closeout" -> Move Project to Closeout/Closure
+          let targetPhase: number | null = null
+          const gateStage = String(mapped.pm_gatestage || '').toLowerCase()
+
+          if (gateStage.includes('gate 1') || gateStage.includes('initiation')) {
+            targetPhase = 1 // Planning
+          } else if (gateStage.includes('gate 2') || gateStage.includes('planning')) {
+            targetPhase = 0 // Execution
+          } else if (gateStage.includes('gate 3') || gateStage.includes('execution')) {
+            targetPhase = 2 // Closure
+          }
+
+          if (targetPhase !== null) {
+            console.log(`[GovernanceService] Auto-transitioning project ${projectId} to phase ${targetPhase} due to gate approval.`)
+            await updateProject(projectId, { pm_projectphase: targetPhase } as any)
+          }
+        }
+      }
     }
     return mapped
   } catch (err) {
@@ -614,6 +642,151 @@ export async function deletePerformanceMeasure(id: string): Promise<void> {
   } catch (err) {
     console.error('[GovernanceService] deletePerformanceMeasure exception:', err)
     throw err
+  }
+}
+
+/**
+ * Checks if a project meets the criteria for entering the next stage.
+ */
+export async function evaluateGateTransitionPrerequisites(projectId: string, targetGateStage: string): Promise<{ ready: boolean; blockers: string[] }> {
+  const blockers: string[] = []
+  try {
+    const project = await fetchProjectDetails(projectId)
+    if (!project) {
+      return { ready: false, blockers: ['Project not found.'] }
+    }
+
+    const stage = targetGateStage.toLowerCase()
+
+    // Gate 1 (Initiation -> Planning) Checks
+    if (stage.includes('gate 1') || stage.includes('planning')) {
+      if (!project.pm_projectmanager) {
+        blockers.push('A Project Manager must be assigned.')
+      }
+      if (!project.pm_projectsponsor) {
+        blockers.push('A Project Sponsor must be defined.')
+      }
+    } 
+    // Gate 2 (Planning -> Execution) Checks
+    else if (stage.includes('gate 2') || stage.includes('execution')) {
+      const budgetVal = Number(project.pm_approvedbudget ?? 0)
+      if (budgetVal <= 0) {
+        blockers.push('Approved Budget must be greater than €0.')
+      }
+      if (!project.pm_plannedstartdate || !project.pm_plannedenddate) {
+        blockers.push('Planned Start Date and Planned End Date must be set.')
+      }
+      // Check for at least 1 resource allocation
+      const resources = await fetchAllocatedResourcesByProject(projectId)
+      if (resources.length === 0) {
+        blockers.push('At least one Resource Allocation is required.')
+      }
+    } 
+    // Gate 3 (Execution -> Closeout) Checks
+    else if (stage.includes('gate 3') || stage.includes('closeout') || stage.includes('closure')) {
+      if (Number(project.pm_percentcomplete ?? 0) < 100) {
+        blockers.push('Project must be 100% complete.')
+      }
+      // Check milestones
+      const milestones = await fetchProjectMilestones(projectId)
+      const uncompletedMilestones = milestones.filter(m => m.pm_status !== 'Completed' && m.pm_status !== '1') // Assuming status value
+      if (uncompletedMilestones.length > 0) {
+        blockers.push(`${uncompletedMilestones.length} milestone(s) are still uncompleted.`)
+      }
+    }
+
+  } catch (err) {
+    console.error('[GovernanceService] evaluateGateTransitionPrerequisites error:', err)
+    blockers.push('Verification engine failed to query project details.')
+  }
+
+  return {
+    ready: blockers.length === 0,
+    blockers,
+  }
+}
+
+/**
+ * Checks a project's state. If it qualifies for the gate stage of its current next boundary,
+ * automatically generates a Gate Review record with "Pending Review" status.
+ */
+export async function autoSubmitGateReviewRequest(projectId: string, currentPhase: number): Promise<GateReviewModel | null> {
+  try {
+    let gateStageName = ''
+    let nextPhaseName = ''
+    let gateStageValue = 0
+
+    if (currentPhase === 3) { // Initiation -> Planning
+      gateStageName = 'Gate 1: Initiation to Planning'
+      nextPhaseName = 'Planning'
+      gateStageValue = 0
+    } else if (currentPhase === 1) { // Planning -> Execution
+      gateStageName = 'Gate 2: Planning to Execution'
+      nextPhaseName = 'Execution'
+      gateStageValue = 1
+    } else if (currentPhase === 0) { // Execution -> Closure
+      gateStageName = 'Gate 3: Execution to Closeout'
+      nextPhaseName = 'Closure'
+      gateStageValue = 2
+    } else {
+      return null // Already complete or in invalid phase for gate submit
+    }
+
+    const { ready, blockers } = await evaluateGateTransitionPrerequisites(projectId, gateStageName)
+    if (!ready) {
+      console.log(`[GovernanceService] Project ${projectId} is not yet qualified for auto-submitting ${gateStageName}. Blockers:`, blockers)
+      return null
+    }
+
+    // Check if a request for this gate already exists in a pending or approved state
+    const existingResult = await Pm_projectgatereviewsService.getAll({
+      filter: `_pm_project_value eq '${projectId}' and pm_gatestage eq ${gateStageValue} and statecode eq 0`,
+      select: ['pm_projectgatereviewid', 'pm_reviewstatus'],
+    })
+    const existingList = unwrapList<any>(existingResult)
+    const hasAlreadySubmitted = existingList.some(g => g.pm_reviewstatus === 1 || g.pm_reviewstatus === 0 || g.pm_reviewstatus === '1' || g.pm_reviewstatus === '0')
+    if (hasAlreadySubmitted) {
+      console.log(`[GovernanceService] Gate review request for ${gateStageName} already exists. Skipping auto-submit.`)
+      return null
+    }
+
+    // Create the Gate Review Request in "Scheduled" (value: 1)
+    const newGateRequest = await createGateReview({
+      pm_gatename: `${gateStageName} Request (Auto-Submitted)`,
+      pm_gatestage: gateStageValue,
+      pm_reviewstatus: 1, // Scheduled
+      pm_reviewnotes: 'Auto-submitted by the System Quality/Readiness Engine. All stage prerequisites met.',
+      _pm_project_value: projectId,
+    })
+
+    if (newGateRequest && newGateRequest.pm_projectgatereviewid) {
+      console.log(`[GovernanceService] Auto-submitted Gate Review Request: ${newGateRequest.pm_gatename} (ID: ${newGateRequest.pm_projectgatereviewid})`)
+      
+      // Auto-trigger approval workflow if a template exists
+      try {
+        const workflows = await fetchWorkflows()
+        // Find active workflow corresponding to Gate Reviews
+        const gateWorkflow = workflows.find(w => w.pm_isactive && w.pm_module?.toLowerCase() === 'gate reviews')
+        if (gateWorkflow && gateWorkflow.pm_workflowid) {
+          console.log(`[GovernanceService] Automatically triggering workflow ${gateWorkflow.pm_workflowname} (ID: ${gateWorkflow.pm_workflowid}) for Gate Review ${newGateRequest.pm_projectgatereviewid}`)
+          await startWorkflowForEntity(
+            gateWorkflow.pm_workflowid,
+            newGateRequest.pm_projectgatereviewid,
+            'Gate Reviews',
+            'System'
+          )
+        } else {
+          console.warn('[GovernanceService] No active "Gate Reviews" workflow template found to auto-trigger.')
+        }
+      } catch (wfErr) {
+        console.error('[GovernanceService] Failed to auto-trigger workflow instance for gate review:', wfErr)
+      }
+    }
+    return newGateRequest;
+
+  } catch (err) {
+    console.error('[GovernanceService] autoSubmitGateReviewRequest failed:', err)
+    return null
   }
 }
 

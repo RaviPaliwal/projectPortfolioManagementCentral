@@ -6,9 +6,11 @@ import {
   useTheme,
   alpha,
   Tooltip,
+  IconButton,
 } from '@mui/material'
 import BusinessIcon from '@mui/icons-material/Business'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
+import LaunchIcon from '@mui/icons-material/Launch'
 import type { PortfolioModel, ProgrammeModel } from '@/types/dataverse'
 import { currencyFormatter } from '@/utils/formatters'
 import { normalizeLookupId } from '@/services'
@@ -82,10 +84,8 @@ const CardView: React.FC<CardViewProps> = ({ portfolios, programmes, projects, o
               overflow: 'hidden',
               border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
               transition: 'all 0.2s',
-              cursor: onItemClick ? 'pointer' : 'default',
               '&:hover': { borderColor: 'primary.main', boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.1)}` },
             }}
-            onClick={() => onItemClick?.(port.pm_portfolioid!, 'portfolio', port.pm_portfolioname!)}
           >
             {/* Portfolio Header */}
             <Box sx={{
@@ -126,6 +126,15 @@ const CardView: React.FC<CardViewProps> = ({ portfolios, programmes, projects, o
                   }} />
                 </Box>
               </Box>
+              {onItemClick && (
+                <Box sx={{ ml: 1, display: 'flex', alignItems: 'center' }}>
+                  <Tooltip title={`Open ${port.pm_portfolioname} details`}>
+                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); onItemClick?.(port.pm_portfolioid!, 'portfolio', port.pm_portfolioname!) }} sx={{ color: 'text.disabled' }}>
+                      <LaunchIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              )}
             </Box>
 
             {/* Programmes */}
@@ -141,7 +150,7 @@ const CardView: React.FC<CardViewProps> = ({ portfolios, programmes, projects, o
                     normalizeLookupId(pj._pm_programme_value) === normalizedProgId
                   ).length
 
-                  return (
+                    return (
                     <Paper
                       key={prog.pm_programmeid}
                       variant="outlined"
@@ -149,13 +158,11 @@ const CardView: React.FC<CardViewProps> = ({ portfolios, programmes, projects, o
                         p: 1.5, mb: 1, borderRadius: 2,
                         bgcolor: isDark ? alpha(theme.palette.background.paper, 0.5) : alpha(theme.palette.grey[50], 0.5),
                         border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-                        cursor: onItemClick ? 'pointer' : 'default',
                         display: 'flex', alignItems: 'center', gap: 1.5,
                         transition: 'all 0.15s',
                         '&:hover': { borderColor: 'secondary.main', bgcolor: alpha(theme.palette.secondary.main, 0.04) },
                         '&:last-child': { mb: 0 },
                       }}
-                      onClick={(e) => { e.stopPropagation(); onItemClick?.(prog.pm_programmeid!, 'programme', prog.pm_programmename!) }}
                     >
                       <Box sx={{
                         width: 32, height: 32, borderRadius: 1.5,
@@ -180,6 +187,15 @@ const CardView: React.FC<CardViewProps> = ({ portfolios, programmes, projects, o
                           </Typography>
                         </Box>
                       </Box>
+                      {onItemClick && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+                          <Tooltip title={`Open ${prog.pm_programmename} details`}>
+                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onItemClick?.(prog.pm_programmeid!, 'programme', prog.pm_programmename!) }} sx={{ color: 'text.disabled' }}>
+                              <LaunchIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      )}
                     </Paper>
                   )
                 })

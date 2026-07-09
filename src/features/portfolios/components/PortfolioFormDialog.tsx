@@ -207,8 +207,10 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Owner / Sponsor</InputLabel>
+                <InputLabel id="portfolio-owner-label">Owner / Sponsor</InputLabel>
                 <Select
+                  id="portfolio-owner-select"
+                  labelId="portfolio-owner-label"
                   value={formData.pm_ownerlookup}
                   label="Owner / Sponsor"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_ownerlookup: e.target.value }))}
@@ -240,8 +242,10 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Business Unit</InputLabel>
+                <InputLabel id="portfolio-bu-label">Business Unit</InputLabel>
                 <Select
+                  id="portfolio-bu-select"
+                  labelId="portfolio-bu-label"
                   value={formData.pm_businessunit}
                   label="Business Unit"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_businessunit: e.target.value }))}
@@ -255,24 +259,28 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Priority</InputLabel>
+                <InputLabel id="portfolio-priority-label">Priority</InputLabel>
                 <Select
+                  id="portfolio-priority-select"
+                  labelId="portfolio-priority-label"
                   value={formData.pm_prioritylevel}
                   label="Priority"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_prioritylevel: e.target.value as number }))}
                   sx={{ borderRadius: 1.5 }}
                 >
-                  <MenuItem value={1}>1 - High</MenuItem>
-                  <MenuItem value={2}>2 - Medium</MenuItem>
-                  <MenuItem value={3}>3 - Low</MenuItem>
-                  <MenuItem value={4}>4 - Very Low</MenuItem>
+                  <MenuItem value={1}>High</MenuItem>
+                  <MenuItem value={2}>Medium</MenuItem>
+                  <MenuItem value={3}>Low</MenuItem>
+                  <MenuItem value={4}>Very Low</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
+                <InputLabel id="portfolio-status-label">Status</InputLabel>
                 <Select
+                  id="portfolio-status-select"
+                  labelId="portfolio-status-label"
                   value={formData.pm_portfoliostatus}
                   label="Status"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_portfoliostatus: e.target.value as number }))}
@@ -286,8 +294,10 @@ export const PortfolioFormDialog: React.FC<PortfolioFormDialogProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>RAG Status</InputLabel>
+                <InputLabel id="portfolio-rag-label">RAG Status</InputLabel>
                 <Select
+                  id="portfolio-rag-select"
+                  labelId="portfolio-rag-label"
                   value={formData.pm_ragstatus}
                   label="RAG Status"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_ragstatus: e.target.value as number }))}

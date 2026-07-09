@@ -74,6 +74,8 @@ export interface Pm_risksBase {
   pm_inherentscore?: number;
   "pm_project@odata.bind"?: string;
   pm_ragstatus?: Pm_riskspm_ragstatus;
+  "pm_RegardingId@odata.bind"?: string;
+  pm_regardingidtype?: string;
   pm_residualimpact?: Pm_riskspm_residualimpact;
   pm_residualprobability?: Pm_riskspm_residualprobability;
   pm_residualscore?: number;
@@ -112,6 +114,8 @@ export interface Pm_risks extends Pm_risksBase {
   pm_inherentprobabilityname?: string;
   pm_projectname?: string;
   pm_ragstatusname?: string;
+  pm_regardingidname?: string;
+  pm_regardingidyominame?: string;
   pm_residualimpactname?: string;
   pm_residualprobabilityname?: string;
   pm_responsestrategyname?: string;
@@ -137,6 +141,8 @@ export interface Pm_risks extends Pm_risksBase {
   _owninguser_value?: string;
   pm_project?: object;
   _pm_project_value?: string;
+  pm_regardingid?: object;
+  _pm_regardingid_value?: string;
   pm_riskowner?: object;
   _pm_riskowner_value?: string;
 }

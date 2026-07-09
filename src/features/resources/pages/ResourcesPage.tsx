@@ -70,10 +70,10 @@ import {
 import type { ExportColumn } from '@/utils/exportUtils'
 import type { ResourceModel, ResourceAllocationModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, ActionIcon, WorkflowMilestone } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, Breadcrumbs, SearchFilterBar, TabPanel, ExportButton, ActionIcon, WorkflowMilestone } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import type { KpiCardItem, FilterOption } from '@/components/common'
-import  { StatusTag } from '@/components/common'
+import { StatusTag } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import { useUser } from '@/context/UserContext'
 import {
@@ -183,7 +183,7 @@ export default function ResourcesPage() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('')
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [sort, setSort] = useState<SortState>({ field: 'name', dir: 'asc' })
 
   // Detail panel state
@@ -582,8 +582,9 @@ export default function ResourcesPage() {
           {!loading && <KpiCardRow items={kpiItems} />}
 
           {/* ── Resource Grid ─────────────────────────────── */}
-          <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-            <SearchFilterBar
+          {!selectedResource && (
+            <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+              <SearchFilterBar
               searchQuery={searchQuery}
               onSearchChange={handleSearchChange}
               searchPlaceholder="Search by name, role, department, email..."
@@ -654,8 +655,8 @@ export default function ResourcesPage() {
                       onClick={() => handleRowClick(resource)}
                       sx={{
                         cursor: 'pointer',
-                        bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                        '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                        bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                        '&:hover': { bgcolor: 'action.selected' },
                         transition: 'background-color 0.15s ease',
                         '& td': { px: 2.5, py: 1.25 },
                       }}
@@ -739,85 +740,83 @@ export default function ResourcesPage() {
                 filteredCount={filteredResources.length}
                 totalCount={resources.length}
                 itemLabel="resource"
-              />
-            )}
-            {!loading && filteredResources.length > 0 && (
-              <TablePagination
-                component="div"
-                count={filteredResources.length}
                 page={page}
-                onPageChange={handleChangePage}
+                onPageChange={(_, p) => setPage(p)}
                 rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[25, 50, 100]}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10))
+                  setPage(0)
+                }}
               />
             )}
           </Paper>
+          )}
 
-          {/* ── Detail Drawer ────────────────────────────── */}
-          <DetailDrawer
-            open={!!selectedResource}
-            onClose={handleCloseDetail}
-            icon={<PersonIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
-            title={selectedResource?.pm_fullname ?? ''}
-            subtitle={selectedResource && (
-              <>
-                {selectedResource.pm_positiontitle && (
-                  <Typography variant="body2" color="text.secondary">
-                    <BadgeIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                    {selectedResource.pm_positiontitle}
-                  </Typography>
-                )}
-                {selectedResource.pm_departmentname && (
-                  <Typography variant="body2" color="text.secondary">
-                    <BusinessCenterIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                    {selectedResource.pm_departmentname}
-                  </Typography>
-                )}
-                {selectedResource._pm_systemuser_value && (
-                  <Typography variant="body2" color="text.secondary">
-                    <EmailIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                    System User: {selectedResource._pm_systemuser_value}
-                  </Typography>
-                )}
-                <StatusTag
-                  label={CATEGORY_LABELS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'Unknown'}
-                  color={CATEGORY_COLORS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'default'}
-                  size="small"
-                  variant="outlined"
-                />
-              </>
-            )}
-            headerActions={
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                {canEdit && (
-                  <ActionIcon
-                    icon={<EditIcon />}
-                    onClick={() => selectedResource && openEditForm(selectedResource)}
-                    label="Edit Resource"
-                    color="primary"
-                  />
-                )}
-                {canDelete && (
-                  <ActionIcon
-                    icon={<DeleteIcon />}
-                    onClick={() => selectedResource?.pm_resourceid && setDeleteConfirm(selectedResource.pm_resourceid)}
-                    label="Delete Resource"
-                    color="error"
-                  />
-                )}
+          {/* ── Detail View ────────────────────────────── */}
+          {selectedResource && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+              <Breadcrumbs
+                items={[
+                  { label: 'Directory', path: 'list' },
+                  { label: selectedResource.pm_fullname ?? 'Detail' }
+                ]}
+                onNavigate={() => handleCloseDetail()}
+              />
+              <PageHeader
+                title={selectedResource?.pm_fullname ?? ''}
+                subtitle={
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: 1 }}>
+                    {selectedResource.pm_positiontitle && (
+                      <Typography variant="body2" color="text.secondary">
+                        <BadgeIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                        {selectedResource.pm_positiontitle}
+                      </Typography>
+                    )}
+                    {selectedResource.pm_departmentname && (
+                      <Typography variant="body2" color="text.secondary">
+                        <BusinessCenterIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                        {selectedResource.pm_departmentname}
+                      </Typography>
+                    )}
+
+                    <StatusTag
+                      label={CATEGORY_LABELS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'Unknown'}
+                      color={CATEGORY_COLORS[String(selectedResource.pm_resourcecategory ?? '')] ?? 'default'}
+                      size="small"
+                      variant="outlined"
+                    />
+                  </Box>
+                }
+                actionElement={
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {canEdit && (
+                      <Button variant="outlined" startIcon={<EditIcon />} onClick={() => selectedResource && openEditForm(selectedResource)} sx={{ borderRadius: 1.5 }}>
+                        Edit Resource
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => selectedResource?.pm_resourceid && setDeleteConfirm(selectedResource.pm_resourceid)} sx={{ borderRadius: 1.5 }}>
+                        Delete Resource
+                      </Button>
+                    )}
+                  </Box>
+                }
+              />
+
+              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                <Tabs
+                  value={detailTab}
+                  onChange={(_, v) => { setDetailTab(v); setError(null) }}
+                  sx={{
+                    '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 14, minHeight: 40, px: 3 },
+                    '& .Mui-selected': { color: 'primary.main' },
+                  }}
+                >
+                  <Tab label="Overview" />
+                  <Tab label={`Allocations (${resourceAllocations.length})`} />
+                </Tabs>
               </Box>
-            }
-            tabs={[
-              { label: 'Overview' },
-              { label: 'Assignments', count: resourceAllocations.length },
-              { label: 'Approval' },
-              { label: 'Tasks' },
-            ]}
-            tabValue={detailTab}
-            onTabChange={(v) => { setDetailTab(v); setError(null) }}
-          >
-            {selectedResource && (
+
               <>
                 {/* Overview Tab */}
                 <TabPanel value={detailTab} index={0} pt={0}>
@@ -856,14 +855,6 @@ export default function ResourcesPage() {
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Department</Typography>
                           <Typography variant="body2">{selectedResource.pm_departmentname || '—'}</Typography>
                         </Box>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>System User ID</Typography>
-                          <Typography variant="body2">{selectedResource._pm_systemuser_value || '—'}</Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Supplier</Typography>
-                          <Typography variant="body2">{selectedResource.pm_suppliercompany || '—'}</Typography>
-                        </Box>
                         {selectedResource.pm_contractstartdate && (
                           <Box>
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Contract Start</Typography>
@@ -890,22 +881,41 @@ export default function ResourcesPage() {
                             {resourceAllocations.reduce((s, a) => s + (a.pm_allocatedhours ?? 0), 0)}h
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Total allocated hours across {resourceAllocations.length} assignment{resourceAllocations.length !== 1 ? 's' : ''}
+                            Total allocated hours across {resourceAllocations.length} allocation{resourceAllocations.length !== 1 ? 's' : ''}
                           </Typography>
                         </>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          No current assignments. Allocate this resource to projects from the Assignments tab.
+                          No current allocations. Allocate this resource to projects from the Allocations tab.
                         </Typography>
                       )}
                     </Paper>
                   </Box>
                 </TabPanel>
 
-                {/* Assignments Tab */}
+                {/* Allocations Tab */}
                 <TabPanel value={detailTab} index={1} pt={0}>
                   {resourceAllocations.length > 0 ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 1 }}>
+                        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Hours Allocated</Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>
+                            {resourceAllocations.reduce((acc, curr) => acc + (curr.pm_allocatedhours || 0), 0)}h
+                          </Typography>
+                          <LinearProgress variant="determinate" value={100} sx={{ height: 6, borderRadius: 3 }} />
+                        </Paper>
+                        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Average Allocation %</Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main', fontFamily: '"JetBrains Mono", monospace' }}>
+                            {Math.round(resourceAllocations.reduce((acc, curr) => acc + (curr.pm_allocationpercentage || 0), 0) / resourceAllocations.length)}%
+                          </Typography>
+                          <LinearProgress variant="determinate" value={Math.round(resourceAllocations.reduce((acc, curr) => acc + (curr.pm_allocationpercentage || 0), 0) / resourceAllocations.length)} color="success" sx={{ height: 6, borderRadius: 3 }} />
+                        </Paper>
+                      </Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 1, mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <WorkIcon sx={{ fontSize: 16 }} /> Detailed Allocations
+                      </Typography>
                       {resourceAllocations.map((alloc) => (
                         <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -938,58 +948,14 @@ export default function ResourcesPage() {
                     </Box>
                   ) : (
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
-                      No assignments for this resource yet.
+                      No allocations for this resource yet.
                     </Typography>
                   )}
                 </TabPanel>
 
-                {/* Approval Tab */}
-                <TabPanel value={detailTab} index={2} pt={0}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <TimelineIcon sx={{ fontSize: 20 }} /> Approval Workflow Timeline
-                  </Typography>
-                  {resourceAllocations.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {resourceAllocations.map((alloc) => (
-                        <Paper key={alloc.pm_resourceallocationid} variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <WorkIcon sx={{ fontSize: 16 }} />
-                            {alloc.pm_assignmentrole || 'Unspecified Role'}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                            {alloc.pm_allocatedhours ?? 0}h A� {alloc.pm_allocationpercentage ?? 0}%
-                            {alloc.pm_startdate ? ` A� ${new Date(alloc.pm_startdate).toLocaleDateString()} \u2192 ${alloc.pm_enddate ? new Date(alloc.pm_enddate).toLocaleDateString() : '\u2014'}` : ''}
-                          </Typography>
-                          {alloc.pm_resourceallocationid && (
-                            <WorkflowMilestone
-                              moduleName={MODULE_NAMES.RESOURCES.value}
-                              entityId={alloc.pm_resourceallocationid}
-                            />
-                          )}
-                        </Paper>
-                      ))}
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 6 }}>
-                      No allocations with workflow tracking yet.
-                    </Typography>
-                  )}
-                </TabPanel>
-
-                <TabPanel value={detailTab} index={3} pt={0}>
-                  {selectedResource?.pm_resourceid && (
-                    <EntityApprovalTasks
-                      entityId={selectedResource.pm_resourceid}
-                      moduleName={MODULE_NAMES.RESOURCES.value}
-                      entityLabel="Resource"
-                      tabValue={detailTab}
-                      index={3}
-                    />
-                  )}
-                </TabPanel>
               </>
-            )}
-          </DetailDrawer>
+            </Box>
+          )}
 
           {/* ── Create/Edit Modal ──────────────────────── */}
           <Dialog
@@ -1034,8 +1000,10 @@ export default function ResourcesPage() {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>Category</InputLabel>
+                    <InputLabel id="resource-category-label">Category</InputLabel>
                     <Select
+                      id="resource-category-select"
+                      labelId="resource-category-label"
                       value={formData.pm_resourcecategory}
                       label="Category"
                       onChange={(e) => setFormData((f) => ({ ...f, pm_resourcecategory: e.target.value as number }))}
@@ -1079,8 +1047,10 @@ export default function ResourcesPage() {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth size="small" error={!!systemUserConflict}>
-                    <InputLabel>System User</InputLabel>
+                    <InputLabel id="resource-system-user-label">System User</InputLabel>
                     <Select
+                      id="resource-system-user-select"
+                      labelId="resource-system-user-label"
                       value={users.find((u) => u.systemuserid === formData._pm_systemuser_value)?.systemuserid || ''}
                       label="System User"
                       onChange={(e) => setFormData(f => ({ ...f, _pm_systemuser_value: e.target.value }))}
@@ -1590,7 +1560,7 @@ function ForecastingView({ capacityData, plannedVsActual, utilizationByProject, 
   return (
     <Box>
       {/* Forecasting KPIs */}
-      <KpiCardRow items={forecasterKpis} />
+      <KpiCardRow items={forecasterKpis} variant="compact" />
 
       {/* Two-column chart layout */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 3, mb: 3 }}>

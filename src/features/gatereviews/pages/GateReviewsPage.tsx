@@ -422,8 +422,14 @@ export default function GateReviewsPage() {
             <Grid size={{ xs: 12 }}><TextField label="Gate Name" fullWidth size="small" value={formData.pm_gatename} onChange={(e) => setFormData(f => ({ ...f, pm_gatename: e.target.value }))} /></Grid>
             <Grid size={{ xs: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Stage</InputLabel>
-                <Select value={formData.pm_gatestage} label="Stage" onChange={(e) => setFormData(f => ({ ...f, pm_gatestage: e.target.value as number }))}>
+                <InputLabel id="gate-review-stage-label">Stage</InputLabel>
+                <Select
+                  id="gate-review-stage-select"
+                  labelId="gate-review-stage-label"
+                  value={formData.pm_gatestage}
+                  label="Stage"
+                  onChange={(e) => setFormData(f => ({ ...f, pm_gatestage: e.target.value as number }))}
+                >
                   <MenuItem value={0}>Gate 1</MenuItem><MenuItem value={1}>Gate 2</MenuItem><MenuItem value={2}>Gate 3</MenuItem><MenuItem value={3}>Gate 4</MenuItem>
                 </Select>
               </FormControl>

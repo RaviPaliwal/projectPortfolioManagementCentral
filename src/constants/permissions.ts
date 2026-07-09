@@ -275,6 +275,12 @@ function normalizeUserId(id: string): string {
 
 /** Get the manual persona override for a user, or null if none set. */
 export function getPersonaOverride(userId: string): Persona | null {
+  // Security check: Only allow persona overrides in development mode
+  const isDev = (typeof window !== 'undefined' && (window as any).process?.env?.NODE_ENV === 'development') || 
+                (import.meta as any).env?.DEV || 
+                (import.meta as any).env?.VITE_ALLOW_PERSONA_OVERRIDE === 'true';
+  if (!isDev) return null;
+
   try {
     const key = OVERRIDE_PREFIX + normalizeUserId(userId)
     const stored = localStorage.getItem(key)
@@ -282,7 +288,7 @@ export function getPersonaOverride(userId: string): Persona | null {
       return stored as Persona
     }
   } catch { /* localStorage may be unavailable */ }
-  return null
+  return null;
 }
 
 /** Set a manual persona override for a user. Pass null to clear. */
@@ -300,6 +306,12 @@ export function setPersonaOverride(userId: string, persona: Persona | null): voi
 /** Get all persona overrides as a record of userId → persona. */
 export function getAllPersonaOverrides(): Record<string, Persona> {
   const overrides: Record<string, Persona> = {}
+  // Security check: Only allow persona overrides in development mode
+  const isDev = (typeof window !== 'undefined' && (window as any).process?.env?.NODE_ENV === 'development') || 
+                (import.meta as any).env?.DEV || 
+                (import.meta as any).env?.VITE_ALLOW_PERSONA_OVERRIDE === 'true';
+  if (!isDev) return overrides;
+
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
@@ -312,7 +324,7 @@ export function getAllPersonaOverrides(): Record<string, Persona> {
       }
     }
   } catch { /* localStorage may be unavailable */ }
-  return overrides
+  return overrides;
 }
 
 /**

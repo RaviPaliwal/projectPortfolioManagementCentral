@@ -7,6 +7,14 @@ export const Pm_resourceallocationspm_assignmentstatus = {
   1: 'Complete'
 } as const;
 export type Pm_resourceallocationspm_assignmentstatus = keyof typeof Pm_resourceallocationspm_assignmentstatus;
+export const Pm_resourceallocationspm_performancescore = {
+  1: '_1',
+  2: '_2',
+  3: '_3',
+  4: '_4',
+  5: '_5'
+} as const;
+export type Pm_resourceallocationspm_performancescore = keyof typeof Pm_resourceallocationspm_performancescore;
 export const Pm_resourceallocationsstatecode = {
   0: 'Active',
   1: 'Inactive'
@@ -30,6 +38,8 @@ export interface Pm_resourceallocationsBase {
   pm_assignmentstatus?: Pm_resourceallocationspm_assignmentstatus;
   pm_enddate?: string;
   pm_notes?: string;
+  pm_performancemeasure?: string;
+  pm_performancescore?: Pm_resourceallocationspm_performancescore;
   "pm_project@odata.bind"?: string;
   "pm_projecttask@odata.bind"?: string;
   "pm_resource@odata.bind"?: string;
@@ -58,6 +68,7 @@ export interface Pm_resourceallocations extends Pm_resourceallocationsBase {
   owneridyominame: string;
   owningbusinessunitname: string;
   pm_assignmentstatusname?: string;
+  pm_performancescorename?: string;
   pm_projectname?: string;
   pm_projecttaskname?: string;
   pm_resourcename?: string;

@@ -96,8 +96,8 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
         if (changeRequest._pm_project_value && (costImpact > 0 || scheduleImpact > 0)) {
           const projectUpdates: Partial<ProjectModel> = {}
           if (costImpact > 0 && linkedProject) {
-            const currentBudget = linkedProject.pm_approvedbudgeteur ?? 0
-            projectUpdates.pm_approvedbudgeteur = currentBudget + costImpact
+            const currentBudget = linkedProject.pm_approvedbudget ?? 0
+            projectUpdates.pm_approvedbudget = currentBudget + costImpact
           }
           if (scheduleImpact > 0 && linkedProject && linkedProject.pm_plannedenddate) {
             const currentEnd = new Date(linkedProject.pm_plannedenddate)

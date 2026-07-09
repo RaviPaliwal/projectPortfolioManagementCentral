@@ -513,6 +513,8 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
                 <TableCell>
                   <FormControl size="small" fullWidth>
                     <Select
+                      id={`wbs-predecessor-${index}`}
+                      inputProps={{ 'aria-label': 'Predecessor Task' }}
                       value={task._pm_predecessortask_value || ''}
                       onChange={(e) => handlePredecessorChange(index, e.target.value as string)}
                       sx={{ borderRadius: 1.15, fontSize: fontSizes.xs }}

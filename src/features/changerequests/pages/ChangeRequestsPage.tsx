@@ -6,7 +6,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Grid, TextField, FormControl, InputLabel, Select,
   MenuItem, Divider, Avatar, LinearProgress,
-  Switch, FormControlLabel,
+  Switch, FormControlLabel, Tabs, Tab,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -48,7 +48,7 @@ import { useUser } from '@/context/UserContext'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
 import type { ExportColumn } from '@/utils/exportUtils'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, ConfirmDialog, EntityDocumentsTab } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, Breadcrumbs, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, ConfirmDialog, EntityDocumentsTab } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { KpiCardItem, FilterOption } from '@/components/common'
@@ -158,7 +158,7 @@ export default function ChangeRequestsPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [sort, setSort] = useState<SortState>({ field: 'title', dir: 'asc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   const [selectedCR, setSelectedCR] = useState<ChangeRequestModel | null>(null)
   const [detailTab, setDetailTab] = useState(0)
@@ -477,7 +477,10 @@ export default function ChangeRequestsPage() {
     try {
       const payload = { ...formData }
       if (editingCR?.pm_changerequestid) {
-        await updateChangeRequest(editingCR.pm_changerequestid, payload)
+        const result = await updateChangeRequest(editingCR.pm_changerequestid, payload)
+        if (!result) {
+          throw new Error('Update returned empty response')
+        }
         createdId = editingCR.pm_changerequestid
         isUpdate = true
         setSuccessMsg('Change request updated successfully.')
@@ -485,7 +488,10 @@ export default function ChangeRequestsPage() {
         // Auto-generate reference for new change requests
         payload.pm_changerequestreference = autoGenerateReference()
         const created = await createChangeRequest(payload)
-        createdId = created?.pm_changerequestid ?? null
+        if (!created) {
+          throw new Error('Create returned empty response')
+        }
+        createdId = created.pm_changerequestid ?? null
         setSuccessMsg('Change request created successfully.')
 
         // Auto-trigger workflow after creation
@@ -572,28 +578,33 @@ export default function ChangeRequestsPage() {
 
   return (
     <Box>
-      <PageHeader
-        title="Change Requests"
-        subtitle="Manage scope, schedule, cost, and resource changes across projects and programmes \u2014 track lifecycle from submission to approval."
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <ExportButton data={filteredCRs} columns={changeRequestExportColumns} filename="change_requests" />
-            {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-                Add Change Request
-              </Button>
-            )}
-          </Box>
-        }
-      />
+      {!selectedCR && (
+        <>
+          <PageHeader
+            title="Change Requests"
+            subtitle="Manage scope, schedule, cost, and resource changes across projects and programmes \u2014 track lifecycle from submission to approval."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <ExportButton data={filteredCRs} columns={changeRequestExportColumns} filename="change_requests" />
+                {canCreate && (
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+                    Add Change Request
+                  </Button>
+                )}
+              </Box>
+            }
+          />
 
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-      {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+          {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-      {!loading && <KpiCardRow items={kpiItems} />}
+          {!loading && <KpiCardRow items={kpiItems} />}
+        </>
+      )}
 
-      <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-        <SearchFilterBar
+      {!selectedCR ? (
+        <Paper sx={{ overflow: 'hidden', mb: 3 }}>
+          <SearchFilterBar
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
           searchPlaceholder="Search by title, reference, requestor, project..."
@@ -668,8 +679,8 @@ export default function ChangeRequestsPage() {
                   onClick={() => handleRowClick(cr)}
                   sx={{
                     cursor: 'pointer',
-                    bgcolor: idx % 2 === 1 ? (isDark ? 'action.hover' : 'background.default') : 'transparent',
-                    '&:hover': { bgcolor: isDark ? 'action.selected' : 'primary.light' },
+                    bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                    '&:hover': { bgcolor: 'action.selected' },
                     transition: 'background-color 0.15s ease',
                     '& td': { px: 2.5, py: 1.25 },
                   }}
@@ -729,209 +740,254 @@ export default function ChangeRequestsPage() {
         </TableShell>
 
         {!loading && filteredCRs.length > 0 && (
-          <>
-            <TableFooter
-              filteredCount={filteredCRs.length}
-              totalCount={changeRequests.length}
-              itemLabel="change request"
-              totals={[
-                { label: 'Total cost impact', value: '\u20AC' + numberFormatter.format(filteredCRs.reduce((s, cr) => s + (cr.pm_costimpacteur ?? 0), 0)) },
-                { label: 'Total schedule impact', value: filteredCRs.reduce((s, cr) => s + (cr.pm_scheduleimpactdays ?? 0), 0) + ' days' },
-              ]}
-            />
-            <TablePagination
-              component="div"
-              count={filteredCRs.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[25, 50, 100]}
-            />
-          </>
+          <TableFooter
+            filteredCount={filteredCRs.length}
+            totalCount={changeRequests.length}
+            itemLabel="change request"
+            totals={[
+              { label: 'Total cost impact', value: '\u20AC' + numberFormatter.format(filteredCRs.reduce((s, cr) => s + (cr.pm_costimpacteur ?? 0), 0)) },
+              { label: 'Total schedule impact', value: filteredCRs.reduce((s, cr) => s + (cr.pm_scheduleimpactdays ?? 0), 0) + ' days' },
+            ]}
+            page={page}
+            onPageChange={(_, p) => setPage(p)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10))
+              setPage(0)
+            }}
+          />
         )}
       </Paper>
+      ) : (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+        <Breadcrumbs
+          items={[
+            { label: 'Change Requests', path: 'list' },
+            { label: selectedCR.pm_changerequesttitle ?? 'Detail' }
+          ]}
+          onNavigate={() => handleCloseDetail()}
+        />
 
-      <DetailDrawer
-        open={!!selectedCR}
-        onClose={handleCloseDetail}
-        icon={<ChangeCircleIcon sx={{ color: 'primary.main', fontSize: fontSizes.xl }} />}
-        title={selectedCR?.pm_changerequesttitle ?? ''}
-        subtitle={selectedCR && (
-          <>
-            <StatusTag label={STATUS_LABELS[String(selectedCR.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(selectedCR.pm_status ?? '')] ?? 'default'} variant="outlined" />
-            {selectedCR.pm_changerequestreference && (
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 1, display: 'inline', fontFamily: '\"JetBrains Mono\", monospace', fontSize: fontSizes.xs }}>
-                {selectedCR.pm_changerequestreference}
+        {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+        {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
+
+        <PageHeader
+          title={selectedCR?.pm_changerequesttitle ?? 'Change Request Detail'}
+          subtitle={
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                Requestor: {selectedCR.pm_requestorname || '—'}
               </Typography>
-            )}
-          </>
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {canDelete && selectedCR && String(selectedCR.pm_status) !== '1' && (
-              <ActionIcon
-                label="Delete"
-                color="error"
-                onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)}
-                icon={<DeleteIcon />}
-              />
-            )}
-            {canEdit && selectedCR && String(selectedCR.pm_status) !== '1' && (
-              <ActionIcon
-                label="Edit"
-                color="primary"
-                onClick={() => selectedCR && openEditForm(selectedCR)}
-                icon={<EditIcon />}
-              />
-            )}
-          </Box>
-        }
-        tabs={[{ label: 'Overview' }, { label: 'Details' }, { label: 'Tasks' }, { label: 'Documents' }]}
-        tabValue={detailTab}
-        onTabChange={(_e, v) => { setDetailTab(v); setError(null) }}
-      >
-        {selectedCR && (
-          <>
-            <TabPanel value={detailTab} index={0} pt={0}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <GppMaybeIcon sx={{ fontSize: 16 }} /> Impact Summary
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                {selectedCR.pm_prioritylevel != null && (
+                  <StatusTag label={PRIORITY_LABELS[String(selectedCR.pm_prioritylevel)] ?? 'Unknown'} color={PRIORITY_COLORS[String(selectedCR.pm_prioritylevel)] ?? 'default'} variant="outlined" />
+                )}
+                <StatusTag label={STATUS_LABELS[String(selectedCR.pm_status ?? '')] ?? 'Unknown'} color={STATUS_COLORS[String(selectedCR.pm_status ?? '')] ?? 'default'} variant="outlined" />
+                {selectedCR.pm_projectname && (
+                  <StatusTag label={selectedCR.pm_projectname} color="success" variant="outlined" />
+                )}
+                {selectedCR.pm_changerequestreference && (
+                  <StatusTag label={selectedCR.pm_changerequestreference} color="default" variant="outlined" sx={{ fontFamily: '"JetBrains Mono", monospace' }} />
+                )}
+              </Box>
+            </Box>
+          }
+          actionElement={
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+              {canEdit && selectedCR && String(selectedCR.pm_status) !== '1' && (
+                <Button
+                  variant="outlined"
+                  color="success"
+                  startIcon={<EditIcon />}
+                  onClick={() => selectedCR && openEditForm(selectedCR)}
+                  sx={{ borderRadius: '24px', px: 2.5, py: 0.75, fontWeight: 600, textTransform: 'none' }}
+                >
+                  Edit Request
+                </Button>
+              )}
+              {canDelete && selectedCR && String(selectedCR.pm_status) !== '1' && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => selectedCR?.pm_changerequestid && setDeleteConfirm(selectedCR.pm_changerequestid)}
+                  sx={{ borderRadius: '24px', px: 2.5, py: 0.75, fontWeight: 600, textTransform: 'none' }}
+                >
+                  Delete Request
+                </Button>
+              )}
+            </Box>
+          }
+        />
+
+        <Grid container spacing={3}>
+          {/* Top Left: Impact Summary & Description Card (Merged) */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {/* Cost & Schedule Impact Summary */}
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                    <GppMaybeIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Impact Summary
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center', borderLeft: '3px solid', borderLeftColor: 'error.main' }}>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
                       <AttachMoneyIcon sx={{ fontSize: 20, color: 'error.main', mb: 0.5 }} />
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '\"JetBrains Mono\", monospace', fontSize: 16 }}>
-                        {selectedCR.pm_costimpacteur != null ? '\u20AC' + numberFormatter.format(selectedCR.pm_costimpacteur) : '\u2014'}
+                      <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+                        {selectedCR.pm_costimpacteur != null ? '€' + numberFormatter.format(selectedCR.pm_costimpacteur) : '—'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">Cost Impact</Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, textAlign: 'center', borderLeft: '3px solid', borderLeftColor: 'warning.main' }}>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, textAlign: 'center' }}>
                       <ScheduleIcon sx={{ fontSize: 20, color: 'warning.main', mb: 0.5 }} />
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '\"JetBrains Mono\", monospace', fontSize: 16 }}>
-                        {selectedCR.pm_scheduleimpactdays != null ? selectedCR.pm_scheduleimpactdays + ' days' : '\u2014'}
+                      <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
+                        {selectedCR.pm_scheduleimpactdays != null ? selectedCR.pm_scheduleimpactdays + ' days' : '—'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">Schedule Impact</Typography>
                     </Paper>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 2 }}>
-                    <Typography variant="caption" color="text.secondary">Baseline Updated:</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Baseline Updated:</Typography>
                     <StatusTag label={selectedCR.pm_baselineupdated ? 'Yes' : 'No'} color={selectedCR.pm_baselineupdated ? 'warning' : 'default'} />
                   </Box>
-                </Paper>
+                </Box>
 
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <DescriptionIcon sx={{ fontSize: 16 }} /> Description
+                <Divider />
+
+                {/* Description, Justification, Benefits Impact */}
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                    <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                     {selectedCR.pm_changedescription || 'No description provided.'}
                   </Typography>
-                </Paper>
+                </Box>
 
                 {selectedCR.pm_justification && (
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <VerifiedIcon sx={{ fontSize: 16 }} /> Justification
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', fontStyle: 'italic' }}>
-                      {selectedCR.pm_justification}
-                    </Typography>
-                  </Paper>
+                  <>
+                    <Divider />
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                        <VerifiedIcon sx={{ fontSize: 18, color: 'success.main' }} /> Justification
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', fontStyle: 'italic', lineHeight: 1.6 }}>
+                        {selectedCR.pm_justification}
+                      </Typography>
+                    </Box>
+                  </>
                 )}
 
                 {selectedCR.pm_benefitsimpact && (
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <EmojiEventsIcon sx={{ fontSize: 16 }} /> Benefits Impact
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
-                      {selectedCR.pm_benefitsimpact}
-                    </Typography>
-                  </Paper>
+                  <>
+                    <Divider />
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                        <EmojiEventsIcon sx={{ fontSize: 18, color: 'info.main' }} /> Benefits Impact
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                        {selectedCR.pm_benefitsimpact}
+                      </Typography>
+                    </Box>
+                  </>
                 )}
               </Box>
-            </TabPanel>
+            </Paper>
+          </Grid>
 
-            <TabPanel value={detailTab} index={1} pt={0}>
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <AssignmentIcon sx={{ fontSize: 16 }} /> Change Request Details
+          {/* Top Right: Change Details */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 1.5, height: '100%' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                <AssignmentIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Change Details
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Type</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{CHANGE_TYPE_LABELS[String(selectedCR.pm_changetype ?? '')] || '—'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Priority</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{PRIORITY_LABELS[String(selectedCR.pm_prioritylevel ?? '')] || '—'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Requestor</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedCR.pm_requestorname || '—'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Submission Date</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedCR.pm_submissiondate ? new Date(selectedCR.pm_submissiondate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedCR.pm_projectname || selectedCR.pm_projectcode || '—'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedCR.pm_programmename || selectedCR.pm_programmelookupname || '—'}</Typography>
+                </Box>
+                {selectedCR.pm_decisionmaker && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Decision Maker</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedCR.pm_decisionmaker}</Typography>
+                  </Box>
+                )}
+                {selectedCR.pm_decisiondate && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Decision Date</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{new Date(selectedCR.pm_decisiondate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</Typography>
+                  </Box>
+                )}
+                {selectedCR.pm_versionnumber != null && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Version</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>v{selectedCR.pm_versionnumber}</Typography>
+                  </Box>
+                )}
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Bottom Left: Approval Tasks / Workflow */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            {selectedCR.pm_changerequestid && (
+              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                  <AssignmentIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Approvals & Workflow Tasks
                 </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Type</Typography>
-                    <Typography variant="body2">{CHANGE_TYPE_LABELS[String(selectedCR.pm_changetype ?? '')] || '\u2014'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Priority</Typography>
-                    <Typography variant="body2">{PRIORITY_LABELS[String(selectedCR.pm_prioritylevel ?? '')] || '\u2014'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Requestor</Typography>
-                    <Typography variant="body2">{selectedCR.pm_requestorname || '\u2014'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Submission Date</Typography>
-                    <Typography variant="body2">{selectedCR.pm_submissiondate ? new Date(selectedCR.pm_submissiondate).toLocaleDateString() : '\u2014'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Project</Typography>
-                    <Typography variant="body2">{selectedCR.pm_projectname || selectedCR.pm_projectcode || '\u2014'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Programme</Typography>
-                    <Typography variant="body2">{selectedCR.pm_programmename || selectedCR.pm_programmelookupname || '\u2014'}</Typography>
-                  </Box>
-                  {selectedCR.pm_decisionmaker && (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Decision Maker</Typography>
-                      <Typography variant="body2">{selectedCR.pm_decisionmaker}</Typography>
-                    </Box>
-                  )}
-                  {selectedCR.pm_decisiondate && (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Decision Date</Typography>
-                      <Typography variant="body2">{new Date(selectedCR.pm_decisiondate).toLocaleDateString()}</Typography>
-                    </Box>
-                  )}
-                  {selectedCR.pm_versionnumber != null && (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Version</Typography>
-                      <Typography variant="body2">v{selectedCR.pm_versionnumber}</Typography>
-                    </Box>
-                  )}
+                <Box sx={{ flexGrow: 1 }}>
+                  <EntityApprovalTasks
+                    entityId={selectedCR.pm_changerequestid}
+                    moduleName={MODULE_NAMES.CHANGE_REQUESTS.value}
+                    entityLabel="Change Request"
+                    tabValue={0}
+                    index={0}
+                  />
                 </Box>
               </Paper>
-            </TabPanel>
+            )}
+          </Grid>
 
-            <TabPanel value={detailTab} index={2} pt={0}>
-              {selectedCR.pm_changerequestid && (
-                <EntityApprovalTasks
-                  entityId={selectedCR.pm_changerequestid}
-                  moduleName={MODULE_NAMES.CHANGE_REQUESTS.value}
-                  entityLabel="Change Request"
-                  tabValue={detailTab}
-                  index={3}
-                />
-              )}
-            </TabPanel>
-
-            <TabPanel value={detailTab} index={3} pt={0}>
-              {selectedCR.pm_changerequestid && (
-                <Box sx={{ position: 'relative' }}>
+          {/* Bottom Right: Uploaded Documents */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            {selectedCR.pm_changerequestid && (
+              <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                  <InsertDriveFileIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Uploaded Documents
+                </Typography>
+                <Box sx={{ flexGrow: 1 }}>
                   <EntityDocumentsTab
                     entityId={selectedCR.pm_changerequestid}
                     moduleName={MODULE_NAMES.CHANGE_REQUESTS.value}
                     canEdit={String(selectedCR.pm_status) !== '1'}
                   />
                 </Box>
-              )}
-            </TabPanel>
-          </>
-        )}
-      </DetailDrawer>
+              </Paper>
+            )}
+          </Grid>
+        </Grid>
+        </Box>
+      )}
 
       <Dialog
         open={showFormModal}

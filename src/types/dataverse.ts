@@ -92,7 +92,6 @@ export interface IssueModel {
 export interface ProjectModel {
   pm_projectid?: string
   pm_projectname?: string
-  pm_projectcode?: string
   _pm_portfolio_value?: string
   _pm_programme_value?: string
   pm_projectmanager?: string
@@ -104,8 +103,8 @@ export interface ProjectModel {
   pm_plannedenddate?: string
   pm_actualstartdate?: string
   pm_actualenddate?: string
-  pm_approvedbudgeteur?: number
-  pm_actualcosteur?: number
+  pm_approvedbudget?: number
+  pm_actualcost?: number
   pm_percentcomplete?: number
   pm_businessunit?: string
   pm_projectsponsor?: string
@@ -127,13 +126,17 @@ export interface InitiativeModel {
   pm_priorityscore?: number
   pm_strategicalignmentscore?: number
   pm_pipelinestatus?: string | number
-  pm_requestorname?: string
+  pm_requestedbyname?: string
+  _pm_requestedby_value?: string
   pm_createdbyname?: string
   pm_submissiondate?: string
   pm_portfolioname?: string
+  pm_programmename?: string
+  _pm_programme_value?: string
   pm_initiativetype?: number | string
   _pm_portfolio_value?: string
   pm_decisiondate?: string
+  pm_convertedtoreference?: string
 }
 
 export interface ProjectTaskModel {
@@ -157,6 +160,7 @@ export interface ProjectTaskModel {
   pm_predecessortaskid?: string
   _pm_predecessortask_value?: string
   _pm_project_value?: string
+  pm_projectname?: string
   _pm_assignedtoresource_value?: string
 }
 
@@ -246,6 +250,8 @@ export interface TimesheetEntryModel {
 export interface BudgetLineModel {
   pm_budgetlineid?: string
   pm_budgetlinename?: string
+  pm_budgetlinestatus?: number | string
+  pm_budgetlinestatusname?: string
   pm_approvedbudgeteur?: number
   pm_revisedbudgeteur?: number
   pm_actualspendeur?: number
@@ -299,19 +305,16 @@ export interface FundingSourceModel {
 export interface CashflowEntryModel {
   pm_cashflowentryid?: string
   pm_entryname?: string
-  pm_amounteur?: number
+  pm_amount?: number
   pm_transactiondate?: string
   pm_transactiondirection?: number | string
   pm_transactiontype?: number | string
-  pm_category?: number | string
   pm_description?: string
   pm_invoicenumber?: string
   pm_fiscalperiodname?: string
-  pm_programmelookupname?: string
   pm_projectname?: string
   pm_budgetlinename?: string
   _pm_fiscalperiod_value?: string
-  _pm_programmelookup_value?: string
   _pm_project_value?: string
   _pm_budgetline_value?: string
   statecode?: number
@@ -421,26 +424,7 @@ export interface ChangeRequestModel {
   _pm_programmelookup_value?: string
   _pm_changerequest_value?: string
   statecode?: number
-}
-
-export interface ApprovalRequestModel {
-  pm_projectapprovalrequestid?: string
-  pm_requesttitle?: string
-  pm_approvalstage?: number | string
-  pm_approvalstagename?: string
-  pm_decisionstatus?: number | string
-  pm_decisionstatusname?: string
-  pm_entitytype?: number | string
-  pm_entitytypename?: string
-  pm_prioritylevel?: number | string
-  pm_prioritylevelname?: string
-  pm_approvername?: string
-  pm_decisiondate?: string
-  pm_decisionnotes?: string
-  pm_duedate?: string
-  pm_entityid?: string
-  pm_requestorname?: string
-  statecode?: number
+  ownerid?: string
 }
 
 export interface SkillModel {
@@ -579,6 +563,7 @@ export interface WorkflowStepTemplateModel {
   pm_assigneeid?: string
   pm_description?: string
   pm_sladays?: number
+  pm_tasktype?: number | string
   new_formkey?: string
   _pm_workflowlookup_value?: string
   statecode?: number
@@ -602,4 +587,23 @@ export interface WorkflowApprovalStepModel {
   _pm_workflowtemplate_value?: string
   statecode?: number
   pm_stepname?: string
+}
+
+export interface ChecklistConfigurationModel {
+  pm_workflowchecklistconfigurationid?: string
+  pm_name?: string
+  pm_itemname?: string
+  pm_isrequired?: boolean
+  _pm_workflowsteptemplate_value?: string
+  statecode?: number
+}
+
+export interface ChecklistResponseModel {
+  pm_checklistresponseid?: string
+  pm_name?: string
+  pm_checklistitem?: string
+  pm_responseflag?: boolean
+  _pm_checklistconfiguration_value?: string
+  _pm_workflowapprovalstep_value?: string
+  statecode?: number
 }

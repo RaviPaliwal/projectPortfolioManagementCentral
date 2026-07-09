@@ -41,6 +41,8 @@ import { fetchPortfolios } from '@/services/portfolio.service'
 import { fetchProgrammes } from '@/services/programme.service'
 import { fetchProjects } from '@/services/project.service'
 import { fetchFundingSources, fetchFinancialPeriods } from '@/services/finance.service'
+import { useReportData } from '../hooks/useReportData'
+import { useReportDataProcessor } from '../hooks/useReportDataProcessor'
 import {
   ResponsiveContainer,
   BarChart,
@@ -113,6 +115,17 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
     return ownerUser ? ownerUser.fullname : (selected.owneridname || 'System')
   }, [selectedConfigId, configs, users])
 
+  const {
+    budgetLines,
+    cashFlows,
+    tasks,
+    milestones,
+    risks,
+    issues,
+    projects: dataverseProjects,
+    loading: dataLoading
+  } = useReportData()
+
   // Lookup data for filters
   const [portfolios, setPortfolios] = useState<any[]>([])
   const [programmes, setProgrammes] = useState<any[]>([])
@@ -165,7 +178,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
       setCategories({ Capex: true, Opex: true })
     } else if (type === 'schedule') {
       setGroupby(1) // default to Project (1)
-      setColumns({ duration: true, complete: true, overdue: true, milestones: true })
+      setColumns({ duration: true, complete: true, overdue: true, milestones: true, totalTasks: true })
       setCategories({ 'Active Tasks': true, 'Completed Tasks': true, 'Milestones Only': false })
     } else {
       setGroupby(1) // default to Project (1)
@@ -191,6 +204,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
       if (col === 'complete') return '% Complete'
       if (col === 'overdue') return 'Overdue Tasks'
       if (col === 'milestones') return 'Milestone Count'
+      if (col === 'totalTasks') return 'Total Tasks'
     } else if (reportType === 'risk_issue') {
       if (col === 'impact') return 'Impact Score'
       if (col === 'probability') return 'Probability Score'
@@ -212,7 +226,8 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
         { key: 'duration', name: 'Duration (Days)', color: theme.palette.primary.main },
         { key: 'complete', name: '% Complete', color: theme.palette.success.main },
         { key: 'overdue', name: 'Overdue Tasks', color: theme.palette.error.main },
-        { key: 'milestones', name: 'Milestone Count', color: theme.palette.warning.main }
+        { key: 'milestones', name: 'Milestone Count', color: theme.palette.warning.main },
+        { key: 'totalTasks', name: 'Total Tasks', color: theme.palette.secondary.main }
       ]
     } else {
       return [
@@ -243,18 +258,17 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
     async function loadData() {
       try {
         setLoading(true)
-        const [configsList, portfoliosList, programmesList, projectsList, fundingList, periodsList] = await Promise.all([
+        const [configsList, portfoliosList, programmesList, fundingList, periodsList] = await Promise.all([
           fetchReportConfigs(),
           fetchPortfolios(),
           fetchProgrammes(),
-          fetchProjects(),
           fetchFundingSources(),
           fetchFinancialPeriods()
         ])
         setConfigs(configsList)
         setPortfolios(portfoliosList)
         setProgrammes(programmesList)
-        setProjects(projectsList)
+        setProjects(dataverseProjects)
         setFundingSources(fundingList || [])
         setPeriods(periodsList || [])
       } catch (err) {
@@ -322,7 +336,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
           if (activeType === 'financial') {
             nextCols.budget = false; nextCols.actual = false; nextCols.forecast = false; nextCols.variance = false;
           } else if (activeType === 'schedule') {
-            nextCols.duration = false; nextCols.complete = false; nextCols.overdue = false; nextCols.milestones = false;
+            nextCols.duration = false; nextCols.complete = false; nextCols.overdue = false; nextCols.milestones = true; nextCols.totalTasks = true;
           } else {
             nextCols.impact = false; nextCols.probability = false; nextCols.open = false; nextCols.mitigated = false;
           }
@@ -334,7 +348,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
           setColumns(activeType === 'financial' 
             ? { budget: true, actual: true, forecast: true, variance: true }
             : activeType === 'schedule'
-            ? { duration: true, complete: true, overdue: true, milestones: true }
+            ? { duration: true, complete: true, overdue: true, milestones: true, totalTasks: true }
             : { impact: true, probability: true, open: true, mitigated: true }
           )
         }
@@ -486,240 +500,47 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
     }
   }
 
-  // Visual Mock Data Generator for Live Preview reflecting selected multi-select filters
-  const previewData = useMemo(() => {
-    const activeCats = Object.keys(categories).filter(c => categories[c])
+  // Live Data Processor for Preview
+  const mockActiveConfig = useMemo(() => {
+    const selectedCatsStr = Object.keys(categories).filter(c => categories[c]).join(',')
+    const selectedColsArr = Object.keys(columns).filter(c => columns[c])
 
-    if (activeCats.length === 0) {
-      return []
+    const filterObj = {
+      reportType,
+      targetRecordId: selectedLevelRecordIds[0] || '',
+      selectedLevelRecordIds,
+      selectedProjectIds,
+      selectedFundingSourceIds,
+      selectedPeriodNames,
+      selectedCostCategories
     }
 
-    // A. Compute Reporting Level scale factor to simulate filtering of project scopes
-    let levelScaleFactor = 1.0;
-    if (hierarchylevel > 1 && selectedLevelRecordIds.length > 0) {
-      let matchingProjectsCount = projects.length;
-      const normalizedLevelIds = selectedLevelRecordIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase());
-      if (hierarchylevel === 2) {
-        matchingProjectsCount = projects.filter(p => {
-          const val = (p._pm_portfolio_value || '').replace(/[{}]/g, '').trim().toLowerCase();
-          return normalizedLevelIds.includes(val);
-        }).length;
-      } else if (hierarchylevel === 3) {
-        matchingProjectsCount = projects.filter(p => {
-          const val = (p._pm_programme_value || '').replace(/[{}]/g, '').trim().toLowerCase();
-          return normalizedLevelIds.includes(val);
-        }).length;
-      } else if (hierarchylevel === 4) {
-        matchingProjectsCount = projects.filter(p => {
-          const val = (p.pm_projectid || '').replace(/[{}]/g, '').trim().toLowerCase();
-          return normalizedLevelIds.includes(val);
-        }).length;
-      }
-      if (projects.length > 0) {
-        levelScaleFactor = Math.max(0.05, Math.min(1.0, matchingProjectsCount / projects.length));
-      } else {
-        levelScaleFactor = 0.2;
-      }
+    return {
+      pm_name: name,
+      pm_description: description,
+      pm_groupby: groupby,
+      pm_charttype: charttype,
+      pm_hierarchylevel: hierarchylevel,
+      pm_categoriesfilter: selectedCatsStr,
+      pm_selectedcolumns: JSON.stringify(selectedColsArr),
+      pm_selectedfilters: JSON.stringify(filterObj),
+      pm_ispublic: isPublic
     }
+  }, [name, description, groupby, charttype, hierarchylevel, categories, columns, isPublic, reportType, selectedLevelRecordIds, selectedProjectIds, selectedFundingSourceIds, selectedPeriodNames, selectedCostCategories])
 
-    if (reportType === 'financial') {
-      // Group by Fiscal Period
-      if (groupby === 3) {
-        const allPeriods = ['Q1 2026', 'Q2 2026', 'Q3 2026', 'Q4 2026', 'Q1 2027', 'Q2 2027']
-        const filteredPeriods = selectedPeriodNames.length > 0 
-          ? allPeriods.filter(p => selectedPeriodNames.includes(p))
-          : allPeriods
+  const processedPreviewData = useReportDataProcessor(
+    mockActiveConfig,
+    budgetLines,
+    tasks,
+    milestones,
+    risks,
+    issues,
+    dataverseProjects
+  )
 
-        return filteredPeriods.map((p, index) => {
-          const factor = (index + 1) * 1.5 * levelScaleFactor
-          return {
-            name: p,
-            budget: columns.budget ? Math.round(75000 * factor) : 0,
-            actual: columns.actual ? Math.round(62000 * factor) : 0,
-            forecast: columns.forecast ? Math.round(70000 * factor) : 0,
-            variance: columns.variance ? Math.round(13000 * factor) : 0
-          }
-        })
-      } 
-      // Group by Project
-      else if (groupby === 1) {
-        // First filter projects by the selected Reporting Level (Portfolio, Programme, Project)
-        let filteredProjects = [...projects];
+  const previewData = processedPreviewData.list
 
-        const normalizedLevelIds = selectedLevelRecordIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase());
-        if (hierarchylevel === 2 && normalizedLevelIds.length > 0) {
-          filteredProjects = filteredProjects.filter(p => {
-            const val = (p._pm_portfolio_value || '').replace(/[{}]/g, '').trim().toLowerCase();
-            return normalizedLevelIds.includes(val);
-          });
-        } else if (hierarchylevel === 3 && normalizedLevelIds.length > 0) {
-          filteredProjects = filteredProjects.filter(p => {
-            const val = (p._pm_programme_value || '').replace(/[{}]/g, '').trim().toLowerCase();
-            return normalizedLevelIds.includes(val);
-          });
-        } else if (hierarchylevel === 4 && normalizedLevelIds.length > 0) {
-          filteredProjects = filteredProjects.filter(p => {
-            const val = (p.pm_projectid || '').replace(/[{}]/g, '').trim().toLowerCase();
-            return normalizedLevelIds.includes(val);
-          });
-        }
-
-        // Then filter by the specific selectedProjectIds if provided
-        const normalizedProjectIds = selectedProjectIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase());
-        if (normalizedProjectIds.length > 0) {
-          filteredProjects = filteredProjects.filter(p => {
-            const val = (p.pm_projectid || '').replace(/[{}]/g, '').trim().toLowerCase();
-            return normalizedProjectIds.includes(val);
-          });
-        }
-
-        const allProjectsList = filteredProjects.map(p => ({ id: p.pm_projectid, name: p.pm_projectname }));
-        
-        const hasFilterApplied = (hierarchylevel > 1 && selectedLevelRecordIds.length > 0) || selectedProjectIds.length > 0;
-        const targetProjects = hasFilterApplied
-          ? allProjectsList
-          : allProjectsList.slice(0, 4);
-
-        return targetProjects.map((p, index) => {
-          const factor = (index + 1) * 2.8;
-          return {
-            name: p.name || 'Project Name',
-            budget: columns.budget ? Math.round(110000 * factor) : 0,
-            actual: columns.actual ? Math.round(98000 * factor) : 0,
-            forecast: columns.forecast ? Math.round(105000 * factor) : 0,
-            variance: columns.variance ? Math.round(12000 * factor) : 0
-          };
-        });
-      }
-      // Group by Cost Category
-      else if (groupby === 2) {
-        const targetCats = selectedCostCategories.length > 0
-          ? activeCats.filter(c => selectedCostCategories.includes(c))
-          : activeCats
-
-        return targetCats.map((cat, index) => {
-          const factor = (index + 1) * 4.2 * levelScaleFactor
-          return {
-            name: cat,
-            budget: columns.budget ? Math.round(280000 * factor) : 0,
-            actual: columns.actual ? Math.round(245000 * factor) : 0,
-            forecast: columns.forecast ? Math.round(260000 * factor) : 0,
-            variance: columns.variance ? Math.round(35000 * factor) : 0
-          }
-        })
-      } 
-      // Group by Funding Source
-      else {
-        const allSourcesList = fundingSources.map(s => ({ id: s.pm_fundingsourceid, name: s.pm_fundingsourcename }))
-        const targetSources = selectedFundingSourceIds.length > 0
-          ? allSourcesList.filter(s => selectedFundingSourceIds.includes(s.id))
-          : allSourcesList.slice(0, 3)
-
-        return targetSources.map((s, index) => {
-          const factor = (index + 1) * 3.4 * levelScaleFactor
-          return {
-            name: s.name || 'Funding Source',
-            budget: columns.budget ? Math.round(190000 * factor) : 0,
-            actual: columns.actual ? Math.round(170000 * factor) : 0,
-            forecast: columns.forecast ? Math.round(185000 * factor) : 0,
-            variance: columns.variance ? Math.round(20000 * factor) : 0
-          }
-        })
-      }
-    } else if (reportType === 'schedule') {
-      let groups: string[] = []
-      if (groupby === 1) {
-        let filteredProjects = [...projects]
-        const normalizedLevelIds = selectedLevelRecordIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase())
-        if (hierarchylevel === 2 && normalizedLevelIds.length > 0) {
-          filteredProjects = filteredProjects.filter(p => {
-            const val = (p._pm_portfolio_value || '').replace(/[{}]/g, '').trim().toLowerCase()
-            return normalizedLevelIds.includes(val)
-          })
-        } else if (hierarchylevel === 3 && normalizedLevelIds.length > 0) {
-          filteredProjects = filteredProjects.filter(p => {
-            const val = (p._pm_programme_value || '').replace(/[{}]/g, '').trim().toLowerCase()
-            return normalizedLevelIds.includes(val)
-          })
-        } else if (hierarchylevel === 4 && normalizedLevelIds.length > 0) {
-          filteredProjects = filteredProjects.filter(p => {
-            const val = (p.pm_projectid || '').replace(/[{}]/g, '').trim().toLowerCase()
-            return normalizedLevelIds.includes(val)
-          })
-        }
-        if (selectedProjectIds.length > 0) {
-          const normalizedProjectIds = selectedProjectIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase())
-          filteredProjects = filteredProjects.filter(p => normalizedProjectIds.includes(p.pm_projectid?.toLowerCase() || ''))
-        }
-        groups = filteredProjects.map(p => p.pm_projectname || 'Unnamed Project')
-        if (groups.length === 0) groups = ['Project Alpha', 'Project Beta', 'Project Gamma']
-      } else if (groupby === 2) {
-        groups = ['Not Started', 'In Progress', 'On Hold', 'Completed']
-      } else if (groupby === 3) {
-        groups = ['Initiation', 'Planning', 'Execution', 'Closure']
-      } else {
-        groups = ['Green', 'Amber', 'Red']
-      }
-
-      return groups.map((name, index) => {
-        const factor = (index + 1) * levelScaleFactor
-        return {
-          name,
-          duration: columns.duration ? Math.round(15 + factor * 20) : 0,
-          complete: columns.complete ? Math.round(Math.min(100, 30 + factor * 15)) : 0,
-          overdue: columns.overdue ? Math.round(factor * 2) : 0,
-          milestones: columns.milestones ? Math.round(1 + factor * 2) : 0
-        }
-      })
-    } else {
-      let groups: string[] = []
-      if (groupby === 1) {
-        let filteredProjects = [...projects]
-        const normalizedLevelIds = selectedLevelRecordIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase())
-        if (hierarchylevel === 2 && normalizedLevelIds.length > 0) {
-          filteredProjects = filteredProjects.filter(p => {
-            const val = (p._pm_portfolio_value || '').replace(/[{}]/g, '').trim().toLowerCase()
-            return normalizedLevelIds.includes(val)
-          })
-        } else if (hierarchylevel === 3 && normalizedLevelIds.length > 0) {
-          filteredProjects = filteredProjects.filter(p => {
-            const val = (p._pm_programme_value || '').replace(/[{}]/g, '').trim().toLowerCase()
-            return normalizedLevelIds.includes(val)
-          })
-        } else if (hierarchylevel === 4 && normalizedLevelIds.length > 0) {
-          filteredProjects = filteredProjects.filter(p => {
-            const val = (p.pm_projectid || '').replace(/[{}]/g, '').trim().toLowerCase()
-            return normalizedLevelIds.includes(val)
-          })
-        }
-        if (selectedProjectIds.length > 0) {
-          const normalizedProjectIds = selectedProjectIds.map(id => id.replace(/[{}]/g, '').trim().toLowerCase())
-          filteredProjects = filteredProjects.filter(p => normalizedProjectIds.includes(p.pm_projectid?.toLowerCase() || ''))
-        }
-        groups = filteredProjects.map(p => p.pm_projectname || 'Unnamed Project')
-        if (groups.length === 0) groups = ['Project Alpha', 'Project Beta', 'Project Gamma']
-      } else if (groupby === 2) {
-        groups = ['Low', 'Medium', 'High', 'Critical']
-      } else if (groupby === 3) {
-        groups = ['Green', 'Amber', 'Red']
-      } else {
-        groups = ['Scope', 'Schedule', 'Cost', 'Resource', 'Quality']
-      }
-
-      return groups.map((name, index) => {
-        const factor = (index + 1) * levelScaleFactor
-        return {
-          name,
-          impact: columns.impact ? Number((1.5 + factor * 0.7).toFixed(1)) : 0,
-          probability: columns.probability ? Number((1.2 + factor * 0.8).toFixed(1)) : 0,
-          open: columns.open ? Math.round(factor * 3) : 0,
-          mitigated: columns.mitigated ? Math.round(1 + factor * 2) : 0
-        }
-      })
-    }
-  }, [groupby, categories, columns, selectedProjectIds, selectedFundingSourceIds, selectedPeriodNames, selectedCostCategories, projects, fundingSources, hierarchylevel, selectedLevelRecordIds, reportType])
-
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
         <CircularProgress />
@@ -1128,7 +949,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Total Budget</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>€1,240,000</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>€{processedPreviewData.totals.budget.toLocaleString()}</Typography>
                         </Paper>
                       </Grid>
                     )}
@@ -1136,7 +957,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>€982,000</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>€{processedPreviewData.totals.actual.toLocaleString()}</Typography>
                         </Paper>
                       </Grid>
                     )}
@@ -1144,7 +965,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Forecasted Spend</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'info.main' }}>€1,180,000</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'info.main' }}>€{processedPreviewData.totals.forecast.toLocaleString()}</Typography>
                         </Paper>
                       </Grid>
                     )}
@@ -1152,7 +973,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Variance Remaining</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'warning.main' }}>€258,000</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: processedPreviewData.totals.variance < 0 ? 'error.main' : 'warning.main' }}>€{processedPreviewData.totals.variance.toLocaleString()}</Typography>
                         </Paper>
                       </Grid>
                     )}
@@ -1163,7 +984,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Avg Duration</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>45 Days</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>{processedPreviewData.totals.duration} Days</Typography>
                         </Paper>
                       </Grid>
                     )}
@@ -1171,7 +992,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Avg Completion %</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>68%</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>{processedPreviewData.totals.complete}%</Typography>
                         </Paper>
                       </Grid>
                     )}
@@ -1179,7 +1000,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Overdue Tasks</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'error.main' }}>3</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'error.main' }}>{processedPreviewData.totals.overdue}</Typography>
                         </Paper>
                       </Grid>
                     )}
@@ -1187,7 +1008,15 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Milestone Count</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'warning.main' }}>12</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'warning.main' }}>{processedPreviewData.totals.milestones}</Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+                    {columns.totalTasks && (
+                      <Grid size={{ xs: 3 }}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
+                          <Typography variant="caption" color="text.secondary">Total Tasks</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'secondary.main' }}>{processedPreviewData.totals.totalTasks}</Typography>
                         </Paper>
                       </Grid>
                     )}
@@ -1198,7 +1027,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Avg Impact Score</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>3.2 / 5</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>{processedPreviewData.totals.impact} / 5</Typography>
                         </Paper>
                       </Grid>
                     )}
@@ -1206,7 +1035,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Avg Probability Score</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'info.main' }}>2.8 / 5</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'info.main' }}>{processedPreviewData.totals.probability} / 5</Typography>
                         </Paper>
                       </Grid>
                     )}
@@ -1214,7 +1043,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Open Issues</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'error.main' }}>5</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'error.main' }}>{processedPreviewData.totals.open}</Typography>
                         </Paper>
                       </Grid>
                     )}
@@ -1222,7 +1051,7 @@ export default function ReportConfigsPage({ onNavigate }: ReportConfigsPageProps
                       <Grid size={{ xs: 3 }}>
                         <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'background.default' }}>
                           <Typography variant="caption" color="text.secondary">Mitigated Risks</Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>8</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5, color: 'success.main' }}>{processedPreviewData.totals.mitigated}</Typography>
                         </Paper>
                       </Grid>
                     )}

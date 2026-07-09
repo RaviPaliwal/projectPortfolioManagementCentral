@@ -38,7 +38,7 @@ interface SortState { field: SortField; dir: SortDir }
 export default function PendingApprovalsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
-  const { currentUser } = useUser()
+  const { currentUser, userTeams } = useUser()
 
   const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,7 +48,7 @@ export default function PendingApprovalsPage() {
 
   const [sort, setSort] = useState<SortState>({ field: 'due', dir: 'asc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
 
   // Reject dialog
@@ -63,8 +63,10 @@ export default function PendingApprovalsPage() {
     setLoading(true)
     setError(null)
     try {
+      const cleanId = (currentUser.systemuserid ?? '').replace(/[{}]/g, '').toLowerCase()
+      const teams = userTeams.get(cleanId) || []
       const result = await fetchPendingWorkflowApprovals(
-          currentUser.systemuserid ?? '', currentUser.fullname,
+          currentUser.systemuserid ?? '', currentUser.fullname, teams
         )
       setSteps(result)
     } catch (err) {
@@ -73,7 +75,7 @@ export default function PendingApprovalsPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentUser])
+  }, [currentUser, userTeams])
 
   useEffect(() => {
     loadApprovals()
@@ -247,8 +249,8 @@ export default function PendingApprovalsPage() {
                     key={step.pm_workflowapprovalstepid}
                     hover
                     sx={{
-                      bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                      '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                      bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                      '&:hover': { bgcolor: 'action.selected' },
                       transition: 'background-color 0.15s ease',
                       '& td': { px: 2.5, py: 1.25 },
                     }}
@@ -361,18 +363,15 @@ export default function PendingApprovalsPage() {
         </TableShell>
 
         {!loading && filteredSteps.length > 0 && (
-          <>
-            <TableFooter filteredCount={filteredSteps.length} totalCount={steps.length} itemLabel="pending step" />
-            <TablePagination
-              component="div"
-              count={filteredSteps.length}
-              page={page}
-              onPageChange={(_, p) => setPage(p)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0) }}
-              rowsPerPageOptions={[25, 50, 100]}
-            />
-          </>
+          <TableFooter
+            filteredCount={filteredSteps.length}
+            totalCount={steps.length}
+            itemLabel="pending step"
+            page={page}
+            onPageChange={(_, p) => setPage(p)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0) }}
+          />
         )}
       </Paper>
 

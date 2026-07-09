@@ -53,12 +53,14 @@ export const StatusTag = forwardRef<HTMLSpanElement, StatusTagProps>(({
     Object.assign(styles, {
       bgcolor: alpha(baseColor, isDark ? 0.2 : 0.1),
       color: isDark ? alpha(baseColor, 0.95) : baseColor,
-      // border: `1px solid ${alpha(baseColor, 0.1)}`,
+      border: `1px solid ${alpha(baseColor, isDark ? 0.2 : 0.15)}`,
+      boxShadow: `0 1px 2px 0 ${alpha(baseColor, 0.1)}`,
     })
   } else if (variant === 'outlined') {
     Object.assign(styles, {
       border: `1px solid ${alpha(baseColor, 0.5)}`,
       color: baseColor,
+      boxShadow: `0 1px 2px 0 ${alpha(baseColor, 0.05)}`,
     })
   } else {
     // Filled

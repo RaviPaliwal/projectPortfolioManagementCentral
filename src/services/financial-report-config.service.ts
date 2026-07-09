@@ -1,6 +1,7 @@
 import { Pm_financialreportconfigsService } from '@/generated/services/Pm_financialreportconfigsService'
 import type { Pm_financialreportconfigs } from '@/generated/models/Pm_financialreportconfigsModel'
 import { unwrapList, unwrapSingle } from './common'
+import { writeAuditLog } from './changelog.service'
 
 export interface FinancialReportConfigModel {
   pm_financialreportconfigid: string
@@ -95,6 +96,14 @@ export async function createReportConfig(payload: Partial<FinancialReportConfigM
     const created = unwrapSingle<Pm_financialreportconfigs>(result)
     if (!created) return null
 
+    writeAuditLog({
+      actionType: 'Create',
+      entityName: 'pm_financialreportconfigs',
+      recordId: created.pm_financialreportconfigid!,
+      recordName: created.pm_name,
+      moduleName: 'Financial Report Configs',
+    })
+
     return {
       pm_financialreportconfigid: created.pm_financialreportconfigid!,
       pm_name: created.pm_name,
@@ -134,6 +143,14 @@ export async function updateReportConfig(
     if (payload.pm_selectedfilters !== undefined) cleanPayload.pm_selectedfilters = payload.pm_selectedfilters
     if (payload.pm_ispublic !== undefined) cleanPayload.pm_ispublic = payload.pm_ispublic
 
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_financialreportconfigs',
+      recordId: id,
+      recordName: payload.pm_name,
+      moduleName: 'Financial Report Configs',
+    })
+
     const result = await Pm_financialreportconfigsService.update(id, cleanPayload)
     if (!result.success) {
       console.error('[FinancialReportConfigService] updateReportConfig failed:', result.error)
@@ -166,6 +183,13 @@ export async function updateReportConfig(
 
 export async function deleteReportConfig(id: string): Promise<boolean> {
   try {
+    writeAuditLog({
+      actionType: 'Update',
+      entityName: 'pm_financialreportconfigs',
+      recordId: id,
+      moduleName: 'Financial Report Configs',
+      description: `Deleted report config ${id}`,
+    })
     await Pm_financialreportconfigsService.delete(id)
     return true
   } catch (err) {

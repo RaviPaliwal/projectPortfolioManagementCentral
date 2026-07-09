@@ -15,6 +15,7 @@ import {
   Tooltip,
   useTheme,
   styled,
+  alpha,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -32,19 +33,27 @@ import type { WorkflowInstanceModel, WorkflowApprovalStepModel } from '@/types/d
 import { useUser } from '@/context/UserContext'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 
+const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+const formatDate = (d?: string | null): string => d ? dateFormatter.format(new Date(d)).replace(/ /g, '-') : '—'
+
 // ─── Styled Step Connector ────────────────────────────────────────────────
 
 const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
+  [`&.${stepConnectorClasses.alternativeLabel}`]: {
+    top: 20,
+    left: 'calc(-50% + 20px)',
+    right: 'calc(50% + 20px)',
+  },
   [`&.${stepConnectorClasses.active}`]: {
     [`& .${stepConnectorClasses.line}`]: {
-      backgroundImage:
-        'linear-gradient( 95deg, rgb(59,130,246) 0%, rgb(99,102,241) 50%, rgb(139,92,246) 100%)',
+      backgroundColor: theme.palette.info.main,
+      opacity: 0.8,
     },
   },
   [`&.${stepConnectorClasses.completed}`]: {
     [`& .${stepConnectorClasses.line}`]: {
-      backgroundImage:
-        'linear-gradient( 95deg, rgb(34,197,94) 0%, rgb(22,163,74) 100%)',
+      backgroundColor: theme.palette.success.main,
+      opacity: 0.8,
     },
   },
   [`& .${stepConnectorClasses.line}`]: {
@@ -70,14 +79,14 @@ const ColorlibStepIconRoot = styled('div')<{
   alignItems: 'center',
   transition: 'all 0.2s ease',
   ...(ownerState.active && {
-    backgroundImage:
-      'linear-gradient( 136deg, rgb(59,130,246) 0%, rgb(99,102,241) 50%, rgb(139,92,246) 100%)',
-    boxShadow: '0 4px 10px 0 rgba(59,130,246,0.3)',
+    backgroundColor: theme.palette.info.main,
+    color: theme.palette.info.contrastText,
+    boxShadow: `0 4px 10px 0 ${alpha(theme.palette.info.main, 0.3)}`,
   }),
   ...(ownerState.completed && {
-    backgroundImage:
-      'linear-gradient( 136deg, rgb(34,197,94) 0%, rgb(22,163,74) 100%)',
-    boxShadow: '0 4px 10px 0 rgba(34,197,94,0.3)',
+    backgroundColor: theme.palette.success.main,
+    color: theme.palette.success.contrastText,
+    boxShadow: `0 4px 10px 0 ${alpha(theme.palette.success.main, 0.3)}`,
   }),
 }))
 
@@ -128,12 +137,15 @@ function isStepAssignedToUser(
   if (String(step.pm_assigneetype) === '1') return true
 
   const assigneeDisplay = (step.pm_assigneedisplayname || '').toLowerCase()
+  const assigneeName = ((step as any).pm_assigneename || '').toLowerCase()
   const approverName = (step.pm_approvername || '').toLowerCase()
 
-  if (assigneeDisplay === userId.toLowerCase()) return true
-  if (assigneeDisplay === userName.toLowerCase()) return true
-  if (approverName === userId.toLowerCase()) return true
-  if (approverName === userName.toLowerCase()) return true
+  const uId = userId.toLowerCase()
+  const uName = userName.toLowerCase()
+
+  if (assigneeDisplay === uId || assigneeDisplay === uName) return true
+  if (assigneeName === uId || assigneeName === uName) return true
+  if (approverName === uId || approverName === uName) return true
 
   return false
 }
@@ -141,17 +153,19 @@ function isStepAssignedToUser(
 // ─── Props ────────────────────────────────────────────────────────────────
 
 export interface WorkflowMilestoneProps {
-  /** Module/entity type name, e.g. "GateReview", "Project", "Portfolio" */
-  moduleName: string
-  /** Entity GUID to fetch workflow instances for */
-  entityId: string
+  /** Optional explicit Workflow Instance ID. If provided, fetches only this workflow. */
+  workflowInstanceId?: string
+  /** Module/entity type name, e.g. "GateReview", "Project", "Portfolio". Used if workflowInstanceId is not provided. */
+  moduleName?: string
+  /** Entity GUID to fetch workflow instances for. Used if workflowInstanceId is not provided. */
+  entityId?: string
   /** Optional class name override */
   className?: string
 }
 
 // ─── Component ────────────────────────────────────────────────────────────
 
-export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowMilestoneProps) {
+export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, className }: WorkflowMilestoneProps) {
   const theme = useTheme()
 
   const [instances, setInstances] = useState<WorkflowInstanceModel[]>([])
@@ -160,14 +174,27 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
   const [error, setError] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
-    if (!moduleName || !entityId) {
+    if (!workflowInstanceId && (!moduleName || !entityId)) {
       setLoading(false)
       return
     }
     setLoading(true)
     setError(null)
     try {
-      const workflowInstances = await fetchWorkflowInstancesForEntity(moduleName, entityId)
+      let workflowInstances: WorkflowInstanceModel[] = []
+      
+      if (workflowInstanceId) {
+        // Fetch single instance by ID
+        // Note: fetchWorkflowInstanceById needs to be imported if not already
+        const instance = await import('@/services').then(m => m.fetchWorkflowInstanceById(workflowInstanceId))
+        if (instance) {
+          workflowInstances = [instance]
+        }
+      } else if (moduleName && entityId) {
+        // Fetch all instances for entity
+        workflowInstances = await fetchWorkflowInstancesForEntity(moduleName, entityId)
+      }
+      
       setInstances(workflowInstances)
 
       const stepsMap: Record<string, WorkflowApprovalStepModel[]> = {}
@@ -188,7 +215,7 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
     } finally {
       setLoading(false)
     }
-  }, [moduleName, entityId])
+  }, [workflowInstanceId, moduleName, entityId])
 
   // Initial load
   useEffect(() => {
@@ -253,7 +280,8 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
           (s) => String(s.pm_decisionstatus) === '1' || String(s.pm_decisionstatus) === '2'
         )
         const isCompleted = String(instance.pm_status) === '0'
-        const currentStep = activeStepIndex >= 0 ? activeStepIndex : (isCompleted ? steps.length : 0)
+        const currentStep = activeStepIndex >= 0 ? activeStepIndex : steps.length
+        const hasActionableSteps = steps.some(s => String(s.pm_decisionstatus) === '2')
 
         return (
           <Paper key={instance.pm_workflowinstanceid} variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
@@ -281,26 +309,16 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
               </Box>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 {instance.pm_startdate && (
-                  <Tooltip title={`Started: ${new Date(instance.pm_startdate).toLocaleDateString()}`}>
+                  <Tooltip title={`Started: ${formatDate(instance.pm_startdate)}`}>
                     <Chip
                       icon={<EventIcon sx={{ fontSize: 14 }} />}
-                      label={new Date(instance.pm_startdate).toLocaleDateString()}
+                      label={formatDate(instance.pm_startdate)}
                       size="small"
                       variant="outlined"
                       sx={{ borderRadius: 1 }}
                     />
                   </Tooltip>
                 )}
-                <Chip
-                  label={
-                    isCompleted
-                      ? 'Completed'
-                      : String(instance.pm_statusname || instance.pm_status || 'Active')
-                  }
-                  size="small"
-                  color={isCompleted ? 'success' : 'primary'}
-                  sx={{ fontWeight: 600, borderRadius: 1 }}
-                />
               </Box>
             </Box>
 
@@ -313,9 +331,9 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
               ) : (
                 <Stepper
                   activeStep={currentStep}
-                  alternativeLabel={steps.length > 4}
+                  alternativeLabel
                   connector={<ColorlibConnector />}
-                  sx={{ flexWrap: 'wrap', gap: steps.length > 4 ? 1 : 0 }}
+                  sx={{ flexWrap: 'wrap', gap: 0 }}
                 >
                   {steps.map((step, index) => {
                     const decision = getDecisionConfig(step.pm_decisionstatus)
@@ -345,7 +363,7 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                                 color: isPast
                                   ? 'text.secondary'
                                   : isCurrent
-                                    ? 'primary.main'
+                                    ? 'info.main'
                                     : 'text.primary',
                               }}
                             >
@@ -382,8 +400,6 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                               />
                             </Box>
 
-
-
                             {/* Due Date / Decision Date */}
                             {(step.pm_duedate || step.pm_decisiondate) && (
                               <Typography
@@ -392,33 +408,11 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
                                 sx={{ display: 'block', mt: 0.5, fontSize: '0.6rem' }}
                               >
                                 {step.pm_decisiondate
-                                  ? `Decided: ${new Date(step.pm_decisiondate).toLocaleDateString()}`
+                                  ? `Decided: ${formatDate(step.pm_decisiondate)}`
                                   : step.pm_duedate
-                                    ? `Due: ${new Date(step.pm_duedate).toLocaleDateString()}`
+                                    ? `Due: ${formatDate(step.pm_duedate)}`
                                     : ''}
                               </Typography>
-                            )}
-
-                            {/* Decision Notes */}
-                            {step.pm_decisionnotes && (
-                              <Tooltip title={step.pm_decisionnotes}>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  sx={{
-                                    display: 'block',
-                                    mt: 0.5,
-                                    fontSize: '0.6rem',
-                                    maxWidth: 140,
-                                    mx: 'auto',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  {step.pm_decisionnotes}
-                                </Typography>
-                              </Tooltip>
                             )}
                           </Box>
                         </StepLabel>
@@ -429,11 +423,11 @@ export function WorkflowMilestone({ moduleName, entityId, className }: WorkflowM
               )}
             </Box>
 
-            {!isCompleted && (
+            {!isCompleted && hasActionableSteps && (
               <Box sx={{ px: 3, pb: 3, borderTop: `1px solid ${theme.palette.divider}`, pt: 2 }}>
                 <EntityApprovalTasks
-                  entityId={entityId}
-                  moduleName={moduleName}
+                  entityId={entityId || instance.pm_entityid!}
+                  moduleName={moduleName || instance.pm_entitytype || ''}
                   entityLabel=""
                   tabValue={0}
                   index={0}

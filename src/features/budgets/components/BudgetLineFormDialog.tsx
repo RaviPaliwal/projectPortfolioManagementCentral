@@ -186,6 +186,11 @@ export default function BudgetLineFormDialog({
         _pm_project_value: normalizeGuid(editBudget._pm_project_value),
         pm_notes: editBudget.pm_notes ?? '',
         _pm_fundingsource_value: editBudget._pm_fundingsource_value ?? '',
+        pm_approvedbudgeteur: editBudget.pm_approvedbudgeteur ?? 0,
+        pm_revisedbudgeteur: editBudget.pm_revisedbudgeteur ?? 0,
+        pm_actualspendeur: editBudget.pm_actualspendeur ?? 0,
+        pm_committedspendeur: editBudget.pm_committedspendeur ?? 0,
+        pm_forecastspendeur: editBudget.pm_forecastspendeur ?? 0,
       })
     } else {
       setFormData({ ...DEFAULT_FORM_DATA })
@@ -219,29 +224,47 @@ export default function BudgetLineFormDialog({
     }
   }, [open, editBudget, prefillProjectId, prefillPortfolioId, prefillProgrammeId, loadLookups])
 
+  // Sync Forecast to Calculated Total for new lines until user edits it
+  useEffect(() => {
+    if (!editBudget && open) {
+      const calculated = computeTotalAmount(formData)
+      setFormData(f => ({ ...f, pm_forecastspendeur: calculated }))
+    }
+  }, [formData.pm_unitcosteur, formData.pm_quantity, formData.pm_costinglevelcode, editBudget, open])
+
   const handleSave = async () => {
     if (!formData.pm_budgetlinename.trim()) return
     setActionLoading(true)
     try {
       const totalAmount = computeTotalAmount(formData)
+      const isEdit = !!editBudget
       const payload: any = {
         ...formData,
         pm_totalamounteur: totalAmount,
-        pm_actualspendeur: totalAmount,
-        pm_committedspendeur: totalAmount,
-        pm_forecastspendeur: totalAmount,
         pm_jsonrawcalculation: buildCalculationJson(formData),
-        pm_estimateatcompletioneur: totalAmount,
-        pm_estimatetocompleteeur: 0,
-        pm_varianceeur: 0,
-        pm_approvedbudgeteur: 0,
-        pm_revisedbudgeteur: 0,
       }
+
+      if (!isEdit) {
+        payload.pm_actualspendeur = 0
+        payload.pm_committedspendeur = 0
+        payload.pm_approvedbudgeteur = 0
+        payload.pm_revisedbudgeteur = 0
+        payload.pm_estimateatcompletioneur = totalAmount
+        payload.pm_estimatetocompleteeur = totalAmount
+        payload.pm_varianceeur = 0
+      } else {
+        const revised = formData.pm_revisedbudgeteur ?? 0
+        const actual = formData.pm_actualspendeur ?? 0
+        const committed = formData.pm_committedspendeur ?? 0
+        payload.pm_varianceeur = revised - actual - committed
+        payload.pm_estimateatcompletioneur = actual + committed
+      }
+
       delete payload.pm_jsonrawcalculation
       const calcJson = buildCalculationJson(formData)
       payload.pm_jsonrawcalculation = calcJson
 
-      if (editBudget?.pm_budgetlineid) {
+      if (isEdit && editBudget?.pm_budgetlineid) {
         delete payload.pm_budgetlineid
         const _pm_budgetlineid = editBudget.pm_budgetlineid
         const updated = await updateBudgetLine(_pm_budgetlineid, payload)
@@ -593,6 +616,34 @@ export default function BudgetLineFormDialog({
             </Box>
           </Box>
         </Paper>
+
+        {/* Forecast Settings */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 2 }}>
+          <TimelineIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+            Forecast Spend
+          </Typography>
+          <Divider sx={{ flex: 1 }} />
+        </Box>
+        <Grid container spacing={2.5} sx={{ mb: 3 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              label="Forecast Spend (EUR)"
+              fullWidth
+              size="small"
+              type="number"
+              value={formData.pm_forecastspendeur || 0}
+              onChange={(e) => setFormData((f) => ({ ...f, pm_forecastspendeur: Math.max(0, Number(e.target.value)) }))}
+              placeholder="Enter forecast amount..."
+              slotProps={{
+                input: {
+                  startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary', fontWeight: 600 }}>€</Typography>,
+                  sx: { borderRadius: 1.5 }
+                }
+              }}
+            />
+          </Grid>
+        </Grid>
 
         {/* Notes */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>

@@ -14,6 +14,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import BusinessIcon from '@mui/icons-material/Business'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import FolderIcon from '@mui/icons-material/Folder'
+import LaunchIcon from '@mui/icons-material/Launch'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
 import { currencyFormatter } from '@/utils/formatters'
 import { normalizeLookupId } from '@/services'
@@ -53,11 +54,10 @@ const TreeItemRow: React.FC<{
       borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
       minHeight: 56,
       transition: 'background-color 0.15s',
-      cursor: onClick ? 'pointer' : 'default',
       '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.02) },
       pl: level * 3 + 1,
       pr: 2,
-    }} onClick={onClick}>
+    }}>
       <Box sx={{ width: 36, display: 'flex', justifyContent: 'center', mr: 1 }}>
         {hasChildren ? (
           <Tooltip title={expanded ? 'Collapse section' : 'Expand section'}>
@@ -117,6 +117,13 @@ const TreeItemRow: React.FC<{
         <Tooltip title={`RAG: ${ragStatus === '0' ? 'Low' : ragStatus === '1' ? 'Medium' : ragStatus === '2' ? 'High' : 'Unknown'}`}>
           <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: ragColor, boxShadow: `0 0 6px ${ragColor}`, flexShrink: 0, cursor: 'help' }} />
         </Tooltip>
+        {onClick && (
+          <Tooltip title={`Open ${name} details`}>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onClick?.() }} sx={{ color: 'text.disabled', ml: 1 }}>
+              <LaunchIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
     </Box>
   )
@@ -187,7 +194,7 @@ const TreeView: React.FC<TreeViewProps> = ({ portfolios, programmes, projects, o
                       name={prog.pm_programmename!}
                       ragStatus={prog.pm_ragstatus?.toString()}
                       budget={prog.pm_budgeteur ?? 0}
-                      allocatedBudget={progProjects.reduce((s, pj) => s + (pj.pm_approvedbudgeteur ?? 0), 0) || undefined}
+                      allocatedBudget={progProjects.reduce((s, pj) => s + (pj.pm_approvedbudget ?? 0), 0) || undefined}
                       level={1}
                       hasChildren={progProjects.length > 0}
                       expanded={isProgExpanded}
@@ -201,7 +208,7 @@ const TreeView: React.FC<TreeViewProps> = ({ portfolios, programmes, projects, o
                           icon={<FolderIcon sx={{ fontSize: 16 }} />}
                           name={proj.pm_projectname!}
                           ragStatus={proj.pm_ragstatus?.toString()}
-                          budget={proj.pm_approvedbudgeteur ?? 0}
+                          budget={proj.pm_approvedbudget ?? 0}
                           level={2}
                           hasChildren={false}
                           onClick={() => onItemClick?.(proj.pm_projectid!, 'project', proj.pm_projectname!)}

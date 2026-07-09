@@ -293,6 +293,54 @@
           "x-ms-schema-name": "pm_notes",
           "maxLength": 100
         },
+        "pm_performancemeasure": {
+          "type": "string",
+          "title": "Performance Measure",
+          "x-ms-dataverse-attribute": "pm_performancemeasure",
+          "x-ms-dataverse-type": "MemoType",
+          "x-ms-schema-name": "pm_PerformanceMeasure",
+          "maxLength": 2000
+        },
+        "pm_performancescore": {
+          "type": "string",
+          "title": "Performance Score",
+          "x-ms-dataverse-attribute": "pm_performancescore",
+          "x-ms-dataverse-type": "PicklistType",
+          "x-ms-schema-name": "pm_PerformanceScore",
+          "enum": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5"
+          ],
+          "x-ms-enum-values": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "Color": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "6b089672-2e66-f111-ab0d-6045bd56f0ba",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Performance Score",
+          "x-ms-optionSetType": "Picklist"
+        },
+        "pm_performancescorename": {
+          "type": "string",
+          "title": "pm_performancescorename",
+          "x-ms-dataverse-attribute": "pm_performancescorename",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pm_performancescoreName",
+          "x-ms-read-only": true
+        },
         "pm_project": {
           "type": "string",
           "title": "Project",

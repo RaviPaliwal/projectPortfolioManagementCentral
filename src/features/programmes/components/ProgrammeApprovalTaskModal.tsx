@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
-  Button, IconButton, CircularProgress, Divider, Chip, Paper,
+  Button, IconButton, CircularProgress, Divider, Chip, Paper, useTheme, alpha,
+  TextField, FormControl, InputLabel, Select, MenuItem, Avatar,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
@@ -13,8 +14,9 @@ import BusinessIcon from '@mui/icons-material/Business'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import GroupsIcon from '@mui/icons-material/Groups'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
-import { fetchProgrammeDetails, updateProgrammePhase } from '@/services/programme.service'
+import { fetchProgrammeDetails, updateProgrammePhase, updateProgramme } from '@/services/programme.service'
 import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
+import { useUser } from '@/context/UserContext'
 import type { ProgrammeModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
@@ -47,6 +49,9 @@ export const ProgrammeApprovalTaskModal: React.FC<ProgrammeApprovalTaskModalProp
   open, onClose, entityId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
 }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+  const { users } = useUser()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [programme, setProgramme] = useState<ProgrammeModel | null>(null)
@@ -54,16 +59,29 @@ export const ProgrammeApprovalTaskModal: React.FC<ProgrammeApprovalTaskModalProp
   const [riskCount, setRiskCount] = useState<number>(0)
   const [issueCount, setIssueCount] = useState<number>(0)
 
+  // Form states for editable fields
+  const [managerId, setManagerId] = useState<string>('')
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
+  const [description, setDescription] = useState<string>('')
+
   const loadData = useCallback(async () => {
     if (!entityId) return
     setLoading(true)
     try {
       const detail = await fetchProgrammeDetails(entityId)
       if (!detail.programme) { onError('Programme not found.'); setLoading(false); return }
-      setProgramme(detail.programme)
+      const p = detail.programme
+      setProgramme(p)
       setProjectCount(detail.projects.length)
       setRiskCount(detail.risks.length)
       setIssueCount(detail.issues.length)
+
+      // Initialize form fields
+      setManagerId(p.pm_programmemanager ? p.pm_programmemanager.replace(/[{}]/g, '').toLowerCase() : '')
+      setStartDate(p.pm_startdate ? p.pm_startdate.split('T')[0] : '')
+      setEndDate(p.pm_enddate ? p.pm_enddate.split('T')[0] : '')
+      setDescription(p.pm_programmedescription || '')
     } catch (err) {
       console.error('Failed to load programme', err)
       onError('Failed to load programme details.')
@@ -78,6 +96,14 @@ export const ProgrammeApprovalTaskModal: React.FC<ProgrammeApprovalTaskModalProp
     if (!entityId) return false
     setSaving(true)
     try {
+      // First save the updated details to Dataverse
+      await updateProgramme(entityId, {
+        pm_programmemanager: managerId || undefined,
+        pm_startdate: startDate || undefined,
+        pm_enddate: endDate || undefined,
+        pm_programmedescription: description || undefined,
+      })
+
       // DecisionBox values: 0 = Approve, 3 = Reject
       const targetPhase = workflowDecision === 0 ? 2 : 1
       await updateProgrammePhase(entityId, targetPhase)
@@ -89,13 +115,12 @@ export const ProgrammeApprovalTaskModal: React.FC<ProgrammeApprovalTaskModalProp
       onError('Failed to record programme decision.')
       return false
     } finally { setSaving(false) }
-  }, [entityId, onSuccess, onError])
+  }, [entityId, managerId, startDate, endDate, description, onSuccess, onError])
 
   if (!open) return null
 
   const currentPhase = programme?.pm_programmephase != null ? PHASE_LABELS[Number(programme.pm_programmephase)] : null
   const rag = programme?.pm_ragstatus != null ? RAG_LABELS[Number(programme.pm_ragstatus)] : null
-  const variance = (programme?.pm_budgeteur ?? 0) - (programme?.pm_actualspendeur ?? 0)
 
   const formatDate = (d?: string | null): string => {
     if (!d) return '-'
@@ -104,166 +129,198 @@ export const ProgrammeApprovalTaskModal: React.FC<ProgrammeApprovalTaskModalProp
 
   return (
     <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.dark', color: 'primary.contrastText', py: 1.5, pr: 1 }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', py: 2, px: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <AccountTreeIcon />
+          <AccountTreeIcon sx={{ color: 'primary.main' }} />
           <Typography variant="h6" sx={{ fontWeight: 700 }}>Programme Approval</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip label="Pending Approval" color="warning" size="small" sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'white' }}>
+          <Chip label="Pending Approval" color="warning" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'text.secondary' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
       </DialogTitle>
-      <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
+      <DialogContent sx={{ p: 3, pt: '24px !important', bgcolor: 'background.default' }}>
         {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
         ) : (
-          <Grid container sx={{ height: '100%' }}>
-            <Grid size={{ xs: 12, md: 4 }} sx={{ borderRight: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', p: 3 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1 }}>Programme Summary</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{programme?.pm_programmename || 'Loading...'}</Typography>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  {currentPhase && <StatusTag label={currentPhase.label} color={currentPhase.color} size="small" sx={{ fontWeight: 600 }} />}
-                  {rag && <StatusTag label={rag.label} color={rag.color} size="small" variant="outlined" sx={{ fontWeight: 600 }} />}
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <PersonIcon sx={{ fontSize: 14 }} /> Manager
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{programme?.pm_programmemanagername || 'Unassigned'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Sponsor</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{programme?.pm_sponsorname || '-'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <BusinessIcon sx={{ fontSize: 14 }} /> Portfolio
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{programme?.pm_portfolioname || '-'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Business Unit</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{programme?.pm_businessunit || '-'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <AttachMoneyIcon sx={{ fontSize: 14 }} /> Budget
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                    {programme?.pm_budgeteur != null ? currencyFormatter.format(programme.pm_budgeteur) : '-'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <CalendarTodayIcon sx={{ fontSize: 14 }} /> Period
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {formatDate(programme?.pm_startdate)}
-                    {programme?.pm_enddate ? ' - ' + formatDate(programme.pm_enddate) : ''}
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ mt: 4, p: 2, bgcolor: 'primary.50', borderRadius: 1.5, border: '1px solid', borderColor: 'primary.100' }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <FactCheckIcon sx={{ fontSize: 16 }} /> Authority Required
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.8rem' }}>
-                  As the approving authority, your decision will set the programme phase. Approved programmes move to Initiation; rejected programmes return to Planning.
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12, md: 8 }} sx={{ p: 3 }}>
-              {/* Description */}
-              {programme?.pm_programmedescription && (
-                <>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <DescriptionIcon sx={{ fontSize: 16 }} /> Description
-                  </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, mb: 3, bgcolor: 'background.paper', maxHeight: 100, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
-                    {programme.pm_programmedescription}
-                  </Paper>
-                </>
-              )}
-
-              {/* Quick Stats */}
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <FactCheckIcon sx={{ fontSize: 16 }} /> Overview
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Programme Context details Card */}
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1, display: 'block', mb: 1.5 }}>
+                Programme Context
               </Typography>
-              <Grid container spacing={1.5} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, textAlign: 'center' }}>
-                    <GroupsIcon sx={{ fontSize: 20, color: 'primary.main', mb: 0.5 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{projectCount}</Typography>
-                    <Typography variant="caption" color="text.secondary">Projects</Typography>
-                  </Paper>
+              <Typography variant="h5" sx={{ fontWeight: 800, mb: 2.5 }}>
+                {programme?.pm_programmename || 'Loading...'}
+              </Typography>
+
+              <Grid container spacing={2.5}>
+                {/* Row 1: Non-editable fields */}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Target Portfolio</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{programme?.pm_portfolioname || '—'}</Typography>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, textAlign: 'center' }}>
-                    <WarningAmberIcon sx={{ fontSize: 20, color: riskCount > 0 ? 'warning.main' : 'text.disabled', mb: 0.5 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{riskCount}</Typography>
-                    <Typography variant="caption" color="text.secondary">Risks</Typography>
-                  </Paper>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Business Sponsor</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{programme?.pm_sponsorname || '—'}</Typography>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, textAlign: 'center' }}>
-                    <WarningAmberIcon sx={{ fontSize: 20, color: issueCount > 0 ? 'error.main' : 'text.disabled', mb: 0.5 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{issueCount}</Typography>
-                    <Typography variant="caption" color="text.secondary">Issues</Typography>
-                  </Paper>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Business Unit</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{programme?.pm_businessunit || '—'}</Typography>
+                  </Box>
+                </Grid>
+
+                {/* Row 2: Non-editable fields */}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Budget</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
+                      {programme?.pm_budgeteur != null ? currencyFormatter.format(programme.pm_budgeteur) : '—'}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Overall RAG</Typography>
+                    <Box sx={{ mt: 0.5 }}>
+                      {rag ? (
+                        <StatusTag label={rag.label} color={rag.color} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">Not specified</Typography>
+                      )}
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Programme Phase</Typography>
+                    <Box sx={{ mt: 0.5 }}>
+                      {currentPhase ? (
+                        <StatusTag label={currentPhase.label} color={currentPhase.color} size="small" sx={{ fontWeight: 600 }} />
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">Not specified</Typography>
+                      )}
+                    </Box>
+                  </Box>
+                </Grid>
+
+                {/* Row 3: Editable fields */}
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="approve-manager-label">Programme Manager</InputLabel>
+                    <Select
+                      labelId="approve-manager-label"
+                      label="Programme Manager"
+                      value={managerId ? managerId.replace(/[{}]/g, '').toLowerCase() : ''}
+                      onChange={(e) => setManagerId(e.target.value ? e.target.value.replace(/[{}]/g, '').toLowerCase() : '')}
+                      renderValue={(selected) => {
+                        const normSel = selected ? selected.replace(/[{}]/g, '').toLowerCase() : ''
+                        const user = users.find((u) => u.systemuserid?.replace(/[{}]/g, '').toLowerCase() === normSel)
+                        return (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
+                              {user?.fullname?.charAt(0) || '?'}
+                            </Avatar>
+                            {user?.fullname || 'Select Manager'}
+                          </Box>
+                        )
+                      }}
+                    >
+                      <MenuItem value="">— Select —</MenuItem>
+                      {users.map((user) => {
+                        const normId = user.systemuserid ? user.systemuserid.replace(/[{}]/g, '').toLowerCase() : ''
+                        return (
+                          <MenuItem key={normId} value={normId}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
+                                {user.fullname?.charAt(0) || '?'}
+                              </Avatar>
+                              <Typography variant="body2">{user.fullname}</Typography>
+                            </Box>
+                          </MenuItem>
+                        )
+                      })}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField
+                    fullWidth
+                    label="Start Date"
+                    size="small"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField
+                    fullWidth
+                    label="End Date"
+                    size="small"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                  />
                 </Grid>
               </Grid>
+            </Paper>
 
-              {/* Financial Summary */}
+            {/* Description */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <DescriptionIcon sx={{ fontSize: 16 }} /> Description & Objectives
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                size="small"
+                placeholder="Enter description or objectives..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </Box>
+
+            {/* Financial Summary */}
+            <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <AttachMoneyIcon sx={{ fontSize: 16 }} /> Financial Summary
               </Typography>
-              <Grid container spacing={1.5} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, textAlign: 'center' }}>
-                    <Typography variant="caption" color="text.secondary">Budget</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
-                      {programme?.pm_budgeteur != null ? currencyFormatter.format(programme.pm_budgeteur) : '-'}
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, textAlign: 'center' }}>
-                    <Typography variant="caption" color="text.secondary">Actual Spend</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
-                      {programme?.pm_actualspendeur != null ? currencyFormatter.format(programme.pm_actualspendeur) : '-'}
-                    </Typography>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 4 }}>
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, textAlign: 'center' }}>
-                    <Typography variant="caption" color="text.secondary">Variance</Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 700, fontFamily: 'monospace', color: variance < 0 ? 'error.main' : 'success.main' }}
-                    >
-                      {programme?.pm_budgeteur != null ? currencyFormatter.format(variance) : '-'}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              </Grid>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Approved Budget</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 700, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
+                  {programme?.pm_budgeteur != null ? currencyFormatter.format(programme.pm_budgeteur) : '—'}
+                </Typography>
+              </Paper>
+            </Box>
 
-              {/* What happens next */}
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, display: 'block', mb: 0.75 }}>After Your Decision</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.6 }}>
-                  <strong>Approved:</strong> Programme phase changes to <em>Initiation</em>, enabling project creation and resource allocation.
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.6 }}>
-                  <strong>Rejected:</strong> Programme returns to <em>Planning</em> phase. The programme manager will be notified with the decision notes.
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
+            {/* Decision Instruction Banner */}
+            <Box sx={{ p: 2, borderRadius: 1.5, bgcolor: alpha(theme.palette.info.main, 0.05), border: '1px solid', borderColor: alpha(theme.palette.info.main, 0.1) }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5, color: 'info.main' }}>
+                <FactCheckIcon sx={{ fontSize: 16 }} /> After Your Decision
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.8rem' }}>
+                <strong>Approved:</strong> Programme phase changes to <em>Initiation</em>, enabling project creation and resource allocation.
+                <br />
+                <strong>Rejected:</strong> Programme returns to <em>Planning</em> phase. The programme manager will be notified with the decision notes.
+              </Typography>
+            </Box>
+          </Box>
         )}
       </DialogContent>
       <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>

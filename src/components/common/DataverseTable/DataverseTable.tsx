@@ -1,6 +1,10 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableRow, Paper, Box, TablePagination } from '@mui/material';
-import { TableShell, SearchFilterBar, ExportButton, TableHeader } from '@/components/common';
+import { TableShell } from '../TableShell/TableShell';
+import { SearchFilterBar } from '../SearchFilterBar/SearchFilterBar';
+import { ExportButton } from '../ExportButton/ExportButton';
+import { TableHeader } from '../TableHeader/TableHeader';
+import { TableFooter, type TableFooterTotal } from '../TableFooter/TableFooter';
 import { useDataGrid, type SortState } from '@/hooks/useDataGrid';
 import type { ReactNode } from 'react';
 
@@ -29,6 +33,10 @@ export interface DataverseTableProps<T> {
   showExport?: boolean;
   minHeight?: number | string;
   maxHeight?: string;
+  variant?: 'elevation' | 'outlined' | 'flat';
+  totals?: TableFooterTotal[];
+  itemLabel?: string;
+  getRowSx?: (item: T) => Record<string, any>;
 }
 
 export function DataverseTable<T extends Record<string, any>>({
@@ -48,6 +56,10 @@ export function DataverseTable<T extends Record<string, any>>({
   showExport = true,
   minHeight,
   maxHeight,
+  variant = 'elevation',
+  totals,
+  itemLabel = 'item',
+  getRowSx,
 }: DataverseTableProps<T>) {
   const {
     searchQuery,
@@ -63,7 +75,7 @@ export function DataverseTable<T extends Record<string, any>>({
     reset,
   } = useDataGrid(data, {
     searchFields,
-    initialRowsPerPage: 25,
+    initialRowsPerPage: 10,
   });
 
   const handleClear = () => {
@@ -72,7 +84,20 @@ export function DataverseTable<T extends Record<string, any>>({
   };
 
   return (
-    <Paper sx={{ overflow: 'hidden', mb: 3, borderRadius: 2 }}>
+    <Paper 
+      elevation={variant === 'elevation' ? 1 : 0} 
+      variant={variant === 'outlined' ? 'outlined' : 'elevation'}
+      sx={{ 
+        overflow: 'hidden', 
+        mb: 3, 
+        borderRadius: variant === 'flat' ? 0 : 2,
+        bgcolor: variant === 'flat' ? 'transparent' : 'background.paper',
+        border: variant === 'flat' ? 'none' : undefined,
+        display: 'flex',
+        flexDirection: 'column',
+        flexGrow: 1,
+      }}
+    >
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, borderBottom: 1, borderColor: 'divider' }}>
         <SearchFilterBar
           searchQuery={searchQuery}
@@ -101,6 +126,7 @@ export function DataverseTable<T extends Record<string, any>>({
         emptyTitle={emptyTitle}
         minHeight={minHeight}
         maxHeight={maxHeight}
+        sx={{ flexGrow: 1 }}
       >
         <Table size="small">
           <TableHeader
@@ -119,7 +145,7 @@ export function DataverseTable<T extends Record<string, any>>({
                   key={id}
                   hover
                   onClick={() => onRowClick?.(item)}
-                  sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                  sx={{ cursor: onRowClick ? 'pointer' : 'default', ...getRowSx?.(item) }}
                 >
                   {columns.map((col) => (
                     <TableCell key={col.key as string} align={col.align}>
@@ -138,18 +164,15 @@ export function DataverseTable<T extends Record<string, any>>({
         </Table>
       </TableShell>
 
-      <TablePagination
-        component="div"
-        count={filteredCount}
+      <TableFooter
+        filteredCount={filteredCount}
+        totalCount={data.length}
+        itemLabel={itemLabel}
+        totals={totals}
         page={page}
+        onPageChange={(_, newPage) => setPage(null, newPage)}
         rowsPerPage={rowsPerPage}
-        onPageChange={(_, newPage) => setPage(_, newPage)}
-        onRowsPerPageChange={(event) => setRowsPerPage(event as React.ChangeEvent<HTMLInputElement>)}
-        rowsPerPageOptions={[10, 25, 50, 100]}
-        sx={{
-          '.MuiTablePagination-toolbar': { minHeight: 48 },
-          '.MuiTablePagination-select': { py: 0 },
-        }}
+        onRowsPerPageChange={(event) => setRowsPerPage(event)}
       />
     </Paper>
   );

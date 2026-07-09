@@ -43,7 +43,7 @@ export const PortfolioHealthSnapshot = ({
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>Health Snapshot</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>Risk Snapshot</Typography>
         {!loading && (
           <StatusTag
             icon={<CalendarMonthIcon />}
@@ -73,12 +73,12 @@ export const PortfolioHealthSnapshot = ({
           {/* Portfolio Snapshot */}
           <Box>
             <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: '0.03em', mb: 1, display: 'block' }}>
-              Portfolio Health
+              Portfolio Risk
             </Typography>
             {portfolioSnapshot.length > 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                 {portfolioSnapshot.map((portfolio) => (
-                  <Box key={portfolio.pm_portfolioid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.25, bgcolor: theme.palette.action.hover, borderRadius: 1.5 }}>
+                  <Box key={portfolio.pm_portfolioid} className="activity-list-item" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.25, bgcolor: theme.palette.action.hover, borderRadius: 1.5 }}>
                     <Box sx={{ minWidth: 0, flex: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {portfolio.pm_portfolioname ?? 'Unnamed'}
@@ -99,12 +99,12 @@ export const PortfolioHealthSnapshot = ({
           {/* Programme Snapshot */}
           <Box>
             <Typography variant="caption" sx={{ fontWeight: 700, color: 'secondary.main', textTransform: 'uppercase', letterSpacing: '0.03em', mb: 1, display: 'block' }}>
-              Programme Health
+              Programme Risk
             </Typography>
             {programmeSnapshot.length > 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                 {programmeSnapshot.map((programme) => (
-                  <Box key={programme.pm_programmeid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.25, bgcolor: theme.palette.action.hover, borderRadius: 1.5 }}>
+                  <Box key={programme.pm_programmeid} className="activity-list-item" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.25, bgcolor: theme.palette.action.hover, borderRadius: 1.5 }}>
                     <Box sx={{ minWidth: 0, flex: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {programme.pm_programmename ?? 'Unnamed'}

@@ -3,11 +3,13 @@ import {
   Box,
   Typography,
   Paper,
+  Button
 } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import HowToRegIcon from '@mui/icons-material/HowToReg'
 import { StatusTag } from '@/components/common'
 import type { GateReviewModel } from '@/types/dataverse'
+import { GateReview360View } from '@/features/gatereviews/components/GateReview360View'
 
 const GATE_STAGE_LABELS: Record<string, string> = {
   '0': 'Gate 1',
@@ -19,13 +21,53 @@ const GATE_STAGE_LABELS: Record<string, string> = {
 interface ProjectGovernanceTabProps {
   gateReviews: GateReviewModel[]
   onNavigateToGateReview?: (gateReview?: GateReviewModel) => void
+  onAddGateReview?: () => void
+  selectedGateReview: GateReviewModel | null
+  setSelectedGateReview: (gateReview: GateReviewModel | null) => void
+  canEdit?: boolean
+  canDelete?: boolean
+  onEditGateReview?: (gateReview: GateReviewModel) => void
+  onDeleteGateReview?: (gateReviewId: string) => void
 }
 
-export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gateReviews, onNavigateToGateReview }) => {
+export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({
+  gateReviews,
+  onNavigateToGateReview,
+  onAddGateReview,
+  selectedGateReview,
+  setSelectedGateReview,
+  canEdit = false,
+  canDelete = false,
+  onEditGateReview,
+  onDeleteGateReview
+}) => {
+  if (selectedGateReview) {
+    return (
+      <GateReview360View
+        review={selectedGateReview}
+        onBack={() => setSelectedGateReview(null)}
+        onPmoCheck={() => {}}
+        onFinanceReview={() => {}}
+        onBoardDecision={() => {}}
+        onEdit={onEditGateReview ? () => onEditGateReview(selectedGateReview) : () => {}}
+        onDelete={onDeleteGateReview ? () => onDeleteGateReview(selectedGateReview.pm_projectgatereviewid!) : () => {}}
+        canEdit={canEdit}
+        canDelete={canDelete}
+      />
+    )
+  }
+
   return (
-    <Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Action Buttons */}
+      {onAddGateReview && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -2 }}>
+          <Button size="small" variant="outlined" color="success" startIcon={<HowToRegIcon />} onClick={onAddGateReview}>Gate Review</Button>
+        </Box>
+      )}
+
       {gateReviews.length > 0 ? (
-        <Box sx={{ mb: 3 }}>
+        <Box>
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Gate Reviews ({gateReviews.length})</Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {gateReviews.map((g) => (
@@ -38,16 +80,16 @@ export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({ gate
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  cursor: onNavigateToGateReview ? 'pointer' : 'default',
+                  cursor: 'pointer',
                   transition: 'all 0.15s ease',
-                  '&:hover': onNavigateToGateReview ? { bgcolor: 'action.hover', borderColor: 'primary.main' } : {},
+                  '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
                 }}
                 onClick={() => onNavigateToGateReview?.(g)}
               >
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {g.pm_gatename}
-                    {onNavigateToGateReview && <OpenInNewIcon sx={{ fontSize: 14, ml: 0.5, verticalAlign: 'middle', color: 'text.disabled' }} />}
+                    <OpenInNewIcon sx={{ fontSize: 14, ml: 0.5, verticalAlign: 'middle', color: 'text.disabled' }} />
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {GATE_STAGE_LABELS[String(g.pm_gatestage)] || `Stage ${g.pm_gatestage}`} · {g.pm_leadreviewer ? `Reviewer: ${g.pm_leadreviewer}` : ''}

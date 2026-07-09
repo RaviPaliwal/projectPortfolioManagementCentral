@@ -272,8 +272,10 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Parent Portfolio</InputLabel>
+                <InputLabel id="parent-portfolio-label">Parent Portfolio</InputLabel>
                 <Select
+                  id="parent-portfolio-select"
+                  labelId="parent-portfolio-label"
                   value={formData._pm_portfolio_value}
                   label="Parent Portfolio"
                   onChange={(e) => setFormData((f) => ({ ...f, _pm_portfolio_value: e.target.value }))}
@@ -288,8 +290,10 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Programme Manager</InputLabel>
+                <InputLabel id="programme-manager-label">Programme Manager</InputLabel>
                 <Select
+                  id="programme-manager-select"
+                  labelId="programme-manager-label"
                   value={formData.pm_programmemanager}
                   label="Programme Manager"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_programmemanager: e.target.value }))}
@@ -332,8 +336,10 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Phase</InputLabel>
+                <InputLabel id="programme-phase-label">Phase</InputLabel>
                 <Select
+                  id="programme-phase-select"
+                  labelId="programme-phase-label"
                   value={formData.pm_programmephase}
                   label="Phase"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_programmephase: e.target.value as number }))}
@@ -348,8 +354,10 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>RAG Status</InputLabel>
+                <InputLabel id="programme-rag-label">RAG Status</InputLabel>
                 <Select
+                  id="programme-rag-select"
+                  labelId="programme-rag-label"
                   value={formData.pm_ragstatus}
                   label="RAG Status"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_ragstatus: e.target.value as number }))}
@@ -363,8 +371,10 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Business Unit</InputLabel>
+                <InputLabel id="programme-bu-label">Business Unit</InputLabel>
                 <Select
+                  id="programme-bu-select"
+                  labelId="programme-bu-label"
                   value={formData.pm_businessunit}
                   label="Business Unit"
                   onChange={(e) => setFormData((f) => ({ ...f, pm_businessunit: e.target.value }))}

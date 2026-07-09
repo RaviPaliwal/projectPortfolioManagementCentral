@@ -42,6 +42,8 @@ import type { FormField } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import { BudgetLineFormDialog } from '@/features/budgets/components'
 import type { BudgetLineModel } from '@/types/dataverse'
+import { updateRiskFull, updateIssueFull } from '@/services/risk-issue.service'
+import { updateBenefitFull, updateGateReview } from '@/services/governance.service'
 
 interface SubDialogProps {
   open: boolean
@@ -142,7 +144,7 @@ export const MilestoneDialog: React.FC<SubDialogProps> = ({ open, onClose, proje
   )
 }
 
-export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
+export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
   const [resources, setResources] = useState<{ value: string, label: string }[]>([])
   const [resourcesLoaded, setResourcesLoaded] = useState(false)
 
@@ -202,27 +204,68 @@ export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
     ]},
   ]
 
+  const mappedInitialData = useMemo(() => {
+    if (!initialData) return undefined
+    return {
+      ...initialData,
+      pm_riskcategory: initialData.pm_riskcategory != null ? String(initialData.pm_riskcategory) : undefined,
+      pm_ragstatus: initialData.pm_ragstatus != null ? String(initialData.pm_ragstatus) : '1',
+      pm_inherentprobability: initialData.pm_inherentprobability != null ? String(initialData.pm_inherentprobability) : undefined,
+      pm_inherentimpact: initialData.pm_inherentimpact != null ? String(initialData.pm_inherentimpact) : undefined,
+      pm_residualprobability: initialData.pm_residualprobability != null ? String(initialData.pm_residualprobability) : undefined,
+      pm_residualimpact: initialData.pm_residualimpact != null ? String(initialData.pm_residualimpact) : undefined,
+      pm_responsestrategy: initialData.pm_responsestrategy != null ? String(initialData.pm_responsestrategy) : undefined,
+    }
+  }, [initialData])
+
   const handleSubmit = async (data: Record<string, any>) => {
     try {
-      await createRisk({ ...data, pm_projectid: projectId })
-      onSuccess('Risk logged successfully.')
+      const payload = {
+        ...data,
+        pm_riskcategory: data.pm_riskcategory !== '' ? Number(data.pm_riskcategory) : undefined,
+        pm_ragstatus: data.pm_ragstatus !== '' ? Number(data.pm_ragstatus) : undefined,
+        pm_inherentprobability: data.pm_inherentprobability !== '' ? Number(data.pm_inherentprobability) : undefined,
+        pm_inherentimpact: data.pm_inherentimpact !== '' ? Number(data.pm_inherentimpact) : undefined,
+        pm_residualprobability: data.pm_residualprobability !== '' ? Number(data.pm_residualprobability) : undefined,
+        pm_residualimpact: data.pm_residualimpact !== '' ? Number(data.pm_residualimpact) : undefined,
+        pm_responsestrategy: data.pm_responsestrategy !== '' ? Number(data.pm_responsestrategy) : undefined,
+      }
+      
+      if (initialData?.pm_riskid) {
+        await updateRiskFull(initialData.pm_riskid, payload)
+        onSuccess('Risk updated successfully.')
+      } else {
+        await createRisk({ ...payload, pm_projectid: projectId })
+        onSuccess('Risk logged successfully.')
+      }
       onClose()
-    } catch {
-      onError('Unable to log risk.')
+    } catch (err) {
+      console.error('[RiskDialog] handleSubmit failed:', err)
+      onError(initialData?.pm_riskid ? 'Unable to update risk.' : 'Unable to log risk.')
     }
   }
 
   if (open && !resourcesLoaded) return null
 
-  return <DynamicFormDialog open={open} title="Log Risk" fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText="Log Risk" />
+  return (
+    <DynamicFormDialog 
+      open={open} 
+      title={initialData ? "Edit Risk" : "Log Risk"} 
+      fields={fields} 
+      initialData={mappedInitialData} 
+      onClose={onClose} 
+      onSubmit={handleSubmit} 
+      submitText={initialData ? "Save Changes" : "Log Risk"} 
+    />
+  )
 }
 
-export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
+export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
   const fields: FormField[] = [
     { name: 'pm_issuetitle', label: 'Issue title', type: 'text', required: true },
     { name: 'pm_issuedescription', label: 'Description', type: 'multiline', rows: 3 },
     { name: 'pm_issuecategory', label: 'Category', type: 'select', defaultValue: '0', gridSize: 6, options: [
-      { value: '0', label: 'Scope' }, { value: '1', label: 'Schedule' }, { value: '2', label: 'Budget' }, { value: '3', label: 'Quality' }, { value: '4', label: 'Resource' }
+      { value: '0', label: 'Dependency' }, { value: '1', label: 'Technical' }
     ]},
     { name: 'pm_prioritylevel', label: 'Priority', type: 'select', defaultValue: '0', gridSize: 6, options: [
       { value: '0', label: 'Normal' }, { value: '1', label: 'High' }, { value: '2', label: 'Critical' }
@@ -231,17 +274,48 @@ export const IssueDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId
     { name: 'pm_targetresolutiondate', label: 'Target resolution date', type: 'date' }
   ]
 
+  const mappedInitialData = useMemo(() => {
+    if (!initialData) return undefined
+    return {
+      ...initialData,
+      pm_issuecategory: initialData.pm_issuecategory != null ? String(initialData.pm_issuecategory) : '0',
+      pm_prioritylevel: initialData.pm_prioritylevel != null ? String(initialData.pm_prioritylevel) : '0',
+    }
+  }, [initialData])
+
   const handleSubmit = async (data: Record<string, any>) => {
     try {
-      await createIssue({ ...data, pm_projectid: projectId })
-      onSuccess('Issue logged successfully.')
+      const payload = {
+        ...data,
+        pm_issuecategory: data.pm_issuecategory !== '' ? Number(data.pm_issuecategory) : undefined,
+        pm_prioritylevel: data.pm_prioritylevel !== '' ? Number(data.pm_prioritylevel) : undefined,
+      }
+      
+      if (initialData?.pm_issueid) {
+        await updateIssueFull(initialData.pm_issueid, payload)
+        onSuccess('Issue updated successfully.')
+      } else {
+        await createIssue({ ...payload, pm_projectid: projectId })
+        onSuccess('Issue logged successfully.')
+      }
       onClose()
-    } catch {
-      onError('Unable to log issue.')
+    } catch (err) {
+      console.error('[IssueDialog] handleSubmit failed:', err)
+      onError(initialData?.pm_issueid ? 'Unable to update issue.' : 'Unable to log issue.')
     }
   }
 
-  return <DynamicFormDialog open={open} title="Log Issue" fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText="Log Issue" />
+  return (
+    <DynamicFormDialog 
+      open={open} 
+      title={initialData ? "Edit Issue" : "Log Issue"} 
+      fields={fields} 
+      initialData={mappedInitialData} 
+      onClose={onClose} 
+      onSubmit={handleSubmit} 
+      submitText={initialData ? "Save Changes" : "Log Issue"} 
+    />
+  )
 }
 
 function countWorkingDays(start: string, end: string): number {
@@ -630,7 +704,7 @@ export const BudgetDialog: React.FC<SubDialogProps> = ({ open, onClose, projectI
   )
 }
 
-export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
+export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
   const fields: FormField[] = [
     { name: 'pm_benefitname', label: 'Benefit name', type: 'text', required: true },
     { name: 'pm_benefitcategory', label: 'Category', type: 'select', defaultValue: '0', gridSize: 6, options: [
@@ -644,17 +718,48 @@ export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, project
     { name: 'pm_realisationenddate', label: 'Realisation end date', type: 'date' }
   ]
 
+  const mappedInitialData = useMemo(() => {
+    if (!initialData) return undefined
+    return {
+      ...initialData,
+      pm_benefitcategory: initialData.pm_benefitcategory != null ? String(initialData.pm_benefitcategory) : '0',
+      pm_benefitstatus: initialData.pm_benefitstatus != null ? String(initialData.pm_benefitstatus) : '0',
+    }
+  }, [initialData])
+
   const handleSubmit = async (data: Record<string, any>) => {
     try {
-      await createBenefit({ ...data, _pm_project_value: projectId })
-      onSuccess('Benefit added successfully.')
+      const payload = {
+        ...data,
+        pm_benefitcategory: data.pm_benefitcategory !== '' ? Number(data.pm_benefitcategory) : undefined,
+        pm_benefitstatus: data.pm_benefitstatus !== '' ? Number(data.pm_benefitstatus) : undefined,
+      }
+      
+      if (initialData?.pm_benefitid) {
+        await updateBenefitFull(initialData.pm_benefitid, payload)
+        onSuccess('Benefit updated successfully.')
+      } else {
+        await createBenefit({ ...payload, _pm_project_value: projectId })
+        onSuccess('Benefit added successfully.')
+      }
       onClose()
-    } catch {
-      onError('Unable to add benefit.')
+    } catch (err) {
+      console.error('[BenefitDialog] handleSubmit failed:', err)
+      onError(initialData?.pm_benefitid ? 'Unable to update benefit.' : 'Unable to add benefit.')
     }
   }
 
-  return <DynamicFormDialog open={open} title="Add Benefit" fields={fields} onClose={onClose} onSubmit={handleSubmit} submitText="Add Benefit" />
+  return (
+    <DynamicFormDialog 
+      open={open} 
+      title={initialData ? "Edit Benefit" : "Add Benefit"} 
+      fields={fields} 
+      initialData={mappedInitialData} 
+      onClose={onClose} 
+      onSubmit={handleSubmit} 
+      submitText={initialData ? "Save Changes" : "Add Benefit"} 
+    />
+  )
 }
 
 export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
@@ -944,7 +1049,7 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
 
 // GateReviewDialog is kept largely intact because it requires a custom Readiness Check UI
 // which is beyond the scope of a standard simple form.
-export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError }) => {
+export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId, onSuccess, onError, initialData }) => {
   const [form, setForm] = useState({ pm_gatename: '', pm_gatestage: 0, pm_plannedreviewdate: '' })
   const [readiness, setReadiness] = useState<any>(null)
   const [checking, setChecking] = useState(false)
@@ -962,6 +1067,20 @@ export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, proj
   }, [projectId])
 
   useEffect(() => {
+    if (open) {
+      if (initialData) {
+        setForm({
+          pm_gatename: initialData.pm_gatename || '',
+          pm_gatestage: initialData.pm_gatestage != null ? Number(initialData.pm_gatestage) : 0,
+          pm_plannedreviewdate: initialData.pm_plannedreviewdate ? new Date(initialData.pm_plannedreviewdate).toISOString().split('T')[0] : '',
+        })
+      } else {
+        setForm({ pm_gatename: '', pm_gatestage: 0, pm_plannedreviewdate: '' })
+      }
+    }
+  }, [open, initialData])
+
+  useEffect(() => {
     if (open) checkReadiness(form.pm_gatestage)
   }, [open, form.pm_gatestage, checkReadiness])
 
@@ -970,27 +1089,32 @@ export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, proj
     if (readiness && !readiness.isReady) { onError('Project is not ready for submission. Please address the failed checks.'); return }
     
     try {
-      const { createGateReview } = await import('@/services')
-      const createdReview = await createGateReview({
-        ...form,
-        _pm_project_value: projectId,
-        pm_reviewstatus: 1, // Scheduled
-        pm_reviewoutcome: 2, // Not Yet Reviewed
-      } as any)
+      if (initialData?.pm_projectgatereviewid) {
+        await updateGateReview(initialData.pm_projectgatereviewid, form as any)
+        onSuccess('Gate review updated successfully.')
+      } else {
+        const { createGateReview } = await import('@/services')
+        const createdReview = await createGateReview({
+          ...form,
+          _pm_project_value: projectId,
+          pm_reviewstatus: 1, // Scheduled
+          pm_reviewoutcome: 2, // Not Yet Reviewed
+        } as any)
 
-      if (createdReview?.pm_projectgatereviewid) {
-        try {
-          await startWorkflowForEntity('default-template', createdReview.pm_projectgatereviewid, MODULE_NAMES.GATE_REVIEWS.value, 'System')
-        } catch (wfErr) {
-          console.error('[GateReviewDialog] Failed to initiate workflow:', wfErr)
+        if (createdReview?.pm_projectgatereviewid) {
+          try {
+            await startWorkflowForEntity('default-template', createdReview.pm_projectgatereviewid, MODULE_NAMES.GATE_REVIEWS.value, 'System')
+          } catch (wfErr) {
+            console.error('[GateReviewDialog] Failed to initiate workflow:', wfErr)
+          }
         }
+        onSuccess('Gate review scheduled successfully and workflow initiated.')
       }
 
       setForm({ pm_gatename: '', pm_gatestage: 0, pm_plannedreviewdate: '' })
-      onSuccess('Gate review scheduled successfully and workflow initiated.')
       onClose()
     } catch {
-      onError('Unable to schedule gate review.')
+      onError(initialData?.pm_projectgatereviewid ? 'Unable to update gate review.' : 'Unable to schedule gate review.')
     }
   }
 
@@ -1000,10 +1124,10 @@ export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, proj
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 800, pb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
         <HowToRegIcon color="success" />
-        Submit for Gate Review
+        {initialData ? 'Edit Gate Review' : 'Submit for Gate Review'}
       </DialogTitle>
       <Typography variant="caption" color="text.secondary" sx={{ px: 3, pb: 1 }}>
-        Schedule a formal governance review for this project.
+        {initialData ? 'Update details of this formal governance review.' : 'Schedule a formal governance review for this project.'}
       </Typography>
       <DialogContent>
         <Grid container spacing={2.5} sx={{ mt: 0.5 }}>
@@ -1107,7 +1231,7 @@ export const GateReviewDialog: React.FC<SubDialogProps> = ({ open, onClose, proj
           disabled={!form.pm_gatename || checking || readiness?.isReady === false}
           startIcon={<HowToRegIcon />}
         >
-          {readiness?.isReady === false ? 'Not Ready' : 'Submit for Review'}
+          {initialData ? 'Save Changes' : (readiness?.isReady === false ? 'Not Ready' : 'Submit for Review')}
         </Button>
       </DialogActions>
     </Dialog>

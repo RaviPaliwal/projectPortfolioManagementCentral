@@ -11,10 +11,8 @@ import {
   DIRECTION_LABELS,
   DIRECTION_COLORS,
   TXN_TYPE_LABELS,
-  CATEGORY_LABELS,
   DIRECTION_FILTERS,
-  TXN_TYPE_FILTERS,
-  CATEGORY_FILTERS
+  TXN_TYPE_FILTERS
 } from '../constants'
 
 interface CashflowTableProps {
@@ -24,8 +22,6 @@ interface CashflowTableProps {
   onDirectionFilterChange: (v: string) => void
   txnTypeFilter: string
   onTxnTypeFilterChange: (v: string) => void
-  categoryFilter: string
-  onCategoryFilterChange: (v: string) => void
   onSelectEntry: (entry: CashflowEntryModel) => void
   onEditEntry: (entry: CashflowEntryModel) => void
   onDeleteEntry: (entry: CashflowEntryModel) => void
@@ -40,8 +36,6 @@ export const CashflowTable: React.FC<CashflowTableProps> = ({
   onDirectionFilterChange,
   txnTypeFilter,
   onTxnTypeFilterChange,
-  categoryFilter,
-  onCategoryFilterChange,
   onSelectEntry,
   onEditEntry,
   onDeleteEntry,
@@ -52,7 +46,7 @@ export const CashflowTable: React.FC<CashflowTableProps> = ({
   const columns: Column<CashflowEntryModel>[] = [
     { key: 'pm_entryname', label: 'Entry Name', format: (val) => <Typography variant="body2" sx={{ fontWeight: 600 }}>{val}</Typography> },
     {
-      key: 'pm_amounteur',
+      key: 'pm_amount',
       label: 'Amount',
       align: 'right',
       format: (val) => (
@@ -73,8 +67,6 @@ export const CashflowTable: React.FC<CashflowTableProps> = ({
       )
     },
     { key: 'pm_transactiontype', label: 'Type', format: (val) => TXN_TYPE_LABELS[String(val ?? '')] || '—' },
-    { key: 'pm_category', label: 'Category', format: (val) => CATEGORY_LABELS[String(val ?? '')] || '—' },
-    { key: 'pm_programmelookupname', label: 'Programme', format: (val) => val || '—' },
     { key: 'pm_projectname', label: 'Project', format: (val) => val || '—' },
     { key: 'pm_budgetlinename', label: 'Budget Line', format: (val) => val || '—' },
     { key: 'pm_transactiondate', label: 'Date', format: (val) => formatDate(val as string) },
@@ -96,13 +88,6 @@ export const CashflowTable: React.FC<CashflowTableProps> = ({
         filterOptions={TXN_TYPE_FILTERS}
         sx={{ minWidth: 140, p: 0, border: 'none' }}
       />
-      <SearchFilterBar
-        filterValue={categoryFilter}
-        onFilterChange={onCategoryFilterChange}
-        filterLabel="Category"
-        filterOptions={CATEGORY_FILTERS}
-        sx={{ minWidth: 140, p: 0, border: 'none' }}
-      />
     </Box>
   )
 
@@ -119,7 +104,6 @@ export const CashflowTable: React.FC<CashflowTableProps> = ({
       onClearFilters={() => {
         onDirectionFilterChange('')
         onTxnTypeFilterChange('')
-        onCategoryFilterChange('')
       }}
       actions={(entry) => (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>

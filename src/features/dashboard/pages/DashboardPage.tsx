@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogActions,
   useTheme,
+  alpha,
   IconButton,
   Tooltip,
   LinearProgress,
@@ -32,7 +33,6 @@ import {
   fetchDashboardMetrics,
   fetchProjectsFull,
   fetchPortfolioHierarchy,
-  fetchApprovalRequests,
   fetchCapacityAllocationData,
   fetchPlannedVsActualData,
   fetchUtilizationByProjectData,
@@ -52,9 +52,19 @@ import {
   KpiCardRow,
 } from '@/components/common'
 import { fontSizes } from '@/styles'
-import type { InitiativeModel, ApprovalRequestModel, PortfolioModel, ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
+import type { InitiativeModel, PortfolioModel, ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
 import type { PipelineKpis } from '@/services'
 import { DashboardTasksWidget, BudgetHealthPanel, PipelineStageSummary, PortfolioHealthSnapshot } from '../components'
+import {
+  MockupKpiRow,
+  MockupOverviewCard,
+  MockupFinancialsCard,
+  MockupTrendCard,
+  MockupPipelineCard,
+  MockupResourceTrendCard,
+  MockupBudgetGaugeCard,
+  MockupSeverityCard
+} from '../components/MockupDashboardLayout'
 import { currencyFormatter, formatDateTime } from '@/utils/formatters'
 import { useUser } from '@/context/UserContext'
 
@@ -98,7 +108,6 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   // New data
   const [pipelineKpis, setPipelineKpis] = useState<PipelineKpis>({ totalActiveInitiatives: 0, pendingApprovals: 0, totalEstimatedCost: 0, approvedThisMonth: 0 })
   const [initiatives, setInitiatives] = useState<InitiativeModel[]>([])
-  const [approvalRequests, setApprovalRequests] = useState<ApprovalRequestModel[]>([])
   const [milestonesDue, setMilestonesDue] = useState(0)
   const [risks, setRisks] = useState<RiskModel[]>([])
   const [issues, setIssues] = useState<IssueModel[]>([])
@@ -107,6 +116,13 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   // Budget Filter State
   const [availableYears, setAvailableYears] = useState<number[]>([])
   const [budgetYear, setBudgetYear] = useState<number | 'all'>('all')
+
+  // Resource Filter State
+  const [resourceMonth, setResourceMonth] = useState<Date>(new Date())
+
+  useEffect(() => {
+    fetchCapacityAllocationData(resourceMonth).then(setCapacityAllocationData)
+  }, [resourceMonth])
 
   const sortByRag = <T extends { pm_ragstatus?: string | number }>(a: T, b: T) => {
     const rank = (status?: string | number) => (status === '2' || status === 2 ? 0 : status === '0' || status === 0 ? 1 : 2)
@@ -117,7 +133,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     if (isRefresh) setRefreshing(true)
     try {
       // Global metrics for the whole dashboard (non-filtered)
-      const [dashboard, activeProjects, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, allApprovalRequests, milestones, risksData, issuesData, periods, portfolioTrend] = await Promise.all([
+      const [dashboard, activeProjects, hierarchy, capacityAlloc, plannedActual, utilByProject, deptDemand, pipeline, initiativesData, milestones, risksData, issuesData, periods, portfolioTrend] = await Promise.all([
         fetchDashboardMetrics({}),
         fetchProjectsFull(),
         fetchPortfolioHierarchy(),
@@ -127,7 +143,6 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         fetchDepartmentDemandData(),
         fetchPipelineKpis(),
         fetchInitiatives(),
-        fetchApprovalRequests(),
         fetchMilestonesDueThisMonth(),
         fetchAllRisks(),
         fetchAllIssues(),
@@ -160,7 +175,6 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       setProgrammeSnapshot(hierarchy.programmes.slice().sort(sortByRag).slice(0, 4))
       setPipelineKpis(pipeline)
       setInitiatives(initiativesData)
-      setApprovalRequests(allApprovalRequests)
       setMilestonesDue(milestones)
       setRisks(risksData)
       setIssues(issuesData)
@@ -215,7 +229,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     { label: 'Actual Spend', value: currencyFormatter.format(metrics.totalActualSpend), icon: <TrendingDownIcon />, color: 'warning.main', subtitle: `${budgetPct}% of budget consumed` },
     { label: 'Red / Amber', value: metrics.projectsInRed + metrics.projectsInAmber, icon: <WarningIcon />, color: 'error.main', subtitle: `${pipelineKpis.pendingApprovals} pending approvals` },
     { label: 'Pipeline Value', value: currencyFormatter.format(metrics.pipelineValue), icon: <TimelineIcon />, color: 'secondary.main', subtitle: `${pipelineKpis.totalActiveInitiatives} initiatives` },
-    { label: 'RAG Health', value: `${metrics.projectsInGreen}/${metrics.projectsInAmber}/${metrics.projectsInRed}`, icon: <CheckCircleIcon />, color: 'success.main', subtitle: 'G / A / R ratio' },
+    { label: 'RAG Risk', value: `${metrics.projectsInGreen}/${metrics.projectsInAmber}/${metrics.projectsInRed}`, icon: <CheckCircleIcon />, color: 'success.main', subtitle: 'G / A / R ratio' },
   ]
 
   return (
@@ -265,66 +279,56 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       })()}
 
       {dashboardTab === 0 || !(currentUserPersona === 'FinancialController' || currentUserPersona === 'SystemAdministrator') ? (
-        <>
-          {/* KPI Cards — Standardized Row */}
-          <KpiCardRow items={kpiItems} loading={loading} />
+        <Box sx={{ mt: 1 }}>
+          {/* Top Pill KPI Row */}
+          <MockupKpiRow metrics={metrics} pipelineKpis={pipelineKpis} />
 
-          {/* Dashboard Charts */}
-          <Box sx={{ mb: 3 }}>
-            <DashboardCharts
-              projectStatusData={projectStatusData}
-              portfolioTrendData={portfolioTrendData}
-              capacityAllocationData={capacityAllocationData}
-              plannedVsActualData={plannedVsActualData}
-              utilizationByProjectData={utilizationByProjectData}
-              departmentDemandData={departmentDemandData}
-            />
-          </Box>
-
-          {/* Main grid */}
-          <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
-            {/* Row 1: Budget Health + Tasks */}
-            <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex' }}>
-              <BudgetHealthPanel
+          {/* Row 1: RAG Overview, Financial Performance & Trends */}
+          <Grid container spacing={3.5} sx={{ mb: 3.5 }}>
+            <Grid size={{ xs: 12, lg: 3 }}>
+              <MockupOverviewCard metrics={metrics} pipelineKpis={pipelineKpis} />
+            </Grid>
+            <Grid size={{ xs: 12, lg: 6 }}>
+              <MockupFinancialsCard
                 totalApprovedBudget={budgetMetrics.approved}
                 totalActualSpend={budgetMetrics.actual}
-                loading={loading || budgetLoading}
+                portfolios={allPortfolios}
                 selectedYear={budgetYear}
                 availableYears={availableYears}
                 onYearChange={handleBudgetYearChange}
-                portfolios={allPortfolios}
-                sx={{ flex: 1, height: '100%' }}
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex' }}>
-              <DashboardTasksWidget variant="tasks" sx={{ flex: 1, height: '100%' }} />
+            <Grid size={{ xs: 12, lg: 3 }}>
+              <MockupTrendCard portfolioTrendData={portfolioTrendData} metrics={metrics} />
             </Grid>
           </Grid>
 
-          <Grid container spacing={2.5}>
-            {/* Left column — Portfolio Health Snapshot */}
-            <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex' }}>
-              <PortfolioHealthSnapshot
-                metrics={metrics}
-                portfolioSnapshot={portfolioSnapshot}
-                programmeSnapshot={programmeSnapshot}
-                milestonesDue={milestonesDue}
-                loading={loading}
-                sx={{ flex: 1, height: '100%' }}
-              />
+          {/* Row 2: Pipeline, Logged Hours, Budget Consumption Circular Gauge, Threat Levels Column Chart */}
+          <Grid container spacing={3.5} sx={{ mb: 3.5 }}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <MockupPipelineCard initiatives={initiatives} />
             </Grid>
-
-            {/* Right column — AI Insights + Pipeline Stage Summary */}
-            <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <DashboardTasksWidget variant="insights" />
-              <PipelineStageSummary
-                initiatives={initiatives}
-                loading={loading}
-                sx={{ flex: 1 }}
-              />
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <MockupResourceTrendCard plannedVsActualData={plannedVsActualData} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <MockupBudgetGaugeCard totalApprovedBudget={budgetMetrics.approved} totalActualSpend={budgetMetrics.actual} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <MockupSeverityCard risks={risks} issues={issues} />
             </Grid>
           </Grid>
-        </>
+
+          {/* Row 3: Action Center & AI Copilot Tasks (Approvals & Insights) */}
+          <Grid container spacing={3.5}>
+            <Grid size={{ xs: 12, lg: 7 }}>
+              <DashboardTasksWidget variant="tasks" sx={{ height: '100%' }} />
+            </Grid>
+            <Grid size={{ xs: 12, lg: 5 }}>
+              <DashboardTasksWidget variant="insights" sx={{ height: '100%' }} />
+            </Grid>
+          </Grid>
+        </Box>
       ) : (
         <FinancialReportsPage onNavigate={onNavigate} />
       )}
@@ -350,7 +354,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{project.pm_projectname ?? 'Untitled'}</Typography>
                       <StatusChip status={project.pm_ragstatus} type="rag" />
                     </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{project.pm_projectcode ?? '—'}</Typography>
+
                     <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                       <StatusChip status={project.pm_projectphase} type="phase" />
                     </Box>

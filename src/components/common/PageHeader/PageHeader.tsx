@@ -13,7 +13,7 @@ export interface PageHeaderAction {
 
 export interface PageHeaderProps {
   title: string
-  subtitle?: string
+  subtitle?: ReactNode
   /** Optional action button shown on the right */
   action?: PageHeaderAction
   /** Custom action element (overrides action prop if provided) */
@@ -27,15 +27,15 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, action,
     <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
       <Box>
         {caption && (
-          <Typography variant="caption" color="primary" sx={{ fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: fontSizes.sm }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: '10px', color: 'text.secondary', display: 'block', mb: 0.5 }}>
             {caption}
           </Typography>
         )}
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.03em', mb: 0.5 }}>
           {title}
         </Typography>
         {subtitle && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
             {subtitle}
           </Typography>
         )}

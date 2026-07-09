@@ -31,7 +31,7 @@ export interface SearchFilterBarProps {
   showClear?: boolean
   /** MUI SxProps */
   sx?: SxProps<Theme>
-} 
+}
 
 export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   searchQuery = '',

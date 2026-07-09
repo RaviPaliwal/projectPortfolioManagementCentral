@@ -5,6 +5,12 @@ import {
   Chip,
   useTheme,
   Typography,
+  Tabs,
+  Tab,
+  alpha,
+  Avatar,
+  Grid,
+  Paper,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import ScheduleIcon from '@mui/icons-material/Schedule'
@@ -36,7 +42,6 @@ import {
 import type { TimesheetModel, TimesheetEntryModel, ResourceModel } from '@/types/dataverse'
 import {
   PageHeader,
-  DetailDrawer,
   TabPanel,
   ExportButton,
   KpiCardRow,
@@ -44,6 +49,7 @@ import {
   WorkflowMilestone,
   Button,
   ConfirmDialog,
+  Breadcrumbs,
 } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
@@ -362,6 +368,7 @@ export default function TimesheetsPage() {
   }
 
   // â”€â”€ KPI Ribbon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ——————————————————————————————————————————————————————————
   const kpiData = useMemo(() => {
     const total = timesheets.length
     const pending = timesheets.filter((t) => String(t.pm_timesheetstatus) === '1').length
@@ -416,104 +423,118 @@ export default function TimesheetsPage() {
     ]
   }, [timesheets])
 
+  const detailKpiItems = useMemo(() => {
+    if (!selectedTimesheet) return []
+    return [
+      {
+        label: "Total Hours Logged",
+        value: `${selectedTimesheet.pm_totalhours ?? 0}h`,
+        subtitle: "Total logged time",
+        icon: <AccessTimeIcon />,
+        color: theme.palette.primary.main
+      },
+      {
+        label: "Chargeable Hours",
+        value: `${selectedTimesheet.pm_totalchargeablehours ?? 0}h`,
+        subtitle: "Billing/Chargeable hours",
+        icon: <CheckCircleIcon />,
+        color: theme.palette.success.main
+      },
+      {
+        label: "Non-Chargeable Hours",
+        value: `${selectedTimesheet.pm_totalnonchargeablehours ?? 0}h`,
+        subtitle: "Internal/Non-chargeable",
+        icon: <CancelIcon />,
+        color: theme.palette.error.main
+      },
+      {
+        label: "Reporting Period",
+        value: selectedTimesheet.pm_reportingperiod || '—',
+        subtitle: "Target calendar period",
+        icon: <EventNoteIcon />,
+        color: theme.palette.secondary.main
+      }
+    ]
+  }, [selectedTimesheet, theme])
+
   const currentStatus = String(selectedTimesheet?.pm_timesheetstatus ?? '')
   const isDraft = currentStatus === '3'
 
   return (
     <Box>
-      <PageHeader
-        title="Timesheets"
-        subtitle="Track and manage time entries â€” create timesheets, log hours, and manage the approval workflow."
-        actionElement={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <ExportButton filename="timesheets.csv" columns={timesheetExportColumns} data={timesheets} />
-            {canCreate && (
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => { setDraftMode(true); setShowCreateModal(true); setOverlapError(null) }}
-                disabled={actionLoading || loading}
-              >
-                New Entry
-              </Button>
-            )}
-          </Box>
-        }
-      />
-
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-      {/* KPI Ribbon â€” Standardized Row */}
-      {!loading && (
-        <KpiCardRow items={kpiData} loading={loading} />
-      )}
-
-      {/* Main Grid */}
-      <TimesheetGrid
-        timesheets={timesheets}
-        loading={loading}
-        onRowClick={handleRowClick}
-        selectedTimesheetId={selectedTimesheet?.pm_timesheetid}
-        onCreateFirst={() => setShowCreateModal(true)}
-      />
-
-      {/* Detail Drawer */}
-      <DetailDrawer
-        open={!!selectedTimesheet}
-        onClose={handleCloseDetail}
-        icon={<EventNoteIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
-        title={selectedTimesheet?.pm_timesheetname ?? ''}
-        subtitle={
-          selectedTimesheet && (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-              <StatusTag
-                icon={STATUS_ICONS[currentStatus]}
-                label={TIMESHEET_STATUS_LABELS[currentStatus] ?? 'Unknown'}
-                color={TIMESHEET_STATUS_COLORS[currentStatus] ?? 'default'}
-                size="small"
-                variant={currentStatus === '2' ? 'filled' : 'outlined'}
-                sx={{ fontWeight: 600 }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                <PersonIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                {selectedTimesheet.pm_ownername || 'â€”'}
-              </Typography>
-            </Box>
-          )
-        }
-        headerActions={
-          selectedTimesheet && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <TimesheetStatusControls
-                status={currentStatus}
-                onStatusUpdate={handleStatusUpdate}
-                approvalDate={selectedTimesheet.pm_approvaldate}
-                rejectionReason={selectedTimesheet.pm_rejectionreason}
-                loading={actionLoading}
-                entriesCount={entries.length}
-              />
-              {canDelete && (
-                <Button
+      {/* Main Content conditionally rendered */}
+      {selectedTimesheet ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Timesheets', path: 'list' },
+              { label: selectedTimesheet.pm_timesheetname ?? 'Detail' }
+            ]}
+            onNavigate={() => setSelectedTimesheet(null)}
+          />
+          <PageHeader
+            title={selectedTimesheet.pm_timesheetname ?? 'Timesheet Detail'}
+            subtitle={
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: 1 }}>
+                <StatusTag
+                  icon={STATUS_ICONS[currentStatus]}
+                  label={TIMESHEET_STATUS_LABELS[currentStatus] ?? 'Unknown'}
+                  color={TIMESHEET_STATUS_COLORS[currentStatus] ?? 'default'}
                   size="small"
-                  color="error"
-                  variant="outlined"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  disabled={actionLoading || deleteLoading}
-                  sx={{ minWidth: 0, px: 1.5 }}
-                >
-                  Delete
-                </Button>
-              )}
+                  variant={currentStatus === '2' ? 'filled' : 'outlined'}
+                  sx={{ fontWeight: 600 }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  <PersonIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                  {selectedTimesheet.pm_ownername || '—'}
+                </Typography>
+              </Box>
+            }
+            actionElement={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TimesheetStatusControls
+                  status={currentStatus}
+                  onStatusUpdate={handleStatusUpdate}
+                  approvalDate={selectedTimesheet.pm_approvaldate}
+                  rejectionReason={selectedTimesheet.pm_rejectionreason}
+                  loading={actionLoading}
+                  entriesCount={entries.length}
+                />
+                {canDelete && (
+                  <Button
+                    size="small"
+                    color="error"
+                    variant="outlined"
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    disabled={actionLoading || deleteLoading}
+                    sx={{ minWidth: 0, px: 1.5, borderRadius: 1.5 }}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+
+          {/* KPI Ribbon */}
+          <KpiCardRow
+            variant="compact"
+            items={detailKpiItems}
+          />
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tabs value={detailTab} onChange={(_, v) => setDetailTab(v)}>
+                <Tab label="Entries" />
+                <Tab label="Details" />
+                <Tab label="Approval" />
+                <Tab label="Tasks" />
+              </Tabs>
             </Box>
-          )
-        }
-        tabs={[{ label: 'Entries', count: entries.length }, { label: 'Details' }, { label: 'Approval' }, { label: 'Tasks' }]}
-        tabValue={detailTab}
-        onTabChange={(value) => setDetailTab(value)}
-      >
-        {selectedTimesheet && (
-          <>
+
             <TabPanel value={detailTab} index={0} pt={0}>
               <TimesheetEntryList
                 entries={entries}
@@ -566,9 +587,139 @@ export default function TimesheetsPage() {
                 />
               )}
             </TabPanel>
-          </>
-        )}
-      </DetailDrawer>
+          </Box>
+        </Box>
+      ) : (
+        <>
+          <PageHeader
+            title="Timesheets"
+            subtitle="Track and manage time entries — create timesheets, log hours, and manage the approval workflow."
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <ExportButton filename="timesheets.csv" columns={timesheetExportColumns} data={timesheets} />
+                {canCreate && (
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => { setDraftMode(true); setShowCreateModal(true); setOverlapError(null) }}
+                    disabled={actionLoading || loading}
+                  >
+                    New Entry
+                  </Button>
+                )}
+              </Box>
+            }
+          />
+
+          {/* KPI Ribbon — Standardized Row */}
+          {!loading && (
+            <Grid container spacing={2.5} sx={{ mb: 4 }}>
+              {kpiData.map((kpi, idx) => {
+                const themeColor = kpi.color === 'primary.main' ? theme.palette.primary.main
+                                : kpi.color === 'success.main' ? theme.palette.success.main
+                                : kpi.color === 'warning.main' ? theme.palette.warning.main
+                                : kpi.color === 'error.main' ? theme.palette.error.main
+                                : kpi.color === 'secondary.main' ? theme.palette.secondary.main
+                                : theme.palette.primary.main;
+                return (
+                  <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }} key={idx}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2.5,
+                        height: '100%',
+                        borderRadius: '20px',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        bgcolor: isDark ? 'background.paper' : '#fff',
+                        border: `1px solid ${alpha(themeColor, 0.15)}`,
+                        boxShadow: isDark
+                          ? `0 8px 30px ${alpha(themeColor, 0.05)}`
+                          : `0 8px 30px ${alpha(themeColor, 0.03)}`,
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: `0 12px 40px ${alpha(themeColor, 0.12)}`,
+                          borderColor: themeColor,
+                        },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 800,
+                            color: 'text.secondary',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.08em',
+                            fontSize: '0.68rem',
+                          }}
+                        >
+                          {kpi.label}
+                        </Typography>
+                        <Avatar
+                          sx={{
+                            width: 34,
+                            height: 34,
+                            bgcolor: alpha(themeColor, 0.1),
+                            color: themeColor,
+                            border: `1px solid ${alpha(themeColor, 0.2)}`,
+                            '& .MuiSvgIcon-root': { fontSize: 18 }
+                          }}
+                        >
+                          {kpi.icon}
+                        </Avatar>
+                      </Box>
+
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 900,
+                          letterSpacing: '-0.02em',
+                          color: isDark ? '#fff' : '#0f172a',
+                          fontFamily: '"Outfit", sans-serif',
+                          mb: 0.5,
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {kpi.value}
+                      </Typography>
+
+                      {kpi.subtitle && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', opacity: 0.8 }}>
+                          {kpi.subtitle}
+                        </Typography>
+                      )}
+
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '4px',
+                          background: `linear-gradient(90deg, ${themeColor}, ${alpha(themeColor, 0.3)})`,
+                        }}
+                      />
+                    </Paper>
+                  </Grid>
+                )
+              })}
+            </Grid>
+          )}
+
+          {/* Main Grid */}
+          <TimesheetGrid
+            timesheets={timesheets}
+            loading={loading}
+            onRowClick={handleRowClick}
+            selectedTimesheetId={undefined}
+            onCreateFirst={() => setShowCreateModal(true)}
+          />
+        </>
+      )}
 
       {/* Modals */}
       <TimesheetFormDialog
@@ -607,10 +758,12 @@ export default function TimesheetsPage() {
 function DetailField({ label, value }: { label: string; value: string | undefined }) {
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', display: 'block' }}>
         {label}
       </Typography>
-      <Typography variant="body2">{value || 'â€”'}</Typography>
+      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>
+        {value || '—'}
+      </Typography>
     </Box>
   )
 }

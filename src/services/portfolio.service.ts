@@ -65,7 +65,7 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
     const [portfoliosResult, programmesResult, projectsResult] = await Promise.all([
       Pm_portfoliosService.getAll({ filter: 'statecode eq 0', select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'pm_createdon'], top: 200 }),
       Pm_programmesService.getAll({ filter: 'statecode eq 0', select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', '_pm_programmemanager_value', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'], top: 500 }),
-      Pm_projectsService.getAll({ filter: 'statecode eq 0', select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_portfolio_value', '_pm_programme_value', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudgeteur', 'pm_actualcosteur'], top: 1000 }),
+      Pm_projectsService.getAll({ filter: 'statecode eq 0', select: ['pm_projectid', 'pm_projectname', '_pm_portfolio_value', '_pm_programme_value', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudget', 'pm_actualcost'], top: 1000 }),
     ])
 
     if (!portfoliosResult.success) console.error('[PortfolioService] portfoliosResult failed:', portfoliosResult.error)
@@ -78,7 +78,7 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
     if (projects.length === 0) {
       try {
         const fallback = await Pm_projectsService.getAll({
-          select: ['pm_projectid', 'pm_projectname', 'pm_projectcode', '_pm_portfolio_value', '_pm_programme_value', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudgeteur', 'pm_actualcosteur'],
+          select: ['pm_projectid', 'pm_projectname', '_pm_portfolio_value', '_pm_programme_value', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudget', 'pm_actualcost'],
           top: 1000,
         })
         if (fallback.success) {
@@ -132,7 +132,7 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
       const childProjects = projects.filter(p => normalizeLookupId(p._pm_portfolio_value) === portId)
 
       if (childProjects.length > 0) {
-        const aggregates = aggregateFinancials(childProjects, 'pm_approvedbudgeteur', 'pm_actualcosteur')
+        const aggregates = aggregateFinancials(childProjects, 'pm_approvedbudget', 'pm_actualcost')
         // Only override if the original record has 0/null to avoid confusing manual entries, 
         // OR provide them as the source of truth for the dashboard.
         // Let's use the aggregated values for the UI consistency.
@@ -340,7 +340,7 @@ export async function createPortfolio(payload: Partial<PortfolioModel>): Promise
   } catch (err: any) {
     try {
       console.error('[PortfolioService] createPortfolio API call failed:', err?.message || err, '| payload:', JSON.stringify(cleanPayload))
-    } catch (e) {
+    } catch {
       console.error('[PortfolioService] createPortfolio API call failed (unable to serialize):', err)
     }
     throw err

@@ -287,6 +287,37 @@
           "x-ms-dataverse-type": "IntegerType",
           "x-ms-schema-name": "pm_stepOrder"
         },
+        "pm_tasktype": {
+          "type": "string",
+          "title": "Task Type",
+          "x-ms-dataverse-attribute": "pm_tasktype",
+          "x-ms-dataverse-type": "PicklistType",
+          "x-ms-schema-name": "pm_TaskType",
+          "enum": [
+            "Custom",
+            "Checklist"
+          ],
+          "x-ms-enum-values": [
+            1,
+            2
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "bb14d1d8-0d79-f111-ab0f-002248ec1213",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Task Type",
+          "x-ms-optionSetType": "Picklist"
+        },
+        "pm_tasktypename": {
+          "type": "string",
+          "title": "pm_tasktypename",
+          "x-ms-dataverse-attribute": "pm_tasktypename",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pm_tasktypeName",
+          "x-ms-read-only": true
+        },
         "pm_workflowlookup": {
           "type": "string",
           "title": "Workflow Lookup",
@@ -312,6 +343,14 @@
           "x-ms-dataverse-primary-name": true,
           "required": true,
           "maxLength": 850
+        },
+        "pm_workflowphase": {
+          "type": "string",
+          "title": "Workflow Phase",
+          "x-ms-dataverse-attribute": "pm_workflowphase",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_WorkflowPhase",
+          "maxLength": 100
         },
         "pm_workflowsteptemplateid": {
           "type": "string",

@@ -5,7 +5,7 @@
 export const Pm_initiativespm_initiativetype = {
   0: 'Project',
   1: 'Programme',
-  2: 'Initiative'
+  2: 'Portfolio'
 } as const;
 export type Pm_initiativespm_initiativetype = keyof typeof Pm_initiativespm_initiativetype;
 export const Pm_initiativespm_pipelinestatus = {
@@ -33,6 +33,8 @@ export interface Pm_initiativesBase {
   ownerid: string;
   owneridtype: string;
   pm_businesscasedescription?: string;
+  "pm_ConvertedToId@odata.bind"?: string;
+  pm_convertedtoidtype?: string;
   pm_convertedtoreference?: string;
   pm_decisiondate?: string;
   pm_estimatedbenefitseur?: number;
@@ -42,9 +44,10 @@ export interface Pm_initiativesBase {
   pm_initiativetype?: Pm_initiativespm_initiativetype;
   pm_pipelinestatus?: Pm_initiativespm_pipelinestatus;
   "pm_portfolio@odata.bind"?: string;
-  pm_portfoliocode?: string;
   pm_priorityscore?: number;
-  pm_requestorname?: string;
+  "pm_Programme@odata.bind"?: string;
+  "pm_RequestedBy@odata.bind"?: string;
+  "pm_Sponsor@odata.bind"?: string;
   pm_strategicalignmentscore?: number;
   pm_submissiondate?: string;
   statecode: Pm_initiativesstatecode;
@@ -69,11 +72,18 @@ export interface Pm_initiatives extends Pm_initiativesBase {
   owneridname: string;
   owneridyominame: string;
   owningbusinessunitname: string;
+  pm_convertedtoidname?: string;
+  pm_convertedtoidyominame?: string;
   pm_estimatedbenefitseur_base?: number;
   pm_estimatedcosteur_base?: number;
   pm_initiativetypename?: string;
   pm_pipelinestatusname?: string;
   pm_portfolioname?: string;
+  pm_programmename?: string;
+  pm_requestedbyname?: string;
+  pm_requestedbyyominame?: string;
+  pm_sponsorname?: string;
+  pm_sponsoryominame?: string;
   statecodename?: string;
   statuscodename?: string;
   transactioncurrencyidname?: string;
@@ -92,8 +102,16 @@ export interface Pm_initiatives extends Pm_initiativesBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
+  pm_convertedtoid?: object;
+  _pm_convertedtoid_value?: string;
   pm_portfolio?: object;
   _pm_portfolio_value?: string;
+  pm_programme?: object;
+  _pm_programme_value?: string;
+  pm_requestedby?: object;
+  _pm_requestedby_value?: string;
+  pm_sponsor?: object;
+  _pm_sponsor_value?: string;
   transactioncurrencyid?: object;
   _transactioncurrencyid_value?: string;
 }

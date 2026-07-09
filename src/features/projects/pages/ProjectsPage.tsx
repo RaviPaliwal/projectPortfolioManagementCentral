@@ -25,7 +25,12 @@ import {
   fetchPortfolioHierarchy,
   uploadDocument,
   updateProjectTask,
+  deleteProjectTask,
+  deleteProjectMilestone,
 } from '@/services'
+import { deleteRisk, deleteIssue } from '@/services/risk-issue.service'
+import { deleteBenefit, deleteGateReview } from '@/services/governance.service'
+import { deleteBudgetLine } from '@/services/finance.service'
 import { useUser } from '@/context/UserContext'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import { PageHeader, KpiCardRow, ExportButton, Button, ConfirmDialog } from '@/components/common'
@@ -75,15 +80,19 @@ export default function ProjectsPage() {
   const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestoneModel | null>(null)
   const [riskDialogOpen, setRiskDialogOpen] = useState(false)
+  const [editingRisk, setEditingRisk] = useState<RiskModel | null>(null)
   const [issueDialogOpen, setIssueDialogOpen] = useState(false)
+  const [editingIssue, setEditingIssue] = useState<IssueModel | null>(null)
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false)
   const [editingResource, setEditingResource] = useState<any>(null)
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false)
   const [editingBudget, setEditingBudget] = useState<BudgetLineModel | null>(null)
   const [benefitDialogOpen, setBenefitDialogOpen] = useState(false)
+  const [editingBenefit, setEditingBenefit] = useState<BenefitModel | null>(null)
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<ProjectTaskModel | null>(null)
   const [gateReviewDialogOpen, setGateReviewDialogOpen] = useState(false)
+  const [editingGateReview, setEditingGateReview] = useState<GateReviewModel | null>(null)
 
   // Delete state
   const [deleteTarget, setDeleteTarget] = useState<ProjectModel | null>(null)
@@ -121,7 +130,7 @@ export default function ProjectsPage() {
         const progBudget = p.pm_budgeteur ?? 0
         const allocatedToProjects = projList
           .filter(pj => normalizeLookupId(pj._pm_programme_value) === normalizeLookupId(p.pm_programmeid!))
-          .reduce((sum, pj) => sum + (pj.pm_approvedbudgeteur ?? 0), 0)
+          .reduce((sum, pj) => sum + (pj.pm_approvedbudget ?? 0), 0)
         return {
           id: p.pm_programmeid!,
           name: p.pm_programmename!,
@@ -245,13 +254,22 @@ export default function ProjectsPage() {
     // Determine the ID: either from the updated form data or the state
     const targetId = form.pm_projectid || editingProject?.pm_projectid
     
+    const sanitizedForm = {
+      ...form,
+      pm_ragstatus: form.pm_ragstatus != null ? Number(form.pm_ragstatus) : undefined,
+      pm_costragstatus: form.pm_costragstatus != null ? Number(form.pm_costragstatus) : undefined,
+      pm_scheduleragstatus: form.pm_scheduleragstatus != null ? Number(form.pm_scheduleragstatus) : undefined,
+      pm_benefitsragstatus: form.pm_benefitsragstatus != null ? Number(form.pm_benefitsragstatus) : undefined,
+      pm_projectphase: form.pm_projectphase != null ? Number(form.pm_projectphase) : undefined,
+    }
+
     setIsSavingProject(true)
     try {
       let projectId = targetId
       if (targetId) {
         // Perform update — persist to server
         try {
-          await updateProject(targetId, form)
+          await updateProject(targetId, sanitizedForm)
         } catch (err) {
           // updateProject can throw even when the Dataverse update itself succeeded
           // (e.g. the follow-up fetchProjectDetails fails). We still update the UI
@@ -268,7 +286,7 @@ export default function ProjectsPage() {
             normalizeLookupId(p.pm_projectid) === normalizeLookupId(targetId)
               ? {
                   ...p,
-                  ...form,
+                  ...sanitizedForm,
                   pm_projectmanagername: selectedUser ? selectedUser.fullname : p.pm_projectmanagername,
                   _pm_projectmanager_value: form.pm_projectmanager,
                 }
@@ -280,7 +298,7 @@ export default function ProjectsPage() {
         if (selectedProject && normalizeLookupId(targetId) === normalizeLookupId(selectedProject.pm_projectid)) {
            setSelectedProject((prev) => prev ? {
              ...prev,
-             ...form,
+             ...sanitizedForm,
              pm_projectmanagername: selectedUser ? selectedUser.fullname : prev.pm_projectmanagername,
              _pm_projectmanager_value: form.pm_projectmanager,
            } : prev)
@@ -290,7 +308,7 @@ export default function ProjectsPage() {
         loadData()
       } else {
         // Perform creation
-        const created = await createProject(form)
+        const created = await createProject(sanitizedForm)
         if (created) {
           projectId = created.pm_projectid
           setSuccessMsg('Project created successfully.')
@@ -473,6 +491,65 @@ export default function ProjectsPage() {
     }
   }
 
+  const handleDeleteTask = async (taskId: string) => {
+    if (!selectedProject?.pm_projectid) return
+    try {
+      // 1. Delete task in Dataverse
+      await deleteProjectTask(taskId)
+
+      // 2. Filter details local state
+      const updatedTasks = detailTasks.filter((t) => t.pm_projecttaskid !== taskId)
+
+      // 3. Compute new average progress
+      const total = updatedTasks.length
+      const avgProgress = total > 0
+        ? Math.round(updatedTasks.reduce((s, t) => s + (t.pm_percentcomplete ?? 0), 0) / total)
+        : 0
+
+      // 4. Update the project in Dataverse
+      await updateProject(selectedProject.pm_projectid, {
+        pm_percentcomplete: avgProgress
+      })
+
+      setSuccessMsg('Task deleted successfully and project progress updated.')
+
+      // 5. Update UI states
+      setDetailTasks(updatedTasks)
+      setSelectedProject((prev) => (prev ? { ...prev, pm_percentcomplete: avgProgress } : null))
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.pm_projectid === selectedProject.pm_projectid ? { ...p, pm_percentcomplete: avgProgress } : p
+        )
+      )
+
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err) {
+      console.error('[ProjectsPage] handleDeleteTask error:', err)
+      setError('Unable to delete project task.')
+    }
+  }
+
+  const handleDeleteMilestone = async (milestoneId: string) => {
+    if (!selectedProject?.pm_projectid) return
+    try {
+      // 1. Delete milestone in Dataverse
+      await deleteProjectMilestone(milestoneId)
+
+      // 2. Filter details local state
+      const updatedMilestones = detailMilestones.filter((m) => m.pm_projectmilestoneid !== milestoneId)
+
+      setSuccessMsg('Milestone deleted successfully.')
+
+      // 3. Update UI states
+      setDetailMilestones(updatedMilestones)
+
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err) {
+      console.error('[ProjectsPage] handleDeleteMilestone error:', err)
+      setError('Unable to delete project milestone.')
+    }
+  }
+
   const handleEditMilestone = (milestone: ProjectMilestoneModel) => {
     setEditingMilestone(milestone)
     setMilestoneDialogOpen(true)
@@ -514,7 +591,7 @@ export default function ProjectsPage() {
     },
     {
       label: 'Total Active Budget',
-      value: currency(projects.reduce((sum, p) => sum + (p.pm_approvedbudgeteur ?? 0), 0)),
+      value: currency(projects.reduce((sum, p) => sum + (p.pm_approvedbudget ?? 0), 0)),
       icon: <AttachMoneyIcon />,
       color: 'primary.main',
     },
@@ -551,8 +628,14 @@ export default function ProjectsPage() {
             setMilestoneDialogOpen(true)
           }}
           onEditMilestone={handleEditMilestone}
-          onLogRisk={() => setRiskDialogOpen(true)}
-          onLogIssue={() => setIssueDialogOpen(true)}
+          onLogRisk={() => {
+            setEditingRisk(null)
+            setRiskDialogOpen(true)
+          }}
+          onLogIssue={() => {
+            setEditingIssue(null)
+            setIssueDialogOpen(true)
+          }}
           onAssignResource={() => {
             setEditingResource(null)
             setResourceDialogOpen(true)
@@ -567,18 +650,98 @@ export default function ProjectsPage() {
             setEditingBudget(b)
             setBudgetDialogOpen(true)
           }}
-          onAddBenefit={() => setBenefitDialogOpen(true)}
+          onDeleteBudgetLine={async (budgetId) => {
+            try {
+              await deleteBudgetLine(budgetId)
+              await recalculateProjectFinancials(selectedProject.pm_projectid!)
+              setSuccessMsg('Budget line deleted.')
+              refreshDetailData('budget')
+              loadData()
+              setTimeout(() => setSuccessMsg(null), 3000)
+            } catch {
+              setError('Unable to delete budget line.')
+            }
+          }}
+          onAddBenefit={() => {
+            setEditingBenefit(null)
+            setBenefitDialogOpen(true)
+          }}
+          onEditBenefit={(benefit) => {
+            setEditingBenefit(benefit)
+            setBenefitDialogOpen(true)
+          }}
+          onDeleteBenefit={async (benefitId) => {
+            try {
+              await deleteBenefit(benefitId)
+              setSuccessMsg('Benefit deleted.')
+              refreshDetailData('benefit')
+              setTimeout(() => setSuccessMsg(null), 3000)
+            } catch {
+              setError('Unable to delete benefit.')
+            }
+          }}
           onAddTask={() => {
             setEditingTask(null)
             setTaskDialogOpen(true)
           }}
           onEditTask={handleEditTask}
-          onNavigateToGateReview={() => setGateReviewDialogOpen(true)}
+          onNavigateToGateReview={(gr) => {
+            setEditingGateReview(gr || null)
+            setGateReviewDialogOpen(true)
+          }}
+          onAddGateReview={() => {
+            setEditingGateReview(null)
+            setGateReviewDialogOpen(true)
+          }}
+          onEditGateReview={(gr) => {
+            setEditingGateReview(gr)
+            setGateReviewDialogOpen(true)
+          }}
+          onDeleteGateReview={async (grId) => {
+            try {
+              await deleteGateReview(grId)
+              setSuccessMsg('Gate review deleted.')
+              refreshDetailData('gatereview')
+              setTimeout(() => setSuccessMsg(null), 3000)
+            } catch {
+              setError('Unable to delete gate review.')
+            }
+          }}
+          onEditRisk={(risk) => {
+            setEditingRisk(risk)
+            setRiskDialogOpen(true)
+          }}
+          onDeleteRisk={async (riskId) => {
+            try {
+              await deleteRisk(riskId)
+              setSuccessMsg('Risk deleted.')
+              refreshDetailData('risk')
+              setTimeout(() => setSuccessMsg(null), 3000)
+            } catch {
+              setError('Unable to delete risk.')
+            }
+          }}
+          onEditIssue={(issue) => {
+            setEditingIssue(issue)
+            setIssueDialogOpen(true)
+          }}
+          onDeleteIssue={async (issueId) => {
+            try {
+              await deleteIssue(issueId)
+              setSuccessMsg('Issue deleted.')
+              refreshDetailData('issue')
+              setTimeout(() => setSuccessMsg(null), 3000)
+            } catch {
+              setError('Unable to delete issue.')
+            }
+          }}
           canEdit={canEdit}
           canDelete={canDelete}
           onEditProject={openEditForm}
           onMarkTaskAsDone={handleMarkTaskAsDone}
           onUpdateTaskStatus={handleUpdateTaskStatus}
+          onDeleteTask={handleDeleteTask}
+          onDeleteMilestone={handleDeleteMilestone}
           onRefresh={() => refreshDetailData('task')}
           onSuccess={(msg) => {
             setSuccessMsg(msg)
@@ -651,15 +814,23 @@ export default function ProjectsPage() {
           />
           <RiskDialog
             open={riskDialogOpen}
-            onClose={() => setRiskDialogOpen(false)}
+            onClose={() => {
+              setRiskDialogOpen(false)
+              setEditingRisk(null)
+            }}
             projectId={selectedProject.pm_projectid!}
+            initialData={editingRisk ? editingRisk as any : undefined}
             onSuccess={(msg) => { setSuccessMsg(msg); refreshDetailData('risk'); setTimeout(() => setSuccessMsg(null), 3000) }}
             onError={(msg) => setError(msg)}
           />
           <IssueDialog
             open={issueDialogOpen}
-            onClose={() => setIssueDialogOpen(false)}
+            onClose={() => {
+              setIssueDialogOpen(false)
+              setEditingIssue(null)
+            }}
             projectId={selectedProject.pm_projectid!}
+            initialData={editingIssue ? editingIssue as any : undefined}
             onSuccess={(msg) => { setSuccessMsg(msg); refreshDetailData('issue'); setTimeout(() => setSuccessMsg(null), 3000) }}
             onError={(msg) => setError(msg)}
           />
@@ -690,8 +861,12 @@ export default function ProjectsPage() {
           />
           <BenefitDialog
             open={benefitDialogOpen}
-            onClose={() => setBenefitDialogOpen(false)}
+            onClose={() => {
+              setBenefitDialogOpen(false)
+              setEditingBenefit(null)
+            }}
             projectId={selectedProject.pm_projectid!}
+            initialData={editingBenefit ? editingBenefit as any : undefined}
             onSuccess={(msg) => { setSuccessMsg(msg); refreshDetailData('benefit'); setTimeout(() => setSuccessMsg(null), 3000) }}
             onError={(msg) => setError(msg)}
           />
@@ -708,8 +883,12 @@ export default function ProjectsPage() {
           />
           <GateReviewDialog
             open={gateReviewDialogOpen}
-            onClose={() => setGateReviewDialogOpen(false)}
+            onClose={() => {
+              setGateReviewDialogOpen(false)
+              setEditingGateReview(null)
+            }}
             projectId={selectedProject.pm_projectid!}
+            initialData={editingGateReview ? editingGateReview as any : undefined}
             onSuccess={(msg) => { setSuccessMsg(msg); refreshDetailData('gatereview'); setTimeout(() => setSuccessMsg(null), 3000) }}
             onError={(msg) => setError(msg)}
           />

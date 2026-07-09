@@ -14,6 +14,8 @@ import {
   useTheme,
   IconButton,
   Tooltip,
+  Grid,
+  Divider,
 } from '@mui/material'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import BugReportIcon from '@mui/icons-material/BugReport'
@@ -31,7 +33,6 @@ import AddIcon from '@mui/icons-material/Add'
 import {
   PageHeader,
   KpiCardRow,
-  DetailDrawer,
   StatusTag,
   ActionIcon,
   ExportButton,
@@ -40,8 +41,9 @@ import {
   TableFooter,
   SearchFilterBar,
   ConfirmDialog,
-  TabPanel,
   TableHeader,
+  Breadcrumbs,
+  TabPanel,
 } from '@/components/common'
 import type { FilterOption } from '@/components/common'
 import type { KpiCardItem } from '@/components/common'
@@ -71,10 +73,6 @@ import type { ProjectOption, ProgrammeOption, RiskOption, ResourceOption } from 
 const ISSUE_CATEGORY_LABELS: Record<string, string> = {
   '0': 'Dependency',
   '1': 'Technical',
-  '2': 'Resource',
-  '3': 'Financial',
-  '4': 'Scope',
-  '5': 'Quality',
 }
 
 const RAG_LABELS: Record<string, string> = {
@@ -145,10 +143,8 @@ export default function IssuesPage() {
   const [resources, setResources] = useState<ResourceOption[]>([])
   const [resourcesLoading, setResourcesLoading] = useState(false)
 
-  // Drawer
+  // Detail View
   const [selectedIssue, setSelectedIssue] = useState<IssueModel | null>(null)
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [drawerTab, setDrawerTab] = useState(0)
 
   // Create/Edit dialog
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -178,7 +174,7 @@ export default function IssuesPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [sort, setSort] = useState<SortState>({ field: 'pm_dateraised', direction: 'desc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState<IssueModel | null>(null)
@@ -298,7 +294,6 @@ export default function IssuesPage() {
         const issue = issues.find(i => normalizeLookupId(i.pm_issueid) === normalizeLookupId(preselectedId))
         if (issue) {
           setSelectedIssue(issue)
-          setDrawerOpen(true)
         }
       }
     }
@@ -352,12 +347,33 @@ export default function IssuesPage() {
       setSuccessMsg('Issue deleted.')
       setDeleteTarget(null)
       if (selectedIssue?.pm_issueid === deleteTarget.pm_issueid) {
-        setDrawerOpen(false)
         setSelectedIssue(null)
       }
       setTimeout(() => setSuccessMsg(null), 3000)
     } catch (err) {
       setError('Unable to delete issue.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleEscalateIssue = async (issue: IssueModel) => {
+    if (!issue.pm_issueid) return
+    setError(null)
+    setSaving(true)
+    try {
+      const updated = await updateIssueFull(issue.pm_issueid, {
+        pm_escalationstatus: true
+      })
+      if (updated) {
+        setSuccessMsg('Issue escalated successfully.')
+        setSelectedIssue(updated)
+        setIssues(prev => prev.map(i => i.pm_issueid === issue.pm_issueid ? updated : i))
+        setTimeout(() => setSuccessMsg(null), 3000)
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to escalate issue.')
+      setTimeout(() => setError(null), 4000)
     } finally {
       setSaving(false)
     }
@@ -507,6 +523,10 @@ export default function IssuesPage() {
 
   return (
     <Box>
+
+      {!selectedIssue ? (
+        <>
+
       {successMsg && <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ mb: 2 }}>{successMsg}</Alert>}
       {error && <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -594,12 +614,12 @@ export default function IssuesPage() {
                 <TableRow
                   key={issue.pm_issueid}
                   hover
-                  onClick={() => { setSelectedIssue(issue); setDrawerOpen(true); setDrawerTab(0) }}
+                  onClick={() => setSelectedIssue(issue)}
                   sx={{
                     cursor: 'pointer',
-                    bgcolor: idx % 2 === 1 ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)') : 'transparent',
+                    bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
                     '& td': { py: 1.25, px: 2.5 },
-                    '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
+                    '&:hover': { bgcolor: 'action.selected' },
                     transition: 'background-color 0.15s ease',
                   }}
                 >
@@ -675,76 +695,170 @@ export default function IssuesPage() {
             filteredCount={filteredIssues.length}
             totalCount={issues.length}
             itemLabel="issue"
-          />
-        )}
-        {!loading && filteredIssues.length > 0 && (
-          <TablePagination
-            component="div"
-            count={filteredIssues.length}
             page={page}
-            onPageChange={handleChangePage}
+            onPageChange={(_, p) => setPage(p)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[25, 50, 100]}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10))
+              setPage(0)
+            }}
           />
         )}
       </Paper>
 
-      {/* Drawer */}
-      <DetailDrawer
-        open={drawerOpen}
-        onClose={() => { setDrawerOpen(false); setSelectedIssue(null) }}
-        title={selectedIssue?.pm_issuetitle ?? ''}
-        subtitle={selectedIssue && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-            <StatusTag label={ISSUE_CATEGORY_LABELS[String(selectedIssue.pm_issuecategory ?? '')] ?? '—'} variant="outlined" />
-            <StatusTag label={RAG_LABELS[String(selectedIssue.pm_ragstatus ?? '')] ?? '—'} color={RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] || 'default'} />
-            {selectedIssue.pm_escalationstatus && (
-              <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600, bgcolor: 'error.main', color: 'white', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <FlagIcon sx={{ fontSize: 12 }} /> Escalated
+      
+        </>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+          <Breadcrumbs
+            items={[
+              { label: 'Issues', path: 'list' },
+              { label: selectedIssue.pm_issuetitle ?? 'Detail' }
+            ]}
+            onNavigate={() => setSelectedIssue(null)}
+          />
+          <PageHeader
+            title={selectedIssue?.pm_issuetitle ?? 'Issue Detail'}
+            subtitle={
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                <StatusTag label={ISSUE_CATEGORY_LABELS[String(selectedIssue.pm_issuecategory ?? '')] ?? '—'} variant="outlined" />
+                <StatusTag label={RAG_LABELS[String(selectedIssue.pm_ragstatus ?? '')] ?? '—'} color={RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] || 'default'} />
+                {selectedIssue.pm_escalationstatus && (
+                  <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 1.5, fontSize: '0.75rem', fontWeight: 600, bgcolor: 'error.main', color: 'white', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <FlagIcon sx={{ fontSize: 12 }} /> Escalated
+                  </Box>
+                )}
               </Box>
-            )}
-          </Box>
-        )}
-        headerActions={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {canEdit && (
-              <ActionIcon icon={<EditIcon />} onClick={() => openEdit(selectedIssue!)} label="Edit" />
-            )}
-            {canDelete && (
-              <ActionIcon icon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedIssue)} label="Delete" color="error" />
-            )}
-          </Box>
-        }
-        tabs={[{ label: 'Overview' }, { label: 'Resolution' }]}
-        tabValue={drawerTab}
-        onTabChange={(_e, v) => setDrawerTab(v)}
-      >
-        {selectedIssue && (
-          <>
-            <TabPanel value={drawerTab} index={0}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Details</Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
-                    {selectedIssue.pm_issuedescription || 'No description provided.'}
-                  </Typography>
-                </Paper>
+            }
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                {selectedIssue && !selectedIssue.pm_escalationstatus && canEdit && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    startIcon={<FlagIcon />}
+                    onClick={() => handleEscalateIssue(selectedIssue)}
+                    sx={{ mr: 1, borderRadius: 1.5 }}
+                  >
+                    Escalate Issue
+                  </Button>
+                )}
+                {canEdit && (
+                  <Button variant="outlined" startIcon={<EditIcon />} onClick={() => openEdit(selectedIssue)} sx={{ borderRadius: 1.5 }}>
+                    Edit Issue
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={() => setDeleteTarget(selectedIssue)} sx={{ borderRadius: 1.5 }}>
+                    Delete Issue
+                  </Button>
+                )}
               </Box>
-            </TabPanel>
-            <TabPanel value={drawerTab} index={1}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Resolution details</Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
-                    {selectedIssue.pm_resolutiondetails || 'No resolution details yet.'}
-                  </Typography>
-                </Paper>
-              </Box>
-            </TabPanel>
-          </>
-        )}
-      </DetailDrawer>
+            }
+          />
+
+          <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5 }}>
+            <Grid container spacing={4} sx={{ alignItems: 'stretch' }}>
+              {/* Left Column: Description & Resolution details */}
+              <Grid size={{ xs: 12, md: 8 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                      <BugReportIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Description
+                    </Typography>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', lineHeight: 1.6 }}>
+                      {selectedIssue.pm_issuedescription || 'No description provided.'}
+                    </Typography>
+                  </Box>
+
+                  <Divider />
+
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                      <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} /> Resolution Details
+                    </Typography>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', lineHeight: 1.6 }}>
+                      {selectedIssue.pm_resolutiondetails || 'No resolution details recorded yet.'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              {/* Right Column: Metadata Overview */}
+              <Grid 
+                size={{ xs: 12, md: 4 }}
+                sx={{ 
+                  borderLeft: { md: `1px solid ${useTheme().palette.divider}` },
+                  pl: { md: 4 },
+                  pt: { xs: 3, md: 0 },
+                  borderTop: { xs: `1px solid ${useTheme().palette.divider}`, md: 'none' },
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5, fontSize: '0.75rem' }}>
+                  Issue Context
+                </Typography>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Associated Project</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {projectNameMap[(selectedIssue._pm_project_value || '').toLowerCase()] || '—'}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Issue Owner</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {resourceNameMap[(selectedIssue._pm_issueowner_value || '').toLowerCase()] || selectedIssue.pm_issueowner || '—'}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Category</Typography>
+                      <StatusTag 
+                        label={ISSUE_CATEGORY_LABELS[String(selectedIssue.pm_issuecategory ?? '')] ?? '—'} 
+                        variant="outlined" 
+                        sx={{ mt: 0.5, borderColor: ISSUE_CATEGORY_COLORS[String(selectedIssue.pm_issuecategory ?? '')], color: ISSUE_CATEGORY_COLORS[String(selectedIssue.pm_issuecategory ?? '')] }}
+                      />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Priority</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                        {String(selectedIssue.pm_prioritylevel ?? '') === '1' && <NewReleasesIcon fontSize="small" sx={{ color: 'error.main' }} />}
+                        {String(selectedIssue.pm_prioritylevel ?? '') === '0' && <PriorityHighIcon fontSize="small" sx={{ color: 'warning.main' }} />}
+                        {String(selectedIssue.pm_prioritylevel ?? '') === '2' && <LowPriorityIcon fontSize="small" sx={{ color: 'info.main' }} />}
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {PRIORITY_LABELS[String(selectedIssue.pm_prioritylevel ?? '')] ?? '—'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>RAG Status</Typography>
+                      <Box sx={{ mt: 0.5 }}>
+                        <StatusTag 
+                          label={RAG_LABELS[String(selectedIssue.pm_ragstatus ?? '')] ?? '—'} 
+                          color={RAG_COLORS[String(selectedIssue.pm_ragstatus ?? '')] || 'default'} 
+                        />
+                      </Box>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.7rem' }}>Target Date</Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
+                        {formatDate(selectedIssue.pm_targetresolutiondate) || '—'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Box>
+      )}
 
       {/* Create / Edit Dialog */}
       <IssueDialog

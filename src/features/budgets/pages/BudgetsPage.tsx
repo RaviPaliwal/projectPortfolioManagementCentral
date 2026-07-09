@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts'
 import {
   Box,
   Paper,
@@ -17,6 +18,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  Tabs,
+  Tab,
   DialogActions,
   Grid,
   TextField,
@@ -65,8 +68,8 @@ import {
 import type { BudgetLineModel, FundingSourceModel, FinancialPeriodModel } from '@/types/dataverse'
 import type { PortfolioLookupItem, ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
-import { BudgetLineFormDialog } from '../components'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, DetailDrawer, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, Breadcrumbs, ExcelImportDialog } from '@/components/common'
+import { BudgetLineFormDialog, BudgetTable } from '../components'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, Breadcrumbs, ExcelImportDialog } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
@@ -154,12 +157,55 @@ export default function BudgetsPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
 
+  // View mode switcher: budgets or forecasting
+  const [viewMode, setViewMode] = useState<'budgets' | 'forecasting'>('budgets')
+
+  // Multi-scenario forecasting states
+  const [activeScenario, setActiveScenario] = useState<'target' | 'best' | 'worst' | 'compare'>('target')
+  const [bestCasePct, setBestCasePct] = useState<number>(-15)
+  const [worstCasePct, setWorstCasePct] = useState<number>(25)
+
+  const handleApplyScenario = async () => {
+    if (activeScenario === 'target' || activeScenario === 'compare') return
+    setActionLoading(true)
+    setError(null)
+    setSuccessMsg(null)
+    try {
+      const multiplier = activeScenario === 'best' ? 1 + bestCasePct / 100 : 1 + worstCasePct / 100
+      const updatePromises = filteredBudgetLines
+        .filter(line => !!line.pm_budgetlineid)
+        .map(line => {
+          const base = line.pm_forecastspendeur ?? line.pm_approvedbudgeteur ?? 0
+          const updatedForecast = Math.round(base * multiplier)
+          return updateBudgetLine(line.pm_budgetlineid!, {
+            pm_forecastspendeur: updatedForecast,
+          })
+        })
+
+      const results = await Promise.allSettled(updatePromises)
+      const successCount = results.filter(r => r.status === 'fulfilled' && r.value !== null).length
+      
+      if (successCount > 0) {
+        setSuccessMsg(`Successfully applied ${activeScenario === 'best' ? 'Best Case' : 'Worst Case'} scenario to ${successCount} budget line forecasts.`)
+        setTimeout(() => setSuccessMsg(null), 4000)
+      } else {
+        setError('No budget lines could be updated.')
+        setTimeout(() => setError(null), 4000)
+      }
+      await loadData()
+    } catch (err) {
+      setError('Failed to apply scenario adjustments to budget lines.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   // Grid state
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [sort, setSort] = useState<SortState>({ field: 'name', dir: 'asc' })
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Detail panel state
   const [selectedBudget, setSelectedBudget] = useState<BudgetLineModel | null>(null)
@@ -173,6 +219,7 @@ export default function BudgetsPage() {
 
   // Excel/CSV import state
   const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [sapImportOpen, setSapImportOpen] = useState(false)
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -320,6 +367,95 @@ export default function BudgetsPage() {
 
     return sorted
   }, [budgetLines, searchQuery, categoryFilter, sort])
+
+  // ── Forecasting KPIs & Memos ──────────────────────────────────────────────
+  const forecastingKpis = useMemo((): KpiCardItem[] => {
+    const totalApproved = budgetLines.reduce((s, l) => s + (l.pm_approvedbudgeteur ?? 0), 0)
+    const totalRevised = budgetLines.reduce((s, l) => s + (l.pm_revisedbudgeteur ?? 0), 0)
+    
+    let scenarioMultiplier = 1
+    if (activeScenario === 'best') scenarioMultiplier = 1 + bestCasePct / 100
+    if (activeScenario === 'worst') scenarioMultiplier = 1 + worstCasePct / 100
+
+    const totalForecast = budgetLines.reduce((s, l) => {
+      const base = l.pm_forecastspendeur ?? l.pm_approvedbudgeteur ?? 0
+      return s + (base * scenarioMultiplier)
+    }, 0)
+
+    const totalActual = budgetLines.reduce((s, l) => s + (l.pm_actualspendeur ?? 0), 0)
+    const variance = totalRevised - totalForecast
+    const healthPercent = totalApproved > 0 ? Math.round((totalForecast / totalApproved) * 100) : 0
+
+    return [
+      {
+        label: activeScenario === 'best'
+          ? 'Forecast Spend (Best Case)'
+          : activeScenario === 'worst'
+          ? 'Forecast Spend (Worst Case)'
+          : activeScenario === 'compare'
+          ? 'Forecast Spend (Target)'
+          : 'Total Forecast Spend',
+        value: `€${numberFormatter.format(totalForecast)}`,
+        subtitle: 'Estimated final spend across all lines',
+        icon: <TrendingDownIcon />,
+        color: 'primary.main',
+      },
+      {
+        label: 'Approved Baseline Budget',
+        value: `€${numberFormatter.format(totalApproved)}`,
+        subtitle: 'Initial baseline budget',
+        icon: <AccountBalanceWalletIcon />,
+        color: 'text.secondary',
+      },
+      {
+        label: 'Forecast vs Revised Variance',
+        value: `€${numberFormatter.format(Math.abs(variance))}`,
+        subtitle: variance >= 0 ? 'Forecast is under revised budget' : 'Forecast exceeds revised budget!',
+        icon: <CurrencyExchangeIcon />,
+        color: variance >= 0 ? 'success.main' : 'error.main',
+      },
+      {
+        label: 'Forecast Consumption',
+        value: `${healthPercent}%`,
+        subtitle: 'Forecast vs Approved baseline ratio',
+        icon: <AssessmentIcon />,
+        color: healthPercent > 100 ? 'error.main' : healthPercent > 85 ? 'warning.main' : 'success.main',
+      }
+    ]
+  }, [budgetLines, activeScenario, bestCasePct, worstCasePct])
+
+  const chartData = useMemo(() => {
+    const categories = ['Staff', 'Contractors', 'Licences', 'Infrastructure']
+    return categories.map((catName, code) => {
+      const lines = budgetLines.filter((l) => Number(l.pm_costcategory) === code)
+      const approved = lines.reduce((s, l) => s + (l.pm_approvedbudgeteur ?? 0), 0)
+      const actual = lines.reduce((s, l) => s + (l.pm_actualspendeur ?? 0), 0)
+      const target = lines.reduce((s, l) => s + (l.pm_forecastspendeur ?? l.pm_approvedbudgeteur ?? 0), 0)
+      
+      if (activeScenario === 'compare') {
+        const best = target * (1 + bestCasePct / 100)
+        const worst = target * (1 + worstCasePct / 100)
+        return {
+          name: catName,
+          approved,
+          target,
+          best,
+          worst,
+        }
+      }
+
+      let multiplier = 1
+      if (activeScenario === 'best') multiplier = 1 + bestCasePct / 100
+      if (activeScenario === 'worst') multiplier = 1 + worstCasePct / 100
+
+      return {
+        name: catName,
+        approved,
+        actual,
+        forecast: target * multiplier,
+      }
+    })
+  }, [budgetLines, activeScenario, bestCasePct, worstCasePct])
 
   // ── Resolve display names from lookup lists ──────────────────────────────
   const resolvePortfolioName = useCallback((id?: string) => {
@@ -502,6 +638,59 @@ export default function BudgetsPage() {
     return { successCount, failedCount, errors }
   }
 
+  const handleImportSapActuals = async (file: File) => {
+    setActionLoading(true)
+    setError(null)
+    setSuccessMsg(null)
+    try {
+      const text = await file.text()
+      const lines = text.split(/\r?\n/)
+      if (lines.length < 2) throw new Error('File is empty or has no header')
+      
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+      const wbsIndex = headers.indexOf('wbs_element')
+      const actualIndex = headers.indexOf('actual_spend')
+      const committedIndex = headers.indexOf('committed_spend')
+      
+      if (wbsIndex === -1 || actualIndex === -1) {
+        throw new Error('SAP actuals CSV must contain WBS_Element and Actual_Spend columns')
+      }
+      
+      let updatedCount = 0
+      const updatePromises: Promise<any>[] = []
+      
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim()
+        if (!line) continue
+        const cols = line.split(',').map(c => c.trim())
+        const wbs = cols[wbsIndex]
+        const actual = Number(cols[actualIndex] || 0)
+        const committed = committedIndex !== -1 ? Number(cols[committedIndex] || 0) : 0
+        
+        const match = budgetLines.find(bl => bl.pm_budgetlinename?.toLowerCase().trim() === wbs.toLowerCase().trim())
+        if (match && match.pm_budgetlineid) {
+          updatePromises.push(
+            updateBudgetLine(match.pm_budgetlineid, {
+              pm_actualspendeur: actual,
+              pm_committedspendeur: committed,
+            })
+          )
+          updatedCount++
+        }
+      }
+      
+      await Promise.all(updatePromises)
+      setSuccessMsg(`SAP Integration: Successfully synchronized actual costs for ${updatedCount} matching budget lines.`)
+      setTimeout(() => setSuccessMsg(null), 4000)
+      await loadData()
+    } catch (err: any) {
+      setError(`SAP Loader failed: ${err.message || 'Unknown error'}`)
+    } finally {
+      setActionLoading(false)
+      setSapImportOpen(false)
+    }
+  }
+
   // ── Budget utilization percentage ──
   const budgetUtilization = useCallback((budget?: BudgetLineModel): number => {
     if (!budget) return 0
@@ -560,124 +749,140 @@ export default function BudgetsPage() {
             )}
           </Box>
 
-          <Grid container spacing={3}>
-            {/* Column 1: Budget Utilization & Variance Analysis */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Budget Utilization
-                    </Typography>
-                    <Box sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Budget Used
+          <Grid container spacing={2.5}>
+            {/* Column 1: Budget Utilization & Variance Analysis (Horizontal Full Width) */}
+            <Grid size={{ xs: 12 }}>
+              <Paper sx={{ p: 2, borderRadius: 1.5 }}>
+                <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+                  {/* Left sub-column: Budget Utilization */}
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Budget Utilization
                         </Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {budgetUtilization(selectedBudget)}%
-                        </Typography>
+                        <Box sx={{ mb: 1.5 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Budget Used
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                              {budgetUtilization(selectedBudget)}%
+                            </Typography>
+                          </Box>
+                          <LinearProgress
+                            variant="determinate"
+                            value={budgetUtilization(selectedBudget)}
+                            sx={{
+                              height: 6,
+                              borderRadius: 1.5,
+                              bgcolor: isDark ? 'divider' : '#e2e8f0',
+                              '& .MuiLinearProgress-bar': {
+                                bgcolor: budgetUtilization(selectedBudget) > 85 ? 'error.main'
+                                  : budgetUtilization(selectedBudget) > 65 ? 'warning.main' : 'success.main',
+                              },
+                            }}
+                          />
+                        </Box>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                          <Box sx={{ p: 1, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25, fontWeight: 600 }}>Revised Budget</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
+                              {selectedBudget.pm_revisedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_revisedbudgeteur) : '—'}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ p: 1, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.success.main}` }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25, fontWeight: 600 }}>Actual Spend</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'success.main' }}>
+                              {selectedBudget.pm_actualspendeur != null ? currencyFormatter.format(selectedBudget.pm_actualspendeur) : '—'}
+                            </Typography>
+                          </Box>
+                        </Box>
                       </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={budgetUtilization(selectedBudget)}
-                        sx={{
-                          height: 8,
-                          borderRadius: 1.5,
-                          bgcolor: isDark ? 'divider' : '#e2e8f0',
-                          '& .MuiLinearProgress-bar': {
-                            bgcolor: budgetUtilization(selectedBudget) > 85 ? 'error.main'
-                              : budgetUtilization(selectedBudget) > 65 ? 'warning.main' : 'success.main',
-                          },
-                        }}
-                      />
                     </Box>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.primary.main}` }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Revised Budget</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'primary.main' }}>
-                          {selectedBudget.pm_revisedbudgeteur != null ? currencyFormatter.format(selectedBudget.pm_revisedbudgeteur) : '—'}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderLeft: (theme) => `3px solid ${theme.palette.success.main}` }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>Actual Spend</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'success.main' }}>
-                          {selectedBudget.pm_actualspendeur != null ? currencyFormatter.format(selectedBudget.pm_actualspendeur) : '—'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
+                  </Grid>
 
-                  <Divider />
-
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CurrencyExchangeIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Variance Analysis
-                    </Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
-                      <Box
-                        sx={{
-                          p: 2,
-                          borderRadius: 1,
-                          textAlign: 'center',
-                          border: (theme) => `1px solid ${selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0 ? theme.palette.success.main : theme.palette.error.main}`,
-                          bgcolor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
-                            ? (isDark ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.05)')
-                            : (isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)'),
-                        }}
-                      >
-                        {selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
-                          ? <VerifiedIcon sx={{ fontSize: 24, color: 'success.main', mb: 0.5 }} />
-                          : <WarningAmberIcon sx={{ fontSize: 24, color: 'error.main', mb: 0.5 }} />
-                        }
-                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: getVarianceColor(selectedBudget.pm_varianceeur) }}>
-                          {selectedBudget.pm_varianceeur != null
-                            ? `${selectedBudget.pm_varianceeur >= 0 ? '+' : ''}${currencyFormatter.format(selectedBudget.pm_varianceeur)}`
-                            : '—'}
+                  {/* Right sub-column: Variance Analysis */}
+                  <Grid 
+                    size={{ xs: 12, md: 6 }}
+                    sx={{ 
+                      borderLeft: { md: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}` },
+                      pl: { md: 3 },
+                      pt: { xs: 2, md: 0 },
+                      borderTop: { xs: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`, md: 'none' },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CurrencyExchangeIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Variance Analysis
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">Variance</Typography>
-                      </Box>
-                      <Box sx={{ p: 2, borderRadius: 1, textAlign: 'center', border: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {selectedBudget.pm_committedspendeur != null ? currencyFormatter.format(selectedBudget.pm_committedspendeur) : '—'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">Committed</Typography>
-                      </Box>
-                      <Box sx={{ p: 2, borderRadius: 1, textAlign: 'center', border: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {selectedBudget.pm_forecastspendeur != null ? currencyFormatter.format(selectedBudget.pm_forecastspendeur) : '—'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">Forecast</Typography>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5 }}>
+                          <Box
+                            sx={{
+                              p: 1,
+                              borderRadius: 1,
+                              textAlign: 'center',
+                              border: (theme) => `1px solid ${selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0 ? theme.palette.success.main : theme.palette.error.main}`,
+                              bgcolor: selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
+                                ? (isDark ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.05)')
+                                : (isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)'),
+                            }}
+                          >
+                            {selectedBudget.pm_varianceeur != null && selectedBudget.pm_varianceeur >= 0
+                              ? <VerifiedIcon sx={{ fontSize: 20, color: 'success.main', mb: 0.25 }} />
+                              : <WarningAmberIcon sx={{ fontSize: 20, color: 'error.main', mb: 0.25 }} />
+                            }
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: getVarianceColor(selectedBudget.pm_varianceeur) }}>
+                              {selectedBudget.pm_varianceeur != null
+                                ? `${selectedBudget.pm_varianceeur >= 0 ? '+' : ''}${currencyFormatter.format(selectedBudget.pm_varianceeur)}`
+                                : '—'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>Variance</Typography>
+                          </Box>
+                          <Box sx={{ p: 1, borderRadius: 1, textAlign: 'center', border: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', pt: 0.5 }}>
+                              {selectedBudget.pm_committedspendeur != null ? currencyFormatter.format(selectedBudget.pm_committedspendeur) : '—'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', mt: 0.5 }}>Committed</Typography>
+                          </Box>
+                          <Box sx={{ p: 1, borderRadius: 1, textAlign: 'center', border: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', pt: 0.5 }}>
+                              {selectedBudget.pm_forecastspendeur != null ? currencyFormatter.format(selectedBudget.pm_forecastspendeur) : '—'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem', mt: 0.5 }}>Forecast</Typography>
+                          </Box>
+                        </Box>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mt: 1.5 }}>
+                          <Box sx={{ p: 1, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate at Completion</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                              {selectedBudget.pm_estimateatcompletioneur != null ? currencyFormatter.format(selectedBudget.pm_estimateatcompletioneur) : '—'}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ p: 1, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate to Complete</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
+                              {selectedBudget.pm_estimatetocompleteeur != null ? currencyFormatter.format(selectedBudget.pm_estimatetocompleteeur) : '—'}
+                            </Typography>
+                          </Box>
+                        </Box>
                       </Box>
                     </Box>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate at Completion</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {selectedBudget.pm_estimateatcompletioneur != null ? currencyFormatter.format(selectedBudget.pm_estimateatcompletioneur) : '—'}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', border: '1px solid', borderColor: 'divider' }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 0.25 }}>Estimate to Complete</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {selectedBudget.pm_estimatetocompleteeur != null ? currencyFormatter.format(selectedBudget.pm_estimatetocompleteeur) : '—'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                </Box>
+                  </Grid>
+                </Grid>
               </Paper>
             </Grid>
 
             {/* Column 2: Line Details & Notes */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 2, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                       <CategoryIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Line Details
                     </Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
                       <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Category</Typography>
                         <Typography variant="body2">{selectedBudget.pm_costcategory || CATEGORY_LABELS[String(selectedBudget.pm_costcategory ?? '')] || '—'}</Typography>
@@ -710,18 +915,17 @@ export default function BudgetsPage() {
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Project</Typography>
                         <Typography variant="body2">{resolveProjectName(selectedBudget._pm_project_value) || selectedBudget.pm_projectcode || '—'}</Typography>
                       </Box>
-
                     </Box>
                   </Box>
 
                   {selectedBudget.pm_notes && (
                     <>
-                      <Divider />
+                      <Divider sx={{ my: 1 }} />
                       <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                           <NotesIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Notes
                         </Typography>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>
                           {selectedBudget.pm_notes}
                         </Typography>
                       </Box>
@@ -732,11 +936,11 @@ export default function BudgetsPage() {
             </Grid>
 
             {/* Column 3: Approval Tasks */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, flexGrow: 1 }}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 2, borderRadius: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
                   <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                       <AssignmentIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Pending Decisions
                     </Typography>
                     {selectedBudget.pm_budgetlineid && (
@@ -772,6 +976,13 @@ export default function BudgetsPage() {
                     >
                       Import Budget Lines
                     </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<CloudUploadIcon />}
+                      onClick={() => setSapImportOpen(true)}
+                    >
+                      Load SAP Actuals
+                    </Button>
                     <Button variant="contained" startIcon={<AddIcon />} onClick={() => setBudgetFormEditRecord(null)}>
                       Add Budget Line
                     </Button>
@@ -784,186 +995,306 @@ export default function BudgetsPage() {
           {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
           {successMsg && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>{successMsg}</Alert>}
 
-          {/* ── KPI Row ──────────────────────────────────── */}
-          {!loading && <KpiCardRow items={kpiItems} />}
-
-          {/* ── Budget Grid ──────────────────────────────── */}
-          <Paper sx={{ overflow: 'hidden', mb: 3 }}>
-            <SearchFilterBar
-              searchQuery={searchQuery}
-              onSearchChange={handleSearchChange}
-              searchPlaceholder="Search by name, category, portfolio, programme..."
-              filterValue={categoryFilter}
-              onFilterChange={handleCategoryFilterChange}
-              filterLabel="Category"
-              filterOptions={CATEGORY_FILTER_OPTIONS}
-              onClear={() => { setSearchQuery(''); setCategoryFilter(''); setPage(0) }}
-            />
-
-            <TableShell
-              loading={loading}
-              empty={filteredBudgetLines.length === 0}
-              emptyIcon={<AccountBalanceWalletIcon />}
-              emptyTitle={searchQuery || categoryFilter ? 'No budget lines match your criteria.' : 'No budget lines found.'}
-              emptyAction={!searchQuery && !categoryFilter ? (
-                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setBudgetFormEditRecord(null)}>
-                  Add your first budget line
-                </Button>
-              ) : undefined}
+          {/* ── View switcher ─────────────────────────────── */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tabs
+              value={viewMode === 'budgets' ? 0 : 1}
+              onChange={(_, newVal) => setViewMode(newVal === 0 ? 'budgets' : 'forecasting')}
+              indicatorColor="primary"
+              textColor="primary"
             >
-              <Table stickyHeader size="small" sx={{ minWidth: 1100 }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                      <TableSortLabel active={sort.field === 'name'} direction={sort.field === 'name' ? sort.dir : 'asc'} onClick={() => handleSort('name')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                        Budget Line
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                      <TableSortLabel active={sort.field === 'category'} direction={sort.field === 'category' ? sort.dir : 'asc'} onClick={() => handleSort('category')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                        Category
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                      <TableSortLabel active={sort.field === 'budget'} direction={sort.field === 'budget' ? sort.dir : 'asc'} onClick={() => handleSort('budget')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                        Approved Budget
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                      <TableSortLabel active={sort.field === 'revised'} direction={sort.field === 'revised' ? sort.dir : 'asc'} onClick={() => handleSort('revised')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                        Revised Budget
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                      <TableSortLabel active={sort.field === 'actual'} direction={sort.field === 'actual' ? sort.dir : 'asc'} onClick={() => handleSort('actual')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                        Actual Spend
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, bgcolor: isDark ? 'background.paper' : 'background.default', borderBottom: `2px solid ${theme.palette.divider}`, px: 2.5, py: 1.5 }}>
-                      <TableSortLabel active={sort.field === 'variance'} direction={sort.field === 'variance' ? sort.dir : 'asc'} onClick={() => handleSort('variance')} sx={{ fontWeight: 700, color: isDark ? '#e2e8f0' : '#475569' }}>
-                        Variance
-                      </TableSortLabel>
-                    </TableCell>
+              <Tab label="Budget Lines" sx={{ fontWeight: 600 }} />
+              <Tab label="Forecasting & Scenarios" sx={{ fontWeight: 600 }} />
+            </Tabs>
+          </Box>
 
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedBudgetLines.map((line, idx) => {
-                    const ut = budgetUtilization(line)
-                    const variance = line.pm_varianceeur
-                    const isOverBudget = variance != null && variance < 0
-                    return (
-                      <TableRow
-                        key={line.pm_budgetlineid}
-                        hover
-                        onClick={() => handleRowClick(line)}
-                        sx={{
-                          cursor: 'pointer',
-                          bgcolor: idx % 2 === 1 ? (isDark ? '#1a2332' : 'background.default') : 'transparent',
-                          '&:hover': { bgcolor: isDark ? '#1e3a5f !important' : '#eef2ff !important' },
-                          transition: 'background-color 0.15s ease',
-                          '& td': { px: 2.5, py: 1.25 },
-                        }}
-                      >
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: fontSizes.sm, fontWeight: 700 }}>
-                              {(line.pm_budgetlinename ?? 'B').charAt(0).toUpperCase()}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                {line.pm_budgetlinename ?? 'Unnamed'}
-                              </Typography>
-                              {line.pm_fundingsourcename && (
-                                <Typography variant="caption" color="text.secondary">
-                                  {line.pm_fundingsourcename}
-                                </Typography>
-                              )}
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <StatusTag
-                            label={CATEGORY_LABELS[String(line.pm_costcategory ?? '')] ?? 'Unknown'}
-                            color={CATEGORY_COLORS[String(line.pm_costcategory ?? '')] ?? 'default'}
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
-                            {line.pm_approvedbudgeteur != null ? currencyFormatter.format(line.pm_approvedbudgeteur) : '—'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
-                            {line.pm_revisedbudgeteur != null ? currencyFormatter.format(line.pm_revisedbudgeteur) : '—'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
-                            <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>
-                              {line.pm_actualspendeur != null ? currencyFormatter.format(line.pm_actualspendeur) : '—'}
-                            </Typography>
-                            <LinearProgress
-                              variant="determinate"
-                              value={ut}
-                              sx={{
-                                width: '100%',
-                                maxWidth: 100,
-                                height: 4,
-                                borderRadius: 1.5,
-                                bgcolor: isDark ? '#334155' : '#e2e8f0',
-                                '& .MuiLinearProgress-bar': {
-                                  bgcolor: ut > 85 ? 'error.main' : ut > 65 ? 'warning.main' : 'success.main',
-                                },
-                              }}
-                            />
-                          </Box>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
-                            {isOverBudget && <WarningAmberIcon sx={{ fontSize: 16, color: 'error.main' }} />}
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontFamily: '"JetBrains Mono", monospace',
-                                fontWeight: 700,
-                                color: getVarianceColor(variance),
-                              }}
-                            >
-                              {variance != null ? `${variance >= 0 ? '+' : ''}${currencyFormatter.format(variance)}` : '—'}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </TableShell>
+          {viewMode === 'budgets' ? (
+            <>
+              {/* ── KPI Row ──────────────────────────────────── */}
+              {!loading && <KpiCardRow items={kpiItems} />}
 
-            {!loading && filteredBudgetLines.length > 0 && (
-              <TableFooter
-                filteredCount={filteredBudgetLines.length}
-                totalCount={budgetLines.length}
-                itemLabel="budget line"
-                totals={[
-                  { label: 'Total budget', value: `€${numberFormatter.format(filteredBudgetLines.reduce((s, l) => s + (l.pm_approvedbudgeteur ?? 0), 0))}` },
-                  { label: 'Total spend', value: `€${numberFormatter.format(filteredBudgetLines.reduce((s, l) => s + (l.pm_actualspendeur ?? 0), 0))}` },
-                ]}
+              {/* ── Budget Grid ──────────────────────────────── */}
+              <BudgetTable
+                budgetLines={budgetLines}
+                loading={loading}
+                onSelect={handleRowClick}
+                onEdit={canEdit ? (line) => setBudgetFormEditRecord(line) : undefined}
+                categoryFilter={categoryFilter}
+                setCategoryFilter={setCategoryFilter}
+                openCreate={canCreate ? () => setBudgetFormEditRecord(null) : undefined}
+                canEdit={canEdit}
               />
-            )}
-            {!loading && filteredBudgetLines.length > 0 && (
-              <TablePagination
-                component="div"
-                count={filteredBudgetLines.length}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[25, 50, 100]}
-              />
-            )}
-          </Paper>
+            </>
+          ) : (
+            <>
+              {/* ── Forecasting KPIs ────────────────────────── */}
+              {!loading && <KpiCardRow items={forecastingKpis} />}
+
+              {/* ── Scenario Control Panel ────────────────────── */}
+              <Paper sx={{ p: 3, mb: 3, borderRadius: 1.5 }}>
+                <Grid container spacing={3} sx={{ alignItems: 'center' }}>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary' }}>
+                      SELECT ACTIVE SCENARIO
+                    </Typography>
+                    <ToggleButtonGroup
+                      value={activeScenario}
+                      exclusive
+                      onChange={(_, val) => val && setActiveScenario(val)}
+                      size="small"
+                      color="primary"
+                      fullWidth
+                    >
+                      <ToggleButton value="target" sx={{ fontWeight: 600 }}>Target</ToggleButton>
+                      <ToggleButton value="best" sx={{ fontWeight: 600 }}>Best Case</ToggleButton>
+                      <ToggleButton value="worst" sx={{ fontWeight: 600 }}>Worst Case</ToggleButton>
+                      <ToggleButton value="compare" sx={{ fontWeight: 600 }}>Compare All</ToggleButton>
+                    </ToggleButtonGroup>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Box sx={{ px: 1 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between', color: 'success.main' }}>
+                        <span>BEST CASE ADJ</span>
+                        <span>{bestCasePct}%</span>
+                      </Typography>
+                      <Slider
+                        value={bestCasePct}
+                        onChange={(_, val) => setBestCasePct(val as number)}
+                        min={-50}
+                        max={-5}
+                        step={5}
+                        disabled={activeScenario === 'worst'}
+                        valueLabelDisplay="auto"
+                        sx={{ color: 'success.main', mt: 1 }}
+                      />
+                    </Box>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Box sx={{ px: 1 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between', color: 'error.main' }}>
+                        <span>WORST CASE ADJ</span>
+                        <span>+{worstCasePct}%</span>
+                      </Typography>
+                      <Slider
+                        value={worstCasePct}
+                        onChange={(_, val) => setWorstCasePct(val as number)}
+                        min={5}
+                        max={100}
+                        step={5}
+                        disabled={activeScenario === 'best'}
+                        valueLabelDisplay="auto"
+                        sx={{ color: 'error.main', mt: 1 }}
+                      />
+                    </Box>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 2 }}>
+                    <Button
+                      variant="contained"
+                      color={activeScenario === 'best' ? 'success' : activeScenario === 'worst' ? 'error' : 'primary'}
+                      fullWidth
+                      disabled={activeScenario === 'target' || activeScenario === 'compare' || actionLoading}
+                      onClick={handleApplyScenario}
+                      sx={{ borderRadius: 1.5, py: 1, fontWeight: 600 }}
+                    >
+                      {actionLoading ? 'Applying...' : 'Apply Scenario'}
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* ── Scenario Chart and Forecast Grid ────────── */}
+              <Grid container spacing={3} sx={{ mt: 0.5, mb: 3 }}>
+                <Grid size={{ xs: 12, md: activeScenario === 'compare' ? 12 : 5 }}>
+                  <Paper sx={{ p: 3, borderRadius: 1.5, height: '100%' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AssessmentIcon sx={{ fontSize: 18, color: 'primary.main' }} /> {activeScenario === 'compare' ? 'Scenario Comparison Breakdown' : 'Category Scenario Breakdown'}
+                    </Typography>
+                    <Box sx={{ width: '100%', height: 330 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" opacity={isDark ? 0.1 : 0.2} />
+                          <XAxis dataKey="name" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} />
+                          <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} tickFormatter={(v) => `€${v/1000}k`} />
+                          <RechartsTooltip formatter={(value: any) => `€${Number(value).toLocaleString()}`} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                          {activeScenario === 'compare' ? (
+                            <>
+                              <Bar dataKey="approved" name="Approved Budget" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                              <Bar dataKey="target" name="Target Forecast" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
+                              <Bar dataKey="best" name="Best Case Forecast" fill="#10b981" radius={[3, 3, 0, 0]} />
+                              <Bar dataKey="worst" name="Worst Case Forecast" fill="#ef4444" radius={[3, 3, 0, 0]} />
+                            </>
+                          ) : (
+                            <>
+                              <Bar dataKey="approved" name="Approved" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                              <Bar dataKey="actual" name="Actual" fill="#10b981" radius={[3, 3, 0, 0]} />
+                              <Bar dataKey="forecast" name="Forecast" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
+                            </>
+                          )}
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Box>
+                  </Paper>
+                </Grid>
+
+                <Grid size={{ xs: 12, md: activeScenario === 'compare' ? 12 : 7 }}>
+                  <Paper sx={{ overflow: 'hidden' }}>
+                    <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <TrendingDownIcon sx={{ fontSize: 18, color: 'primary.main' }} /> {activeScenario === 'compare' ? 'Scenario Comparison Matrix' : 'Forecast Adjustment Matrix'}
+                      </Typography>
+                    </Box>
+                    <TableShell loading={loading} empty={filteredBudgetLines.length === 0} emptyIcon={<TrendingDownIcon />}>
+                      <Table stickyHeader size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 700, px: 2, py: 1.5 }}>Budget Line</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700, px: 2, py: 1.5 }}>Approved Budget</TableCell>
+                            {activeScenario === 'compare' ? (
+                              <>
+                                <TableCell align="right" sx={{ fontWeight: 700, px: 2, py: 1.5 }}>Target Forecast</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 700, px: 2, py: 1.5 }}>Best Case</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 700, px: 2, py: 1.5 }}>Worst Case</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 700, px: 2, py: 1.5 }}>Max Deviation</TableCell>
+                              </>
+                            ) : (
+                              <>
+                                <TableCell align="right" sx={{ fontWeight: 700, px: 2, py: 1.5 }}>Forecast Spend</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 700, px: 2, py: 1.5 }}>Variance</TableCell>
+                                <TableCell align="center" sx={{ fontWeight: 700, px: 2, py: 1.5 }}>Actions</TableCell>
+                              </>
+                            )}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {filteredBudgetLines.map((line, idx) => {
+                            const approved = line.pm_revisedbudgeteur ?? line.pm_approvedbudgeteur ?? 0
+                            const targetVal = line.pm_forecastspendeur ?? line.pm_approvedbudgeteur ?? 0
+
+                            if (activeScenario === 'compare') {
+                              const bestVal = Math.round(targetVal * (1 + bestCasePct / 100))
+                              const worstVal = Math.round(targetVal * (1 + worstCasePct / 100))
+                              const maxDeviation = worstVal - approved
+
+                              return (
+                                <TableRow
+                                  key={line.pm_budgetlineid}
+                                  hover
+                                  sx={{
+                                    bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                                    '& td': { px: 2, py: 1.25 }
+                                  }}
+                                >
+                                  <TableCell>
+                                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{line.pm_budgetlinename}</Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {CATEGORY_LABELS[String(line.pm_costcategory ?? '')] ?? 'Unknown'}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                                      {currencyFormatter.format(approved)}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600, color: 'primary.main' }}>
+                                      {currencyFormatter.format(targetVal)}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600, color: 'success.main' }}>
+                                      {currencyFormatter.format(bestVal)}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600, color: 'error.main' }}>
+                                      {currencyFormatter.format(worstVal)}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontFamily: '"JetBrains Mono", monospace',
+                                        fontWeight: 700,
+                                        color: maxDeviation <= 0 ? 'success.main' : 'error.main'
+                                      }}
+                                    >
+                                      {maxDeviation > 0 ? '+' : ''}{currencyFormatter.format(maxDeviation)}
+                                    </Typography>
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            }
+
+                            // Single scenario mode
+                            let activeForecast = targetVal
+                            if (activeScenario === 'best') activeForecast = Math.round(targetVal * (1 + bestCasePct / 100))
+                            if (activeScenario === 'worst') activeForecast = Math.round(targetVal * (1 + worstCasePct / 100))
+                            const variance = approved - activeForecast
+
+                            return (
+                              <TableRow
+                                key={line.pm_budgetlineid}
+                                hover
+                                sx={{
+                                  bgcolor: idx % 2 === 1 ? 'action.hover' : 'transparent',
+                                  '& td': { px: 2, py: 1.25 }
+                                }}
+                              >
+                                <TableCell>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{line.pm_budgetlinename}</Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {CATEGORY_LABELS[String(line.pm_costcategory ?? '')] ?? 'Unknown'}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                                    {currencyFormatter.format(approved)}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600, color: 'primary.main' }}>
+                                    {currencyFormatter.format(activeForecast)}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontFamily: '"JetBrains Mono", monospace',
+                                      fontWeight: 700,
+                                      color: variance >= 0 ? 'success.main' : 'error.main'
+                                    }}
+                                  >
+                                    {variance >= 0 ? '+' : ''}{currencyFormatter.format(variance)}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="center">
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<EditIcon sx={{ fontSize: 12 }} />}
+                                    onClick={() => setBudgetFormEditRecord(line)}
+                                    sx={{ borderRadius: 1.5, py: 0.5, fontSize: fontSizes.xs }}
+                                  >
+                                    Edit Forecast
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                    </TableShell>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </>
+          )}
         </>
       )}
 
@@ -1025,6 +1356,57 @@ export default function BudgetsPage() {
         title="Import Budget Lines from CSV"
         onImport={handleImportBudgets}
       />
+
+      {/* ── SAP Actuals Import Dialog ──────────────── */}
+      <Dialog
+        open={sapImportOpen}
+        onClose={() => !actionLoading && setSapImportOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        slotProps={{
+          paper: { sx: { borderRadius: 1.5 } }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Load SAP Actual Costs</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1.5 }}>
+            <Typography variant="body2" color="text.secondary">
+              Upload the standard SAP cost output CSV. The loader maps `WBS_Element` values directly to Dataverse budget lines and updates actual/committed spend.
+            </Typography>
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<CloudUploadIcon />}
+              fullWidth
+              sx={{ py: 1.5, borderStyle: 'dashed', borderRadius: 1.5 }}
+              disabled={actionLoading}
+            >
+              Upload SAP CSV File
+              <input
+                type="file"
+                accept=".csv"
+                hidden
+                onChange={(e) => {
+                  const files = e.target.files
+                  if (files && files.length > 0) {
+                    handleImportSapActuals(files[0])
+                  }
+                }}
+              />
+            </Button>
+            {actionLoading && (
+              <Box sx={{ width: '100%', mt: 1 }}>
+                <LinearProgress sx={{ height: 4, borderRadius: 1 }} />
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button onClick={() => setSapImportOpen(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5 }}>
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

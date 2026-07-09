@@ -122,7 +122,7 @@ export const LedgerCalendar: React.FC<LedgerCalendarProps> = ({
       </Box>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 0.5 }}>
         {cells.map((day, idx) => {
-          if (!day) return <Box key={`blank-${idx}`} sx={{ borderRadius: 1, minHeight: 80 }} />
+          if (!day) return <Box key={`blank-${idx}`} sx={{ borderRadius: 1, minHeight: 56 }} />
 
           const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
           const dow = (startDow + day - 1) % 7
@@ -147,13 +147,13 @@ export const LedgerCalendar: React.FC<LedgerCalendarProps> = ({
           return (
             <Box
               key={dateStr}
-              onClick={() => interactive && !isWeekend && onSelectDate?.(dateStr)}
-              onDoubleClick={() => interactive && !isWeekend && onDoubleClickDate?.(dateStr)}
+              onClick={() => interactive && onSelectDate?.(dateStr)}
+              onDoubleClick={() => interactive && onDoubleClickDate?.(dateStr)}
               title={tooltipLines.length > 0 ? tooltipLines.join('\n') : undefined}
               sx={{
                 position: 'relative',
                 borderRadius: 1,
-                minHeight: 80,
+                minHeight: 56,
                 p: 0.5,
                 border: isHoliday ? `1px dashed ${colorMap['leave']}` : '1px solid transparent',
                 bgcolor: isSelected
@@ -161,12 +161,12 @@ export const LedgerCalendar: React.FC<LedgerCalendarProps> = ({
                   : isWeekend
                     ? 'action.hover'
                     : 'action.selected',
-                opacity: isWeekend ? 0.6 : 1,
-                cursor: interactive && !isWeekend ? 'pointer' : 'default',
+                opacity: isWeekend ? 0.8 : 1,
+                cursor: interactive ? 'pointer' : 'default',
                 boxShadow: isToday ? `inset 0 0 0 1.5px ${theme.palette.primary.main}` : undefined,
                 color: isSelected ? '#fff' : 'text.primary',
                 transition: 'background-color 0.15s',
-                '&:hover': interactive && !isWeekend ? { bgcolor: isSelected ? 'primary.dark' : 'action.focus' } : undefined,
+                '&:hover': interactive ? { bgcolor: isSelected ? 'primary.dark' : 'action.focus' } : undefined,
               }}
             >
               <Typography variant="caption" sx={{ fontSize: '0.68rem', color: isSelected ? 'inherit' : 'text.secondary', fontWeight: 600 }}>
