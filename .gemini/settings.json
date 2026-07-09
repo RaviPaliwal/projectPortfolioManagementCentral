@@ -9,6 +9,20 @@
     }
   },
   "mcpServers": {
+    "appian-server": {
+      "type": "local",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\SuvigyaKumawat\\Downloads\\MCP-Appian-master\\MCP-Appian-master\\dist\\index.js"
+      ],
+      "environment": {
+        "APPIAN_TENANT": "cc-deployment",
+        "APPIAN_API_KEY": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjNzIyNzVlNy1kOWFiLWM4Y2EtMGZmMS1mZTc0Yzk0OGI2ZGIifQ.I9PWhs1m-xJQVetnJI2SBkxUszE7QeKhyRQMVGdx3ic",
+        "APPIAN_CLIENT_ID": "FhlIksGsFh0FxNmFgcTlDGV-OQEAZtv-mFzSOnqxqOw",
+        "APPIAN_CLIENT_SECRET": "tU0-Iwk6FpJZmgLS23FUJC_uBJsWLV9zSw1AWevp4nj-mEOk4D0daJ_LFx2-iuokQUcWtutHzV9CKsWRV3clBDcQtCSL3jmk5xf0BGHweXxn6d6tQRjn1Zf8eZSIXYeq51hX9ceVsSzj3hFtC2LZpiyrSfbKwn3KHx0zDVyOU02IBsvtG1TM8zGg67yXAlT8ieq2QPz6sQDBJ4FxGRvvPgEWendVb1nwMkxWIhxtoK1mtY0_8rsS5tXeOzqjwFLP3vPVXzpgv5YnMbGo5DNbbdE1dbOMGbpq9orcv20Mqd0EPDlWb7HYLxJHTo4kLV7vwpYbwPgfSzNWaqiHDStUYw==",
+        "APPIAN_BASE_URL": "https://cc-deployment.appiancloud.com/suite/webapi"
+      }
+    },
     "chrome-devtools-mcp": {
       "command": "npx",
       "args": [

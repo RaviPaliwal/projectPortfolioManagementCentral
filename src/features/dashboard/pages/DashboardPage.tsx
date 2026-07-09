@@ -15,7 +15,8 @@ import {
   LinearProgress,
   Alert,
   Tabs,
-  Tab
+  Tab,
+  CircularProgress
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
@@ -25,6 +26,8 @@ import ViewsIcon from '@mui/icons-material/GridView'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import ScheduleIcon from '@mui/icons-material/Schedule'
+import SmartToyIcon from '@mui/icons-material/SmartToy'
+import LaunchIcon from '@mui/icons-material/Launch'
 import FinancialReportsPage from '@/features/financialreports/pages/FinancialReportsPage'
 import type { TabKey } from '@/components/layout/PrimaryShell'
 
@@ -54,7 +57,7 @@ import {
 import { fontSizes } from '@/styles'
 import type { InitiativeModel, ApprovalRequestModel, PortfolioModel, ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
 import type { PipelineKpis } from '@/services'
-import { DashboardTasksWidget, BudgetHealthPanel, PipelineStageSummary, PortfolioHealthSnapshot } from '../components'
+import { DashboardTasksWidget, BudgetHealthPanel, PipelineStageSummary, PortfolioHealthSnapshot, PpmCopilotWidget } from '../components'
 import { currencyFormatter, formatDateTime } from '@/utils/formatters'
 import { useUser } from '@/context/UserContext'
 
@@ -103,6 +106,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const [risks, setRisks] = useState<RiskModel[]>([])
   const [issues, setIssues] = useState<IssueModel[]>([])
   const [showAllProjects, setShowAllProjects] = useState(false)
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false)
+  const [isTabIframeLoading, setIsTabIframeLoading] = useState(true)
+  const [tabIframeKey, setTabIframeKey] = useState(0)
 
   // Budget Filter State
   const [availableYears, setAvailableYears] = useState<number[]>([])
@@ -249,7 +255,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       {/* Tab Switcher */}
       {(() => {
         const showFinancialTab = currentUserPersona === 'FinancialController' || currentUserPersona === 'SystemAdministrator'
-        return showFinancialTab ? (
+        return (
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
             <Tabs
               value={dashboardTab}
@@ -258,13 +264,14 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               textColor="primary"
             >
               <Tab label="Portfolio Overview" sx={{ fontWeight: 600 }} />
-              <Tab label="Financial Reports" sx={{ fontWeight: 600 }} />
+              <Tab label="AI Copilot" sx={{ fontWeight: 600 }} />
+              {showFinancialTab && <Tab label="Financial Reports" sx={{ fontWeight: 600 }} />}
             </Tabs>
           </Box>
-        ) : null
+        )
       })()}
 
-      {dashboardTab === 0 || !(currentUserPersona === 'FinancialController' || currentUserPersona === 'SystemAdministrator') ? (
+      {dashboardTab === 0 && (
         <>
           {/* KPI Cards — Standardized Row */}
           <KpiCardRow items={kpiItems} loading={loading} />
@@ -322,11 +329,277 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 loading={loading}
                 sx={{ flex: 1 }}
               />
+
+              {/* Premium Copilot Card Banner */}
+              <Paper
+                sx={{
+                  p: 2.5,
+                  borderRadius: 2,
+                  background: theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)'
+                    : 'linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
+                  border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)'}`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.5,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 120,
+                    height: 120,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0) 70%)',
+                    zIndex: 0,
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, zIndex: 1 }}>
+                  <SmartToyIcon sx={{ color: 'primary.main', fontSize: 24 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: "'Outfit', sans-serif" }}>
+                    Interactive PPM Copilot
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ zIndex: 1 }}>
+                  Have questions about project status, resource capacity, or budget allocations? Ask our AI assistant for real-time summaries and analysis.
+                </Typography>
+                <Button
+                  variant="contained"
+                  onClick={() => setIsCopilotOpen(true)}
+                  startIcon={<SmartToyIcon />}
+                  sx={{
+                    alignSelf: 'flex-start',
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                    boxShadow: '0 4px 12px rgba(139, 92, 246, 0.2)',
+                    zIndex: 1,
+                    '&:hover': {
+                      background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.secondary.dark} 100%)`,
+                      boxShadow: '0 6px 16px rgba(139, 92, 246, 0.35)',
+                    }
+                  }}
+                >
+                  Start Chatting
+                </Button>
+              </Paper>
             </Grid>
           </Grid>
         </>
-      ) : (
-        <FinancialReportsPage onNavigate={onNavigate} />
+      )}
+
+      {dashboardTab === 1 && (
+        <Grid container spacing={3} sx={{ mt: 0.5 }}>
+          {/* Left panel: Info & Help */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 3,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.5) 100%)'
+                  : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(14, 165, 233, 0.08)',
+                    p: 1,
+                    borderRadius: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <SmartToyIcon color="primary" sx={{ fontSize: 28 }} />
+                </Box>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: "'Outfit', sans-serif" }}>
+                    PPM AI Assistant
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                    Powered by Copilot Studio
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                Meet the Project Portfolio Management AI Assistant. It can help you search projects, query timelines, analyze budgets, and review active approvals.
+              </Typography>
+
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, fontFamily: "'Outfit', sans-serif", display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>🚀</span> Key Capabilities
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {[
+                    { title: 'Project Health Auditing', desc: 'Instantly query RAG statuses, delays, and phase progress.' },
+                    { title: 'Resource Allocation Analysis', desc: 'Identify bottlenecks, over-allocations, and daily work capacities.' },
+                    { title: 'Budget & Cost Tracking', desc: 'Compare actual spend vs. approved budgets and pipeline costs.' },
+                    { title: 'Governance & Risks', desc: 'Summarize risk severities and pending workflow approval tasks.' }
+                  ].map((cap, idx) => (
+                    <Box key={idx} sx={{ pl: 1.5, borderLeft: '2px solid', borderLeftColor: 'primary.light' }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>{cap.title}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>{cap.desc}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, fontFamily: "'Outfit', sans-serif", display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>💡</span> Try Asking
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {[
+                    'Show me all active projects in the RED status.',
+                    'Which resources are over-allocated this month?',
+                    'What is the budget consumption percentage of our portfolio?',
+                    'Summarize the top risks for the EMEA Programme.'
+                  ].map((prompt, idx) => (
+                    <Paper
+                      key={idx}
+                      variant="outlined"
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 1.5,
+                        fontSize: '0.8rem',
+                        fontFamily: '"JetBrains Mono", monospace',
+                        bgcolor: 'action.hover',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          borderColor: 'primary.main',
+                          color: 'primary.main',
+                          transform: 'translateX(3px)'
+                        }
+                      }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(prompt)
+                      }}
+                    >
+                      <Tooltip title="Click to copy to clipboard" placement="top">
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="inherit" sx={{ pr: 1 }}>"{prompt}"</Typography>
+                          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>Copy</Typography>
+                        </Box>
+                      </Tooltip>
+                    </Paper>
+                  ))}
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Right panel: Chat interface */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Paper
+              variant="outlined"
+              sx={{
+                height: 650,
+                borderRadius: 2,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                border: `1px solid ${theme.palette.divider}`,
+                boxShadow: theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 24px rgba(14, 165, 233, 0.05)',
+              }}
+            >
+              {/* Header */}
+              <Box
+                sx={{
+                  px: 2.5,
+                  py: 1.5,
+                  borderBottom: `1px solid ${theme.palette.divider}`,
+                  bgcolor: 'background.paper',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#22c55e' }} />
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Active Chat Session</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Tooltip title="Reset Chat">
+                    <IconButton size="small" onClick={() => { setIsTabIframeLoading(true); setTabIframeKey(k => k + 1) }}>
+                      <RefreshIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Open in new window">
+                    <IconButton
+                      size="small"
+                      component="a"
+                      href="https://copilotstudio.microsoft.com/environments/b13877a6-5201-e4ef-8d74-878957333982/bots/cr0b5_commonagent_DUZ8WI/canvas?__version__=2&enableFileAttachment=false&cliAgent=true"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <LaunchIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+
+              {/* Chat Canvas */}
+              <Box sx={{ flex: 1, position: 'relative', bgcolor: '#ffffff' }}>
+                {isTabIframeLoading && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                      zIndex: 2,
+                      gap: 2
+                    }}
+                  >
+                    <CircularProgress size={32} thickness={4} />
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                      Loading Copilot Workspace...
+                    </Typography>
+                  </Box>
+                )}
+                <iframe
+                  key={tabIframeKey}
+                  src="https://copilotstudio.microsoft.com/environments/b13877a6-5201-e4ef-8d74-878957333982/bots/cr0b5_commonagent_DUZ8WI/canvas?__version__=2&enableFileAttachment=false&cliAgent=true"
+                  onLoad={() => setIsTabIframeLoading(false)}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  title="PPM Copilot Workspace"
+                />
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
+      )}
+
+      {(() => {
+        const showFinancialTab = currentUserPersona === 'FinancialController' || currentUserPersona === 'SystemAdministrator'
+        if (dashboardTab === 2 && showFinancialTab) {
+          return <FinancialReportsPage onNavigate={onNavigate} />
+        }
+        return null
+      })()}
+
+      {dashboardTab !== 1 && (
+        <PpmCopilotWidget isOpen={isCopilotOpen} setIsOpen={setIsCopilotOpen} />
       )}
 
       {/* Error */}
