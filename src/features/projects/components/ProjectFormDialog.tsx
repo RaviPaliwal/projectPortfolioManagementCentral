@@ -17,6 +17,8 @@ import {
   Slider,
   Paper,
   Chip,
+  useTheme,
+  Stack,
 } from '@mui/material'
 import InfoIcon from '@mui/icons-material/Info'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
@@ -73,7 +75,10 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
   portfolios,
   programmes,
 }) => {
-  const { users } = useUser()
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+  const { users, currentUserPersona } = useUser()
+  const isEdit = !!initialData?.pm_projectid
   const [form, setForm] = useState<Partial<ProjectModel>>(defaultProjectForm)
   const [stagedFiles, setStagedFiles] = useState<File[]>([])
   const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null)
@@ -360,6 +365,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
             <TextField fullWidth type="number" label="Approved Budget (EUR)" size="small" value={form.pm_approvedbudget ?? 0}
               onChange={(e) => setForm((p) => ({ ...p, pm_approvedbudget: Number(e.target.value) }))}
               error={hasBudgetError}
+              disabled={isEdit && currentUserPersona !== 'SystemAdministrator'}
               helperText={hasBudgetError ? `Exceeds programme budget by ${currencyFormatter.format((form.pm_approvedbudget ?? 0) - programmeBudgetInfo!.availableBudget)}` : ''}
             />
           </Grid>
@@ -371,33 +377,104 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           </Grid>
         </Grid>
 
-        {programmeBudgetInfo && (
-          <Paper variant="outlined" sx={{ p: 1.5, mb: 2, bgcolor: 'grey.50' }}>
-            <Typography variant="caption" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
-              <AccountBalanceWalletIcon sx={{ fontSize: 14 }} /> Programme Budget Allocation
-            </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">Total Programme Budget</Typography>
-              <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace' }}>{currencyFormatter.format(programmeBudgetInfo.programmeBudget)}</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">Already allocated to other projects</Typography>
-              <Typography variant="caption" sx={{ fontWeight: 600, fontFamily: 'monospace', color: 'warning.main' }}>{currencyFormatter.format(programmeBudgetInfo.programmeBudget - programmeBudgetInfo.availableBudget)}</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="caption" sx={{ fontWeight: 700 }}>Remaining for this project</Typography>
-              <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: 'monospace', color: programmeBudgetInfo.availableBudget <= 0 ? 'error.main' : 'success.main' }}>{currencyFormatter.format(programmeBudgetInfo.availableBudget)}</Typography>
-            </Box>
-            {programmeBudgetInfo.availableBudget <= 0 && (
-              <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.75, fontWeight: 600 }}>No remaining budget in this programme.</Typography>
-            )}
-          </Paper>
-        )}
+        {programmeBudgetInfo && !isEdit && (() => {
+          const allocatedAmount = programmeBudgetInfo.programmeBudget - programmeBudgetInfo.availableBudget
+          const allocationPercentage = programmeBudgetInfo.programmeBudget > 0
+            ? Math.min(100, (allocatedAmount / programmeBudgetInfo.programmeBudget) * 100)
+            : 0
+
+          return (
+            <Paper 
+              variant="outlined" 
+              sx={{ 
+                p: 2.5, 
+                mb: 3, 
+                bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: '12px'
+              }}
+            >
+              {/* Header */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <AccountBalanceWalletIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: 0.2 }}>
+                  Programme Budget Allocation
+                </Typography>
+              </Box>
+
+              {/* Data Rows */}
+              <Stack component="div" spacing={1.5}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    Total Programme Budget
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: 'monospace', color: 'text.primary' }}>
+                    {currencyFormatter.format(programmeBudgetInfo.programmeBudget)}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    Already Allocated to Other Projects
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 700, fontFamily: 'monospace', color: 'warning.main' }}>
+                    {currencyFormatter.format(allocatedAmount)}
+                  </Typography>
+                </Box>
+
+                {/* Progress Bar */}
+                <Box sx={{ py: 0.5 }}>
+                  <Box sx={{ width: '100%', height: 6, bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+                    <Box sx={{ width: `${allocationPercentage}%`, height: '100%', bgcolor: 'warning.main', borderRadius: 3 }} />
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      {allocationPercentage > 0 && allocationPercentage < 0.01
+                        ? '< 0.01%'
+                        : `${allocationPercentage.toFixed(1)}%`}{' '}
+                      Allocated
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Divider sx={{ my: 0.5 }} />
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>
+                    Remaining for This Project
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: 'monospace', color: programmeBudgetInfo.availableBudget <= 0 ? 'error.main' : 'success.main' }}>
+                    {currencyFormatter.format(programmeBudgetInfo.availableBudget)}
+                  </Typography>
+                </Box>
+
+                {programmeBudgetInfo.availableBudget <= 0 && (
+                  <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1, fontWeight: 700 }}>
+                    ⚠️ No remaining budget available in this programme.
+                  </Typography>
+                )}
+              </Stack>
+            </Paper>
+          )
+        })()}
 
         {hasBudgetError && (
-          <Box sx={{ mb: 2, p: 1.25, bgcolor: 'error.50', border: '1px solid', borderColor: 'error.200', display: 'flex', alignItems: 'center', gap: 1 }}>
-            <WarningAmberIcon sx={{ fontSize: 18, color: 'error.main', flexShrink: 0 }} />
-            <Typography variant="caption" color="error.dark" sx={{ fontWeight: 600 }}>
+          <Box 
+            sx={{ 
+              mb: 3, 
+              p: 2, 
+              bgcolor: isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)', 
+              border: '1px solid', 
+              borderColor: isDark ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.3)', 
+              borderRadius: '8px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1.5 
+            }}
+          >
+            <WarningAmberIcon sx={{ fontSize: 20, color: 'error.main', flexShrink: 0 }} />
+            <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
               Approved budget exceeds programme budget by {currencyFormatter.format((form.pm_approvedbudget ?? 0) - programmeBudgetInfo!.availableBudget)}.
             </Typography>
           </Box>
@@ -413,7 +490,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
         </Box>
 
         {selectedProgramme && selectedProgramme.startDate && (
-          <Paper variant="outlined" sx={{ p: 1.5, mb: 2, bgcolor: 'grey.50', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Paper variant="outlined" sx={{ p: 1.5, mb: 2, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'grey.50', display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <TimelineIcon sx={{ fontSize: 16, color: 'primary.main' }} />
             <Typography variant="caption" color="text.secondary">
               Programme date range:{' '}

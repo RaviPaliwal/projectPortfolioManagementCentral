@@ -250,7 +250,7 @@ export default function WorkflowsPage() {
   return (
     <>
       {/* Create Workflow Dialog */}
-      <Dialog open={view === 'create'} onClose={handleDialogClose} maxWidth="md" fullWidth sx={dialogSx}>
+      <Dialog open={view === 'create'} onClose={handleDialogClose} maxWidth="lg" fullWidth sx={dialogSx}>
         <DialogTitle sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Typography variant="h6" sx={{ fontWeight: 800 }}>Create New Workflow</Typography>
           <IconButton size="small" onClick={handleDialogClose}><CloseIcon fontSize="small" /></IconButton>
@@ -261,7 +261,7 @@ export default function WorkflowsPage() {
       </Dialog>
 
       {/* Edit Workflow Dialog */}
-      <Dialog open={view === 'edit' && !!viewWorkflow} onClose={handleDialogClose} maxWidth="md" fullWidth sx={dialogSx}>
+      <Dialog open={view === 'edit' && !!viewWorkflow} onClose={handleDialogClose} maxWidth="lg" fullWidth sx={dialogSx}>
         <DialogTitle sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Typography variant="h6" sx={{ fontWeight: 800 }}>Edit Workflow Template</Typography>
           <IconButton size="small" onClick={handleDialogClose}><CloseIcon fontSize="small" /></IconButton>

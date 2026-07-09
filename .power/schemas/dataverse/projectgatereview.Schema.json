@@ -225,14 +225,6 @@
           "x-ms-dataverse-type": "DateTimeType",
           "x-ms-schema-name": "pm_actualreviewdate"
         },
-        "pm_documentsurl": {
-          "type": "string",
-          "title": "Documents URL",
-          "x-ms-dataverse-attribute": "pm_documentsurl",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_documentsurl",
-          "maxLength": 100
-        },
         "pm_gatename": {
           "type": "string",
           "title": "Gate Name",
@@ -279,14 +271,6 @@
           "x-ms-schema-name": "pm_gatestageName",
           "x-ms-read-only": true
         },
-        "pm_leadreviewer": {
-          "type": "string",
-          "title": "Lead Reviewer",
-          "x-ms-dataverse-attribute": "pm_leadreviewer",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_leadreviewer",
-          "maxLength": 100
-        },
         "pm_plannedreviewdate": {
           "type": "string",
           "title": "Planned Review Date",
@@ -294,44 +278,12 @@
           "x-ms-dataverse-type": "DateTimeType",
           "x-ms-schema-name": "pm_plannedreviewdate"
         },
-        "pm_programmelookup": {
-          "type": "string",
-          "title": "ProgrammeLookup",
-          "x-ms-dataverse-attribute": "pm_programmelookup",
-          "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_ProgrammeLookup"
-        },
-        "pm_programmelookupname": {
-          "type": "string",
-          "title": "pm_programmelookupname",
-          "x-ms-dataverse-attribute": "pm_programmelookupname",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_ProgrammeLookupName",
-          "x-ms-read-only": true,
-          "maxLength": 850
-        },
-        "pm_programmename": {
-          "type": "string",
-          "title": "Programme",
-          "x-ms-dataverse-attribute": "pm_programmename",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_programmename",
-          "maxLength": 100
-        },
         "pm_project": {
           "type": "string",
           "title": "Project",
           "x-ms-dataverse-attribute": "pm_project",
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_project"
-        },
-        "pm_projectcode": {
-          "type": "string",
-          "title": "Project",
-          "x-ms-dataverse-attribute": "pm_projectcode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projectcode",
-          "maxLength": 100
         },
         "pm_projectgatereviewid": {
           "type": "string",
@@ -358,7 +310,7 @@
           "x-ms-dataverse-attribute": "pm_reviewconditions",
           "x-ms-dataverse-type": "StringType",
           "x-ms-schema-name": "pm_reviewconditions",
-          "maxLength": 100
+          "maxLength": 2000
         },
         "pm_reviewnotes": {
           "type": "string",
@@ -406,37 +358,6 @@
           "x-ms-dataverse-attribute": "pm_reviewoutcomename",
           "x-ms-dataverse-type": "VirtualType",
           "x-ms-schema-name": "pm_reviewoutcomeName",
-          "x-ms-read-only": true
-        },
-        "pm_reviewstatus": {
-          "type": "string",
-          "title": "Status",
-          "x-ms-dataverse-attribute": "pm_reviewstatus",
-          "x-ms-dataverse-type": "PicklistType",
-          "x-ms-schema-name": "pm_reviewstatus",
-          "enum": [
-            "Complete",
-            "Scheduled"
-          ],
-          "x-ms-enum-values": [
-            0,
-            1
-          ],
-          "Color": [
-            null,
-            null
-          ],
-          "x-ms-optionsetmetadataid": "3b06e809-5091-4c98-aeb6-7d8b390b47c1",
-          "x-ms-isGlobal": false,
-          "x-ms-optionsetdisplayname": "Status",
-          "x-ms-optionSetType": "Picklist"
-        },
-        "pm_reviewstatusname": {
-          "type": "string",
-          "title": "pm_reviewstatusname",
-          "x-ms-dataverse-attribute": "pm_reviewstatusname",
-          "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_reviewstatusName",
           "x-ms-read-only": true
         },
         "statecode": {

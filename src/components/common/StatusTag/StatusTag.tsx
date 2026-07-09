@@ -27,10 +27,16 @@ export const StatusTag = forwardRef<HTMLSpanElement, StatusTagProps>(({
 
   // Resolve semantic color to hex
   let baseColor = color
+  let textBaseColor = color
   if (['success', 'warning', 'error', 'info', 'primary', 'secondary', 'default'].includes(color)) {
-    baseColor = (theme.palette as any)[color === 'default' ? 'grey' : color]?.main || theme.palette.text.secondary
+    const paletteKey = color === 'default' ? 'grey' : color
+    baseColor = (theme.palette as any)[paletteKey]?.main || theme.palette.text.secondary
+    textBaseColor = isDark 
+      ? ((theme.palette as any)[paletteKey]?.light || baseColor)
+      : baseColor
     if (color === 'default') {
-      baseColor = isDark ? theme.palette.grey[400] : theme.palette.grey[700]
+      baseColor = isDark ? theme.palette.grey[500] : theme.palette.grey[700]
+      textBaseColor = isDark ? theme.palette.grey[300] : theme.palette.grey[800]
     }
   }
 
@@ -51,15 +57,15 @@ export const StatusTag = forwardRef<HTMLSpanElement, StatusTagProps>(({
 
   if (variant === 'subtle') {
     Object.assign(styles, {
-      bgcolor: alpha(baseColor, isDark ? 0.2 : 0.1),
-      color: isDark ? alpha(baseColor, 0.95) : baseColor,
-      border: `1px solid ${alpha(baseColor, isDark ? 0.2 : 0.15)}`,
+      bgcolor: alpha(baseColor, isDark ? 0.15 : 0.08),
+      color: textBaseColor,
+      border: `1px solid ${alpha(baseColor, isDark ? 0.3 : 0.15)}`,
       boxShadow: `0 1px 2px 0 ${alpha(baseColor, 0.1)}`,
     })
   } else if (variant === 'outlined') {
     Object.assign(styles, {
       border: `1px solid ${alpha(baseColor, 0.5)}`,
-      color: baseColor,
+      color: textBaseColor,
       boxShadow: `0 1px 2px 0 ${alpha(baseColor, 0.05)}`,
     })
   } else {

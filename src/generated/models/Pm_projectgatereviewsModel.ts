@@ -17,11 +17,6 @@ export const Pm_projectgatereviewspm_reviewoutcome = {
   4: 'Rejected'
 } as const;
 export type Pm_projectgatereviewspm_reviewoutcome = keyof typeof Pm_projectgatereviewspm_reviewoutcome;
-export const Pm_projectgatereviewspm_reviewstatus = {
-  0: 'Complete',
-  1: 'Scheduled'
-} as const;
-export type Pm_projectgatereviewspm_reviewstatus = keyof typeof Pm_projectgatereviewspm_reviewstatus;
 export const Pm_projectgatereviewsstatecode = {
   0: 'Active',
   1: 'Inactive'
@@ -39,20 +34,14 @@ export interface Pm_projectgatereviewsBase {
   ownerid: string;
   owneridtype: string;
   pm_actualreviewdate?: string;
-  pm_documentsurl?: string;
   pm_gatename?: string;
   pm_gatestage?: Pm_projectgatereviewspm_gatestage;
-  pm_leadreviewer?: string;
   pm_plannedreviewdate?: string;
-  "pm_ProgrammeLookup@odata.bind"?: string;
-  pm_programmename?: string;
   "pm_project@odata.bind"?: string;
-  pm_projectcode?: string;
   pm_projectgatereviewid: string;
   pm_reviewconditions?: string;
   pm_reviewnotes?: string;
   pm_reviewoutcome?: Pm_projectgatereviewspm_reviewoutcome;
-  pm_reviewstatus?: Pm_projectgatereviewspm_reviewstatus;
   statecode: Pm_projectgatereviewsstatecode;
   statuscode?: Pm_projectgatereviewsstatuscode;
   timezoneruleversionnumber?: number;
@@ -74,10 +63,8 @@ export interface Pm_projectgatereviews extends Pm_projectgatereviewsBase {
   owneridyominame: string;
   owningbusinessunitname: string;
   pm_gatestagename?: string;
-  pm_programmelookupname?: string;
   pm_projectname?: string;
   pm_reviewoutcomename?: string;
-  pm_reviewstatusname?: string;
   statecodename?: string;
   statuscodename?: string;
   versionnumber?: number;
@@ -95,8 +82,6 @@ export interface Pm_projectgatereviews extends Pm_projectgatereviewsBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
-  pm_programmelookup?: object;
-  _pm_programmelookup_value?: string;
   pm_project?: object;
   _pm_project_value?: string;
 }

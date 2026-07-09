@@ -53,7 +53,6 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const { currentUserPersona } = useUser()
-  const [activeSubTab, setActiveSubTab] = useState(0)
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null)
 
@@ -122,39 +121,7 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
         </Box>
       )}
 
-      <Tabs
-        value={activeSubTab}
-        onChange={(_, v) => setActiveSubTab(v)}
-        sx={{
-          borderBottom: 1,
-          borderColor: 'divider',
-          minHeight: 36,
-          '& .MuiTab-root': {
-            textTransform: 'none',
-            fontWeight: 600,
-            fontSize: '0.85rem',
-            minHeight: 36,
-            py: 0.75,
-            px: 2
-          }
-        }}
-      >
-        <Tab icon={<HourglassEmptyIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Approval Tasks" />
-        <Tab icon={<AssignmentIcon sx={{ fontSize: 16 }} />} iconPosition="start" label={`Project Tasks (${projectTasks.length})`} />
-      </Tabs>
-
-      {activeSubTab === 0 && (
-        <EntityApprovalTasks
-          entityId={project.pm_projectid ?? ''}
-          moduleName={MODULE_NAMES.PROJECTS.value}
-          entityLabel="Project"
-          tabValue={0}
-          index={0}
-        />
-      )}
-
-      {activeSubTab === 1 && (
-        <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: 1.5 }}>
+      <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: 1.5 }}>
           <Table size="small">
             <TableHead sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
               <TableRow>
@@ -303,7 +270,6 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
             </TableBody>
           </Table>
         </Paper>
-      )}
 
       {/* Quick Status Selector Menu */}
       <Menu

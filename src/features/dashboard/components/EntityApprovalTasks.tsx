@@ -7,6 +7,8 @@ import {
   Alert,
   Chip,
   Tooltip,
+  useTheme,
+  alpha,
 } from '@mui/material'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
@@ -36,6 +38,7 @@ interface EntityApprovalTasksProps {
   index: number
   refreshTrigger?: number
   onAllStepsCompleted?: (info: StepCompletionInfo) => void
+  hideHeader?: boolean
 }
 
 /** Check if a step is assigned to the given user */
@@ -64,7 +67,9 @@ function isStepAssignedToUser(
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 const formatDate = (d?: string | null): string => d ? dateFormatter.format(new Date(d)) : '—'
 
-export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValue, index, refreshTrigger, onAllStepsCompleted }: EntityApprovalTasksProps) {
+export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValue, index, refreshTrigger, onAllStepsCompleted, hideHeader = false }: EntityApprovalTasksProps) {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const { currentUser } = useUser()
   const [updatedInstances, setUpdatedInstances] = useState<WorkflowInstanceModel[]>([])
   const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
@@ -177,12 +182,14 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
         </Box>
       ) : (
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              Pending Approval Tasks
-            </Typography>
-            <Chip label={`${steps.length} pending`} color="warning" size="small" sx={{ fontWeight: 700 }} />
-          </Box>
+          {!hideHeader && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                Pending Approval Tasks
+              </Typography>
+              <Chip label={`${steps.length} pending`} color="warning" size="small" sx={{ fontWeight: 700 }} />
+            </Box>
+          )}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {(() => {
               const workflowMap: Record<string, string> = {}
@@ -204,6 +211,7 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                     variant="outlined"
                     sx={{
                       p: 1.5,
+                      borderRadius: '4px',
                       borderLeft: '3px solid',
                       borderLeftColor: isOverdue ? 'error.main' : 'warning.main',
                       transition: 'all 0.15s ease',
@@ -212,9 +220,6 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                   >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
                       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, minWidth: 0 }}>
-                        <Box sx={{ mt: 0.25 }}>
-                          <AssignmentIcon sx={{ fontSize: 16, color: isOverdue ? 'error.main' : 'warning.main' }} />
-                        </Box>
                         <Box sx={{ minWidth: 0 }}>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {step.pm_stepname || 'Approval Step'}
@@ -247,7 +252,20 @@ export function EntityApprovalTasks({ entityId, moduleName, entityLabel, tabValu
                                   setOpeningStep(null)
                                 }
                               }}
-                              sx={{ fontWeight: 600, fontSize: fontSizes.xs, py: 0.5, minWidth: 90 }}
+                              sx={{ 
+                                fontWeight: 600, 
+                                fontSize: fontSizes.xs, 
+                                py: 0.5, 
+                                minWidth: 90,
+                                ...(isDark && {
+                                  color: 'primary.light',
+                                  borderColor: alpha(theme.palette.primary.light, 0.5),
+                                  '&:hover': {
+                                    borderColor: 'primary.light',
+                                    bgcolor: alpha(theme.palette.primary.light, 0.08)
+                                  }
+                                })
+                              }}
                             >
                               {openingStep === step.pm_workflowapprovalstepid ? 'Opening...' : 'Review'}
                             </Button>

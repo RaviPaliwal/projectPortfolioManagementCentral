@@ -52,7 +52,6 @@ export type TabKey = 'dashboard' | 'aiagent' | 'portfolios' | 'programmes' | 'pr
 
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?: boolean }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
-  { key: 'aiagent', label: 'AI Agent', icon: <SmartToyIcon /> },
   { key: 'strategicRoster', label: 'Strategic Roster', icon: <SchemaIcon /> },
   { key: 'portfolios', label: 'Portfolios', icon: <AccountTreeIcon /> },
   { key: 'programmes', label: 'Programmes', icon: <FolderOpenIcon /> },
@@ -62,7 +61,6 @@ export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?:
   { key: 'calendar', label: 'Calendar', icon: <CalendarMonthIcon /> },
   { key: 'timesheets', label: 'Timesheets', icon: <AccessTimeIcon /> },
   { key: 'budgets', label: 'Budgets', icon: <AccountBalanceWalletIcon /> },
-  { key: 'gatereviews', label: 'Gate Reviews', icon: <FactCheckIcon /> },
   { key: 'benefits', label: 'Benefits', icon: <EmojiEventsIcon /> },
   { key: 'risks', label: 'Risks', icon: <CrisisAlertIcon /> },
   { key: 'issues', label: 'Issues', icon: <ReportProblemIcon /> },

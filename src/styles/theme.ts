@@ -103,7 +103,7 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           root: {
             borderRadius: '6px',
-            backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
+            backgroundColor: mode === 'light' ? '#ffffff' : '#1f2937',
             transition: 'all 0.2s ease-in-out',
             '&.MuiOutlinedInput-multiline': {
               padding: '8px 16px',
@@ -113,25 +113,25 @@ export const getTheme = (mode: PaletteMode) =>
             },
             '& .MuiOutlinedInput-notchedOutline': {
               borderWidth: '1px',
-              borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.23)' : 'rgba(255, 255, 255, 0.23)',
+              borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
             },
             '&:hover': {
-              backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
+              backgroundColor: mode === 'light' ? '#ffffff' : '#1f2937',
               '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.87)' : 'rgba(255, 255, 255, 0.87)',
+                borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)',
               },
             },
             '&.Mui-focused': {
-              backgroundColor: mode === 'light' ? '#ffffff' : '#111827',
+              backgroundColor: mode === 'light' ? '#ffffff' : '#1f2937',
               '& .MuiOutlinedInput-notchedOutline': {
                 borderColor: '#217C35',
                 borderWidth: '2px',
               },
             },
             '&.Mui-disabled': {
-              backgroundColor: mode === 'light' ? '#f3f4f6' : '#1f2937',
+              backgroundColor: mode === 'light' ? '#f3f4f6' : '#111827',
               '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: mode === 'light' ? '#cbd5e1' : '#374151',
+                borderColor: mode === 'light' ? '#cbd5e1' : '#1f2937',
               },
             },
           },

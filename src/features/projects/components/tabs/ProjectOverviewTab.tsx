@@ -150,10 +150,12 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
   ], [taskStats.avgProgress, percentSpent, riskStats.activeRisks, riskStats.openIssues, riskStats.criticalRisks, riskStats.criticalIssues, milestoneStats.completed, milestoneStats.total, milestoneStats.pending])
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
       {/* ── KPI Row ── */}
-      <KpiCardRow items={kpiItems} />
-
+      <Box sx={{ mb: -2.5 }}>
+        <KpiCardRow items={kpiItems} />
+      </Box>
+ 
       {/* ── Main Layout Grid ── */}
       <Grid container spacing={3}>
         {/* Left Column — Project Info, Business Summary */}

@@ -93,7 +93,7 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
-  
+
   // Realized is status "0" (On Track) or whatever matches realization status
   const achievedBenefits = benefits.filter(b => String(b.pm_benefitstatus) === '0' || b.pm_benefitstatus === 0).length
   const achievementRate = benefits.length > 0 ? Math.round((achievedBenefits / benefits.length) * 100) : 0
@@ -104,14 +104,14 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
       '1': { name: 'Non Financial', value: 0, color: theme.palette.primary.main },
       '2': { name: 'Strategic', value: 0, color: theme.palette.secondary.main }
     }
-    
+
     for (const b of benefits) {
       const cat = String(b.pm_benefitcategory ?? '')
       if (summaryMap[cat]) {
         summaryMap[cat].value += 1
       }
     }
-    
+
     return Object.values(summaryMap).filter(c => c.value > 0)
   }, [benefits, theme])
 
@@ -190,9 +190,9 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
                 </Grid>
 
                 {/* Right sub-column: Description */}
-                <Grid 
+                <Grid
                   size={{ xs: 12, md: 5 }}
-                  sx={{ 
+                  sx={{
                     borderLeft: { md: `1px solid ${theme.palette.divider}` },
                     pl: { md: 3 },
                     pt: { xs: 2, md: 0 },
@@ -269,10 +269,15 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
 
   // Summary and Lists view
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: -1, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <StarIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Planned Benefits
-      </Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5, mb: 1 }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <StarIcon sx={{ fontSize: 20, color: 'warning.main' }} /> Planned Benefits
+        </Typography>
+        {onAddBenefit && (
+          <Button size="small" variant="outlined" startIcon={<StarIcon />} onClick={onAddBenefit}>Benefit</Button>
+        )}
+      </Box>
 
       {/* 2-Column Side-by-Side Benefits Grid */}
       <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch' }}>
@@ -281,7 +286,7 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
             benefits={benefits}
             loading={false}
             onRowClick={setSelectedBenefit}
-            onCreateClick={onAddBenefit || (() => {})}
+            onCreateClick={onAddBenefit || (() => { })}
             statusFilter={benefitStatusFilter}
             onStatusFilterChange={setBenefitStatusFilter}
             categoryFilter={benefitCategoryFilter}
@@ -307,7 +312,7 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Category Breakdown
               </Typography>
-              
+
               <Box sx={{ height: 180, width: '100%', mb: 2, flexGrow: 1, display: 'block', position: 'relative' }}>
                 {categorySummary.length > 0 ? (
                   <>
@@ -359,7 +364,7 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
               <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Summary Indicators
               </Typography>
-              
+
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
                   <VerifiedIcon fontSize="small" sx={{ color: 'primary.main' }} /> Realisation Progress

@@ -17,7 +17,7 @@ import type {
     ProjectMilestoneModel,
 } from '@/types/dataverse'
 import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
-import { autoSubmitGateReviewRequest } from './governance.service'
+
 
 import { applySecurityMasking } from './security'
 
@@ -459,11 +459,7 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
         // to ensure the UI gets the complete record with all computed/lookup fields.
         const updatedProject = await fetchProjectDetails(normalizedId)
 
-        // Trigger auto-submit check asynchronously so project update doesn't block
-        if (updatedProject && updatedProject.pm_projectphase !== undefined) {
-            autoSubmitGateReviewRequest(normalizedId, Number(updatedProject.pm_projectphase))
-                .catch(e => console.error('[ProjectService] autoSubmitGateReviewRequest error:', e))
-        }
+
 
         return updatedProject
     } catch (err) {

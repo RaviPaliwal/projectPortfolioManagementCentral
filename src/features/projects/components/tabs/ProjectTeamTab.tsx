@@ -20,6 +20,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
+import PeopleIcon from '@mui/icons-material/People'
 import { StatusTag } from '@/components/common'
 import { useUser } from '@/context/UserContext'
 
@@ -33,10 +34,10 @@ interface ProjectTeamTabProps {
   onAssignResource?: () => void
 }
 
-export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({ 
-  resources, 
-  tasks = [], 
-  onEdit, 
+export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
+  resources,
+  tasks = [],
+  onEdit,
   onComplete,
   onEditTask,
   onUpdateTaskStatus,
@@ -45,7 +46,7 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
   const { currentUserPersona } = useUser()
   const isManager = ['PMO', 'ProjectManager', 'SystemAdministrator'].includes(currentUserPersona)
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
-  
+
   const [anchorEl, setAnchorEl] = useState<{ element: HTMLElement | null, resource: any | null }>({ element: null, resource: null })
   const [expandedAllocIds, setExpandedAllocIds] = useState<Record<string, boolean>>({})
   const [taskStatusMenuAnchor, setTaskStatusMenuAnchor] = useState<{ element: HTMLElement | null, task: any | null }>({ element: null, task: null })
@@ -81,16 +82,16 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
     const task = taskStatusMenuAnchor.task
     setTaskStatusMenuAnchor({ element: null, task: null })
     if (!task || !onUpdateTaskStatus) return
-    
+
     let percent = 0
     if (status === '0') {
       percent = 100
     } else if (status === '1') {
-      percent = task.pm_percentcomplete && task.pm_percentcomplete > 0 && task.pm_percentcomplete < 100 
-        ? task.pm_percentcomplete 
+      percent = task.pm_percentcomplete && task.pm_percentcomplete > 0 && task.pm_percentcomplete < 100
+        ? task.pm_percentcomplete
         : 50
     }
-    
+
     setUpdatingTaskId(task.pm_projecttaskid!)
     try {
       await onUpdateTaskStatus(task.pm_projecttaskid!, status, percent)
@@ -100,9 +101,11 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Allocated Resources</Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5, mb: 1 }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <PeopleIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Allocated Resources
+        </Typography>
         {onAssignResource && (
           <Button size="small" variant="outlined" startIcon={<PersonAddIcon />} onClick={onAssignResource}>Resource</Button>
         )}
@@ -112,7 +115,7 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {resources.map((alloc: any) => {
             const resourceName = alloc['_pm_resource_value@OData.Community.Display.V1.FormattedValue'] || alloc.pm_resourcename || '';
-            const matchedTasks = tasks.filter(t => 
+            const matchedTasks = tasks.filter(t =>
               !t.pm_ismilestone &&
               t.pm_assignedresource &&
               resourceName &&
@@ -121,13 +124,13 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
             const isExpanded = !!expandedAllocIds[alloc.pm_resourceallocationid];
 
             return (
-              <Paper 
-                key={alloc.pm_resourceallocationid} 
-                variant="outlined" 
-                sx={{ 
-                  p: 2, 
-                  borderRadius: 1.5, 
-                  display: 'flex', 
+              <Paper
+                key={alloc.pm_resourceallocationid}
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  borderRadius: 1.5,
+                  display: 'flex',
                   flexDirection: 'column',
                   transition: 'box-shadow 0.2s ease',
                   '&:hover': {
@@ -140,10 +143,10 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>{resourceName || 'Unknown resource'}</Typography>
-                      <StatusTag 
-                        label={String(alloc.pm_assignmentstatus) === '1' ? 'Completed' : 'Active'} 
-                        size="small" 
-                        color={String(alloc.pm_assignmentstatus) === '1' ? 'success' : 'primary'} 
+                      <StatusTag
+                        label={String(alloc.pm_assignmentstatus) === '1' ? 'Completed' : 'Active'}
+                        size="small"
+                        color={String(alloc.pm_assignmentstatus) === '1' ? 'success' : 'primary'}
                       />
                     </Box>
                     <Typography variant="caption" color="text.secondary">{alloc.pm_assignmentrole ?? '—'} &middot; {alloc.pm_allocatedhours ?? 0}h allocated</Typography>
@@ -188,17 +191,17 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
                     {matchedTasks.map(task => {
                       const isComplete = String(task.pm_taskstatus) === '0'
                       return (
-                        <Box 
-                          key={task.pm_projecttaskid} 
-                          sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'space-between', 
+                        <Box
+                          key={task.pm_projecttaskid}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
                             py: 0.5,
                             borderBottom: '1px solid',
                             borderColor: 'divider',
                             '&:last-child': { border: 0 },
-                            opacity: isComplete ? 0.65 : 1 
+                            opacity: isComplete ? 0.65 : 1
                           }}
                         >
                           <Box sx={{ minWidth: 0, flex: 1, pr: 2 }}>

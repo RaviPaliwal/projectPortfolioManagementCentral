@@ -939,17 +939,17 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
     </Dialog>
   )
   const reviewContent = (
-    <Grid container spacing={3}>
-      <Grid size={{ xs: 12, md: 5 }}>
+    <Grid container spacing={3.5}>
+      <Grid size={{ xs: 12, md: 4 }}>
         <Stack spacing={3}>
-          <Paper variant="outlined" sx={{ p: 3, bgcolor: 'background.paper' }}>
+          <Paper variant="outlined" sx={{ p: 3, bgcolor: 'background.paper', height: '100%' }}>
             <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, color: 'text.disabled', mb: 2.5, display: 'block' }}>
               Template Details
             </Typography>
             <Stack spacing={2.5}>
               <Box>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>NAME</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 800 }}>{f.pm_workflowname || 'Ã¢â‚¬â€'}</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 800 }}>{f.pm_workflowname || '—'}</Typography>
               </Box>
               <Box>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>MODULE</Typography>
@@ -978,45 +978,82 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
           </Paper>
         </Stack>
       </Grid>
-      <Grid size={{ xs: 12, md: 7 }}>
+      <Grid size={{ xs: 12, md: 8 }}>
         <Paper variant="outlined" sx={{ p: 3, height: '100%' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, color: 'text.disabled', display: 'block' }}>
               Approval Chain ({stepTemplates.length})
             </Typography>
           </Box>
-          <Box sx={{ position: 'relative' }}>
-            {(stepTemplates as any[]).map((step: any, idx: number) => (
-              <Box key={idx} sx={{ display: 'flex', gap: 2.5, mb: idx === stepTemplates.length - 1 ? 0 : 3, position: 'relative' }}>
-                {idx !== stepTemplates.length - 1 && (
-                  <Box sx={{ position: 'absolute', left: 15, top: 32, bottom: -24, width: 2, bgcolor: 'divider' }} />
-                )}
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', border: '4px solid', borderColor: theme.palette.background.paper, boxShadow: '0 0 0 1px ', zIndex: 1, fontSize: fontSizes.base, fontWeight: 800 }}>
-                  {idx + 1}
-                </Avatar>
-                <Box sx={{ flex: 1, mt: 0.5 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>{step.pm_workflowname}</Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      {Number(step.pm_assignetype) === 1 ? <GroupIcon sx={{ fontSize: 14, color: 'text.secondary' }} /> : <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />}
-                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                        {(() => {
-                          if (Number(step.pm_assignetype) === 1) return teams.find((t: any) => t.id === step.pm_assigneeid)?.name
-                          return assigneeList.find((u: any) => u.systemuserid === step.pm_assigneeid)?.fullname
-                        })()}
-                      </Typography>
-                    </Box>
-                    {step.pm_sladays && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {(stepTemplates as any[]).map((step: any, idx: number) => {
+              const isTeam = Number(step.pm_assignetype) === 1
+              const assigneeName = isTeam 
+                ? teams.find((t: any) => t.id === step.pm_assigneeid)?.name
+                : assigneeList.find((u: any) => u.systemuserid === step.pm_assigneeid)?.fullname
+
+              return (
+                <Box 
+                  key={idx} 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 2.5, 
+                    p: 2, 
+                    borderRadius: '8px', 
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                    border: '1px solid',
+                    borderColor: 'divider'
+                  }}
+                >
+                  {/* Step Index Avatar */}
+                  <Avatar 
+                    sx={{ 
+                      width: 32, 
+                      height: 32, 
+                      bgcolor: 'primary.main', 
+                      color: 'primary.contrastText',
+                      fontSize: '0.85rem', 
+                      fontWeight: 800 
+                    }}
+                  >
+                    {idx + 1}
+                  </Avatar>
+
+                  {/* Step Content */}
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                      {step.pm_workflowname}
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.75 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <TimerIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                        <Typography variant="caption" sx={{ fontWeight: 600 }}>{step.pm_sladays} Day SLA</Typography>
+                        {isTeam ? <GroupIcon sx={{ fontSize: 13, color: 'text.secondary' }} /> : <PersonIcon sx={{ fontSize: 13, color: 'text.secondary' }} />}
+                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                          {assigneeName || 'Unassigned'}
+                        </Typography>
                       </Box>
-                    )}
-                    <StatusTag label={step.pm_assignetype === 1 ? 'TEAM' : 'USER'} color={step.pm_assignetype === 1 ? 'warning' : 'primary'} size="small" sx={{ height: 16, fontSize: fontSizes.xs, fontWeight: 900 }} />
+                      {step.pm_sladays && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <TimerIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                            {step.pm_sladays} Day SLA
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
                   </Box>
+
+                  {/* Type Tag */}
+                  <StatusTag 
+                    label={isTeam ? 'TEAM' : 'USER'} 
+                    color={isTeam ? 'warning' : 'primary'} 
+                    size="small" 
+                    sx={{ fontWeight: 800, fontSize: '0.65rem' }} 
+                  />
                 </Box>
-              </Box>
-            ))}
+              )
+            })}
           </Box>
         </Paper>
       </Grid>

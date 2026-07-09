@@ -10,6 +10,7 @@ import {
   StepConnector,
   stepConnectorClasses,
   Chip,
+  Button,
   CircularProgress,
   Alert,
   Tooltip,
@@ -35,6 +36,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import GroupIcon from '@mui/icons-material/Group'
+import CommentIcon from '@mui/icons-material/Comment'
 import ShieldIcon from '@mui/icons-material/Shield'
 import {
   fetchWorkflowInstancesForEntity,
@@ -202,12 +204,14 @@ export interface WorkflowMilestoneProps {
 
 export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, className }: WorkflowMilestoneProps) {
   const theme = useTheme()
+  const { currentUser } = useUser()
 
   const [instances, setInstances] = useState<WorkflowInstanceModel[]>([])
   const [stepsByInstance, setStepsByInstance] = useState<Record<string, WorkflowApprovalStepModel[]>>({})
   const [templatesByInstance, setTemplatesByInstance] = useState<Record<string, WorkflowStepTemplateModel[]>>({})
   const [selectedPhases, setSelectedPhases] = useState<Record<string, string>>({})
   const [collapsedInstances, setCollapsedInstances] = useState<Record<string, boolean>>({})
+  const [pendingTasksCollapsed, setPendingTasksCollapsed] = useState(true)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -354,13 +358,19 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
   }
 
   return (
-    <Box className={className} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <Box className={className} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       {instances.map((instance) => {
         const steps = stepsByInstance[instance.pm_workflowinstanceid!] || []
         const templates = templatesByInstance[instance.pm_workflowinstanceid!] || []
-        const isCompleted = String(instance.pm_status) === '0'
-        const hasActionableSteps = steps.some(s => String(s.pm_decisionstatus) === '2')
+        const actionableStepsCount = steps.filter(s => 
+          String(s.pm_decisionstatus) === '2' && 
+          currentUser?.systemuserid &&
+          isStepAssignedToUser(s, currentUser.systemuserid, currentUser.fullname || '')
+        ).length
+        const hasActionableSteps = actionableStepsCount > 0
 
+        const isCompleted = String(instance.pm_status) === '0'
+        
         // Resolve phases
         const phasesFromTemplates = Array.from(new Set(templates.map(t => t.pm_workflowphase).filter(Boolean))) as string[]
         const hasOther = steps.some(s => getStepPhase(s, templates) === 'Other')
@@ -400,12 +410,12 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
         const totalCount = selectedPhaseSteps.length
         const isPhaseCompleted = totalCount > 0 && completedCount === totalCount
         const isSelectedActive = selectedPhase === inferredActivePhase
-        const isCollapsed = collapsedInstances[instance.pm_workflowinstanceid!] ?? true
+        const isCollapsed = collapsedInstances[instance.pm_workflowinstanceid!] ?? false
 
         const handlePhaseSelect = (instId: string, phaseName: string) => {
           setSelectedPhases(prev => {
             const currentSelected = prev[instId] || defaultSelectedPhase
-            const isCurrentlyCollapsed = collapsedInstances[instId] ?? true
+            const isCurrentlyCollapsed = collapsedInstances[instId] ?? false
             if (currentSelected === phaseName) {
               setCollapsedInstances(cPrev => ({ ...cPrev, [instId]: !isCurrentlyCollapsed }))
             } else {
@@ -417,7 +427,7 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
 
         const handleToggleCollapse = (instId: string) => {
           setCollapsedInstances(prev => {
-            const isCurrentlyCollapsed = prev[instId] ?? true
+            const isCurrentlyCollapsed = prev[instId] ?? false
             return { ...prev, [instId]: !isCurrentlyCollapsed }
           })
         }
@@ -425,7 +435,7 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
         return (
           <Paper key={instance.pm_workflowinstanceid} variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
             {/* ── Phase-based Stepper ──────────────────────────── */}
-            <Box sx={{ p: 4, borderBottom: `1px solid ${theme.palette.divider}`, bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.01)' }}>
+            <Box sx={{ p: 2.5, borderBottom: `1px solid ${theme.palette.divider}`, bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.01)' }}>
               <Stepper
                 activeStep={activePhaseStepperIndex}
                 alternativeLabel
@@ -517,13 +527,12 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
             {/* ── Selected Phase steps details ─────────────────────────── */}
             <Box 
               sx={{ 
-                m: 3, 
-                borderRadius: '12px',
-                border: isSelectedActive ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
+                mx: 0, 
+                mt: 0, 
+                mb: 0, 
+                border: 'none',
                 overflow: 'hidden',
-                boxShadow: isSelectedActive 
-                  ? `0 4px 20px ${alpha(theme.palette.primary.main, 0.08)}`
-                  : '0 2px 8px rgba(0,0,0,0.01)',
+                boxShadow: 'none',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             >
@@ -531,7 +540,8 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
               <Box
                 onClick={() => handleToggleCollapse(instance.pm_workflowinstanceid!)}
                 sx={{
-                  p: 2.25,
+                  px: 3,
+                  py: 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -563,7 +573,9 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                       <CheckCircleIcon sx={{ fontSize: 18 }} />
                     </Avatar>
                   ) : isSelectedActive ? (
-                    <CircularProgress size={24} thickness={5} sx={{ color: 'primary.main', p: 0.2 }} />
+                    <Avatar sx={{ width: 32, height: 32, bgcolor: alpha(theme.palette.primary.main, 0.1), color: 'primary.main' }}>
+                      <TimelineIcon sx={{ fontSize: 18 }} />
+                    </Avatar>
                   ) : (
                     <Avatar sx={{ width: 32, height: 32, bgcolor: alpha(theme.palette.grey[500], 0.1), color: 'text.disabled' }}>
                       <HourglassEmptyIcon sx={{ fontSize: 18 }} />
@@ -587,9 +599,11 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
               <Collapse in={!isCollapsed}>
                 <Box 
                   sx={{ 
-                    borderTop: `1px solid ${theme.palette.divider}`, 
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.1)' : 'rgba(248, 250, 252, 0.4)', 
-                    p: 3 
+                    borderTop: 'none', 
+                    bgcolor: 'transparent', 
+                    px: 3,
+                    pb: 2,
+                    pt: 0,
                   }}
                 >
                   {selectedPhaseSteps.length === 0 ? (
@@ -597,10 +611,12 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                       No steps configured for this phase.
                     </Typography>
                   ) : (
-                    <Box sx={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+                    <Box sx={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 1.5, pt: 2 }}>
                       {selectedPhaseSteps.map((step, idx) => {
                         const decision = getDecisionConfig(step.pm_decisionstatus)
-                        const isStepActionable = String(step.pm_decisionstatus) === '2'
+                        const isStepActionable = String(step.pm_decisionstatus) === '2' && 
+                           currentUser?.systemuserid &&
+                           isStepAssignedToUser(step, currentUser.systemuserid, currentUser.fullname || '')
 
                         let stepIcon = <HourglassEmptyIcon sx={{ fontSize: 16 }} />
                         if (String(step.pm_decisionstatus) === '0') {
@@ -609,52 +625,61 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                           stepIcon = <CancelIcon sx={{ fontSize: 16, color: 'error.main' }} />
                         }
 
+                        const isApproved = String(step.pm_decisionstatus) === '0'
+                        const isRejected = String(step.pm_decisionstatus) === '3'
+                        const isPending = String(step.pm_decisionstatus) === '2'
+
+                        const statusBgColor = isApproved
+                          ? theme.palette.mode === 'dark' ? 'rgba(46, 125, 50, 0.12)' : 'rgba(76, 175, 80, 0.06)'
+                          : isRejected
+                            ? theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.12)' : 'rgba(244, 67, 54, 0.06)'
+                            : isPending
+                              ? theme.palette.mode === 'dark' ? 'rgba(2, 136, 209, 0.12)' : 'rgba(3, 169, 244, 0.06)'
+                              : theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)'
+
                         return (
                           <Box
                             key={step.pm_workflowapprovalstepid || idx}
                             sx={{
                               display: 'flex',
-                              alignItems: 'flex-start',
-                              gap: 3,
-                              position: 'relative',
-                              zIndex: 1,
+                              alignItems: 'center',
+                              gap: 2.5,
+                              p: 1.5,
+                              borderRadius: '8px',
+                              bgcolor: statusBgColor,
+                              transition: 'all 0.2s',
                               ...(isStepActionable && {
                                 cursor: 'pointer',
-                                '&:hover .step-title-text': {
-                                  color: 'primary.main',
-                                  textDecoration: 'underline',
+                                '&:hover': {
+                                  bgcolor: isApproved
+                                    ? alpha(theme.palette.success.main, 0.18)
+                                    : isRejected
+                                      ? alpha(theme.palette.error.main, 0.18)
+                                      : isPending
+                                        ? alpha(theme.palette.info.main, 0.18)
+                                        : 'rgba(0, 0, 0, 0.06)',
+                                  '& .step-title-text': {
+                                    color: 'primary.main',
+                                    textDecoration: 'underline',
+                                  }
                                 }
                               })
                             }}
                             onClick={() => isStepActionable && handleStepClick(step)}
                           >
-                            {/* Vertical connector line segment to next step */}
-                            {idx < selectedPhaseSteps.length - 1 && (
-                              <Box
-                                sx={{
-                                  position: 'absolute',
-                                  left: 15,
-                                  top: 32, // Starts from bottom of current avatar
-                                  bottom: -28, // Spans gap down to top of next avatar
-                                  width: 2,
-                                  bgcolor: theme.palette.divider,
-                                  zIndex: 0,
-                                }}
-                              />
-                            )}
                             {/* Avatar Icon */}
                             <Avatar
                               sx={{
                                 width: 32,
                                 height: 32,
-                                bgcolor: String(step.pm_decisionstatus) === '0'
+                                bgcolor: isApproved
                                   ? alpha(theme.palette.success.main, 0.1)
-                                  : String(step.pm_decisionstatus) === '3'
+                                  : isRejected
                                     ? alpha(theme.palette.error.main, 0.1)
                                     : alpha(theme.palette.warning.main, 0.1),
-                                color: String(step.pm_decisionstatus) === '0'
+                                color: isApproved
                                   ? 'success.main'
-                                  : String(step.pm_decisionstatus) === '3'
+                                  : isRejected
                                     ? 'error.main'
                                     : 'warning.main',
                                 border: '2px solid',
@@ -666,7 +691,7 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                             </Avatar>
 
                             {/* Step Info */}
-                            <Box sx={{ flex: 1, mt: 0.5 }}>
+                            <Box sx={{ flex: 1 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Typography className="step-title-text" variant="body2" sx={{ fontWeight: 700, color: 'text.primary', transition: 'color 0.2s' }}>
                                   {step.pm_stepname || `Step ${step.pm_steporder ?? idx + 1}`}
@@ -675,25 +700,29 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                                   <OpenInNewIcon sx={{ fontSize: 14, color: 'primary.main', opacity: 0.8 }} />
                                 )}
                               </Box>
-                              {step.pm_decisionnotes && (
-                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}>
-                                  "{step.pm_decisionnotes}"
-                                </Typography>
-                              )}
-                              {(step.pm_duedate || step.pm_decisiondate) && (
-                                <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.5, fontSize: '0.65rem' }}>
-                                  {step.pm_decisiondate
-                                    ? `Decided: ${formatDate(step.pm_decisiondate)}`
-                                    : step.pm_duedate
-                                      ? `Due: ${formatDate(step.pm_duedate)}`
-                                      : ''}
-                                </Typography>
+                              {(step.pm_duedate || step.pm_decisiondate || step.pm_decisionnotes) && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.5 }}>
+                                  {(step.pm_duedate || step.pm_decisiondate) && (
+                                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
+                                      {step.pm_decisiondate
+                                        ? `Completed On: ${formatDate(step.pm_decisiondate)}`
+                                        : step.pm_duedate
+                                          ? `Due: ${formatDate(step.pm_duedate)}`
+                                          : ''}
+                                    </Typography>
+                                  )}
+                                  {step.pm_decisionnotes && (
+                                    <Tooltip title={step.pm_decisionnotes} arrow placement="top">
+                                      <CommentIcon sx={{ fontSize: 13, color: 'text.secondary', cursor: 'pointer', opacity: 0.7, '&:hover': { opacity: 1 } }} />
+                                    </Tooltip>
+                                  )}
+                                </Box>
                               )}
                             </Box>
 
                             {/* Assignee display */}
                             {(step.pm_assigneedisplayname || step.pm_approvername) && (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Avatar sx={{ width: 24, height: 24, fontSize: '0.7rem', bgcolor: 'primary.main', color: '#ffffff' }}>
                                   {(step.pm_assigneedisplayname || step.pm_approvername || '?')[0].toUpperCase()}
                                 </Avatar>
@@ -703,21 +732,43 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                               </Box>
                             )}
 
-                            {/* Status Chip */}
-                            <Box sx={{ minWidth: 90, display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
-                              <Chip
-                                label={decision.label.toUpperCase()}
-                                size="small"
-                                color={decision.color}
-                                variant="outlined"
-                                sx={{
-                                  fontWeight: 800,
-                                  fontSize: '0.65rem',
-                                  borderRadius: '4px',
-                                  height: 22,
-                                  px: 1,
-                                }}
-                              />
+                            {/* Status Chip / Action Button */}
+                            <Box sx={{ minWidth: 90, display: 'flex', justifyContent: 'flex-end' }}>
+                              {isStepActionable ? (
+                                <Button
+                                  variant="contained"
+                                  color="primary"
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleStepClick(step)
+                                  }}
+                                  sx={{
+                                    textTransform: 'none',
+                                    fontWeight: 700,
+                                    fontSize: '0.65rem',
+                                    height: 24,
+                                    px: 1.5,
+                                    borderRadius: '4px',
+                                  }}
+                                >
+                                  Review
+                                </Button>
+                              ) : (
+                                <Chip
+                                  label={decision.label.toUpperCase()}
+                                  size="small"
+                                  color={decision.color}
+                                  variant="outlined"
+                                  sx={{
+                                    fontWeight: 800,
+                                    fontSize: '0.65rem',
+                                    borderRadius: '4px',
+                                    height: 22,
+                                    px: 1,
+                                  }}
+                                />
+                              )}
                             </Box>
                           </Box>
                         )
@@ -729,14 +780,39 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
             </Box>
 
             {!isCompleted && hasActionableSteps && (
-              <Box sx={{ px: 3, pb: 3, borderTop: `1px solid ${theme.palette.divider}`, pt: 2 }}>
-                <EntityApprovalTasks
-                  entityId={entityId || instance.pm_entityid!}
-                  moduleName={moduleName || instance.pm_entitytype || ''}
-                  entityLabel=""
-                  tabValue={0}
-                  index={0}
-                />
+              <Box sx={{ borderTop: `1px solid ${theme.palette.divider}`, pt: 0 }}>
+                <Box 
+                  onClick={() => setPendingTasksCollapsed(!pendingTasksCollapsed)}
+                  sx={{ 
+                    px: 3, 
+                    py: 1, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                    '&:hover': {
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'
+                    }
+                  }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, fontSize: '0.7rem', color: 'text.secondary', letterSpacing: '0.5px' }}>
+                    PENDING APPROVAL TASKS ({actionableStepsCount})
+                  </Typography>
+                  {pendingTasksCollapsed ? <KeyboardArrowDownIcon sx={{ fontSize: 16 }} /> : <KeyboardArrowUpIcon sx={{ fontSize: 16 }} />}
+                </Box>
+                <Collapse in={!pendingTasksCollapsed}>
+                  <Box sx={{ px: 3, pb: 2, pt: 1.5 }}>
+                    <EntityApprovalTasks
+                      entityId={entityId || instance.pm_entityid!}
+                      moduleName={moduleName || instance.pm_entitytype || ''}
+                      entityLabel=""
+                      tabValue={0}
+                      index={0}
+                      hideHeader={true}
+                    />
+                  </Box>
+                </Collapse>
               </Box>
             )}
           </Paper>

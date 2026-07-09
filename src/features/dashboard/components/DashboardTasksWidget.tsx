@@ -10,6 +10,8 @@ import {
   Tooltip,
   Collapse,
   Divider,
+  useTheme,
+  alpha,
 } from '@mui/material'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
@@ -84,6 +86,7 @@ interface DashboardTasksWidgetProps {
 }
 
 export default function DashboardTasksWidget({ variant = 'full', sx }: DashboardTasksWidgetProps) {
+  const theme = useTheme()
   const { currentUser, userTeams } = useUser()
   const [steps, setSteps] = useState<WorkflowApprovalStepModel[]>([])
   const [insights, setInsights] = useState<AgentInsightModel[]>([])
@@ -255,28 +258,21 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                             </Typography>
                           )}
                         </Box>
-                        <Chip
+                        <StatusTag
                           size="small"
-                          label={step.pm_duedate ? (isOverdue ? 'Overdue' : formatDate(step.pm_duedate)) : 'No date'}
-                          icon={<Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: isOverdue ? 'error.main' : 'warning.main', ml: 1 }} />}
-                          sx={{ 
-                            height: 24, 
-                            fontSize: '11px', 
-                            fontWeight: 600, 
-                            bgcolor: isOverdue ? 'error.50' : 'warning.50',
-                            color: isOverdue ? 'error.main' : 'warning.dark',
-                            border: 'none'
-                          }}
+                          label={step.pm_duedate ? (isOverdue ? 'OVERDUE' : formatDate(step.pm_duedate)) : 'NO DATE'}
+                          color={isOverdue ? 'error' : 'warning'}
+                          variant="subtle"
                         />
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {(step as any).pm_entitytype && (
-                            <Chip
-                              label={getEntityLabel((step as any).pm_entitytype).toUpperCase()}
+                            <StatusTag
                               size="small"
-                              variant="outlined"
-                              sx={{ height: 24, fontSize: '11px', fontWeight: 600, color: 'text.secondary', borderColor: 'divider', borderRadius: 1 }}
+                              label={getEntityLabel((step as any).pm_entitytype)}
+                              color="default"
+                              variant="subtle"
                             />
                           )}
                           {((step as any).pm_assigneename || step.pm_approvername) && (
@@ -304,7 +300,22 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                               setOpeningStep(null)
                             }
                           }}
-                          sx={{ fontWeight: 600, fontSize: fontSizes.xs, py: 0.5, px: 2, borderRadius: 12, minWidth: 90 }}
+                          sx={{ 
+                            fontWeight: 600, 
+                            fontSize: fontSizes.xs, 
+                            py: 0.5, 
+                            px: 2, 
+                            borderRadius: 12, 
+                            minWidth: 90,
+                            ...(theme.palette.mode === 'dark' && {
+                              color: 'primary.light',
+                              borderColor: alpha(theme.palette.primary.light, 0.5),
+                              '&:hover': {
+                                borderColor: 'primary.light',
+                                bgcolor: alpha(theme.palette.primary.light, 0.08)
+                              }
+                            })
+                          }}
                         >
                           {openingStep === step.pm_workflowapprovalstepid ? 'Opening...' : 'Review'}
                         </Button>
