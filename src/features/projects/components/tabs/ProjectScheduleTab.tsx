@@ -195,9 +195,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
             <Tab label="Gantt Chart" icon={<ViewWeekIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
             <Tab label="Detailed List" icon={<ListIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
             <Tab label="Dependency Network" icon={<SchemaIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
-            {canEdit && (
-              <Tab label="WBS Structure Builder" icon={<ListIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
-            )}
+            <Tab label="WBS Structure Builder" icon={<ListIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
           </Tabs>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
