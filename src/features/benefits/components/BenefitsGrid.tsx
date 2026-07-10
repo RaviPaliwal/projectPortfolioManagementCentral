@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useUser } from '@/context/UserContext'
 import {
   Box,
   Avatar,
@@ -32,6 +33,7 @@ export const BenefitsGrid = ({
   categoryFilter,
   statusFilter,
 }: BenefitsGridProps) => {
+  const { users } = useUser()
 
   const filteredBenefits = useMemo(() => {
     return benefits.filter(item => {
@@ -118,12 +120,15 @@ export const BenefitsGrid = ({
     {
       key: 'pm_benifitownername',
       label: 'Owner',
-      format: (val) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-          <Typography variant="body2" color="text.secondary">{val || '—'}</Typography>
-        </Box>
-      )
+      format: (val, item) => {
+        const resolvedName = val || users.find(u => u.systemuserid === item._pm_benifitowner_value)?.fullname || '—'
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+            <Typography variant="body2" color="text.secondary">{resolvedName}</Typography>
+          </Box>
+        )
+      }
     }
   ]
 

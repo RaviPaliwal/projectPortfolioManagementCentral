@@ -397,6 +397,22 @@
           "x-ms-read-only": true,
           "maxLength": 850
         },
+        "pm_project": {
+          "type": "string",
+          "title": "Project",
+          "x-ms-dataverse-attribute": "pm_project",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_Project"
+        },
+        "pm_projectname": {
+          "type": "string",
+          "title": "pm_projectname",
+          "x-ms-dataverse-attribute": "pm_projectname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_ProjectName",
+          "x-ms-read-only": true,
+          "maxLength": 850
+        },
         "pm_totalamounteur": {
           "type": "string",
           "title": "Total Amount (EUR)",

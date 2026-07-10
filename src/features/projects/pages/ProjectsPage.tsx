@@ -29,7 +29,7 @@ import {
   deleteProjectMilestone,
 } from '@/services'
 import { deleteRisk, deleteIssue } from '@/services/risk-issue.service'
-import { deleteBenefit, deleteGateReview } from '@/services/governance.service'
+import { deleteBenefit, deleteGateReview, fetchBenefitsByProject } from '@/services/governance.service'
 import { deleteBudgetLine } from '@/services/finance.service'
 import { useUser } from '@/context/UserContext'
 import { MODULE_NAMES } from '@/constants/moduleNames'
@@ -181,7 +181,7 @@ export default function ProjectsPage() {
         Pm_issuesService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 }),
         Pm_resourceallocationsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 }),
         Pm_budgetlinesService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 }),
-        Pm_benefitsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 }),
+        fetchBenefitsByProject(projectId),
         Pm_projecttasksService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 200, orderBy: ['pm_plannedstartdate asc'] }),
         Pm_projectgatereviewsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 50, orderBy: ['pm_plannedreviewdate desc'] }),
       ])
@@ -191,7 +191,7 @@ export default function ProjectsPage() {
       setDetailIssues(unwrap(issueResult))
       setDetailResources(unwrap(allocResult))
       setDetailBudgetLines(unwrap(budgetResult))
-      setDetailBenefits(unwrap(benefitResult))
+      setDetailBenefits(benefitResult)
       setDetailTasks(unwrap(taskResult).map(mapProjectTask))
       setDetailGateReviews(unwrap(gateResult))
     } catch (err) {
@@ -396,8 +396,8 @@ export default function ProjectsPage() {
         const r = await Pm_budgetlinesService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 })
         setDetailBudgetLines(unwrap(r))
       } else if (type === 'benefit') {
-        const r = await Pm_benefitsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 })
-        setDetailBenefits(unwrap(r))
+        const list = await fetchBenefitsByProject(projectId)
+        setDetailBenefits(list)
       } else if (type === 'task') {
         const r = await Pm_projecttasksService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 200, orderBy: ['pm_plannedstartdate asc'] })
         setDetailTasks(unwrap(r).map(mapProjectTask))
@@ -745,7 +745,10 @@ export default function ProjectsPage() {
           onUpdateTaskStatus={handleUpdateTaskStatus}
           onDeleteTask={handleDeleteTask}
           onDeleteMilestone={handleDeleteMilestone}
-          onRefresh={() => refreshDetailData('task')}
+          onRefresh={(type) => {
+            if (type) refreshDetailData(type)
+            loadData()
+          }}
           onSuccess={(msg) => {
             setSuccessMsg(msg)
             setTimeout(() => setSuccessMsg(null), 4000)

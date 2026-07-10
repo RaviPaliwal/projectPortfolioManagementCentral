@@ -7,7 +7,11 @@ import {
   Grid,
   Divider,
   useTheme,
-  LinearProgress
+  LinearProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import PieChartIcon from '@mui/icons-material/PieChart'
@@ -20,8 +24,10 @@ import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import NotesIcon from '@mui/icons-material/Notes'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
+import AddIcon from '@mui/icons-material/Add'
 
-import { StatusTag, VarianceDisplay, KpiCardRow } from '@/components/common'
+import { StatusTag, VarianceDisplay, KpiCardRow, ExportButton, ExcelImportDialog } from '@/components/common'
 import {
   BarChart,
   Bar,
@@ -35,6 +41,19 @@ import type { BudgetLineModel, ProjectModel } from '@/types/dataverse'
 import { currency } from '../../constants'
 import { fontSizes } from '@/styles'
 import { BudgetTable } from '@/features/budgets/components/BudgetTable'
+import {
+  createBudgetLine,
+  updateBudgetLine,
+  fetchFundingSources,
+  fetchPortfoliosForLookup,
+  fetchProgrammesForLookup,
+  fetchProjectsForLookup,
+  startWorkflowForEntity
+} from '@/services'
+import type { FundingSourceModel } from '@/types/dataverse'
+import type { PortfolioLookupItem, ProgrammeLookupItem, ProjectLookupItem } from '@/services'
+import { MODULE_NAMES } from '@/constants/moduleNames'
+import type { ExportColumn } from '@/utils/exportUtils'
 
 interface ProjectFinancialsTabProps {
   budgetLines: BudgetLineModel[]
@@ -44,6 +63,9 @@ interface ProjectFinancialsTabProps {
   onAddBudgetLine?: () => void
   selectedBudgetLine: BudgetLineModel | null
   setSelectedBudgetLine: (budgetLine: BudgetLineModel | null) => void
+  onRefresh?: (type?: string) => void
+  onSuccess?: (msg: string) => void
+  onError?: (msg: string) => void
 }
 
 // Mappings matching BudgetsPage.tsx
@@ -68,11 +90,201 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
   canEdit = false,
   onAddBudgetLine,
   selectedBudgetLine,
-  setSelectedBudgetLine
+  setSelectedBudgetLine,
+  onRefresh,
+  onSuccess,
+  onError
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const [categoryFilter, setCategoryFilter] = React.useState('')
+
+  // Excel/CSV import state
+  const [importDialogOpen, setImportDialogOpen] = React.useState(false)
+  const [sapImportOpen, setSapImportOpen] = React.useState(false)
+  const [actionLoading, setActionLoading] = React.useState(false)
+
+  // Lookup data for Excel importer
+  const [portfolioLookups, setPortfolioLookups] = React.useState<PortfolioLookupItem[]>([])
+  const [programmeLookups, setProgrammeLookups] = React.useState<ProgrammeLookupItem[]>([])
+  const [projectLookups, setProjectLookups] = React.useState<ProjectLookupItem[]>([])
+  const [fundingSources, setFundingSources] = React.useState<FundingSourceModel[]>([])
+
+  // Load lookups on mount
+  React.useEffect(() => {
+    async function loadLookups() {
+      try {
+        const [portfolios, programmes, projects, sources] = await Promise.all([
+          fetchPortfoliosForLookup(),
+          fetchProgrammesForLookup(),
+          fetchProjectsForLookup(),
+          fetchFundingSources(),
+        ])
+        setPortfolioLookups(portfolios)
+        setProgrammeLookups(programmes)
+        setProjectLookups(projects)
+        setFundingSources(sources)
+      } catch (err) {
+        console.error('[ProjectFinancialsTab] Failed to load lookups:', err)
+      }
+    }
+    loadLookups()
+  }, [])
+
+  const handleImportBudgets = async (
+    rows: any[],
+    onProgress: (current: number, total: number) => void
+  ) => {
+    let successCount = 0
+    let failedCount = 0
+    const errors: string[] = []
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+      try {
+        const method = Number(row.pm_costinglevelcode) === 1 ? 'Rate-Based' : 'Fixed Cost'
+        const unitCost = row.pm_unitcosteur || 0
+        const quantity = Number(row.pm_costinglevelcode) === 1 ? (row.pm_quantity || 1) : 1
+        const total = Number(row.pm_costinglevelcode) === 1 ? unitCost * quantity : unitCost
+
+        const pm_jsonrawcalculation = JSON.stringify({
+          costingMethod: method,
+          unitCost,
+          quantity,
+          totalAmount: total,
+          formula: method === 'Rate-Based' ? 'Unit Cost × Quantity' : 'Unit Cost (Fixed)',
+          generatedAt: new Date().toISOString(),
+        }, null, 2)
+
+        // Resolve Portfolio/Programme/Project names to GUIDs for Dataverse lookups
+        const portfolioMatch = row.pm_portfolioname
+          ? portfolioLookups.find(p => p.pm_portfolioname?.toLowerCase().trim() === row.pm_portfolioname.toLowerCase().trim())
+          : undefined
+        const programmeMatch = row.pm_programmename
+          ? programmeLookups.find(p => p.pm_programmename?.toLowerCase().trim() === row.pm_programmename.toLowerCase().trim())
+          : undefined
+        
+        let projectMatch = row.pm_projectname
+          ? projectLookups.find(p => p.pm_projectname?.toLowerCase().trim() === row.pm_projectname.toLowerCase().trim())
+          : undefined
+        if (!projectMatch && (!row.pm_projectname || row.pm_projectname.toLowerCase().trim() === project.pm_projectname?.toLowerCase().trim())) {
+          projectMatch = { pm_projectid: project.pm_projectid, pm_projectname: project.pm_projectname } as any
+        }
+
+        const fundingSourceMatch = row.pm_fundingsourcename
+          ? fundingSources.find(s => s.pm_fundingsourcename?.toLowerCase().trim() === row.pm_fundingsourcename.toLowerCase().trim())
+          : undefined
+
+        if (row.pm_portfolioname && !portfolioMatch) {
+          errors.push(`Row ${i + 1}: Portfolio "${row.pm_portfolioname}" not found in Dataverse`)
+          failedCount++
+          onProgress(i + 1, rows.length)
+          continue
+        }
+        if (row.pm_programmename && !programmeMatch) {
+          errors.push(`Row ${i + 1}: Programme "${row.pm_programmename}" not found in Dataverse`)
+          failedCount++
+          onProgress(i + 1, rows.length)
+          continue
+        }
+        if (row.pm_projectname && !projectMatch) {
+          errors.push(`Row ${i + 1}: Project "${row.pm_projectname}" not found in Dataverse`)
+          failedCount++
+          onProgress(i + 1, rows.length)
+          continue
+        }
+        if (row.pm_fundingsourcename && !fundingSourceMatch) {
+          errors.push(`Row ${i + 1}: Funding source "${row.pm_fundingsourcename}" not found in Dataverse`)
+          failedCount++
+          onProgress(i + 1, rows.length)
+          continue
+        }
+
+        const payload: Partial<BudgetLineModel> = {
+          pm_budgetlinename: row.pm_budgetlinename,
+          pm_costcategory: row.pm_costcategory ?? 0,
+          pm_expencecatagory: row.pm_expencecatagory ?? 0,
+          pm_approvedbudgeteur: total,
+          pm_revisedbudgeteur: total,
+          pm_actualspendeur: total,
+          pm_committedspendeur: total,
+          pm_forecastspendeur: total,
+          pm_estimateatcompletioneur: total,
+          pm_jsonrawcalculation,
+          pm_notes: row.pm_notes || '',
+          _pm_portfoliolookup_value: portfolioMatch ? portfolioMatch.pm_portfolioid : undefined,
+          _pm_programmelookup_value: programmeMatch ? programmeMatch.pm_programmeid : undefined,
+          _pm_project_value: projectMatch ? projectMatch.pm_projectid : project.pm_projectid,
+          _pm_fundingsource_value: fundingSourceMatch ? fundingSourceMatch.pm_fundingsourceid : undefined,
+        }
+
+        const created = await createBudgetLine(payload)
+        if (created) {
+          successCount++
+        } else {
+          failedCount++
+          errors.push(`Row ${i + 1}: Failed to save record to Dataverse`)
+        }
+      } catch (err: any) {
+        failedCount++
+        errors.push(`Row ${i + 1}: ${err.message || 'Unknown error'}`)
+      }
+      onProgress(i + 1, rows.length)
+    }
+
+    onRefresh?.()
+    return { successCount, failedCount, errors }
+  }
+
+  const handleImportSapActuals = async (file: File) => {
+    setActionLoading(true)
+    try {
+      const text = await file.text()
+      const lines = text.split(/\r?\n/)
+      if (lines.length < 2) throw new Error('File is empty or has no header')
+      
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+      const wbsIndex = headers.indexOf('wbs_element')
+      const actualIndex = headers.indexOf('actual_spend')
+      const committedIndex = headers.indexOf('committed_spend')
+      
+      if (wbsIndex === -1 || actualIndex === -1) {
+        throw new Error('SAP actuals CSV must contain WBS_Element and Actual_Spend columns')
+      }
+      
+      let updatedCount = 0
+      const updatePromises: Promise<any>[] = []
+      
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim()
+        if (!line) continue
+        const cols = line.split(',').map(c => c.trim())
+        const wbs = cols[wbsIndex]
+        const actual = Number(cols[actualIndex] || 0)
+        const committed = committedIndex !== -1 ? Number(cols[committedIndex] || 0) : 0
+        
+        const match = budgetLines.find(bl => bl.pm_budgetlinename?.toLowerCase().trim() === wbs.toLowerCase().trim())
+        if (match && match.pm_budgetlineid) {
+          updatePromises.push(
+            updateBudgetLine(match.pm_budgetlineid, {
+              pm_actualspendeur: actual,
+              pm_committedspendeur: committed,
+            })
+          )
+          updatedCount++
+        }
+      }
+      
+      await Promise.all(updatePromises)
+      onSuccess?.(`SAP Integration: Successfully synchronized actual costs for ${updatedCount} matching budget lines.`)
+      onRefresh?.()
+    } catch (err: any) {
+      onError?.(`SAP Loader failed: ${err.message || 'Unknown error'}`)
+    } finally {
+      setActionLoading(false)
+      setSapImportOpen(false)
+    }
+  }
 
   const totalBudget = budgetLines.reduce((s, b) => s + (b.pm_approvedbudgeteur ?? 0), 0)
   const totalSpent = budgetLines.reduce((s, b) => s + (b.pm_actualspendeur ?? 0), 0)
@@ -343,11 +555,61 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
     )
   }
 
+const budgetExportColumns: ExportColumn[] = [
+  { key: 'pm_budgetlinename', label: 'Name' },
+  { key: 'pm_portfolioname', label: 'Portfolio' },
+  { key: 'pm_programmename', label: 'Programme' },
+  { key: 'pm_projectname', label: 'Project' },
+  { key: 'pm_approvedbudgeteur', label: 'Budget (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_forecastspendeur', label: 'Forecast (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_actualspendeur', label: 'Actual (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_committedspendeur', label: 'Committed (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_fiscalperiodname', label: 'Period' },
+]
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1.5, mt: 1.5, mb: 1 }}>
-        <PieChartIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Budget Breakdown
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5, mb: 1, flexWrap: 'wrap', gap: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <PieChartIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Budget Breakdown
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
+          <ExportButton filename={`project_${project.pm_projectid || 'budget'}_lines.csv`} columns={budgetExportColumns} data={budgetLines} />
+          {canEdit && (
+            <>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<CloudUploadIcon />}
+                onClick={() => setImportDialogOpen(true)}
+                sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600 }}
+              >
+                Import Budget Lines
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<CloudUploadIcon />}
+                onClick={() => setSapImportOpen(true)}
+                sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600 }}
+              >
+                Load SAP Actuals
+              </Button>
+            </>
+          )}
+          {onAddBudgetLine && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={onAddBudgetLine}
+              sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600 }}
+            >
+              Add Budget Line
+            </Button>
+          )}
+        </Box>
+      </Box>
 
       {/* EVM KPI Cards Summary Row */}
       <Box sx={{ mb: -2.5 }}>
@@ -445,6 +707,66 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Excel/CSV Import Dialog */}
+      <ExcelImportDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        importType="budgets"
+        title="Import Budget Lines from CSV"
+        onImport={handleImportBudgets}
+      />
+
+      {/* SAP Actuals Import Dialog */}
+      <Dialog
+        open={sapImportOpen}
+        onClose={() => !actionLoading && setSapImportOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        slotProps={{
+          paper: { sx: { borderRadius: 1.5 } }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Load SAP Actual Costs</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1.5 }}>
+            <Typography variant="body2" color="text.secondary">
+              Upload the standard SAP cost output CSV. The loader maps `WBS_Element` values directly to Dataverse budget lines and updates actual/committed spend.
+            </Typography>
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<CloudUploadIcon />}
+              fullWidth
+              sx={{ py: 1.5, borderStyle: 'dashed', borderRadius: 1.5, textTransform: 'none' }}
+              disabled={actionLoading}
+            >
+              Upload SAP CSV File
+              <input
+                type="file"
+                accept=".csv"
+                hidden
+                onChange={(e) => {
+                  const files = e.target.files
+                  if (files && files.length > 0) {
+                    handleImportSapActuals(files[0])
+                  }
+                }}
+              />
+            </Button>
+            {actionLoading && (
+              <Box sx={{ width: '100%', mt: 1 }}>
+                <LinearProgress sx={{ height: 4, borderRadius: 1 }} />
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button onClick={() => setSapImportOpen(false)} variant="outlined" disabled={actionLoading} sx={{ borderRadius: 1.5, textTransform: 'none' }}>
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

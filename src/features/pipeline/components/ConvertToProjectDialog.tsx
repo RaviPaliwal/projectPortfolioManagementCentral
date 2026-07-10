@@ -36,6 +36,7 @@ import { DocumentPreviewDialog, Button } from '@/components/common'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import AttachFileIcon from '@mui/icons-material/AttachFile'
+import { BUSINESS_UNITS } from '@/constants/businessUnits'
 
 interface ConvertToProjectDialogProps {
   open: boolean
@@ -405,13 +406,23 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                   </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Business Unit"
-                    size="small"
-                    value={form.pm_businessunit}
-                    onChange={handleChange('pm_businessunit')}
-                  />
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="convert-businessunit-label">Business Unit</InputLabel>
+                    <Select
+                      id="convert-businessunit-select"
+                      labelId="convert-businessunit-label"
+                      value={form.pm_businessunit || ''}
+                      label="Business Unit"
+                      onChange={(e) => setForm((p) => ({ ...p, pm_businessunit: e.target.value }))}
+                    >
+                      <MenuItem value="">— Select —</MenuItem>
+                      {BUSINESS_UNITS.map((bu) => (
+                        <MenuItem key={bu} value={bu}>
+                          {bu}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth size="small">
@@ -520,13 +531,23 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Business Unit"
-                    size="small"
-                    value={form.pm_businessunit}
-                    onChange={handleChange('pm_businessunit')}
-                  />
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="convert-pgm-businessunit-label">Business Unit</InputLabel>
+                    <Select
+                      id="convert-pgm-businessunit-select"
+                      labelId="convert-pgm-businessunit-label"
+                      value={form.pm_businessunit || ''}
+                      label="Business Unit"
+                      onChange={(e) => setForm((p) => ({ ...p, pm_businessunit: e.target.value }))}
+                    >
+                      <MenuItem value="">— Select —</MenuItem>
+                      {BUSINESS_UNITS.map((bu) => (
+                        <MenuItem key={bu} value={bu}>
+                          {bu}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
@@ -604,13 +625,23 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                   </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Business Unit"
-                    size="small"
-                    value={form.pm_businessunit}
-                    onChange={handleChange('pm_businessunit')}
-                  />
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="convert-port-businessunit-label">Business Unit</InputLabel>
+                    <Select
+                      id="convert-port-businessunit-select"
+                      labelId="convert-port-businessunit-label"
+                      value={form.pm_businessunit || ''}
+                      label="Business Unit"
+                      onChange={(e) => setForm((p) => ({ ...p, pm_businessunit: e.target.value }))}
+                    >
+                      <MenuItem value="">— Select —</MenuItem>
+                      {BUSINESS_UNITS.map((bu) => (
+                        <MenuItem key={bu} value={bu}>
+                          {bu}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField

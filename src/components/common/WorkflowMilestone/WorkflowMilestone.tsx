@@ -173,19 +173,41 @@ function isStepAssignedToUser(
   return false
 }
 
+const normalizeGuid = (guid?: string | null): string => {
+  if (!guid) return ''
+  return guid.replace(/[{}]/g, '').trim().toLowerCase()
+}
+
 /** Helper to map a running approval step to its phase name using step templates */
 export const getStepPhase = (
   step: WorkflowApprovalStepModel,
   templates: WorkflowStepTemplateModel[]
 ): string => {
-  const match = templates.find(
-    (t) =>
-      t.pm_steporder === step.pm_steporder ||
-      (t.pm_workflowname &&
-        step.pm_stepname &&
-        t.pm_workflowname.trim().toLowerCase() === step.pm_stepname.trim().toLowerCase())
-  )
-  return match?.pm_workflowphase || 'Other'
+  // 1. Try exact template ID lookup first (most specific)
+  const stepTemplateId = normalizeGuid(step._pm_workflowtemplate_value)
+  if (stepTemplateId) {
+    const match = templates.find(
+      (t) => normalizeGuid(t.pm_workflowsteptemplateid) === stepTemplateId
+    )
+    if (match) return match.pm_workflowphase?.trim() || 'Other'
+  }
+
+  // 2. Try matching by unique step order in the sequence next
+  if (step.pm_steporder !== undefined && step.pm_steporder !== null) {
+    const match = templates.find((t) => Number(t.pm_steporder) === Number(step.pm_steporder))
+    if (match) return match.pm_workflowphase?.trim() || 'Other'
+  }
+
+  // 3. Fallback to name matching if order is not available or doesn't match
+  const stepName = (step.pm_stepname || '').trim().toLowerCase()
+  if (stepName) {
+    const match = templates.find(
+      (t) => (t.pm_workflowname || '').trim().toLowerCase() === stepName
+    )
+    if (match) return match.pm_workflowphase?.trim() || 'Other'
+  }
+
+  return 'Other'
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────
@@ -424,11 +446,17 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
 
         const isCompleted = String(instance.pm_status) === '0'
         
-        // Resolve phases
-        const phasesFromTemplates = Array.from(new Set(templates.map(t => t.pm_workflowphase).filter(Boolean))) as string[]
-        const hasOther = steps.some(s => getStepPhase(s, templates) === 'Other')
+        // Resolve phases (trimmed and deduplicated case-insensitively)
+        const phasesFromTemplates: string[] = []
+        templates.forEach(t => {
+          const phase = (t.pm_workflowphase || '').trim()
+          if (phase && !phasesFromTemplates.some(p => p.toLowerCase() === phase.toLowerCase())) {
+            phasesFromTemplates.push(phase)
+          }
+        })
+        const hasOther = steps.some(s => getStepPhase(s, templates).toLowerCase() === 'other')
         const allPhases = [...phasesFromTemplates]
-        if (hasOther && !allPhases.includes('Other')) {
+        if (hasOther && !allPhases.some(p => p.toLowerCase() === 'other')) {
           allPhases.push('Other')
         }
         if (allPhases.length === 0) {
@@ -443,7 +471,7 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
 
         // Find the first phase that is not complete
         const firstUncompletedPhase = allPhases.find(p => {
-          const pSteps = steps.filter(s => getStepPhase(s, templates) === p)
+          const pSteps = steps.filter(s => getStepPhase(s, templates).toLowerCase() === p.toLowerCase())
           return pSteps.length > 0 && !pSteps.every(s => String(s.pm_decisionstatus) === '0' || String(s.pm_decisionstatus) === '3')
         })
         const inferredActivePhase = activePhaseName || firstUncompletedPhase || null
@@ -456,7 +484,7 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
         // Selected phase
         const defaultSelectedPhase = inferredActivePhase || allPhases[0]
         const selectedPhase = selectedPhases[instance.pm_workflowinstanceid!] || defaultSelectedPhase
-        const selectedPhaseSteps = steps.filter(s => getStepPhase(s, templates) === selectedPhase)
+        const selectedPhaseSteps = steps.filter(s => getStepPhase(s, templates).toLowerCase() === selectedPhase.toLowerCase())
         
         // Progress for details header
         const completedCount = selectedPhaseSteps.filter(s => String(s.pm_decisionstatus) === '0').length
@@ -496,10 +524,10 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                 sx={{ flexWrap: 'wrap', gap: 0 }}
               >
                 {allPhases.map((phase, index) => {
-                  const pSteps = steps.filter(s => getStepPhase(s, templates) === phase)
+                  const pSteps = steps.filter(s => getStepPhase(s, templates).toLowerCase() === phase.toLowerCase())
                   const isPComplete = pSteps.length > 0 && pSteps.every(s => String(s.pm_decisionstatus) === '0' || String(s.pm_decisionstatus) === '3')
-                  const isPActive = phase === inferredActivePhase
-                  const isSelected = selectedPhase === phase
+                  const isPActive = phase.toLowerCase() === (inferredActivePhase || '').toLowerCase()
+                  const isSelected = selectedPhase.toLowerCase() === phase.toLowerCase()
 
                   // Dynamic icon selection
                   let icon = <LayersIcon sx={{ fontSize: 20 }} />
@@ -534,7 +562,11 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                                 ...(isSelected && {
                                   border: '3px solid',
-                                  borderColor: 'primary.main',
+                                  borderColor: isPComplete
+                                    ? 'success.dark'
+                                    : isPActive
+                                      ? 'info.dark'
+                                      : 'grey.500',
                                 }),
                                 ...(isPComplete ? {
                                   backgroundColor: 'success.main',

@@ -92,7 +92,7 @@ interface Project360ViewProps {
   onEditGateReview?: (gateReview: GateReviewModel) => void
   onDeleteGateReview?: (gateReviewId: string) => void
   onAddGateReview?: () => void
-  onRefresh?: () => void
+  onRefresh?: (type?: string) => void
   onSuccess?: (msg: string) => void
   onError?: (msg: string) => void
 }
@@ -187,6 +187,42 @@ export const Project360View: React.FC<Project360ViewProps> = ({
     setActiveBudgetLine(null)
     setActiveGateReview(null)
   }, [activeTab])
+
+  // Sync active detail view states when lists change (e.g. after edit/update/delete)
+  useEffect(() => {
+    if (activeRisk) {
+      const updated = risks.find(r => r.pm_riskid === activeRisk.pm_riskid)
+      setActiveRisk(updated || null)
+    }
+  }, [risks])
+
+  useEffect(() => {
+    if (activeIssue) {
+      const updated = issues.find(i => i.pm_issueid === activeIssue.pm_issueid)
+      setActiveIssue(updated || null)
+    }
+  }, [issues])
+
+  useEffect(() => {
+    if (activeBenefit) {
+      const updated = benefits.find(b => b.pm_benefitid === activeBenefit.pm_benefitid)
+      setActiveBenefit(updated || null)
+    }
+  }, [benefits])
+
+  useEffect(() => {
+    if (activeBudgetLine) {
+      const updated = budgetLines.find(b => b.pm_budgetlineid === activeBudgetLine.pm_budgetlineid)
+      setActiveBudgetLine(updated || null)
+    }
+  }, [budgetLines])
+
+  useEffect(() => {
+    if (activeGateReview) {
+      const updated = gateReviews.find(g => g.pm_projectgatereviewid === activeGateReview.pm_projectgatereviewid)
+      setActiveGateReview(updated || null)
+    }
+  }, [gateReviews])
 
   const allTabs = [
     { id: 'overview', label: 'Overview', icon: <AnalyticsIcon fontSize="small" /> },
@@ -355,6 +391,9 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   onAddBudgetLine={canCreateBudgets ? onAddBudgetLine : undefined}
                   selectedBudgetLine={activeBudgetLine}
                   setSelectedBudgetLine={setActiveBudgetLine}
+                  onRefresh={() => onRefresh?.('budget')}
+                  onSuccess={onSuccess}
+                  onError={onError}
                 />
               )}
               {activeTab === 'risks' && (

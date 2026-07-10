@@ -328,11 +328,37 @@ export async function fetchBenefits(): Promise<BenefitModel[]> {
   }
 }
 
+export async function fetchBenefitsByProject(projectId: string): Promise<BenefitModel[]> {
+  try {
+    const selectFields = [
+      'pm_benefitid', 'pm_benefitname', 'pm_benefitcategory',
+      'pm_benefitdescription', 'pm_benefitstatus', 'pm_benefittype',
+      'pm_benefitreference', 'pm_baselinevalue', 'pm_targetvalue',
+      'pm_unitofmeasure', 'pm_ragstatus', 'pm_realisationstartdate',
+      'pm_realisationenddate',
+      '_pm_benifitowner_value', '_pm_programmelookup_value', '_pm_project_value',
+    ]
+    const result = await Pm_benefitsService.getAll({
+      filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
+      select: selectFields,
+      top: 100,
+    })
+    if (!result.success) {
+      console.error('[GovernanceService] fetchBenefitsByProject failed:', result.error)
+      return []
+    }
+    return unwrapList<Pm_benefits>(result).map(mapBenefit)
+  } catch (err) {
+    console.error('[GovernanceService] fetchBenefitsByProject exception:', err)
+    return []
+  }
+}
+
 export async function createBenefit(payload: Partial<BenefitModel>): Promise<BenefitModel | null> {
   const cleanPayload: Record<string, unknown> = {}
+  const banned = ['pm_benefitid', '_pm_benifitowner_value', '_pm_programmelookup_value', '_pm_project_value', 'pm_benifitownername', 'pm_projectname', 'pm_programmename', 'pm_programmelookupname', 'pm_projectcode', 'createdon', 'modifiedon']
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '' &&
-        key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+    if (value !== undefined && value !== null && value !== '' && !banned.includes(key)) {
       cleanPayload[key] = value
     }
   }
@@ -366,9 +392,9 @@ export async function createBenefit(payload: Partial<BenefitModel>): Promise<Ben
 
 export async function updateBenefit(id: string, changes: Partial<BenefitModel>): Promise<BenefitModel | null> {
   const cleanPayload: Record<string, unknown> = {}
+  const banned = ['pm_benefitid', '_pm_benifitowner_value', '_pm_programmelookup_value', '_pm_project_value', 'pm_benifitownername', 'pm_projectname', 'pm_programmename', 'pm_programmelookupname', 'pm_projectcode', 'createdon', 'modifiedon']
   for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null &&
-        key !== 'pm_benefitid' && key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+    if (value !== undefined && value !== null && !banned.includes(key)) {
       cleanPayload[key] = value
     }
   }
@@ -405,9 +431,9 @@ export async function updateBenefit(id: string, changes: Partial<BenefitModel>):
 
 export async function createBenefitFull(payload: Partial<BenefitModel>): Promise<BenefitModel | null> {
   const cleanPayload: Record<string, unknown> = {}
+  const banned = ['pm_benefitid', '_pm_benifitowner_value', '_pm_programmelookup_value', '_pm_project_value', 'pm_benifitownername', 'pm_projectname', 'pm_programmename', 'pm_programmelookupname', 'pm_projectcode', 'createdon', 'modifiedon']
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && value !== '' &&
-        key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+    if (value !== undefined && value !== null && value !== '' && !banned.includes(key)) {
       cleanPayload[key] = value
     }
   }
@@ -459,9 +485,9 @@ export async function createBenefitFull(payload: Partial<BenefitModel>): Promise
 
 export async function updateBenefitFull(id: string, changes: Partial<BenefitModel>): Promise<BenefitModel | null> {
   const cleanPayload: Record<string, unknown> = {}
+  const banned = ['pm_benefitid', '_pm_benifitowner_value', '_pm_programmelookup_value', '_pm_project_value', 'pm_benifitownername', 'pm_projectname', 'pm_programmename', 'pm_programmelookupname', 'pm_projectcode', 'createdon', 'modifiedon']
   for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null &&
-        key !== 'pm_benefitid' && key !== '_pm_benifitowner_value' && key !== '_pm_programmelookup_value' && key !== '_pm_project_value') {
+    if (value !== undefined && value !== null && !banned.includes(key)) {
       cleanPayload[key] = value
     }
   }

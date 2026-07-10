@@ -24,6 +24,7 @@ import TaskAltIcon from '@mui/icons-material/TaskAlt'
 import HistoryIcon from '@mui/icons-material/History'
 
 import { useAuthorization } from '@/hooks/useAuthorization'
+import { useUser } from '@/context/UserContext'
 import { Pm_performancemeasuresService } from '@/generated'
 import {
   fetchBenefits,
@@ -62,6 +63,7 @@ const TYPE_LABELS: Record<string, string> = {
 export default function BenefitsPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+  const { users } = useUser()
 
   const { allowed: canCreate } = useAuthorization('BENEFITS', 'create')
   const { allowed: canEdit } = useAuthorization('BENEFITS', 'update')
@@ -126,6 +128,14 @@ export default function BenefitsPage() {
       loadMeasures(selectedBenefit.pm_benefitid)
     }
   }, [selectedBenefit, loadMeasures])
+
+  // Sync selectedBenefit when the benefits list changes (e.g. after edit or delete)
+  useEffect(() => {
+    if (selectedBenefit) {
+      const updated = benefits.find((b) => b.pm_benefitid === selectedBenefit.pm_benefitid)
+      setSelectedBenefit(updated || null)
+    }
+  }, [benefits])
 
   // G��G�� KPIs G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��
   const kpiItems = useMemo(() => {
@@ -303,7 +313,9 @@ export default function BenefitsPage() {
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Owner</Typography>
-                      <Typography variant="body2">{selectedBenefit.pm_benifitownername || '—'}</Typography>
+                      <Typography variant="body2">
+                        {selectedBenefit.pm_benifitownername || users.find(u => u.systemuserid === selectedBenefit._pm_benifitowner_value)?.fullname || '—'}
+                      </Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>Project / Programme</Typography>

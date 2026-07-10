@@ -32,6 +32,8 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import { DocumentPreviewDialog, Button } from '@/components/common'
 
+import { BUSINESS_UNITS } from '@/constants/businessUnits'
+
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
 const defaultProjectForm: Partial<ProjectModel> = {
@@ -269,8 +271,19 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Business Unit" size="small" value={form.pm_businessunit ?? ''}
-              onChange={(e) => setForm((p) => ({ ...p, pm_businessunit: e.target.value }))} />
+            <FormControl fullWidth size="small">
+              <InputLabel id="project-businessunit-label">Business Unit</InputLabel>
+              <Select
+                id="project-businessunit-select"
+                labelId="project-businessunit-label"
+                value={form.pm_businessunit || ''}
+                label="Business Unit"
+                onChange={(e) => setForm((p) => ({ ...p, pm_businessunit: e.target.value }))}
+              >
+                <MenuItem value="">— Select —</MenuItem>
+                {BUSINESS_UNITS.map(bu => <MenuItem key={bu} value={bu}>{bu}</MenuItem>)}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth size="small">

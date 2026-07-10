@@ -340,6 +340,11 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
         fetchSystemUsers(),
       ])
       setInitiatives(list)
+      setSelectedInitiative((current) => {
+        if (!current) return null
+        const latest = list.find((item) => item.pm_initiativeid === current.pm_initiativeid)
+        return latest || current
+      })
       setKpis(kpiData)
       setPortfolios(hierarchy.portfolios)
       setProgrammes(hierarchy.programmes)
@@ -516,6 +521,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
           pm_estimatedcosteur: 0,
           pm_estimatedbenefitseur: 0,
           _pm_requestedby_value: '',
+          _pm_sponsor_value: '',
           pm_initiativetype: 0,
           pm_pipelinestatus: 1,
           _pm_portfolio_value: '',

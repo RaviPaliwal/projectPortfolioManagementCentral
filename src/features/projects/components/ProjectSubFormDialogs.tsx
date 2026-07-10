@@ -33,7 +33,6 @@ import {
   createIssue,
   assignResource,
   createBudgetLine,
-  createBenefit,
   createProjectTask,
   startWorkflowForEntity,
   GovernanceReadinessService,
@@ -51,7 +50,7 @@ import { BudgetLineFormDialog } from '@/features/budgets/components'
 import { formatDate } from '@/utils/formatters'
 import type { BudgetLineModel } from '@/types/dataverse'
 import { updateRiskFull, updateIssueFull } from '@/services/risk-issue.service'
-import { updateBenefitFull, updateGateReview } from '@/services/governance.service'
+import { updateBenefitFull, createBenefitFull, updateGateReview } from '@/services/governance.service'
 import { MitigationActionDialog } from '@/features/risks/components'
 
 interface SubDialogProps {
@@ -1118,9 +1117,16 @@ export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, project
     { name: 'pm_benefitstatus', label: 'Status', type: 'select', defaultValue: '0', gridSize: 6, options: [
       { value: '0', label: 'On Track' }, { value: '1', label: 'Planned' }, { value: '2', label: 'At Risk' }
     ]},
+    { name: 'pm_benefittype', label: 'Benefit type', type: 'select', defaultValue: '0', gridSize: 6, options: [
+      { value: '0', label: 'Cashable' }, { value: '1', label: 'Non-Cashable' }, { value: '2', label: 'Avoided Cost' }
+    ]},
+    { name: 'pm_baselinevalue', label: 'Baseline value', type: 'number', defaultValue: 0, gridSize: 6 },
     { name: 'pm_targetvalue', label: 'Target value', type: 'number', defaultValue: 0, gridSize: 6 },
-    { name: 'pm_unitofmeasure', label: 'Unit of measure', type: 'text', gridSize: 6 },
-    { name: 'pm_realisationenddate', label: 'Realisation end date', type: 'date' }
+    { name: 'pm_unitofmeasure', label: 'Unit of Measure (e.g., EUR, Hours, FTE)', type: 'text', gridSize: 6 },
+    { name: 'pm_realisationstartdate', label: 'Realisation start date', type: 'date', gridSize: 6 },
+    { name: 'pm_realisationenddate', label: 'Realisation end date', type: 'date', gridSize: 6 },
+    { name: '_pm_benifitowner_value', label: 'Benefit Owner', type: 'user-select-id', gridSize: 6 },
+    { name: 'pm_benefitdescription', label: 'Benefit description', type: 'multiline', rows: 2, gridSize: 12 }
   ]
 
   const mappedInitialData = useMemo(() => {
@@ -1129,6 +1135,7 @@ export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, project
       ...initialData,
       pm_benefitcategory: initialData.pm_benefitcategory != null ? String(initialData.pm_benefitcategory) : '0',
       pm_benefitstatus: initialData.pm_benefitstatus != null ? String(initialData.pm_benefitstatus) : '0',
+      pm_benefittype: initialData.pm_benefittype != null ? String(initialData.pm_benefittype) : '0',
     }
   }, [initialData])
 
@@ -1138,13 +1145,14 @@ export const BenefitDialog: React.FC<SubDialogProps> = ({ open, onClose, project
         ...data,
         pm_benefitcategory: data.pm_benefitcategory !== '' ? Number(data.pm_benefitcategory) : undefined,
         pm_benefitstatus: data.pm_benefitstatus !== '' ? Number(data.pm_benefitstatus) : undefined,
+        pm_benefittype: data.pm_benefittype !== '' ? Number(data.pm_benefittype) : undefined,
       }
       
       if (initialData?.pm_benefitid) {
         await updateBenefitFull(initialData.pm_benefitid, payload)
         onSuccess('Benefit updated successfully.')
       } else {
-        await createBenefit({ ...payload, _pm_project_value: projectId })
+        await createBenefitFull({ ...payload, _pm_project_value: projectId })
         onSuccess('Benefit added successfully.')
       }
       onClose()

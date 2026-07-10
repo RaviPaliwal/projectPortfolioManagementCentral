@@ -53,20 +53,20 @@ export type TabKey = 'dashboard' | 'portfolios' | 'programmes' | 'projects' | 'p
 export const tabs: Array<{ key: TabKey; label: string; icon: ReactNode; hidden?: boolean }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
   { key: 'strategicRoster', label: 'Strategic Roster', icon: <SchemaIcon /> },
+  { key: 'pipeline', label: 'Pipeline', icon: <TimelineIcon /> },
   { key: 'portfolios', label: 'Portfolios', icon: <AccountTreeIcon /> },
   { key: 'programmes', label: 'Programmes', icon: <FolderOpenIcon /> },
   { key: 'projects', label: 'Projects', icon: <TaskIcon /> },
-  { key: 'pipeline', label: 'Pipeline', icon: <TimelineIcon /> },
+  { key: 'tasks', label: 'Tasks', icon: <AssignmentIcon /> },
+  { key: 'changerequests', label: 'Change Requests', icon: <ChangeCircleIcon /> },
+  { key: 'risks', label: 'Risks', icon: <CrisisAlertIcon /> },
+  { key: 'issues', label: 'Issues', icon: <ReportProblemIcon /> },
   { key: 'resources', label: 'Resources', icon: <PeopleIcon />, hidden: true },
   { key: 'calendar', label: 'Calendar', icon: <CalendarMonthIcon /> },
   { key: 'timesheets', label: 'Timesheets', icon: <AccessTimeIcon /> },
-  { key: 'budgets', label: 'Budgets', icon: <AccountBalanceWalletIcon /> },
-  { key: 'benefits', label: 'Benefits', icon: <EmojiEventsIcon /> },
-  { key: 'risks', label: 'Risks', icon: <CrisisAlertIcon /> },
-  { key: 'issues', label: 'Issues', icon: <ReportProblemIcon /> },
-  { key: 'changerequests', label: 'Change Requests', icon: <ChangeCircleIcon /> },
+  { key: 'budgets', label: 'Budgets', icon: <AccountBalanceWalletIcon />, hidden: true },
+  { key: 'benefits', label: 'Benefits', icon: <EmojiEventsIcon />, hidden: true },
   { key: 'cashflow', label: 'Cashflow', icon: <AccountBalanceIcon /> },
-  { key: 'tasks', label: 'Tasks', icon: <AssignmentIcon /> },
   { key: 'fundingsources', label: 'Funding Sources', icon: <SavingsIcon /> },
   { key: 'statussnapshots', label: 'Status Snapshots', icon: <AssessmentIcon /> },
   { key: 'activitylog', label: 'Activity Log', icon: <MenuBookIcon /> },
@@ -155,6 +155,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
             borderColor: 'divider',
             bgcolor: 'background.paper',
             color: 'text.secondary',
+            borderRadius: 0,
           },
         }}
       >
@@ -223,6 +224,7 @@ export default function PrimaryShell({ activeTab, onChangeTab, onToggleTheme, th
             bgcolor: 'background.paper',
             borderBottom: `1px solid ${themeMode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`,
             color: 'text.primary',
+            borderRadius: 0,
           }}
         >
           <Toolbar sx={{ px: 3, gap: 2, minHeight: '64px !important' }}>
