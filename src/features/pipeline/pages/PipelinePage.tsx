@@ -516,6 +516,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
           pm_estimatedcosteur: 0,
           pm_estimatedbenefitseur: 0,
           _pm_requestedby_value: '',
+          _pm_sponsor_value: '',
           pm_initiativetype: 0,
           pm_pipelinestatus: 1,
           _pm_portfolio_value: '',

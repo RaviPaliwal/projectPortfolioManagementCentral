@@ -7,6 +7,8 @@ import {
   useTheme,
   alpha,
   Menu,
+  Grid,
+  Pagination,
 } from '@mui/material'
 
 import SettingsIcon from '@mui/icons-material/Settings'
@@ -25,6 +27,9 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import LinkIcon from '@mui/icons-material/Link'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
+import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft'
+import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import { useAuthorization } from '@/hooks/useAuthorization'
 import type { CrudModule } from '@/constants/permissions'
 import { fontSizes } from '@/styles'
@@ -77,6 +82,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
   
   // Custom phases added by user
   const [userPhases, setUserPhases] = useState<string[]>([])
+  const [phasePages, setPhasePages] = useState<Record<string, number>>({})
   const [showAddPhaseDialog, setShowAddPhaseDialog] = useState(false)
   const [newPhaseName, setNewPhaseName] = useState('')
  
@@ -235,6 +241,75 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
       setShowRenamePhaseDialog(false)
     }
   }
+
+  const handleDeletePhase = async (phaseName: string) => {
+    const targetPhase = phaseName.trim()
+    if (!targetPhase) return
+
+    setActionLoading(true)
+    setError(null)
+    try {
+      const stepsToDelete = steps.filter(s => s.pm_workflowphase === targetPhase)
+      await Promise.all(stepsToDelete.map(step => 
+        deleteWorkflowStepTemplate(step.pm_workflowsteptemplateid!)
+      ))
+      setUserPhases(p => p.filter(x => x !== targetPhase))
+      setSuccessMsg(`Phase "${targetPhase}" and its steps deleted successfully.`)
+      setTimeout(() => setSuccessMsg(null), 3000)
+      await loadSteps()
+    } catch {
+      setError('Failed to delete phase.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleCopyPhase = async (phaseName: string) => {
+    const targetPhase = phaseName.trim()
+    if (!targetPhase) return
+
+    let baseName = `${targetPhase} (Copy)`
+    let candidate = baseName
+    let counter = 2
+    while (activePhases.includes(candidate)) {
+      candidate = `${baseName} ${counter}`
+      counter++
+    }
+    const newPhaseName = candidate
+
+    setActionLoading(true)
+    setError(null)
+    try {
+      const stepsToCopy = steps.filter(s => s.pm_workflowphase === targetPhase)
+      setUserPhases(p => [...p, newPhaseName])
+
+      if (stepsToCopy.length > 0) {
+        await Promise.all(stepsToCopy.map((step, idx) => {
+          const payload = {
+            pm_workflowname: `${step.pm_workflowname} (Copy)`,
+            pm_steporder: steps.length + idx + 1,
+            pm_assignetype: step.pm_assignetype,
+            pm_assigneeid: step.pm_assigneeid,
+            pm_description: step.pm_description,
+            pm_sladays: step.pm_sladays,
+            new_formkey: step.new_formkey,
+            pm_tasktype: step.pm_tasktype,
+            pm_workflowphase: newPhaseName,
+            _pm_workflowlookup_value: workflow.pm_workflowid
+          }
+          return createWorkflowStepTemplate(payload as any)
+        }))
+      }
+
+      setSuccessMsg(`Phase "${targetPhase}" and its steps copied successfully as "${newPhaseName}".`)
+      setTimeout(() => setSuccessMsg(null), 3000)
+      await loadSteps()
+    } catch {
+      setError('Failed to copy phase.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
  
   // Load steps
   const loadSteps = useCallback(async () => {
@@ -357,7 +432,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
     <Box>
       {/* Toolbar: step count and actions */}
       <Box sx={{
-        display: 'flex', alignItems: 'center', gap: 2, mb: 3,
+        display: 'flex', alignItems: 'center', gap: 2, mb: 2,
         px: 0.5,
       }}>
         <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -376,8 +451,8 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
               sx={{ fontWeight: 600, textTransform: 'none', px: 2 }}>
               Add Phase
             </Button>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => openCreate('')}
-              sx={{ bgcolor: 'secondary.main', '&:hover': { bgcolor: 'secondary.dark' }, fontWeight: 600, textTransform: 'none', px: 2.5, boxShadow: '0 2px 8px rgba(139,92,246,0.25)' }}>
+            <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => openCreate('')}
+              sx={{ fontWeight: 600, textTransform: 'none', px: 2.5, boxShadow: 'none' }}>
               Add Step
             </Button>
           </Box>
@@ -407,8 +482,8 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
                 sx={{ fontWeight: 600, textTransform: 'none', px: 2.5 }}>
                 Add Phase
               </Button>
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => openCreate('')}
-                sx={{ bgcolor: 'secondary.main', '&:hover': { bgcolor: 'secondary.dark' }, fontWeight: 600, textTransform: 'none', px: 3, boxShadow: '0 2px 8px rgba(139,92,246,0.25)' }}>
+              <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => openCreate('')}
+                sx={{ fontWeight: 600, textTransform: 'none', px: 3, boxShadow: 'none' }}>
                 Configure First Step
               </Button>
             </Box>
@@ -425,472 +500,443 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
       )}
  
       {!loading && (activePhases.length > 0 || groupedSteps.Other.length > 0) && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Grid container spacing={2}>
           {activePhases.map((phaseName) => {
             const phaseSteps = groupedSteps[phaseName] || []
-            
-            let color = '#8b5cf6'
-            let icon = <LayersIcon sx={{ color: '#8b5cf6' }} />
-            
-            const lower = phaseName.toLowerCase()
-            if (lower.includes('initiat')) {
-              color = '#f59e0b'
-              icon = <LayersIcon sx={{ color: '#f59e0b' }} />
-            } else if (lower.includes('plann')) {
-              color = '#0ea5e9'
-              icon = <TimelineIcon sx={{ color: '#0ea5e9' }} />
-            } else if (lower.includes('execut')) {
-              color = '#22c55e'
-              icon = <CheckCircleIcon sx={{ color: '#22c55e' }} />
-            } else if (lower.includes('clos') || lower.includes('end')) {
-              color = '#8b5cf6'
-              icon = <LockIcon sx={{ color: '#8b5cf6' }} />
-            }
-            
+            const totalPages = Math.ceil(phaseSteps.length / 3)
+            const currentPage = Math.min(phasePages[phaseName] ?? 1, Math.max(1, totalPages))
+            const startIndex = (currentPage - 1) * 3
+            const paginatedSteps = phaseSteps.slice(startIndex, startIndex + 3)
+            const phaseThemeColor = theme.palette.primary.main
+
             return (
-              <Accordion 
-                key={phaseName} 
-                defaultExpanded={phaseSteps.length > 0 || userPhases.includes(phaseName)}
-                sx={{
-                  borderRadius: '12px !important',
-                  overflow: 'hidden',
-                  '&:before': { display: 'none' },
-                  border: `1px solid ${theme.palette.divider}`,
-                  borderLeft: `6px solid ${color}`,
-                  background: isDark 
-                    ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)' 
-                    : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                  backdropFilter: 'blur(12px)',
-                  boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.02)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: isDark ? '0 8px 30px rgba(0,0,0,0.45)' : '0 8px 24px rgba(139, 92, 246, 0.08)',
-                    borderColor: alpha(color, 0.3)
-                  }
-                }}
-              >
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={phaseName}>
+                <Paper
+                  variant="outlined"
                   sx={{
-                    px: 2.5,
-                    py: 1,
-                    borderBottom: phaseSteps.length > 0 ? '1px solid' : 'none',
-                    borderColor: 'divider',
-                    '&.Mui-expanded': {
-                      minHeight: 48,
-                      borderBottom: '1px solid',
-                      borderColor: 'divider'
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    border: `1px solid ${theme.palette.divider}`,
+                    background: isDark ? 'background.paper' : '#ffffff',
+                    boxShadow: 'none',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      borderColor: alpha(phaseThemeColor, 0.4),
+                      boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.03)',
                     }
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 1.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      {icon}
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, fontFamily: "'Outfit', sans-serif" }}>
-                        {phaseName}
-                      </Typography>
-                      {canEdit && (
-                        <>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openRenamePhase(phaseName)
-                            }}
-                            sx={{
-                              opacity: 0.5,
-                              transition: 'opacity 0.2s',
-                              '&:hover': { opacity: 1, bgcolor: 'action.hover' },
-                              p: 0.5,
-                              ml: -0.5
-                            }}
-                            title="Rename Phase"
-                          >
-                            <EditIcon sx={{ fontSize: 14 }} />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            disabled={activePhases.indexOf(phaseName) === 0}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleMovePhase(phaseName, 'up')
-                            }}
-                            sx={{
-                              opacity: activePhases.indexOf(phaseName) === 0 ? 0.25 : 0.5,
-                              transition: 'opacity 0.2s',
-                              '&:hover': { opacity: 1, bgcolor: 'action.hover' },
-                              p: 0.5,
-                            }}
-                            title="Move Phase Up"
-                          >
-                            <ArrowUpwardIcon sx={{ fontSize: 14 }} />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            disabled={activePhases.indexOf(phaseName) === activePhases.length - 1}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleMovePhase(phaseName, 'down')
-                            }}
-                            sx={{
-                              opacity: activePhases.indexOf(phaseName) === activePhases.length - 1 ? 0.25 : 0.5,
-                              transition: 'opacity 0.2s',
-                              '&:hover': { opacity: 1, bgcolor: 'action.hover' },
-                              p: 0.5,
-                            }}
-                            title="Move Phase Down"
-                          >
-                            <ArrowDownwardIcon sx={{ fontSize: 14 }} />
-                          </IconButton>
-                        </>
-                      )}
-                      <Chip 
-                        label={`${phaseSteps.length} step${phaseSteps.length !== 1 ? 's' : ''}`}
-                        size="small" 
-                        variant="outlined"
-                        sx={{ height: 20, fontSize: '0.75rem', fontWeight: 600 }}
-                      />
-                    </Box>
-                    {canCreate && (
-                      <Button 
-                        size="small" 
-                        variant="outlined" 
-                        color="primary"
-                        startIcon={<AddIcon />}
+                  {/* Header Banner */}
+                  <Box
+                    sx={{
+                      bgcolor: phaseThemeColor,
+                      color: '#ffffff',
+                      px: 1.5,
+                      py: 0.75,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <IconButton
+                        size="small"
+                        disabled={activePhases.indexOf(phaseName) === 0}
                         onClick={(e) => {
                           e.stopPropagation()
-                          openCreate(phaseName)
+                          handleMovePhase(phaseName, 'up')
                         }}
-                        sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.75rem', py: 0.5 }}
+                        sx={{
+                          color: '#ffffff',
+                          p: 0.25,
+                          '&.Mui-disabled': { color: 'rgba(255,255,255,0.3)' }
+                        }}
+                        title="Move Left"
                       >
-                        Add Step
-                      </Button>
+                        <KeyboardDoubleArrowLeftIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                      
+                      <Typography variant="body2" sx={{ fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', fontSize: '0.8rem' }}>
+                        PHASE {activePhases.indexOf(phaseName) + 1}: {phaseName}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {canEdit && (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openRenamePhase(phaseName)
+                          }}
+                          sx={{ color: '#ffffff', p: 0.25 }}
+                          title="Rename Phase"
+                        >
+                          <SettingsIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      )}
+
+                      {canEdit && (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeletePhase(phaseName)
+                          }}
+                          sx={{ color: '#ffffff', p: 0.25 }}
+                          title="Delete Phase"
+                        >
+                          <DeleteIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      )}
+
+                      {canCreate && (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleCopyPhase(phaseName)
+                          }}
+                          sx={{ color: '#ffffff', p: 0.25 }}
+                          title="Copy Phase & Steps"
+                        >
+                          <ContentCopyIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      )}
+
+                      <IconButton
+                        size="small"
+                        disabled={activePhases.indexOf(phaseName) === activePhases.length - 1}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMovePhase(phaseName, 'down')
+                        }}
+                        sx={{
+                          color: '#ffffff',
+                          p: 0.25,
+                          '&.Mui-disabled': { color: 'rgba(255,255,255,0.3)' }
+                        }}
+                        title="Move Right"
+                      >
+                        <KeyboardDoubleArrowRightIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Box>
+                  </Box>
+
+                  {/* Content Body */}
+                  <Box sx={{ p: 1.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    {phaseSteps.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center', fontStyle: 'italic' }}>
+                        No steps configured for this phase.
+                      </Typography>
+                    ) : (
+                      <>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                          {paginatedSteps.map((step, idx) => {
+                            const isTeam = Number(step.pm_assignetype) === 1
+                            const assigneeName = isTeam 
+                              ? (teams.find((t) => t.id === step.pm_assigneeid)?.name || step.pm_assigneeid)
+                              : (assigneeList.find((u) => u.systemuserid === step.pm_assigneeid)?.fullname || step.pm_assigneeid)
+
+                            return (
+                              <Box 
+                                key={step.pm_workflowsteptemplateid} 
+                                className="step-card"
+                                sx={{ position: 'relative' }}
+                              >
+                                <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5, letterSpacing: 0.5 }}>
+                                  PHASE STEP {startIndex + idx + 1}: {step.pm_workflowname?.toUpperCase()}
+                                </Typography>
+
+                                <Box
+                                  sx={{
+                                    p: 1.25,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    borderRadius: '4px',
+                                    borderLeft: `4px solid ${phaseThemeColor}`,
+                                    bgcolor: isDark ? alpha(phaseThemeColor, 0.08) : alpha(phaseThemeColor, 0.04),
+                                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                                    borderLeftColor: phaseThemeColor,
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                      bgcolor: isDark ? alpha(phaseThemeColor, 0.12) : alpha(phaseThemeColor, 0.08),
+                                    }
+                                  }}
+                                >
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
+                                    {Number(step.pm_tasktype) === 2 ? (
+                                      <SettingsIcon sx={{ fontSize: 18, color: phaseThemeColor }} />
+                                    ) : (
+                                      <PersonIcon sx={{ fontSize: 18, color: phaseThemeColor }} />
+                                    )}
+                                    <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {step.pm_workflowname}
+                                    </Typography>
+                                  </Box>
+
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                    {assigneeName && (
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                        {isTeam ? <GroupIcon sx={{ fontSize: 14, color: 'text.secondary' }} /> : <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />}
+                                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                                          {assigneeName}
+                                        </Typography>
+                                      </Box>
+                                    )}
+
+                                    <Box sx={{ 
+                                      display: 'flex', 
+                                      gap: 0.5, 
+                                      opacity: 0, 
+                                      width: 0,
+                                      overflow: 'hidden',
+                                      transition: 'all 0.2s',
+                                      '.step-card:hover &': {
+                                        opacity: 1,
+                                        width: 'auto',
+                                        overflow: 'visible'
+                                      }
+                                    }}>
+                                      {canEdit && (
+                                        <IconButton size="small" title="Link to Phase" onClick={(e) => handleLinkMenuOpen(e, step)} sx={{ p: 0.25 }}>
+                                          <LinkIcon fontSize="small" sx={{ color: 'primary.main', fontSize: 16 }} />
+                                        </IconButton>
+                                      )}
+                                      {canEdit && (
+                                        <IconButton size="small" title="Edit Step" onClick={() => openEdit(step)} sx={{ p: 0.25 }}>
+                                          <EditIcon fontSize="small" sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                      )}
+                                      {canDelete && (
+                                        <IconButton size="small" title="Delete Step" color="error" onClick={() => setDeleteConfirm(step.pm_workflowsteptemplateid!)} sx={{ p: 0.25 }}>
+                                          <DeleteIcon fontSize="small" sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                      )}
+                                    </Box>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            )
+                          })}
+                        </Box>
+                        {totalPages > 1 && (
+                          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                            <Pagination
+                              count={totalPages}
+                              page={currentPage}
+                              onChange={(_, page) => setPhasePages(prev => ({ ...prev, [phaseName]: page }))}
+                              size="small"
+                              color="primary"
+                            />
+                          </Box>
+                        )}
+                      </>
+                    )}
+
+                    {/* Add Step Button inside the Phase Card */}
+                    {canCreate && (
+                      <Box sx={{ mt: 'auto', pt: 2, display: 'flex', justifyContent: 'center' }}>
+                        <Button
+                          size="small"
+                          variant="text"
+                          color="primary"
+                          startIcon={<AddIcon />}
+                          onClick={() => openCreate(phaseName)}
+                          sx={{ textTransform: 'none', fontWeight: 700 }}
+                        >
+                          Add Step
+                        </Button>
+                      </Box>
                     )}
                   </Box>
-                </AccordionSummary>
-                <AccordionDetails sx={{ p: 2.5, bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.2)' : 'rgba(248, 250, 252, 0.5)' }}>
-                  {phaseSteps.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center', fontStyle: 'italic' }}>
-                      No steps configured for this phase. Click "Add Step" to add one.
-                    </Typography>
-                  ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                      {phaseSteps.map((step, idx) => (
-                        <Paper 
-                          key={step.pm_workflowsteptemplateid} 
-                          className="step-card"
-                          variant="outlined"
-                          sx={{
-                            p: 2.25,
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 2.5,
-                            borderRadius: '10px',
-                            border: `1px solid ${theme.palette.divider}`,
-                            bgcolor: isDark ? 'background.paper' : '#ffffff',
-                            position: 'relative',
-                            overflow: 'hidden',
-                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                            '&:hover': {
-                              boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.25)' : '0 6px 18px rgba(0,0,0,0.04)',
-                              borderColor: alpha(color, 0.5),
-                              transform: 'translateY(-2px)',
-                              bgcolor: isDark ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-                            },
-                          }}
-                        >
-                          <Avatar sx={{
-                            width: 36, 
-                            height: 36,
-                            bgcolor: color,
-                            color: '#ffffff',
-                            fontSize: '0.85rem', 
-                            fontWeight: 700,
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-                          }}>
-                            {step.pm_steporder ?? idx + 1}
-                          </Avatar>
-                          <Box sx={{ flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                              <DragIndicatorIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                                {step.pm_workflowname ?? 'Unnamed'}
-                              </Typography>
-                            </Box>
-                            
-                            <Box sx={{ display: 'flex', gap: 1.5, mt: 1, flexWrap: 'wrap' }}>
-                              <Chip
-                                size="small"
-                                icon={Number(step.pm_assignetype) === 1 ? <GroupIcon sx={{ fontSize: 14 }} /> : <PersonIcon sx={{ fontSize: 14 }} />}
-                                label={`${Number(step.pm_assignetype) === 1 ? 'Team' : 'User'}: ${(() => {
-                                  if (Number(step.pm_assignetype) === 1) {
-                                    const found = teams.find((t) => t.id === step.pm_assigneeid)
-                                    return found ? found.name : (step.pm_assigneeid || 'Not set')
-                                  }
-                                  const found = assigneeList.find((u) => u.systemuserid === step.pm_assigneeid)
-                                  return found ? found.fullname : (step.pm_assigneeid || 'Not set')
-                                })()}`}
-                                sx={{
-                                  height: 22,
-                                  fontSize: '0.75rem',
-                                  fontWeight: 500,
-                                  bgcolor: Number(step.pm_assignetype) === 1 ? alpha(theme.palette.warning.main, 0.08) : alpha(theme.palette.primary.main, 0.06),
-                                  color: Number(step.pm_assignetype) === 1 ? 'warning.dark' : 'primary.dark',
-                                  border: '1px solid',
-                                  borderColor: Number(step.pm_assignetype) === 1 ? alpha(theme.palette.warning.main, 0.15) : alpha(theme.palette.primary.main, 0.12),
-                                }}
-                              />
-                              {step.pm_sladays != null && step.pm_sladays > 0 && (
-                                <Chip
-                                  size="small"
-                                  icon={<TimerIcon sx={{ fontSize: 14 }} />}
-                                  label={`${step.pm_sladays}d SLA`}
-                                  sx={{
-                                    height: 22,
-                                    fontSize: '0.75rem',
-                                    fontWeight: 500,
-                                    bgcolor: alpha(theme.palette.error.main, 0.06),
-                                    color: 'error.main',
-                                    border: '1px solid',
-                                    borderColor: alpha(theme.palette.error.main, 0.12),
-                                  }}
-                                />
-                              )}
-                              {step.new_formkey && (
-                                <Chip
-                                  size="small"
-                                  icon={<OpenInNewIcon sx={{ fontSize: 12 }} />}
-                                  label={`Form: ${(() => {
-                                    const formEntry = FORM_REGISTRY.find(f => f.key === step.new_formkey)
-                                    return formEntry ? formEntry.displayName : step.new_formkey
-                                  })()}`}
-                                  sx={{
-                                    height: 22,
-                                    fontSize: '0.75rem',
-                                    fontWeight: 500,
-                                    bgcolor: alpha(theme.palette.info.main, 0.06),
-                                    color: 'info.main',
-                                    border: '1px solid',
-                                    borderColor: alpha(theme.palette.info.main, 0.12),
-                                  }}
-                                />
-                              )}
-                            </Box>
-                          </Box>
-                          
-                          <Box sx={{ 
-                            display: 'flex', 
-                            gap: 0.75, 
-                            opacity: 0, 
-                            transform: 'translateX(10px)',
-                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                            '.step-card:hover &': {
-                              opacity: 1,
-                              transform: 'translateX(0)',
-                            }
-                          }}>
-                            {canEdit && (
-                              <IconButton size="small" title="Link to Phase" onClick={(e) => handleLinkMenuOpen(e, step)} sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}>
-                                <LinkIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-                              </IconButton>
-                            )}
-                            {canEdit && (
-                              <IconButton size="small" title="Edit Step" onClick={() => openEdit(step)} sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}>
-                                <EditIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            )}
-                            {canDelete && (
-                              <IconButton size="small" title="Delete Step" color="error" onClick={() => setDeleteConfirm(step.pm_workflowsteptemplateid!)} sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}>
-                                <DeleteIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            )}
-                          </Box>
-                        </Paper>
-                      ))}
-                    </Box>
-                  )}
-                </AccordionDetails>
-              </Accordion>
+                </Paper>
+              </Grid>
             )
           })}
 
           {/* Unlinked Steps */}
-          {groupedSteps.Other.length > 0 && (
-            <Accordion 
-              defaultExpanded
-              sx={{
-                borderRadius: '12px !important',
-                overflow: 'hidden',
-                '&:before': { display: 'none' },
-                border: `1px solid ${theme.palette.divider}`,
-                borderLeft: '6px solid #64748b',
-                background: isDark 
-                  ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)' 
-                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                backdropFilter: 'blur(12px)',
-                boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.02)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: isDark ? '0 8px 30px rgba(0,0,0,0.45)' : '0 8px 24px rgba(100, 116, 139, 0.08)',
-                  borderColor: 'rgba(100, 116, 139, 0.3)'
-                }
-              }}
-            >
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2.5, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <SettingsIcon sx={{ color: 'text.secondary' }} />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, fontFamily: "'Outfit', sans-serif" }}>
-                    General / Unlinked Steps
-                  </Typography>
-                  <Chip 
-                    label={`${groupedSteps.Other.length} step${groupedSteps.Other.length !== 1 ? 's' : ''}`}
-                    size="small" 
-                    variant="outlined"
-                    sx={{ height: 20, fontSize: '0.75rem', fontWeight: 600 }}
-                  />
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 2.5, bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.2)' : 'rgba(248, 250, 252, 0.5)' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {groupedSteps.Other.map((step, idx) => (
-                    <Paper 
-                      key={step.pm_workflowsteptemplateid} 
-                      className="step-card"
+          {groupedSteps.Other.length > 0 && (() => {
+            const otherSteps = groupedSteps.Other
+            const totalPages = Math.ceil(otherSteps.length / 3)
+            const currentPage = Math.min(phasePages['Other'] ?? 1, Math.max(1, totalPages))
+            const startIndex = (currentPage - 1) * 3
+            const paginatedSteps = otherSteps.slice(startIndex, startIndex + 3)
+            const phaseThemeColor = theme.palette.primary.main
+
+            return (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    border: `1px solid ${theme.palette.divider}`,
+                    background: isDark ? 'background.paper' : '#ffffff',
+                    boxShadow: 'none',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      borderColor: alpha(phaseThemeColor, 0.4),
+                      boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.03)',
+                    }
+                  }}
+                >
+                  {/* Header Banner */}
+                  <Box
+                    sx={{
+                      bgcolor: '#64748b',
+                      color: '#ffffff',
+                      px: 1.5,
+                      py: 0.75,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                    }}
+                  >
+                    <SettingsIcon sx={{ fontSize: 18 }} />
+                    <Typography variant="body2" sx={{ fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', fontSize: '0.8rem' }}>
+                      General / Unlinked Steps
+                    </Typography>
+                    <Chip 
+                      label={`${groupedSteps.Other.length} step${groupedSteps.Other.length !== 1 ? 's' : ''}`}
+                      size="small" 
                       variant="outlined"
-                      sx={{
-                        p: 2.25,
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 2.5,
-                        borderRadius: '10px',
-                        border: `1px solid ${theme.palette.divider}`,
-                        bgcolor: isDark ? 'background.paper' : '#ffffff',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                        '&:hover': {
-                          boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.25)' : '0 6px 18px rgba(0,0,0,0.04)',
-                          borderColor: 'rgba(100, 116, 139, 0.5)',
-                          transform: 'translateY(-2px)',
-                          bgcolor: isDark ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-                        },
-                      }}
-                    >
-                      <Avatar sx={{
-                        width: 36, 
-                        height: 36,
-                        bgcolor: '#64748b',
-                        color: '#ffffff',
-                        fontSize: '0.85rem', 
-                        fontWeight: 700,
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-                      }}>
-                        {step.pm_steporder ?? idx + 1}
-                      </Avatar>
-                      <Box sx={{ flex: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                          <DragIndicatorIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                          <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                            {step.pm_workflowname ?? 'Unnamed'}
-                          </Typography>
-                        </Box>
-                        
-                        <Box sx={{ display: 'flex', gap: 1.5, mt: 1, flexWrap: 'wrap' }}>
-                          <Chip
-                            size="small"
-                            icon={Number(step.pm_assignetype) === 1 ? <GroupIcon sx={{ fontSize: 14 }} /> : <PersonIcon sx={{ fontSize: 14 }} />}
-                            label={`${Number(step.pm_assignetype) === 1 ? 'Team' : 'User'}: ${(() => {
-                              if (Number(step.pm_assignetype) === 1) {
-                                const found = teams.find((t) => t.id === step.pm_assigneeid)
-                                return found ? found.name : (step.pm_assigneeid || 'Not set')
-                              }
-                              const found = assigneeList.find((u) => u.systemuserid === step.pm_assigneeid)
-                              return found ? found.fullname : (step.pm_assigneeid || 'Not set')
-                            })()}`}
-                            sx={{
-                              height: 22,
-                              fontSize: '0.75rem',
-                              fontWeight: 500,
-                              bgcolor: Number(step.pm_assignetype) === 1 ? alpha(theme.palette.warning.main, 0.08) : alpha(theme.palette.primary.main, 0.06),
-                              color: Number(step.pm_assignetype) === 1 ? 'warning.dark' : 'primary.dark',
-                              border: '1px solid',
-                              borderColor: Number(step.pm_assignetype) === 1 ? alpha(theme.palette.warning.main, 0.15) : alpha(theme.palette.primary.main, 0.12),
-                            }}
-                          />
-                          {step.pm_sladays != null && step.pm_sladays > 0 && (
-                            <Chip
-                              size="small"
-                              icon={<TimerIcon sx={{ fontSize: 14 }} />}
-                              label={`${step.pm_sladays}d SLA`}
+                      sx={{ height: 20, fontSize: '0.75rem', fontWeight: 600, color: '#ffffff', borderColor: 'rgba(255,255,255,0.4)' }}
+                    />
+                  </Box>
+
+                  {/* Content Body */}
+                  <Box sx={{ p: 1.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                      {paginatedSteps.map((step, idx) => {
+                        const isTeam = Number(step.pm_assignetype) === 1
+                        const assigneeName = isTeam 
+                          ? (teams.find((t) => t.id === step.pm_assigneeid)?.name || step.pm_assigneeid)
+                          : (assigneeList.find((u) => u.systemuserid === step.pm_assigneeid)?.fullname || step.pm_assigneeid)
+
+                        return (
+                          <Box 
+                            key={step.pm_workflowsteptemplateid} 
+                            className="step-card"
+                            sx={{ position: 'relative' }}
+                          >
+                            <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5, letterSpacing: 0.5 }}>
+                              PHASE STEP {startIndex + idx + 1}: {step.pm_workflowname?.toUpperCase()}
+                            </Typography>
+
+                            <Box
                               sx={{
-                                height: 22,
-                                fontSize: '0.75rem',
-                                fontWeight: 500,
-                                bgcolor: alpha(theme.palette.error.main, 0.06),
-                                color: 'error.main',
-                                border: '1px solid',
-                                borderColor: alpha(theme.palette.error.main, 0.12),
+                                p: 1.25,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                borderRadius: '4px',
+                                borderLeft: `4px solid #64748b`,
+                                bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                                border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                                borderLeftColor: '#64748b',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                }
                               }}
-                            />
-                          )}
-                          {step.new_formkey && (
-                            <Chip
-                              size="small"
-                              icon={<OpenInNewIcon sx={{ fontSize: 12 }} />}
-                              label={`Form: ${(() => {
-                                const formEntry = FORM_REGISTRY.find(f => f.key === step.new_formkey)
-                                return formEntry ? formEntry.displayName : step.new_formkey
-                              })()}`}
-                              sx={{
-                                height: 22,
-                                fontSize: '0.75rem',
-                                fontWeight: 500,
-                                bgcolor: alpha(theme.palette.info.main, 0.06),
-                                color: 'info.main',
-                                border: '1px solid',
-                                borderColor: alpha(theme.palette.info.main, 0.12),
-                              }}
-                            />
-                          )}
-                        </Box>
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
+                                {Number(step.pm_tasktype) === 2 ? (
+                                  <SettingsIcon sx={{ fontSize: 18, color: '#64748b' }} />
+                                ) : (
+                                  <PersonIcon sx={{ fontSize: 18, color: '#64748b' }} />
+                                )}
+                                <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {step.pm_workflowname}
+                                </Typography>
+                              </Box>
+
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                {assigneeName && (
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    {isTeam ? <GroupIcon sx={{ fontSize: 14, color: 'text.secondary' }} /> : <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />}
+                                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                                      {assigneeName}
+                                    </Typography>
+                                  </Box>
+                                )}
+
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  gap: 0.5, 
+                                  opacity: 0, 
+                                  width: 0,
+                                  overflow: 'hidden',
+                                  transition: 'all 0.2s',
+                                  '.step-card:hover &': {
+                                    opacity: 1,
+                                    width: 'auto',
+                                    overflow: 'visible'
+                                  }
+                                }}>
+                                  {canEdit && (
+                                    <IconButton size="small" title="Link to Phase" onClick={(e) => handleLinkMenuOpen(e, step)} sx={{ p: 0.25 }}>
+                                      <LinkIcon fontSize="small" sx={{ color: 'primary.main', fontSize: 16 }} />
+                                    </IconButton>
+                                  )}
+                                  {canEdit && (
+                                    <IconButton size="small" title="Edit Step" onClick={() => openEdit(step)} sx={{ p: 0.25 }}>
+                                      <EditIcon fontSize="small" sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                  )}
+                                  {canDelete && (
+                                    <IconButton size="small" title="Delete Step" color="error" onClick={() => setDeleteConfirm(step.pm_workflowsteptemplateid!)} sx={{ p: 0.25 }}>
+                                      <DeleteIcon fontSize="small" sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                  )}
+                                </Box>
+                              </Box>
+                            </Box>
+                          </Box>
+                        )
+                      })}
+                    </Box>
+                    {totalPages > 1 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                        <Pagination
+                          count={totalPages}
+                          page={currentPage}
+                          onChange={(_, page) => setPhasePages(prev => ({ ...prev, Other: page }))}
+                          size="small"
+                          color="primary"
+                        />
                       </Box>
-                      
-                      <Box sx={{ 
-                        display: 'flex', 
-                        gap: 0.75, 
-                        opacity: 0, 
-                        transform: 'translateX(10px)',
-                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                        '.step-card:hover &': {
-                          opacity: 1,
-                          transform: 'translateX(0)',
-                        }
-                      }}>
-                        {canEdit && (
-                          <IconButton size="small" title="Link to Phase" onClick={(e) => handleLinkMenuOpen(e, step)} sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}>
-                            <LinkIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-                          </IconButton>
-                        )}
-                        {canEdit && (
-                          <IconButton size="small" title="Edit Step" onClick={() => openEdit(step)} sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}>
-                            <EditIcon sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        )}
-                        {canDelete && (
-                          <IconButton size="small" title="Delete Step" color="error" onClick={() => setDeleteConfirm(step.pm_workflowsteptemplateid!)} sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}>
-                            <DeleteIcon sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        )}
+                    )}
+
+                    {/* Add Step Button inside the Phase Card */}
+                    {canCreate && (
+                      <Box sx={{ mt: 'auto', pt: 2, display: 'flex', justifyContent: 'center' }}>
+                        <Button
+                          size="small"
+                          variant="text"
+                          color="primary"
+                          startIcon={<AddIcon />}
+                          onClick={() => openCreate('')}
+                          sx={{ textTransform: 'none', fontWeight: 700 }}
+                        >
+                          Add Step
+                        </Button>
                       </Box>
-                    </Paper>
-                  ))}
-                </Box>
-              </AccordionDetails>
-            </Accordion>
-          )}
-        </Box>
+                    )}
+                  </Box>
+                </Paper>
+              </Grid>
+            )
+          })()}
+        </Grid>
       )}
  
       {/* Create/Edit Dialog */}
@@ -1090,9 +1136,8 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
           <Button onClick={() => setShowForm(false)} variant="outlined" disabled={actionLoading} sx={{ textTransform: 'none', fontWeight: 600, px: 3 }}>
             Cancel
           </Button>
-          <Button onClick={handleSave} variant="contained" disabled={!formData.pm_workflowname.trim() || actionLoading}
+          <Button onClick={handleSave} variant="contained" color="primary" disabled={!formData.pm_workflowname.trim() || actionLoading}
             sx={{
-              bgcolor: 'secondary.main', '&:hover': { bgcolor: 'secondary.dark' },
               fontWeight: 600, textTransform: 'none', px: 3,
             }}>
             {actionLoading ? 'Saving...' : editing ? 'Update Step' : 'Create Step'}
@@ -1126,6 +1171,12 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
             onChange={(e) => setNewPhaseName(e.target.value)}
             placeholder="e.g. Design Phase"
             sx={{ mt: 1 }}
+            error={activePhases.map(p => p.toLowerCase()).includes(newPhaseName.trim().toLowerCase())}
+            helperText={
+              activePhases.map(p => p.toLowerCase()).includes(newPhaseName.trim().toLowerCase())
+                ? 'A phase with this name already exists.'
+                : ''
+            }
           />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
@@ -1142,7 +1193,7 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
               setShowAddPhaseDialog(false)
             }} 
             variant="contained" 
-            disabled={!newPhaseName.trim()}
+            disabled={!newPhaseName.trim() || activePhases.map(p => p.toLowerCase()).includes(newPhaseName.trim().toLowerCase())}
           >
             Add Phase
           </Button>
@@ -1185,6 +1236,12 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
             onChange={(e) => setRenameNewPhaseName(e.target.value)}
             placeholder="e.g. Analysis Phase"
             sx={{ mt: 1 }}
+            error={activePhases.map(p => p.toLowerCase()).filter(p => p !== renameOldPhaseName.toLowerCase()).includes(renameNewPhaseName.trim().toLowerCase())}
+            helperText={
+              activePhases.map(p => p.toLowerCase()).filter(p => p !== renameOldPhaseName.toLowerCase()).includes(renameNewPhaseName.trim().toLowerCase())
+                ? 'A phase with this name already exists.'
+                : ''
+            }
           />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
@@ -1192,7 +1249,11 @@ export default function WorkflowStepConfigPage({ workflow }: Props) {
           <Button 
             onClick={handleRenamePhase} 
             variant="contained" 
-            disabled={!renameNewPhaseName.trim() || renameNewPhaseName.trim() === renameOldPhaseName}
+            disabled={
+              !renameNewPhaseName.trim() || 
+              renameNewPhaseName.trim() === renameOldPhaseName || 
+              activePhases.map(p => p.toLowerCase()).filter(p => p !== renameOldPhaseName.toLowerCase()).includes(renameNewPhaseName.trim().toLowerCase())
+            }
           >
             Rename Phase
           </Button>

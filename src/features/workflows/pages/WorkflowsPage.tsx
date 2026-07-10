@@ -245,7 +245,7 @@ export default function WorkflowsPage() {
   }
 
   const handleDialogClose = () => { if (!actionLoading) navigateTo('list') }
-  const dialogSx = { '& .MuiDialog-paper': { maxWidth: 900, width: '100%', minHeight: '80vh' } }
+  const dialogSx = { '& .MuiDialog-paper': { maxWidth: '96vw', width: '96vw', minHeight: '80vh' } }
 
   return (
     <>
