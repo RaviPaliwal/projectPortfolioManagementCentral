@@ -114,12 +114,14 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-      {/* Action Buttons */}
-      {onAddTask && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: -2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5, mb: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <AssignmentIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Project Tasks
+        </Typography>
+        {onAddTask && (
           <Button size="small" variant="outlined" startIcon={<AssignmentIcon />} onClick={onAddTask}>Task</Button>
-        </Box>
-      )}
+        )}
+      </Box>
 
       <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: 1.5 }}>
           <Table size="small">

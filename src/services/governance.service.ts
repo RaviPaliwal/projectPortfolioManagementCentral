@@ -128,7 +128,7 @@ export async function fetchGateReviews(): Promise<GateReviewModel[]> {
         'pm_actualreviewdate', 'pm_reviewnotes',
         'pm_reviewconditions', '_pm_project_value',
       ],
-      orderBy: ['pm_plannedreviewdate desc'],
+      orderBy: ['createdon desc'],
       top: 500,
     }
     const result = await Pm_projectgatereviewsService.getAll(options)
@@ -306,7 +306,7 @@ export async function fetchBenefits(): Promise<BenefitModel[]> {
     ]
     const options: IGetAllOptions = {
       select: selectFields,
-      orderBy: ['pm_benefitname asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     }
     const result = await Pm_benefitsService.getAll({ ...options, filter: 'statecode eq 0' })

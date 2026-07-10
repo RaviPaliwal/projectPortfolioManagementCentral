@@ -103,7 +103,7 @@ export const ProjectTeamTab: React.FC<ProjectTeamTabProps> = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5, mb: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <PeopleIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Allocated Resources
         </Typography>
         {onAssignResource && (

@@ -138,7 +138,7 @@ export async function fetchBudgetLines(): Promise<BudgetLineModel[]> {
     ]
     const options: IGetAllOptions = {
       select: selectFields,
-      orderBy: ['pm_budgetlinename asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     }
     const result = await Pm_budgetlinesService.getAll({ ...options, filter: 'statecode eq 0' })
@@ -440,7 +440,7 @@ export async function fetchFundingSources(): Promise<FundingSourceModel[]> {
     ]
     const options: IGetAllOptions = {
       select: selectFields,
-      orderBy: ['pm_fundingsourcename asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     }
     const result = await Pm_fundingsourcesService.getAll({ ...options, filter: 'statecode eq 0' })
@@ -671,7 +671,7 @@ export async function fetchCashflowEntries(): Promise<CashflowEntryModel[]> {
         '_pm_fiscalperiod_value', '_pm_project_value',
         '_pm_budgetline_value',
       ],
-      orderBy: ['pm_transactiondate desc'],
+      orderBy: ['createdon desc'],
       top: 500,
     })
     if (!result.success) {

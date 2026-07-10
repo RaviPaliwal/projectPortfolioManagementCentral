@@ -1,7 +1,7 @@
 import {
-  Pm_portfoliosService,
-  Pm_programmesService,
-  Pm_projectsService,
+    Pm_portfoliosService,
+    Pm_programmesService,
+    Pm_projectsService,
 } from '@/generated'
 import { writeAuditLog } from './changelog.service'
 import type { Pm_portfolios } from '@/generated/models/Pm_portfoliosModel'
@@ -9,11 +9,11 @@ import type { Pm_programmes } from '@/generated/models/Pm_programmesModel'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
 import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import {
-  unwrapList,
-  unwrapSingle,
-  normalizeLookupId,
-  aggregateFinancials,
-  isFinancialDataVisible,
+    unwrapList,
+    unwrapSingle,
+    normalizeLookupId,
+    aggregateFinancials,
+    isFinancialDataVisible,
 } from '@/services/common'
 import type { ProjectHierarchy } from '@/services/common'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
@@ -21,329 +21,329 @@ import { mapProgramme } from './programme.service'
 import { mapProject } from './project.service'
 
 export const mapPortfolio = (item: Pm_portfolios): PortfolioModel => {
-  const showFinancials = isFinancialDataVisible()
-  return {
-    pm_portfolioid: item.pm_portfolioid,
-    pm_portfolioname: item.pm_portfolioname,
-    pm_ownerlookup: item._pm_ownerlookup_value,
-    pm_ownerlookupname: item.pm_ownerlookupname || (item as unknown as Record<string, unknown>)['_pm_ownerlookup_value@OData.Community.Display.V1.FormattedValue'] as string,
-    pm_portfoliostatus: item.pm_portfoliostatus,
-    pm_ragstatus: item.pm_ragstatus,
-    pm_startdate: item.pm_startdate,
-    pm_enddate: item.pm_enddate,
-    pm_approvedbudgeteur: showFinancials ? item.pm_approvedbudgeteur : undefined,
-    pm_actualspendeur: showFinancials ? item.pm_actualspendeur : undefined,
-    pm_portfoliodescription: item.pm_portfoliodescription,
-    pm_strategicobjective: item.pm_strategicobjective,
-    pm_prioritylevel: item.pm_prioritylevel,
-    pm_businessunit: item.pm_businessunit,
-    pm_createdon: item.pm_createdon,
-  }
+    const showFinancials = isFinancialDataVisible()
+    return {
+        pm_portfolioid: item.pm_portfolioid,
+        pm_portfolioname: item.pm_portfolioname,
+        pm_ownerlookup: item._pm_ownerlookup_value,
+        pm_ownerlookupname: item.pm_ownerlookupname || (item as unknown as Record<string, unknown>)['_pm_ownerlookup_value@OData.Community.Display.V1.FormattedValue'] as string,
+        pm_portfoliostatus: item.pm_portfoliostatus,
+        pm_ragstatus: item.pm_ragstatus,
+        pm_startdate: item.pm_startdate,
+        pm_enddate: item.pm_enddate,
+        pm_approvedbudgeteur: showFinancials ? item.pm_approvedbudgeteur : undefined,
+        pm_actualspendeur: showFinancials ? item.pm_actualspendeur : undefined,
+        pm_portfoliodescription: item.pm_portfoliodescription,
+        pm_strategicobjective: item.pm_strategicobjective,
+        pm_prioritylevel: item.pm_prioritylevel,
+        pm_businessunit: item.pm_businessunit,
+        pm_createdon: item.pm_createdon,
+    }
 }
 
 export async function fetchPortfolios(): Promise<PortfolioModel[]> {
-  try {
-    const options: IGetAllOptions = {
-      filter: 'statecode eq 0',
-      select: ['pm_portfolioid', 'pm_portfolioname', 'pm_ragstatus', 'pm_approvedbudgeteur', 'pm_actualspendeur', '_pm_ownerlookup_value'],
-      top: 500,
+    try {
+        const options: IGetAllOptions = {
+            filter: 'statecode eq 0',
+            select: ['pm_portfolioid', 'pm_portfolioname', 'pm_ragstatus', 'pm_approvedbudgeteur', 'pm_actualspendeur', '_pm_ownerlookup_value'],
+            top: 500,
+        }
+        const result = await Pm_portfoliosService.getAll(options)
+        if (!result.success) {
+            console.error('[PortfolioService] fetchPortfolios failed:', result.error)
+            return []
+        }
+        return unwrapList<Pm_portfolios>(result).map(mapPortfolio)
+    } catch (err) {
+        console.error('[PortfolioService] fetchPortfolios exception:', err)
+        return []
     }
-    const result = await Pm_portfoliosService.getAll(options)
-    if (!result.success) {
-      console.error('[PortfolioService] fetchPortfolios failed:', result.error)
-      return []
-    }
-    return unwrapList<Pm_portfolios>(result).map(mapPortfolio)
-  } catch (err) {
-    console.error('[PortfolioService] fetchPortfolios exception:', err)
-    return []
-  }
 }
 
 export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
-  try {
-    const [portfoliosResult, programmesResult, projectsResult] = await Promise.all([
-      Pm_portfoliosService.getAll({ filter: 'statecode eq 0', select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'pm_createdon'], top: 200 }),
-      Pm_programmesService.getAll({ filter: 'statecode eq 0', select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', '_pm_programmemanager_value', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'], top: 500 }),
-      Pm_projectsService.getAll({ filter: 'statecode eq 0', select: ['pm_projectid', 'pm_projectname', '_pm_portfolio_value', '_pm_programme_value', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudget', 'pm_actualcost'], top: 1000 }),
-    ])
+    try {
+        const [portfoliosResult, programmesResult, projectsResult] = await Promise.all([
+            Pm_portfoliosService.getAll({ filter: 'statecode eq 0', select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'pm_createdon'], top: 200 }),
+            Pm_programmesService.getAll({ filter: 'statecode eq 0', select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', '_pm_programmemanager_value', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'], top: 500 }),
+            Pm_projectsService.getAll({ filter: 'statecode eq 0', select: ['pm_projectid', 'pm_projectname', '_pm_portfolio_value', '_pm_programme_value', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudget', 'pm_actualcost'], top: 1000 }),
+        ])
 
-    if (!portfoliosResult.success) console.error('[PortfolioService] portfoliosResult failed:', portfoliosResult.error)
-    if (!programmesResult.success) console.error('[PortfolioService] programmesResult failed:', programmesResult.error)
-    if (!projectsResult.success) console.error('[PortfolioService] projectsResult failed:', projectsResult.error)
+        if (!portfoliosResult.success) console.error('[PortfolioService] portfoliosResult failed:', portfoliosResult.error)
+        if (!programmesResult.success) console.error('[PortfolioService] programmesResult failed:', programmesResult.error)
+        if (!projectsResult.success) console.error('[PortfolioService] projectsResult failed:', projectsResult.error)
 
-    let projects = unwrapList<Pm_projects>(projectsResult).map(mapProject)
+        let projects = unwrapList<Pm_projects>(projectsResult).map(mapProject)
 
-    // Fallback: if statecode eq 0 returns empty, try without filter (some environments don't support statecode)
-    if (projects.length === 0) {
-      try {
-        const fallback = await Pm_projectsService.getAll({
-          select: ['pm_projectid', 'pm_projectname', '_pm_portfolio_value', '_pm_programme_value', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudget', 'pm_actualcost'],
-          top: 1000,
+        // Fallback: if statecode eq 0 returns empty, try without filter (some environments don't support statecode)
+        if (projects.length === 0) {
+            try {
+                const fallback = await Pm_projectsService.getAll({
+                    select: ['pm_projectid', 'pm_projectname', '_pm_portfolio_value', '_pm_programme_value', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudget', 'pm_actualcost'],
+                    top: 1000,
+                })
+                if (fallback.success) {
+                    projects = unwrapList<Pm_projects>(fallback).map(mapProject)
+                }
+            } catch (e) {
+                console.error('[PortfolioService] projects fallback query failed:', e)
+            }
+        }
+
+        const rawPortfolios = unwrapList<Pm_portfolios>(portfoliosResult).map(mapPortfolio)
+        const rawProgrammes = unwrapList<Pm_programmes>(programmesResult).map(mapProgramme)
+
+        const portfolioMap = new Map<string, PortfolioModel>()
+        for (const p of rawPortfolios) {
+            if (p.pm_portfolioid) portfolioMap.set(normalizeLookupId(p.pm_portfolioid)!, p)
+        }
+
+        const programmeMap = new Map<string, ProgrammeModel>()
+        for (const pr of rawProgrammes) {
+            if (pr.pm_programmeid) programmeMap.set(normalizeLookupId(pr.pm_programmeid)!, pr)
+        }
+
+        // 1. Roll up relationship names (Programmes -> Portfolios, Projects -> Programmes & Portfolios)
+        for (const prog of rawProgrammes) {
+            const portfolioId = normalizeLookupId(prog._pm_portfolio_value)
+            if (portfolioId && portfolioMap.has(portfolioId)) {
+                prog.pm_portfolioname = portfolioMap.get(portfolioId)!.pm_portfolioname
+            }
+        }
+
+        for (const proj of projects) {
+            const programmeId = normalizeLookupId(proj._pm_programme_value)
+            const portfolioId = normalizeLookupId(proj._pm_portfolio_value)
+
+            if (programmeId && programmeMap.has(programmeId)) {
+                const prog = programmeMap.get(programmeId)!
+                proj.pm_programmename = prog.pm_programmename
+            }
+
+            if (portfolioId && portfolioMap.has(portfolioId)) {
+                const port = portfolioMap.get(portfolioId)!
+                proj.pm_portfolioname = port.pm_portfolioname
+            }
+        }
+
+        // 2. Perform Virtual Financial Aggregation for the hierarchy view
+        // We will iterate through Portfolios and sum up their child Projects' financials
+        const updatedPortfolios = rawPortfolios.map(port => {
+            const portId = normalizeLookupId(port.pm_portfolioid)
+            const childProjects = projects.filter(p => normalizeLookupId(p._pm_portfolio_value) === portId)
+
+            if (childProjects.length > 0) {
+                const aggregates = aggregateFinancials(childProjects, 'pm_approvedbudget', 'pm_actualcost')
+                // Only override if the original record has 0/null to avoid confusing manual entries, 
+                // OR provide them as the source of truth for the dashboard.
+                // Let's use the aggregated values for the UI consistency.
+                return {
+                    ...port,
+                    pm_approvedbudgeteur: aggregates.budget > 0 ? aggregates.budget : port.pm_approvedbudgeteur,
+                    pm_actualspendeur: aggregates.actual > 0 ? aggregates.actual : port.pm_actualspendeur,
+                }
+            }
+            return port
         })
-        if (fallback.success) {
-          projects = unwrapList<Pm_projects>(fallback).map(mapProject)
-        }
-      } catch (e) {
-        console.error('[PortfolioService] projects fallback query failed:', e)
-      }
-    }
 
-    const rawPortfolios = unwrapList<Pm_portfolios>(portfoliosResult).map(mapPortfolio)
-    const rawProgrammes = unwrapList<Pm_programmes>(programmesResult).map(mapProgramme)
+        const updatedProgrammes = rawProgrammes.map(prog => prog)
 
-    const portfolioMap = new Map<string, PortfolioModel>()
-    for (const p of rawPortfolios) {
-      if (p.pm_portfolioid) portfolioMap.set(normalizeLookupId(p.pm_portfolioid)!, p)
-    }
-
-    const programmeMap = new Map<string, ProgrammeModel>()
-    for (const pr of rawProgrammes) {
-      if (pr.pm_programmeid) programmeMap.set(normalizeLookupId(pr.pm_programmeid)!, pr)
-    }
-
-    // 1. Roll up relationship names (Programmes -> Portfolios, Projects -> Programmes & Portfolios)
-    for (const prog of rawProgrammes) {
-      const portfolioId = normalizeLookupId(prog._pm_portfolio_value)
-      if (portfolioId && portfolioMap.has(portfolioId)) {
-        prog.pm_portfolioname = portfolioMap.get(portfolioId)!.pm_portfolioname
-      }
-    }
-
-    for (const proj of projects) {
-      const programmeId = normalizeLookupId(proj._pm_programme_value)
-      const portfolioId = normalizeLookupId(proj._pm_portfolio_value)
-
-      if (programmeId && programmeMap.has(programmeId)) {
-        const prog = programmeMap.get(programmeId)!
-        proj.pm_programmename = prog.pm_programmename
-      }
-
-      if (portfolioId && portfolioMap.has(portfolioId)) {
-        const port = portfolioMap.get(portfolioId)!
-        proj.pm_portfolioname = port.pm_portfolioname
-      }
-    }
-
-    // 2. Perform Virtual Financial Aggregation for the hierarchy view
-    // We will iterate through Portfolios and sum up their child Projects' financials
-    const updatedPortfolios = rawPortfolios.map(port => {
-      const portId = normalizeLookupId(port.pm_portfolioid)
-      const childProjects = projects.filter(p => normalizeLookupId(p._pm_portfolio_value) === portId)
-
-      if (childProjects.length > 0) {
-        const aggregates = aggregateFinancials(childProjects, 'pm_approvedbudget', 'pm_actualcost')
-        // Only override if the original record has 0/null to avoid confusing manual entries, 
-        // OR provide them as the source of truth for the dashboard.
-        // Let's use the aggregated values for the UI consistency.
         return {
-          ...port,
-          pm_approvedbudgeteur: aggregates.budget > 0 ? aggregates.budget : port.pm_approvedbudgeteur,
-          pm_actualspendeur: aggregates.actual > 0 ? aggregates.actual : port.pm_actualspendeur,
+            portfolios: updatedPortfolios,
+            programmes: updatedProgrammes,
+            projects: projects,
         }
-      }
-      return port
-    })
-
-    const updatedProgrammes = rawProgrammes.map(prog => prog)
-
-    return {
-      portfolios: updatedPortfolios,
-      programmes: updatedProgrammes,
-      projects: projects,
+    } catch (err) {
+        console.error('[PortfolioService] fetchPortfolioHierarchy exception:', err)
+        return { portfolios: [], programmes: [], projects: [] }
     }
-  } catch (err) {
-    console.error('[PortfolioService] fetchPortfolioHierarchy exception:', err)
-    return { portfolios: [], programmes: [], projects: [] }
-  }
 }
 
 export async function updatePortfolio(id: string, changes: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
-  const normalizedId = normalizeLookupId(id)
-  if (!normalizedId) return null
+    const normalizedId = normalizeLookupId(id)
+    if (!normalizedId) return null
 
-  const cleanPayload: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(changes)) {
-    if (value !== undefined && value !== null && key !== 'pm_portfolioid') {
-      if (key === 'pm_ownerlookup') {
-        cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
-      } else {
-        cleanPayload[key] = value
-      }
-    }
-  }
-
-  let original: PortfolioModel | null = null
-  try {
-    const details = await Pm_portfoliosService.get(normalizedId, {
-      select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit'],
-    })
-    if (details.success) {
-      const uItem = unwrapSingle<Pm_portfolios>(details)
-      if (uItem) original = mapPortfolio(uItem)
-    }
-  } catch (e) {
-    console.error('[PortfolioService] fetch original details failed:', e)
-  }
-
-  try {
-    const result = await Pm_portfoliosService.update(normalizedId, cleanPayload as any)
-    if (!result.success) {
-      console.error('[PortfolioService] updatePortfolio failed:', result.error)
-      return null
-    }
-
-    // Log audit entries for changed fields
-    if (original) {
-      const formatVal = (val: unknown): string => {
-        if (val === undefined || val === null) return ''
-        if (typeof val === 'object') return JSON.stringify(val)
-        return String(val)
-      }
-
-      for (const [key, value] of Object.entries(changes)) {
-        if (key === 'pm_portfolioid') continue
-        const oldVal = (original as any)[key]
-        if (formatVal(oldVal) !== formatVal(value)) {
-          const isStatus = key === 'pm_portfoliostatus' || key === 'statuscode' || key === 'statecode'
-          writeAuditLog({
-            actionType: isStatus ? 'StatusChange' : 'Update',
-            entityName: 'pm_portfolios',
-            recordId: normalizedId,
-            recordName: original.pm_portfolioname || '',
-            fieldName: key,
-            oldValue: formatVal(oldVal),
-            newValue: formatVal(value)
-          })
+    const cleanPayload: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(changes)) {
+        if (value !== undefined && value !== null && key !== 'pm_portfolioid' && key !== 'pm_createdon') {
+            if (key === 'pm_ownerlookup') {
+                cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
+            } else {
+                cleanPayload[key] = value
+            }
         }
-      }
     }
 
-    // ALWAYS fetch fresh full details after update
-    const fresh = await Pm_portfoliosService.get(normalizedId, {
-      select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'pm_createdon'],
-    })
-    if (!fresh.success) {
-      console.error('[PortfolioService] fetch updated details failed:', fresh.error)
-      return null
+    let original: PortfolioModel | null = null
+    try {
+        const details = await Pm_portfoliosService.get(normalizedId, {
+            select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit'],
+        })
+        if (details.success) {
+            const uItem = unwrapSingle<Pm_portfolios>(details)
+            if (uItem) original = mapPortfolio(uItem)
+        }
+    } catch (e) {
+        console.error('[PortfolioService] fetch original details failed:', e)
     }
-    const item = unwrapSingle<Pm_portfolios>(fresh)
-    return item ? mapPortfolio(item) : null
-  } catch (err) {
-    console.error('[PortfolioService] updatePortfolio exception:', err)
-    throw err
-  }
+
+    try {
+        const result = await Pm_portfoliosService.update(normalizedId, cleanPayload as any)
+        if (!result.success) {
+            console.error('[PortfolioService] updatePortfolio failed:', result.error)
+            return null
+        }
+
+        // Log audit entries for changed fields
+        if (original) {
+            const formatVal = (val: unknown): string => {
+                if (val === undefined || val === null) return ''
+                if (typeof val === 'object') return JSON.stringify(val)
+                return String(val)
+            }
+
+            for (const [key, value] of Object.entries(changes)) {
+                if (key === 'pm_portfolioid') continue
+                const oldVal = (original as any)[key]
+                if (formatVal(oldVal) !== formatVal(value)) {
+                    const isStatus = key === 'pm_portfoliostatus' || key === 'statuscode' || key === 'statecode'
+                    writeAuditLog({
+                        actionType: isStatus ? 'StatusChange' : 'Update',
+                        entityName: 'pm_portfolios',
+                        recordId: normalizedId,
+                        recordName: original.pm_portfolioname || '',
+                        fieldName: key,
+                        oldValue: formatVal(oldVal),
+                        newValue: formatVal(value)
+                    })
+                }
+            }
+        }
+
+        // ALWAYS fetch fresh full details after update
+        const fresh = await Pm_portfoliosService.get(normalizedId, {
+            select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'pm_createdon'],
+        })
+        if (!fresh.success) {
+            console.error('[PortfolioService] fetch updated details failed:', fresh.error)
+            return null
+        }
+        const item = unwrapSingle<Pm_portfolios>(fresh)
+        return item ? mapPortfolio(item) : null
+    } catch (err) {
+        console.error('[PortfolioService] updatePortfolio exception:', err)
+        throw err
+    }
 }
 
 export async function updatePortfolioStatus(id: string, status: number): Promise<void> {
-  let recordName = id
-  let oldStatusStr = ''
-  try {
-    const details = await Pm_portfoliosService.get(id, { select: ['pm_portfolioname', 'pm_portfoliostatus'] })
-    if (details.success) {
-      const item = unwrapSingle<Pm_portfolios>(details)
-      if (item) {
-        if (item.pm_portfolioname) recordName = item.pm_portfolioname
-        oldStatusStr = String(item.pm_portfoliostatus ?? '')
-      }
-    }
-  } catch (e) {
-    console.error('[PortfolioService] fetch status details failed:', e)
-  }
-
-  try {
-    const updateRes = await Pm_portfoliosService.update(id, { pm_portfoliostatus: status } as any)
-    if (!updateRes.success) {
-      console.error('[PortfolioService] updatePortfolioStatus failed:', updateRes.error)
-      throw new Error(`Failed to update status to ${status}`)
+    let recordName = id
+    let oldStatusStr = ''
+    try {
+        const details = await Pm_portfoliosService.get(id, { select: ['pm_portfolioname', 'pm_portfoliostatus'] })
+        if (details.success) {
+            const item = unwrapSingle<Pm_portfolios>(details)
+            if (item) {
+                if (item.pm_portfolioname) recordName = item.pm_portfolioname
+                oldStatusStr = String(item.pm_portfoliostatus ?? '')
+            }
+        }
+    } catch (e) {
+        console.error('[PortfolioService] fetch status details failed:', e)
     }
 
-    writeAuditLog({
-      actionType: 'StatusChange',
-      entityName: 'pm_portfolios',
-      recordId: id,
-      recordName: recordName,
-      fieldName: 'pm_portfoliostatus',
-      oldValue: oldStatusStr,
-      newValue: String(status)
-    })
-  } catch (err) {
-    console.error('[PortfolioService] updatePortfolioStatus exception:', err)
-    throw err
-  }
+    try {
+        const updateRes = await Pm_portfoliosService.update(id, { pm_portfoliostatus: status } as any)
+        if (!updateRes.success) {
+            console.error('[PortfolioService] updatePortfolioStatus failed:', updateRes.error)
+            throw new Error(`Failed to update status to ${status}`)
+        }
+
+        writeAuditLog({
+            actionType: 'StatusChange',
+            entityName: 'pm_portfolios',
+            recordId: id,
+            recordName: recordName,
+            fieldName: 'pm_portfoliostatus',
+            oldValue: oldStatusStr,
+            newValue: String(status)
+        })
+    } catch (err) {
+        console.error('[PortfolioService] updatePortfolioStatus exception:', err)
+        throw err
+    }
 }
 
 export async function deletePortfolio(id: string): Promise<void> {
-  let recordName = id
-  try {
-    const details = await Pm_portfoliosService.get(id, { select: ['pm_portfolioname'] })
-    if (details.success) {
-      const item = unwrapSingle<Pm_portfolios>(details)
-      if (item?.pm_portfolioname) recordName = item.pm_portfolioname
+    let recordName = id
+    try {
+        const details = await Pm_portfoliosService.get(id, { select: ['pm_portfolioname'] })
+        if (details.success) {
+            const item = unwrapSingle<Pm_portfolios>(details)
+            if (item?.pm_portfolioname) recordName = item.pm_portfolioname
+        }
+    } catch (e) {
+        console.error('[PortfolioService] fetch delete name failed:', e)
     }
-  } catch (e) {
-    console.error('[PortfolioService] fetch delete name failed:', e)
-  }
 
-  try {
-    await Pm_portfoliosService.delete(id)
-    writeAuditLog({
-      actionType: 'Update',
-      entityName: 'pm_portfolios',
-      recordId: id,
-      recordName: recordName,
-      fieldName: 'deleted',
-      oldValue: 'Active',
-      newValue: 'Deleted'
-    })
-  } catch (err) {
-    console.error('[PortfolioService] deletePortfolio exception:', err)
-    throw err
-  }
+    try {
+        await Pm_portfoliosService.delete(id)
+        writeAuditLog({
+            actionType: 'Update',
+            entityName: 'pm_portfolios',
+            recordId: id,
+            recordName: recordName,
+            fieldName: 'deleted',
+            oldValue: 'Active',
+            newValue: 'Deleted'
+        })
+    } catch (err) {
+        console.error('[PortfolioService] deletePortfolio exception:', err)
+        throw err
+    }
 }
 
 export async function createPortfolio(payload: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
-  const cleanPayload: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null) {
-      if (key === 'pm_ownerlookup') {
-        cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
-      } else {
-        cleanPayload[key] = value
-      }
+    const cleanPayload: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(payload)) {
+        if (value !== undefined && value !== null && key !== 'pm_createdon') {
+            if (key === 'pm_ownerlookup') {
+                cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
+            } else {
+                cleanPayload[key] = value
+            }
+        }
     }
-  }
-  const defaults: Record<string, unknown> = {
-    statecode: 0,
-    statuscode: 1,
-  }
-  try {
-    const result = await Pm_portfoliosService.create({ ...defaults, ...cleanPayload } as any)
-    if (!result.success) {
-      console.error('[PortfolioService] createPortfolio failed:', result.error)
-      return null
+    const defaults: Record<string, unknown> = {
+        statecode: 0,
+        statuscode: 1,
     }
-    const item = unwrapSingle<Pm_portfolios>(result)
-    if (item) {
-      if (item.pm_portfolioid) {
-        writeAuditLog({
-          actionType: 'Create',
-          entityName: 'pm_portfolios',
-          recordId: item.pm_portfolioid,
-          recordName: item.pm_portfolioname || '',
-          newValue: `Portfolio created: ${item.pm_portfolioname || ''}`
-        })
-      }
-      return mapPortfolio(item)
-    }
-    return null
-  } catch (err: any) {
     try {
-      console.error('[PortfolioService] createPortfolio API call failed:', err?.message || err, '| payload:', JSON.stringify(cleanPayload))
-    } catch {
-      console.error('[PortfolioService] createPortfolio API call failed (unable to serialize):', err)
+        const result = await Pm_portfoliosService.create({ ...defaults, ...cleanPayload } as any)
+        if (!result.success) {
+            console.error('[PortfolioService] createPortfolio failed:', result.error)
+            return null
+        }
+        const item = unwrapSingle<Pm_portfolios>(result)
+        if (item) {
+            if (item.pm_portfolioid) {
+                writeAuditLog({
+                    actionType: 'Create',
+                    entityName: 'pm_portfolios',
+                    recordId: item.pm_portfolioid,
+                    recordName: item.pm_portfolioname || '',
+                    newValue: `Portfolio created: ${item.pm_portfolioname || ''}`
+                })
+            }
+            return mapPortfolio(item)
+        }
+        return null
+    } catch (err: any) {
+        try {
+            console.error('[PortfolioService] createPortfolio API call failed:', err?.message || err, '| payload:', JSON.stringify(cleanPayload))
+        } catch {
+            console.error('[PortfolioService] createPortfolio API call failed (unable to serialize):', err)
+        }
+        throw err
     }
-    throw err
-  }
 }
 

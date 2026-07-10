@@ -40,7 +40,7 @@ export async function fetchApprovalRequests(): Promise<ApprovalRequestModel[]> {
         'pm_entityid',
         'pm_requestorname',
       ],
-      orderBy: ['pm_requesttitle asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     }
     const result = await Pm_projectapprovalrequestsService.getAll(options)

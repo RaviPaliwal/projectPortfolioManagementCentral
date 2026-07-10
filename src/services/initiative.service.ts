@@ -46,7 +46,7 @@ export const mapInitiative = (item: Pm_initiatives): InitiativeModel => {
 export async function fetchInitiatives(status?: number): Promise<InitiativeModel[]> {
   try {
     const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', '_pm_portfolio_value', 'pm_initiativetype', 'pm_convertedtoreference']
-    const options: IGetAllOptions = { select, orderBy: ['pm_initiativename asc'], top: 200 }
+    const options: IGetAllOptions = { select, orderBy: ['createdon desc'], top: 200 }
     if (typeof status === 'number') options.filter = `pm_pipelinestatus eq ${status}`
     const result = await Pm_initiativesService.getAll(options)
     if (!result.success) {
@@ -373,7 +373,7 @@ export async function convertInitiativeToProject(initiative: InitiativeModel): P
 export async function createInitiative(payload: Partial<InitiativeModel>): Promise<InitiativeModel | null> {
   const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(payload)) {
-    if (value !== undefined && value !== null && !key.startsWith('_') && key !== 'pm_initiativeid') {
+    if (value !== undefined && value !== null && !key.startsWith('_') && key !== 'pm_initiativeid' && key !== 'createdon') {
       cleanPayload[key] = value
     }
   }
@@ -429,7 +429,7 @@ export async function updateInitiative(id: string, changes: Partial<InitiativeMo
   try {
     const cleanChanges: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(changes)) {
-      if (value !== undefined && !key.startsWith('_') && key !== 'pm_initiativeid') {
+      if (value !== undefined && !key.startsWith('_') && key !== 'pm_initiativeid' && key !== 'createdon') {
         if (key === 'pm_name') {
           cleanChanges.pm_initiativename = value
         } else if (key === 'pm_businesscase') {

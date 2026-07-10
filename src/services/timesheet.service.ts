@@ -67,7 +67,7 @@ export async function fetchTimesheets(resourceId?: string): Promise<TimesheetMod
     ]
     const options: IGetAllOptions = {
       select: selectFields,
-      orderBy: ['pm_periodenddate desc', 'pm_timesheetname asc'],
+      orderBy: ['createdon desc'],
       top: 500
     }
     const filters = ["statecode eq 0"]

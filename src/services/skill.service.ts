@@ -43,7 +43,7 @@ export async function fetchSkills(): Promise<SkillModel[]> {
   try {
     const options: IGetAllOptions = {
       select: ['pm_skillid', 'pm_skillname', 'pm_skillcategory', 'pm_skilldescription', 'pm_isactive'],
-      orderBy: ['pm_skillname asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     }
     const result = await Pm_skillsService.getAll(options)

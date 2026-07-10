@@ -68,7 +68,9 @@ export const ProjectGovernanceTab: React.FC<ProjectGovernanceTabProps> = ({
 
       {gateReviews.length > 0 ? (
         <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Gate Reviews ({gateReviews.length})</Typography>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <HowToRegIcon sx={{ fontSize: 20, color: 'success.main' }} /> Gate Reviews ({gateReviews.length})
+          </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {gateReviews.map((g) => (
               <Paper

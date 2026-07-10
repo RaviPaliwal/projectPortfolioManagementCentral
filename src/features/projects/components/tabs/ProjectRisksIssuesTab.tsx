@@ -361,8 +361,8 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({
       {/* ── SECTION 1: ORIGINAL STYLE RISK GRID ── */}
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <BugReportIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Project Risks
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <BugReportIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Project Risks
           </Typography>
           {onLogRisk && (
             <Button size="small" variant="outlined" color="error" startIcon={<BugReportIcon />} onClick={onLogRisk}>
@@ -394,8 +394,8 @@ export const ProjectRisksIssuesTab: React.FC<ProjectRisksIssuesTabProps> = ({
       {/* ── SECTION 2: ORIGINAL STYLE ISSUES GRID ── */}
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <WarningAmberIcon sx={{ fontSize: 18, color: 'warning.main' }} /> Project Issues
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <WarningAmberIcon sx={{ fontSize: 20, color: 'warning.main' }} /> Project Issues
           </Typography>
           {onLogIssue && (
             <Button size="small" variant="outlined" color="warning" startIcon={<WarningAmberIcon />} onClick={onLogIssue}>

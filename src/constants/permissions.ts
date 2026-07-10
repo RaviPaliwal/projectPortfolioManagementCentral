@@ -31,7 +31,7 @@ export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
   ],
   PortfolioExecutive: [
     'dashboard', 'aiagent', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
-    'gatereviews', 'benefits', 'changerequests', 'statussnapshots', 'calendar'
+    'gatereviews', 'benefits', 'changerequests', 'statussnapshots', 'calendar', 'tasks'
   ],
   PMO: [
     'dashboard', 'aiagent', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
@@ -43,7 +43,7 @@ export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
     'risks', 'issues', 'changerequests', 'tasks', 'statussnapshots', 'calendar'
   ],
   FinancialController: [
-    'dashboard', 'aiagent', 'projects', 'budgets', 'cashflow', 'fundingsources', 'calendar'
+    'dashboard', 'aiagent', 'projects', 'budgets', 'cashflow', 'fundingsources', 'calendar', 'tasks'
   ],
   Planner: [
     'dashboard', 'aiagent', 'projects', 'tasks', 'calendar'

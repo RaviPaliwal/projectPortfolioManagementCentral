@@ -377,8 +377,8 @@ export const EntityDocumentsTab = forwardRef<EntityDocumentsTabRef, EntityDocume
       <Box sx={{ flex: 1 }}>
         {!hideUploadIfNotEmpty && (
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              Documents ({documents.length})
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1.5, mt: 1.5, mb: 1.5 }}>
+              <InsertDriveFileIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Documents ({documents.length})
             </Typography>
           </Box>
         )}

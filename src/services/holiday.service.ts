@@ -16,6 +16,7 @@ export async function fetchHolidays(year?: number): Promise<HolidayModel[]> {
     const options: IGetAllOptions = {
       select: ['pm_holidayid', 'pm_holidayname', 'pm_holidaydate', 'pm_country', 'pm_year'],
       filter: 'statecode eq 0',
+      orderBy: ['createdon desc'],
       top: 500
     }
     if (year) {

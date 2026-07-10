@@ -37,6 +37,7 @@ export interface ProgrammeModel {
   pm_budgeteur?: number
   pm_actualspendeur?: number
   pm_businessunit?: string
+  createdon?: string
 }
 
 export interface RiskModel {
@@ -120,6 +121,7 @@ export interface ProjectModel {
   pm_benefitsragstatus?: RagStatusCode
   pm_isactive?: boolean
   pm_projectpriority?: number
+  createdon?: string
 }
 
 export interface InitiativeModel {
@@ -142,6 +144,7 @@ export interface InitiativeModel {
   _pm_portfolio_value?: string
   pm_decisiondate?: string
   pm_convertedtoreference?: string
+  createdon?: string
 }
 
 export interface ProjectTaskModel {

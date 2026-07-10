@@ -17,6 +17,7 @@ export interface KpiCardRowProps {
   items: KpiCardItem[]
   loading?: boolean
   variant?: 'standard' | 'compact'
+  mb?: number | string
 }
 
 const getDeterministicTrend = (label: string) => {
@@ -36,7 +37,7 @@ const getDeterministicTrend = (label: string) => {
   return { value: '+5.4%', isPositive: true }
 }
 
-export const KpiCardRow: React.FC<KpiCardRowProps> = ({ items, loading, variant = 'standard' }) => {
+export const KpiCardRow: React.FC<KpiCardRowProps> = ({ items, loading, variant = 'standard', mb }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
   const count = items.length
@@ -68,6 +69,7 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({ items, loading, variant 
     if (theme.palette[colorStr as keyof typeof theme.palette]) {
       const p = theme.palette[colorStr as keyof typeof theme.palette] as any
       if (p && p.main) return p.main
+      return colorStr
     }
 
     return colorStr
@@ -78,7 +80,7 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({ items, loading, variant 
       container
       spacing={isCompact ? 1.75 : 2.5}
       sx={{
-        mb: isCompact ? 2.5 : 4,
+        mb: mb !== undefined ? mb : (isCompact ? 2.5 : 4),
         flexWrap: { xs: 'wrap', md: 'nowrap' }
       }}
     >

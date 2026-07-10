@@ -26,7 +26,7 @@ import ViewWeekIcon from '@mui/icons-material/ViewWeek'
 import ListIcon from '@mui/icons-material/List'
 import EditIcon from '@mui/icons-material/Edit'
 import SchemaIcon from '@mui/icons-material/Schema'
-import { StatusChip, StatusTag, MetricTile } from '@/components/common'
+import { StatusChip, StatusTag, KpiCardRow } from '@/components/common'
 import GanttChart from '@/components/common/GanttChart/GanttChart'
 import { WbsBuilder } from './WbsBuilder'
 import { DependencyNetwork } from './DependencyNetwork'
@@ -34,25 +34,31 @@ import type { ProjectMilestoneModel, ProjectTaskModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 
 interface ProjectScheduleTabProps {
+  projectId?: string
   milestones: ProjectMilestoneModel[]
   tasks: ProjectTaskModel[]
   onEditMilestone?: (milestone: ProjectMilestoneModel) => void
   onEditTask?: (task: ProjectTaskModel) => void
+  onDeleteMilestone?: (milestoneId: string) => Promise<void>
   canEdit?: boolean
   onRefresh?: () => void
   onSuccess?: (msg: string) => void
-  onError?: (msg: string) => void
+  onError?: (err: any) => void
+  onAddMilestone?: () => void
 }
 
 export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ 
+  projectId,
   milestones, 
   tasks, 
   onEditMilestone, 
   onEditTask,
+  onDeleteMilestone,
   canEdit = false,
   onRefresh,
   onSuccess,
   onError,
+  onAddMilestone,
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -120,14 +126,13 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
         rag: m.pm_ragstatus,
         mType: m.pm_milestonetype,
         status: m.pm_status,
-        resource: m.pm_responsible,
+        resource: undefined,
         onCriticalPath: false,
       })),
       ...filteredTasks.map(t => ({
         id: t.pm_projecttaskid,
         name: t.pm_taskname,
-        date: t.pm_plannedstartdate,
-        endDate: t.pm_plannedenddate,
+        date: t.pm_plannedenddate,
         type: 'task' as const,
         status: t.pm_taskstatus,
         progress: t.pm_percentcomplete,
@@ -142,23 +147,46 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
     })
   }, [milestones, tasks, showCriticalPathOnly])
 
+  const kpiItems = useMemo(() => [
+    {
+      label: 'Total Tasks',
+      value: String(stats.total),
+      subtitle: 'Tasks in schedule',
+      icon: <AssignmentIcon />,
+      color: 'primary.main',
+    },
+    {
+      label: 'Avg. Progress',
+      value: `${stats.avgProgress}%`,
+      subtitle: 'Average completion %',
+      icon: <ViewWeekIcon />,
+      color: 'info.main',
+    },
+    {
+      label: 'Milestones',
+      value: String(milestones.length),
+      subtitle: 'Defined checkpoints',
+      icon: <FlagIcon />,
+      color: 'warning.main',
+    },
+    {
+      label: 'Completed',
+      value: String(stats.completed),
+      subtitle: 'Finished tasks',
+      icon: <AssignmentIcon />,
+      color: 'success.main',
+    }
+  ], [stats, milestones])
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* ── Schedule Stats ── */}
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile label="Total Tasks" value={stats.total} icon={<AssignmentIcon />} color="primary.main" />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile label="Avg. Progress" value={`${stats.avgProgress}%`} icon={<ViewWeekIcon />} color="info.main" />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile label="Milestones" value={milestones.length} icon={<FlagIcon />} color="warning.main" />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile label="Completed" value={stats.completed} icon={<AssignmentIcon />} color="success.main" />
-        </Grid>
-      </Grid>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5, mb: 0.5 }}>
+        <FlagIcon sx={{ fontSize: 20, color: 'success.main' }} /> Project Schedule
+      </Typography>
+
+      <Box>
+        <KpiCardRow items={kpiItems} mb={0} />
+      </Box>
 
       {/* ── View Toggle ── */}
       <Paper sx={{ overflow: 'hidden' }}>

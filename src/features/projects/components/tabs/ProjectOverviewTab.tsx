@@ -19,6 +19,9 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import BugReportIcon from '@mui/icons-material/BugReport'
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
 import ShieldAlertIcon from '@mui/icons-material/Security'
+import ShieldIcon from '@mui/icons-material/Shield'
+import HowToRegIcon from '@mui/icons-material/HowToReg'
+import AnalyticsIcon from '@mui/icons-material/Analytics'
 
 import type { ProjectModel, ProjectMilestoneModel, ProjectTaskModel, RiskModel, IssueModel, BenefitModel } from '@/types/dataverse'
 import { phaseLabel, currency } from '../../constants'
@@ -151,6 +154,10 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1.5, mt: 1.5, mb: 1 }}>
+        <AnalyticsIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Project Overview
+      </Typography>
+
       {/* ── KPI Row ── */}
       <Box sx={{ mb: -2.5 }}>
         <KpiCardRow items={kpiItems} />
@@ -167,8 +174,8 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
               <Box sx={{ position: 'absolute', right: -20, top: -20, opacity: 0.03 }}>
                 <DescriptionIcon sx={{ fontSize: 160 }} />
               </Box>
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <LightbulbIcon sx={{ color: 'warning.main' }} /> Executive Summary
+              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <LightbulbIcon sx={{ fontSize: 20, color: 'warning.main' }} /> Executive Summary
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8, mb: 3, fontSize: '0.92rem' }}>
                 <strong>{project.pm_projectname}</strong> is currently in the **{phaseLabel(project.pm_projectphase)}** stage. This project is structured to achieve strategic corporate goals, delivering direct value for the **{project.pm_businessunit || 'General'}** division. Under active tracking of delivery timelines and resource allocations, current progress is logged at **{taskStats.avgProgress}%**.
@@ -206,8 +213,8 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
 
             {/* Financial Burn Card */}
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5 }}>
-                <AttachMoneyIcon color="primary" /> Financial Burn & Budget Status
+              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1.5, color: 'text.primary' }}>
+                <AttachMoneyIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Financial Burn & Budget Status
               </Typography>
               
               <Box sx={{ mb: 2.5 }}>
@@ -258,8 +265,8 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
 
             {/* Delivery & Milestones Progress */}
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5 }}>
-                <AssignmentTurnedInIcon color="success" /> Delivery Progress & Milestones
+              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1.5, color: 'text.primary' }}>
+                <AssignmentTurnedInIcon sx={{ fontSize: 20, color: 'success.main' }} /> Delivery Progress & Milestones
               </Typography>
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -315,8 +322,8 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
             
             {/* Strategic RAG Risk Check */}
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2.5, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5 }}>
-                Risk Check Indicators
+              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, mb: 2.5, display: 'flex', alignItems: 'center', gap: 1.5, color: 'text.primary' }}>
+                <ShieldIcon sx={{ fontSize: 20, color: 'error.main' }} /> Risk Check Indicators
               </Typography>
               
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -362,8 +369,8 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
 
             {/* Risk & Issue Density Card */}
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.5 }}>
-                <ShieldAlertIcon color="error" /> Risk & Issue density
+              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1.5, color: 'text.primary' }}>
+                <BugReportIcon sx={{ fontSize: 20, color: 'error.main' }} /> Risk & Issue Density
               </Typography>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 6 }}>
@@ -393,8 +400,8 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
 
             {/* Ownership & Metadata */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, px: 0.5, textTransform: 'uppercase', letterSpacing: 1, color: 'text.secondary' }}>
-                Governance & Metadata
+              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, px: 0.5, mb: 2, display: 'flex', alignItems: 'center', gap: 1.5, color: 'text.primary' }}>
+                <HowToRegIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Governance & Metadata
               </Typography>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Phase</Typography>

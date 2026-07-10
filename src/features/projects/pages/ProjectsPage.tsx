@@ -261,6 +261,7 @@ export default function ProjectsPage() {
       pm_scheduleragstatus: form.pm_scheduleragstatus != null ? Number(form.pm_scheduleragstatus) : undefined,
       pm_benefitsragstatus: form.pm_benefitsragstatus != null ? Number(form.pm_benefitsragstatus) : undefined,
       pm_projectphase: form.pm_projectphase != null ? Number(form.pm_projectphase) : undefined,
+      pm_projectpriority: form.pm_projectpriority != null ? Number(form.pm_projectpriority) : undefined,
     }
 
     setIsSavingProject(true)
@@ -271,9 +272,11 @@ export default function ProjectsPage() {
         try {
           await updateProject(targetId, sanitizedForm)
         } catch (err) {
-          // updateProject can throw even when the Dataverse update itself succeeded
-          // (e.g. the follow-up fetchProjectDetails fails). We still update the UI
-          // optimistically and let the background loadData() reconcile with the server.
+          console.error('[ProjectsPage] Failed to save project to server:', err)
+          setError(err instanceof Error ? err.message : 'Failed to update project on the server.')
+          setTimeout(() => setError(null), 5000)
+          setIsSavingProject(false)
+          return
         }
         
         setSuccessMsg('Project updated successfully.')

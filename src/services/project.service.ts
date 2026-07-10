@@ -48,6 +48,7 @@ export const mapProject = (item: Pm_projects): ProjectModel => {
         pm_costragstatus: item.pm_costragstatus,
         pm_scheduleragstatus: item.pm_scheduleragstatus,
         pm_benefitsragstatus: item.pm_benefitsragstatus,
+        createdon: (item as any).createdon,
     }
     return applySecurityMasking(mapped, 'project')
 }
@@ -109,10 +110,12 @@ export async function fetchMyActiveProjects(): Promise<ProjectModel[]> {
         'pm_costragstatus',
         'pm_scheduleragstatus',
         'pm_benefitsragstatus',
+        'pm_projectpriority',
+        'createdon',
     ]
     const options = {
         select: selectFields,
-        orderBy: ['pm_projectname asc'],
+        orderBy: ['createdon desc'],
         top: 50,
     }
     const activeResult = await Pm_projectsService.getAll({ ...options, filter: 'statecode eq 0' })
@@ -191,8 +194,10 @@ export async function fetchProjectsFull(): Promise<ProjectModel[]> {
             'pm_approvedbudget', 'pm_actualcost',
             'pm_percentcomplete', 'pm_businessunit', 'pm_projectsponsor',
             'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus',
+            'pm_projectpriority',
+            'createdon',
         ],
-        orderBy: ['pm_projectname asc'],
+        orderBy: ['createdon desc'],
         top: 500,
     })
     let projects = unwrapList<Pm_projects>(result).map(mapProject)
@@ -207,8 +212,10 @@ export async function fetchProjectsFull(): Promise<ProjectModel[]> {
                 'pm_approvedbudget', 'pm_actualcost',
                 'pm_percentcomplete', 'pm_businessunit', 'pm_projectsponsor',
                 'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus',
+                'pm_projectpriority',
+                'createdon',
             ],
-            orderBy: ['pm_projectname asc'],
+            orderBy: ['createdon desc'],
             top: 500,
         })
         projects = unwrapList<Pm_projects>(fallbackResult).map(mapProject)
@@ -285,11 +292,11 @@ export async function generateNextProjectCode(): Promise<string> {
 
 export async function createProject(payload: Partial<ProjectModel>): Promise<ProjectModel | null> {
     const cleanPayload: Record<string, any> = {}
-    const exclude = ['_pm_portfolio_value', '_pm_programme_value', 'pm_projectmanager', 'pm_projectid']
+    const exclude = ['_pm_portfolio_value', '_pm_programme_value', 'pm_projectmanager', 'pm_projectid', 'createdon']
     for (const [key, value] of Object.entries(payload)) {
         if (value !== undefined && value !== null && value !== '' && !exclude.includes(key)) {
             let parsedValue = value
-            if (['pm_ragstatus', 'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus', 'pm_projectphase'].includes(key)) {
+            if (['pm_ragstatus', 'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus', 'pm_projectphase', 'pm_projectpriority'].includes(key)) {
                 parsedValue = Number(value)
             }
             cleanPayload[key] = parsedValue
@@ -353,13 +360,14 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
         'pm_projectmanagername',
         'pm_portfolioname',
         'pm_programmename',
+        'createdon',
     ]
 
     for (const [key, value] of Object.entries(changes)) {
         if (value !== undefined && value !== null && !exclude.includes(key)) {
             if (hasChanged(key, value)) {
                 let parsedValue = value
-                if (['pm_ragstatus', 'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus', 'pm_projectphase'].includes(key)) {
+                if (['pm_ragstatus', 'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus', 'pm_projectphase', 'pm_projectpriority'].includes(key)) {
                     parsedValue = Number(value)
                 }
                 cleanPayload[key] = parsedValue
@@ -394,6 +402,10 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
 
     try {
         const result = await Pm_projectsService.update(normalizedId, cleanPayload as any)
+        if (!result.success) {
+            console.error('[updateProject] ❌ updateProject failed:', result.error)
+            throw new Error(result.error?.message || 'Failed to update project in Dataverse')
+        }
 
         // Log audit entries for changed fields
         if (original) {

@@ -309,7 +309,7 @@ export async function fetchAllRisks(): Promise<RiskModel[]> {
     ]
     const options: IGetAllOptions = {
       select: selectFields,
-      orderBy: ['pm_risktitle asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     }
     const result = await Pm_risksService.getAll({ ...options, filter: 'statecode eq 0' })
@@ -370,7 +370,7 @@ export async function fetchRisksForSystemUser(systemUserId: string): Promise<Ris
     const result = await Pm_risksService.getAll({
       filter: filterStr,
       select: selectFields,
-      orderBy: ['pm_risktitle asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     })
     if (!result.success) {
@@ -648,7 +648,7 @@ export async function fetchIssuesForSystemUser(systemUserId: string): Promise<Is
     const result = await Pm_issuesService.getAll({
       filter: `_pm_issueowner_value eq '${resourceId}' and statecode eq 0`,
       select: selectFields,
-      orderBy: ['pm_dateraised desc'],
+      orderBy: ['createdon desc'],
       top: 500,
     })
     if (!result.success) {
@@ -676,7 +676,7 @@ export async function fetchAllIssues(): Promise<IssueModel[]> {
     ]
     const options: IGetAllOptions = {
       select: selectFields,
-      orderBy: ['pm_dateraised desc'],
+      orderBy: ['createdon desc'],
       top: 500,
     }
     const result = await Pm_issuesService.getAll({ ...options, filter: 'statecode eq 0' })

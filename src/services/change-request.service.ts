@@ -66,7 +66,7 @@ export async function fetchChangeRequests(): Promise<ChangeRequestModel[]> {
     ]
     const options: IGetAllOptions = {
       select: selectFields,
-      orderBy: ['pm_submissiondate desc', 'pm_changerequesttitle asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     }
     const result = await Pm_changerequestsService.getAll({ ...options, filter: "statecode eq 0" })

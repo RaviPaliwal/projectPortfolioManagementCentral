@@ -112,7 +112,7 @@ export async function fetchWorkflows(): Promise<WorkflowModel[]> {
         'pm_module', 'pm_version', 'pm_isactive',
         'statecode', 'statuscode',
       ],
-      orderBy: ['pm_workflowname asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     })
     if (!result.success) {
@@ -433,7 +433,7 @@ export async function fetchWorkflowInstances(): Promise<WorkflowInstanceModel[]>
         'pm_currentstep',
         '_pm_workflowlookup_value', '_pm_initiatedbylookup_value',
       ],
-      orderBy: ['pm_startdate desc'],
+      orderBy: ['createdon desc'],
       top: 500,
     })
     if (!result.success) {
@@ -857,7 +857,7 @@ export async function fetchPendingWorkflowApprovals(
         'pm_duedate', 'pm_isparallelstep',
         '_pm_workflowinstancelookup_value', '_pm_workflowtemplate_value',
       ],
-      orderBy: ['pm_duedate asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     })
     if (!allPendingResult.success) {

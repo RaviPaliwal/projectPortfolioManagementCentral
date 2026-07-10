@@ -248,8 +248,8 @@ export default function ProgrammesPage() {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
-  type SortField = 'name' | 'phase' | 'rag' | 'sponsor' | 'manager' | 'portfolio' | 'budget' | 'actual' | 'variance' | 'bizunit'
-  const [sort, setSort] = useState<{ field: SortField; dir: 'asc' | 'desc' }>({ field: 'name', dir: 'asc' })
+  type SortField = 'name' | 'phase' | 'rag' | 'sponsor' | 'manager' | 'portfolio' | 'budget' | 'actual' | 'variance' | 'bizunit' | 'createdon'
+  const [sort, setSort] = useState<{ field: SortField; dir: 'asc' | 'desc' }>({ field: 'createdon', dir: 'desc' })
 
   // ── Detail View State ──────────────────────────────────────────────────────
   const [selectedProgrammeId, setSelectedProgrammeId] = useState<string | null>(null)
@@ -431,6 +431,7 @@ export default function ProgrammesPage() {
         case 'budget': cmp = (a.pm_budgeteur ?? 0) - (b.pm_budgeteur ?? 0); break
         case 'actual': cmp = (a.pm_actualspendeur ?? 0) - (b.pm_actualspendeur ?? 0); break
         case 'variance': cmp = ((a.pm_budgeteur ?? 0) - (a.pm_actualspendeur ?? 0)) - ((b.pm_budgeteur ?? 0) - (b.pm_actualspendeur ?? 0)); break
+        case 'createdon': cmp = new Date(a.createdon ?? 0).getTime() - new Date(b.createdon ?? 0).getTime(); break
       }
       return sort.dir === 'asc' ? cmp : -cmp
     })

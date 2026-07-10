@@ -58,7 +58,7 @@ export async function fetchResources(): Promise<ResourceModel[]> {
     const result = await Pm_resourcesService.getAll({
       filter: "statecode eq 0",
       select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole', 'pm_resourcecategory', 'pm_employmentstatus', 'pm_dailyworkcapacity', 'pm_dailycostrate', 'pm_positiontitle', '_pm_systemuser_value', 'pm_suppliercompany', 'pm_contractstartdate', 'pm_contractenddate'],
-      orderBy: ['pm_fullname asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     })
     if (!result.success) {
@@ -244,7 +244,7 @@ export async function fetchResourceAllocations(resourceId: string): Promise<Reso
     const result = await Pm_resourceallocationsService.getAll({
       filter: `_pm_resource_value eq '${resourceId}' and statecode eq 0`,
       select: ['pm_resourceallocationid', 'pm_allocatedhours', 'pm_allocationpercentage', 'pm_assignmentrole', 'pm_assignmentstatus', 'pm_startdate', 'pm_enddate', '_pm_project_value'],
-      orderBy: ['pm_startdate desc'],
+      orderBy: ['createdon desc'],
       top: 200,
     })
     if (!result.success) {
@@ -363,7 +363,9 @@ export async function fetchProjectsForSystemUser(systemUserId: string): Promise<
         '_pm_programme_value', '_pm_portfolio_value',
         'pm_ragstatus', 'pm_projectphase',
         'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus',
+        'createdon',
       ],
+      orderBy: ['createdon desc'],
       top: 200,
     })
     if (!projectResult.success) {
@@ -440,7 +442,7 @@ export async function fetchAllocatedResourcesByProject(projectId: string): Promi
     const resourceResult = await Pm_resourcesService.getAll({
       filter: resourceIds.map((id) => `pm_resourceid eq '${id}'`).join(' or '),
       select: ['pm_resourceid', 'pm_fullname', 'pm_departmentname', 'pm_primaryrole', 'pm_resourcecategory', 'pm_employmentstatus', 'pm_dailyworkcapacity', 'pm_dailycostrate', 'pm_positiontitle', '_pm_systemuser_value', 'pm_suppliercompany', 'pm_contractstartdate', 'pm_contractenddate'],
-      orderBy: ['pm_fullname asc'],
+      orderBy: ['createdon desc'],
       top: 500,
     })
     if (!resourceResult.success) {

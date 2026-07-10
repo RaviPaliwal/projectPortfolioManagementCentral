@@ -156,7 +156,7 @@ export default function ChangeRequestsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [sort, setSort] = useState<SortState>({ field: 'title', dir: 'asc' })
+  const [sort, setSort] = useState<SortState>({ field: 'date', dir: 'desc' })
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 

@@ -164,15 +164,16 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
 
   return (
     <Dialog open={open} onClose={() => !isSaving && onClose()} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>
+      <DialogTitle sx={{ fontWeight: 700, pb: 0.5 }}>
         {initialData?.pm_projectid ? 'Edit Project' : 'Create New Project'}
       </DialogTitle>
-      <DialogContent sx={{ pt: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      <DialogContent sx={{ pt: 0 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
           {initialData?.pm_projectid 
             ? 'Update project details, timelines, and risk indicators.'
             : 'Register a new project and associate it with a portfolio and programme.'}
         </Typography>
+        <Divider sx={{ mb: 3 }} />
 
         {/* Section: Basic Information */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -196,6 +197,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
                 labelId="project-portfolio-label"
                 value={form._pm_portfolio_value || ''}
                 label="Portfolio"
+                disabled={isEdit}
                 onChange={(e) => setForm((p) => ({ ...p, _pm_portfolio_value: e.target.value, _pm_programme_value: '' }))}
               >
                 <MenuItem value="">None</MenuItem>
@@ -212,7 +214,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
                 value={form._pm_programme_value || ''}
                 label="Programme"
                 onChange={(e) => setForm((p) => ({ ...p, _pm_programme_value: e.target.value }))}
-                disabled={!form._pm_portfolio_value}
+                disabled={isEdit || !form._pm_portfolio_value}
               >
                 <MenuItem value="">None</MenuItem>
                 {filteredProgrammes.map(p => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
@@ -263,6 +265,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
               size="small"
               value={form.pm_projectsponsor ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, pm_projectsponsor: e.target.value }))}
+              disabled={isEdit}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -307,6 +310,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField select fullWidth label="Phase" size="small" value={form.pm_projectphase ?? '1'}
+              disabled={isEdit}
               onChange={(e) => setForm((p) => ({ ...p, pm_projectphase: e.target.value }))}>
               <MenuItem value="1">Planning</MenuItem>
               <MenuItem value="0">Execution</MenuItem>
@@ -373,6 +377,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
             <TextField fullWidth type="number" label="Actual Cost (EUR)" size="small" value={form.pm_actualcost ?? 0}
               disabled
               slotProps={{ input: { readOnly: true } }}
+              helperText="Aggregated sum of all cashflows for this project"
             />
           </Grid>
         </Grid>
@@ -507,6 +512,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
               value={form.pm_plannedstartdate ?? ''} onChange={(e) => setForm((p) => ({ ...p, pm_plannedstartdate: e.target.value }))}
               error={!!dateErrors.startDate}
               helperText={dateErrors.startDate || ''}
+              disabled={Number(form.pm_projectphase) !== 1}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -514,15 +520,20 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
               value={form.pm_plannedenddate ?? ''} onChange={(e) => setForm((p) => ({ ...p, pm_plannedenddate: e.target.value }))}
               error={!!dateErrors.endDate}
               helperText={dateErrors.endDate || ''}
+              disabled={Number(form.pm_projectphase) !== 1}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth type="date" size="small" slotProps={{ inputLabel: { shrink: true } }} label="Actual Start"
-              value={form.pm_actualstartdate ?? ''} onChange={(e) => setForm((p) => ({ ...p, pm_actualstartdate: e.target.value }))} />
+              value={form.pm_actualstartdate ?? ''} onChange={(e) => setForm((p) => ({ ...p, pm_actualstartdate: e.target.value }))}
+              disabled={Number(form.pm_projectphase) === 1}
+            />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth type="date" size="small" slotProps={{ inputLabel: { shrink: true } }} label="Actual End"
-              value={form.pm_actualenddate ?? ''} onChange={(e) => setForm((p) => ({ ...p, pm_actualenddate: e.target.value }))} />
+              value={form.pm_actualenddate ?? ''} onChange={(e) => setForm((p) => ({ ...p, pm_actualenddate: e.target.value }))}
+              disabled={Number(form.pm_projectphase) === 1}
+            />
           </Grid>
         </Grid>
 

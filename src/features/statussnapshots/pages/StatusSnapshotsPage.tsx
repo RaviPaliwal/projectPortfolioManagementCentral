@@ -355,7 +355,7 @@ export default function StatusSnapshotsPage() {
           'pm_reportingperiod', 'pm_submissiondate', 'pm_submittedby',
           'statecode',
         ],
-        orderBy: ['pm_snapshotname asc'],
+        orderBy: ['createdon desc'],
         top: 1000,
       })
       if (!result.success) {

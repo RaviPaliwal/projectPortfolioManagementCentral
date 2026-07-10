@@ -345,14 +345,14 @@ export const ProjectFinancialsTab: React.FC<ProjectFinancialsTabProps> = ({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1.5, mt: 1.5, mb: 1 }}>
+        <PieChartIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Budget Breakdown
+      </Typography>
+
       {/* EVM KPI Cards Summary Row */}
       <Box sx={{ mb: -2.5 }}>
         <KpiCardRow items={kpiItems} />
       </Box>
-
-      <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1, mt: 1.5, mb: 1 }}>
-        <PieChartIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Budget Breakdown
-      </Typography>
 
       <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch' }}>
         <Grid size={{ xs: 12, md: 8.5 }} sx={{ display: 'flex', flexDirection: 'column' }}>
