@@ -1,354 +1,364 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import {
   Box,
   Typography,
   Paper,
-  Grid,
-  useTheme,
-  Tabs,
-  Tab,
   Table,
   TableHead,
   TableRow,
   TableCell,
   TableBody,
+  LinearProgress,
+  useTheme,
+  Stack,
+  Divider,
+  Tabs,
+  Tab,
+  Grid,
   IconButton,
   Tooltip,
-  CircularProgress,
-  Button,
+  FormControlLabel,
+  Switch,
 } from '@mui/material'
+import FlagIcon from '@mui/icons-material/Flag'
+import AssignmentIcon from '@mui/icons-material/Assignment'
 import ViewWeekIcon from '@mui/icons-material/ViewWeek'
 import ListIcon from '@mui/icons-material/List'
-import FlagIcon from '@mui/icons-material/Flag'
 import EditIcon from '@mui/icons-material/Edit'
-import DeleteIcon from '@mui/icons-material/Delete'
-import AddIcon from '@mui/icons-material/Add'
-
-import { StatusChip, StatusTag, MetricTile, GanttChart } from '@/components/common'
+import SchemaIcon from '@mui/icons-material/Schema'
+import { StatusChip, StatusTag, MetricTile } from '@/components/common'
+import GanttChart from '@/components/common/GanttChart/GanttChart'
+import { WbsBuilder } from './WbsBuilder'
+import { DependencyNetwork } from './DependencyNetwork'
 import type { ProjectMilestoneModel, ProjectTaskModel } from '@/types/dataverse'
+import { fontSizes } from '@/styles'
 
 interface ProjectScheduleTabProps {
-  projectId?: string
   milestones: ProjectMilestoneModel[]
   tasks: ProjectTaskModel[]
   onEditMilestone?: (milestone: ProjectMilestoneModel) => void
   onEditTask?: (task: ProjectTaskModel) => void
-  onDeleteMilestone?: (milestoneId: string) => Promise<void>
   canEdit?: boolean
   onRefresh?: () => void
   onSuccess?: (msg: string) => void
-  onError?: (err: any) => void
-  onAddMilestone?: () => void
+  onError?: (msg: string) => void
 }
 
-const isCritical = (v: any): boolean => {
-  if (v === undefined || v === null) return false
-  if (typeof v === 'boolean') return v
-  if (typeof v === 'number') return v === 1
-  const s = String(v).toLowerCase().trim()
-  return s === 'true' || s === '1' || s === 'yes'
-}
-
-export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
-  milestones = [],
-  tasks = [],
-  onEditMilestone,
+export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({ 
+  milestones, 
+  tasks, 
+  onEditMilestone, 
   onEditTask,
-  onDeleteMilestone,
   canEdit = false,
   onRefresh,
   onSuccess,
   onError,
-  onAddMilestone,
 }) => {
   const theme = useTheme()
-  const [activeView, setActiveView] = useState<number>(0) // 0 = Gantt, 1 = Milestones List
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const isDark = theme.palette.mode === 'dark'
+  const [activeView, setActiveView] = useState(0)
+  const [showCriticalPathOnly, setShowCriticalPathOnly] = useState(false)
 
-  // Calculations
-  const stats = useMemo(() => {
-    const total = milestones.length
-    const achieved = milestones.filter(m => String(m.pm_status) === '2').length
-    const atRisk = milestones.filter(m => String(m.pm_status) === '0').length
-    const notStarted = milestones.filter(m => String(m.pm_status) === '1').length
-    return { total, achieved, atRisk, notStarted }
-  }, [milestones])
+  // Robust boolean checker for Dataverse option/string formats
+  const isCritical = (v: any): boolean => {
+    if (v === undefined || v === null) return false
+    if (typeof v === 'boolean') return v
+    if (typeof v === 'number') return v === 1
+    const s = String(v).toLowerCase().trim()
+    return s === 'true' || s === '1' || s === 'yes'
+  }
 
+  // Map to Gantt formats
   const ganttTasks = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0]
-    return tasks.map(t => {
-      const taskStart = t.pm_plannedstartdate || todayStr
-      const taskEnd = t.pm_plannedenddate || taskStart
-      return {
-        id: t.pm_projecttaskid!,
-        name: t.pm_taskname!,
-        startDate: taskStart,
-        endDate: taskEnd,
-        percentComplete: t.pm_percentcomplete ?? 0,
-        status: String(t.pm_taskstatus),
-        level: (t.pm_tasklevel ?? 1) + 1,
-        wbs: t.pm_wbsnumber,
-        onCriticalPath: isCritical(t.pm_oncriticalpath),
-        predecessorId: t._pm_predecessortask_value,
-      }
-    })
-  }, [tasks])
-
-  const ganttMilestones = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0]
-    return milestones.map(m => ({
-      id: m.pm_projectmilestoneid!,
-      name: m.pm_milestonename!,
-      date: m.pm_planneddate || todayStr,
-      status: String(m.pm_status),
+    const raw = tasks.map(t => ({
+      id: t.pm_projecttaskid!,
+      name: t.pm_taskname!,
+      startDate: t.pm_plannedstartdate!,
+      endDate: t.pm_plannedenddate!,
+      percentComplete: t.pm_percentcomplete ?? 0,
+      status: String(t.pm_taskstatus),
+      level: t.pm_tasklevel ?? 1,
+      wbs: t.pm_wbsnumber,
+      onCriticalPath: isCritical(t.pm_oncriticalpath),
+      predecessorId: t._pm_predecessortask_value,
     }))
-  }, [milestones])
-
-  const handleDeleteMilestoneClick = async (milestoneId: string) => {
-    if (!onDeleteMilestone) return
-    if (!window.confirm('Are you sure you want to delete this milestone?')) return
-    setDeletingId(milestoneId)
-    try {
-      await onDeleteMilestone(milestoneId)
-      if (onSuccess) onSuccess('Milestone deleted successfully.')
-      if (onRefresh) onRefresh()
-    } catch (err: any) {
-      if (onError) onError(err)
-    } finally {
-      setDeletingId(null)
+    if (showCriticalPathOnly) {
+      return raw.filter(t => t.onCriticalPath)
     }
-  }
+    return raw
+  }, [tasks, showCriticalPathOnly])
 
-  const getMilestoneStatusDetails = (status?: string | number | null) => {
-    const s = String(status ?? '')
-    switch (s) {
-      case '2':
-        return { label: 'Achieved', color: 'success' as const }
-      case '0':
-        return { label: 'At Risk', color: 'error' as const }
-      case '1':
-      default:
-        return { label: 'Not Started', color: 'default' as const }
-    }
-  }
+  const ganttMilestones = useMemo(() => milestones.map(m => ({
+    id: m.pm_projectmilestoneid!,
+    name: m.pm_milestonename!,
+    date: m.pm_planneddate!,
+    status: String(m.pm_status),
+  })), [milestones])
 
-  const getMilestoneTypeLabel = (type?: string | number | null) => {
-    const t = String(type ?? '')
-    return t === '1' ? 'Governance' : 'Delivery'
-  }
+  // Stats
+  const stats = useMemo(() => {
+    const total = tasks.length
+    const completed = tasks.filter(t => String(t.pm_taskstatus) === '0').length
+    const avgProgress = total > 0 ? Math.round(tasks.reduce((s, t) => s + (t.pm_percentcomplete ?? 0), 0) / total) : 0
+    const upcomingMilestones = milestones.filter(m => m.pm_planneddate && new Date(m.pm_planneddate) >= new Date()).length
 
-  const getRagLabel = (rag?: string | number | null) => {
-    const r = String(rag ?? '')
-    switch (r) {
-      case '0':
-        return 'Amber'
-      case '1':
-        return 'Green'
-      case '2':
-        return 'Not Set'
-      default:
-        return 'N/A'
-    }
-  }
+    return { total, completed, avgProgress, upcomingMilestones }
+  }, [tasks, milestones])
+
+  // Combine and sort by planned date for the list view
+  const timelineItems = useMemo(() => {
+    const filteredTasks = showCriticalPathOnly
+      ? tasks.filter(t => isCritical(t.pm_oncriticalpath))
+      : tasks
+
+    const items = [
+      ...milestones.map(m => ({
+        id: m.pm_projectmilestoneid,
+        name: m.pm_milestonename,
+        date: m.pm_planneddate,
+        type: 'milestone' as const,
+        rag: m.pm_ragstatus,
+        mType: m.pm_milestonetype,
+        status: m.pm_status,
+        resource: m.pm_responsible,
+        onCriticalPath: false,
+      })),
+      ...filteredTasks.map(t => ({
+        id: t.pm_projecttaskid,
+        name: t.pm_taskname,
+        date: t.pm_plannedstartdate,
+        endDate: t.pm_plannedenddate,
+        type: 'task' as const,
+        status: t.pm_taskstatus,
+        progress: t.pm_percentcomplete,
+        resource: t.pm_assignedresource,
+        onCriticalPath: isCritical(t.pm_oncriticalpath),
+      }))
+    ]
+    return items.sort((a, b) => {
+      const dateA = new Date(a.date || 0).getTime()
+      const dateB = new Date(b.date || 0).getTime()
+      return dateA - dateB
+    })
+  }, [milestones, tasks, showCriticalPathOnly])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* KPI Stats */}
+      {/* ── Schedule Stats ── */}
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile
-            label="Total Milestones"
-            value={stats.total}
-            icon={<FlagIcon />}
-            color="primary.main"
-          />
+          <MetricTile label="Total Tasks" value={stats.total} icon={<AssignmentIcon />} color="primary.main" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile
-            label="Achieved Milestones"
-            value={stats.achieved}
-            icon={<FlagIcon />}
-            color="success.main"
-          />
+          <MetricTile label="Avg. Progress" value={`${stats.avgProgress}%`} icon={<ViewWeekIcon />} color="info.main" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile
-            label="At Risk"
-            value={stats.atRisk}
-            icon={<FlagIcon />}
-            color="error.main"
-          />
+          <MetricTile label="Milestones" value={milestones.length} icon={<FlagIcon />} color="warning.main" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricTile
-            label="Not Started"
-            value={stats.notStarted}
-            icon={<FlagIcon />}
-            color="text.secondary"
-          />
+          <MetricTile label="Completed" value={stats.completed} icon={<AssignmentIcon />} color="success.main" />
         </Grid>
       </Grid>
 
-      {/* Main Container */}
+      {/* ── View Toggle ── */}
       <Paper sx={{ overflow: 'hidden' }}>
-        <Box
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            px: 2,
-            py: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 2,
-          }}
-        >
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
           <Tabs value={activeView} onChange={(_, v) => setActiveView(v)}>
-            <Tab
-              label="Gantt Chart"
-              icon={<ViewWeekIcon fontSize="small" />}
-              iconPosition="start"
-              sx={{ textTransform: 'none', fontWeight: 600 }}
-            />
-            <Tab
-              label="Milestones List"
-              icon={<ListIcon fontSize="small" />}
-              iconPosition="start"
-              sx={{ textTransform: 'none', fontWeight: 600 }}
-            />
+            <Tab label="Gantt Chart" icon={<ViewWeekIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
+            <Tab label="Detailed List" icon={<ListIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
+            <Tab label="Dependency Network" icon={<SchemaIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
+            {canEdit && (
+              <Tab label="WBS Structure Builder" icon={<ListIcon fontSize="small" />} iconPosition="start" sx={{ textTransform: 'none', fontWeight: 600 }} />
+            )}
           </Tabs>
-
-          {activeView === 1 && canEdit && onAddMilestone && (
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<AddIcon />}
-              onClick={onAddMilestone}
-              sx={{ textTransform: 'none' }}
-            >
-              Add Milestone
-            </Button>
-          )}
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  size="small"
+                  color="error"
+                  checked={showCriticalPathOnly}
+                  onChange={(e) => setShowCriticalPathOnly(e.target.checked)}
+                />
+              }
+              label={
+                <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Critical Path Only
+                </Typography>
+              }
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mr: 2 }}>
+              {tasks.length} tasks · {milestones.length} milestones
+            </Typography>
+          </Box>
         </Box>
 
-        {activeView === 0 ? (
-          <Box sx={{ p: 2, minHeight: 300 }}>
-            {ganttTasks.length === 0 && ganttMilestones.length === 0 ? (
-              <Box sx={{ py: 6, textAlign: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  No schedule tasks or milestones to display in Gantt Chart.
-                </Typography>
-              </Box>
-            ) : (
-              <GanttChart
-                tasks={ganttTasks}
-                milestones={ganttMilestones}
-                onTaskClick={(id) => {
-                  const task = tasks.find(t => t.pm_projecttaskid === id)
-                  if (task && onEditTask) {
-                    onEditTask(task)
-                  }
-                }}
-              />
-            )}
-          </Box>
-        ) : (
-          <Box sx={{ overflowX: 'auto' }}>
-            {milestones.length === 0 ? (
-              <Box sx={{ py: 6, textAlign: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  No milestones defined for this project.
-                </Typography>
-              </Box>
-            ) : (
-              <Table size="medium">
-                <TableHead>
+        <Box sx={{ p: 2 }}>
+          {activeView === 0 && (
+            <Box sx={{ mt: 1 }}>
+              <GanttChart tasks={ganttTasks} milestones={ganttMilestones} height={500} />
+            </Box>
+          )}
+
+          {activeView === 1 && (
+            <Table size="small">
+              <TableHead sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'background.default' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase', py: 1.5, pl: 3 }}>Schedule Item</TableCell>
+                  <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase' }}>Responsible</TableCell>
+                  <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase' }} align="center">Progress / Date</TableCell>
+                  <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase' }} align="right">Status</TableCell>
+                  {canEdit && <TableCell sx={{ fontWeight: 800, fontSize: fontSizes.xs, textTransform: 'uppercase', pr: 3 }} align="right">Actions</TableCell>}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {timelineItems.length === 0 ? (
                   <TableRow>
-                    <TableCell>Milestone Name</TableCell>
-                    <TableCell>Planned Date</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>RAG Status</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Responsible</TableCell>
-                    {canEdit && <TableCell align="right">Actions</TableCell>}
+                    <TableCell colSpan={canEdit ? 5 : 4} sx={{ py: 8, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">No items in the project schedule.</Typography>
+                    </TableCell>
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {milestones.map((m) => {
-                    const statusInfo = getMilestoneStatusDetails(m.pm_status)
-                    const isDeleting = deletingId === m.pm_projectmilestoneid
-                    return (
-                      <TableRow key={m.pm_projectmilestoneid} hover>
-                        <TableCell sx={{ fontWeight: 500 }}>
-                          {m.pm_milestonename}
-                        </TableCell>
-                        <TableCell>
-                          {m.pm_planneddate
-                            ? new Date(m.pm_planneddate).toLocaleDateString('en-GB', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric',
-                              })
-                            : 'TBD'}
-                        </TableCell>
-                        <TableCell>
-                          {getMilestoneTypeLabel(m.pm_milestonetype)}
-                        </TableCell>
-                        <TableCell>
-                          <StatusTag
-                            label={getRagLabel(m.pm_ragstatus)}
-                            value={m.pm_ragstatus}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <StatusTag
-                            label={statusInfo.label}
-                            color={statusInfo.color}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {m.pm_responsible || 'Unassigned'}
-                        </TableCell>
-                        {canEdit && (
-                          <TableCell align="right">
-                            {isDeleting ? (
-                              <CircularProgress size={20} />
+                ) : (
+                  timelineItems.map((item) => (
+                    <TableRow key={item.id} hover sx={{ 
+                      bgcolor: item.type === 'milestone' 
+                        ? (isDark ? 'rgba(245, 158, 11, 0.03)' : 'rgba(245, 158, 11, 0.02)') 
+                        : item.onCriticalPath
+                        ? (isDark ? 'rgba(239, 68, 68, 0.05)' : 'rgba(239, 68, 68, 0.02)')
+                        : 'transparent',
+                      borderLeft: item.onCriticalPath ? '3px solid #ef4444' : 'none',
+                      '&:last-child td': { border: 0 } 
+                    }}>
+                      <TableCell sx={{ pl: 3 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                          <Box sx={{ mt: 0.5 }}>
+                            {item.type === 'milestone' ? (
+                              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'warning.main', mt: 0.5, border: '2px solid white', boxShadow: '0 0 0 2px ' + theme.palette.warning.main }} />
                             ) : (
-                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
-                                {onEditMilestone && (
-                                  <Tooltip title="Edit Milestone">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => onEditMilestone(m)}
-                                    >
-                                      <EditIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                )}
-                                {onDeleteMilestone && (
-                                  <Tooltip title="Delete Milestone">
-                                    <IconButton
-                                      size="small"
-                                      color="error"
-                                      onClick={() => handleDeleteMilestoneClick(m.pm_projectmilestoneid!)}
-                                    >
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                )}
-                              </Box>
+                              <Box sx={{ width: 8, height: 8, borderRadius: 0.5, bgcolor: item.onCriticalPath ? 'error.light' : 'primary.light', mt: 0.5, opacity: 0.6 }} />
                             )}
-                          </TableCell>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: item.type === 'milestone' ? 800 : 600, color: item.type === 'milestone' ? 'warning.dark' : item.onCriticalPath ? 'error.dark' : 'text.primary' }}>
+                              {item.name}
+                              {item.type === 'milestone' && (
+                                <Typography variant="caption" sx={{ ml: 1, px: 0.8, py: 0.2, bgcolor: 'rgba(245, 158, 11, 0.08)', color: 'warning.dark', fontWeight: 800, textTransform: 'uppercase', fontSize: fontSizes.xs }}>
+                                  Milestone
+                                </Typography>
+                              )}
+                              {item.onCriticalPath && (
+                                <Typography variant="caption" sx={{ ml: 1, px: 0.8, py: 0.2, bgcolor: 'rgba(239, 68, 68, 0.08)', color: 'error.main', fontWeight: 800, textTransform: 'uppercase', fontSize: fontSizes.xs }}>
+                                  Critical Path
+                                </Typography>
+                              )}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {item.type === 'milestone' ? (
+                                item.mType === '1' || item.mType === 1 ? 'Governance Checkpoint' : 'Delivery Milestone'
+                              ) : (
+                                'Standard Task'
+                              )}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <Typography variant="body2" sx={{ color: item.resource ? 'text.primary' : 'text.disabled' }}>
+                          {item.resource || 'Unassigned'}
+                        </Typography>
+                      </TableCell>
+ 
+                      <TableCell align="center">
+                        {item.type === 'task' ? (
+                          <Box sx={{ minWidth: 120, px: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                                {item.date ? new Date(item.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
+                              </Typography>
+                              <Typography variant="caption" sx={{ fontWeight: 800, color: (item as any).progress === 100 ? 'success.main' : 'primary.main' }}>
+                                {(item as any).progress || 0}%
+                              </Typography>
+                            </Box>
+                            <LinearProgress 
+                              variant="determinate" 
+                              value={(item as any).progress || 0} 
+                              sx={{ height: 6, bgcolor: theme.palette.action.hover, '& .MuiLinearProgress-bar': { bgcolor: (item as any).progress === 100 ? 'success.main' : 'primary.main' } }} 
+                            />
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>
+                            {item.date ? new Date(item.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'}
+                          </Typography>
                         )}
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </Box>
-        )}
+                      </TableCell>
+ 
+                      <TableCell align="right" sx={{ pr: canEdit ? 1 : 3 }}>
+                        {item.type === 'milestone' ? (
+                          <StatusChip status={(item as any).rag} type="rag" size="small" />
+                        ) : (
+                          <StatusTag
+                            label={String((item as any).status) === '0' ? 'Complete' : String((item as any).status) === '1' ? 'In Progress' : 'Not Started'}
+                            size="small"
+                            color={String((item as any).status) === '0' ? 'success' : String((item as any).status) === '1' ? 'info' : 'default'}
+                          />
+                        )}
+                      </TableCell>
+                      {canEdit && (
+                        <TableCell align="right" sx={{ pr: 3 }}>
+                          {item.type === 'milestone' ? (
+                            <Tooltip title="Edit Milestone">
+                              <IconButton
+                                size="small"
+                                onClick={() => onEditMilestone?.(milestones.find(m => m.pm_projectmilestoneid === item.id)!)}
+                                sx={{
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                  '&:hover': { bgcolor: 'action.hover' }
+                                }}
+                              >
+                                <EditIcon sx={{ fontSize: 14 }} />
+                              </IconButton>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip title="Edit Task">
+                              <IconButton
+                                size="small"
+                                onClick={() => onEditTask?.(tasks.find(t => t.pm_projecttaskid === item.id)!)}
+                                sx={{
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                  '&:hover': { bgcolor: 'action.hover' }
+                                }}
+                              >
+                                <EditIcon sx={{ fontSize: 14 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+
+          {activeView === 2 && (
+            <DependencyNetwork tasks={tasks} milestones={milestones} />
+          )}
+
+          {activeView === 3 && (
+            <WbsBuilder
+              tasks={tasks}
+              onSuccess={onSuccess || (() => {})}
+              onError={onError || (() => {})}
+              onRefresh={onRefresh || (() => {})}
+              onEditTask={onEditTask}
+            />
+          )}
+        </Box>
       </Paper>
     </Box>
   )
