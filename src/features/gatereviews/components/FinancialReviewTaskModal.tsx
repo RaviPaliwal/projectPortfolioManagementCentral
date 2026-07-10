@@ -15,6 +15,15 @@ import type { Pm_projectgatereviews } from '@/generated/models/Pm_projectgaterev
 import type { ProjectModel, GateReviewModel, InitiativeModel } from '@/types/dataverse'
 import { currencyFormatter } from '@/utils/formatters'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
+
+const mapPhaseToGate = (phase: number | string | undefined): { stage: number; number: number } => {
+  const p = phase !== undefined ? Number(phase) : 3 // default to Initiation
+  if (p === 3) return { stage: 0, number: 1 } // Initiation -> Gate 1
+  if (p === 1) return { stage: 1, number: 2 } // Planning -> Gate 2
+  if (p === 0) return { stage: 2, number: 3 } // Execution -> Gate 3
+  if (p === 2) return { stage: 3, number: 4 } // Closure -> Gate 4
+  return { stage: 0, number: 1 } // fallback
+}
 import { fontSizes } from '@/styles/fontSizes'
 
 interface FinancialReviewTaskModalProps {
@@ -68,16 +77,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
         if (!proj) { onError('Project not found.'); setLoading(false); return }
         setProject(proj)
 
-        const reviewsResult = await Pm_projectgatereviewsService.getAll({
-          filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
-          select: ['pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage']
-        })
-        const existingReviews = unwrapList<Pm_projectgatereviews>(reviewsResult)
-        
-        const finCount = existingReviews.filter(r => 
-          r.pm_gatename?.toLowerCase().includes('financial review')
-        ).length
-        const currentGateStage = Math.min(3, finCount)
+        const { stage: currentGateStage } = mapPhaseToGate(proj.pm_projectphase)
         setGateStage(currentGateStage)
       }
     } catch (err) {
@@ -98,18 +98,21 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
       if (isInitiative) {
         onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
       } else if (gateReviewId) {
+        const { stage, number } = mapPhaseToGate(project?.pm_projectphase)
         await updateGateReview(gateReviewId, {
           pm_reviewoutcome: workflowDecision === 0 ? 0 : 4,
           pm_reviewstatus: 0,
           pm_reviewnotes: financeNotes,
           pm_actualreviewdate: new Date().toISOString(),
+          pm_gatestage: stage as any,
+          pm_gatename: `Financial Review - Gate ${number}`,
         })
         onSuccess(`Financial Task completed. Decision: ${decisionLabel}.`)
       } else if (projectId) {
-        const gateNumber = gateStage + 1
+        const { stage, number } = mapPhaseToGate(project?.pm_projectphase)
         const newReviewPayload: Partial<GateReviewModel> = {
-          pm_gatename: `Financial Review - Gate ${gateNumber}`,
-          pm_gatestage: gateStage as any,
+          pm_gatename: `Financial Review - Gate ${number}`,
+          pm_gatestage: stage as any,
           pm_reviewoutcome: workflowDecision === 0 ? 0 : 4,
           pm_reviewstatus: 0,
           pm_actualreviewdate: new Date().toISOString(),
@@ -126,7 +129,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
       onError('Failed to save Financial decision.')
       return false
     } finally { setSaving(false) }
-  }, [isInitiative, gateReviewId, projectId, gateStage, financeNotes, onSuccess, onError])
+  }, [isInitiative, gateReviewId, projectId, project, financeNotes, onSuccess, onError])
 
   if (!open) return null
 

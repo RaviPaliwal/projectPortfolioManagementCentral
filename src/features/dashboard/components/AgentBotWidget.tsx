@@ -5,8 +5,7 @@ import {
   Typography,
   IconButton,
   Fab,
-  Zoom,
-  Tooltip
+  Zoom
 } from '@mui/material'
 import SmartToyIcon from '@mui/icons-material/SmartToy'
 import CloseIcon from '@mui/icons-material/Close'
@@ -17,7 +16,22 @@ export default function AgentBotWidget() {
 
   return (
     <>
-      {/* Floating Chat Container */}
+      <Zoom in={!isOpen}>
+        <Fab
+          color="secondary"
+          onClick={() => setIsOpen(true)}
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 1300,
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+          }}
+        >
+          <ForumIcon />
+        </Fab>
+      </Zoom>
+
       <Zoom in={isOpen}>
         <Paper
           elevation={8}
@@ -72,28 +86,6 @@ export default function AgentBotWidget() {
           </Box>
         </Paper>
       </Zoom>
-
-      {/* Floating Action Button (FAB) */}
-      <Tooltip title={isOpen ? 'Close AI Copilot' : 'Open AI Copilot'} placement="left">
-        <Fab
-          color="secondary"
-          aria-label="chat"
-          onClick={() => setIsOpen(!isOpen)}
-          sx={{
-            position: 'fixed',
-            bottom: 24,
-            right: 24,
-            zIndex: 1301,
-            boxShadow: '0 6px 16px rgba(139, 92, 246, 0.3)',
-            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-            '&:hover': {
-              transform: 'scale(1.1) rotate(5deg)',
-            }
-          }}
-        >
-          {isOpen ? <CloseIcon /> : <ForumIcon />}
-        </Fab>
-      </Tooltip>
     </>
   )
 }

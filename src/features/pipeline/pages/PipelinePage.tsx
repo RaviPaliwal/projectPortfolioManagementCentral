@@ -238,6 +238,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
     pm_estimatedcosteur: 0,
     pm_estimatedbenefitseur: 0,
     _pm_requestedby_value: '',
+    _pm_sponsor_value: '',
     pm_initiativetype: 0,
     pm_pipelinestatus: 1,
     _pm_portfolio_value: '',
@@ -1013,7 +1014,14 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
           />
           <PageHeader
             title={selectedInitiative?.pm_name ?? ''}
-            subtitle={selectedInitiative?.pm_requestedbyname ? `Sponsor: ${selectedInitiative.pm_requestedbyname}` : undefined}
+            subtitle={
+              selectedInitiative?.pm_requestedbyname || selectedInitiative?.pm_sponsorname 
+                ? [
+                    selectedInitiative.pm_requestedbyname ? `Requested By: ${selectedInitiative.pm_requestedbyname}` : null,
+                    selectedInitiative.pm_sponsorname ? `Sponsor: ${selectedInitiative.pm_sponsorname}` : null
+                  ].filter(Boolean).join(' • ')
+                : undefined
+            }
             action={selectedInitiative.pm_convertedtoreference ? {
               label: `Go to Converted ${selectedInitiative.pm_initiativetype === 1 ? 'Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Portfolio' : 'Project'}`,
               onClick: () => {
@@ -1172,8 +1180,12 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
                 <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5, flexGrow: 1 }}>
                   <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr' }, gap: 2.5 }}>
                     <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Sponsor</Typography>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Requested By</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_requestedbyname || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Sponsor</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_sponsorname || '—'}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Target Portfolio</Typography>
@@ -1337,6 +1349,27 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
                   value={createForm._pm_requestedby_value}
                   label="Requested By"
                   onChange={(e) => setCreateForm((f) => ({ ...f, _pm_requestedby_value: e.target.value }))}
+                >
+                  <MenuItem value="">
+                    <em style={{ color: 'text.disabled' }}>Select User</em>
+                  </MenuItem>
+                  {users.map((u) => (
+                    <MenuItem key={u.systemuserid} value={u.systemuserid}>
+                      {u.fullname}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="pipeline-sponsor-label">Sponsor</InputLabel>
+                <Select
+                  id="pipeline-sponsor-select"
+                  labelId="pipeline-sponsor-label"
+                  value={(createForm as any)._pm_sponsor_value}
+                  label="Sponsor"
+                  onChange={(e) => setCreateForm((f) => ({ ...f, _pm_sponsor_value: e.target.value }))}
                 >
                   <MenuItem value="">
                     <em style={{ color: 'text.disabled' }}>Select User</em>

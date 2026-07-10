@@ -45,7 +45,7 @@ export const mapInitiative = (item: Pm_initiatives): InitiativeModel => {
 
 export async function fetchInitiatives(status?: number): Promise<InitiativeModel[]> {
   try {
-    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', '_pm_portfolio_value', 'pm_initiativetype', 'pm_convertedtoreference']
+    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', '_pm_portfolio_value', 'pm_initiativetype', 'pm_convertedtoreference', '_pm_sponsor_value']
     const options: IGetAllOptions = { select, orderBy: ['createdon desc'], top: 200 }
     if (typeof status === 'number') options.filter = `pm_pipelinestatus eq ${status}`
     const result = await Pm_initiativesService.getAll(options)
@@ -68,8 +68,12 @@ export async function fetchInitiatives(status?: number): Promise<InitiativeModel
         ? Promise.all(programmeIds.map((id) => Pm_programmesService.get(id, { select: ['pm_programmeid', 'pm_programmename'] })))
         : Promise.resolve([])
 
-      // 3. Resolve Requested By Users
-      const userIds = Array.from(new Set(list.map((i) => i._pm_requestedby_value).filter(Boolean))) as string[]
+      // 3. Resolve Requested By and Sponsor Users
+      const userIdsRaw = [
+        ...list.map((i) => i._pm_requestedby_value),
+        ...list.map((i) => (i as any)._pm_sponsor_value)
+      ].filter(Boolean)
+      const userIds = Array.from(new Set(userIdsRaw)) as string[]
       const usersPromise = userIds.length > 0
         ? Promise.all(userIds.map((id) => SystemusersService.get(id, { select: ['systemuserid', 'fullname'] })))
         : Promise.resolve([])
@@ -114,6 +118,9 @@ export async function fetchInitiatives(status?: number): Promise<InitiativeModel
         if (init._pm_requestedby_value && uMap[init._pm_requestedby_value]) {
           init.pm_requestedbyname = uMap[init._pm_requestedby_value]
         }
+        if ((init as any)._pm_sponsor_value && uMap[(init as any)._pm_sponsor_value]) {
+          init.pm_sponsorname = uMap[(init as any)._pm_sponsor_value]
+        }
       }
     } catch (err) {
       console.error('[InitiativeService] fetchInitiatives lookups resolution exception:', err)
@@ -128,7 +135,7 @@ export async function fetchInitiatives(status?: number): Promise<InitiativeModel
 
 export async function fetchInitiativeById(id: string): Promise<InitiativeModel | null> {
   try {
-    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', 'pm_initiativetype', 'pm_decisiondate', '_pm_portfolio_value', '_createdby_value', 'pm_convertedtoreference']
+    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', 'pm_initiativetype', 'pm_decisiondate', '_pm_portfolio_value', '_createdby_value', 'pm_convertedtoreference', '_pm_sponsor_value']
     const result = await Pm_initiativesService.get(id, { select })
     if (!result.success) {
       console.error('[InitiativeService] fetchInitiativeById failed:', result.error)
@@ -181,6 +188,21 @@ export async function fetchInitiativeById(id: string): Promise<InitiativeModel |
         }
       } catch (e) {
         console.error('[InitiativeService] fetchInitiativeById requestedby lookup exception:', e)
+      }
+    }
+
+    const sponsorId = (item as unknown as Record<string, unknown>)._pm_sponsor_value as string | undefined
+    if (sponsorId) {
+      try {
+        const userResult = await SystemusersService.get(sponsorId, { select: ['systemuserid', 'fullname'] })
+        if (userResult.success) {
+          const user = unwrapSingle<Systemusers>(userResult)
+          if (user?.fullname) {
+            mapped.pm_sponsorname = user.fullname
+          }
+        }
+      } catch (e) {
+        console.error('[InitiativeService] fetchInitiativeById sponsor lookup exception:', e)
       }
     }
 
@@ -395,6 +417,12 @@ export async function createInitiative(payload: Partial<InitiativeModel>): Promi
       cleanPayload['pm_RequestedBy@odata.bind'] = `/systemusers(${userId})`
     }
   }
+  if (payload._pm_sponsor_value) {
+    const sponsorId = normalizeLookupId(payload._pm_sponsor_value)
+    if (sponsorId) {
+      cleanPayload['pm_Sponsor@odata.bind'] = `/systemusers(${sponsorId})`
+    }
+  }
   const defaults: Record<string, unknown> = {
     statecode: 0,
     statuscode: 1,
@@ -454,6 +482,10 @@ export async function updateInitiative(id: string, changes: Partial<InitiativeMo
     if (changes._pm_requestedby_value !== undefined) {
       const userId = normalizeLookupId(changes._pm_requestedby_value)
       cleanChanges['pm_RequestedBy@odata.bind'] = userId ? `/systemusers(${userId})` : null
+    }
+    if (changes._pm_sponsor_value !== undefined) {
+      const sponsorId = normalizeLookupId(changes._pm_sponsor_value)
+      cleanChanges['pm_Sponsor@odata.bind'] = sponsorId ? `/systemusers(${sponsorId})` : null
     }
     const result = await Pm_initiativesService.update(id, cleanChanges as any)
     if (!result.success) {

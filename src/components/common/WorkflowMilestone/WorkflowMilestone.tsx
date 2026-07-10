@@ -24,6 +24,7 @@ import {
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
 import PersonIcon from '@mui/icons-material/Person'
 import EventIcon from '@mui/icons-material/Event'
@@ -213,14 +214,19 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
   const [collapsedInstances, setCollapsedInstances] = useState<Record<string, boolean>>({})
   const [pendingTasksCollapsed, setPendingTasksCollapsed] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isManual = false) => {
     if (!workflowInstanceId && (!moduleName || !entityId)) {
       setLoading(false)
       return
     }
-    setLoading(true)
+    if (isManual) {
+      setRefreshing(true)
+    } else {
+      setLoading(true)
+    }
     setError(null)
     try {
       let workflowInstances: WorkflowInstanceModel[] = []
@@ -299,18 +305,19 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
       setError('Unable to load workflow milestone data.')
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }, [workflowInstanceId, moduleName, entityId])
 
   // Initial load
   useEffect(() => {
-    loadData()
+    loadData(false)
   }, [loadData])
 
   // Refresh whenever a workflow decision is submitted (any task modal completes)
   useEffect(() => {
     const handler = () => {
-      loadData()
+      loadData(true)
     }
     window.addEventListener(WORKFLOW_DECISION_EVENT, handler)
     return () => window.removeEventListener(WORKFLOW_DECISION_EVENT, handler)
@@ -350,15 +357,61 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
         <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5, color: 'text.secondary' }}>
           No Workflow Milestones
         </Typography>
-        <Typography variant="body2" color="text.disabled">
+        <Typography variant="body2" color="text.disabled" sx={{ mb: 2.5 }}>
           No workflow instances have been initiated for this entity yet.
         </Typography>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={refreshing ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
+          onClick={() => loadData(true)}
+          disabled={loading || refreshing}
+          sx={{ borderRadius: '8px', textTransform: 'none' }}
+        >
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </Button>
       </Paper>
     )
   }
 
   return (
     <Box className={className} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
+        <Typography 
+          variant="subtitle2" 
+          sx={{ 
+            fontWeight: 700, 
+            color: 'text.secondary', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 0.75,
+            fontFamily: "'Outfit', sans-serif",
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            fontSize: '0.75rem'
+          }}
+        >
+          <TimelineIcon sx={{ fontSize: 16, color: 'primary.main' }} /> Workflow Progress
+        </Typography>
+        <Tooltip title="Refresh workflow data">
+          <IconButton 
+            size="small" 
+            onClick={() => loadData(true)} 
+            disabled={loading || refreshing}
+            sx={{ 
+              color: 'text.secondary',
+              transition: 'all 0.2s',
+              '&:hover': { color: 'primary.main', bgcolor: 'action.hover' }
+            }}
+          >
+            {refreshing ? (
+              <CircularProgress size={16} color="inherit" />
+            ) : (
+              <RefreshIcon sx={{ fontSize: '1.2rem' }} />
+            )}
+          </IconButton>
+        </Tooltip>
+      </Box>
       {instances.map((instance) => {
         const steps = stepsByInstance[instance.pm_workflowinstanceid!] || []
         const templates = templatesByInstance[instance.pm_workflowinstanceid!] || []
