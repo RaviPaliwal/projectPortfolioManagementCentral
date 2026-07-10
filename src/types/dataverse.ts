@@ -142,6 +142,8 @@ export interface InitiativeModel {
   _pm_portfolio_value?: string
   pm_decisiondate?: string
   pm_convertedtoreference?: string
+  _pm_sponsor_value?: string
+  pm_sponsorname?: string
 }
 
 export interface ProjectTaskModel {

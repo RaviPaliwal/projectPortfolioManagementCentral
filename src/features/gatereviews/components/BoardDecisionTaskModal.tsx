@@ -16,6 +16,7 @@ import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 import { fontSizes } from '@/styles/fontSizes'
+import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 
 const mapPhaseToGate = (phase: number | string | undefined): { stage: number; number: number } => {
   const p = phase !== undefined ? Number(phase) : 3 // default to Initiation
@@ -262,6 +263,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
             onBeforeDecision={saveTaskData}
             onDecisionComplete={(decision) => {
               onSuccess(`Final Board Decision recorded.`)
+              dispatchFormDialogDecision({ formKey: 'board_decision', decision })
               onClose()
             }}
             onDecisionError={(msg) => onError(msg)}
