@@ -106,6 +106,15 @@
           "shared_office365": "979042e1-9a63-4d18-acc4-e61cc3535a6b"
         }
       }
+    },
+    "0ee2b761-795d-4812-b5d8-d76f114ff658": {
+      "id": "/providers/Microsoft.PowerApps/apis/shared_microsoftcopilotstudio",
+      "displayName": "Microsoft Copilot Studio",
+      "dataSources": [
+        "microsoftcopilotstudio"
+      ],
+      "authenticationType": "oauthDefault",
+      "dataSets": {}
     }
   },
   "databaseReferences": {

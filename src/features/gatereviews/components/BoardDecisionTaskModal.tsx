@@ -9,13 +9,32 @@ import PersonIcon from '@mui/icons-material/Person'
 import BusinessIcon from '@mui/icons-material/Business'
 import HistoryIcon from '@mui/icons-material/History'
 
-import { fetchProjectDetails, fetchGateReviewById, createGateReview, updateGateReview, unwrapList } from '@/services'
+import { fetchProjectDetails, fetchGateReviewById, createGateReview, updateGateReview, unwrapList, updateProject } from '@/services'
 import { Pm_projectgatereviewsService } from '@/generated'
 import type { Pm_projectgatereviews } from '@/generated/models/Pm_projectgatereviewsModel'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 import { fontSizes } from '@/styles/fontSizes'
+
+const mapPhaseToGate = (phase: number | string | undefined): { stage: number; number: number } => {
+  const p = phase !== undefined ? Number(phase) : 3 // default to Initiation
+  if (p === 3) return { stage: 0, number: 1 } // Initiation -> Gate 1
+  if (p === 1) return { stage: 1, number: 2 } // Planning -> Gate 2
+  if (p === 0) return { stage: 2, number: 3 } // Execution -> Gate 3
+  if (p === 2) return { stage: 3, number: 4 } // Closure -> Gate 4
+  return { stage: 0, number: 1 } // fallback
+}
+
+const getNextPhase = (currentPhase: number | string | undefined): number | undefined => {
+  if (currentPhase === undefined || currentPhase === null) return undefined
+  const p = Number(currentPhase)
+  if (p === 3) return 1 // Initiation -> Planning
+  if (p === 1) return 0 // Planning -> Execution
+  if (p === 0) return 2 // Execution -> Closure
+  if (p === 2) return 5 // Closure -> Completed
+  return undefined
+}
 
 interface BoardDecisionTaskModalProps {
   open: boolean
@@ -60,16 +79,7 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
         if (!proj) { onError('Project not found.'); setLoading(false); return }
         setProject(proj)
 
-        const reviewsResult = await Pm_projectgatereviewsService.getAll({
-          filter: `_pm_project_value eq '${projectId}' and statecode eq 0`,
-          select: ['pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage']
-        })
-        const existingReviews = unwrapList<Pm_projectgatereviews>(reviewsResult)
-        
-        const boardCount = existingReviews.filter(r => 
-          r.pm_gatename?.toLowerCase().includes('board decision') || r.pm_gatename?.toLowerCase().includes('governance board')
-        ).length
-        const currentGateStage = Math.min(3, boardCount)
+        const { stage: currentGateStage } = mapPhaseToGate(proj.pm_projectphase)
         setGateStage(currentGateStage)
       }
     } catch (err) {
@@ -85,37 +95,51 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
     setSaving(true)
     try {
       const decisionLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'
+      const projId = projectId || project?.pm_projectid || gateReview?._pm_project_value
 
+      // 1. Update or Create Gate Review
       if (gateReviewId) {
+        const { stage, number } = mapPhaseToGate(project?.pm_projectphase)
         await updateGateReview(gateReviewId, {
           pm_reviewoutcome: workflowDecision === 0 ? 0 : 4,
           pm_reviewstatus: 0,
           pm_reviewnotes: boardNotes,
           pm_actualreviewdate: new Date().toISOString(),
+          pm_gatestage: stage as any,
+          pm_gatename: `Governance Board Decision - Gate ${number}`,
         })
         onSuccess(`Final Board Decision recorded. Outcome: ${decisionLabel}`)
-      } else if (projectId) {
-        const gateNumber = gateStage + 1
+      } else if (projId) {
+        const { stage, number } = mapPhaseToGate(project?.pm_projectphase)
         const newReviewPayload: Partial<GateReviewModel> = {
-          pm_gatename: `Governance Board Decision - Gate ${gateNumber}`,
-          pm_gatestage: gateStage as any,
+          pm_gatename: `Governance Board Decision - Gate ${number}`,
+          pm_gatestage: stage as any,
           pm_reviewoutcome: workflowDecision === 0 ? 0 : 4,
           pm_reviewstatus: 0,
           pm_actualreviewdate: new Date().toISOString(),
           pm_plannedreviewdate: new Date().toISOString(),
           pm_reviewnotes: boardNotes,
-          _pm_project_value: projectId,
+          _pm_project_value: projId,
         }
         const createdReview = await createGateReview(newReviewPayload)
         if (!createdReview) throw new Error('Failed to create gate review')
         onSuccess(`Final Board Decision recorded. Outcome: ${decisionLabel}. Gate review entry created.`)
       }
+
+      // 2. Update Project Phase (only on approval)
+      if (workflowDecision === 0 && projId) {
+        const nextPhase = getNextPhase(project?.pm_projectphase)
+        if (nextPhase !== undefined) {
+          await updateProject(projId, { pm_projectphase: nextPhase })
+        }
+      }
+
       return true
     } catch (err) {
       onError('Unable to record board decision.')
       return false
     } finally { setSaving(false) }
-  }, [gateReviewId, projectId, gateStage, boardNotes, onSuccess, onError])
+  }, [gateReviewId, projectId, project, gateReview, boardNotes, onSuccess, onError])
 
   if (!open) return null
 
