@@ -61,16 +61,12 @@ export interface Pm_projectstatussnapshotsBase {
   pm_costragstatus?: Pm_projectstatussnapshotspm_costragstatus;
   pm_entitytype?: string;
   pm_overallragstatus?: Pm_projectstatussnapshotspm_overallragstatus;
-  pm_portfolio?: string;
   "pm_portfolioLookup@odata.bind"?: string;
-  pm_programme?: string;
   "pm_programmeName@odata.bind"?: string;
   "pm_project@odata.bind"?: string;
-  pm_projectcode?: string;
   pm_projecthighlights?: string;
   pm_projectlowlights?: string;
   pm_projectstatussnapshotid: string;
-  "pm_reportingfiscalperiod@odata.bind"?: string;
   pm_reportingperiod?: string;
   pm_resourceragstatus?: Pm_projectstatussnapshotspm_resourceragstatus;
   pm_riskragstatus?: Pm_projectstatussnapshotspm_riskragstatus;
@@ -105,7 +101,6 @@ export interface Pm_projectstatussnapshots extends Pm_projectstatussnapshotsBase
   pm_portfoliolookupname?: string;
   pm_programmenamename?: string;
   pm_projectname?: string;
-  pm_reportingfiscalperiodname?: string;
   pm_resourceragstatusname?: string;
   pm_riskragstatusname?: string;
   pm_scheduleragstatusname?: string;
@@ -132,6 +127,4 @@ export interface Pm_projectstatussnapshots extends Pm_projectstatussnapshotsBase
   _pm_programmename_value?: string;
   pm_project?: object;
   _pm_project_value?: string;
-  pm_reportingfiscalperiod?: object;
-  _pm_reportingfiscalperiod_value?: string;
 }

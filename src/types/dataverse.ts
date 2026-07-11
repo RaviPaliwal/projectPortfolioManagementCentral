@@ -238,6 +238,8 @@ export interface TimesheetModel {
   pm_approvedby?: string
   pm_rejectionreason?: string
   pm_reportingperiod?: string
+  pm_financialperiodname?: string
+  _pm_financialperiod_value?: string
   pm_resourcename?: string
   _pm_resource_value?: string
 }

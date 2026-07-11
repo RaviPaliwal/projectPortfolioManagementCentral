@@ -27,9 +27,7 @@ export interface Pm_timesheetsBase {
   owneridtype: string;
   pm_approvaldate?: string;
   pm_approvedby?: string;
-  "pm_fiscalperiod1@odata.bind"?: string;
-  pm_periodenddate?: string;
-  pm_periodstartdate?: string;
+  "pm_FinancialPeriod@odata.bind"?: string;
   pm_rejectionreason?: string;
   "pm_resource@odata.bind"?: string;
   pm_submissiondate?: string;
@@ -60,7 +58,7 @@ export interface Pm_timesheets extends Pm_timesheetsBase {
   owneridname: string;
   owneridyominame: string;
   owningbusinessunitname: string;
-  pm_fiscalperiod1name?: string;
+  pm_financialperiodname?: string;
   pm_resourcename?: string;
   pm_timesheetstatusname?: string;
   statecodename?: string;
@@ -80,8 +78,8 @@ export interface Pm_timesheets extends Pm_timesheetsBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
-  pm_fiscalperiod1?: object;
-  _pm_fiscalperiod1_value?: string;
+  pm_financialperiod?: object;
+  _pm_financialperiod_value?: string;
   pm_resource?: object;
   _pm_resource_value?: string;
 }

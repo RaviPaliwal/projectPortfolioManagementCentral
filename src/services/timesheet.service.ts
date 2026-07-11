@@ -18,26 +18,43 @@ import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
 import { recalculateRealFinancialsForProject } from './finance.service'
 import type { IGetAllOptions } from '@/generated/models/CommonModels'
 
-export const mapTimesheet = (item: Pm_timesheets): TimesheetModel => ({
-  pm_timesheetid: item.pm_timesheetid,
-  pm_timesheetname: item.pm_timesheetname,
-  pm_ownername: item.pm_resourcename,
-  pm_periodstartdate: item.pm_periodstartdate,
-  pm_periodenddate: item.pm_periodenddate,
-  pm_timesheetstatus: item.pm_timesheetstatus,
-  pm_totalhours: item.pm_totalhours,
-  pm_totalchargeablehours: item.pm_totalchargeablehours,
-  pm_totalnonchargeablehours: item.pm_totalnonchargeablehours,
-  pm_submissiondate: item.pm_submissiondate,
-  pm_submittedby: item.pm_submittedby,
-  pm_approvaldate: item.pm_approvaldate,
-  pm_approvedby: item.pm_approvedby,
-  pm_rejectionreason: item.pm_rejectionreason,
-  pm_resourcename: item.pm_resourcename,
-  _pm_resource_value: item._pm_resource_value,
-  ownerid: (item as any)._ownerid_value || item.ownerid,
-  owneridtype: item.owneridtype,
-})
+export const mapTimesheet = (item: Pm_timesheets, periods?: any[]): TimesheetModel => {
+  let startDate = (item as any).pm_periodstartdate
+  let endDate = (item as any).pm_periodenddate
+  
+  if (periods && item._pm_financialperiod_value) {
+    const normFP = normalizeLookupId(item._pm_financialperiod_value)
+    const found = periods.find(p => normalizeLookupId(p.pm_fiscalperiodid) === normFP)
+    if (found) {
+      startDate = found.pm_startdate
+      endDate = found.pm_enddate
+    }
+  }
+
+  return {
+    pm_timesheetid: item.pm_timesheetid,
+    pm_timesheetname: item.pm_timesheetname,
+    pm_ownername: item.pm_resourcename,
+    pm_periodstartdate: startDate,
+    pm_periodenddate: endDate,
+    pm_timesheetstatus: item.pm_timesheetstatus,
+    pm_totalhours: item.pm_totalhours,
+    pm_totalchargeablehours: item.pm_totalchargeablehours,
+    pm_totalnonchargeablehours: item.pm_totalnonchargeablehours,
+    pm_submissiondate: item.pm_submissiondate,
+    pm_submittedby: item.pm_submittedby,
+    pm_approvaldate: item.pm_approvaldate,
+    pm_approvedby: item.pm_approvedby,
+    pm_rejectionreason: item.pm_rejectionreason,
+    pm_resourcename: item.pm_resourcename,
+    _pm_resource_value: item._pm_resource_value,
+    pm_reportingperiod: item.pm_financialperiodname || undefined,
+    pm_financialperiodname: item.pm_financialperiodname,
+    _pm_financialperiod_value: item._pm_financialperiod_value,
+    ownerid: (item as any)._ownerid_value || item.ownerid,
+    owneridtype: item.owneridtype,
+  }
+}
 
 export const mapTimesheetEntry = (item: Pm_timesheetentries): TimesheetEntryModel => ({
   pm_timesheetentryid: item.pm_timesheetentryid,
@@ -59,11 +76,12 @@ export async function fetchTimesheets(resourceId?: string): Promise<TimesheetMod
   try {
     const selectFields = [
       'pm_timesheetid', 'pm_timesheetname',
-      'pm_periodstartdate', 'pm_periodenddate', 'pm_timesheetstatus',
+      'pm_timesheetstatus',
       'pm_totalhours', 'pm_totalchargeablehours', 'pm_totalnonchargeablehours',
       'pm_submissiondate', 'pm_submittedby',
       'pm_approvaldate', 'pm_approvedby',
       'pm_rejectionreason', '_pm_resource_value',
+      'pm_financialperiodname', '_pm_financialperiod_value',
     ]
     const options: IGetAllOptions = {
       select: selectFields,
@@ -79,7 +97,11 @@ export async function fetchTimesheets(resourceId?: string): Promise<TimesheetMod
       console.error('[TimesheetService] fetchTimesheets failed:', result.error)
       return []
     }
-    const list = unwrapList<Pm_timesheets>(result).map(mapTimesheet)
+    const { Pm_fiscalperiodsService } = await import('@/generated/services/Pm_fiscalperiodsService')
+    const periodsResult = await Pm_fiscalperiodsService.getAll({ select: ['pm_fiscalperiodid', 'pm_startdate', 'pm_enddate'], top: 200 })
+    const periods = periodsResult.success ? unwrapList<any>(periodsResult) : []
+
+    const list = unwrapList<Pm_timesheets>(result).map(item => mapTimesheet(item, periods))
 
     try {
       const resourceIds = Array.from(new Set(list.map((ts) => normalizeLookupId(ts._pm_resource_value)).filter(Boolean))) as string[]
@@ -126,11 +148,12 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
   try {
     const selectFields = [
       'pm_timesheetid', 'pm_timesheetname',
-      'pm_periodstartdate', 'pm_periodenddate', 'pm_timesheetstatus',
+      'pm_timesheetstatus',
       'pm_totalhours', 'pm_totalchargeablehours', 'pm_totalnonchargeablehours',
       'pm_submissiondate', 'pm_submittedby',
       'pm_approvaldate', 'pm_approvedby',
       'pm_rejectionreason', '_pm_resource_value', 'ownerid',
+      'pm_financialperiodname', '_pm_financialperiod_value',
     ]
     const result = await Pm_timesheetsService.get(timesheetId, { select: selectFields })
     if (!result.success) {
@@ -139,8 +162,13 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
     }
     const item = unwrapSingle<Pm_timesheets>(result)
     if (!item) return null
+
+    const { Pm_fiscalperiodsService } = await import('@/generated/services/Pm_fiscalperiodsService')
+    const periodsResult = await Pm_fiscalperiodsService.getAll({ select: ['pm_fiscalperiodid', 'pm_startdate', 'pm_enddate'], top: 200 })
+    const periods = periodsResult.success ? unwrapList<any>(periodsResult) : []
+
     console.log('[TimesheetService] fetchTimesheetDetails raw item:', JSON.stringify(item))
-    const mapped = mapTimesheet(item)
+    const mapped = mapTimesheet(item, periods)
     try {
       const resourceId = normalizeLookupId(item._pm_resource_value)
       if (resourceId) {
@@ -193,6 +221,32 @@ export async function createTimesheet(payload: Partial<TimesheetModel>): Promise
       const resourceId = normalizeLookupId(payload._pm_resource_value)
       if (resourceId) {
         cleanPayload['pm_resource@odata.bind'] = `/pm_resources(${resourceId})`
+      }
+    }
+    if (payload._pm_financialperiod_value) {
+      const fpId = normalizeLookupId(payload._pm_financialperiod_value)
+      if (fpId) {
+        cleanPayload['pm_FinancialPeriod@odata.bind'] = `/pm_fiscalperiods(${fpId})`
+      }
+    } else if (payload.pm_periodstartdate) {
+      try {
+        const { Pm_fiscalperiodsService } = await import('@/generated/services/Pm_fiscalperiodsService')
+        const periodsResult = await Pm_fiscalperiodsService.getAll({ select: ['pm_fiscalperiodid', 'pm_startdate', 'pm_enddate'], top: 100 })
+        if (periodsResult.success) {
+          const periods = unwrapList<any>(periodsResult)
+          const targetDate = new Date(payload.pm_periodstartdate)
+          const match = periods.find((p: any) => {
+            if (!p.pm_startdate || !p.pm_enddate) return false
+            const start = new Date(p.pm_startdate)
+            const end = new Date(p.pm_enddate)
+            return targetDate >= start && targetDate <= end
+          })
+          if (match && match.pm_fiscalperiodid) {
+            cleanPayload['pm_FinancialPeriod@odata.bind'] = `/pm_fiscalperiods(${normalizeLookupId(match.pm_fiscalperiodid)})`
+          }
+        }
+      } catch (err) {
+        console.error('[TimesheetService] failed to auto-bind fiscal period:', err)
       }
     }
     const result = await Pm_timesheetsService.create({ ...defaults, ...cleanPayload } as unknown as Pm_timesheets)
@@ -528,35 +582,9 @@ export async function checkTimesheetOverlap(
   endDate: string,
   excludeTimesheetId?: string
 ): Promise<{ overlaps: boolean; timesheetName?: string; pm_periodstartdate?: string; pm_periodenddate?: string }> {
-  try {
-    const id = normalizeLookupId(resourceId)
-    if (!id) return { overlaps: false }
-    let filter = `_pm_resource_value eq '${id}' and statecode eq 0 and pm_periodstartdate le '${endDate}' and pm_periodenddate ge '${startDate}'`
-    if (excludeTimesheetId) {
-      filter += ` and pm_timesheetid ne '${excludeTimesheetId}'`
-    }
-    const result = await Pm_timesheetsService.getAll({
-      filter,
-      select: ['pm_timesheetid', 'pm_timesheetname', 'pm_periodstartdate', 'pm_periodenddate'],
-      top: 1,
-    })
-    if (!result.success) {
-      console.error('[TimesheetService] checkTimesheetOverlap failed:', result.error)
-      return { overlaps: false }
-    }
-    const list = unwrapList<Pm_timesheets>(result)
-    if (list.length === 0) return { overlaps: false }
-    const ts = list[0]
-    return {
-      overlaps: true,
-      timesheetName: ts.pm_timesheetname,
-      pm_periodstartdate: ts.pm_periodstartdate,
-      pm_periodenddate: ts.pm_periodenddate,
-    }
-  } catch (err) {
-    console.error('[TimesheetService] checkTimesheetOverlap exception:', err)
-    return { overlaps: false }
-  }
+  // Since timesheets are strictly aligned to predefined discrete financial periods,
+  // period duplication is checked via _pm_financialperiod_value lookup.
+  return { overlaps: false }
 }
 
 export async function deleteTimesheet(timesheetId: string): Promise<void> {

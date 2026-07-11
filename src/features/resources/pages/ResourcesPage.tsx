@@ -988,6 +988,60 @@ export default function ResourcesPage() {
               </Box>
               <Grid container spacing={2.5} sx={{ mb: 3 }}>
                 <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormControl fullWidth size="small" error={!!systemUserConflict}>
+                    <InputLabel id="resource-system-user-label">System User</InputLabel>
+                    <Select
+                      id="resource-system-user-select"
+                      labelId="resource-system-user-label"
+                      value={users.find((u) => u.systemuserid === formData._pm_systemuser_value)?.systemuserid || ''}
+                      label="System User"
+                      onChange={(e) => {
+                        const val = e.target.value
+                        const user = users.find((u) => u.systemuserid === val)
+                        setFormData((f) => ({
+                          ...f,
+                          _pm_systemuser_value: val,
+                          pm_fullname: user ? user.fullname || f.pm_fullname : f.pm_fullname,
+                          pm_positiontitle: user ? user.jobtitle || f.pm_positiontitle : f.pm_positiontitle,
+                        }))
+                      }}
+                      sx={{ borderRadius: 1.5 }}
+                      renderValue={(selected) => {
+                        const user = users.find((u) => u.systemuserid === selected)
+                        return (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
+                              {user?.fullname?.charAt(0) || '?'}
+                            </Avatar>
+                            {user?.fullname || 'Select User'}
+                          </Box>
+                        )
+                      }}
+                    >
+                      <MenuItem value="">— None —</MenuItem>
+                      {users.map((user) => (
+                        <MenuItem key={user.systemuserid} value={user.systemuserid}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
+                              {user.fullname?.charAt(0) || '?'}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{user.fullname}</Typography>
+                              {user.jobtitle && <Typography variant="caption" color="text.secondary">{user.jobtitle}</Typography>}
+                            </Box>
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {systemUserConflict && (
+                      <FormHelperText>Already linked to "{systemUserConflict}"</FormHelperText>
+                    )}
+                    {checkingUser && !systemUserConflict && (
+                      <FormHelperText>Checking...</FormHelperText>
+                    )}
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Full Name"
                     required
@@ -1045,52 +1099,7 @@ export default function ResourcesPage() {
                     slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth size="small" error={!!systemUserConflict}>
-                    <InputLabel id="resource-system-user-label">System User</InputLabel>
-                    <Select
-                      id="resource-system-user-select"
-                      labelId="resource-system-user-label"
-                      value={users.find((u) => u.systemuserid === formData._pm_systemuser_value)?.systemuserid || ''}
-                      label="System User"
-                      onChange={(e) => setFormData(f => ({ ...f, _pm_systemuser_value: e.target.value }))}
-                      sx={{ borderRadius: 1.5 }}
-                      renderValue={(selected) => {
-                        const user = users.find((u) => u.systemuserid === selected)
-                        return (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Avatar sx={{ width: 20, height: 20, fontSize: 10, bgcolor: 'primary.main' }}>
-                              {user?.fullname?.charAt(0) || '?'}
-                            </Avatar>
-                            {user?.fullname || 'Select User'}
-                          </Box>
-                        )
-                      }}
-                    >
-                      <MenuItem value="">— None —</MenuItem>
-                      {users.map((user) => (
-                        <MenuItem key={user.systemuserid} value={user.systemuserid}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Avatar sx={{ width: 24, height: 24, fontSize: 12, bgcolor: 'primary.main' }}>
-                              {user.fullname?.charAt(0) || '?'}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{user.fullname}</Typography>
-                              {user.jobtitle && <Typography variant="caption" color="text.secondary">{user.jobtitle}</Typography>}
-                            </Box>
-                          </Box>
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {systemUserConflict && (
-                      <FormHelperText>Already linked to "{systemUserConflict}"</FormHelperText>
-                    )}
-                    {checkingUser && !systemUserConflict && (
-                      <FormHelperText>Checking...</FormHelperText>
-                    )}
-                  </FormControl>
-                </Grid>
-                {formData.pm_resourcecategory === 1 && (
+                {(formData.pm_resourcecategory === 1 || formData.pm_resourcecategory === 2) && (
                   <Grid size={{ xs: 12 }}>
                     <TextField
                       label="Supplier / Company"

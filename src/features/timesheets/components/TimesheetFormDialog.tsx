@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -30,6 +30,7 @@ interface TimesheetFormDialogProps {
   loading?: boolean
   draftMode?: boolean
   overlapError?: string | null
+  financialPeriods?: any[]
 }
 
 function getDefaultDateRange() {
@@ -39,7 +40,6 @@ function getDefaultDateRange() {
   return {
     pm_periodstartdate: start.toISOString().split('T')[0],
     pm_periodenddate: end.toISOString().split('T')[0],
-    pm_reportingperiod: `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`,
   }
 }
 
@@ -51,9 +51,9 @@ export function TimesheetFormDialog({
   loading,
   draftMode = false,
   overlapError = null,
+  financialPeriods = [],
 }: TimesheetFormDialogProps) {
   const { currentUser } = useUser()
-  const defaultRange = getDefaultDateRange()
   const defaultResId = useMemo(() => {
     if (!draftMode || !currentUser?.fullname) return ''
     const match = resources.find(
@@ -61,15 +61,32 @@ export function TimesheetFormDialog({
     )
     return match?.pm_resourceid ?? ''
   }, [draftMode, currentUser, resources])
+
   const [form, setForm] = useState({
     ownerid: currentUser?.systemuserid ?? '',
     owneridtype: 'systemuser' as string,
-    pm_periodstartdate: draftMode ? defaultRange.pm_periodstartdate : '',
-    pm_periodenddate: draftMode ? defaultRange.pm_periodenddate : '',
-    pm_reportingperiod: draftMode ? defaultRange.pm_reportingperiod : '',
+    _pm_financialperiod_value: '',
     _pm_resource_value: defaultResId,
   })
   const [periodError, setPeriodError] = useState<string | null>(null)
+
+  const selectedPeriod = useMemo(() => {
+    if (!form._pm_financialperiod_value) return null
+    return financialPeriods.find(p => p.pm_fiscalperiodid === form._pm_financialperiod_value)
+  }, [form._pm_financialperiod_value, financialPeriods])
+
+  useEffect(() => {
+    if (open && financialPeriods && financialPeriods.length > 0) {
+      const sorted = [...financialPeriods].sort((a, b) => new Date(a.pm_startdate || '').getTime() - new Date(b.pm_startdate || '').getTime())
+      const defaultPeriod = sorted.find(p => !p.pm_isclosed) || sorted[0]
+      if (defaultPeriod) {
+        setForm(prev => ({
+          ...prev,
+          _pm_financialperiod_value: defaultPeriod.pm_fiscalperiodid,
+        }))
+      }
+    }
+  }, [open, financialPeriods])
 
   const resourceOptions = useMemo(() => {
     return resources
@@ -78,29 +95,19 @@ export function TimesheetFormDialog({
   }, [resources])
 
   const periodDurationDays = useMemo(() => {
-    if (!form.pm_periodstartdate || !form.pm_periodenddate) return 0
-    const start = new Date(form.pm_periodstartdate)
-    const end = new Date(form.pm_periodenddate)
+    if (!selectedPeriod?.pm_startdate || !selectedPeriod?.pm_enddate) return 0
+    const start = new Date(selectedPeriod.pm_startdate)
+    const end = new Date(selectedPeriod.pm_enddate)
     return Math.max(0, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-  }, [form.pm_periodstartdate, form.pm_periodenddate])
+  }, [selectedPeriod])
 
   const periodValidationError = useMemo(() => {
-    if (!form.pm_periodstartdate || !form.pm_periodenddate) return null
-    if (form.pm_periodenddate < form.pm_periodstartdate) {
-      return 'Period End must be on or after Period Start.'
-    }
-    if (periodDurationDays > 370) {
-      return 'Period cannot exceed 370 days. Please select a shorter range.'
-    }
-    const now = new Date()
-    now.setHours(0, 0, 0, 0)
-    const start = new Date(form.pm_periodstartdate + 'T00:00:00')
-    const futureLimit = new Date(now.getFullYear() + 1, now.getMonth(), 1)
-    if (start > futureLimit) {
-      return 'Start date cannot be more than 12 months in the future.'
+    if (!selectedPeriod) return 'Please select a financial period.'
+    if (selectedPeriod.pm_isclosed) {
+      return 'The selected period is closed.'
     }
     return null
-  }, [form.pm_periodstartdate, form.pm_periodenddate, periodDurationDays])
+  }, [selectedPeriod])
 
   const handleSubmit = async () => {
     if (periodValidationError) {
@@ -112,16 +119,16 @@ export function TimesheetFormDialog({
       return
     }
     setPeriodError(null)
-    await onSubmit(form)
-    const range = getDefaultDateRange()
-    setForm({
-      ownerid: currentUser?.systemuserid ?? '',
-      owneridtype: 'systemuser',
-      pm_periodstartdate: draftMode ? range.pm_periodstartdate : '',
-      pm_periodenddate: draftMode ? range.pm_periodenddate : '',
-      pm_reportingperiod: draftMode ? range.pm_reportingperiod : '',
-      _pm_resource_value: '',
+    await onSubmit({
+      ...form,
+      pm_periodstartdate: selectedPeriod?.pm_startdate,
+      pm_periodenddate: selectedPeriod?.pm_enddate,
     })
+    setForm(prev => ({
+      ...prev,
+      _pm_financialperiod_value: '',
+      _pm_resource_value: '',
+    }))
   }
 
   return (
@@ -166,29 +173,34 @@ export function TimesheetFormDialog({
             </FormControl>
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Period Start"
-              type="date"
-              required
-              fullWidth
-              size="small"
-              value={form.pm_periodstartdate}
-              onChange={(e) => setForm((f) => ({ ...f, pm_periodstartdate: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Period End"
-              type="date"
-              required
-              fullWidth
-              size="small"
-              value={form.pm_periodenddate}
-              onChange={(e) => setForm((f) => ({ ...f, pm_periodenddate: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
+          <Grid size={{ xs: 12 }}>
+            <FormControl fullWidth size="small" required error={!form._pm_financialperiod_value}>
+              <InputLabel id="financial-period-select-label">Financial Period</InputLabel>
+              <Select
+                id="financial-period-select"
+                labelId="financial-period-select-label"
+                value={form._pm_financialperiod_value}
+                label="Financial Period"
+                onChange={(e) => setForm((f) => ({ ...f, _pm_financialperiod_value: e.target.value }))}
+              >
+                {financialPeriods.map((p) => {
+                  const startStr = p.pm_startdate ? new Date(p.pm_startdate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
+                  const endStr = p.pm_enddate ? new Date(p.pm_enddate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
+                  return (
+                    <MenuItem key={p.pm_fiscalperiodid} value={p.pm_fiscalperiodid}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          Period {p.pm_periodnumber} • FY{p.pm_fiscalyear} {p.pm_isclosed ? ' (Closed)' : ''}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {startStr} - {endStr}
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  )
+                })}
+              </Select>
+            </FormControl>
           </Grid>
 
           {periodDurationDays > 0 && (
@@ -225,7 +237,7 @@ export function TimesheetFormDialog({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={!form.pm_periodstartdate || !form.pm_periodenddate || !form._pm_resource_value || !!periodValidationError || loading}
+          disabled={!selectedPeriod?.pm_startdate || !selectedPeriod?.pm_enddate || !form._pm_resource_value || !!periodValidationError || loading}
         >
           {loading ? 'Creating...' : draftMode ? 'Create Entry' : 'Create Timesheet'}
         </Button>
