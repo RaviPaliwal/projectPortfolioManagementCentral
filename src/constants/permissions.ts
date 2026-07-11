@@ -27,7 +27,7 @@ export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
     'timesheets', 'budgets', 'gatereviews', 'benefits', 'risks',
     'issues', 'changerequests', 'cashflow', 'tasks', 'fundingsources',
     'statussnapshots', 'configurations', 'workflows', 'teamadmin', 'skills', 'holidays', 'calendar', 'activitylog',
-    'reportConfigs'
+    'reportConfigs', 'fiscalperiods'
   ],
   PortfolioExecutive: [
     'dashboard', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
@@ -36,7 +36,7 @@ export const PERSONA_PERMISSIONS: Record<Persona, TabKey[]> = {
   PMO: [
     'dashboard', 'strategicRoster', 'portfolios', 'programmes', 'projects', 'pipeline',
     'gatereviews', 'changerequests', 'tasks', 'statussnapshots',
-    'workflows', 'teamadmin', 'calendar', 'activitylog', 'resources', 'reportConfigs'
+    'workflows', 'teamadmin', 'calendar', 'activitylog', 'resources', 'reportConfigs', 'fiscalperiods'
   ],
   ProjectManager: [
     'dashboard', 'strategicRoster', 'projects', 'resources', 'timesheets', 'gatereviews',

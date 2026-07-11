@@ -62,3 +62,11 @@ export function navigateToIssue(issueId: string): void {
 export function navigateToProgramme(programmeId: string): void {
   navigateToModule('Programme', programmeId)
 }
+
+/**
+ * Navigate to the Portfolios tab and pre-select a portfolio by ID.
+ */
+export function navigateToPortfolio(portfolioId: string): void {
+  navigateToModule('Portfolio', portfolioId)
+}
+

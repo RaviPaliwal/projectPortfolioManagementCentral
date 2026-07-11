@@ -17,7 +17,7 @@ export interface PortfolioModel {
   pm_strategicobjective?: string
   pm_prioritylevel?: number
   pm_businessunit?: string
-  pm_createdon?: string
+  createdon?: string
 }
 
 export interface ProgrammeModel {
@@ -144,6 +144,7 @@ export interface InitiativeModel {
   _pm_portfolio_value?: string
   pm_decisiondate?: string
   pm_convertedtoreference?: string
+  pm_convertedtoname?: string
   createdon?: string
   _pm_sponsor_value?: string
   pm_sponsorname?: string

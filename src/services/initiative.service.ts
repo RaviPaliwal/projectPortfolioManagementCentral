@@ -30,22 +30,25 @@ export const mapInitiative = (item: Pm_initiatives): InitiativeModel => {
     pm_pipelinestatus: item.pm_pipelinestatus,
     pm_requestedbyname: item.pm_requestedbyname,
     _pm_requestedby_value: (item as unknown as Record<string, unknown>)._pm_requestedby_value as string,
-    pm_programmename: item.pm_programmename,
+    pm_programmename: item.pm_programmename || (item as any)['_pm_programme_value@OData.Community.Display.V1.FormattedValue'],
     _pm_programme_value: (item as unknown as Record<string, unknown>)._pm_programme_value as string,
     pm_submissiondate: item.pm_submissiondate || (item as any).createdon,
-    pm_portfolioname: item.pm_portfolioname,
+    pm_portfolioname: item.pm_portfolioname || (item as any)['_pm_portfolio_value@OData.Community.Display.V1.FormattedValue'],
     pm_initiativetype: (item as unknown as Record<string, unknown>).pm_initiativetype as number,
     pm_decisiondate: item.pm_decisiondate,
     pm_createdbyname: undefined,
     _pm_portfolio_value: (item as unknown as Record<string, unknown>)._pm_portfolio_value as string,
-    pm_convertedtoreference: item.pm_convertedtoreference,
+    pm_convertedtoreference: (item as any)._pm_convertedtoid_value,
+    pm_convertedtoname: (item as any)['_pm_convertedtoid_value@OData.Community.Display.V1.FormattedValue'],
+    pm_sponsorname: item.pm_sponsorname || (item as any)['_pm_sponsor_value@OData.Community.Display.V1.FormattedValue'],
+    _pm_sponsor_value: (item as unknown as Record<string, unknown>)._pm_sponsor_value as string,
   }
   return applySecurityMasking(mapped, 'initiative')
 }
 
 export async function fetchInitiatives(status?: number): Promise<InitiativeModel[]> {
   try {
-    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', '_pm_portfolio_value', 'pm_initiativetype', 'pm_convertedtoreference', '_pm_sponsor_value']
+    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', '_pm_portfolio_value', 'pm_initiativetype', '_pm_convertedtoid_value', '_pm_sponsor_value']
     const options: IGetAllOptions = { select, orderBy: ['createdon desc'], top: 200 }
     if (typeof status === 'number') options.filter = `pm_pipelinestatus eq ${status}`
     const result = await Pm_initiativesService.getAll(options)
@@ -135,7 +138,7 @@ export async function fetchInitiatives(status?: number): Promise<InitiativeModel
 
 export async function fetchInitiativeById(id: string): Promise<InitiativeModel | null> {
   try {
-    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', 'pm_initiativetype', 'pm_decisiondate', '_pm_portfolio_value', '_createdby_value', 'pm_convertedtoreference', '_pm_sponsor_value']
+    const select = ['pm_initiativeid', 'pm_initiativename', 'pm_businesscasedescription', 'pm_estimatedcosteur', 'pm_estimatedbenefitseur', 'pm_priorityscore', 'pm_strategicalignmentscore', 'pm_pipelinestatus', '_pm_requestedby_value', '_pm_programme_value', 'pm_submissiondate', 'createdon', 'pm_initiativetype', 'pm_decisiondate', '_pm_portfolio_value', '_createdby_value', '_pm_convertedtoid_value', '_pm_sponsor_value']
     const result = await Pm_initiativesService.get(id, { select })
     if (!result.success) {
       console.error('[InitiativeService] fetchInitiativeById failed:', result.error)
@@ -406,7 +409,7 @@ export async function createInitiative(payload: Partial<InitiativeModel>): Promi
   if (payload._pm_portfolio_value) {
     const portfolioId = normalizeLookupId(payload._pm_portfolio_value)
     if (portfolioId) {
-      cleanPayload['pm_portfolio@odata.bind'] = `/pm_portfolios(${portfolioId})`
+      cleanPayload['pm_Portfolio@odata.bind'] = `/pm_portfolios(${portfolioId})`
     }
   }
   if (payload._pm_programme_value) {
@@ -461,7 +464,7 @@ export async function updateInitiative(id: string, changes: Partial<InitiativeMo
   try {
     const cleanChanges: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(changes)) {
-      if (value !== undefined && !key.startsWith('_') && key !== 'pm_initiativeid' && key !== 'createdon') {
+      if (value !== undefined && !key.startsWith('_') && key !== 'pm_initiativeid' && key !== 'createdon' && key !== 'pm_convertedtoreference') {
         if (key === 'pm_name') {
           const strVal = typeof value === 'string' ? value : '';
           cleanChanges.pm_initiativename = strVal.length > 99 ? strVal.slice(0, 99) : strVal
@@ -480,7 +483,7 @@ export async function updateInitiative(id: string, changes: Partial<InitiativeMo
     }
     if (changes._pm_portfolio_value !== undefined) {
       const portfolioId = normalizeLookupId(changes._pm_portfolio_value)
-      cleanChanges['pm_portfolio@odata.bind'] = portfolioId ? `/pm_portfolios(${portfolioId})` : null
+      cleanChanges['pm_Portfolio@odata.bind'] = portfolioId ? `/pm_portfolios(${portfolioId})` : null
     }
     if (changes._pm_programme_value !== undefined) {
       const programmeId = normalizeLookupId(changes._pm_programme_value)
@@ -493,6 +496,29 @@ export async function updateInitiative(id: string, changes: Partial<InitiativeMo
     if (changes._pm_sponsor_value !== undefined) {
       const sponsorId = normalizeLookupId(changes._pm_sponsor_value)
       cleanChanges['pm_Sponsor@odata.bind'] = sponsorId ? `/systemusers(${sponsorId})` : null
+    }
+    if (changes.pm_convertedtoreference !== undefined) {
+      const refId = changes.pm_convertedtoreference;
+      if (refId) {
+        const type = changes.pm_initiativetype ?? 0;
+        if (Number(type) === 1) { // Programme
+          cleanChanges['pm_ConvertedToId_pm_programme@odata.bind'] = `/pm_programmes(${refId})`;
+          cleanChanges['pm_convertedtoid_pm_programme@odata.bind'] = `/pm_programmes(${refId})`;
+        } else if (Number(type) === 2) { // Portfolio
+          cleanChanges['pm_ConvertedToId_pm_portfolio@odata.bind'] = `/pm_portfolios(${refId})`;
+          cleanChanges['pm_convertedtoid_pm_portfolio@odata.bind'] = `/pm_portfolios(${refId})`;
+        } else { // Project (0)
+          cleanChanges['pm_ConvertedToId_pm_project@odata.bind'] = `/pm_projects(${refId})`;
+          cleanChanges['pm_convertedtoid_pm_project@odata.bind'] = `/pm_projects(${refId})`;
+        }
+      } else {
+        cleanChanges['pm_ConvertedToId_pm_programme@odata.bind'] = null;
+        cleanChanges['pm_convertedtoid_pm_programme@odata.bind'] = null;
+        cleanChanges['pm_ConvertedToId_pm_portfolio@odata.bind'] = null;
+        cleanChanges['pm_convertedtoid_pm_portfolio@odata.bind'] = null;
+        cleanChanges['pm_ConvertedToId_pm_project@odata.bind'] = null;
+        cleanChanges['pm_convertedtoid_pm_project@odata.bind'] = null;
+      }
     }
     const result = await Pm_initiativesService.update(id, cleanChanges as any)
     if (!result.success) {

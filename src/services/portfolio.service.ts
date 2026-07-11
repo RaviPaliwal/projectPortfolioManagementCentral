@@ -37,7 +37,7 @@ export const mapPortfolio = (item: Pm_portfolios): PortfolioModel => {
         pm_strategicobjective: item.pm_strategicobjective,
         pm_prioritylevel: item.pm_prioritylevel,
         pm_businessunit: item.pm_businessunit,
-        pm_createdon: item.pm_createdon,
+        createdon: item.createdon,
     }
 }
 
@@ -45,7 +45,7 @@ export async function fetchPortfolios(): Promise<PortfolioModel[]> {
     try {
         const options: IGetAllOptions = {
             filter: 'statecode eq 0',
-            select: ['pm_portfolioid', 'pm_portfolioname', 'pm_ragstatus', 'pm_approvedbudgeteur', 'pm_actualspendeur', '_pm_ownerlookup_value'],
+            select: ['pm_portfolioid', 'pm_portfolioname', 'pm_ragstatus', 'pm_approvedbudgeteur', 'pm_actualspendeur', '_pm_ownerlookup_value', 'pm_portfoliodescription', 'pm_strategicobjective'],
             top: 500,
         }
         const result = await Pm_portfoliosService.getAll(options)
@@ -63,7 +63,7 @@ export async function fetchPortfolios(): Promise<PortfolioModel[]> {
 export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
     try {
         const [portfoliosResult, programmesResult, projectsResult] = await Promise.all([
-            Pm_portfoliosService.getAll({ filter: 'statecode eq 0', select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'pm_createdon'], top: 200 }),
+            Pm_portfoliosService.getAll({ filter: 'statecode eq 0', select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'createdon'], top: 200 }),
             Pm_programmesService.getAll({ filter: 'statecode eq 0', select: ['pm_programmeid', 'pm_programmename', '_pm_portfolio_value', 'pm_programmephase', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', '_pm_programmemanager_value', 'pm_sponsorname', 'pm_programmedescription', 'pm_budgeteur', 'pm_actualspendeur', 'pm_businessunit'], top: 500 }),
             Pm_projectsService.getAll({ filter: 'statecode eq 0', select: ['pm_projectid', 'pm_projectname', '_pm_portfolio_value', '_pm_programme_value', '_pm_projectmanager_value', 'pm_projectphase', 'pm_ragstatus', 'pm_plannedstartdate', 'pm_plannedenddate', 'pm_approvedbudget', 'pm_actualcost'], top: 1000 }),
         ])
@@ -164,7 +164,7 @@ export async function updatePortfolio(id: string, changes: Partial<PortfolioMode
 
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(changes)) {
-        if (value !== undefined && value !== null && key !== 'pm_portfolioid' && key !== 'pm_createdon') {
+        if (value !== undefined && value !== null && key !== 'pm_portfolioid' && key !== 'createdon') {
             if (key === 'pm_ownerlookup') {
                 cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
             } else if (typeof value === 'string' && ['pm_portfolioname', 'pm_portfoliodescription', 'pm_strategicobjective'].includes(key)) {
@@ -221,9 +221,8 @@ export async function updatePortfolio(id: string, changes: Partial<PortfolioMode
             }
         }
 
-        // ALWAYS fetch fresh full details after update
         const fresh = await Pm_portfoliosService.get(normalizedId, {
-            select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'pm_createdon'],
+            select: ['pm_portfolioid', 'pm_portfolioname', '_pm_ownerlookup_value', 'pm_portfoliostatus', 'pm_ragstatus', 'pm_startdate', 'pm_enddate', 'pm_approvedbudgeteur', 'pm_actualspendeur', 'pm_portfoliodescription', 'pm_strategicobjective', 'pm_prioritylevel', 'pm_businessunit', 'createdon'],
         })
         if (!fresh.success) {
             console.error('[PortfolioService] fetch updated details failed:', fresh.error)
@@ -307,7 +306,7 @@ export async function deletePortfolio(id: string): Promise<void> {
 export async function createPortfolio(payload: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(payload)) {
-        if (value !== undefined && value !== null && key !== 'pm_createdon') {
+        if (value !== undefined && value !== null && key !== 'createdon') {
             if (key === 'pm_ownerlookup') {
                 cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
             } else if (typeof value === 'string' && ['pm_portfolioname', 'pm_portfoliodescription', 'pm_strategicobjective'].includes(key)) {

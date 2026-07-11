@@ -28,6 +28,7 @@ import CalendarPage from '@/features/calendar/pages/CalendarPage'
 import ActivityLogPage from '@/features/activitylog/pages/ActivityLogPage'
 import FinancialReportsPage from '@/features/financialreports/pages/FinancialReportsPage'
 import ReportConfigsPage from '@/features/financialreports/pages/ReportConfigsPage'
+import FiscalPeriodsPage from '@/features/configurations/pages/FiscalPeriodsPage'
 
 export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, ReactNode> => ({
   dashboard: <DashboardPage onNavigate={onNavigate} />,
@@ -56,4 +57,5 @@ export const getPageMap = (onNavigate: (tab: TabKey) => void): Record<TabKey, Re
   calendar: <CalendarPage />,
   activitylog: <ActivityLogPage />,
   reportConfigs: <ReportConfigsPage onNavigate={onNavigate} />,
+  fiscalperiods: <FiscalPeriodsPage onNavigate={onNavigate} />,
 })

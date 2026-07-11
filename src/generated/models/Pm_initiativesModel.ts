@@ -35,7 +35,6 @@ export interface Pm_initiativesBase {
   pm_businesscasedescription?: string;
   "pm_ConvertedToId@odata.bind"?: string;
   pm_convertedtoidtype?: string;
-  pm_convertedtoreference?: string;
   pm_decisiondate?: string;
   pm_estimatedbenefitseur?: number;
   pm_estimatedcosteur?: number;
@@ -43,7 +42,7 @@ export interface Pm_initiativesBase {
   pm_initiativename?: string;
   pm_initiativetype?: Pm_initiativespm_initiativetype;
   pm_pipelinestatus?: Pm_initiativespm_pipelinestatus;
-  "pm_portfolio@odata.bind"?: string;
+  "pm_Portfolio@odata.bind"?: string;
   pm_priorityscore?: number;
   "pm_Programme@odata.bind"?: string;
   "pm_RequestedBy@odata.bind"?: string;

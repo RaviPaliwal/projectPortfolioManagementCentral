@@ -554,19 +554,42 @@ export async function seedFiscalPeriods(year: number, startDateStr: string): Pro
     if (hasYear) {
       throw new Error(`Periods for Fiscal Year ${year} are already configured.`)
     }
-    const currentYear = new Date().getFullYear()
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const toLocalDateStr = (d: Date) => {
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const r = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${r}`
+    }
 
     for (let i = 1; i <= 13; i++) {
       const pStart = new Date(start.getTime() + (i - 1) * 28 * 24 * 60 * 60 * 1000)
       const pEnd = new Date(pStart.getTime() + 27 * 24 * 60 * 60 * 1000)
+      
+      const pStartMidnight = new Date(pStart)
+      pStartMidnight.setHours(0, 0, 0, 0)
+      const pEndEndDay = new Date(pEnd)
+      pEndEndDay.setHours(23, 59, 59, 999)
+
+      let isClosed = false
+      let isCurrent = false
+
+      if (today > pEndEndDay) {
+        isClosed = true
+      } else if (today >= pStartMidnight && today <= pEndEndDay) {
+        isCurrent = true
+      }
+
       const payload = {
         pm_periodname: `Period ${i} FY${year}`,
         pm_periodnumber: i,
         pm_fiscalyear: year,
-        pm_startdate: pStart.toISOString().split('T')[0],
-        pm_enddate: pEnd.toISOString().split('T')[0],
-        pm_isclosed: false,
-        pm_iscurrentperiod: year === currentYear && i === 1,
+        pm_startdate: toLocalDateStr(pStart),
+        pm_enddate: toLocalDateStr(pEnd),
+        pm_isclosed: isClosed,
+        pm_iscurrentperiod: isCurrent,
         statecode: 0,
         statuscode: 1,
       }

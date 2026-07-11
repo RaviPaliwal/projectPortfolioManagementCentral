@@ -695,12 +695,46 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
 
           <Grid container spacing={2.5} sx={{ mb: 4 }}>
             <Grid size={{ xs: 12 }}>
-              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Approved Budget (EUR)</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
-                  {currencyFormatter.format(form.pm_approvedbudget)}
-                </Typography>
-              </Box>
+              <Paper 
+                variant="outlined" 
+                sx={{ 
+                  p: 2.5, 
+                  borderRadius: '16px', 
+                  bgcolor: (theme) => alpha(theme.palette.success.main, 0.04), 
+                  borderColor: (theme) => alpha(theme.palette.success.main, 0.2),
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 2.5,
+                  boxShadow: (theme) => `0 4px 16px ${alpha(theme.palette.success.main, 0.04)}`
+                }}
+              >
+                <Avatar 
+                  sx={{ 
+                    bgcolor: (theme) => alpha(theme.palette.success.main, 0.12), 
+                    color: 'success.main', 
+                    width: 48, 
+                    height: 48, 
+                    border: '1px solid', 
+                    borderColor: (theme) => alpha(theme.palette.success.main, 0.25) 
+                  }}
+                >
+                  <AttachMoneyIcon sx={{ fontSize: 26 }} />
+                </Avatar>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', fontSize: '0.65rem' }}>
+                    Asked Budget
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 900, color: 'success.dark', mt: 0.5, fontFamily: '"Outfit", sans-serif' }}>
+                    {currencyFormatter.format(form.pm_approvedbudget)}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 1, color: 'text.secondary' }}>
+                    <InfoIcon sx={{ fontSize: 14, color: 'success.main' }} />
+                    <Typography variant="caption" sx={{ fontWeight: 500, fontStyle: 'italic', fontSize: '0.725rem' }}>
+                      Draft Budget (Approval happens further in the process)
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
             </Grid>
           </Grid>
 

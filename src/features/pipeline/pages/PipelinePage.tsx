@@ -71,6 +71,7 @@ import InfoIcon from '@mui/icons-material/Info'
 import PsychologyIcon from '@mui/icons-material/Psychology'
 import SendIcon from '@mui/icons-material/Send'
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 
 import PauseCircleFilledIcon from '@mui/icons-material/PauseCircleFilled'
 import AttachFileIcon from '@mui/icons-material/AttachFile'
@@ -127,6 +128,7 @@ import type { ExportColumn } from '@/utils/exportUtils'
 import { WORKFLOW_DECISION_EVENT } from '@/services/workflow.service'
 import { ConvertToProjectDialog } from '../components/ConvertToProjectDialog'
 import { createProject, createProgramme, createPortfolio } from '@/services'
+import { formatDate } from '@/utils/formatters'
 
 // ── Export columns ────────────────────────────────────────────────────────────
 const pipelineExportColumns: ExportColumn[] = [
@@ -166,7 +168,7 @@ const STATUS_FILTER_OPTIONS: FilterOption[] = [
   { value: '4', label: 'Converted' },
 ]
 
-type SortField = 'name' | 'sponsor' | 'strategicScore' | 'type' | 'status'
+type SortField = 'name' | 'sponsor' | 'estimatedCost' | 'estimatedBenefits' | 'type' | 'status'
 type SortDir = 'asc' | 'desc'
 
 interface SortState {
@@ -620,9 +622,12 @@ User Prompt: ${promptText || "Extract details from the document."}`,
         case 'sponsor':
           cmp = (a.pm_requestedbyname ?? '').localeCompare(b.pm_requestedbyname ?? '')
           break
-        case 'strategicScore':
-          cmp = (a.pm_strategicalignmentscore ?? 0) - (b.pm_strategicalignmentscore ?? 0)
-          break
+        case 'estimatedCost':
+          cmp = (a.pm_estimatedcost ?? 0) - (b.pm_estimatedcost ?? 0)
+          break;
+        case 'estimatedBenefits':
+          cmp = (a.pm_estimatedbenefits ?? 0) - (b.pm_estimatedbenefits ?? 0)
+          break;
         case 'type':
           cmp = Number(a.pm_initiativetype ?? 0) - Number(b.pm_initiativetype ?? 0)
           break
@@ -833,6 +838,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
         try {
           await updateInitiative(selectedInitiative.pm_initiativeid!, {
             pm_convertedtoreference: createdId,
+            pm_initiativetype: selectedInitiative.pm_initiativetype,
           } as any)
           await updateInitiativeStatus(selectedInitiative.pm_initiativeid!, 4)
         } catch (e) {
@@ -1058,10 +1064,11 @@ User Prompt: ${promptText || "Extract details from the document."}`,
               ) : undefined}
             >
               <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
-                <TableHeader cells={[
+                 <TableHeader cells={[
                   { label: 'Initiative Name', sortable: true, active: sort.field === 'name', dir: sort.dir, onClick: () => handleSort('name') },
                   { label: 'Business Sponsor', sortable: true, active: sort.field === 'sponsor', dir: sort.dir, onClick: () => handleSort('sponsor') },
-                  { label: 'Strategic Alignment', sortable: true, active: sort.field === 'strategicScore', dir: sort.dir, onClick: () => handleSort('strategicScore') },
+                  { label: 'Estimated Cost', sortable: true, active: sort.field === 'estimatedCost', dir: sort.dir, onClick: () => handleSort('estimatedCost') },
+                  { label: 'Est. Benefits', sortable: true, active: sort.field === 'estimatedBenefits', dir: sort.dir, onClick: () => handleSort('estimatedBenefits') },
                   { label: 'Initiative Type', sortable: true, active: sort.field === 'type', dir: sort.dir, onClick: () => handleSort('type') },
                   { label: 'Status', sortable: true, active: sort.field === 'status', dir: sort.dir, onClick: () => handleSort('status') },
                   { label: 'Actions', align: 'center' },
@@ -1118,12 +1125,14 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <TrendingUpIcon sx={{ fontSize: 14, color: 'primary.main', opacity: 0.7 }} />
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {initiative.pm_strategicalignmentscore ?? '—'} / 100
-                            </Typography>
-                          </Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                            {initiative.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                            {initiative.pm_estimatedbenefits != null ? currencyFormatter.format(initiative.pm_estimatedbenefits) : '—'}
+                          </Typography>
                         </TableCell>
                         <TableCell>
                           {initiative.pm_initiativetype != null ? (
@@ -1148,7 +1157,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                                 onClick={(e) => { e.stopPropagation(); setDeleteTarget(initiative); }}
                                 disabled={!canDelete}
                               >
-                                <DeleteIcon fontSize="small" />
+                                <DeleteIcon fontSize="small" color="error" />
                               </IconButton>
                             </span>
                           </Tooltip>
@@ -1177,7 +1186,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
           </Paper>
         </>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mb: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
           <Breadcrumbs
             items={[
               { label: 'Pipeline', path: 'list' },
@@ -1186,6 +1195,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
             onNavigate={() => handleCloseDetail()}
           />
           <PageHeader
+            sx={{ mb: 0.5 }}
             title={selectedInitiative?.pm_name ?? ''}
             subtitle={
               selectedInitiative?.pm_requestedbyname || selectedInitiative?.pm_sponsorname 
@@ -1222,27 +1232,11 @@ User Prompt: ${promptText || "Extract details from the document."}`,
             } : undefined}
           />
 
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: -2, mb: 1.5 }}>
-            <StatusTag
-              label={STATUS_CONFIG[String(selectedInitiative?.pm_pipelinestatus ?? '')]?.label ?? 'Draft'}
-              color={STATUS_CONFIG[String(selectedInitiative?.pm_pipelinestatus ?? '')]?.color ?? 'default'}
-              size="small"
-              variant="outlined"
-              sx={{ fontWeight: 600 }}
-            />
-            {selectedInitiative?.pm_portfolioname && (
+          {selectedInitiative?.pm_portfolioname && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: -2, mb: 1.5 }}>
               <StatusTag label={selectedInitiative.pm_portfolioname} size="small" color="primary" variant="outlined" />
-            )}
-            {selectedInitiative?.pm_submissiondate && (
-              <Chip
-                icon={<CalendarTodayIcon sx={{ fontSize: '14px !important', ml: 0.5 }} />}
-                label={`Submitted: ${new Date(selectedInitiative.pm_submissiondate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
-                size="small"
-                variant="outlined"
-                sx={{ fontWeight: 600 }}
-              />
-            )}
-          </Box>
+            </Box>
+          )}
 
           {/* Workflow Step Milestones */}
           <WorkflowMilestone
@@ -1266,7 +1260,6 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
                 gap: 2,
-                mb: 3,
                 boxShadow: (theme) => `0 2px 12px ${alpha(theme.palette.success.main, 0.08)}`
               }}
             >
@@ -1310,7 +1303,6 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
                 gap: 2,
-                mb: 3,
                 boxShadow: (theme) => `0 2px 12px ${alpha(theme.palette.primary.main, 0.08)}`
               }}
             >
@@ -1341,7 +1333,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
           )}
 
           {/* Main Grid Layout: Overview, Approval Tasks side-by-side; Supporting Documents below */}
-          <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch', mt: 1.5 }}>
+          <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch' }}>
             {/* Overview - 6/12 Width */}
             <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
@@ -1361,8 +1353,46 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                       <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_sponsorname || '—'}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Target Portfolio</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_portfolioname || '—'}</Typography>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Converted To</Typography>
+                      {selectedInitiative.pm_convertedtoreference ? (
+                        <Typography 
+                          variant="body2" 
+                          onClick={() => {
+                            const targetRef = selectedInitiative.pm_convertedtoreference;
+                            if (!targetRef) return;
+                            const type = selectedInitiative.pm_initiativetype;
+                            if (type === 1 || type === '1') {
+                              sessionStorage.setItem('preselectProgrammeId', targetRef);
+                              if (onNavigate) onNavigate('programmes');
+                            } else if (type === 2 || type === '2') {
+                              sessionStorage.setItem('preselectPortfolioId', targetRef);
+                              if (onNavigate) onNavigate('portfolios');
+                            } else {
+                              sessionStorage.setItem('preselectProjectId', targetRef);
+                              if (onNavigate) onNavigate('projects');
+                            }
+                          }}
+                          sx={{ 
+                            fontWeight: 600, 
+                            color: 'success.main', 
+                            mt: 0.25, 
+                            fontSize: '0.825rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            textDecoration: 'underline',
+                            '&:hover': {
+                              color: 'success.dark',
+                            }
+                          }}
+                        >
+                          {Number(selectedInitiative.pm_initiativetype) === 1 ? 'Programme' : Number(selectedInitiative.pm_initiativetype) === 2 ? 'Portfolio' : 'Project'}: {selectedInitiative.pm_convertedtoname || selectedInitiative.pm_name || 'View Record'}
+                          <OpenInNewIcon sx={{ fontSize: 12 }} />
+                        </Typography>
+                      ) : (
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>—</Typography>
+                      )}
                     </Box>
                     <Box>
                       <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Initiative Type</Typography>
@@ -1371,7 +1401,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                       </Typography>
                     </Box>
                     <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>RAG Status</Typography>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Status</Typography>
                       <Box sx={{ mt: 0.25 }}>
                         <StatusTag
                           label={STATUS_CONFIG[String(selectedInitiative?.pm_pipelinestatus ?? '')]?.label ?? 'Draft'}
@@ -1379,6 +1409,12 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                           size="small"
                         />
                       </Box>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Submission Date</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>
+                        {selectedInitiative.pm_submissiondate ? formatDate(selectedInitiative.pm_submissiondate) : '—'}
+                      </Typography>
                     </Box>
 
                     {/* Cost, Benefits, Priority & Alignment boxes */}
@@ -1409,7 +1445,9 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                         </Avatar>
                         <Box>
                           <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem' }}>Priority Score</Typography>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'warning.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{selectedInitiative.pm_priorityscore ?? '—'}</Typography>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'warning.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>
+                            {selectedInitiative.pm_priorityscore != null ? selectedInitiative.pm_priorityscore : 'Not Scored'}
+                          </Typography>
                         </Box>
                       </Paper>
 
@@ -1419,7 +1457,26 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                         </Avatar>
                         <Box>
                           <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem' }}>Strategic Alignment</Typography>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'secondary.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{selectedInitiative.pm_strategicalignmentscore ?? '—'} / 100</Typography>
+                          {selectedInitiative.pm_strategicalignmentscore != null ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                              {(() => {
+                                const rawVal = Number(selectedInitiative.pm_strategicalignmentscore);
+                                const starVal = rawVal > 5 ? rawVal / 20 : rawVal;
+                                return (
+                                  <>
+                                    <Rating value={starVal} precision={0.5} readOnly size="small" />
+                                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'secondary.main', fontFamily: '"Outfit", sans-serif' }}>
+                                      {starVal.toFixed(1)} / 5.0
+                                    </Typography>
+                                  </>
+                                )
+                              })()}
+                            </Box>
+                          ) : (
+                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'secondary.main', mt: 0.25 }}>
+                              Not Scored
+                            </Typography>
+                          )}
                         </Box>
                       </Paper>
                     </Box>
@@ -1435,35 +1492,15 @@ User Prompt: ${promptText || "Extract details from the document."}`,
               </Paper>
             </Grid>
 
-            {/* Approval Tasks - 6/12 Width */}
+            {/* Supporting Documents - 6/12 Width */}
             <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <TaskAltIcon sx={{ fontSize: 18, color: 'success.main' }} /> Approval Tasks
-                  </Typography>
-                </Box>
-                <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-                  <EntityApprovalTasks
-                    entityId={selectedInitiative.pm_initiativeid ?? null}
-                    moduleName={MODULE_NAMES.PIPELINE.value}
-                    entityLabel="Initiative"
-                    tabValue={0}
-                    index={0}
-                  />
-                </Box>
-              </Paper>
-            </Grid>
-
-            {/* Supporting Documents - Full Width */}
-            <Grid size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
                 <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     <FolderIcon sx={{ fontSize: 18, color: 'success.main' }} /> Supporting Documents
                   </Typography>
                 </Box>
-                <Box sx={{ p: 3 }}>
+                <Box sx={{ p: 3, flexGrow: 1, overflow: 'auto' }}>
                   <EntityDocumentsTab
                     entityId={selectedInitiative.pm_initiativeid || ''}
                     moduleName={MODULE_NAMES.PIPELINE.value}

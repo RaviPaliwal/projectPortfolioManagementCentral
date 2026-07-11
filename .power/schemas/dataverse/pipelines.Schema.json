@@ -266,14 +266,6 @@
           "x-ms-read-only": true,
           "maxLength": 1000
         },
-        "pm_convertedtoreference": {
-          "type": "string",
-          "title": "Converted To",
-          "x-ms-dataverse-attribute": "pm_convertedtoreference",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_convertedtoreference",
-          "maxLength": 100
-        },
         "pm_decisiondate": {
           "type": "string",
           "title": "Decision Date",
@@ -409,14 +401,14 @@
           "title": "Portfolio",
           "x-ms-dataverse-attribute": "pm_portfolio",
           "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_portfolio"
+          "x-ms-schema-name": "pm_Portfolio"
         },
         "pm_portfolioname": {
           "type": "string",
           "title": "pm_portfolioname",
           "x-ms-dataverse-attribute": "pm_portfolioname",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_portfolioName",
+          "x-ms-schema-name": "pm_PortfolioName",
           "x-ms-read-only": true,
           "maxLength": 850
         },

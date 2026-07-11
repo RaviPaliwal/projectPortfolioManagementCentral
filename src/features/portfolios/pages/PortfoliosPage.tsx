@@ -76,6 +76,7 @@ import {
   DataverseTable,
   ConfirmDialog,
   MasterScheduleTab,
+  WorkflowMilestone,
 } from '@/components/common'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { PortfolioModel, ProgrammeModel, ProjectModel } from '@/types/dataverse'
@@ -757,11 +758,16 @@ export default function PortfoliosPage() {
         >
           <Tab label="Overview & Projects" sx={{ textTransform: 'none', fontWeight: 600 }} />
           <Tab label="Master Schedule" sx={{ textTransform: 'none', fontWeight: 600 }} />
-          <Tab label="Documents" sx={{ textTransform: 'none', fontWeight: 600 }} />
         </Tabs>
 
         {detailTab === 0 && (
-          <Grid container spacing={3.5} sx={{ mt: 1, display: 'flex', alignItems: 'stretch' }}>
+          <>
+            <WorkflowMilestone
+              entityId={selectedPortfolio.pm_portfolioid ?? ''}
+              moduleName={MODULE_NAMES.PORTFOLIOS.value}
+            />
+
+            <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch' }}>
             {/* Overview - 6/12 Width */}
             <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
@@ -982,21 +988,33 @@ export default function PortfoliosPage() {
               </Paper>
             </Grid>
 
-            {/* Approval Tasks */}
+            {/* Supporting Documents */}
             <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <TaskAltIcon sx={{ fontSize: 18, color: 'success.main' }} /> Approval Tasks
+                    <FolderIcon sx={{ fontSize: 18, color: 'success.main' }} /> Supporting Documents
                   </Typography>
+                  {canEdit && portfolioDocCount > 0 && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      onClick={() => documentsTabRef.current?.triggerUpload()}
+                      sx={{ borderRadius: 1.5 }}
+                    >
+                      Add Document
+                    </Button>
+                  )}
                 </Box>
                 <Box sx={{ p: 3, flexGrow: 1 }}>
-                  <EntityApprovalTasks
+                  <EntityDocumentsTab
+                    ref={documentsTabRef}
                     entityId={selectedPortfolio.pm_portfolioid ?? ''}
                     moduleName={MODULE_NAMES.PORTFOLIOS.value}
-                    entityLabel="Portfolio"
-                    tabValue={0}
-                    index={0}
+                    canEdit={canEdit}
+                    hideUploadIfNotEmpty={true}
+                    onDocumentsChange={(docs) => setPortfolioDocCount(docs.length)}
                   />
                 </Box>
               </Paper>
@@ -1193,41 +1211,11 @@ export default function PortfoliosPage() {
               </Paper>
             </Grid>
           </Grid>
+          </>
         )}
 
         {detailTab === 1 && (
           <MasterScheduleTab projects={detailProjects} />
-        )}
-
-        {detailTab === 2 && (
-          <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-            <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                <FolderIcon sx={{ fontSize: 18, color: 'success.main' }} /> Documents
-              </Typography>
-              {canEdit && portfolioDocCount > 0 && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={() => documentsTabRef.current?.triggerUpload()}
-                  sx={{ borderRadius: 1.5 }}
-                >
-                  Add Document
-                </Button>
-              )}
-            </Box>
-            <Box sx={{ p: 3 }}>
-              <EntityDocumentsTab
-                ref={documentsTabRef}
-                entityId={selectedPortfolio.pm_portfolioid ?? ''}
-                moduleName={MODULE_NAMES.PORTFOLIOS.value}
-                canEdit={canEdit}
-                hideUploadIfNotEmpty={true}
-                onDocumentsChange={(docs) => setPortfolioDocCount(docs.length)}
-              />
-            </Box>
-          </Paper>
         )}
 
         <PortfolioFormDialog

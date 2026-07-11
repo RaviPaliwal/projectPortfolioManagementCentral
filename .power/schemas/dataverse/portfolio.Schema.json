@@ -264,13 +264,6 @@
           "x-ms-schema-name": "pm_businessunit",
           "maxLength": 100
         },
-        "pm_createdon": {
-          "type": "string",
-          "title": "Created On",
-          "x-ms-dataverse-attribute": "pm_createdon",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_createdon"
-        },
         "pm_enddate": {
           "type": "string",
           "title": "End Date",
@@ -309,7 +302,7 @@
           "x-ms-dataverse-attribute": "pm_portfoliodescription",
           "x-ms-dataverse-type": "StringType",
           "x-ms-schema-name": "pm_portfoliodescription",
-          "maxLength": 100
+          "maxLength": 2000
         },
         "pm_portfolioid": {
           "type": "string",
@@ -418,7 +411,7 @@
           "x-ms-dataverse-attribute": "pm_strategicobjective",
           "x-ms-dataverse-type": "StringType",
           "x-ms-schema-name": "pm_strategicobjective",
-          "maxLength": 100
+          "maxLength": 2000
         },
         "statecode": {
           "type": "string",

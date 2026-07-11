@@ -45,7 +45,8 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
       const init = await fetchInitiativeById(initiativeId)
       if (!init) { onError('Initiative not found.'); setLoading(false); return }
       setInitiative(init)
-      setStrategicAlignment((init.pm_strategicalignmentscore ?? 0) / 20)
+      const score = init.pm_strategicalignmentscore ?? 0
+      setStrategicAlignment(score > 5 ? score / 20 : score)
       setPriorityScore(init.pm_priorityscore ?? 0)
     } catch (err) {
       console.error('Failed to load initiative', err)
@@ -61,7 +62,7 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
     setSaving(true)
     try {
       await updateInitiative(initiativeId, {
-        pm_strategicalignmentscore: Math.round(strategicAlignment * 20),
+        pm_strategicalignmentscore: strategicAlignment,
         pm_priorityscore: priorityScore,
       } as any)
       const decisionLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'

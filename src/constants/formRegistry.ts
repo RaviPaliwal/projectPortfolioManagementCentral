@@ -7,6 +7,9 @@ import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionB
 const PortfolioApprovalTaskModalWrapper = lazy(() =>
   import('@/features/portfolios/components').then((m) => ({ default: m.PortfolioApprovalTaskModalWrapper }))
 )
+const PortfolioFinanceTaskModalWrapper = lazy(() =>
+  import('@/features/portfolios/components').then((m) => ({ default: m.PortfolioFinanceTaskModalWrapper }))
+)
 const PmoReadinessTaskModalWrapper = lazy(() =>
   import('@/features/gatereviews/components').then((m) => ({ default: m.PmoReadinessTaskModalWrapper }))
 )
@@ -226,6 +229,13 @@ export const FORM_REGISTRY: FormRegistryEntry[] = [
     displayName: 'Portfolio Approval',
     description: 'Approve or reject a newly created portfolio — set status to Active or Rejected',
     modalComponent: PortfolioApprovalTaskModalWrapper,
+  },
+  {
+    key: 'portfolio_finance_decision',
+    moduleName: MODULE_NAMES.PORTFOLIOS.label,
+    displayName: 'Portfolio Finance Decision',
+    description: 'Review portfolio budget details — verify estimated cost from the source pipeline initiative, and decide the final approved budget for this portfolio.',
+    modalComponent: PortfolioFinanceTaskModalWrapper,
   },
   {
     key: 'programme_approval',

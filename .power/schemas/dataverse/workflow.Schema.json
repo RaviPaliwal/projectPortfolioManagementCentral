@@ -265,38 +265,6 @@
           "x-ms-schema-name": "pm_module",
           "maxLength": 100
         },
-        "pm_regardingentityid": {
-          "type": "string",
-          "title": "Regarding Entity",
-          "x-ms-dataverse-attribute": "pm_regardingentityid",
-          "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_RegardingEntityId"
-        },
-        "pm_regardingentityidname": {
-          "type": "string",
-          "title": "pm_regardingentityidname",
-          "x-ms-dataverse-attribute": "pm_regardingentityidname",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_RegardingEntityIdName",
-          "x-ms-read-only": true,
-          "maxLength": 1000
-        },
-        "pm_regardingentityidtype": {
-          "type": "string",
-          "title": "pm_regardingentityidtype",
-          "x-ms-dataverse-attribute": "pm_regardingentityidtype",
-          "x-ms-dataverse-type": "EntityNameType",
-          "x-ms-schema-name": "pm_RegardingEntityIdType"
-        },
-        "pm_regardingentityidyominame": {
-          "type": "string",
-          "title": "pm_regardingentityidyominame",
-          "x-ms-dataverse-attribute": "pm_regardingentityidyominame",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_RegardingEntityIdYomiName",
-          "x-ms-read-only": true,
-          "maxLength": 1000
-        },
         "pm_version": {
           "type": "string",
           "title": "Version",

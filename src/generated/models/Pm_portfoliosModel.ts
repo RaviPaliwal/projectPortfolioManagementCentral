@@ -33,7 +33,6 @@ export interface Pm_portfoliosBase {
   pm_actualspendeur?: number;
   pm_approvedbudgeteur?: number;
   pm_businessunit?: string;
-  pm_createdon?: string;
   pm_enddate?: string;
   "pm_OwnerLookup@odata.bind"?: string;
   pm_portfoliodescription?: string;

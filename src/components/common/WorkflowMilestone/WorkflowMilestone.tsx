@@ -295,31 +295,29 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
         const updated = { ...prev }
         for (const inst of workflowInstances) {
           const instId = inst.pm_workflowinstanceid!
-          if (!updated[instId]) {
-            const instSteps = stepsMap[instId] || []
-            const instTemplates = templatesMap[instId] || []
-            
-            const phasesFromTemplates = Array.from(
-              new Set(instTemplates.map((t) => t.pm_workflowphase).filter(Boolean))
-            ) as string[]
-            const hasOther = instSteps.some((s) => getStepPhase(s, instTemplates) === 'Other')
-            const allPhases = [...phasesFromTemplates]
-            if (hasOther && !allPhases.includes('Other')) allPhases.push('Other')
-            if (allPhases.length === 0) allPhases.push('Workflow Steps')
+          const instSteps = stepsMap[instId] || []
+          const instTemplates = templatesMap[instId] || []
+          
+          const phasesFromTemplates = Array.from(
+            new Set(instTemplates.map((t) => t.pm_workflowphase).filter(Boolean))
+          ) as string[]
+          const hasOther = instSteps.some((s) => getStepPhase(s, instTemplates) === 'Other')
+          const allPhases = [...phasesFromTemplates]
+          if (hasOther && !allPhases.includes('Other')) allPhases.push('Other')
+          if (allPhases.length === 0) allPhases.push('Workflow Steps')
 
-            const activeStep = instSteps.find(
-              (s) => String(s.pm_decisionstatus) === '1' || String(s.pm_decisionstatus) === '2'
-            )
-            let activePhase = activeStep ? getStepPhase(activeStep, instTemplates) : null
-            if (!activePhase) {
-              const firstUncompleted = allPhases.find(p => {
-                const pSteps = instSteps.filter(s => getStepPhase(s, instTemplates) === p)
-                return pSteps.length > 0 && !pSteps.every(s => String(s.pm_decisionstatus) === '0' || String(s.pm_decisionstatus) === '3')
-              })
-              activePhase = firstUncompleted || allPhases[0]
-            }
-            updated[instId] = activePhase
+          const activeStep = instSteps.find(
+            (s) => String(s.pm_decisionstatus) === '1' || String(s.pm_decisionstatus) === '2'
+          )
+          let activePhase = activeStep ? getStepPhase(activeStep, instTemplates) : null
+          if (!activePhase) {
+            const firstUncompleted = allPhases.find(p => {
+              const pSteps = instSteps.filter(s => getStepPhase(s, instTemplates) === p)
+              return pSteps.length > 0 && !pSteps.every(s => String(s.pm_decisionstatus) === '0' || String(s.pm_decisionstatus) === '3')
+            })
+            activePhase = firstUncompleted || allPhases[0]
           }
+          updated[instId] = activePhase
         }
         return updated
       })
@@ -397,23 +395,22 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
   }
 
   return (
-    <Box className={className} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
+    <Paper className={className} sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
+      <Box sx={{ py: 1.25, px: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography 
           variant="subtitle2" 
           sx={{ 
             fontWeight: 700, 
-            color: 'text.secondary', 
             display: 'flex', 
             alignItems: 'center', 
-            gap: 0.75,
+            gap: 1,
             fontFamily: "'Outfit', sans-serif",
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
             fontSize: '0.75rem'
           }}
         >
-          <TimelineIcon sx={{ fontSize: 16, color: 'primary.main' }} /> Workflow Progress
+          <TimelineIcon sx={{ fontSize: 18, color: 'success.main' }} /> Workflow Progress
         </Typography>
         <Tooltip title="Refresh workflow data">
           <IconButton 
@@ -434,7 +431,8 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
           </IconButton>
         </Tooltip>
       </Box>
-      {instances.map((instance) => {
+      <Box sx={{ pt: 0, pb: 2, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {instances.map((instance) => {
         const steps = stepsByInstance[instance.pm_workflowinstanceid!] || []
         const templates = templatesByInstance[instance.pm_workflowinstanceid!] || []
         const actionableStepsCount = steps.filter(s => 
@@ -514,9 +512,9 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
         }
 
         return (
-          <Paper key={instance.pm_workflowinstanceid} variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <Box key={instance.pm_workflowinstanceid} sx={{ display: 'flex', flexDirection: 'column', gap: 1, pt: 2.5 }}>
             {/* ── Phase-based Stepper ──────────────────────────── */}
-            <Box sx={{ p: 2.5, borderBottom: `1px solid ${theme.palette.divider}`, bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.01)' }}>
+            <Box sx={{ px: 0.5 }}>
               <Stepper
                 activeStep={activePhaseStepperIndex}
                 alternativeLabel
@@ -612,9 +610,9 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
             {/* ── Selected Phase steps details ─────────────────────────── */}
             <Box 
               sx={{ 
-                mx: 0, 
+                mx: -3, 
                 mt: 0, 
-                mb: 0, 
+                mb: 0,
                 border: 'none',
                 overflow: 'hidden',
                 boxShadow: 'none',
@@ -865,7 +863,7 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
             </Box>
 
             {!isCompleted && hasActionableSteps && (
-              <Box sx={{ borderTop: `1px solid ${theme.palette.divider}`, pt: 0 }}>
+              <Box sx={{ borderTop: `1px solid ${theme.palette.divider}`, pt: 0, mx: -3 }}>
                 <Box 
                   onClick={() => setPendingTasksCollapsed(!pendingTasksCollapsed)}
                   sx={{ 
@@ -886,8 +884,8 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                   </Typography>
                   {pendingTasksCollapsed ? <KeyboardArrowDownIcon sx={{ fontSize: 16 }} /> : <KeyboardArrowUpIcon sx={{ fontSize: 16 }} />}
                 </Box>
-                <Collapse in={!pendingTasksCollapsed}>
-                  <Box sx={{ px: 3, pb: 2, pt: 1.5 }}>
+                 <Collapse in={!pendingTasksCollapsed}>
+                  <Box sx={{ px: 3, pb: 1, pt: 1.5 }}>
                     <EntityApprovalTasks
                       entityId={entityId || instance.pm_entityid!}
                       moduleName={moduleName || instance.pm_entitytype || ''}
@@ -900,10 +898,11 @@ export function WorkflowMilestone({ workflowInstanceId, moduleName, entityId, cl
                 </Collapse>
               </Box>
             )}
-          </Paper>
+          </Box>
         )
       })}
-    </Box>
+      </Box>
+    </Paper>
   )
 }
 

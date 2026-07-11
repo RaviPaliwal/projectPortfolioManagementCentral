@@ -21,8 +21,6 @@ export interface Pm_workflowsBase {
   pm_description?: string;
   pm_isactive?: boolean;
   pm_module?: string;
-  "pm_RegardingEntityId@odata.bind"?: string;
-  pm_regardingentityidtype?: string;
   pm_version?: number;
   pm_workflowid: string;
   pm_workflowname?: string;
@@ -47,8 +45,6 @@ export interface Pm_workflows extends Pm_workflowsBase {
   owneridyominame: string;
   owningbusinessunitname: string;
   pm_isactivename?: string;
-  pm_regardingentityidname?: string;
-  pm_regardingentityidyominame?: string;
   statecodename?: string;
   statuscodename?: string;
   versionnumber?: number;
@@ -66,6 +62,4 @@ export interface Pm_workflows extends Pm_workflowsBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
-  pm_regardingentityid?: object;
-  _pm_regardingentityid_value?: string;
 }

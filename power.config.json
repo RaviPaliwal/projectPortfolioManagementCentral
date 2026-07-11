@@ -72,7 +72,7 @@
       "authenticationType": "oauthDefault",
       "dataSets": {}
     },
-    "afa95df9-5e01-4d23-802d-210b66c20233": {
+    "77d0ad0a-9ebf-4551-a597-dc94cb3f5aa4": {
       "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
       "displayName": "Logic flows",
       "dataSources": [
@@ -84,7 +84,7 @@
         "workflowName": "c2e0b2d4-4236-d895-9872-30e06ce49724"
       }
     },
-    "803fea2f-77ea-42fa-87be-32cedd2ae363": {
+    "2cb01bd3-0e36-4578-a5f3-617392668cd4": {
       "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
       "displayName": "Logic flows",
       "dataSources": [
@@ -96,11 +96,11 @@
         "workflowName": "777210e4-e557-9ec7-a462-1077b6c2650f"
       }
     },
-    "a348b016-9fc3-4836-8633-947cddbcb2ba": {
+    "e87dd5b0-45f6-46b1-b0b0-bdbfc9b80101": {
       "id": "/providers/microsoft.powerapps/apis/shared_teams",
       "displayName": "Microsoft Teams"
     },
-    "0d947ad4-0c5a-4563-881f-10adf5344048": {
+    "c8842feb-207e-4fcf-9ba0-9faf6414d4d8": {
       "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
       "displayName": "Logic flows",
       "dataSources": [
@@ -111,7 +111,7 @@
         "workflowDisplayName": "Send Message",
         "workflowName": "c645787e-df60-048c-824f-2806515d7e8f",
         "dependencies": {
-          "shared_teams": "a348b016-9fc3-4836-8633-947cddbcb2ba",
+          "shared_teams": "e87dd5b0-45f6-46b1-b0b0-bdbfc9b80101",
           "shared_office365": "979042e1-9a63-4d18-acc4-e61cc3535a6b"
         }
       }

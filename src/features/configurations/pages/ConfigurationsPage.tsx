@@ -43,6 +43,7 @@ import PendingIcon from '@mui/icons-material/Pending'
 import ErrorIcon from '@mui/icons-material/Error'
 import LoopIcon from '@mui/icons-material/Loop'
 import CloseIcon from '@mui/icons-material/Close'
+import DateRangeIcon from '@mui/icons-material/DateRange'
 
 import { PageHeader } from '@/components/common'
 import type { TabKey } from '@/components/layout/PrimaryShell'
@@ -254,6 +255,13 @@ export default function ConfigurationsPage({ onNavigate }: ConfigurationsPagePro
       description: 'Design visual and interactive layouts, charts, and groupings for financial reports.',
       icon: <BarChartIcon fontSize="large" />,
       color: 'info.main'
+    },
+    {
+      key: 'fiscalperiods' as TabKey,
+      title: 'Fiscal Periods',
+      description: 'Configure and seed 13-period annual schedules (year-wise details).',
+      icon: <DateRangeIcon fontSize="large" />,
+      color: 'primary.main'
     }
   ]
 

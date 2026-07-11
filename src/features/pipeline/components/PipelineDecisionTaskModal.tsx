@@ -90,7 +90,8 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
       setEstCost(init.pm_estimatedcost ?? 0)
       setEstBenefits(init.pm_estimatedbenefits ?? 0)
       setPriorityScore(init.pm_priorityscore ?? 0)
-      setStrategicAlignment((init.pm_strategicalignmentscore ?? 0) / 20)
+      const score = init.pm_strategicalignmentscore ?? 0
+      setStrategicAlignment(score > 5 ? score / 20 : score)
       setChosenPortfolioId(init._pm_portfolio_value ?? '')
       setChosenProgrammeId(init._pm_programme_value ?? '')
       
@@ -198,7 +199,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
         pm_estimatedcost: estCost,
         pm_estimatedbenefits: estBenefits,
         pm_priorityscore: priorityScore,
-        pm_strategicalignmentscore: Math.round(strategicAlignment * 20),
+        pm_strategicalignmentscore: strategicAlignment,
       }
       if (chosenPortfolioId !== (initiative?._pm_portfolio_value ?? '')) {
         payload._pm_portfolio_value = chosenPortfolioId || undefined
@@ -244,7 +245,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
         pm_estimatedcost: estCost,
         pm_estimatedbenefits: estBenefits,
         pm_priorityscore: priorityScore,
-        pm_strategicalignmentscore: Math.round(strategicAlignment * 20),
+        pm_strategicalignmentscore: strategicAlignment,
       }
       if (chosenPortfolioId !== (initiative?._pm_portfolio_value ?? '')) {
         payload._pm_portfolio_value = chosenPortfolioId || undefined

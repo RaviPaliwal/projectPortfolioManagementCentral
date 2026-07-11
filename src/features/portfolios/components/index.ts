@@ -1,5 +1,7 @@
 export * from './PortfolioApprovalTaskModal'
 export * from './PortfolioApprovalStepTaskModal'
+export * from './PortfolioFinanceTaskModal'
+export * from './PortfolioFinanceStepTaskModal'
 export * from './PortfolioFormDialog'
 export * from './PortfolioAICreateDialog'
 export * from './PortfolioGrid'
