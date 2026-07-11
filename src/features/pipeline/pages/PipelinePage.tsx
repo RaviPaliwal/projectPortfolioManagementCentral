@@ -39,6 +39,7 @@ import {
   Tabs,
   Tab,
   CircularProgress,
+  Switch,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -235,6 +236,7 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
 
   // ── Create Modal State ─────────────────────────────────────────────────────
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [aiMode, setAiMode] = useState(false)
   const [stagedFiles, setStagedFiles] = useState<File[]>([])
   const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null)
   const [createForm, setCreateForm] = useState({
@@ -251,7 +253,6 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
   })
 
   // ── AI Create Modal State ──────────────────────────────────────────────────
-  const [showAICreateModal, setShowAICreateModal] = useState(false)
   const [aiChatHistory, setAIChatHistory] = useState<ChatMessage[]>([
     { role: 'model', text: 'Hello! I can help you draft and create a new initiative. You can upload a business case PDF, or describe your project in natural language (e.g. costs, benefits, type). I will analyze it and fill out the form for you!' }
   ])
@@ -368,19 +369,32 @@ User Prompt: ${promptText || "Extract details from the document."}`,
         return copy
       })
 
-      // Populate left side form fields (now including user lookups: Requested By & Sponsor)
-      setCreateForm(prev => ({
-        ...prev,
-        pm_initiativename: response.pm_initiativename || prev.pm_initiativename,
-        pm_businesscasedescription: response.pm_businesscasedescription || prev.pm_businesscasedescription,
-        pm_estimatedcosteur: response.pm_estimatedcosteur != null ? response.pm_estimatedcosteur : prev.pm_estimatedcosteur,
-        pm_estimatedbenefitseur: response.pm_estimatedbenefitseur != null ? response.pm_estimatedbenefitseur : prev.pm_estimatedbenefitseur,
-        pm_initiativetype: response.pm_initiativetype != null ? response.pm_initiativetype : prev.pm_initiativetype,
-        _pm_portfolio_value: response.matched_portfolio_id || prev._pm_portfolio_value,
-        _pm_programme_value: response.matched_programme_id || prev._pm_programme_value,
-        _pm_requestedby_value: response.matched_requestedby_id || prev._pm_requestedby_value,
-        _pm_sponsor_value: response.matched_sponsor_id || prev._pm_sponsor_value
-      }))
+      setCreateForm(prev => {
+        const finalType = response.pm_initiativetype != null ? response.pm_initiativetype : prev.pm_initiativetype
+        let newPortfolio = response.matched_portfolio_id || prev._pm_portfolio_value
+        let newProgramme = response.matched_programme_id || prev._pm_programme_value
+
+        // Clear values for lookups that are conditionally hidden in the UI
+        if (finalType === 2) {
+          newPortfolio = ''
+          newProgramme = ''
+        } else if (finalType === 1) {
+          newProgramme = ''
+        }
+
+        return {
+          ...prev,
+          pm_initiativename: response.pm_initiativename || prev.pm_initiativename,
+          pm_businesscasedescription: response.pm_businesscasedescription || prev.pm_businesscasedescription,
+          pm_estimatedcosteur: response.pm_estimatedcosteur != null ? response.pm_estimatedcosteur : prev.pm_estimatedcosteur,
+          pm_estimatedbenefitseur: response.pm_estimatedbenefitseur != null ? response.pm_estimatedbenefitseur : prev.pm_estimatedbenefitseur,
+          pm_initiativetype: finalType,
+          _pm_portfolio_value: newPortfolio,
+          _pm_programme_value: newProgramme,
+          _pm_requestedby_value: response.matched_requestedby_id || prev._pm_requestedby_value,
+          _pm_sponsor_value: response.matched_sponsor_id || prev._pm_sponsor_value
+        }
+      })
     } catch (err) {
       console.error("Gemini AI error:", err)
       setAIChatHistory(prev => {
@@ -399,7 +413,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
   }
 
   // ── Confirmation Dialog State ─────────────────────────────────────────────
-  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; name: string }>({ open: false, name: '' })
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; name: string; id: string }>({ open: false, name: '', id: '' })
 
   // ── Delete State ─────────────────────────────────────────────────────────
   const [deleteTarget, setDeleteTarget] = useState<InitiativeModel | null>(null)
@@ -667,7 +681,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
         }
 
         setShowCreateModal(false)
-        setConfirmDialog({ open: true, name: initiativeName })
+        setConfirmDialog({ open: true, name: initiativeName, id: initiativeId || '' })
         setCreateForm({
           pm_initiativename: '',
           pm_businesscasedescription: '',
@@ -911,14 +925,9 @@ User Prompt: ${promptText || "Extract details from the document."}`,
             actionElement={
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 {canCreate && (
-                  <>
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => { resetCreateForm(); setShowCreateModal(true) }}>
-                      New Initiative
-                    </Button>
-                    <Button variant="outlined" color="primary" startIcon={<PsychologyIcon />} onClick={() => { resetCreateForm(); setShowAICreateModal(true) }}>
-                      Create with AI
-                    </Button>
-                  </>
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => { resetCreateForm(); setAiMode(false); setShowCreateModal(true) }}>
+                    New Initiative
+                  </Button>
                 )}
                 <ExportButton filename="pipeline" columns={pipelineExportColumns} data={filteredInitiatives} />
               </Box>
@@ -1043,14 +1052,9 @@ User Prompt: ${promptText || "Extract details from the document."}`,
               emptyIcon={<LightbulbIcon />}
               emptyTitle={searchQuery || statusFilter ? 'No initiatives match your search criteria.' : 'No initiatives found.'}
               emptyAction={(!searchQuery && !statusFilter && canCreate) ? (
-                <Box sx={{ display: 'flex', gap: 1.5 }}>
-                  <Button variant="outlined" startIcon={<AddIcon />} onClick={() => { resetCreateForm(); setShowCreateModal(true) }}>
-                    Create your first initiative
-                  </Button>
-                  <Button variant="outlined" color="primary" startIcon={<PsychologyIcon />} onClick={() => { resetCreateForm(); setShowAICreateModal(true) }}>
-                    Create with AI
-                  </Button>
-                </Box>
+                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => { resetCreateForm(); setAiMode(false); setShowCreateModal(true) }}>
+                  Create your first initiative
+                </Button>
               ) : undefined}
             >
               <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
@@ -1475,20 +1479,47 @@ User Prompt: ${promptText || "Extract details from the document."}`,
       {/* ── 4. Create Initiative Modal ────────────────────────────────────────── */}
       <Dialog
         open={showCreateModal}
-        onClose={() => !actionLoading && setShowCreateModal(false)}
-        maxWidth="md"
+        onClose={() => !actionLoading && !aiLoading && setShowCreateModal(false)}
+        maxWidth={aiMode ? "lg" : "md"}
         fullWidth
+        slotProps={{
+          paper: {
+            sx: aiMode 
+              ? { borderRadius: 3, height: '85vh', maxHeight: 800 } 
+              : { borderRadius: 1.5 }
+          }
+        }}
       >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: 'warning.main' }}>
-            <LightbulbIcon sx={{ fontSize: 18, color: '#fff' }} />
-          </Avatar>
-          New Initiative
-        </DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3, pl: 0 }}>
-            Submit a new idea to the pipeline for executive review and triage. Initiatives default to <strong>Under Review</strong> status.
-          </Typography>
+        <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden', flexDirection: 'row', width: '100%' }}>
+          {/* Left Panel: The Initiative Form */}
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', borderRight: aiMode ? '1px solid' : 'none', borderColor: 'divider', overflow: 'hidden' }}>
+            <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'warning.main' }}>
+                <LightbulbIcon sx={{ fontSize: 18, color: '#fff' }} />
+              </Avatar>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                  {aiMode ? 'New Initiative (AI Guided)' : 'New Initiative'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Submit a new idea to the pipeline for review and triage
+                </Typography>
+              </Box>
+
+              {/* AI Copilot Toggle Switch */}
+              <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>AI Copilot</Typography>
+                <Switch 
+                  checked={aiMode} 
+                  onChange={(e) => setAiMode(e.target.checked)} 
+                  color="primary" 
+                  size="small"
+                  disabled={actionLoading || aiLoading}
+                />
+              </Box>
+            </DialogTitle>
+            
+            <DialogContent dividers sx={{ p: 3, overflowY: 'auto', flex: 1 }}>
 
           {/* ── Section: Basic Information ── */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -1646,47 +1677,45 @@ User Prompt: ${promptText || "Extract details from the document."}`,
           </Grid>
 
           {/* ── Section: Financial Estimates ── */}
-          {createForm.pm_initiativetype !== 2 && (
-            <>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <MonetizationOnIcon sx={{ fontSize: 18, color: 'success.main' }} />
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-                  Financial Estimates
-                </Typography>
-                <Divider sx={{ flex: 1 }} />
-              </Box>
-              <Grid container spacing={2.5} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    label="Estimated Cost (EUR)"
-                    type="number"
-                    fullWidth
-                    size="small"
-                    value={createForm.pm_estimatedcosteur}
-                    onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedcosteur: Number(e.target.value) }))}
-                    error={hasBudgetError}
-                    helperText={hasBudgetError && parentBudgetInfo ? `Exceeds remaining ${parentBudgetInfo.label.toLowerCase()} budget by ${currencyFormatter.format(createForm.pm_estimatedcosteur - parentBudgetInfo.availableBudget)}` : ''}
-                    slotProps={{
-                      input: { startAdornment: <CurrencyExchangeIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} /> },
-                    }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    label="Estimated Benefits (EUR)"
-                    type="number"
-                    fullWidth
-                    size="small"
-                    value={createForm.pm_estimatedbenefitseur}
-                    onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedbenefitseur: Number(e.target.value) }))}
-                    slotProps={{
-                      input: { startAdornment: <TrendingUpIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} /> },
-                    }}
-                  />
-                </Grid>
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <MonetizationOnIcon sx={{ fontSize: 18, color: 'success.main' }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+                Financial Estimates
+              </Typography>
+              <Divider sx={{ flex: 1 }} />
+            </Box>
+            <Grid container spacing={2.5} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Estimated Cost (EUR)"
+                  type="number"
+                  fullWidth
+                  size="small"
+                  value={createForm.pm_estimatedcosteur}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedcosteur: Number(e.target.value) }))}
+                  error={hasBudgetError}
+                  helperText={hasBudgetError && parentBudgetInfo ? `Exceeds remaining ${parentBudgetInfo.label.toLowerCase()} budget by ${currencyFormatter.format(createForm.pm_estimatedcosteur - parentBudgetInfo.availableBudget)}` : ''}
+                  slotProps={{
+                    input: { startAdornment: <CurrencyExchangeIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} /> },
+                  }}
+                />
               </Grid>
-            </>
-          )}
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Estimated Benefits (EUR)"
+                  type="number"
+                  fullWidth
+                  size="small"
+                  value={createForm.pm_estimatedbenefitseur}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedbenefitseur: Number(e.target.value) }))}
+                  slotProps={{
+                    input: { startAdornment: <TrendingUpIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} /> },
+                  }}
+                />
+              </Grid>
+            </Grid>
+          </>
 
           {parentBudgetInfo && (() => {
             const allocatedPct = Math.min(100, Math.round((parentBudgetInfo.usedBudget / parentBudgetInfo.parentBudget) * 100))
@@ -1864,14 +1893,14 @@ User Prompt: ${promptText || "Extract details from the document."}`,
           <Button
             onClick={() => setShowCreateModal(false)}
             variant="outlined"
-            disabled={actionLoading}
+            disabled={actionLoading || aiLoading}
           >
             Cancel
           </Button>
           <Button
             onClick={handleCreateInitiative}
             variant="contained"
-            disabled={!createForm.pm_initiativename.trim() || actionLoading}
+            disabled={!createForm.pm_initiativename.trim() || actionLoading || aiLoading}
             startIcon={actionLoading ? undefined : <AddIcon />}
             sx={{
               bgcolor: 'primary.main',
@@ -1882,496 +1911,156 @@ User Prompt: ${promptText || "Extract details from the document."}`,
             {actionLoading ? 'Creating...' : 'Create Initiative'}
           </Button>
         </DialogActions>
-      </Dialog>
+      </Box>
 
-      {/* ── 4a. Create Initiative with AI Dialog ────────────────────────────── */}
-      <Dialog
-        open={showAICreateModal}
-        onClose={() => !actionLoading && !aiLoading && setShowAICreateModal(false)}
-        maxWidth="lg"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: { borderRadius: 3, height: '85vh', maxHeight: 800 }
-          }
-        }}
-      >
-        <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-          {/* Left Panel: The Initiative Form */}
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', borderRight: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-            <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                <LightbulbIcon sx={{ fontSize: 18, color: '#fff' }} />
-              </Avatar>
-              New Initiative (AI Assisted)
-            </DialogTitle>
-            <DialogContent dividers sx={{ p: 3, overflowY: 'auto', flex: 1 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Review and refine the initiative parameters. The fields are populated automatically by the AI chat helper on the right.
-              </Typography>
-
-              {/* Basic Information */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <DescriptionIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-                  Basic Information
-                </Typography>
-                <Divider sx={{ flex: 1 }} />
-              </Box>
-
-              <Grid container spacing={2.5} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 12 }}>
-                  <TextField
-                    label="Initiative Name"
-                    required
-                    fullWidth
-                    size="small"
-                    value={createForm.pm_initiativename}
-                    onChange={(e) => setCreateForm((f) => ({ ...f, pm_initiativename: e.target.value }))}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="ai-requestedby-label">Requested By</InputLabel>
-                    <Select
-                      id="ai-requestedby-select"
-                      labelId="ai-requestedby-label"
-                      value={createForm._pm_requestedby_value}
-                      label="Requested By"
-                      onChange={(e) => setCreateForm((f) => ({ ...f, _pm_requestedby_value: e.target.value }))}
-                    >
-                      <MenuItem value="">
-                        <em style={{ color: 'text.disabled' }}>Select User</em>
-                      </MenuItem>
-                      {users.map((u) => (
-                        <MenuItem key={u.systemuserid} value={u.systemuserid}>
-                          {u.fullname}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="ai-sponsor-label">Sponsor</InputLabel>
-                    <Select
-                      id="ai-sponsor-select"
-                      labelId="ai-sponsor-label"
-                      value={(createForm as any)._pm_sponsor_value}
-                      label="Sponsor"
-                      onChange={(e) => setCreateForm((f) => ({ ...f, _pm_sponsor_value: e.target.value }))}
-                    >
-                      <MenuItem value="">
-                        <em style={{ color: 'text.disabled' }}>Select User</em>
-                      </MenuItem>
-                      {users.map((u) => (
-                        <MenuItem key={u.systemuserid} value={u.systemuserid}>
-                          {u.fullname}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="ai-initiative-type-label">Initiative Type</InputLabel>
-                    <Select
-                      id="ai-initiative-type-select"
-                      labelId="ai-initiative-type-label"
-                      value={createForm.pm_initiativetype}
-                      label="Initiative Type"
-                      onChange={(e) => {
-                        const newType = e.target.value as number
-                        setCreateForm((f) => {
-                          const updated = { ...f, pm_initiativetype: newType }
-                          if (newType !== 0) {
-                            updated._pm_programme_value = ''
-                          }
-                          if (newType === 2) {
-                            updated._pm_portfolio_value = ''
-                            updated._pm_programme_value = ''
-                          }
-                          return updated
-                        })
-                      }}
-                    >
-                      <MenuItem value={0}>Project</MenuItem>
-                      <MenuItem value={1}>Programme</MenuItem>
-                      <MenuItem value={2}>Portfolio</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                {createForm.pm_initiativetype !== 2 && (
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="ai-portfolio-label">Portfolio (optional)</InputLabel>
-                      <Select
-                        id="ai-portfolio-select"
-                        labelId="ai-portfolio-label"
-                        value={createForm._pm_portfolio_value}
-                        label="Portfolio (optional)"
-                        onChange={(e) => {
-                          const newPortfolioId = e.target.value
-                          setCreateForm((f) => {
-                            const updated = { ...f, _pm_portfolio_value: newPortfolioId }
-                            const selectedProg = programmes.find(p => p.pm_programmeid === f._pm_programme_value)
-                            if (selectedProg && selectedProg._pm_portfolio_value !== newPortfolioId) {
-                              updated._pm_programme_value = ''
-                            }
-                            return updated
-                          })
-                        }}
-                      >
-                        <MenuItem value="">
-                          <em style={{ color: 'text.disabled' }}>No portfolio</em>
-                        </MenuItem>
-                        {portfolios.map((p) => (
-                          <MenuItem key={p.pm_portfolioid} value={p.pm_portfolioid}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <AccountTreeIcon sx={{ fontSize: 16, color: 'primary.main', opacity: 0.6 }} />
-                              {p.pm_portfolioname}
-                            </Box>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                )}
-
-                {createForm.pm_initiativetype === 0 && (
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="ai-programme-label">Programme (optional)</InputLabel>
-                      <Select
-                        id="ai-programme-select"
-                        labelId="ai-programme-label"
-                        value={createForm._pm_programme_value}
-                        label="Programme (optional)"
-                        onChange={(e) => setCreateForm((f) => ({ ...f, _pm_programme_value: e.target.value }))}
-                      >
-                        <MenuItem value="">
-                          <em style={{ color: 'text.disabled' }}>No programme</em>
-                        </MenuItem>
-                        {programmes
-                          .filter(p => !createForm._pm_portfolio_value || p._pm_portfolio_value === createForm._pm_portfolio_value)
-                          .map((p) => (
-                            <MenuItem key={p.pm_programmeid} value={p.pm_programmeid}>
-                              {p.pm_programmename}
-                            </MenuItem>
-                          ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                )}
-              </Grid>
-
-              {/* Financial Estimates */}
-              {createForm.pm_initiativetype !== 2 && (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <MonetizationOnIcon sx={{ fontSize: 18, color: 'success.main' }} />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-                      Financial Estimates
-                    </Typography>
-                    <Divider sx={{ flex: 1 }} />
-                  </Box>
-                  <Grid container spacing={2.5} sx={{ mb: 3 }}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <TextField
-                        label="Estimated Cost (EUR)"
-                        type="number"
-                        fullWidth
-                        size="small"
-                        value={createForm.pm_estimatedcosteur}
-                        onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedcosteur: Number(e.target.value) }))}
-                        error={hasBudgetError}
-                        helperText={hasBudgetError && parentBudgetInfo ? `Exceeds remaining ${(parentBudgetInfo?.label ?? '').toLowerCase()} budget by ${currencyFormatter.format(createForm.pm_estimatedcosteur - (parentBudgetInfo?.availableBudget ?? 0))}` : ''}
-                        slotProps={{
-                          input: { startAdornment: <CurrencyExchangeIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} /> },
-                        }}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <TextField
-                        label="Estimated Benefits (EUR)"
-                        type="number"
-                        fullWidth
-                        size="small"
-                        value={createForm.pm_estimatedbenefitseur}
-                        onChange={(e) => setCreateForm((f) => ({ ...f, pm_estimatedbenefitseur: Number(e.target.value) }))}
-                        slotProps={{
-                          input: { startAdornment: <TrendingUpIcon sx={{ fontSize: 16, mr: 0.75, color: 'action.active' }} /> },
-                        }}
-                      />
-                    </Grid>
-                  </Grid>
-                </>
-              )}
-
-              {/* Parent Budget Allocation */}
-              {parentBudgetInfo && ((info) => {
-                const allocatedPct = Math.min(100, Math.round((info.usedBudget / info.parentBudget) * 100))
-                const isOverBudget = info.availableBudget <= 0
-                const remainingAfterThis = info.availableBudget - (createForm.pm_estimatedcosteur || 0)
-                return (
-                  <Paper variant="outlined" sx={{ p: 2.5, mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: '16px', bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'grey.50' }}>
-                    <Typography variant="body2" sx={{ fontWeight: 800, mb: 2, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.primary' }}>
-                      <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} /> {info.label} Budget Allocation
-                    </Typography>
-
-                    <Grid container spacing={2} sx={{ mb: 2 }}>
-                      <Grid size={{ xs: 12, sm: 4 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>{info.label} Budget</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', fontSize: fontSizes.md }}>
-                          {currencyFormatter.format(info.parentBudget)}
-                        </Typography>
-                      </Grid>
-                      <Grid size={{ xs: 12, sm: 4 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Allocated</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', color: 'warning.main', fontSize: fontSizes.md }}>
-                          {currencyFormatter.format(info.usedBudget)}
-                        </Typography>
-                      </Grid>
-                      <Grid size={{ xs: 12, sm: 4 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>Available Remaining</Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: isOverBudget ? 'error.main' : 'success.main', fontSize: fontSizes.lg }}>
-                          {currencyFormatter.format(info.availableBudget)}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-
-                    <Box sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Allocation Usage</Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 700 }}>{allocatedPct}%</Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={allocatedPct}
-                        color={isOverBudget ? 'error' : allocatedPct > 80 ? 'warning' : 'success'}
-                        sx={{ height: 10, borderRadius: 5 }}
-                      />
-                    </Box>
-
-                    <Box sx={{ mt: 2.5, pt: 2, borderTop: '1px dashed', borderColor: 'divider' }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        Calculation Breakdown
-                      </Typography>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-                        <Typography variant="body2" color="text.secondary">Current Available Remaining:</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                          {currencyFormatter.format(info.availableBudget)}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-                        <Typography variant="body2" color="text.secondary">New Initiative Cost:</Typography>
-                        <Typography variant="body2" color="error.main" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
-                          - {currencyFormatter.format(createForm.pm_estimatedcosteur || 0)}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 700 }}>Forecasted Remaining:</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace', color: remainingAfterThis < 0 ? 'error.main' : 'success.main' }}>
-                          {currencyFormatter.format(remainingAfterThis)}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Paper>
-                )
-              })(parentBudgetInfo)}
-
-              {/* Business Case */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <ScienceIcon sx={{ fontSize: 18, color: 'secondary.main' }} />
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-                  Business Case
-                </Typography>
-                <Divider sx={{ flex: 1 }} />
-              </Box>
-              <Grid container spacing={2.5}>
-                <Grid size={{ xs: 12 }}>
-                  <TextField
-                    label="Business Case / Description"
-                    fullWidth
-                    size="small"
-                    multiline
-                    rows={4}
-                    value={createForm.pm_businesscasedescription}
-                    onChange={(e) => setCreateForm((f) => ({ ...f, pm_businesscasedescription: e.target.value }))}
-                    placeholder="Describe the project opportunity..."
-                  />
-                </Grid>
-              </Grid>
-            </DialogContent>
-            <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Button
-                onClick={() => setShowAICreateModal(false)}
-                variant="outlined"
-                disabled={actionLoading || aiLoading}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowAICreateModal(false)
-                  handleCreateInitiative()
-                }}
-                variant="contained"
-                disabled={!createForm.pm_initiativename.trim() || actionLoading || aiLoading}
-                startIcon={<AddIcon />}
-                sx={{ fontWeight: 600 }}
-              >
-                Create Initiative
-              </Button>
-            </DialogActions>
+      {/* Right Panel: AI Chat Assistant */}
+      {aiMode && (
+        <Box sx={{ width: { md: '380px', lg: '440px' }, display: 'flex', flexDirection: 'column', height: '100%', borderLeft: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'background.default' : 'grey.50' }}>
+          <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+              <PsychologyIcon sx={{ color: '#fff', fontSize: 18 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Initiative Copilot</Typography>
+              <Typography variant="caption" color="text.secondary">Powered by Gemini 1.5 Flash</Typography>
+            </Box>
           </Box>
 
-          {/* Right Panel: AI Chat Assistant */}
-          <Box sx={{ width: { md: '380px', lg: '440px' }, display: 'flex', flexDirection: 'column', height: '100%', bgcolor: isDark ? 'background.default' : 'grey.50' }}>
-            <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                <PsychologyIcon sx={{ color: '#fff', fontSize: 18 }} />
-              </Avatar>
-              <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Initiative Copilot</Typography>
-                <Typography variant="caption" color="text.secondary">Powered by Gemini 1.5 Flash</Typography>
-              </Box>
-            </Box>
-
-            {/* Chat History */}
-            <Box sx={{ flex: 1, p: 2.5, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {aiChatHistory.map((msg, idx) => {
-                const isUser = msg.role === 'user'
-                return (
+          {/* Chat History */}
+          <Box sx={{ flex: 1, p: 2.5, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {aiChatHistory.map((msg, idx) => {
+              const isUser = msg.role === 'user'
+              return (
+                <Box
+                  key={idx}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: isUser ? 'flex-end' : 'flex-start',
+                    width: '100%'
+                  }}
+                >
                   <Box
-                    key={idx}
                     sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: isUser ? 'flex-end' : 'flex-start',
-                      width: '100%'
+                      maxWidth: '85%',
+                      p: 1.5,
+                      borderRadius: 2.5,
+                      bgcolor: isUser 
+                        ? 'primary.main' 
+                        : isDark ? 'background.paper' : 'common.white',
+                      color: isUser 
+                        ? 'primary.contrastText' 
+                        : 'text.primary',
+                      border: isUser ? 'none' : '1px solid',
+                      borderColor: 'divider',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                      position: 'relative'
                     }}
                   >
-                    <Box
-                      sx={{
-                        maxWidth: '85%',
-                        p: 1.5,
-                        borderRadius: 2.5,
-                        bgcolor: isUser 
-                          ? 'primary.main' 
-                          : isDark ? 'background.paper' : 'common.white',
-                        color: isUser 
-                          ? 'primary.contrastText' 
-                          : 'text.primary',
-                        border: isUser ? 'none' : '1px solid',
-                        borderColor: 'divider',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                        position: 'relative'
-                      }}
-                    >
-                      {msg.hasFile && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, p: 0.75, borderRadius: 1, bgcolor: isUser ? 'rgba(0,0,0,0.2)' : 'error.50', color: isUser ? '#fff' : 'error.main' }}>
-                          <PictureAsPdfIcon sx={{ fontSize: 16 }} />
-                          <Typography variant="caption" sx={{ fontWeight: 700 }}>{msg.fileName}</Typography>
-                        </Box>
-                      )}
-                      {isUser ? (
-                        <Typography variant="body2" sx={{ lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
-                          {msg.text}
-                        </Typography>
-                      ) : (
-                        <Typography
-                          variant="body2"
-                          component="div"
-                          sx={{ 
-                            lineHeight: 1.4,
-                            '& p': { my: 1 },
-                            '& table': { borderCollapse: 'collapse', width: '100%', my: 1.5, fontSize: '0.825rem' },
-                            '& th, & td': { border: '1px solid', borderColor: 'divider', p: 0.75, textAlign: 'left' },
-                            '& th': { bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'grey.100', fontWeight: 700 },
-                            '& ul, & ol': { pl: 2.5, my: 1 }
-                          }}
-                          dangerouslySetInnerHTML={{ __html: msg.text }}
-                        />
-                      )}
-                    </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, px: 0.5, fontSize: '9px' }}>
-                      {isUser ? 'You' : 'Gemini Copilot'}
-                    </Typography>
+                    {msg.hasFile && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, p: 0.75, borderRadius: 1, bgcolor: isUser ? 'rgba(0,0,0,0.2)' : 'error.50', color: isUser ? '#fff' : 'error.main' }}>
+                        <PictureAsPdfIcon sx={{ fontSize: 16 }} />
+                        <Typography variant="caption" sx={{ fontWeight: 700 }}>{msg.fileName}</Typography>
+                      </Box>
+                    )}
+                    {isUser ? (
+                      <Typography variant="body2" sx={{ lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
+                        {msg.text}
+                      </Typography>
+                    ) : (
+                      <Typography
+                        variant="body2"
+                        component="div"
+                        sx={{ 
+                          lineHeight: 1.4,
+                          '& p': { my: 1 },
+                          '& table': { borderCollapse: 'collapse', width: '100%', my: 1.5, fontSize: '0.825rem' },
+                          '& th, & td': { border: '1px solid', borderColor: 'divider', p: 0.75, textAlign: 'left' },
+                          '& th': { bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'grey.100', fontWeight: 700 },
+                          '& ul, & ol': { pl: 2.5, my: 1 }
+                        }}
+                        dangerouslySetInnerHTML={{ __html: msg.text }}
+                      />
+                    )}
                   </Box>
-                )
-              })}
-              {aiLoading && (
-                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', p: 1.5, bgcolor: isDark ? 'background.paper' : 'common.white', borderRadius: 2.5, border: '1px solid', borderColor: 'divider', width: 'fit-content' }}>
-                  <CircularProgress size={16} color="primary" />
-                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                    Gemini is processing details...
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, px: 0.5, fontSize: '9px' }}>
+                    {isUser ? 'You' : 'Gemini Copilot'}
                   </Typography>
                 </Box>
-              )}
-            </Box>
+              )
+            })}
+            {aiLoading && (
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', p: 1.5, bgcolor: isDark ? 'background.paper' : 'common.white', borderRadius: 2.5, border: '1px solid', borderColor: 'divider', width: 'fit-content' }}>
+                <CircularProgress size={16} color="primary" />
+                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                  Gemini is processing details...
+                </Typography>
+              </Box>
+            )}
+          </Box>
 
-            {/* Input area */}
-            <Box sx={{ p: 2.5, borderTop: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'background.paper' : 'common.white' }}>
-              {aiFile && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                  <Chip
-                    icon={<PictureAsPdfIcon />}
-                    label={aiFile.name}
-                    color="error"
-                    variant="outlined"
-                    onDelete={() => setAIFile(null)}
-                    sx={{ fontWeight: 600 }}
-                  />
-                </Box>
-              )}
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <IconButton
-                  component="label"
-                  disabled={aiLoading}
-                  color={aiFile ? "error" : "primary"}
-                  sx={{ border: '1px solid', borderColor: 'divider' }}
-                >
-                  <AttachFileIcon />
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    hidden
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setAIFile(e.target.files[0])
-                      }
-                    }}
-                  />
-                </IconButton>
-                <TextField
-                  placeholder="Describe your project or ask AI..."
-                  size="small"
-                  fullWidth
-                  disabled={aiLoading}
-                  value={aiMessage}
-                  onChange={(e) => setAIMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleAISend()
+          {/* Input area */}
+          <Box sx={{ p: 2.5, borderTop: '1px solid', borderColor: 'divider', bgcolor: isDark ? 'background.paper' : 'common.white' }}>
+            {aiFile && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                <Chip
+                  icon={<PictureAsPdfIcon />}
+                  label={aiFile.name}
+                  color="error"
+                  variant="outlined"
+                  onDelete={() => setAIFile(null)}
+                  sx={{ fontWeight: 600 }}
+                />
+              </Box>
+            )}
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <IconButton
+                component="label"
+                disabled={aiLoading}
+                color={aiFile ? "error" : "primary"}
+                sx={{ border: '1px solid', borderColor: 'divider' }}
+              >
+                <AttachFileIcon />
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  hidden
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setAIFile(e.target.files[0])
                     }
                   }}
                 />
-                <IconButton
-                  color="primary"
-                  disabled={aiLoading || (!aiMessage.trim() && !aiFile)}
-                  onClick={handleAISend}
-                  sx={{ bgcolor: 'primary.main', color: '#fff', '&:hover': { bgcolor: 'primary.dark' }, '&.Mui-disabled': { bgcolor: 'action.disabledBackground', color: 'action.disabled' } }}
-                >
-                  <SendIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </Box>
+              </IconButton>
+              <TextField
+                placeholder="Describe your project or ask AI..."
+                size="small"
+                fullWidth
+                disabled={aiLoading}
+                value={aiMessage}
+                onChange={(e) => setAIMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleAISend()
+                  }
+                }}
+              />
+              <IconButton
+                color="primary"
+                disabled={aiLoading || (!aiMessage.trim() && !aiFile)}
+                onClick={handleAISend}
+                sx={{ bgcolor: 'primary.main', color: '#fff', '&:hover': { bgcolor: 'primary.dark' }, '&.Mui-disabled': { bgcolor: 'action.disabledBackground', color: 'action.disabled' } }}
+              >
+                <SendIcon sx={{ fontSize: 18 }} />
+              </IconButton>
             </Box>
           </Box>
         </Box>
-      </Dialog>
+      )}
+    </Box>
+  </Dialog>
+
 
       {/* ── 5. Convert to Project Dialog ──────────────────────────────────── */}
       <ConvertToProjectDialog
@@ -2388,7 +2077,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
       {/* ── 6. Success Confirmation Dialog ─────────────────────────────────── */}
       <Dialog
         open={confirmDialog.open}
-        onClose={() => setConfirmDialog({ open: false, name: '' })}
+        onClose={() => setConfirmDialog({ open: false, name: '', id: '' })}
         maxWidth="sm"
         fullWidth
         slotProps={{
@@ -2428,8 +2117,25 @@ User Prompt: ${promptText || "Extract details from the document."}`,
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', pb: 3, gap: 1.5 }}>
           <Button
+            variant="outlined"
+            onClick={() => {
+              const latest = initiatives.find(i => i.pm_initiativeid === confirmDialog.id)
+              if (latest) {
+                setSelectedInitiative(latest)
+                setDetailTab(0)
+              }
+              setConfirmDialog({ open: false, name: '', id: '' })
+            }}
+            sx={{
+              px: 3,
+              fontWeight: 600,
+            }}
+          >
+            Triage details
+          </Button>
+          <Button
             variant="contained"
-            onClick={() => setConfirmDialog({ open: false, name: '' })}
+            onClick={() => setConfirmDialog({ open: false, name: '', id: '' })}
             sx={{
               bgcolor: 'primary.main',
               '&:hover': { bgcolor: 'primary.dark' },
