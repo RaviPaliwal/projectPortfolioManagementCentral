@@ -1,2 +1,2 @@
 export * from './ChangeRequestApprovalTaskModal'
-export * from './ChangeRequestApprovalStepTaskModal'
+export * from './ChangeRequestImpactAssessmentTaskModal'

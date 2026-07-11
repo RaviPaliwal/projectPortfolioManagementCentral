@@ -52,6 +52,9 @@ const FundingSourceApprovalTaskModalWrapper = lazy(() =>
 const ChangeRequestApprovalTaskModalWrapper = lazy(() =>
   import('@/features/changerequests/components').then((m) => ({ default: m.ChangeRequestApprovalTaskModalWrapper }))
 )
+const ChangeRequestImpactAssessmentTaskModalWrapper = lazy(() =>
+  import('@/features/changerequests/components').then((m) => ({ default: m.ChangeRequestImpactAssessmentTaskModalWrapper }))
+)
 const ProgrammeApprovalTaskModalWrapper = lazy(() =>
   import('@/features/programmes/components').then((m) => ({ default: m.ProgrammeApprovalTaskModalWrapper }))
 )
@@ -209,6 +212,13 @@ export const FORM_REGISTRY: FormRegistryEntry[] = [
     displayName: 'Change Request Approval',
     description: 'Review change request details — verify cost/schedule impacts, justification, and linked project data before approving or rejecting. On approval, dynamically updates project budget and schedule.',
     modalComponent: ChangeRequestApprovalTaskModalWrapper,
+  },
+  {
+    key: 'change_request_impact_assessment',
+    moduleName: MODULE_NAMES.CHANGE_REQUESTS.label,
+    displayName: 'Change Request Impact Assessment',
+    description: 'Conduct impact assessment on the change request across Schedule, Cost, Quality, and Benefits categories before submitting for approval.',
+    modalComponent: ChangeRequestImpactAssessmentTaskModalWrapper,
   },
   {
     key: 'portfolio_approval',
