@@ -51,7 +51,7 @@ import {
   TaskDialog,
   GateReviewDialog,
 } from '../components/ProjectSubFormDialogs'
-import { recalculateProjectFinancials, normalizeLookupId, mapProjectTask, mapProjectMilestone } from '@/services'
+import { recalculateProjectFinancials, normalizeLookupId, mapProjectTask, mapProjectMilestone, attachDependenciesToMultipleProjectTasks } from '@/services'
 
 export default function ProjectsPage() {
   const { currentUser, currentUserPersona, users } = useUser()
@@ -192,7 +192,9 @@ export default function ProjectsPage() {
       setDetailResources(unwrap(allocResult))
       setDetailBudgetLines(unwrap(budgetResult))
       setDetailBenefits(benefitResult)
-      setDetailTasks(unwrap(taskResult).map(mapProjectTask))
+      const mappedTasks = unwrap(taskResult).map(mapProjectTask)
+      const tasksWithDeps = await attachDependenciesToMultipleProjectTasks(mappedTasks)
+      setDetailTasks(tasksWithDeps)
       setDetailGateReviews(unwrap(gateResult))
     } catch (err) {
       setError('Failed to load project detail data.')
@@ -400,7 +402,9 @@ export default function ProjectsPage() {
         setDetailBenefits(list)
       } else if (type === 'task') {
         const r = await Pm_projecttasksService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 200, orderBy: ['pm_plannedstartdate asc'] })
-        setDetailTasks(unwrap(r).map(mapProjectTask))
+        const mapped = unwrap(r).map(mapProjectTask)
+        const withDeps = await attachDependenciesToMultipleProjectTasks(mapped)
+        setDetailTasks(withDeps)
       } else if (type === 'gatereview') {
         const r = await Pm_projectgatereviewsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 50, orderBy: ['pm_plannedreviewdate desc'] })
         setDetailGateReviews(unwrap(r))

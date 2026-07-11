@@ -1,14 +1,14 @@
 {
-  "name": "pm_projecttask",
-  "title": "Project Task",
+  "name": "pm_taskdependency",
+  "title": "Task Dependencies",
   "schema": {
     "type": "array",
     "items": {
       "type": "object",
       "x-ms-dataverse-entity": true,
-      "x-ms-dataverse-entityset": "pm_projecttasks",
-      "x-ms-dataverse-primary-id": "pm_projecttaskid",
-      "x-ms-dataverse-primary-name": "pm_taskname",
+      "x-ms-dataverse-entityset": "pm_taskdependencies",
+      "x-ms-dataverse-primary-id": "pm_taskdependencyid",
+      "x-ms-dataverse-primary-name": "pm_name",
       "properties": {
         "createdby": {
           "type": "string",
@@ -218,205 +218,114 @@
           "x-ms-schema-name": "OwningUser",
           "x-ms-read-only": true
         },
-        "pm_actualenddate": {
+        "pm_dependencytype": {
           "type": "string",
-          "title": "Actual End",
-          "x-ms-dataverse-attribute": "pm_actualenddate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_actualenddate"
-        },
-        "pm_actualstartdate": {
-          "type": "string",
-          "title": "Actual Start",
-          "x-ms-dataverse-attribute": "pm_actualstartdate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_actualstartdate"
-        },
-        "pm_assignedtoresource": {
-          "type": "string",
-          "title": "Assigned To Resource",
-          "x-ms-dataverse-attribute": "pm_assignedtoresource",
-          "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_AssignedToResource"
-        },
-        "pm_assignedtoresourcename": {
-          "type": "string",
-          "title": "pm_assignedtoresourcename",
-          "x-ms-dataverse-attribute": "pm_assignedtoresourcename",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_AssignedToResourceName",
-          "x-ms-read-only": true,
-          "maxLength": 850
-        },
-        "pm_baselineenddate": {
-          "type": "string",
-          "title": "Baseline End",
-          "x-ms-dataverse-attribute": "pm_baselineenddate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_baselineenddate"
-        },
-        "pm_baselinestartdate": {
-          "type": "string",
-          "title": "Baseline Start",
-          "x-ms-dataverse-attribute": "pm_baselinestartdate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_baselinestartdate"
-        },
-        "pm_durationdays": {
-          "type": "string",
-          "title": "Duration (Days)",
-          "x-ms-dataverse-attribute": "pm_durationdays",
-          "x-ms-dataverse-type": "IntegerType",
-          "x-ms-schema-name": "pm_durationdays"
-        },
-        "pm_oncriticalpath": {
-          "type": "string",
-          "title": "On Critical Path",
-          "x-ms-dataverse-attribute": "pm_oncriticalpath",
-          "x-ms-dataverse-type": "BooleanType",
-          "x-ms-schema-name": "pm_oncriticalpath",
+          "title": "Dependency Type",
+          "x-ms-dataverse-attribute": "pm_dependencytype",
+          "x-ms-dataverse-type": "PicklistType",
+          "x-ms-schema-name": "pm_DependencyType",
           "enum": [
-            "No",
-            "Yes"
+            "Finish-to-Start",
+            "Start-to-Start",
+            "Finish-to-Finish"
           ],
           "x-ms-enum-values": [
-            0,
-            1
+            1,
+            2,
+            3
           ],
           "Color": [
             null,
+            null,
             null
           ],
-          "x-ms-optionsetmetadataid": "c911da8f-1e0b-4524-9ad9-d532abe668f8",
+          "x-ms-optionsetmetadataid": "1eac4e2c-e87c-f111-ab0f-000d3a82c178",
           "x-ms-isGlobal": false,
-          "x-ms-optionsetdisplayname": "On Critical Path",
-          "x-ms-optionSetType": "Boolean"
+          "x-ms-optionsetdisplayname": "Dependency Type",
+          "x-ms-optionSetType": "Picklist"
         },
-        "pm_oncriticalpathname": {
+        "pm_dependencytypename": {
           "type": "string",
-          "title": "pm_oncriticalpathname",
-          "x-ms-dataverse-attribute": "pm_oncriticalpathname",
+          "title": "pm_dependencytypename",
+          "x-ms-dataverse-attribute": "pm_dependencytypename",
           "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_oncriticalpathName",
+          "x-ms-schema-name": "pm_dependencytypeName",
           "x-ms-read-only": true
         },
-        "pm_percentcomplete": {
+        "pm_lagdays": {
           "type": "string",
-          "title": "% Complete",
-          "x-ms-dataverse-attribute": "pm_percentcomplete",
+          "title": "Lag Days",
+          "x-ms-dataverse-attribute": "pm_lagdays",
           "x-ms-dataverse-type": "IntegerType",
-          "x-ms-schema-name": "pm_percentcomplete"
+          "x-ms-schema-name": "pm_LagDays"
         },
-        "pm_plannedenddate": {
+        "pm_name": {
           "type": "string",
-          "title": "Planned End",
-          "x-ms-dataverse-attribute": "pm_plannedenddate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_plannedenddate"
+          "title": "Name",
+          "x-ms-dataverse-attribute": "pm_name",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_Name",
+          "x-ms-dataverse-primary-name": true,
+          "required": true,
+          "maxLength": 850
         },
-        "pm_plannedstartdate": {
+        "pm_predecessortask": {
           "type": "string",
-          "title": "Planned Start",
-          "x-ms-dataverse-attribute": "pm_plannedstartdate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_plannedstartdate"
+          "title": "Predecessor Task\t",
+          "x-ms-dataverse-attribute": "pm_predecessortask",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_PredecessorTask"
+        },
+        "pm_predecessortaskname": {
+          "type": "string",
+          "title": "pm_predecessortaskname",
+          "x-ms-dataverse-attribute": "pm_predecessortaskname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_PredecessorTaskName",
+          "x-ms-read-only": true,
+          "maxLength": 850
         },
         "pm_project": {
           "type": "string",
           "title": "Project",
           "x-ms-dataverse-attribute": "pm_project",
           "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_project"
+          "x-ms-schema-name": "pm_Project"
         },
         "pm_projectname": {
           "type": "string",
           "title": "pm_projectname",
           "x-ms-dataverse-attribute": "pm_projectname",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projectName",
+          "x-ms-schema-name": "pm_ProjectName",
           "x-ms-read-only": true,
           "maxLength": 850
         },
-        "pm_projecttask": {
+        "pm_successortask": {
           "type": "string",
-          "title": "Parent Task",
-          "x-ms-dataverse-attribute": "pm_projecttask",
+          "title": "Successor Task",
+          "x-ms-dataverse-attribute": "pm_successortask",
           "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_projecttask"
+          "x-ms-schema-name": "pm_SuccessorTask"
         },
-        "pm_projecttaskid": {
+        "pm_successortaskname": {
           "type": "string",
-          "title": "Project Task",
-          "x-ms-dataverse-attribute": "pm_projecttaskid",
+          "title": "pm_successortaskname",
+          "x-ms-dataverse-attribute": "pm_successortaskname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pm_SuccessorTaskName",
+          "x-ms-read-only": true,
+          "maxLength": 850
+        },
+        "pm_taskdependencyid": {
+          "type": "string",
+          "title": "Task Dependency",
+          "x-ms-dataverse-attribute": "pm_taskdependencyid",
           "x-ms-dataverse-type": "UniqueidentifierType",
-          "x-ms-schema-name": "pm_projecttaskId",
+          "x-ms-schema-name": "pm_TaskDependencyId",
           "x-ms-dataverse-primary-id": true,
           "required": true,
           "x-ms-keyType": "primary"
-        },
-        "pm_projecttaskname": {
-          "type": "string",
-          "title": "pm_projecttaskname",
-          "x-ms-dataverse-attribute": "pm_projecttaskname",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projecttaskName",
-          "x-ms-read-only": true,
-          "maxLength": 850
-        },
-        "pm_tasklevel": {
-          "type": "string",
-          "title": "Task Level",
-          "x-ms-dataverse-attribute": "pm_tasklevel",
-          "x-ms-dataverse-type": "IntegerType",
-          "x-ms-schema-name": "pm_tasklevel"
-        },
-        "pm_taskname": {
-          "type": "string",
-          "title": "Task Name",
-          "x-ms-dataverse-attribute": "pm_taskname",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_taskname",
-          "x-ms-dataverse-primary-name": true,
-          "maxLength": 850
-        },
-        "pm_taskstatus": {
-          "type": "string",
-          "title": "Status",
-          "x-ms-dataverse-attribute": "pm_taskstatus",
-          "x-ms-dataverse-type": "PicklistType",
-          "x-ms-schema-name": "pm_taskstatus",
-          "enum": [
-            "Complete",
-            "In Progress"
-          ],
-          "x-ms-enum-values": [
-            0,
-            1
-          ],
-          "Color": [
-            null,
-            null
-          ],
-          "x-ms-optionsetmetadataid": "277a30cd-eb6d-49b8-9177-d80a48a25f39",
-          "x-ms-isGlobal": false,
-          "x-ms-optionsetdisplayname": "Status",
-          "x-ms-optionSetType": "Picklist"
-        },
-        "pm_taskstatusname": {
-          "type": "string",
-          "title": "pm_taskstatusname",
-          "x-ms-dataverse-attribute": "pm_taskstatusname",
-          "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_taskstatusName",
-          "x-ms-read-only": true
-        },
-        "pm_wbsnumber": {
-          "type": "string",
-          "title": "WBS Number",
-          "x-ms-dataverse-attribute": "pm_wbsnumber",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_wbsnumber",
-          "maxLength": 100
         },
         "statecode": {
           "type": "string",
@@ -437,7 +346,7 @@
             null,
             null
           ],
-          "x-ms-optionsetmetadataid": "e720be49-2d55-4b6a-b4af-bae5e357f1ad",
+          "x-ms-optionsetmetadataid": "e61f82e5-f676-f111-ab0e-7ced8dff1711",
           "x-ms-isGlobal": false,
           "x-ms-optionsetdisplayname": "Status",
           "x-ms-optionSetType": "State"
@@ -468,7 +377,7 @@
             null,
             null
           ],
-          "x-ms-optionsetmetadataid": "43138013-2b6d-4023-9fd5-0e6bcdcd2f65",
+          "x-ms-optionsetmetadataid": "f01f82e5-f676-f111-ab0e-7ced8dff1711",
           "x-ms-isGlobal": false,
           "x-ms-optionsetdisplayname": "Status Reason",
           "x-ms-optionSetType": "Status"
@@ -514,7 +423,8 @@
         "owneridtype",
         "owneridyominame",
         "owningbusinessunitname",
-        "pm_projecttaskid",
+        "pm_name",
+        "pm_taskdependencyid",
         "statecode"
       ]
     }

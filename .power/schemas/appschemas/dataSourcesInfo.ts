@@ -57,6 +57,13 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pm_budgetlinefundingallocations": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_budgetlinefundingallocationid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pm_cashflowentries": {
     "tableId": "",
     "version": "",
@@ -274,6 +281,13 @@ export const dataSourcesInfo = {
     "tableId": "",
     "version": "",
     "primaryKey": "pm_skillid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pm_taskdependencies": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pm_taskdependencyid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },

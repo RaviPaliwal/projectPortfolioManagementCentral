@@ -172,6 +172,8 @@ export interface ProjectTaskModel {
   _pm_project_value?: string
   pm_projectname?: string
   _pm_assignedtoresource_value?: string
+  predecessorIds?: string[]
+  dependencies?: any[]
 }
 
 export interface ProjectMilestoneModel {
@@ -307,8 +309,10 @@ export interface FundingSourceModel {
   pm_effectivetodate?: string
   pm_portfolioname?: string
   pm_programmelookupname?: string
-  _pm_portfolio_value?: string
-  _pm_programmelookup_value?: string
+  pm_projectname?: string
+  _pm_regardingid_value?: string
+  pm_regardingidtype?: string
+  pm_regardingidname?: string
   statecode?: number
 }
 

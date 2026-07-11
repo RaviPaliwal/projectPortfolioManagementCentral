@@ -18,6 +18,14 @@ import {
   LinearProgress,
   Tooltip,
   useTheme,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
+  Dialog as MuiDialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
@@ -27,6 +35,7 @@ import SaveIcon from '@mui/icons-material/Save'
 import WarningIcon from '@mui/icons-material/Warning'
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import EditIcon from '@mui/icons-material/Edit'
+import SettingsIcon from '@mui/icons-material/Settings'
 
 import { updateProjectTask } from '@/services'
 import type { ProjectTaskModel } from '@/types/dataverse'
@@ -68,6 +77,57 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
   const [localTasks, setLocalTasks] = useState<ProjectTaskModel[]>([])
   const [saving, setSaving] = useState(false)
   const [saveProgress, setSaveProgress] = useState(0)
+
+  const [activeTaskIndex, setActiveTaskIndex] = useState<number | null>(null)
+  const [dependencyDialogTasks, setDependencyDialogTasks] = useState<any[]>([])
+  const [dependencyDialogOpen, setDependencyDialogOpen] = useState(false)
+
+  const handleOpenDependencyDialog = (index: number) => {
+    const task = localTasks[index]
+    const values = task.predecessorIds || (task._pm_predecessortask_value ? [task._pm_predecessortask_value] : [])
+    const deps = task.dependencies || []
+    
+    // Build a helper list of predecessor tasks with their current lag/type
+    const dialogTasks = values.map(predId => {
+      const predTask = localTasks.find(t => t.pm_projecttaskid === predId)
+      const existingDep = deps.find(d => d.predecessorId === predId)
+      return {
+        predecessorId: predId,
+        wbs: predTask?.pm_wbsnumber || '',
+        name: predTask?.pm_taskname || 'Unnamed Task',
+        lagDays: existingDep?.lagDays ?? 0,
+        dependencyType: existingDep?.dependencyType ?? 1,
+      }
+    })
+    
+    setActiveTaskIndex(index)
+    setDependencyDialogTasks(dialogTasks)
+    setDependencyDialogOpen(true)
+  }
+
+  const handleSaveDependencySettings = () => {
+    if (activeTaskIndex === null) return
+    const list = [...localTasks]
+    const task = list[activeTaskIndex]
+    
+    // Save mapped dependencies
+    const updatedDeps = dependencyDialogTasks.map(d => ({
+      predecessorId: d.predecessorId,
+      lagDays: Number(d.lagDays) || 0,
+      dependencyType: Number(d.dependencyType) || 1,
+    }))
+    
+    list[activeTaskIndex] = {
+      ...task,
+      dependencies: updatedDeps,
+      predecessorIds: updatedDeps.map(d => d.predecessorId),
+      _pm_predecessortask_value: updatedDeps[0]?.predecessorId || undefined,
+    }
+    
+    setLocalTasks(list)
+    setDependencyDialogOpen(false)
+    setActiveTaskIndex(null)
+  }
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
   // Load initial tasks or merge updates without losing unsaved WBS layout structure
@@ -112,6 +172,8 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
             pm_percentcomplete: fresh.pm_percentcomplete,
             pm_taskstatus: fresh.pm_taskstatus,
             pm_assignedresource: fresh.pm_assignedresource,
+            _pm_project_value: fresh._pm_project_value,
+            predecessorIds: fresh.predecessorIds,
           }
         }
         return localTask
@@ -198,10 +260,14 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
     setLocalTasks(list)
   }
 
-  // Update Predecessor
-  const handlePredecessorChange = (index: number, predId: string) => {
+  // Update Predecessors
+  const handlePredecessorsChange = (index: number, predIds: string[]) => {
     const list = [...localTasks]
-    list[index] = { ...list[index], _pm_predecessortask_value: predId || undefined }
+    list[index] = { 
+      ...list[index], 
+      predecessorIds: predIds, 
+      _pm_predecessortask_value: predIds[0] || undefined 
+    }
     setLocalTasks(list)
   }
 
@@ -220,11 +286,21 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
 
       const wbsChanged = t.pm_wbsnumber !== orig.pm_wbsnumber
       const levelChanged = t.pm_tasklevel !== orig.pm_tasklevel
-      const predChanged = t._pm_predecessortask_value !== orig._pm_predecessortask_value
+      const origPreds = orig.predecessorIds || (orig._pm_predecessortask_value ? [orig._pm_predecessortask_value] : [])
+      const localPreds = t.predecessorIds || (t._pm_predecessortask_value ? [t._pm_predecessortask_value] : [])
+      const predChanged = JSON.stringify([...origPreds].sort()) !== JSON.stringify([...localPreds].sort())
+      
+      const origDeps = orig.dependencies || []
+      const localDeps = t.dependencies || []
+      const mapDepKey = (d: any) => `${d.predecessorId}-${d.lagDays || 0}-${d.dependencyType || 1}`
+      const origDepKeys = origDeps.map(mapDepKey).sort()
+      const localDepKeys = localDeps.map(mapDepKey).sort()
+      const depDetailsChanged = JSON.stringify(origDepKeys) !== JSON.stringify(localDepKeys)
+
       const parentChanged = t.pm_parenttaskid !== orig.pm_parenttaskid
       const critChanged = !!t.pm_oncriticalpath !== !!orig.pm_oncriticalpath
 
-      if (wbsChanged || levelChanged || predChanged || parentChanged || critChanged) {
+      if (wbsChanged || levelChanged || predChanged || depDetailsChanged || parentChanged || critChanged) {
         changes.push(t)
       }
     })
@@ -251,8 +327,9 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
       }
 
       // 2. Predecessor conflict
-      if (task._pm_predecessortask_value) {
-        const predecessor = localTasks.find(t => t.pm_projecttaskid === task._pm_predecessortask_value)
+      const preds = task.predecessorIds || (task._pm_predecessortask_value ? [task._pm_predecessortask_value] : [])
+      for (const predId of preds) {
+        const predecessor = localTasks.find(t => t.pm_projecttaskid === predId)
         if (predecessor) {
           const predEnd = predecessor.pm_plannedenddate ? new Date(predecessor.pm_plannedenddate) : null
           if (start && predEnd && start < predEnd) {
@@ -300,8 +377,15 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
           pm_tasklevel: task.pm_tasklevel,
           pm_parenttaskid: task.pm_parenttaskid || undefined,
           _pm_predecessortask_value: task._pm_predecessortask_value || undefined,
+          predecessorIds: task.predecessorIds || [],
+          dependencyDetails: task.dependencies?.map(d => ({
+            predecessorId: d.predecessorId,
+            lagDays: d.lagDays,
+            dependencyType: d.dependencyType,
+          })) || [],
+          _pm_project_value: task._pm_project_value,
           pm_oncriticalpath: task.pm_oncriticalpath,
-        })
+        } as any)
       } catch (err) {
         console.error(`Failed to save task ${task.pm_taskname}:`, err)
         errCount++
@@ -401,12 +485,16 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
             }
 
             // Predecessor timeline validation
-            if (!dateConflictMessage && task._pm_predecessortask_value) {
-              const predecessor = localTasks.find(t => t.pm_projecttaskid === task._pm_predecessortask_value)
-              if (predecessor) {
-                const predEnd = predecessor.pm_plannedenddate ? new Date(predecessor.pm_plannedenddate) : null
-                if (start && predEnd && start < predEnd) {
-                  dateConflictMessage = `Dependency conflict: Starts (${start.toLocaleDateString()}) before predecessor finishes (${predEnd.toLocaleDateString()}: ${predecessor.pm_taskname || 'Predecessor'})`
+            if (!dateConflictMessage) {
+              const preds = task.predecessorIds || (task._pm_predecessortask_value ? [task._pm_predecessortask_value] : [])
+              for (const predId of preds) {
+                if (dateConflictMessage) break
+                const predecessor = localTasks.find(t => t.pm_projecttaskid === predId)
+                if (predecessor) {
+                  const predEnd = predecessor.pm_plannedenddate ? new Date(predecessor.pm_plannedenddate) : null
+                  if (start && predEnd && start < predEnd) {
+                    dateConflictMessage = `Dependency conflict: Starts (${start.toLocaleDateString()}) before predecessor finishes (${predEnd.toLocaleDateString()}: ${predecessor.pm_taskname || 'Predecessor'})`
+                  }
                 }
               }
             }
@@ -511,23 +599,45 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <FormControl size="small" fullWidth>
-                    <Select
-                      id={`wbs-predecessor-${index}`}
-                      inputProps={{ 'aria-label': 'Predecessor Task' }}
-                      value={task._pm_predecessortask_value || ''}
-                      onChange={(e) => handlePredecessorChange(index, e.target.value as string)}
-                      sx={{ borderRadius: 1.15, fontSize: fontSizes.xs }}
-                      displayEmpty
-                    >
-                      <MenuItem value="">— None —</MenuItem>
-                      {predecessorOptions.map(opt => (
-                        <MenuItem key={opt.pm_projecttaskid} value={opt.pm_projecttaskid} sx={{ fontSize: fontSizes.xs }}>
-                          {opt.pm_wbsnumber} {opt.pm_taskname}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <FormControl size="small" fullWidth>
+                      <Select
+                        id={`wbs-predecessors-${index}`}
+                        multiple
+                        inputProps={{ 'aria-label': 'Predecessor Tasks' }}
+                        value={task.predecessorIds || (task._pm_predecessortask_value ? [task._pm_predecessortask_value] : [])}
+                        onChange={(e) => handlePredecessorsChange(index, e.target.value as string[])}
+                        input={<OutlinedInput size="small" sx={{ borderRadius: 1.15, fontSize: fontSizes.xs }} />}
+                        renderValue={(selected) => {
+                          const selectedList = selected as string[]
+                          if (selectedList.length === 0) return '— None —'
+                          return selectedList.map(id => {
+                            const opt = predecessorOptions.find(t => t.pm_projecttaskid === id)
+                            return opt ? opt.pm_wbsnumber : ''
+                          }).filter(Boolean).join(', ')
+                        }}
+                        sx={{ borderRadius: 1.15, fontSize: fontSizes.xs }}
+                      >
+                        {predecessorOptions.map(opt => {
+                          const values = task.predecessorIds || (task._pm_predecessortask_value ? [task._pm_predecessortask_value] : [])
+                          const isChecked = values.includes(opt.pm_projecttaskid!)
+                          return (
+                            <MenuItem key={opt.pm_projecttaskid} value={opt.pm_projecttaskid} sx={{ fontSize: fontSizes.xs }}>
+                              <Checkbox size="small" checked={isChecked} />
+                              <ListItemText primary={`${opt.pm_wbsnumber} ${opt.pm_taskname}`} slotProps={{ primary: { sx: { fontSize: fontSizes.xs } } }} />
+                            </MenuItem>
+                          )
+                        })}
+                      </Select>
+                    </FormControl>
+                    {(task.predecessorIds || (task._pm_predecessortask_value ? [task._pm_predecessortask_value] : [])).length > 0 && (
+                      <Tooltip title="Configure Lag & Dependency Type">
+                        <IconButton size="small" onClick={() => handleOpenDependencyDialog(index)}>
+                          <SettingsIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Box>
                 </TableCell>
                 <TableCell align="center">
                   <Switch
@@ -553,6 +663,76 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
           })}
         </TableBody>
       </Table>
+
+      <MuiDialog 
+        open={dependencyDialogOpen} 
+        onClose={() => setDependencyDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: { borderRadius: 1.5 }
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1, borderBottom: '1px solid', borderColor: 'divider', fontWeight: 600 }}>
+          Dependency Settings
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          {dependencyDialogTasks.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">No predecessors selected.</Typography>
+          ) : (
+            dependencyDialogTasks.map((dep, dIdx) => (
+              <Box key={dep.predecessorId} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 1.15 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
+                  Predecessor: {dep.wbs} {dep.name}
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <FormControl size="small" fullWidth>
+                    <Typography variant="caption" sx={{ mb: 0.5, fontWeight: 500 }}>Dependency Type</Typography>
+                    <Select
+                      value={dep.dependencyType}
+                      onChange={(e) => {
+                        const copy = [...dependencyDialogTasks]
+                        copy[dIdx].dependencyType = Number(e.target.value)
+                        setDependencyDialogTasks(copy)
+                      }}
+                      sx={{ borderRadius: 1.15 }}
+                    >
+                      <MenuItem value={1}>Finish-to-Start (FS)</MenuItem>
+                      <MenuItem value={2}>Start-to-Start (SS)</MenuItem>
+                      <MenuItem value={3}>Finish-to-Finish (FF)</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <FormControl size="small" fullWidth>
+                    <Typography variant="caption" sx={{ mb: 0.5, fontWeight: 500 }}>Lag Days</Typography>
+                    <TextField
+                      type="number"
+                      size="small"
+                      value={dep.lagDays}
+                      onChange={(e) => {
+                        const copy = [...dependencyDialogTasks]
+                        copy[dIdx].lagDays = e.target.value
+                        setDependencyDialogTasks(copy)
+                      }}
+                      slotProps={{ htmlInput: { min: -100, max: 100 } }}
+                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.15 } }}
+                    />
+                  </FormControl>
+                </Box>
+              </Box>
+            ))
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button onClick={() => setDependencyDialogOpen(false)} variant="outlined" sx={{ borderRadius: 1.15 }}>
+            Cancel
+          </Button>
+          <Button onClick={handleSaveDependencySettings} variant="contained" sx={{ borderRadius: 1.15 }}>
+            Save
+          </Button>
+        </DialogActions>
+      </MuiDialog>
     </Box>
   )
 }

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useRef, useEffect } from 'react'
 import {
   Box,
   Typography,
@@ -15,6 +15,13 @@ import ZoomOutIcon from '@mui/icons-material/ZoomOut'
 import FlagIcon from '@mui/icons-material/Flag'
 import type { ProjectTaskModel, ProjectMilestoneModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
+
+const parseToLocalMidnight = (dStr: string | Date | undefined | null): Date | null => {
+  if (!dStr) return null
+  const d = new Date(dStr)
+  if (isNaN(d.getTime())) return null
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+}
 
 interface DependencyNetworkProps {
   tasks: ProjectTaskModel[]
@@ -39,6 +46,7 @@ interface VisualTask {
   progress: number
   status: string
   predecessorId?: string
+  predecessorIds?: string[]
   onCriticalPath: boolean
   isBlocked: boolean
   isCycle: boolean
@@ -64,6 +72,31 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
 
   // Zoom factor
   const [zoom, setZoom] = useState(100)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Selected & Hovered dependency line connection states
+  const [selectedLine, setSelectedLine] = useState<{ predId: string; succId: string } | null>(null)
+  const [hoveredLine, setHoveredLine] = useState<{ predId: string; succId: string } | null>(null)
+
+  // Native wheel zoom listener (Ctrl + Wheel)
+  useEffect(() => {
+    const scrollEl = scrollRef.current
+    if (!scrollEl) return
+    const wheelHandler = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault()
+        if (e.deltaY < 0) {
+          setZoom((z) => Math.min(800, Math.round(z * 1.15)))
+        } else {
+          setZoom((z) => Math.max(20, Math.round(z / 1.15)))
+        }
+      }
+    }
+    scrollEl.addEventListener('wheel', wheelHandler, { passive: false })
+    return () => {
+      scrollEl.removeEventListener('wheel', wheelHandler)
+    }
+  }, [])
 
   // Robust boolean checker for Dataverse option/string formats
   const isCritical = (v: any): boolean => {
@@ -86,10 +119,12 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
     const adj = new Map<string, string[]>()
     tasks.forEach(t => {
       const tid = t.pm_projecttaskid!
-      const predId = t._pm_predecessortask_value
-      if (predId && idMap.has(predId)) {
-        if (!adj.has(predId)) adj.set(predId, [])
-        adj.get(predId)!.push(tid)
+      const preds = t.predecessorIds || (t._pm_predecessortask_value ? [t._pm_predecessortask_value] : [])
+      for (const predId of preds) {
+        if (predId && idMap.has(predId)) {
+          if (!adj.has(predId)) adj.set(predId, [])
+          adj.get(predId)!.push(tid)
+        }
       }
     })
 
@@ -121,40 +156,47 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
     let maxTime = -Infinity
 
     tasks.forEach(t => {
-      if (t.pm_plannedstartdate) {
-        const d = new Date(t.pm_plannedstartdate).getTime()
+      const start = parseToLocalMidnight(t.pm_plannedstartdate)
+      const end = parseToLocalMidnight(t.pm_plannedenddate)
+      if (start) {
+        const d = start.getTime()
         if (d < minTime) minTime = d
       }
-      if (t.pm_plannedenddate) {
-        const d = new Date(t.pm_plannedenddate).getTime()
+      if (end) {
+        const d = end.getTime()
         if (d > maxTime) maxTime = d
       }
     })
 
     milestones.forEach(m => {
-      if (m.pm_planneddate) {
-        const d = new Date(m.pm_planneddate).getTime()
+      const date = parseToLocalMidnight(m.pm_planneddate)
+      if (date) {
+        const d = date.getTime()
         if (d < minTime) minTime = d
         if (d > maxTime) maxTime = d
       }
     })
 
     if (minTime === Infinity || maxTime === -Infinity) {
-      const now = new Date().getTime()
-      minTime = now
-      maxTime = now + 30 * 24 * 60 * 60 * 1000
+      const now = new Date()
+      const normalizedNow = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+      minTime = normalizedNow
+      maxTime = normalizedNow + 30 * 24 * 60 * 60 * 1000
     }
 
     const oneDay = 24 * 60 * 60 * 1000
-    const minDate = new Date(minTime - 7 * oneDay)
-    const maxDate = new Date(maxTime + 14 * oneDay)
+    const rawMin = new Date(minTime - 7 * oneDay)
+    const rawMax = new Date(maxTime + 14 * oneDay)
+
+    const minDate = new Date(rawMin.getFullYear(), rawMin.getMonth(), rawMin.getDate())
+    const maxDate = new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate())
     const totalDuration = maxDate.getTime() - minDate.getTime()
 
     // 3. Map Milestones
     const visualMilestones: VisualMilestone[] = milestones
       .filter(m => m.pm_planneddate)
       .map(m => {
-        const date = new Date(m.pm_planneddate!)
+        const date = parseToLocalMidnight(m.pm_planneddate!) || minDate
         const leftPercent = ((date.getTime() - minDate.getTime()) / totalDuration) * 100
         return {
           milestone: m,
@@ -200,30 +242,32 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
       const visualTasks: VisualTask[] = []
 
       const rawVisuals = laneTasks.map(t => {
-        const start = t.pm_plannedstartdate ? new Date(t.pm_plannedstartdate) : minDate
-        const end = t.pm_plannedenddate ? new Date(t.pm_plannedenddate) : start
+        const start = parseToLocalMidnight(t.pm_plannedstartdate) || minDate
+        const end = parseToLocalMidnight(t.pm_plannedenddate) || start
 
         const leftPercent = ((start.getTime() - minDate.getTime()) / totalDuration) * 100
         const widthPercent = Math.max(2, ((end.getTime() - start.getTime()) / totalDuration) * 100)
 
         let isBlocked = false
         let reason = ''
-        const predId = t._pm_predecessortask_value
+        const preds = t.predecessorIds || (t._pm_predecessortask_value ? [t._pm_predecessortask_value] : [])
 
-        if (predId && idMap.has(predId)) {
-          const pred = idMap.get(predId)!
-          if (t.pm_plannedstartdate && pred.pm_plannedenddate) {
-            const sStart = new Date(t.pm_plannedstartdate)
-            const pEnd = new Date(pred.pm_plannedenddate)
-            if (sStart < pEnd) {
-              isBlocked = true
-              reason = `Blocked: Starts (${sStart.toLocaleDateString()}) before predecessor completes (${pEnd.toLocaleDateString()})`
-              conflicts.push(`"${t.pm_taskname}" overlaps with predecessor "${pred.pm_taskname}"`)
+        for (const predId of preds) {
+          if (predId && idMap.has(predId)) {
+            const pred = idMap.get(predId)!
+            if (t.pm_plannedstartdate && pred.pm_plannedenddate) {
+              const sStart = parseToLocalMidnight(t.pm_plannedstartdate)!
+              const pEnd = parseToLocalMidnight(pred.pm_plannedenddate)!
+              if (sStart < pEnd) {
+                isBlocked = true
+                reason = `Blocked: Starts (${sStart.toLocaleDateString()}) before predecessor completes (${pEnd.toLocaleDateString()})`
+                conflicts.push(`"${t.pm_taskname}" overlaps with predecessor "${pred.pm_taskname}"`)
+              }
             }
-          }
-          if (String(pred.pm_taskstatus) !== '0' && new Date(t.pm_plannedstartdate!) < new Date()) {
-            isBlocked = true
-            reason = reason || 'Predecessor incomplete (planned start date passed)'
+            if (String(pred.pm_taskstatus) !== '0' && new Date(t.pm_plannedstartdate!) < new Date()) {
+              isBlocked = true
+              reason = reason || 'Predecessor incomplete (planned start date passed)'
+            }
           }
         }
 
@@ -237,6 +281,7 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
           progress: t.pm_percentcomplete ?? 0,
           status: String(t.pm_taskstatus),
           predecessorId: t._pm_predecessortask_value,
+          predecessorIds: preds,
           onCriticalPath: isCritical(t.pm_oncriticalpath),
           isBlocked,
           isCycle: cycles.has(t.pm_projecttaskid!),
@@ -313,27 +358,41 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
     }
   }, [tasks, milestones])
 
-  const timelineMarkers = useMemo(() => {
+  const { markers: timelineMarkers, stepDays } = useMemo(() => {
     const markers: Date[] = []
     const start = graphData.minDate.getTime()
     const end = graphData.maxDate.getTime()
     const diff = end - start
-    const days = diff / (24 * 60 * 60 * 1000)
+    const days = Math.max(1, diff / (24 * 60 * 60 * 1000))
+
+    // Determine pixel width per day
+    const dayWidthInPx = ((zoom / 100) * 1200) / days
 
     let stepDays = 7
-    if (days > 120) stepDays = 30
-    if (days > 360) stepDays = 90
+    if (dayWidthInPx >= 30) {
+      stepDays = 1
+    } else if (dayWidthInPx >= 10) {
+      stepDays = 7
+    } else if (dayWidthInPx >= 3) {
+      stepDays = 14
+    } else if (days > 120) {
+      stepDays = 30
+    }
+    if (days > 360 && stepDays < 14) {
+      stepDays = 90
+    }
 
-    let current = new Date(graphData.minDate)
+    let current = new Date(graphData.minDate.getFullYear(), graphData.minDate.getMonth(), graphData.minDate.getDate())
     while (current <= graphData.maxDate) {
       markers.push(new Date(current))
       current.setDate(current.getDate() + stepDays)
+      current = new Date(current.getFullYear(), current.getMonth(), current.getDate())
     }
-    return markers
-  }, [graphData.minDate, graphData.maxDate])
+    return { markers, stepDays }
+  }, [graphData.minDate, graphData.maxDate, zoom])
 
-  const handleZoomIn = () => setZoom(z => Math.min(300, z + 20))
-  const handleZoomOut = () => setZoom(z => Math.max(60, z - 20))
+  const handleZoomIn = () => setZoom(z => Math.min(800, Math.round(z * 1.35)))
+  const handleZoomOut = () => setZoom(z => Math.max(20, Math.round(z / 1.35)))
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -345,13 +404,13 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <IconButton size="small" onClick={handleZoomOut} disabled={zoom <= 60}>
+          <IconButton size="small" onClick={handleZoomOut} disabled={zoom <= 20}>
             <ZoomOutIcon fontSize="small" />
           </IconButton>
           <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 40, textAlign: 'center' }}>
             {zoom}%
           </Typography>
-          <IconButton size="small" onClick={handleZoomIn} disabled={zoom >= 300}>
+          <IconButton size="small" onClick={handleZoomIn} disabled={zoom >= 800}>
             <ZoomInIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -369,6 +428,8 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
 
       {/* Diagram container */}
       <Box
+        ref={scrollRef}
+        onClick={() => setSelectedLine(null)}
         sx={{
           overflowX: 'auto',
           border: 1,
@@ -397,26 +458,35 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
             </Box>
             <Box sx={{ flexGrow: 1, position: 'relative', height: '100%' }}>
               {timelineMarkers.map((date, idx) => {
-                const percent = ((date.getTime() - graphData.minDate.getTime()) / (graphData.maxDate.getTime() - graphData.minDate.getTime())) * 100
+                const totalDiff = graphData.maxDate.getTime() - graphData.minDate.getTime()
+                const percent = ((date.getTime() - graphData.minDate.getTime()) / totalDiff) * 100
+                const colWidthPercent = ((stepDays * 24 * 60 * 60 * 1000) / totalDiff) * 100
                 return (
                   <Box
                     key={idx}
                     sx={{
                       position: 'absolute',
                       left: `${percent}%`,
+                      width: `${colWidthPercent}%`,
                       top: 0,
                       bottom: 0,
-                      transform: 'translateX(-50%)',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'center',
-                      alignItems: 'center'
+                      alignItems: 'center',
                     }}
                   >
                     <Typography variant="caption" sx={{ fontSize: '0.62rem', fontWeight: 700, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                      {date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      {(() => {
+                        const days = Math.max(1, (graphData.maxDate.getTime() - graphData.minDate.getTime()) / (24 * 60 * 60 * 1000))
+                        const dayWidthInPx = ((zoom / 100) * 1200) / days
+                        if (dayWidthInPx >= 30) {
+                          // Show day name and number (e.g. "Mon 12")
+                          return date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })
+                        }
+                        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                      })()}
                     </Typography>
-                    <Box sx={{ width: 1, height: 6, bgcolor: 'divider', mt: 0.25 }} />
                   </Box>
                 )
               })}
@@ -563,6 +633,10 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
                   {lane.tasks.map(node => {
                     const isComplete = node.status === '0'
 
+                    const isSelectedNode = selectedLine && (selectedLine.predId === node.id || selectedLine.succId === node.id)
+                    const isHoveredNode = hoveredLine && (hoveredLine.predId === node.id || hoveredLine.succId === node.id)
+                    const isHighlightedNode = !!(isSelectedNode || isHoveredNode)
+
                     let bgCol = isDark ? '#1e293b' : '#ffffff'
                     let borderCol = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
                     let textCol = 'text.primary'
@@ -619,15 +693,26 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
                             px: 1.5,
                             borderRadius: 2,
                             bgcolor: bgCol,
-                            border: '1.5px solid',
-                            borderColor: borderCol,
-                            boxShadow: 2,
-                            zIndex: 3,
+                            border: isHighlightedNode ? '2.5px solid' : '1.5px solid',
+                            borderColor: isHighlightedNode
+                              ? (node.onCriticalPath ? '#ff3b30' : '#00f6ff')
+                              : borderCol,
+                            boxShadow: isHighlightedNode
+                              ? (node.onCriticalPath
+                                ? '0 0 14px 3px rgba(239, 68, 68, 0.85), 0 0 4px rgba(239, 68, 68, 0.4)'
+                                : '0 0 14px 3px rgba(0, 246, 255, 0.85), 0 0 4px rgba(0, 246, 255, 0.4)')
+                              : 2,
+                            zIndex: isHighlightedNode ? 20 : 3,
                             cursor: 'pointer',
-                            transition: 'all 0.1s',
+                            transform: isHighlightedNode ? 'scale(1.08) translateY(-3px)' : 'none',
+                            transition: 'all 0.15s ease-in-out',
                             '&:hover': {
-                              transform: 'scale(1.02)',
-                              boxShadow: 4,
+                              transform: isHighlightedNode ? 'scale(1.1) translateY(-4px)' : 'scale(1.02)',
+                              boxShadow: isHighlightedNode
+                                ? (node.onCriticalPath
+                                  ? '0 0 18px 4px rgba(239, 68, 68, 0.95)'
+                                  : '0 0 18px 4px rgba(0, 246, 255, 0.95)')
+                                : 4,
                             }
                           }}
                         >
@@ -644,7 +729,7 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
                               mr: 1
                             }}
                           >
-                            {node.wbs ? `${node.wbs} ` : ''}{node.name}
+                            {node.wbs && !node.name.startsWith(node.wbs) ? `${node.wbs} ` : ''}{node.name}
                           </Typography>
 
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
@@ -689,62 +774,107 @@ export const DependencyNetwork: React.FC<DependencyNetworkProps> = ({ tasks, mil
                     <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#f59e0b" />
                   </marker>
                 </defs>
-                {Array.from(graphData.nodesMap.values()).map(node => {
-                  if (!node.predecessorId) return null
+                {Array.from(graphData.nodesMap.values()).flatMap(node => {
+                  const preds = node.predecessorIds || (node.predecessorId ? [node.predecessorId] : [])
+                  if (preds.length === 0) return []
+                  const totalPreds = preds.length
 
-                  const predNode = graphData.nodesMap.get(node.predecessorId)
-                  if (!predNode) return null
+                  return preds.map((predId, predIndex) => {
+                    const predNode = graphData.nodesMap.get(predId)
+                    if (!predNode) return null
 
-                  // 1. Find tasks in their respective swimlanes
-                  const predLaneId = predNode.wbs ? predNode.wbs.split('.')[0] : 'Other'
-                  const succLaneId = node.wbs ? node.wbs.split('.')[0] : 'Other'
+                    // 1. Find tasks in their respective swimlanes
+                    const predLaneId = predNode.wbs ? predNode.wbs.split('.')[0] : 'Other'
+                    const succLaneId = node.wbs ? node.wbs.split('.')[0] : 'Other'
 
-                  const predLaneTop = graphData.laneTops.get(predLaneId)
-                  const succLaneTop = graphData.laneTops.get(succLaneId)
+                    const predLaneTop = graphData.laneTops.get(predLaneId)
+                    const succLaneTop = graphData.laneTops.get(succLaneId)
 
-                  if (predLaneTop === undefined || succLaneTop === undefined) return null
+                    if (predLaneTop === undefined || succLaneTop === undefined) return null
 
-                  // 2. Compute exact coordinates mathematically in pixels
-                  const startXPercent = predNode.left + predNode.width
-                  const endXPercent = node.left
+                    // 2. Compute exact coordinates mathematically in pixels
+                    const startXPercent = predNode.left + predNode.width
+                    const endXPercent = node.left
 
-                  const startX = (startXPercent / 100) * timelineWidth
-                  const endX = (endXPercent / 100) * timelineWidth
+                    const startX = (startXPercent / 100) * timelineWidth
+                    const endX = (endXPercent / 100) * timelineWidth
 
-                  // Y coordinates in absolute pixels (accumulated lane heights)
-                  const startY = predLaneTop + predNode.trackIndex * 46 + 10 + 17
-                  const endY = succLaneTop + node.trackIndex * 46 + 10 + 17
+                    // Y coordinates in absolute pixels (accumulated lane heights)
+                    const yOffset = totalPreds > 1
+                      ? ((predIndex / (totalPreds - 1)) - 0.5) * 12
+                      : 0
 
-                  const strokeColor = node.isCycle
-                    ? '#ef4444'
-                    : node.isBlocked
-                      ? '#f59e0b'
-                      : node.onCriticalPath
-                        ? '#ef4444'
-                        : '#3b82f6'
+                    const startY = predLaneTop + predNode.trackIndex * 46 + 10 + 17 + yOffset
+                    const endY = succLaneTop + node.trackIndex * 46 + 10 + 17 + yOffset
 
-                  const markerId = node.isCycle || node.onCriticalPath
-                    ? 'arrow-critical'
-                    : node.isBlocked
-                      ? 'arrow-blocked'
-                      : 'arrow'
+                    const strokeColor = node.isCycle
+                      ? '#ef4444'
+                      : node.isBlocked
+                        ? '#f59e0b'
+                        : node.onCriticalPath
+                          ? '#ef4444'
+                          : '#3b82f6'
 
-                  const isDashed = node.isBlocked || node.isCycle
+                    const markerId = node.isCycle || node.onCriticalPath
+                      ? 'arrow-critical'
+                      : node.isBlocked
+                        ? 'arrow-blocked'
+                        : 'arrow'
 
-                  // Render elbow connectors using unitless absolute pixel paths
-                  return (
-                    <g key={`arrow-${predNode.id}-${node.id}`}>
-                      <path
-                        d={`M ${startX} ${startY} C ${startX + (endX - startX) / 2} ${startY}, ${startX + (endX - startX) / 2} ${endY}, ${endX} ${endY}`}
-                        fill="none"
-                        stroke={strokeColor}
-                        strokeWidth={node.onCriticalPath || isDashed ? 2 : 1.25}
-                        strokeDasharray={isDashed ? '4,3' : 'none'}
-                        opacity={0.7}
-                        markerEnd={`url(#${markerId})`}
-                      />
-                    </g>
-                  )
+                    const isDashed = node.isBlocked || node.isCycle
+
+                    // Offset the cubic bezier curve midpoint horizontally to prevent horizontal overlap
+                    const ctrlXOffset = totalPreds > 1 ? (predIndex - (totalPreds - 1) / 2) * 16 : 0
+                    const ctrlX = startX + (endX - startX) / 2 + ctrlXOffset
+
+                    const isSelectedLine = !!(selectedLine && selectedLine.predId === predNode.id && selectedLine.succId === node.id)
+                    const isHoveredLine = !!(hoveredLine && hoveredLine.predId === predNode.id && hoveredLine.succId === node.id)
+                    const isLineHighlighted = isSelectedLine || isHoveredLine
+
+                    return (
+                      <g
+                        key={`arrow-${predNode.id}-${node.id}-${predId}`}
+                        style={{ cursor: 'pointer' }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedLine({ predId: predNode.id, succId: node.id })
+                        }}
+                        onMouseEnter={() => setHoveredLine({ predId: predNode.id, succId: node.id })}
+                        onMouseLeave={() => setHoveredLine(null)}
+                      >
+                        {/* Neon glow effect line */}
+                        {isLineHighlighted && (
+                          <path
+                            d={`M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`}
+                            fill="none"
+                            stroke={node.onCriticalPath ? '#ef4444' : '#00f6ff'}
+                            strokeWidth={7}
+                            opacity={0.5}
+                            style={{ filter: 'drop-shadow(0px 0px 4px rgba(0, 246, 255, 0.5))' }}
+                          />
+                        )}
+                        {/* Main connection line */}
+                        <path
+                          d={`M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`}
+                          fill="none"
+                          stroke={isLineHighlighted ? (node.onCriticalPath ? '#ff3b30' : '#00f6ff') : strokeColor}
+                          strokeWidth={isLineHighlighted ? 3.5 : (node.onCriticalPath || isDashed ? 2.25 : 1.5)}
+                          strokeDasharray={isDashed ? '4,3' : 'none'}
+                          opacity={isLineHighlighted ? 1 : 0.7}
+                          markerEnd={`url(#${markerId})`}
+                          style={{ transition: 'stroke-width 0.15s, opacity 0.15s, stroke 0.15s' }}
+                        />
+                        {/* Easy-to-click hit area */}
+                        <path
+                          d={`M ${startX} ${startY} C ${ctrlX} ${startY}, ${ctrlX} ${endY}, ${endX} ${endY}`}
+                          fill="none"
+                          stroke="transparent"
+                          strokeWidth={14}
+                          style={{ pointerEvents: 'stroke' }}
+                        />
+                      </g>
+                    )
+                  }).filter(Boolean)
                 })}
               </svg>
             )

@@ -1273,26 +1273,72 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
 
   // Reactive inline validation checking
   const validationError = useMemo(() => {
-    if (!parentTaskId) return null
-    const parentTask = rawTasks.find(t => t.pm_projecttaskid === parentTaskId)
-    if (!parentTask) return null
+    // 1. Parent Task Bounds Check
+    if (parentTaskId) {
+      const parentTask = rawTasks.find(t => t.pm_projecttaskid === parentTaskId)
+      if (parentTask) {
+        if (plannedStartDate && parentTask.pm_plannedstartdate) {
+          const taskStart = new Date(plannedStartDate)
+          const parentStart = new Date(parentTask.pm_plannedstartdate.split('T')[0])
+          if (taskStart < parentStart) {
+            return `Planned start date (${taskStart.toLocaleDateString('en-GB')}) cannot be before parent task start date (${parentStart.toLocaleDateString('en-GB')}: ${parentTask.pm_taskname || 'Parent'}).`
+          }
+        }
+        if (plannedEndDate && parentTask.pm_plannedenddate) {
+          const taskEnd = new Date(plannedEndDate)
+          const parentEnd = new Date(parentTask.pm_plannedenddate.split('T')[0])
+          if (taskEnd > parentEnd) {
+            return `Planned end date (${taskEnd.toLocaleDateString('en-GB')}) cannot be after parent task end date (${parentEnd.toLocaleDateString('en-GB')}: ${parentTask.pm_taskname || 'Parent'}).`
+          }
+        }
+      }
+    }
 
-    if (plannedStartDate && parentTask.pm_plannedstartdate) {
+    // 2. Predecessor Dates & Dependency Validation
+    if (plannedStartDate && initialData && (initialData.dependencies || initialData.predecessorIds)) {
+      const preds = initialData.dependencies || (initialData.predecessorIds || []).map((id: string) => ({ predecessorId: id, lagDays: 0, dependencyType: 1 }))
       const taskStart = new Date(plannedStartDate)
-      const parentStart = new Date(parentTask.pm_plannedstartdate.split('T')[0])
-      if (taskStart < parentStart) {
-        return `Planned start date (${taskStart.toLocaleDateString('en-GB')}) cannot be before parent task start date (${parentStart.toLocaleDateString('en-GB')}: ${parentTask.pm_taskname || 'Parent'}).`
+
+      for (const dep of preds) {
+        const predId = dep.predecessorId || dep
+        if (!predId) continue
+        const predecessor = rawTasks.find(t => normalizeLookupId(t.pm_projecttaskid) === normalizeLookupId(predId))
+        if (predecessor && predecessor.pm_plannedenddate) {
+          const predEnd = new Date(predecessor.pm_plannedenddate.split('T')[0])
+          const lag = dep.lagDays || 0
+          const depType = dep.dependencyType !== undefined ? Number(dep.dependencyType) : 1
+
+          if (depType === 1 || depType === 0) { // FS
+            const earliestAllowedStart = new Date(predEnd.getTime() + (lag * 24 * 60 * 60 * 1000))
+            if (taskStart < earliestAllowedStart) {
+              return `Dependency conflict: Planned start date (${taskStart.toLocaleDateString('en-GB')}) is before predecessor finishes plus lag (${earliestAllowedStart.toLocaleDateString('en-GB')}: ${predecessor.pm_taskname || 'Predecessor'}).`
+            }
+          } else if (depType === 2 && predecessor.pm_plannedstartdate) { // SS
+            const predStart = new Date(predecessor.pm_plannedstartdate.split('T')[0])
+            const earliestAllowedStart = new Date(predStart.getTime() + (lag * 24 * 60 * 60 * 1000))
+            if (taskStart < earliestAllowedStart) {
+              return `Dependency conflict: Planned start date (${taskStart.toLocaleDateString('en-GB')}) is before predecessor starts plus lag (${earliestAllowedStart.toLocaleDateString('en-GB')}: ${predecessor.pm_taskname || 'Predecessor'}).`
+            }
+          } else if (depType === 3 && plannedEndDate) { // FF
+            const taskEnd = new Date(plannedEndDate)
+            const earliestAllowedEnd = new Date(predEnd.getTime() + (lag * 24 * 60 * 60 * 1000))
+            if (taskEnd < earliestAllowedEnd) {
+              return `Dependency conflict: Planned end date (${taskEnd.toLocaleDateString('en-GB')}) is before predecessor finishes plus lag (${earliestAllowedEnd.toLocaleDateString('en-GB')}: ${predecessor.pm_taskname || 'Predecessor'}).`
+            }
+          } else if (depType === 4 && plannedEndDate && predecessor.pm_plannedstartdate) { // SF
+            const taskEnd = new Date(plannedEndDate)
+            const predStart = new Date(predecessor.pm_plannedstartdate.split('T')[0])
+            const earliestAllowedEnd = new Date(predStart.getTime() + (lag * 24 * 60 * 60 * 1000))
+            if (taskEnd < earliestAllowedEnd) {
+              return `Dependency conflict: Planned end date (${taskEnd.toLocaleDateString('en-GB')}) is before predecessor starts plus lag (${earliestAllowedEnd.toLocaleDateString('en-GB')}: ${predecessor.pm_taskname || 'Predecessor'}).`
+            }
+          }
+        }
       }
     }
-    if (plannedEndDate && parentTask.pm_plannedenddate) {
-      const taskEnd = new Date(plannedEndDate)
-      const parentEnd = new Date(parentTask.pm_plannedenddate.split('T')[0])
-      if (taskEnd > parentEnd) {
-        return `Planned end date (${taskEnd.toLocaleDateString('en-GB')}) cannot be after parent task end date (${parentEnd.toLocaleDateString('en-GB')}: ${parentTask.pm_taskname || 'Parent'}).`
-      }
-    }
+
     return null
-  }, [parentTaskId, plannedStartDate, plannedEndDate, rawTasks])
+  }, [parentTaskId, plannedStartDate, plannedEndDate, rawTasks, initialData])
 
   const isValid = taskName.trim() !== '' && !validationError
 

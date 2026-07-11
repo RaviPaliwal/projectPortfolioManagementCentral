@@ -29,30 +29,6 @@
         }
       }
     },
-    "716400e8-58e2-4ab6-9ec4-fadfabebff99": {
-      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
-      "displayName": "Logic flows",
-      "dataSources": [
-        "manageteams"
-      ],
-      "workflowDetails": {
-        "workflowEntityId": "2b8560e4-505e-f111-a826-6045bd56f0ba",
-        "workflowDisplayName": "manageTeams",
-        "workflowName": "c2e0b2d4-4236-d895-9872-30e06ce49724"
-      }
-    },
-    "adb3c21b-110a-4b87-b694-89f42e6c7460": {
-      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
-      "displayName": "Logic flows",
-      "dataSources": [
-        "workflowroutinghandler"
-      ],
-      "workflowDetails": {
-        "workflowEntityId": "43b7ed55-b260-f111-a826-6045bd56f0ba",
-        "workflowDisplayName": "workflowRoutingHandler",
-        "workflowName": "777210e4-e557-9ec7-a462-1077b6c2650f"
-      }
-    },
     "979042e1-9a63-4d18-acc4-e61cc3535a6b": {
       "id": "/providers/microsoft.powerapps/apis/shared_office365",
       "displayName": "Office 365 Outlook"
@@ -87,11 +63,44 @@
         }
       }
     },
-    "5ac3fa42-553f-4a64-95b5-8d18e90abbb5": {
+    "0ee2b761-795d-4812-b5d8-d76f114ff658": {
+      "id": "/providers/Microsoft.PowerApps/apis/shared_microsoftcopilotstudio",
+      "displayName": "Microsoft Copilot Studio",
+      "dataSources": [
+        "microsoftcopilotstudio"
+      ],
+      "authenticationType": "oauthDefault",
+      "dataSets": {}
+    },
+    "aa3ecae9-012a-42a3-810e-d4021b0b4c40": {
+      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+      "displayName": "Logic flows",
+      "dataSources": [
+        "manageteams"
+      ],
+      "workflowDetails": {
+        "workflowEntityId": "2b8560e4-505e-f111-a826-6045bd56f0ba",
+        "workflowDisplayName": "manageTeams",
+        "workflowName": "c2e0b2d4-4236-d895-9872-30e06ce49724"
+      }
+    },
+    "37343737-37fc-494e-b5f1-c648b014ba81": {
+      "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+      "displayName": "Logic flows",
+      "dataSources": [
+        "workflowroutinghandler"
+      ],
+      "workflowDetails": {
+        "workflowEntityId": "43b7ed55-b260-f111-a826-6045bd56f0ba",
+        "workflowDisplayName": "workflowRoutingHandler",
+        "workflowName": "777210e4-e557-9ec7-a462-1077b6c2650f"
+      }
+    },
+    "c214fade-7968-4372-a329-a1325772c377": {
       "id": "/providers/microsoft.powerapps/apis/shared_teams",
       "displayName": "Microsoft Teams"
     },
-    "ec144e87-376c-43d9-b724-e3ceee4256c5": {
+    "c5941408-b828-4c58-bd48-b427325345df": {
       "id": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
       "displayName": "Logic flows",
       "dataSources": [
@@ -102,19 +111,10 @@
         "workflowDisplayName": "Send Message",
         "workflowName": "c645787e-df60-048c-824f-2806515d7e8f",
         "dependencies": {
-          "shared_teams": "5ac3fa42-553f-4a64-95b5-8d18e90abbb5",
+          "shared_teams": "c214fade-7968-4372-a329-a1325772c377",
           "shared_office365": "979042e1-9a63-4d18-acc4-e61cc3535a6b"
         }
       }
-    },
-    "0ee2b761-795d-4812-b5d8-d76f114ff658": {
-      "id": "/providers/Microsoft.PowerApps/apis/shared_microsoftcopilotstudio",
-      "displayName": "Microsoft Copilot Studio",
-      "dataSources": [
-        "microsoftcopilotstudio"
-      ],
-      "authenticationType": "oauthDefault",
-      "dataSets": {}
     }
   },
   "databaseReferences": {
@@ -312,6 +312,16 @@
         "workflowchecklistconfigurations": {
           "entitySetName": "pm_workflowchecklistconfigurations",
           "logicalName": "pm_workflowchecklistconfiguration",
+          "isHidden": false
+        },
+        "taskdependencies": {
+          "entitySetName": "pm_taskdependencies",
+          "logicalName": "pm_taskdependency",
+          "isHidden": false
+        },
+        "budgetlinefundingallocations": {
+          "entitySetName": "pm_budgetlinefundingallocations",
+          "logicalName": "pm_budgetlinefundingallocation",
           "isHidden": false
         }
       },

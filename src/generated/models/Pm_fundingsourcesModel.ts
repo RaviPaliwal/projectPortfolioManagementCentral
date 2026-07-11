@@ -39,9 +39,8 @@ export interface Pm_fundingsourcesBase {
   pm_fundingsourcename?: string;
   pm_fundingstatus?: Pm_fundingsourcespm_fundingstatus;
   pm_fundingtype?: Pm_fundingsourcespm_fundingtype;
-  "pm_portfolio@odata.bind"?: string;
-  "pm_ProgrammeLookup@odata.bind"?: string;
-  "pm_Project@odata.bind"?: string;
+  "pm_RegardingId@odata.bind"?: string;
+  pm_regardingidtype?: string;
   pm_totalamounteur?: number;
   statecode: Pm_fundingsourcesstatecode;
   statuscode?: Pm_fundingsourcesstatuscode;
@@ -69,9 +68,8 @@ export interface Pm_fundingsources extends Pm_fundingsourcesBase {
   pm_availableamounteur_base?: number;
   pm_fundingstatusname?: string;
   pm_fundingtypename?: string;
-  pm_portfolioname?: string;
-  pm_programmelookupname?: string;
-  pm_projectname?: string;
+  pm_regardingidname?: string;
+  pm_regardingidyominame?: string;
   pm_totalamounteur_base?: number;
   statecodename?: string;
   statuscodename?: string;
@@ -91,12 +89,8 @@ export interface Pm_fundingsources extends Pm_fundingsourcesBase {
   _owningteam_value?: string;
   owninguser?: object;
   _owninguser_value?: string;
-  pm_portfolio?: object;
-  _pm_portfolio_value?: string;
-  pm_programmelookup?: object;
-  _pm_programmelookup_value?: string;
-  pm_project?: object;
-  _pm_project_value?: string;
+  pm_regardingid?: object;
+  _pm_regardingid_value?: string;
   transactioncurrencyid?: object;
   _transactioncurrencyid_value?: string;
 }

@@ -1,14 +1,14 @@
 {
-  "name": "pm_projecttask",
-  "title": "Project Task",
+  "name": "pm_budgetlinefundingallocation",
+  "title": "Budgetline Funding Allocations",
   "schema": {
     "type": "array",
     "items": {
       "type": "object",
       "x-ms-dataverse-entity": true,
-      "x-ms-dataverse-entityset": "pm_projecttasks",
-      "x-ms-dataverse-primary-id": "pm_projecttaskid",
-      "x-ms-dataverse-primary-name": "pm_taskname",
+      "x-ms-dataverse-entityset": "pm_budgetlinefundingallocations",
+      "x-ms-dataverse-primary-id": "pm_budgetlinefundingallocationid",
+      "x-ms-dataverse-primary-name": "pm_name",
       "properties": {
         "createdby": {
           "type": "string",
@@ -71,6 +71,14 @@
           "x-ms-read-only": true,
           "required": true,
           "maxLength": 100
+        },
+        "exchangerate": {
+          "type": "string",
+          "title": "Exchange Rate",
+          "x-ms-dataverse-attribute": "exchangerate",
+          "x-ms-dataverse-type": "DecimalType",
+          "x-ms-schema-name": "ExchangeRate",
+          "x-ms-read-only": true
         },
         "importsequencenumber": {
           "type": "string",
@@ -218,205 +226,72 @@
           "x-ms-schema-name": "OwningUser",
           "x-ms-read-only": true
         },
-        "pm_actualenddate": {
+        "pm_allocatedamount": {
           "type": "string",
-          "title": "Actual End",
-          "x-ms-dataverse-attribute": "pm_actualenddate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_actualenddate"
+          "title": "Allocated Amount",
+          "x-ms-dataverse-attribute": "pm_allocatedamount",
+          "x-ms-dataverse-type": "MoneyType",
+          "x-ms-schema-name": "pm_AllocatedAmount"
         },
-        "pm_actualstartdate": {
+        "pm_allocatedamount_base": {
           "type": "string",
-          "title": "Actual Start",
-          "x-ms-dataverse-attribute": "pm_actualstartdate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_actualstartdate"
-        },
-        "pm_assignedtoresource": {
-          "type": "string",
-          "title": "Assigned To Resource",
-          "x-ms-dataverse-attribute": "pm_assignedtoresource",
-          "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_AssignedToResource"
-        },
-        "pm_assignedtoresourcename": {
-          "type": "string",
-          "title": "pm_assignedtoresourcename",
-          "x-ms-dataverse-attribute": "pm_assignedtoresourcename",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_AssignedToResourceName",
-          "x-ms-read-only": true,
-          "maxLength": 850
-        },
-        "pm_baselineenddate": {
-          "type": "string",
-          "title": "Baseline End",
-          "x-ms-dataverse-attribute": "pm_baselineenddate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_baselineenddate"
-        },
-        "pm_baselinestartdate": {
-          "type": "string",
-          "title": "Baseline Start",
-          "x-ms-dataverse-attribute": "pm_baselinestartdate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_baselinestartdate"
-        },
-        "pm_durationdays": {
-          "type": "string",
-          "title": "Duration (Days)",
-          "x-ms-dataverse-attribute": "pm_durationdays",
-          "x-ms-dataverse-type": "IntegerType",
-          "x-ms-schema-name": "pm_durationdays"
-        },
-        "pm_oncriticalpath": {
-          "type": "string",
-          "title": "On Critical Path",
-          "x-ms-dataverse-attribute": "pm_oncriticalpath",
-          "x-ms-dataverse-type": "BooleanType",
-          "x-ms-schema-name": "pm_oncriticalpath",
-          "enum": [
-            "No",
-            "Yes"
-          ],
-          "x-ms-enum-values": [
-            0,
-            1
-          ],
-          "Color": [
-            null,
-            null
-          ],
-          "x-ms-optionsetmetadataid": "c911da8f-1e0b-4524-9ad9-d532abe668f8",
-          "x-ms-isGlobal": false,
-          "x-ms-optionsetdisplayname": "On Critical Path",
-          "x-ms-optionSetType": "Boolean"
-        },
-        "pm_oncriticalpathname": {
-          "type": "string",
-          "title": "pm_oncriticalpathname",
-          "x-ms-dataverse-attribute": "pm_oncriticalpathname",
-          "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_oncriticalpathName",
+          "title": "Allocated Amount (Base)",
+          "x-ms-dataverse-attribute": "pm_allocatedamount_base",
+          "x-ms-dataverse-type": "MoneyType",
+          "x-ms-schema-name": "pm_allocatedamount_Base",
           "x-ms-read-only": true
         },
-        "pm_percentcomplete": {
+        "pm_budgetline": {
           "type": "string",
-          "title": "% Complete",
-          "x-ms-dataverse-attribute": "pm_percentcomplete",
-          "x-ms-dataverse-type": "IntegerType",
-          "x-ms-schema-name": "pm_percentcomplete"
-        },
-        "pm_plannedenddate": {
-          "type": "string",
-          "title": "Planned End",
-          "x-ms-dataverse-attribute": "pm_plannedenddate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_plannedenddate"
-        },
-        "pm_plannedstartdate": {
-          "type": "string",
-          "title": "Planned Start",
-          "x-ms-dataverse-attribute": "pm_plannedstartdate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_plannedstartdate"
-        },
-        "pm_project": {
-          "type": "string",
-          "title": "Project",
-          "x-ms-dataverse-attribute": "pm_project",
+          "title": "Budgetline",
+          "x-ms-dataverse-attribute": "pm_budgetline",
           "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_project"
+          "x-ms-schema-name": "pm_Budgetline"
         },
-        "pm_projectname": {
+        "pm_budgetlinefundingallocationid": {
           "type": "string",
-          "title": "pm_projectname",
-          "x-ms-dataverse-attribute": "pm_projectname",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projectName",
-          "x-ms-read-only": true,
-          "maxLength": 850
-        },
-        "pm_projecttask": {
-          "type": "string",
-          "title": "Parent Task",
-          "x-ms-dataverse-attribute": "pm_projecttask",
-          "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_projecttask"
-        },
-        "pm_projecttaskid": {
-          "type": "string",
-          "title": "Project Task",
-          "x-ms-dataverse-attribute": "pm_projecttaskid",
+          "title": "Budgetline Funding Allocation",
+          "x-ms-dataverse-attribute": "pm_budgetlinefundingallocationid",
           "x-ms-dataverse-type": "UniqueidentifierType",
-          "x-ms-schema-name": "pm_projecttaskId",
+          "x-ms-schema-name": "pm_BudgetlineFundingAllocationId",
           "x-ms-dataverse-primary-id": true,
           "required": true,
           "x-ms-keyType": "primary"
         },
-        "pm_projecttaskname": {
+        "pm_budgetlinename": {
           "type": "string",
-          "title": "pm_projecttaskname",
-          "x-ms-dataverse-attribute": "pm_projecttaskname",
+          "title": "pm_budgetlinename",
+          "x-ms-dataverse-attribute": "pm_budgetlinename",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projecttaskName",
+          "x-ms-schema-name": "pm_BudgetlineName",
           "x-ms-read-only": true,
           "maxLength": 850
         },
-        "pm_tasklevel": {
+        "pm_fundingsource": {
           "type": "string",
-          "title": "Task Level",
-          "x-ms-dataverse-attribute": "pm_tasklevel",
-          "x-ms-dataverse-type": "IntegerType",
-          "x-ms-schema-name": "pm_tasklevel"
+          "title": "Funding Source",
+          "x-ms-dataverse-attribute": "pm_fundingsource",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pm_FundingSource"
         },
-        "pm_taskname": {
+        "pm_fundingsourcename": {
           "type": "string",
-          "title": "Task Name",
-          "x-ms-dataverse-attribute": "pm_taskname",
+          "title": "pm_fundingsourcename",
+          "x-ms-dataverse-attribute": "pm_fundingsourcename",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_taskname",
-          "x-ms-dataverse-primary-name": true,
+          "x-ms-schema-name": "pm_FundingSourceName",
+          "x-ms-read-only": true,
           "maxLength": 850
         },
-        "pm_taskstatus": {
+        "pm_name": {
           "type": "string",
-          "title": "Status",
-          "x-ms-dataverse-attribute": "pm_taskstatus",
-          "x-ms-dataverse-type": "PicklistType",
-          "x-ms-schema-name": "pm_taskstatus",
-          "enum": [
-            "Complete",
-            "In Progress"
-          ],
-          "x-ms-enum-values": [
-            0,
-            1
-          ],
-          "Color": [
-            null,
-            null
-          ],
-          "x-ms-optionsetmetadataid": "277a30cd-eb6d-49b8-9177-d80a48a25f39",
-          "x-ms-isGlobal": false,
-          "x-ms-optionsetdisplayname": "Status",
-          "x-ms-optionSetType": "Picklist"
-        },
-        "pm_taskstatusname": {
-          "type": "string",
-          "title": "pm_taskstatusname",
-          "x-ms-dataverse-attribute": "pm_taskstatusname",
-          "x-ms-dataverse-type": "VirtualType",
-          "x-ms-schema-name": "pm_taskstatusName",
-          "x-ms-read-only": true
-        },
-        "pm_wbsnumber": {
-          "type": "string",
-          "title": "WBS Number",
-          "x-ms-dataverse-attribute": "pm_wbsnumber",
+          "title": "Name",
+          "x-ms-dataverse-attribute": "pm_name",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_wbsnumber",
-          "maxLength": 100
+          "x-ms-schema-name": "pm_Name",
+          "x-ms-dataverse-primary-name": true,
+          "required": true,
+          "maxLength": 850
         },
         "statecode": {
           "type": "string",
@@ -437,7 +312,7 @@
             null,
             null
           ],
-          "x-ms-optionsetmetadataid": "e720be49-2d55-4b6a-b4af-bae5e357f1ad",
+          "x-ms-optionsetmetadataid": "afeb00d2-f676-f111-ab0e-7ced8dff1711",
           "x-ms-isGlobal": false,
           "x-ms-optionsetdisplayname": "Status",
           "x-ms-optionSetType": "State"
@@ -468,7 +343,7 @@
             null,
             null
           ],
-          "x-ms-optionsetmetadataid": "43138013-2b6d-4023-9fd5-0e6bcdcd2f65",
+          "x-ms-optionsetmetadataid": "b9eb00d2-f676-f111-ab0e-7ced8dff1711",
           "x-ms-isGlobal": false,
           "x-ms-optionsetdisplayname": "Status Reason",
           "x-ms-optionSetType": "Status"
@@ -487,6 +362,22 @@
           "x-ms-dataverse-attribute": "timezoneruleversionnumber",
           "x-ms-dataverse-type": "IntegerType",
           "x-ms-schema-name": "TimeZoneRuleVersionNumber"
+        },
+        "transactioncurrencyid": {
+          "type": "string",
+          "title": "Currency",
+          "x-ms-dataverse-attribute": "transactioncurrencyid",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "TransactionCurrencyId"
+        },
+        "transactioncurrencyidname": {
+          "type": "string",
+          "title": "transactioncurrencyidname",
+          "x-ms-dataverse-attribute": "transactioncurrencyidname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "TransactionCurrencyIdName",
+          "x-ms-read-only": true,
+          "maxLength": 100
         },
         "utcconversiontimezonecode": {
           "type": "string",
@@ -514,7 +405,8 @@
         "owneridtype",
         "owneridyominame",
         "owningbusinessunitname",
-        "pm_projecttaskid",
+        "pm_budgetlinefundingallocationid",
+        "pm_name",
         "statecode"
       ]
     }

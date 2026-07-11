@@ -453,22 +453,6 @@
           "x-ms-schema-name": "pm_forecastspendeur_Base",
           "x-ms-read-only": true
         },
-        "pm_fundingsource": {
-          "type": "string",
-          "title": "Funding Source",
-          "x-ms-dataverse-attribute": "pm_fundingsource",
-          "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_fundingsource"
-        },
-        "pm_fundingsourcename": {
-          "type": "string",
-          "title": "pm_fundingsourcename",
-          "x-ms-dataverse-attribute": "pm_fundingsourcename",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_fundingsourceName",
-          "x-ms-read-only": true,
-          "maxLength": 850
-        },
         "pm_jsonrawcalculation": {
           "type": "string",
           "title": "Json Raw Calculation",
@@ -484,38 +468,6 @@
           "x-ms-dataverse-type": "StringType",
           "x-ms-schema-name": "pm_notes",
           "maxLength": 100
-        },
-        "pm_portfoliolookup": {
-          "type": "string",
-          "title": "Portfolio",
-          "x-ms-dataverse-attribute": "pm_portfoliolookup",
-          "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_portfolioLookup"
-        },
-        "pm_portfoliolookupname": {
-          "type": "string",
-          "title": "pm_portfoliolookupname",
-          "x-ms-dataverse-attribute": "pm_portfoliolookupname",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_portfolioLookupName",
-          "x-ms-read-only": true,
-          "maxLength": 850
-        },
-        "pm_programmelookup": {
-          "type": "string",
-          "title": "Programme",
-          "x-ms-dataverse-attribute": "pm_programmelookup",
-          "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_programmeLookup"
-        },
-        "pm_programmelookupname": {
-          "type": "string",
-          "title": "pm_programmelookupname",
-          "x-ms-dataverse-attribute": "pm_programmelookupname",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_programmeLookupName",
-          "x-ms-read-only": true,
-          "maxLength": 850
         },
         "pm_project": {
           "type": "string",
@@ -546,21 +498,6 @@
           "x-ms-dataverse-attribute": "pm_revisedbudgeteur_base",
           "x-ms-dataverse-type": "MoneyType",
           "x-ms-schema-name": "pm_revisedbudgeteur_Base",
-          "x-ms-read-only": true
-        },
-        "pm_varianceeur": {
-          "type": "string",
-          "title": "Variance (EUR)",
-          "x-ms-dataverse-attribute": "pm_varianceeur",
-          "x-ms-dataverse-type": "MoneyType",
-          "x-ms-schema-name": "pm_varianceeur"
-        },
-        "pm_varianceeur_base": {
-          "type": "string",
-          "title": "Variance (EUR) (Base)",
-          "x-ms-dataverse-attribute": "pm_varianceeur_base",
-          "x-ms-dataverse-type": "MoneyType",
-          "x-ms-schema-name": "pm_varianceeur_Base",
           "x-ms-read-only": true
         },
         "statecode": {

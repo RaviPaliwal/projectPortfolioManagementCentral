@@ -33,7 +33,6 @@ export interface Pm_projecttasksBase {
   pm_percentcomplete?: number;
   pm_plannedenddate?: string;
   pm_plannedstartdate?: string;
-  "pm_PredecessorTask@odata.bind"?: string;
   "pm_project@odata.bind"?: string;
   "pm_projecttask@odata.bind"?: string;
   pm_projecttaskid: string;
@@ -63,7 +62,6 @@ export interface Pm_projecttasks extends Pm_projecttasksBase {
   owningbusinessunitname: string;
   pm_assignedtoresourcename?: string;
   pm_oncriticalpathname?: string;
-  pm_predecessortaskname?: string;
   pm_projectname?: string;
   pm_projecttaskname?: string;
   pm_taskstatusname?: string;
@@ -86,8 +84,6 @@ export interface Pm_projecttasks extends Pm_projecttasksBase {
   _owninguser_value?: string;
   pm_assignedtoresource?: object;
   _pm_assignedtoresource_value?: string;
-  pm_predecessortask?: object;
-  _pm_predecessortask_value?: string;
   pm_project?: object;
   _pm_project_value?: string;
   pm_projecttask?: object;

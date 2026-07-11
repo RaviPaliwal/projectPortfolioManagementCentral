@@ -4,6 +4,7 @@ import {
     Pm_projectmilestonesService,
     Pm_portfoliosService,
     Pm_programmesService,
+    Pm_taskdependenciesService,
 } from '@/generated'
 import { writeAuditLog } from './changelog.service'
 import type { Pm_projects } from '@/generated/models/Pm_projectsModel'
@@ -11,6 +12,7 @@ import type { Pm_projecttasks } from '@/generated/models/Pm_projecttasksModel'
 import type { Pm_projectmilestones } from '@/generated/models/Pm_projectmilestonesModel'
 import type { Pm_portfolios } from '@/generated/models/Pm_portfoliosModel'
 import type { Pm_programmes } from '@/generated/models/Pm_programmesModel'
+import type { Pm_taskdependencies } from '@/generated/models/Pm_taskdependenciesModel'
 import type {
     ProjectModel,
     ProjectTaskModel,
@@ -73,7 +75,7 @@ export const mapProjectTask = (item: Pm_projecttasks): ProjectTaskModel => {
         pm_ismilestone: (item as any).pm_ismilestone,
         pm_oncriticalpath: item.pm_oncriticalpath,
         pm_predecessortaskid: (item as any).pm_predecessortaskid,
-        _pm_predecessortask_value: item._pm_predecessortask_value,
+        _pm_predecessortask_value: (item as any)._pm_predecessortask_value,
         _pm_project_value: item._pm_project_value,
         pm_projectname: item.pm_projectname || (item.pm_project as any)?.pm_projectname || (item as any)['_pm_project_value@OData.Community.Display.V1.FormattedValue'] || (item as any).pm_projectname,
         _pm_assignedtoresource_value: item._pm_assignedtoresource_value,
@@ -522,7 +524,8 @@ export async function fetchProjectTasksForResource(resourceId: string): Promise<
     console.error('[ProjectService] fetchProjectTasksForResource failed:', result.error)
     return []
   }
-  return unwrapList<Pm_projecttasks>(result).map(mapProjectTask)
+  const tasks = unwrapList<Pm_projecttasks>(result).map(mapProjectTask)
+  return attachDependenciesToMultipleProjectTasks(tasks)
 }
 
 export async function fetchProjectTasksByResource(projectId: string, resourceId?: string): Promise<ProjectTaskModel[]> {
@@ -541,11 +544,125 @@ export async function fetchProjectTasksByResource(projectId: string, resourceId?
       'pm_percentcomplete', 'pm_taskstatus',
       '_pm_assignedtoresource_value',
       '_pm_predecessortask_value',
+      '_pm_project_value',
     ],
     orderBy: ['pm_tasklevel asc', 'pm_wbsnumber asc', 'pm_taskname asc'],
     top: 200,
   })
-  return unwrapList<Pm_projecttasks>(result).map(mapProjectTask)
+  const tasks = unwrapList<Pm_projecttasks>(result).map(mapProjectTask)
+  return attachDependenciesToMultipleProjectTasks(tasks)
+}
+
+export async function attachDependenciesToMultipleProjectTasks(tasks: ProjectTaskModel[]): Promise<ProjectTaskModel[]> {
+    if (tasks.length === 0) return tasks
+    try {
+        const projectIds = Array.from(new Set(tasks.map(t => t._pm_project_value).filter(Boolean))) as string[]
+        if (projectIds.length === 0) return tasks
+        
+        // Build OData filter string to fetch dependencies for these projects
+        const filterStr = projectIds.map(id => `_pm_project_value eq '${id}'`).join(' or ')
+        const depResult = await Pm_taskdependenciesService.getAll({
+            filter: `(${filterStr}) and statecode eq 0`,
+            select: ['pm_taskdependencyid', '_pm_predecessortask_value', '_pm_successortask_value', 'pm_lagdays', 'pm_dependencytype'],
+            top: 2000,
+        })
+        
+        const dependencies = unwrapList<Pm_taskdependencies>(depResult)
+        const dependencyMap = new Map<string, any[]>()
+        for (const dep of dependencies) {
+            if (dep._pm_successortask_value && dep._pm_predecessortask_value) {
+                const list = dependencyMap.get(dep._pm_successortask_value) || []
+                list.push({
+                    dependencyId: dep.pm_taskdependencyid,
+                    predecessorId: dep._pm_predecessortask_value,
+                    lagDays: dep.pm_lagdays || 0,
+                    dependencyType: dep.pm_dependencytype || 1,
+                })
+                dependencyMap.set(dep._pm_successortask_value, list)
+            }
+        }
+        
+        for (const task of tasks) {
+            const deps = dependencyMap.get(task.pm_projecttaskid!) || []
+            task.dependencies = deps
+            task.predecessorIds = deps.map(d => d.predecessorId)
+            task._pm_predecessortask_value = task.predecessorIds[0] || undefined
+            task.pm_predecessortaskid = task.predecessorIds[0] || undefined
+        }
+    } catch (err) {
+        console.error('[ProjectService] Failed to attach dependencies:', err)
+    }
+    return tasks
+}
+
+export async function saveTaskDependencies(
+    taskId: string, 
+    predecessorIds: string[], 
+    projectId: string,
+    dependencyDetails?: Array<{ predecessorId: string, lagDays?: number, dependencyType?: number }>
+): Promise<void> {
+    try {
+        // Fetch current active dependencies for this successor task
+        const existingResult = await Pm_taskdependenciesService.getAll({
+            filter: `_pm_successortask_value eq '${taskId}' and statecode eq 0`,
+            select: ['pm_taskdependencyid', '_pm_predecessortask_value', 'pm_lagdays', 'pm_dependencytype'],
+        })
+        
+        const existing = unwrapList<Pm_taskdependencies>(existingResult)
+        const existingMap = new Map<string, Pm_taskdependencies>()
+        existing.forEach(e => {
+            if (e._pm_predecessortask_value) existingMap.set(e._pm_predecessortask_value, e)
+        })
+        
+        // Determine additions, removals, and updates
+        const toAdd = predecessorIds.filter(id => id && !existingMap.has(id))
+        const toRemove = existing.filter(e => e._pm_predecessortask_value && !predecessorIds.includes(e._pm_predecessortask_value))
+        const toUpdate = predecessorIds.filter(id => id && existingMap.has(id))
+        
+        // Delete removed dependencies
+        await Promise.all(
+            toRemove.map(r => Pm_taskdependenciesService.delete(r.pm_taskdependencyid))
+        )
+        
+        // Create added dependencies
+        await Promise.all(
+            toAdd.map(predId => {
+                const detail = dependencyDetails?.find(d => d.predecessorId === predId)
+                return Pm_taskdependenciesService.create({
+                    pm_name: `Dependency`,
+                    pm_lagdays: detail?.lagDays ?? 0,
+                    pm_dependencytype: (detail?.dependencyType as any) ?? 1,
+                    'pm_Project@odata.bind': `/pm_projects(${normalizeLookupId(projectId)})`,
+                    'pm_PredecessorTask@odata.bind': `/pm_projecttasks(${normalizeLookupId(predId)})`,
+                    'pm_SuccessorTask@odata.bind': `/pm_projecttasks(${normalizeLookupId(taskId)})`,
+                } as any)
+            })
+        )
+
+        // Update existing dependencies if lag/type changed
+        if (dependencyDetails) {
+            await Promise.all(
+                toUpdate.map(predId => {
+                    const detail = dependencyDetails.find(d => d.predecessorId === predId)
+                    const existRec = existingMap.get(predId)
+                    if (detail && existRec) {
+                        const lagChanged = detail.lagDays !== undefined && detail.lagDays !== existRec.pm_lagdays
+                        const typeChanged = detail.dependencyType !== undefined && detail.dependencyType !== existRec.pm_dependencytype
+                        if (lagChanged || typeChanged) {
+                            return Pm_taskdependenciesService.update(existRec.pm_taskdependencyid, {
+                                pm_lagdays: detail.lagDays ?? 0,
+                                pm_dependencytype: (detail.dependencyType as any) ?? 1,
+                            })
+                        }
+                    }
+                    return Promise.resolve()
+                })
+            )
+        }
+    } catch (err) {
+        console.error('[ProjectService] Failed to save task dependencies:', err)
+        throw err
+    }
 }
 
 export async function fetchProjectTasks(projectId: string): Promise<ProjectTaskModel[]> {
@@ -560,17 +677,19 @@ export async function fetchProjectTasks(projectId: string): Promise<ProjectTaskM
             'pm_percentcomplete', 'pm_taskstatus',
             '_pm_assignedtoresource_value', 'pm_oncriticalpath',
             '_pm_predecessortask_value',
+            '_pm_project_value',
         ],
         orderBy: ['pm_tasklevel asc', 'pm_wbsnumber asc', 'pm_taskname asc'],
         top: 500,
     })
-    return unwrapList<Pm_projecttasks>(result).map(mapProjectTask)
+    const tasks = unwrapList<Pm_projecttasks>(result).map(mapProjectTask)
+    return attachDependenciesToMultipleProjectTasks(tasks)
 }
 
 export interface ScheduleData {
     tasks: ProjectTaskModel[]
     milestones: ProjectMilestoneModel[]
-    predecessorMap: Map<string, string> // taskId -> predecessorTaskId
+    predecessorMap: Map<string, string[]> // taskId -> predecessorTaskIds
 }
 
 export async function fetchScheduleData(projectId: string): Promise<ScheduleData> {
@@ -586,6 +705,7 @@ export async function fetchScheduleData(projectId: string): Promise<ScheduleData
                 'pm_percentcomplete', 'pm_taskstatus',
                 '_pm_assignedtoresource_value', 'pm_oncriticalpath',
                 '_pm_predecessortask_value',
+                '_pm_project_value',
             ],
             orderBy: ['pm_tasklevel asc', 'pm_wbsnumber asc', 'pm_taskname asc'],
             top: 500,
@@ -602,14 +722,13 @@ export async function fetchScheduleData(projectId: string): Promise<ScheduleData
         }),
     ])
 
-    const tasks = unwrapList<Pm_projecttasks>(tasksResult).map(mapProjectTask)
+    const rawTasks = unwrapList<Pm_projecttasks>(tasksResult).map(mapProjectTask)
     const milestones = unwrapList<Pm_projectmilestones>(milestonesResult).map(mapProjectMilestone)
+    const tasks = await attachDependenciesToMultipleProjectTasks(rawTasks)
 
-    const predecessorMap = new Map<string, string>()
+    const predecessorMap = new Map<string, string[]>()
     for (const task of tasks) {
-        if (task._pm_predecessortask_value) {
-            predecessorMap.set(task.pm_projecttaskid!, task._pm_predecessortask_value)
-        }
+        predecessorMap.set(task.pm_projecttaskid!, task.predecessorIds || [])
     }
 
     return { tasks, milestones, predecessorMap }
@@ -618,26 +737,50 @@ export async function fetchScheduleData(projectId: string): Promise<ScheduleData
 export async function createScheduleTask(payload: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
     const cleanPayload: Record<string, any> = {}
     for (const [key, value] of Object.entries(payload)) {
-        if (value !== undefined && value !== null && value !== '' && key !== '_pm_project_value' && key !== '_pm_predecessortask_value') {
+        if (
+            value !== undefined && 
+            value !== null && 
+            value !== '' && 
+            key !== '_pm_project_value' && 
+            key !== '_pm_predecessortask_value' &&
+            key !== 'predecessorIds'
+        ) {
             cleanPayload[key] = value
         }
     }
     if (payload._pm_project_value) cleanPayload['pm_project@odata.bind'] = `/pm_projects(${normalizeLookupId(payload._pm_project_value)})`
-    if (payload._pm_predecessortask_value) cleanPayload['pm_PredecessorTask@odata.bind'] = `/pm_projecttasks(${normalizeLookupId(payload._pm_predecessortask_value)})`
+    
     const result = await Pm_projecttasksService.create({ statecode: 0, statuscode: 1, ...cleanPayload } as any)
     const item = unwrapSingle<Pm_projecttasks>(result)
+    
+    if (item && payload.predecessorIds && payload._pm_project_value) {
+        await saveTaskDependencies(item.pm_projecttaskid, payload.predecessorIds, payload._pm_project_value)
+    }
+    
     return item ? mapProjectTask(item) : null
 }
 
 export async function updateScheduleTask(id: string, changes: Partial<ProjectTaskModel>): Promise<ProjectTaskModel | null> {
     const cleanPayload: Record<string, any> = {}
     for (const [key, value] of Object.entries(changes)) {
-        if (value !== undefined && value !== null && key !== 'pm_projecttaskid' && key !== '_pm_project_value' && key !== '_pm_predecessortask_value') {
+        if (
+            value !== undefined && 
+            value !== null && 
+            key !== 'pm_projecttaskid' && 
+            key !== '_pm_project_value' && 
+            key !== '_pm_predecessortask_value' &&
+            key !== 'predecessorIds'
+        ) {
             cleanPayload[key] = value
         }
     }
     const result = await Pm_projecttasksService.update(id, cleanPayload as any)
     const item = unwrapSingle<Pm_projecttasks>(result)
+    
+    if (item && changes.predecessorIds !== undefined && changes._pm_project_value) {
+        await saveTaskDependencies(id, changes.predecessorIds, changes._pm_project_value)
+    }
+    
     return item ? mapProjectTask(item) : null
 }
 
@@ -756,6 +899,13 @@ export async function updateProjectTask(id: string, changes: Partial<ProjectTask
         }
         const result = await Pm_projecttasksService.update(id, cleanPayload as any)
         const item = unwrapSingle<Pm_projecttasks>(result)
+        
+        if (changes.predecessorIds !== undefined && (changes._pm_project_value || (item && item._pm_project_value))) {
+            const projId = changes._pm_project_value || item?._pm_project_value
+            if (projId) {
+                await saveTaskDependencies(id, changes.predecessorIds, projId, (changes as any).dependencyDetails)
+            }
+        }
         return item ? mapProjectTask(item) : null
     } catch (err) {
         console.error('[updateProjectTask] error caught:', err)
