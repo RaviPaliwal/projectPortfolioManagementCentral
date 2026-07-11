@@ -171,8 +171,7 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
           <Box sx={{ p: 2.5, pb: 1.5 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
               <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AssignmentIcon sx={{ color: 'primary.main' }} />
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   Tasks
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -345,6 +344,9 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
           sx={{
             borderRadius: '24px',
             overflow: 'hidden',
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             '&:hover': {
               transform: 'translateY(-3px)',
@@ -357,17 +359,16 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
           <Box
             sx={{
               p: 2.5, pb: 1.5,
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
               cursor: 'pointer',
               '&:hover': { bgcolor: 'action.hover' },
             }}
             onClick={() => setShowInsights(!showInsights)}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AutoAwesomeIcon sx={{ color: 'warning.main', fontSize: 20 }} />
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>AI Insights</Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="body2" color="text.secondary">
                   {insights.length > 0
                     ? `${insights.length} actionable insight${insights.length !== 1 ? 's' : ''}`
                     : 'Automated analysis from agent data'}
@@ -378,8 +379,17 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
               {showInsights ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
           </Box>
-          <Collapse in={showInsights}>
-            <Box sx={{ px: 2.5, pb: 2.5 }}>
+          <Collapse 
+            in={showInsights}
+            sx={{ 
+              flexGrow: 1, 
+              display: 'flex', 
+              flexDirection: 'column',
+              '& .MuiCollapse-wrapper': { flexGrow: 1, display: 'flex', flexDirection: 'column' },
+              '& .MuiCollapse-wrapperInner': { flexGrow: 1, display: 'flex', flexDirection: 'column', width: '100%' }
+            }}
+          >
+            <Box sx={{ px: 2.5, pb: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
               <Divider sx={{ mb: 2 }} />
               {loading ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -388,11 +398,16 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                   ))}
                 </Box>
               ) : insights.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                  No unreviewed insights at this time.
-                </Typography>
+                <Box sx={{ textAlign: 'center', py: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    No unreviewed insights
+                  </Typography>
+                  <Typography variant="caption" color="text.disabled">
+                    No new recommendations or insights at this time.
+                  </Typography>
+                </Box>
               ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, flexGrow: 1 }}>
                   <Box
                     sx={{
                       display: 'flex',
@@ -401,7 +416,6 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                       maxHeight: showAllInsights ? 450 : 'unset',
                       overflowY: showAllInsights ? 'auto' : 'visible',
                       pr: showAllInsights ? 0.75 : 0,
-                      // Custom scrollbar
                       '&::-webkit-scrollbar': {
                         width: '6px',
                       },
@@ -474,18 +488,18 @@ export default function DashboardTasksWidget({ variant = 'full', sx }: Dashboard
                                   {isExpanded ? 'Show less' : 'Show more'}
                                 </Typography>
                               )}
-                            <Box sx={{ display: 'flex', gap: 0.75, mt: 0.5, flexWrap: 'wrap' }}>
-                              <Chip label={insight.type} size="small" color={insight.type === 'Alert' ? 'warning' : 'info'} variant="outlined" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
-                              <Chip label={insight.priority} size="small" color={insight.priority === 'High' ? 'error' : insight.priority === 'Medium' ? 'warning' : 'default'} variant="filled" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
-                              {insight.confidenceScore > 0 && (
-                                <Chip label={`${Math.round(insight.confidenceScore)}% confidence`} size="small" variant="outlined" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
-                              )}
+                              <Box sx={{ display: 'flex', gap: 0.75, mt: 0.5, flexWrap: 'wrap' }}>
+                                <Chip label={insight.type} size="small" color={insight.type === 'Alert' ? 'warning' : 'info'} variant="outlined" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
+                                <Chip label={insight.priority} size="small" color={insight.priority === 'High' ? 'error' : insight.priority === 'Medium' ? 'warning' : 'default'} variant="filled" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
+                                {insight.confidenceScore > 0 && (
+                                  <Chip label={`${Math.round(insight.confidenceScore)}% confidence`} size="small" variant="outlined" sx={{ height: 20, fontSize: fontSizes.xs, fontWeight: 600 }} />
+                                )}
+                              </Box>
                             </Box>
                           </Box>
-                        </Box>
-                      </Paper>
-                    )
-                  })}
+                        </Paper>
+                      )
+                    })}
                   </Box>
                   {insights.length > insightDisplayCount && (
                     <Button
