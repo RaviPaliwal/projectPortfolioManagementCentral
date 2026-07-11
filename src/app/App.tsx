@@ -9,11 +9,12 @@ import '@fontsource/outfit/500.css'
 import '@fontsource/outfit/600.css'
 import '@fontsource/outfit/700.css'
 import { useState, useMemo, useEffect, Component, type ReactNode, type ErrorInfo } from 'react'
-import { ThemeProvider, CssBaseline, Box, Paper, Typography, Button, Alert, IconButton } from '@mui/material'
+import { ThemeProvider, CssBaseline, Box, Paper, Typography, Button, Alert, IconButton, Tooltip } from '@mui/material'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import ChatIcon from '@mui/icons-material/Chat'
 import CloseIcon from '@mui/icons-material/Close'
 import SmartToyIcon from '@mui/icons-material/SmartToy'
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import type { PaletteMode } from '@mui/material'
 import { UserContextProvider } from '@/context/UserContext'
 import { getTheme } from '@/styles/theme'
@@ -69,6 +70,7 @@ import PrimaryShell, { type TabKey, tabs } from '@/components/layout/PrimaryShel
 import { getPageMap } from './routes'
 import { FormDialog } from '@/components/common'
 import RouteGuard from '@/components/common/RouteGuard/RouteGuard'
+import { DirectLineChat } from '@/components/common/DirectLineChat'
 
 function App() {
   // Read initial tab from URL query param (?tab=xxx) for deep-link support
@@ -84,6 +86,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabKey>(getInitialTab)
   const [themeMode, setThemeMode] = useState<PaletteMode>('light')
   const [copilotOpen, setCopilotOpen] = useState(false)
+  const [useDirectLine, setUseDirectLine] = useState(true)
 
   // Sync activeTab to URL query params and support browser history back/forward
   useEffect(() => {
@@ -177,27 +180,42 @@ function App() {
                         Enterprise Copilot
                       </Typography>
                       <Typography variant="caption" sx={{ opacity: 0.85, display: 'block' }}>
-                        Online
+                        {useDirectLine ? 'DirectLine Mode' : 'IFrame Mode'}
                       </Typography>
                     </Box>
                   </Box>
-                  <IconButton
-                    size="small"
-                    onClick={() => setCopilotOpen(false)}
-                    sx={{ color: 'inherit', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Tooltip title={useDirectLine ? "Switch to IFrame" : "Switch to Direct Line"}>
+                      <IconButton
+                        size="small"
+                        onClick={() => setUseDirectLine(!useDirectLine)}
+                        sx={{ color: 'inherit', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+                      >
+                        <SwapHorizIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <IconButton
+                      size="small"
+                      onClick={() => setCopilotOpen(false)}
+                      sx={{ color: 'inherit', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </Box>
 
-                {/* IFrame Area */}
-                <Box sx={{ flex: 1, bgcolor: 'background.paper', position: 'relative' }}>
-                  <iframe
-                    src="https://copilotstudio.microsoft.com/environments/b13877a6-5201-e4ef-8d74-878957333982/bots/cr0b5_commonagent_DUZ8WI/canvas?__version__=2&enableFileAttachment=false&cliAgent=true"
-                    frameBorder="0"
-                    style={{ width: '100%', height: '100%', border: 'none' }}
-                    title="Copilot Chatbot"
-                  />
+                {/* Chat Area */}
+                <Box sx={{ flex: 1, bgcolor: 'background.paper', position: 'relative', overflow: 'hidden' }}>
+                  {useDirectLine && import.meta.env.VITE_DIRECT_LINE_SECRET ? (
+                    <DirectLineChat directLineSecret={import.meta.env.VITE_DIRECT_LINE_SECRET} />
+                  ) : (
+                    <iframe
+                      src="https://copilotstudio.microsoft.com/environments/b13877a6-5201-e4ef-8d74-878957333982/bots/cr0b5_commonagent_DUZ8WI/canvas?__version__=2&enableFileAttachment=false&cliAgent=true"
+                      frameBorder="0"
+                      style={{ width: '100%', height: '100%', border: 'none' }}
+                      title="Copilot Chatbot"
+                    />
+                  )}
                 </Box>
               </Paper>
             )}

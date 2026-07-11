@@ -998,4 +998,3 @@ Return JSON output matching the requested schema.`
     }
   }
 }
-
