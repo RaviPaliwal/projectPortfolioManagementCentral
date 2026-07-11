@@ -546,6 +546,42 @@ export async function fetchFinancialPeriods(): Promise<FinancialPeriodModel[]> {
   }
 }
 
+export async function seedFiscalPeriods(year: number, startDateStr: string): Promise<boolean> {
+  try {
+    const start = new Date(startDateStr + 'T00:00:00')
+    const existing = await fetchFinancialPeriods()
+    const hasYear = existing.some(p => p.pm_fiscalyear === year)
+    if (hasYear) {
+      throw new Error(`Periods for Fiscal Year ${year} are already configured.`)
+    }
+    const currentYear = new Date().getFullYear()
+
+    for (let i = 1; i <= 13; i++) {
+      const pStart = new Date(start.getTime() + (i - 1) * 28 * 24 * 60 * 60 * 1000)
+      const pEnd = new Date(pStart.getTime() + 27 * 24 * 60 * 60 * 1000)
+      const payload = {
+        pm_periodname: `Period ${i} FY${year}`,
+        pm_periodnumber: i,
+        pm_fiscalyear: year,
+        pm_startdate: pStart.toISOString().split('T')[0],
+        pm_enddate: pEnd.toISOString().split('T')[0],
+        pm_isclosed: false,
+        pm_iscurrentperiod: year === currentYear && i === 1,
+        statecode: 0,
+        statuscode: 1,
+      }
+      const res = await Pm_fiscalperiodsService.create(payload as any)
+      if (!res.success) {
+        throw new Error(`Failed to create Period ${i}: ${res.error?.message || 'Unknown error'}`)
+      }
+    }
+    return true
+  } catch (err) {
+    console.error('[FinanceService] seedFiscalPeriods exception:', err)
+    throw err
+  }
+}
+
 export async function resolveCashflowLookupNames(list: CashflowEntryModel[]): Promise<void> {
   try {
     const projectIds = Array.from(new Set(list.map((e) => e._pm_project_value).filter(Boolean))) as string[]

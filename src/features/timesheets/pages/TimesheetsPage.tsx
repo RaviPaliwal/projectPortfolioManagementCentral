@@ -39,6 +39,7 @@ import {
   recalculateTimesheetHours,
   checkTimesheetOverlap,
 } from '@/services'
+import { fetchFinancialPeriods } from '@/services/finance.service'
 import type { TimesheetModel, TimesheetEntryModel, ResourceModel } from '@/types/dataverse'
 import {
   PageHeader,
@@ -99,6 +100,7 @@ export default function TimesheetsPage() {
   // Data state
   const [timesheets, setTimesheets] = useState<TimesheetModel[]>([])
   const [resources, setResources] = useState<ResourceModel[]>([])
+  const [financialPeriods, setFinancialPeriods] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -141,8 +143,10 @@ export default function TimesheetsPage() {
         timesheetList = await fetchTimesheets()
       }
       const res = await fetchResources()
+      const periods = await fetchFinancialPeriods()
       setTimesheets(timesheetList)
       setResources(res)
+      setFinancialPeriods(periods)
     } catch (err) {
       console.error('[TimesheetsPage] loadData error:', err)
       setError('Unable to load timesheet data.')
@@ -236,34 +240,53 @@ export default function TimesheetsPage() {
     setActionLoading(true)
     try {
       const resourceId = formData._pm_resource_value
-      if (resourceId) {
-        const overlap = await checkTimesheetOverlap(
-          resourceId,
-          formData.pm_periodstartdate,
-          formData.pm_periodenddate
+      const selectedPeriod = financialPeriods.find(p => p.pm_fiscalperiodid === formData._pm_financialperiod_value)
+      
+      if (resourceId && formData._pm_financialperiod_value) {
+        // Prevent duplicate timesheets for same resource + same financial period
+        const hasDuplicate = timesheets.some(t => 
+          t._pm_resource_value && 
+          t._pm_resource_value.replace(/[{}]/g, '').toLowerCase() === resourceId.replace(/[{}]/g, '').toLowerCase() &&
+          t._pm_financialperiod_value && 
+          t._pm_financialperiod_value.replace(/[{}]/g, '').toLowerCase() === formData._pm_financialperiod_value.replace(/[{}]/g, '').toLowerCase()
         )
-        if (overlap.overlaps) {
-          const periodStr = overlap.pm_periodstartdate && overlap.pm_periodenddate
-            ? ` (${overlap.pm_periodstartdate} to ${overlap.pm_periodenddate})`
-            : ''
-          setOverlapError(
-            `Date range overlaps with "${overlap.timesheetName || 'existing timesheet'}"${periodStr}. Please adjust the dates.`
-          )
+        if (hasDuplicate) {
+          setError('A timesheet already exists for this resource for the selected financial period.')
           setActionLoading(false)
           return
         }
+
+        // Keep standard overlap check on dates if we have them
+        if (formData.pm_periodstartdate && formData.pm_periodenddate) {
+          const overlap = await checkTimesheetOverlap(
+            resourceId,
+            formData.pm_periodstartdate,
+            formData.pm_periodenddate
+          )
+          if (overlap.overlaps) {
+            const periodStr = overlap.pm_periodstartdate && overlap.pm_periodenddate
+              ? ` (${overlap.pm_periodstartdate} to ${overlap.pm_periodenddate})`
+              : ''
+            setOverlapError(
+              `Date range overlaps with "${overlap.timesheetName || 'existing timesheet'}"${periodStr}. Please adjust the dates.`
+            )
+            setActionLoading(false)
+            return
+          }
+        }
       }
-      const periodKey = formData.pm_periodstartdate.substring(0, 7)
+
       const resource = resources.find((r) => r.pm_resourceid === formData._pm_resource_value)
       const ownerName = resource?.pm_fullname || currentUser?.fullname || 'Unnamed'
+      const periodLabel = selectedPeriod ? `Period ${selectedPeriod.pm_periodnumber} FY${selectedPeriod.pm_fiscalyear}` : 'Unnamed Period'
       const payload: any = {
-        pm_timesheetname: `${ownerName} - ${periodKey}`,
+        pm_timesheetname: `${ownerName} - ${periodLabel}`,
         ownerid: currentUser?.systemuserid,
         owneridtype: 'systemuser',
+        _pm_resource_value: formData._pm_resource_value || undefined,
+        _pm_financialperiod_value: formData._pm_financialperiod_value || undefined,
         pm_periodstartdate: formData.pm_periodstartdate,
         pm_periodenddate: formData.pm_periodenddate,
-        pm_reportingperiod: periodKey,
-        _pm_resource_value: formData._pm_resource_value || undefined,
       }
       await createTimesheet(payload)
       setSuccessMsg(draftMode ? 'Draft timesheet created.' : 'Timesheet created successfully.')
@@ -730,6 +753,7 @@ export default function TimesheetsPage() {
         loading={actionLoading}
         draftMode={draftMode}
         overlapError={overlapError}
+        financialPeriods={financialPeriods}
       />
 
       <TimesheetEntryFormDialog

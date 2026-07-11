@@ -233,35 +233,21 @@
           "x-ms-schema-name": "pm_approvedby",
           "maxLength": 100
         },
-        "pm_fiscalperiod1": {
+        "pm_financialperiod": {
           "type": "string",
-          "title": "Reporting Fiscal Period",
-          "x-ms-dataverse-attribute": "pm_fiscalperiod1",
+          "title": "Financial Period",
+          "x-ms-dataverse-attribute": "pm_financialperiod",
           "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_fiscalperiod1"
+          "x-ms-schema-name": "pm_FinancialPeriod"
         },
-        "pm_fiscalperiod1name": {
+        "pm_financialperiodname": {
           "type": "string",
-          "title": "pm_fiscalperiod1name",
-          "x-ms-dataverse-attribute": "pm_fiscalperiod1name",
+          "title": "pm_financialperiodname",
+          "x-ms-dataverse-attribute": "pm_financialperiodname",
           "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_fiscalperiod1Name",
+          "x-ms-schema-name": "pm_FinancialPeriodName",
           "x-ms-read-only": true,
           "maxLength": 850
-        },
-        "pm_periodenddate": {
-          "type": "string",
-          "title": "Period End",
-          "x-ms-dataverse-attribute": "pm_periodenddate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_periodenddate"
-        },
-        "pm_periodstartdate": {
-          "type": "string",
-          "title": "Period Start",
-          "x-ms-dataverse-attribute": "pm_periodstartdate",
-          "x-ms-dataverse-type": "DateTimeType",
-          "x-ms-schema-name": "pm_periodstartdate"
         },
         "pm_rejectionreason": {
           "type": "string",

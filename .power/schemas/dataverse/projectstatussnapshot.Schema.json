@@ -358,14 +358,6 @@
           "x-ms-schema-name": "pm_overallragstatusName",
           "x-ms-read-only": true
         },
-        "pm_portfolio": {
-          "type": "string",
-          "title": "Portfolio",
-          "x-ms-dataverse-attribute": "pm_portfolio",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_portfolio",
-          "maxLength": 100
-        },
         "pm_portfoliolookup": {
           "type": "string",
           "title": "Portfolio",
@@ -381,14 +373,6 @@
           "x-ms-schema-name": "pm_portfolioLookupName",
           "x-ms-read-only": true,
           "maxLength": 850
-        },
-        "pm_programme": {
-          "type": "string",
-          "title": "Programme",
-          "x-ms-dataverse-attribute": "pm_programme",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_programme",
-          "maxLength": 100
         },
         "pm_programmename": {
           "type": "string",
@@ -412,14 +396,6 @@
           "x-ms-dataverse-attribute": "pm_project",
           "x-ms-dataverse-type": "LookupType",
           "x-ms-schema-name": "pm_project"
-        },
-        "pm_projectcode": {
-          "type": "string",
-          "title": "Project",
-          "x-ms-dataverse-attribute": "pm_projectcode",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_projectcode",
-          "maxLength": 100
         },
         "pm_projecthighlights": {
           "type": "string",
@@ -455,22 +431,6 @@
           "x-ms-dataverse-primary-id": true,
           "required": true,
           "x-ms-keyType": "primary"
-        },
-        "pm_reportingfiscalperiod": {
-          "type": "string",
-          "title": "Reporting Fiscal Period",
-          "x-ms-dataverse-attribute": "pm_reportingfiscalperiod",
-          "x-ms-dataverse-type": "LookupType",
-          "x-ms-schema-name": "pm_reportingfiscalperiod"
-        },
-        "pm_reportingfiscalperiodname": {
-          "type": "string",
-          "title": "pm_reportingfiscalperiodname",
-          "x-ms-dataverse-attribute": "pm_reportingfiscalperiodname",
-          "x-ms-dataverse-type": "StringType",
-          "x-ms-schema-name": "pm_reportingfiscalperiodName",
-          "x-ms-read-only": true,
-          "maxLength": 850
         },
         "pm_reportingperiod": {
           "type": "string",

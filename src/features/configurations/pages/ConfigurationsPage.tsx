@@ -77,7 +77,8 @@ import {
   Pm_programmesService,
   Pm_portfoliosService,
   Pm_holidaiesService,
-  Pm_skillsService
+  Pm_skillsService,
+  Pm_initiativesService
 } from '@/generated'
 
 interface ConfigTileProps {
@@ -182,6 +183,7 @@ const PURGEABLE_TABLES: PurgeTableConfig[] = [
   { id: 'pm_projectmilestones', displayName: 'Project Milestones', category: 'Project Management', service: Pm_projectmilestonesService, idField: 'pm_projectmilestoneid', deleteOrder: 2 },
   { id: 'pm_projectgatereviews', displayName: 'Project Gate Reviews', category: 'Project Management', service: Pm_projectgatereviewsService, idField: 'pm_projectgatereviewid', deleteOrder: 2 },
   { id: 'pm_projectstatussnapshots', displayName: 'Project Status Snapshots', category: 'Project Management', service: Pm_projectstatussnapshotsService, idField: 'pm_projectstatussnapshotid', deleteOrder: 2 },
+  { id: 'pm_initiatives', displayName: 'Pipeline / Initiatives', category: 'Project Management', service: Pm_initiativesService, idField: 'pm_initiativeid', deleteOrder: 3 },
   { id: 'pm_projects', displayName: 'Projects', category: 'Project Management', service: Pm_projectsService, idField: 'pm_projectid', deleteOrder: 4 },
   { id: 'pm_programmes', displayName: 'Programmes', category: 'Project Management', service: Pm_programmesService, idField: 'pm_programmeid', deleteOrder: 5 },
   { id: 'pm_portfolios', displayName: 'Portfolios', category: 'Project Management', service: Pm_portfoliosService, idField: 'pm_portfolioid', deleteOrder: 6 },
