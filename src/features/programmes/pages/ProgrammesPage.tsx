@@ -92,8 +92,8 @@ import { fontSizes } from '@/styles'
 import type { ProgrammeModel, ProjectModel, RiskModel, IssueModel } from '@/types/dataverse'
 import type { KpiCardItem, FilterOption } from '@/components/common'
 
-// Sub-components
-import { ProgrammeFormDialog } from '../components/ProgrammeFormDialog'
+import PsychologyIcon from '@mui/icons-material/Psychology'
+import { ProgrammeFormDialog, ProgrammeAICreateDialog } from '../components'
 import { navigateToProject, navigateToRisk, navigateToIssue } from '@/utils/navigation'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
@@ -268,6 +268,7 @@ export default function ProgrammesPage() {
 
   // ── Create/Edit Modal State ────────────────────────────────────────────────
   const [showFormModal, setShowFormModal] = useState(false)
+  const [showAIModal, setShowAIModal] = useState(false)
   const [editingProgramme, setEditingProgramme] = useState<ProgrammeModel | null>(null)
 
   // ── Delete State ──────────────────────────────────────────────────────────
@@ -1202,7 +1203,25 @@ export default function ProgrammesPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1 }}>
             {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>New Programme</Button>
+              <>
+                <Button
+                  variant="outlined"
+                  startIcon={<PsychologyIcon />}
+                  onClick={() => setShowAIModal(true)}
+                  color="secondary"
+                  sx={{ borderRadius: 2 }}
+                >
+                  Create with AI
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={openCreateForm}
+                  sx={{ borderRadius: 2 }}
+                >
+                  New Programme
+                </Button>
+              </>
             )}
             <ExportButton filename="programmes" columns={programmeExportColumns} data={filteredProgrammes} />
           </Box>
@@ -1535,6 +1554,14 @@ export default function ProgrammesPage() {
         initialData={editingProgramme}
         portfolios={portfolios}
         allProgrammes={programmes}
+      />
+
+      <ProgrammeAICreateDialog
+        open={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onSuccess={handleSuccess}
+        onError={(msg) => setError(msg)}
+        portfolios={portfolios}
       />
 
       {/* Delete Confirmation */}

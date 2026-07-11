@@ -85,9 +85,8 @@ import { navigateToProgramme, navigateToProject } from '@/utils/navigation'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { colors } from '@/styles'
 
-// Sub-components
-import { PortfolioGrid } from '../components/PortfolioGrid'
-import { PortfolioFormDialog } from '../components/PortfolioFormDialog'
+import PsychologyIcon from '@mui/icons-material/Psychology'
+import { PortfolioFormDialog, PortfolioAICreateDialog, PortfolioGrid } from '../components'
 
 // ── Export columns ────────────────────────────────────────────────────────────
 const portfolioExportColumns: ExportColumn[] = [
@@ -409,6 +408,7 @@ export default function PortfoliosPage() {
 
   // Create/Edit modal state
   const [showFormModal, setShowFormModal] = useState(false)
+  const [showAIModal, setShowAIModal] = useState(false)
   const [editingPortfolio, setEditingPortfolio] = useState<PortfolioModel | null>(null)
 
   // Delete state
@@ -1249,9 +1249,25 @@ export default function PortfoliosPage() {
         actionElement={
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             {canCreate && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
-                New Portfolio
-              </Button>
+              <>
+                <Button
+                  variant="outlined"
+                  startIcon={<PsychologyIcon />}
+                  onClick={() => setShowAIModal(true)}
+                  color="secondary"
+                  sx={{ borderRadius: 2 }}
+                >
+                  Create with AI
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={openCreateForm}
+                  sx={{ borderRadius: 2 }}
+                >
+                  New Portfolio
+                </Button>
+              </>
             )}
             <ExportButton filename="portfolios" columns={portfolioExportColumns} data={filteredPortfolios} />
           </Box>
@@ -1410,13 +1426,19 @@ export default function PortfoliosPage() {
         canDelete={canDelete}
       />
 
-      {/* ── 4. Create/Edit Portfolio Modal ──────────────── */}
       <PortfolioFormDialog
         open={showFormModal}
         onClose={() => setShowFormModal(false)}
         onSuccess={handleSuccess}
         onError={(msg) => setError(msg)}
         initialData={editingPortfolio}
+      />
+
+      <PortfolioAICreateDialog
+        open={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onSuccess={handleSuccess}
+        onError={(msg) => setError(msg)}
       />
 
       {/* Delete Confirmation */}

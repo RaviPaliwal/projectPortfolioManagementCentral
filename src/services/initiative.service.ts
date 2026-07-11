@@ -396,7 +396,11 @@ export async function createInitiative(payload: Partial<InitiativeModel>): Promi
   const cleanPayload: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(payload)) {
     if (value !== undefined && value !== null && !key.startsWith('_') && key !== 'pm_initiativeid' && key !== 'createdon') {
-      cleanPayload[key] = value
+      if (key === 'pm_initiativename' && typeof value === 'string') {
+        cleanPayload[key] = value.length > 99 ? value.slice(0, 99) : value
+      } else {
+        cleanPayload[key] = value
+      }
     }
   }
   if (payload._pm_portfolio_value) {
@@ -459,7 +463,10 @@ export async function updateInitiative(id: string, changes: Partial<InitiativeMo
     for (const [key, value] of Object.entries(changes)) {
       if (value !== undefined && !key.startsWith('_') && key !== 'pm_initiativeid' && key !== 'createdon') {
         if (key === 'pm_name') {
-          cleanChanges.pm_initiativename = value
+          const strVal = typeof value === 'string' ? value : '';
+          cleanChanges.pm_initiativename = strVal.length > 99 ? strVal.slice(0, 99) : strVal
+        } else if (key === 'pm_initiativename' && typeof value === 'string') {
+          cleanChanges.pm_initiativename = value.length > 99 ? value.slice(0, 99) : value
         } else if (key === 'pm_businesscase') {
           cleanChanges.pm_businesscasedescription = value
         } else if (key === 'pm_estimatedcost') {

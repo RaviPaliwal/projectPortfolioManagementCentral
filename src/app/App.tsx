@@ -9,8 +9,11 @@ import '@fontsource/outfit/500.css'
 import '@fontsource/outfit/600.css'
 import '@fontsource/outfit/700.css'
 import { useState, useMemo, useEffect, Component, type ReactNode, type ErrorInfo } from 'react'
-import { ThemeProvider, CssBaseline, Box, Paper, Typography, Button, Alert } from '@mui/material'
+import { ThemeProvider, CssBaseline, Box, Paper, Typography, Button, Alert, IconButton } from '@mui/material'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined'
+import ChatIcon from '@mui/icons-material/Chat'
+import CloseIcon from '@mui/icons-material/Close'
+import SmartToyIcon from '@mui/icons-material/SmartToy'
 import type { PaletteMode } from '@mui/material'
 import { UserContextProvider } from '@/context/UserContext'
 import { getTheme } from '@/styles/theme'
@@ -80,6 +83,7 @@ function App() {
 
   const [activeTab, setActiveTab] = useState<TabKey>(getInitialTab)
   const [themeMode, setThemeMode] = useState<PaletteMode>('light')
+  const [copilotOpen, setCopilotOpen] = useState(false)
 
   // Sync activeTab to URL query params and support browser history back/forward
   useEffect(() => {
@@ -135,6 +139,89 @@ function App() {
             </PageErrorBoundary>
           </PrimaryShell>
           <FormDialog />
+          {/* Floating Copilot Chat Icon & Widget */}
+          <Box sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+            {copilotOpen && (
+              <Paper
+                elevation={6}
+                sx={{
+                  width: { xs: 'calc(100vw - 48px)', sm: 380 },
+                  height: 520,
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  boxShadow: theme => theme.palette.mode === 'dark' ? '0 12px 32px rgba(0,0,0,0.6)' : '0 12px 32px rgba(0,0,0,0.15)',
+                  transform: 'scale(1)',
+                  transformOrigin: 'bottom right',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+              >
+                {/* Header */}
+                <Box
+                  sx={{
+                    p: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <SmartToyIcon />
+                    <Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                        Enterprise Copilot
+                      </Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.85, display: 'block' }}>
+                        Online
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={() => setCopilotOpen(false)}
+                    sx={{ color: 'inherit', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+
+                {/* IFrame Area */}
+                <Box sx={{ flex: 1, bgcolor: 'background.paper', position: 'relative' }}>
+                  <iframe
+                    src="https://copilotstudio.microsoft.com/environments/b13877a6-5201-e4ef-8d74-878957333982/bots/cr0b5_commonagent_DUZ8WI/canvas?__version__=2&enableFileAttachment=false&cliAgent=true"
+                    frameBorder="0"
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                    title="Copilot Chatbot"
+                  />
+                </Box>
+              </Paper>
+            )}
+
+            {/* Float Button */}
+            <IconButton
+              onClick={() => setCopilotOpen(!copilotOpen)}
+              sx={{
+                width: 56,
+                height: 56,
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                boxShadow: 4,
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                  transform: 'scale(1.05)'
+                },
+                transition: 'all 0.2s',
+                borderRadius: '50%'
+              }}
+            >
+              {copilotOpen ? <CloseIcon /> : <ChatIcon />}
+            </IconButton>
+          </Box>
         </div>
       </UserContextProvider>
     </ThemeProvider>

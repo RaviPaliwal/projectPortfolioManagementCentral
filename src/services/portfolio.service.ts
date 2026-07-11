@@ -167,6 +167,8 @@ export async function updatePortfolio(id: string, changes: Partial<PortfolioMode
         if (value !== undefined && value !== null && key !== 'pm_portfolioid' && key !== 'pm_createdon') {
             if (key === 'pm_ownerlookup') {
                 cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
+            } else if (typeof value === 'string' && ['pm_portfolioname', 'pm_portfoliodescription', 'pm_strategicobjective'].includes(key)) {
+                cleanPayload[key] = value.length > 99 ? value.slice(0, 99) : value
             } else {
                 cleanPayload[key] = value
             }
@@ -308,6 +310,8 @@ export async function createPortfolio(payload: Partial<PortfolioModel>): Promise
         if (value !== undefined && value !== null && key !== 'pm_createdon') {
             if (key === 'pm_ownerlookup') {
                 cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
+            } else if (typeof value === 'string' && ['pm_portfolioname', 'pm_portfoliodescription', 'pm_strategicobjective'].includes(key)) {
+                cleanPayload[key] = value.length > 99 ? value.slice(0, 99) : value
             } else {
                 cleanPayload[key] = value
             }
