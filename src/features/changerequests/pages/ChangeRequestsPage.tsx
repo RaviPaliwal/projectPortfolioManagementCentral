@@ -48,7 +48,7 @@ import { useUser } from '@/context/UserContext'
 import type { ProgrammeLookupItem, ProjectLookupItem } from '@/services'
 import { fontSizes } from '@/styles'
 import type { ExportColumn } from '@/utils/exportUtils'
-import { PageHeader, KpiCardRow, TableFooter, TableShell, Breadcrumbs, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, ConfirmDialog, EntityDocumentsTab } from '@/components/common'
+import { PageHeader, KpiCardRow, TableFooter, TableShell, Breadcrumbs, SearchFilterBar, TabPanel, ExportButton, StatusTag, ActionIcon, ConfirmDialog, EntityDocumentsTab, WorkflowMilestone } from '@/components/common'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import type { KpiCardItem, FilterOption } from '@/components/common'
@@ -819,6 +819,15 @@ export default function ChangeRequestsPage() {
             </Box>
           }
         />
+
+        {selectedCR.pm_changerequestid && (
+          <Box sx={{ mt: -2, mb: -1.5 }}>
+            <WorkflowMilestone
+              moduleName={MODULE_NAMES.CHANGE_REQUESTS.value}
+              entityId={selectedCR.pm_changerequestid}
+            />
+          </Box>
+        )}
 
         <Grid container spacing={3}>
           {/* Top Left: Impact Summary & Description Card (Merged) */}
