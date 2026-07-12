@@ -29,6 +29,7 @@ import {
   Avatar,
   alpha,
   Collapse,
+  LinearProgress,
 } from '@mui/material'
 import ErrorIcon from '@mui/icons-material/Error'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
@@ -86,6 +87,7 @@ import {
   ConfirmDialog,
   MasterScheduleTab,
   StatusProgressBar,
+  WorkflowMilestone,
 } from '@/components/common'
 import type { ExportColumn } from '@/utils/exportUtils'
 import { fontSizes } from '@/styles'
@@ -647,7 +649,12 @@ export default function ProgrammesPage() {
         </Tabs>
 
         {detailTab === 0 && (
-          <Grid container spacing={3} sx={{ mt: 1 }}>
+          <>
+            <WorkflowMilestone
+              entityId={selectedProgrammeId ?? ''}
+              moduleName={MODULE_NAMES.PROGRAMMES.value}
+            />
+            <Grid container spacing={3} sx={{ mt: 1 }}>
             {/* Overview - 6/12 Width */}
             <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
@@ -856,22 +863,106 @@ export default function ProgrammesPage() {
               </Paper>
             </Grid>
 
-            {/* Approval Tasks */}
+            {/* Financials Section */}
             <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
                 <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <TaskAltIcon sx={{ fontSize: 18, color: 'success.main' }} /> Approval Tasks
+                    <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'success.main' }} /> Financials
                   </Typography>
                 </Box>
-                <Box sx={{ p: 2, flexGrow: 1 }}>
-                  <EntityApprovalTasks
-                    entityId={selectedProgrammeId}
-                    moduleName={MODULE_NAMES.PROGRAMMES.value}
-                    entityLabel="Programme"
-                    tabValue={0}
-                    index={0}
-                  />
+                <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
+                  {/* KPIs in one row */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5 }}>
+                    {/* Approved Budget */}
+                    <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 0.5, fontSize: '0.62rem' }}>
+                        Approved
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 900, color: 'primary.main', fontFamily: '"Outfit", sans-serif', fontSize: { xs: '0.85rem', sm: '1rem', md: '1.1rem' } }}>
+                        {currencyFormatter.format(prog?.pm_budgeteur ?? 0)}
+                      </Typography>
+                    </Box>
+
+                    {/* Actual Spend */}
+                    <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 0.5, fontSize: '0.62rem' }}>
+                        Spend
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 900, color: 'warning.main', fontFamily: '"Outfit", sans-serif', fontSize: { xs: '0.85rem', sm: '1rem', md: '1.1rem' } }}>
+                        {currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}
+                      </Typography>
+                    </Box>
+
+                    {/* Variance */}
+                    {(() => {
+                      const budget = prog?.pm_budgeteur ?? 0
+                      const spend = prog?.pm_actualspendeur ?? 0
+                      const remaining = budget - spend
+                      return (
+                        <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 0.5, fontSize: '0.62rem' }}>
+                            Variance
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 900, color: remaining < 0 ? 'error.main' : 'success.main', fontFamily: '"Outfit", sans-serif', fontSize: { xs: '0.85rem', sm: '1rem', md: '1.1rem' } }}>
+                            {currencyFormatter.format(remaining)}
+                          </Typography>
+                        </Box>
+                      )
+                    })()}
+                  </Box>
+
+                  {/* Budget Utilization Progress Bar */}
+                  {(() => {
+                    const budget = prog?.pm_budgeteur ?? 0
+                    const spend = prog?.pm_actualspendeur ?? 0
+                    const consumedPct = budget > 0 ? Math.min(100, Math.round((spend / budget) * 100)) : 0
+                    return (
+                      <Box sx={{ mt: 0.5 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75, alignItems: 'center' }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem' }}>
+                            Budget Utilization
+                          </Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 800, color: consumedPct > 90 ? 'error.main' : consumedPct > 75 ? 'warning.main' : 'success.main' }}>
+                            {consumedPct}%
+                          </Typography>
+                        </Box>
+                        <LinearProgress
+                          variant="determinate"
+                          value={consumedPct}
+                          color={consumedPct > 90 ? 'error' : consumedPct > 75 ? 'warning' : 'success'}
+                          sx={{ height: 8, borderRadius: 4 }}
+                        />
+                      </Box>
+                    )
+                  })()}
+
+                  {/* Bar Chart */}
+                  <Box sx={{ height: 110, mt: 0.5, flexGrow: 1 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { name: 'Approved', amount: prog?.pm_budgeteur ?? 0 },
+                          { name: 'Spend', amount: prog?.pm_actualspendeur ?? 0 },
+                          { name: 'Variance', amount: Math.max(0, (prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) }
+                        ]}
+                        margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                      >
+                        <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700, fill: theme.palette.text.secondary }} stroke={theme.palette.divider} />
+                        <YAxis tick={{ fontSize: 8, fontFamily: 'monospace', fill: theme.palette.text.secondary }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
+                        <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
+                        <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={24}>
+                          {[
+                            { color: theme.palette.primary.main },
+                            { color: theme.palette.warning.main },
+                            { color: theme.palette.info.main }
+                          ].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
                 </Box>
               </Paper>
             </Grid>
@@ -911,8 +1002,8 @@ export default function ProgrammesPage() {
             </Grid>
 
             {/* Row 3: Detail Cards (3 columns side-by-side to avoid whitespace/empty grid columns) */}
-            {/* Overall Health - 4/12 Width */}
-            <Grid size={{ xs: 12, lg: 4 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+            {/* Overall Health - 6/12 Width */}
+            <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
                 <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
@@ -998,69 +1089,9 @@ export default function ProgrammesPage() {
               </Paper>
             </Grid>
 
-            <Grid size={{ xs: 12, lg: 4 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-              {/* Financials Card */}
-              <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'success.main' }} /> Financials
-                  </Typography>
-                </Box>
-                <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1 }}>
-                    <Paper variant="outlined" sx={{ p: 1, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Total Budget</Typography>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'primary.main', mt: 0.5 }}>{currencyFormatter.format(prog?.pm_budgeteur ?? 0)}</Typography>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ p: 1, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Actual Spend</Typography>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'warning.main', mt: 0.5 }}>{currencyFormatter.format(prog?.pm_actualspendeur ?? 0)}</Typography>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ p: 1, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider' }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>Variance</Typography>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'info.main', mt: 0.5 }}>
-                        {currencyFormatter.format((prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0))}
-                      </Typography>
-                    </Paper>
-                  </Box>
 
-                  <Box>
-                    <StatusProgressBar value={prog?.pm_actualspendeur ?? 0} total={prog?.pm_budgeteur ?? 0} label="Budget Utilization" />
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, display: 'block', textAlign: 'right' }}>
-                      {prog?.pm_budgeteur && prog?.pm_budgeteur > 0 ? `${((prog?.pm_actualspendeur ?? 0) / prog?.pm_budgeteur * 100).toFixed(1)}% consumed` : ''}
-                    </Typography>
-                  </Box>
 
-                  <Box sx={{ height: 110, mt: -1.5, mb: -1.5, flexGrow: 1 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={[
-                          { name: 'Approved', amount: prog?.pm_budgeteur ?? 0, color: theme.palette.primary.main },
-                          { name: 'Spend', amount: prog?.pm_actualspendeur ?? 0, color: theme.palette.warning.main },
-                          { name: 'Variance', amount: Math.max(0, (prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)), color: theme.palette.info.main }
-                        ]}
-                        margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
-                      >
-                        <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: theme.palette.text.secondary }} stroke={theme.palette.divider} />
-                        <YAxis tick={{ fontSize: 9, fontFamily: 'monospace', fill: theme.palette.text.secondary }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
-                        <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
-                        <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={20}>
-                          {[
-                            { color: theme.palette.primary.main },
-                            { color: theme.palette.warning.main },
-                            { color: theme.palette.info.main }
-                          ].map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
-
-            <Grid size={{ xs: 12, lg: 4 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+            <Grid size={{ xs: 12, lg: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               {/* Escalated Risks & Issues */}
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
                 <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
@@ -1144,7 +1175,8 @@ export default function ProgrammesPage() {
               </Paper>
             </Grid>
           </Grid>
-        )}
+        </>
+      )}
 
         {detailTab === 1 && (
           <MasterScheduleTab projects={detailProjects} />

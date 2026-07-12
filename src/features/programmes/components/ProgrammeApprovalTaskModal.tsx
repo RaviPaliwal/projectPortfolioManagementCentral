@@ -15,6 +15,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import GroupsIcon from '@mui/icons-material/Groups'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import { fetchProgrammeDetails, updateProgrammePhase, updateProgramme } from '@/services/programme.service'
+import { fetchInitiatives } from '@/services/initiative.service'
 import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import { useUser } from '@/context/UserContext'
 import type { ProgrammeModel } from '@/types/dataverse'
@@ -58,6 +59,7 @@ export const ProgrammeApprovalTaskModal: React.FC<ProgrammeApprovalTaskModalProp
   const [projectCount, setProjectCount] = useState<number>(0)
   const [riskCount, setRiskCount] = useState<number>(0)
   const [issueCount, setIssueCount] = useState<number>(0)
+  const [askedBudget, setAskedBudget] = useState<number | null>(null)
 
   // Form states for editable fields
   const [managerId, setManagerId] = useState<string>('')
@@ -69,13 +71,23 @@ export const ProgrammeApprovalTaskModal: React.FC<ProgrammeApprovalTaskModalProp
     if (!entityId) return
     setLoading(true)
     try {
-      const detail = await fetchProgrammeDetails(entityId)
+      const [detail, inits] = await Promise.all([
+        fetchProgrammeDetails(entityId),
+        fetchInitiatives()
+      ])
       if (!detail.programme) { onError('Programme not found.'); setLoading(false); return }
       const p = detail.programme
       setProgramme(p)
       setProjectCount(detail.projects.length)
       setRiskCount(detail.risks.length)
       setIssueCount(detail.issues.length)
+
+      const linkedInit = inits.find(i => i.pm_convertedtoreference === entityId)
+      if (linkedInit && linkedInit.pm_estimatedcost != null) {
+        setAskedBudget(linkedInit.pm_estimatedcost)
+      } else {
+        setAskedBudget(p.pm_budgeteur ?? null)
+      }
 
       // Initialize form fields
       setManagerId(p.pm_programmemanager ? p.pm_programmemanager.replace(/[{}]/g, '').toLowerCase() : '')
@@ -180,12 +192,26 @@ export const ProgrammeApprovalTaskModal: React.FC<ProgrammeApprovalTaskModalProp
 
                 {/* Row 2: Non-editable fields */}
                 <Grid size={{ xs: 12, sm: 4 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Budget</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
-                      {programme?.pm_budgeteur != null ? currencyFormatter.format(programme.pm_budgeteur) : '—'}
+                  <Paper 
+                    variant="outlined" 
+                    sx={{ 
+                      p: 1.5, 
+                      height: '100%', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      justifyContent: 'center', 
+                      borderRadius: 1, 
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(46, 125, 50, 0.04)' : 'rgba(46, 125, 50, 0.02)',
+                      borderColor: (theme) => alpha(theme.palette.success.main, 0.25),
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.65rem' }}>
+                      Asked Budget
                     </Typography>
-                  </Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, mt: 0.5, color: 'success.main', fontFamily: '"Outfit", sans-serif' }}>
+                      {askedBudget != null ? currencyFormatter.format(askedBudget) : '—'}
+                    </Typography>
+                  </Paper>
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 4 }}>

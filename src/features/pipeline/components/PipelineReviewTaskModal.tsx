@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, type ComponentType } from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
-  IconButton, CircularProgress, TextField, Divider, Chip, Paper, Slider, Rating,
+  IconButton, CircularProgress, TextField, Divider, Chip, Paper,
   useTheme,
   alpha,
 } from '@mui/material'
@@ -10,7 +10,7 @@ import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
 import DescriptionIcon from '@mui/icons-material/Description'
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
-import { fetchInitiativeById, updateInitiative } from '@/services/initiative.service'
+import { fetchInitiativeById } from '@/services/initiative.service'
 import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import type { InitiativeModel } from '@/types/dataverse'
 import { StatusTag } from '@/components/common'
@@ -36,8 +36,6 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [initiative, setInitiative] = useState<InitiativeModel | null>(null)
-  const [strategicAlignment, setStrategicAlignment] = useState<number>(0)
-  const [priorityScore, setPriorityScore] = useState<number>(0)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -45,9 +43,6 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
       const init = await fetchInitiativeById(initiativeId)
       if (!init) { onError('Initiative not found.'); setLoading(false); return }
       setInitiative(init)
-      const score = init.pm_strategicalignmentscore ?? 0
-      setStrategicAlignment(score > 5 ? score / 20 : score)
-      setPriorityScore(init.pm_priorityscore ?? 0)
     } catch (err) {
       console.error('Failed to load initiative', err)
       onError('Failed to load initiative details.')
@@ -61,10 +56,6 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
   const saveTaskData = useCallback(async (workflowDecision: number): Promise<boolean> => {
     setSaving(true)
     try {
-      await updateInitiative(initiativeId, {
-        pm_strategicalignmentscore: strategicAlignment,
-        pm_priorityscore: priorityScore,
-      } as any)
       const decisionLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'
       onSuccess(`Pipeline Review completed. Decision: ${decisionLabel}.`)
       return true
@@ -72,7 +63,7 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
       onError('Failed to save review decision.')
       return false
     } finally { setSaving(false) }
-  }, [initiativeId, strategicAlignment, priorityScore, onSuccess, onError])
+  }, [onSuccess, onError])
 
   if (!open) return null
 
@@ -139,50 +130,6 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
               </Grid>
             </Paper>
 
-            {/* Scoring & Strategic Evaluation */}
-            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <LightbulbIcon sx={{ fontSize: 16, color: 'warning.main' }} /> Scoring & Strategic Evaluation
-              </Typography>
-              <Grid container spacing={2.5}>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 1 }}>
-                    Strategic Alignment (1-5 Stars)
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Rating
-                      value={strategicAlignment}
-                      onChange={(_, v) => setStrategicAlignment(v ?? 0)}
-                      precision={0.5}
-                      max={5}
-                    />
-                    <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace' }}>
-                      {strategicAlignment.toFixed(1)} / 5.0
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 1.5 }}>
-                    Priority Score (0 - 100)
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, px: 1 }}>
-                    <Slider
-                      value={priorityScore}
-                      onChange={(_, v) => setPriorityScore(v as number)}
-                      min={0}
-                      max={100}
-                      step={1}
-                      valueLabelDisplay="auto"
-                      sx={{ flex: 1 }}
-                    />
-                    <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: '"JetBrains Mono", monospace', minWidth: 40, textAlign: 'right' }}>
-                      {priorityScore}
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
-
             {/* Business Case Paper */}
             {initiative?.pm_businesscase && (
               <Box>
@@ -203,7 +150,7 @@ export const PipelineReviewTaskModal: React.FC<PipelineReviewTaskModalProps> = (
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 4 }}>
                   <Paper variant="outlined" sx={{ p: 2 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Est. Cost</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Est. Budget</Typography>
                     <Typography variant="body1" sx={{ fontWeight: 700, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
                       {initiative?.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '-'}
                     </Typography>

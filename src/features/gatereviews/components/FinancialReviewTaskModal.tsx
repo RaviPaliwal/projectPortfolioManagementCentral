@@ -173,7 +173,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
                 {isInitiative ? (
                   <>
                     <Grid size={{ xs: 12, sm: 6 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Estimated Cost</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Estimated Budget</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
                         {initiative?.pm_estimatedcost != null ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
                       </Typography>
@@ -223,7 +223,7 @@ export const FinancialReviewTaskModal: React.FC<FinancialReviewTaskModalProps> =
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 {isInitiative
-                  ? "Review the initiative's estimated costs and benefits. Assess financial viability before progressing through the pipeline."
+                  ? "Review the initiative's estimated budgets and benefits. Assess financial viability before progressing through the pipeline."
                   : "Review the project's financial health. Ensure that the budget requested for the upcoming phase is realistic and that previous phase spending is accounted for."}
               </Typography>
 

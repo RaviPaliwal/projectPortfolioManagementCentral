@@ -371,6 +371,8 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
                 let parsedValue = value
                 if (['pm_ragstatus', 'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus', 'pm_projectphase', 'pm_projectpriority'].includes(key)) {
                     parsedValue = Number(value)
+                } else if (['pm_plannedstartdate', 'pm_plannedenddate', 'pm_actualstartdate', 'pm_actualenddate'].includes(key) && value === '') {
+                    parsedValue = null
                 }
                 cleanPayload[key] = parsedValue
             }

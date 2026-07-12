@@ -503,21 +503,15 @@ export async function updateInitiative(id: string, changes: Partial<InitiativeMo
         const type = changes.pm_initiativetype ?? 0;
         if (Number(type) === 1) { // Programme
           cleanChanges['pm_ConvertedToId_pm_programme@odata.bind'] = `/pm_programmes(${refId})`;
-          cleanChanges['pm_convertedtoid_pm_programme@odata.bind'] = `/pm_programmes(${refId})`;
         } else if (Number(type) === 2) { // Portfolio
           cleanChanges['pm_ConvertedToId_pm_portfolio@odata.bind'] = `/pm_portfolios(${refId})`;
-          cleanChanges['pm_convertedtoid_pm_portfolio@odata.bind'] = `/pm_portfolios(${refId})`;
         } else { // Project (0)
           cleanChanges['pm_ConvertedToId_pm_project@odata.bind'] = `/pm_projects(${refId})`;
-          cleanChanges['pm_convertedtoid_pm_project@odata.bind'] = `/pm_projects(${refId})`;
         }
       } else {
         cleanChanges['pm_ConvertedToId_pm_programme@odata.bind'] = null;
-        cleanChanges['pm_convertedtoid_pm_programme@odata.bind'] = null;
         cleanChanges['pm_ConvertedToId_pm_portfolio@odata.bind'] = null;
-        cleanChanges['pm_convertedtoid_pm_portfolio@odata.bind'] = null;
         cleanChanges['pm_ConvertedToId_pm_project@odata.bind'] = null;
-        cleanChanges['pm_convertedtoid_pm_project@odata.bind'] = null;
       }
     }
     const result = await Pm_initiativesService.update(id, cleanChanges as any)

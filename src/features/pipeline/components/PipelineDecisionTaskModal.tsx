@@ -451,7 +451,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
                 <Grid container spacing={2.5} sx={{ mb: 2 }}>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
-                      label="Estimated Cost (EUR)"
+                      label="Estimated Budget (EUR)"
                       type="number"
                       size="small"
                       fullWidth
@@ -649,7 +649,7 @@ export const PipelineDecisionTaskModal: React.FC<PipelineDecisionTaskModalProps>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 1.5 }}>
-            The edited estimated cost of this initiative exceeds the available {parentBudgetInfo ? parentBudgetInfo.label.toLowerCase() : 'parent'} budget by <strong>{parentBudgetInfo ? currencyFormatter.format(estCost - parentBudgetInfo.availableBudget) : ''}</strong>.
+            The edited estimated budget of this initiative exceeds the available {parentBudgetInfo ? parentBudgetInfo.label.toLowerCase() : 'parent'} budget by <strong>{parentBudgetInfo ? currencyFormatter.format(estCost - parentBudgetInfo.availableBudget) : ''}</strong>.
           </Typography>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
             Do you still want to proceed and submit your decision?

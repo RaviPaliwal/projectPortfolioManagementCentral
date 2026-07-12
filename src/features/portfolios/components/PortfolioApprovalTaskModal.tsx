@@ -19,6 +19,7 @@ import { currencyFormatter } from '@/utils/formatters'
 import { useUser } from '@/context/UserContext'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 import { alpha } from '@mui/material/styles'
+import { BUSINESS_UNITS } from '@/constants/businessUnits'
 
 interface PortfolioApprovalTaskModalProps {
   open: boolean
@@ -227,13 +228,22 @@ export const PortfolioApprovalTaskModal: React.FC<PortfolioApprovalTaskModalProp
 
                 {/* Row 2: Editable fields */}
                 <Grid size={{ xs: 12, sm: 4 }}>
-                  <TextField
-                    fullWidth
-                    label="Business Unit"
-                    size="small"
-                    value={businessUnit}
-                    onChange={(e) => setBusinessUnit(e.target.value)}
-                  />
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="approve-businessunit-label">Business Unit</InputLabel>
+                    <Select
+                      labelId="approve-businessunit-label"
+                      label="Business Unit"
+                      value={businessUnit}
+                      onChange={(e) => setBusinessUnit(e.target.value)}
+                    >
+                      <MenuItem value="">— Select —</MenuItem>
+                      {BUSINESS_UNITS.map((bu) => (
+                        <MenuItem key={bu} value={bu}>
+                          {bu}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 4 }}>

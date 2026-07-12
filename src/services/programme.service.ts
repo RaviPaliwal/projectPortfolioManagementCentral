@@ -81,8 +81,10 @@ export async function createProgramme(payload: Partial<ProgrammeModel>): Promise
     for (const [key, value] of Object.entries(payload)) {
         if (value !== undefined && value !== null && value !== '' &&
             key !== 'pm_programmemanager' && key !== '_pm_portfolio_value' && key !== 'createdon') {
-            if (typeof value === 'string' && ['pm_programmename', 'pm_programmedescription'].includes(key)) {
+            if (typeof value === 'string' && key === 'pm_programmename') {
                 cleanPayload[key] = value.length > 99 ? value.slice(0, 99) : value
+            } else if (typeof value === 'string' && key === 'pm_programmedescription') {
+                cleanPayload[key] = value.length > 3999 ? value.slice(0, 3999) : value
             } else {
                 cleanPayload[key] = value
             }
@@ -131,8 +133,12 @@ export async function updateProgramme(id: string, changes: Partial<ProgrammeMode
     for (const [key, value] of Object.entries(changes)) {
         if (value !== undefined && value !== null && key !== 'pm_programmeid' &&
             key !== 'pm_programmemanager' && key !== '_pm_portfolio_value' && key !== 'createdon') {
-            if (typeof value === 'string' && ['pm_programmename', 'pm_programmedescription'].includes(key)) {
+            if (typeof value === 'string' && key === 'pm_programmename') {
                 cleanPayload[key] = value.length > 99 ? value.slice(0, 99) : value
+            } else if (typeof value === 'string' && key === 'pm_programmedescription') {
+                cleanPayload[key] = value.length > 3999 ? value.slice(0, 3999) : value
+            } else if (['pm_startdate', 'pm_enddate'].includes(key) && value === '') {
+                cleanPayload[key] = null
             } else {
                 cleanPayload[key] = value
             }

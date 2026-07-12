@@ -167,8 +167,12 @@ export async function updatePortfolio(id: string, changes: Partial<PortfolioMode
         if (value !== undefined && value !== null && key !== 'pm_portfolioid' && key !== 'createdon') {
             if (key === 'pm_ownerlookup') {
                 cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
-            } else if (typeof value === 'string' && ['pm_portfolioname', 'pm_portfoliodescription', 'pm_strategicobjective'].includes(key)) {
+            } else if (typeof value === 'string' && key === 'pm_portfolioname') {
                 cleanPayload[key] = value.length > 99 ? value.slice(0, 99) : value
+            } else if (typeof value === 'string' && ['pm_portfoliodescription', 'pm_strategicobjective'].includes(key)) {
+                cleanPayload[key] = value.length > 1999 ? value.slice(0, 1999) : value
+            } else if (['pm_startdate', 'pm_enddate'].includes(key) && value === '') {
+                cleanPayload[key] = null
             } else {
                 cleanPayload[key] = value
             }
@@ -306,11 +310,13 @@ export async function deletePortfolio(id: string): Promise<void> {
 export async function createPortfolio(payload: Partial<PortfolioModel>): Promise<PortfolioModel | null> {
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(payload)) {
-        if (value !== undefined && value !== null && key !== 'createdon') {
+        if (value !== undefined && value !== null && value !== '' && key !== 'createdon') {
             if (key === 'pm_ownerlookup') {
                 cleanPayload['pm_OwnerLookup@odata.bind'] = `/systemusers(${value})`
-            } else if (typeof value === 'string' && ['pm_portfolioname', 'pm_portfoliodescription', 'pm_strategicobjective'].includes(key)) {
+            } else if (typeof value === 'string' && key === 'pm_portfolioname') {
                 cleanPayload[key] = value.length > 99 ? value.slice(0, 99) : value
+            } else if (typeof value === 'string' && ['pm_portfoliodescription', 'pm_strategicobjective'].includes(key)) {
+                cleanPayload[key] = value.length > 1999 ? value.slice(0, 1999) : value
             } else {
                 cleanPayload[key] = value
             }
