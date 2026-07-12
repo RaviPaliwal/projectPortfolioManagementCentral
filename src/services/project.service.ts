@@ -22,6 +22,11 @@ import { unwrapList, unwrapSingle, normalizeLookupId } from './common'
 
 
 import { applySecurityMasking } from './security'
+import {
+  recalculateRealFinancialsForProject,
+  recalculateRealFinancialsForProgramme,
+  recalculateRealFinancialsForPortfolio,
+} from './finance.service'
 
 export const mapProject = (item: Pm_projects): ProjectModel => {
     const mapped: ProjectModel = {
@@ -319,6 +324,7 @@ export async function createProject(payload: Partial<ProjectModel>): Promise<Pro
             recordName: item.pm_projectname || '',
             newValue: `Project created: ${item.pm_projectname || ''}`
         })
+        await recalculateRealFinancialsForProject(item.pm_projectid)
     }
     return item ? mapProject(item) : null
 }
@@ -333,6 +339,8 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
     } catch (e) {
         console.error('[updateProject] Failed to fetch original project details:', e)
     }
+    const oldProgId = original?._pm_programme_value
+    const oldPortId = original?._pm_portfolio_value
 
     const hasChanged = (key: string, newVal: any): boolean => {
         if (original === null) return true
@@ -368,7 +376,7 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
     for (const [key, value] of Object.entries(changes)) {
         if (value !== undefined && value !== null && !exclude.includes(key)) {
             if (hasChanged(key, value)) {
-                let parsedValue = value
+                let parsedValue: any = value
                 if (['pm_ragstatus', 'pm_costragstatus', 'pm_scheduleragstatus', 'pm_benefitsragstatus', 'pm_projectphase', 'pm_projectpriority'].includes(key)) {
                     parsedValue = Number(value)
                 } else if (['pm_plannedstartdate', 'pm_plannedenddate', 'pm_actualstartdate', 'pm_actualenddate'].includes(key) && value === '') {
@@ -475,7 +483,23 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
         // to ensure the UI gets the complete record with all computed/lookup fields.
         const updatedProject = await fetchProjectDetails(normalizedId)
 
+        // Trigger financial rollup
+        await recalculateRealFinancialsForProject(normalizedId)
 
+        if (changes._pm_programme_value !== undefined) {
+            const newProgId = changes._pm_programme_value
+            if (normalizeLookupId(oldProgId) !== normalizeLookupId(newProgId)) {
+                if (oldProgId) await recalculateRealFinancialsForProgramme(oldProgId)
+                if (newProgId) await recalculateRealFinancialsForProgramme(newProgId)
+            }
+        }
+        if (changes._pm_portfolio_value !== undefined) {
+            const newPortId = changes._pm_portfolio_value
+            if (normalizeLookupId(oldPortId) !== normalizeLookupId(newPortId)) {
+                if (oldPortId) await recalculateRealFinancialsForPortfolio(oldPortId)
+                if (newPortId) await recalculateRealFinancialsForPortfolio(newPortId)
+            }
+        }
 
         return updatedProject
     } catch (err) {
@@ -486,14 +510,27 @@ export async function updateProject(id: string, changes: Partial<ProjectModel>):
 
 export async function deleteProject(id: string): Promise<void> {
     let recordName = id
+    let parentProgrammeId: string | null = null
+    let parentPortfolioId: string | null = null
     try {
         const details = await fetchProjectDetails(id)
-        if (details?.pm_projectname) recordName = details.pm_projectname
+        if (details) {
+            if (details.pm_projectname) recordName = details.pm_projectname
+            parentProgrammeId = details._pm_programme_value ?? null
+            parentPortfolioId = details._pm_portfolio_value ?? null
+        }
     } catch (e) {
         console.warn(`[deleteProject] ⚠️ Could not fetch project details for audit log naming (id: ${id}):`, e)
     }
 
     await Pm_projectsService.delete(id)
+
+    if (parentProgrammeId) {
+        await recalculateRealFinancialsForProgramme(parentProgrammeId)
+    }
+    if (parentPortfolioId) {
+        await recalculateRealFinancialsForPortfolio(parentPortfolioId)
+    }
 
     writeAuditLog({
         actionType: 'Update',

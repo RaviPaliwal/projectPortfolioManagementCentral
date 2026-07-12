@@ -1163,58 +1163,85 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
     // 6. Recalculate Programme actual spend
     const programmeId = normalizeLookupId(projectDetails?._pm_programme_value)
     if (programmeId) {
-      try {
-        const progProjectsResult = await Pm_projectsService.getAll({
-          filter: `_pm_programme_value eq '${programmeId}' and statecode eq 0`,
-          select: ['pm_projectid', 'pm_actualcost'],
-          top: 500,
-        })
-        if (progProjectsResult.success) {
-          const progProjects = unwrapList<Pm_projects>(progProjectsResult)
-          const totalProgActuals = progProjects.reduce((sum, p) => sum + (p.pm_actualcost || 0), 0)
-
-          const progUpdateRes = await Pm_programmesService.update(programmeId, {
-            pm_actualspendeur: totalProgActuals,
-          } as unknown as Pm_programmes)
-          if (!progUpdateRes.success) {
-            console.error(`[FinanceService] recalculateRealFinancialsForProject programme update failed for ${programmeId}:`, progUpdateRes.error)
-          }
-        }
-      } catch (err) {
-        console.error('[FinanceService] recalculateRealFinancialsForProject programme rollup exception:', err)
-      }
+      await recalculateRealFinancialsForProgramme(programmeId)
     }
 
     // 7. Recalculate Portfolio budget & actual spend
     const portfolioId = normalizeLookupId(projectDetails?._pm_portfolio_value)
     if (portfolioId) {
-      try {
-        const portProjectsResult = await Pm_projectsService.getAll({
-          filter: `_pm_portfolio_value eq '${portfolioId}' and statecode eq 0`,
-          select: ['pm_projectid', 'pm_approvedbudget', 'pm_actualcost'],
-          top: 500,
-        })
-        if (portProjectsResult.success) {
-          const portProjects = unwrapList<Pm_projects>(portProjectsResult)
-          const totalPortBudget = portProjects.reduce((sum, p) => sum + (p.pm_approvedbudget || 0), 0)
-          const totalPortActuals = portProjects.reduce((sum, p) => sum + (p.pm_actualcost || 0), 0)
-
-          const portUpdateRes = await Pm_portfoliosService.update(portfolioId, {
-            pm_approvedbudgeteur: totalPortBudget,
-            pm_actualspendeur: totalPortActuals,
-          } as unknown as Pm_portfolios)
-          if (!portUpdateRes.success) {
-            console.error(`[FinanceService] recalculateRealFinancialsForProject portfolio update failed for ${portfolioId}:`, portUpdateRes.error)
-          }
-        }
-      } catch (err) {
-        console.error('[FinanceService] recalculateRealFinancialsForProject portfolio rollup exception:', err)
-      }
+      await recalculateRealFinancialsForPortfolio(portfolioId)
     }
   } catch (err) {
     console.error(`[recalculateRealFinancialsForProject] Error rollup for project ${normProjId}:`, err)
   }
 }
+
+export async function recalculateRealFinancialsForProgramme(programmeId: string | null | undefined): Promise<void> {
+  const normProgId = normalizeLookupId(programmeId || undefined)
+  if (!normProgId) return
+  try {
+    const progProjectsResult = await Pm_projectsService.getAll({
+      filter: `_pm_programme_value eq '${normProgId}' and statecode eq 0`,
+      select: ['pm_projectid', 'pm_actualcost'],
+      top: 500,
+    })
+    if (progProjectsResult.success) {
+      const progProjects = unwrapList<Pm_projects>(progProjectsResult)
+      const totalProgActuals = progProjects.reduce((sum, p) => sum + (p.pm_actualcost || 0), 0)
+
+      const progUpdateRes = await Pm_programmesService.update(normProgId, {
+        pm_actualspendeur: totalProgActuals,
+      } as unknown as Pm_programmes)
+      if (!progUpdateRes.success) {
+        console.error(`[FinanceService] recalculateRealFinancialsForProgramme programme update failed for ${normProgId}:`, progUpdateRes.error)
+      }
+    }
+  } catch (err) {
+    console.error('[FinanceService] recalculateRealFinancialsForProgramme exception:', err)
+  }
+}
+
+export async function recalculateRealFinancialsForPortfolio(portfolioId: string | null | undefined): Promise<void> {
+  const normPortId = normalizeLookupId(portfolioId || undefined)
+  if (!normPortId) return
+  try {
+    // Fetch child programmes associated with this portfolio
+    const portProgrammesResult = await Pm_programmesService.getAll({
+      filter: `_pm_portfolio_value eq '${normPortId}' and statecode eq 0`,
+      select: ['pm_programmeid', 'pm_actualspendeur', 'pm_budgeteur'],
+      top: 500,
+    })
+
+    // Fetch orphan projects associated directly with this portfolio and no programme
+    const orphanProjectsResult = await Pm_projectsService.getAll({
+      filter: `_pm_portfolio_value eq '${normPortId}' and _pm_programme_value eq null and statecode eq 0`,
+      select: ['pm_projectid', 'pm_approvedbudget', 'pm_actualcost'],
+      top: 500,
+    })
+
+    const programmesList = portProgrammesResult.success ? unwrapList<Pm_programmes>(portProgrammesResult) : []
+    const orphanProjectsList = orphanProjectsResult.success ? unwrapList<Pm_projects>(orphanProjectsResult) : []
+
+    const totalProgrammesActuals = programmesList.reduce((sum, p) => sum + (p.pm_actualspendeur || 0), 0)
+    const totalOrphansActuals = orphanProjectsList.reduce((sum, p) => sum + (p.pm_actualcost || 0), 0)
+    const totalPortActuals = totalProgrammesActuals + totalOrphansActuals
+
+    const totalProgrammesBudget = programmesList.reduce((sum, p) => sum + (p.pm_budgeteur || 0), 0)
+    const totalOrphansBudget = orphanProjectsList.reduce((sum, p) => sum + (p.pm_approvedbudget || 0), 0)
+    const totalPortBudget = totalProgrammesBudget + totalOrphansBudget
+
+    const portUpdateRes = await Pm_portfoliosService.update(normPortId, {
+      pm_approvedbudgeteur: totalPortBudget,
+      pm_actualspendeur: totalPortActuals,
+    } as unknown as Pm_portfolios)
+    if (!portUpdateRes.success) {
+      console.error(`[FinanceService] recalculateRealFinancialsForPortfolio portfolio update failed for ${normPortId}:`, portUpdateRes.error)
+    }
+  } catch (err) {
+    console.error('[FinanceService] recalculateRealFinancialsForPortfolio exception:', err)
+  }
+}
+
 
 export async function fetchFundingAllocationsByBudgetline(budgetlineId: string): Promise<any[]> {
   try {

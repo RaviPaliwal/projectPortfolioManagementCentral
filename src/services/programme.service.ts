@@ -20,6 +20,7 @@ import type {
 import type { IGetAllOptions } from '@/generated/models/CommonModels'
 import { unwrapList, unwrapSingle, normalizeLookupId, isFinancialDataVisible } from './common'
 import { mapProject } from './project.service'
+import { recalculateRealFinancialsForPortfolio } from './finance.service'
 
 export const mapProgramme = (item: Pm_programmes): ProgrammeModel => {
     const showFinancials = isFinancialDataVisible()
@@ -117,6 +118,9 @@ export async function createProgramme(payload: Partial<ProgrammeModel>): Promise
                 recordName: item.pm_programmename || '',
                 newValue: `Programme created: ${item.pm_programmename || ''}`
             })
+            if (item._pm_portfolio_value) {
+                await recalculateRealFinancialsForPortfolio(item._pm_portfolio_value)
+            }
         }
         return item ? mapProgramme(item) : null
     } catch (err: unknown) {
@@ -207,6 +211,21 @@ export async function updateProgramme(id: string, changes: Partial<ProgrammeMode
             return null
         }
         const item = unwrapSingle<Pm_programmes>(fresh)
+
+        if (changes._pm_portfolio_value !== undefined) {
+            const oldPortId = original?._pm_portfolio_value
+            const newPortId = changes._pm_portfolio_value
+            if (normalizeLookupId(oldPortId) !== normalizeLookupId(newPortId)) {
+                if (oldPortId) await recalculateRealFinancialsForPortfolio(oldPortId)
+                if (newPortId) await recalculateRealFinancialsForPortfolio(newPortId)
+            }
+        } else {
+            const currentPortId = original?._pm_portfolio_value
+            if (currentPortId) {
+                await recalculateRealFinancialsForPortfolio(currentPortId)
+            }
+        }
+
         return item ? mapProgramme(item) : null
     } catch (err) {
         console.error('[ProgrammeService] updateProgramme exception:', err)
@@ -254,11 +273,15 @@ export async function updateProgrammePhase(id: string, phase: number): Promise<v
 
 export async function deleteProgramme(id: string): Promise<void> {
     let recordName = id
+    let parentPortfolioId: string | null = null
     try {
-        const details = await Pm_programmesService.get(id, { select: ['pm_programmename'] })
+        const details = await Pm_programmesService.get(id, { select: ['pm_programmename', '_pm_portfolio_value'] })
         if (details.success) {
             const item = unwrapSingle<Pm_programmes>(details)
-            if (item?.pm_programmename) recordName = item.pm_programmename
+            if (item) {
+                if (item.pm_programmename) recordName = item.pm_programmename
+                parentPortfolioId = item._pm_portfolio_value ?? null
+            }
         }
     } catch (e) {
         console.error('[ProgrammeService] fetch delete name failed:', e)
@@ -266,6 +289,11 @@ export async function deleteProgramme(id: string): Promise<void> {
 
     try {
         await Pm_programmesService.delete(id)
+
+        if (parentPortfolioId) {
+            await recalculateRealFinancialsForPortfolio(parentPortfolioId)
+        }
+
         writeAuditLog({
             actionType: 'Update',
             entityName: 'pm_programmes',

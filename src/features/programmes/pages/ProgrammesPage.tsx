@@ -100,6 +100,8 @@ import { navigateToProject, navigateToRisk, navigateToIssue } from '@/utils/navi
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import { normalizeLookupId } from '@/services'
+import { EntityFundingSourcesTab } from '@/features/fundingsources/components'
+import { fetchFundingSourcesByRegarding } from '@/services'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
@@ -267,6 +269,28 @@ export default function ProgrammesPage() {
   const [projectsSearch, setProjectsSearch] = useState('')
   const [todayHover, setTodayHover] = useState(false)
   const documentsTabRef = useRef<{ triggerUpload: () => void } | null>(null)
+  const fundingTabRef = useRef<{ triggerCreate: () => void } | null>(null)
+  const { allowed: canReadFunding } = useAuthorization('FUNDING_SOURCES', 'read')
+  const [unallocatedReserve, setUnallocatedReserve] = useState(0)
+
+  const loadUnallocatedReserve = useCallback(async () => {
+    if (!selectedProgrammeId) {
+      setUnallocatedReserve(0)
+      return
+    }
+    try {
+      const list = await fetchFundingSourcesByRegarding(selectedProgrammeId, 'pm_programmes')
+      const total = list.reduce((sum, s) => sum + (s.pm_totalamounteur ?? 0), 0)
+      const budget = detailData?.programme?.pm_budgeteur ?? 0
+      setUnallocatedReserve(total > budget ? total - budget : 0)
+    } catch {
+      setUnallocatedReserve(0)
+    }
+  }, [selectedProgrammeId, detailData?.programme])
+
+  useEffect(() => {
+    loadUnallocatedReserve()
+  }, [loadUnallocatedReserve])
 
   // ── Create/Edit Modal State ────────────────────────────────────────────────
   const [showFormModal, setShowFormModal] = useState(false)
@@ -527,9 +551,16 @@ export default function ProgrammesPage() {
           : 'No budget data',
         icon: <TrendingDownIcon />,
         color: theme.palette.warning.main
+      },
+      {
+        label: "Unallocated Reserve",
+        value: currencyFormatter.format(unallocatedReserve),
+        subtitle: "Excess funding reserve",
+        icon: <AccountBalanceWalletIcon />,
+        color: theme.palette.info.main
       }
     ]
-  }, [detailData, theme])
+  }, [detailData, theme, unallocatedReserve])
 
   // ── Render ───────────────────────────────────────────────────────────────────
   if (selectedProgrammeId && detailData) {
@@ -646,6 +677,7 @@ export default function ProgrammesPage() {
           <Tab label="Overview & Projects" sx={{ textTransform: 'none', fontWeight: 600 }} />
           <Tab label="Master Schedule" sx={{ textTransform: 'none', fontWeight: 600 }} />
           <Tab label="Documents" sx={{ textTransform: 'none', fontWeight: 600 }} />
+          {canReadFunding && <Tab label="Funding Sources" sx={{ textTransform: 'none', fontWeight: 600 }} />}
         </Tabs>
 
         {detailTab === 0 && (
@@ -872,8 +904,8 @@ export default function ProgrammesPage() {
                   </Typography>
                 </Box>
                 <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
-                  {/* KPIs in one row */}
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5 }}>
+                  {/* KPIs - 2 per row */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
                     {/* Approved Budget */}
                     <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 0.5, fontSize: '0.62rem' }}>
@@ -910,6 +942,16 @@ export default function ProgrammesPage() {
                         </Box>
                       )
                     })()}
+
+                    {/* Unallocated Reserve */}
+                    <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 0.5, fontSize: '0.62rem' }}>
+                        Unallocated Reserve
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 900, color: unallocatedReserve > 0 ? 'warning.main' : 'text.primary', fontFamily: '"Outfit", sans-serif', fontSize: { xs: '0.85rem', sm: '1rem', md: '1.1rem' } }}>
+                        {currencyFormatter.format(unallocatedReserve)}
+                      </Typography>
+                    </Box>
                   </Box>
 
                   {/* Budget Utilization Progress Bar */}
@@ -936,33 +978,6 @@ export default function ProgrammesPage() {
                       </Box>
                     )
                   })()}
-
-                  {/* Bar Chart */}
-                  <Box sx={{ height: 110, mt: 0.5, flexGrow: 1 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={[
-                          { name: 'Approved', amount: prog?.pm_budgeteur ?? 0 },
-                          { name: 'Spend', amount: prog?.pm_actualspendeur ?? 0 },
-                          { name: 'Variance', amount: Math.max(0, (prog?.pm_budgeteur ?? 0) - (prog?.pm_actualspendeur ?? 0)) }
-                        ]}
-                        margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                      >
-                        <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700, fill: theme.palette.text.secondary }} stroke={theme.palette.divider} />
-                        <YAxis tick={{ fontSize: 8, fontFamily: 'monospace', fill: theme.palette.text.secondary }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
-                        <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
-                        <Bar dataKey="amount" radius={[4, 4, 0, 0]} barSize={24}>
-                          {[
-                            { color: theme.palette.primary.main },
-                            { color: theme.palette.warning.main },
-                            { color: theme.palette.info.main }
-                          ].map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </Box>
                 </Box>
               </Paper>
             </Grid>
@@ -1211,6 +1226,15 @@ export default function ProgrammesPage() {
               />
             </Box>
           </Paper>
+        )}
+
+        {detailTab === 3 && canReadFunding && selectedProgrammeId && (
+          <EntityFundingSourcesTab
+            ref={fundingTabRef}
+            entityId={selectedProgrammeId}
+            entityType="pm_programmes"
+            onFundingSourcesChanged={loadUnallocatedReserve}
+          />
         )}
 
         <ProgrammeFormDialog

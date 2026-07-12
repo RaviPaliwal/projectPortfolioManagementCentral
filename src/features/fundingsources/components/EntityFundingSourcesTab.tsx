@@ -24,6 +24,8 @@ import {
   Divider,
   Avatar,
   alpha,
+  Tabs,
+  Tab,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -80,7 +82,7 @@ export interface EntityFundingSourcesTabRef {
 
 interface EntityFundingSourcesTabProps {
   entityId: string
-  entityType: 'pm_projects' | 'pm_portfolios' | 'pm_initiatives'
+  entityType: 'pm_projects' | 'pm_portfolios' | 'pm_initiatives' | 'pm_programmes'
   hideAddAction?: boolean
   onFundingSourcesChanged?: () => void
 }
@@ -95,7 +97,7 @@ export const EntityFundingSourcesTab = forwardRef<EntityFundingSourcesTabRef, En
     const { allowed: canDelete } = useAuthorization('FUNDING_SOURCES', 'delete')
 
     // Data state
-    const [fundingSources, setFundingSources] = useState<FundingSourceModel[]>([])
+    const [fundingSources, setFundingSources] = useState<(FundingSourceModel & { scope?: 'entity' | 'programme' | 'portfolio' })[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -125,6 +127,11 @@ export const EntityFundingSourcesTab = forwardRef<EntityFundingSourcesTabRef, En
     const [dbApprovedBudget, setDbApprovedBudget] = useState<number>(0)
     const [loadingBudget, setLoadingBudget] = useState(false)
     const [entityDates, setEntityDates] = useState<{ start: string | null, end: string | null }>({ start: null, end: null })
+
+    // Hierarchy parent states
+    const [scopeFilter, setScopeFilter] = useState<'all' | 'entity' | 'programme' | 'portfolio'>('all')
+    const [parentPortfolioId, setParentPortfolioId] = useState<string | null>(null)
+    const [parentProgrammeId, setParentProgrammeId] = useState<string | null>(null)
 
     useEffect(() => {
       if (showFormModal && entityId) {
@@ -181,15 +188,26 @@ export const EntityFundingSourcesTab = forwardRef<EntityFundingSourcesTabRef, En
       return false
     }, [formData.pm_effectivefromdate, formData.pm_effectivetodate, entityDates])
 
+    const entityOnlySources = useMemo(() => {
+      return fundingSources.filter((s) => !s.scope || s.scope === 'entity')
+    }, [fundingSources])
+
     const liveExistingFundingTotal = useMemo(() => {
-      return fundingSources
+      return entityOnlySources
         .filter((s) => !editingSource || s.pm_fundingsourceid !== editingSource.pm_fundingsourceid)
         .reduce((sum, s) => sum + Number(s.pm_totalamounteur ?? 0), 0)
-    }, [fundingSources, editingSource, showFormModal])
+    }, [entityOnlySources, editingSource, showFormModal])
 
     const liveTotalFunding = liveExistingFundingTotal + Number(formData.pm_totalamounteur || 0)
     const isBudgetExceeded = dbApprovedBudget > 0 && liveTotalFunding > dbApprovedBudget
     const addableAmount = Math.max(0, dbApprovedBudget - liveExistingFundingTotal)
+
+    const showHierarchyFilters = entityType === 'pm_programmes' || entityType === 'pm_projects'
+
+    const filteredFundingSources = useMemo(() => {
+      if (scopeFilter === 'all') return fundingSources
+      return fundingSources.filter((s) => s.scope === scopeFilter)
+    }, [fundingSources, scopeFilter])
 
     // Load Data
     const loadData = useCallback(async () => {
@@ -197,8 +215,53 @@ export const EntityFundingSourcesTab = forwardRef<EntityFundingSourcesTabRef, En
       setLoading(true)
       setError(null)
       try {
-        const list = await fetchFundingSourcesByRegarding(entityId, entityType)
-        setFundingSources(list)
+        let parentPortId: string | null = null
+        let parentProgId: string | null = null
+
+        // Fetch hierarchy info first
+        if (entityType === 'pm_programmes') {
+          const progResult = await Pm_programmesService.get(entityId, {
+            select: ['_pm_portfolio_value']
+          })
+          if (progResult.success) {
+            const prog = unwrapSingle<any>(progResult)
+            if (prog?._pm_portfolio_value) {
+              parentPortId = prog._pm_portfolio_value
+              setParentPortfolioId(prog._pm_portfolio_value)
+            }
+          }
+        } else if (entityType === 'pm_projects') {
+          const projResult = await Pm_projectsService.get(entityId, {
+            select: ['_pm_portfolio_value', '_pm_programme_value']
+          })
+          if (projResult.success) {
+            const proj = unwrapSingle<any>(projResult)
+            if (proj?._pm_portfolio_value) {
+              parentPortId = proj._pm_portfolio_value
+              setParentPortfolioId(proj._pm_portfolio_value)
+            }
+            if (proj?._pm_programme_value) {
+              parentProgId = proj._pm_programme_value
+              setParentProgrammeId(proj._pm_programme_value)
+            }
+          }
+        }
+
+        const [mainList, portfolioList, programmeList] = await Promise.all([
+          fetchFundingSourcesByRegarding(entityId, entityType),
+          parentPortId ? fetchFundingSourcesByRegarding(parentPortId, 'pm_portfolios') : Promise.resolve([]),
+          parentProgId ? fetchFundingSourcesByRegarding(parentProgId, 'pm_programmes') : Promise.resolve([])
+        ])
+
+        const annotatedMain = mainList.map(item => ({ ...item, scope: 'entity' }))
+        const annotatedPortfolio = portfolioList.map(item => ({ ...item, scope: 'portfolio' }))
+        const annotatedProgramme = programmeList.map(item => ({ ...item, scope: 'programme' }))
+
+        setFundingSources([
+          ...annotatedMain,
+          ...annotatedProgramme,
+          ...annotatedPortfolio
+        ] as any)
       } catch {
         setError('Unable to load funding sources.')
       } finally {
@@ -376,7 +439,7 @@ export const EntityFundingSourcesTab = forwardRef<EntityFundingSourcesTabRef, En
         <Paper sx={{ overflow: 'hidden', mb: 3 }}>
           <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid', borderColor: 'divider' }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AccountBalanceIcon sx={{ color: 'primary.main', fontSize: 20 }} /> Funding Sources ({fundingSources.length})
+              <AccountBalanceIcon sx={{ color: 'primary.main', fontSize: 20 }} /> Funding Sources ({entityOnlySources.length})
             </Typography>
             {canCreate && !hideAddAction && (
               <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={openCreateForm} sx={{ borderRadius: 1.5 }}>
@@ -385,11 +448,28 @@ export const EntityFundingSourcesTab = forwardRef<EntityFundingSourcesTabRef, En
             )}
           </Box>
 
+          {showHierarchyFilters && (
+            <Tabs
+              value={scopeFilter}
+              onChange={(_, v) => setScopeFilter(v)}
+              sx={{ px: 2, borderBottom: '1px solid', borderColor: 'divider', minHeight: 44, '& .MuiTab-root': { py: 1.5, minHeight: 44, textTransform: 'none', fontWeight: 600 } }}
+            >
+              <Tab label="All Sources" value="all" />
+              <Tab label={entityType === 'pm_programmes' ? 'This Programme' : 'This Project'} value="entity" />
+              {entityType === 'pm_projects' && parentProgrammeId && (
+                <Tab label="Parent Programme" value="programme" />
+              )}
+              {parentPortfolioId && (
+                <Tab label="Parent Portfolio" value="portfolio" />
+              )}
+            </Tabs>
+          )}
+
           <TableShell
             loading={loading}
-            empty={fundingSources.length === 0}
+            empty={filteredFundingSources.length === 0}
             emptyIcon={<AccountBalanceIcon />}
-            emptyTitle="No funding sources linked to this record."
+            emptyTitle="No funding sources found."
             emptyAction={canCreate && !hideAddAction ? (
               <Button variant="outlined" startIcon={<AddIcon />} onClick={openCreateForm}>
                 Link a funding source
@@ -402,6 +482,7 @@ export const EntityFundingSourcesTab = forwardRef<EntityFundingSourcesTabRef, En
                   <TableCell sx={{ fontWeight: 700 }}>Source</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                  {showHierarchyFilters && <TableCell sx={{ fontWeight: 700 }}>Scope</TableCell>}
                   <TableCell align="right" sx={{ fontWeight: 700 }}>Total Amount</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Funding Body</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Effective Dates</TableCell>
@@ -409,8 +490,9 @@ export const EntityFundingSourcesTab = forwardRef<EntityFundingSourcesTabRef, En
                 </TableRow>
               </TableHead>
               <TableBody>
-                {fundingSources.map((source) => {
+                {filteredFundingSources.map((source) => {
                   const totalAmt = source.pm_totalamounteur ?? 0
+                  const isOwner = !source.scope || source.scope === 'entity'
                   return (
                     <TableRow key={source.pm_fundingsourceid} hover>
                       <TableCell sx={{ fontWeight: 600 }}>{source.pm_fundingsourcename ?? 'Unnamed Source'}</TableCell>
@@ -426,6 +508,28 @@ export const EntityFundingSourcesTab = forwardRef<EntityFundingSourcesTabRef, En
                           color={STATUS_COLORS[String(source.pm_fundingstatus ?? '')] ?? 'default'}
                         />
                       </TableCell>
+                      {showHierarchyFilters && (
+                        <TableCell>
+                          <StatusTag
+                            label={
+                              source.scope === 'portfolio'
+                                ? 'Portfolio'
+                                : source.scope === 'programme'
+                                ? 'Programme'
+                                : entityType === 'pm_projects'
+                                ? 'Project'
+                                : 'Programme'
+                            }
+                            color={
+                              source.scope === 'portfolio'
+                                ? 'secondary'
+                                : source.scope === 'programme'
+                                ? 'info'
+                                : 'primary'
+                            }
+                          />
+                        </TableCell>
+                      )}
                       <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
                         {currencyFormatter.format(totalAmt)}
                       </TableCell>
@@ -440,24 +544,30 @@ export const EntityFundingSourcesTab = forwardRef<EntityFundingSourcesTabRef, En
                       </TableCell>
                       {(canEdit || canDelete) && (
                         <TableCell align="right">
-                          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                            {canEdit && (
-                              <ActionIcon
-                                icon={<EditIcon />}
-                                label="Edit"
-                                onClick={() => openEditForm(source)}
-                                color="primary"
-                              />
-                            )}
-                            {canDelete && (
-                              <ActionIcon
-                                icon={<DeleteIcon />}
-                                label="Delete"
-                                onClick={() => source.pm_fundingsourceid && setDeleteConfirm(source.pm_fundingsourceid)}
-                                color="error"
-                              />
-                            )}
-                          </Box>
+                          {isOwner ? (
+                            <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                              {canEdit && (
+                                <ActionIcon
+                                  icon={<EditIcon />}
+                                  label="Edit"
+                                  onClick={() => openEditForm(source)}
+                                  color="primary"
+                                />
+                              )}
+                              {canDelete && (
+                                <ActionIcon
+                                  icon={<DeleteIcon />}
+                                  label="Delete"
+                                  onClick={() => source.pm_fundingsourceid && setDeleteConfirm(source.pm_fundingsourceid)}
+                                  color="error"
+                                />
+                              )}
+                            </Box>
+                          ) : (
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic', pr: 1 }}>
+                              Read-only (Parent)
+                            </Typography>
+                          )}
                         </TableCell>
                       )}
                     </TableRow>
