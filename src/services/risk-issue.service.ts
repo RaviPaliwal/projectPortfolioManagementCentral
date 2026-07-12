@@ -166,7 +166,7 @@ export async function createRisk(payload: Partial<RiskModel> & { pm_projectid: s
       pm_riskstatus: 1,
       pm_identifieddate: new Date().toISOString().split('T')[0],
       pm_targetclosedate: payload.pm_targetclosedate,
-      "pm_regardingid_pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
+      "pm_RegardingId_pm_project@odata.bind": `/pm_projects(${payload.pm_projectid})`,
       statecode: 0,
       statuscode: 1,
     }

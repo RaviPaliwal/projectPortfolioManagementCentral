@@ -36,6 +36,7 @@ interface RiskEntry {
   pm_ragstatus: number
   pm_riskowner: string
   pm_targetclosedate: string
+  _pm_riskowner_value?: string
 }
 interface IssueEntry {
   pm_issuetitle: string
@@ -84,13 +85,14 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
   const [risks, setRisks] = useState<RiskEntry[]>([])
   const [issues, setIssues] = useState<IssueEntry[]>([])
   
-  const [newRisk, setNewRisk] = useState({
+  const [newRisk, setNewRisk] = useState<RiskEntry>({
     pm_risktitle: '',
     pm_riskdescription: '',
     pm_riskcategory: 3,
     pm_ragstatus: 1,
     pm_riskowner: '',
-    pm_targetclosedate: ''
+    pm_targetclosedate: '',
+    _pm_riskowner_value: ''
   })
   
   const [newIssue, setNewIssue] = useState({
@@ -127,7 +129,7 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
   const handleAddRisk = () => {
     if (!newRisk.pm_risktitle.trim()) return
     setRisks(prev => [...prev, { ...newRisk }])
-    setNewRisk({ pm_risktitle: '', pm_riskdescription: '', pm_riskcategory: 3, pm_ragstatus: 1, pm_riskowner: '', pm_targetclosedate: '' })
+    setNewRisk({ pm_risktitle: '', pm_riskdescription: '', pm_riskcategory: 3, pm_ragstatus: 1, pm_riskowner: '', pm_targetclosedate: '', _pm_riskowner_value: '' })
   }
 
   const handleAddIssue = () => {
@@ -389,13 +391,18 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
                       size="small"
                       options={allocatedResources}
                       value={allocatedResources.find((r) => r.pm_fullname === newRisk.pm_riskowner) || null}
-                      onChange={(_, newVal) => setNewRisk(p => ({ ...p, pm_riskowner: newVal?.pm_fullname || '' }))}
+                      onChange={(_, newVal) => setNewRisk(p => ({ ...p, pm_riskowner: newVal?.pm_fullname || '', _pm_riskowner_value: newVal?.pm_resourceid || '' }))}
                       getOptionLabel={(opt) => opt.pm_fullname || ''}
                       isOptionEqualToValue={(opt, val) => opt.pm_resourceid === val.pm_resourceid}
                       renderInput={(params) => (
-                        <TextField {...params} label="Risk Owner" placeholder="Owner…" />
+                        <TextField {...params} label="Risk Owner" placeholder="Owner…" size="small" />
                       )}
                       noOptionsText="No allocated resources found"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          height: 40,
+                        }
+                      }}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 2 }}>
@@ -571,9 +578,14 @@ export const RiskIssueSetupTaskModal: React.FC<RiskIssueSetupTaskModalProps> = (
                       getOptionLabel={(opt) => opt.pm_fullname || ''}
                       isOptionEqualToValue={(opt, val) => opt.pm_resourceid === val.pm_resourceid}
                       renderInput={(params) => (
-                        <TextField {...params} label="Issue Owner" placeholder="Owner…" />
+                        <TextField {...params} label="Issue Owner" placeholder="Owner…" size="small" />
                       )}
                       noOptionsText="No allocated resources found"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          height: 40,
+                        }
+                      }}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 2 }}>

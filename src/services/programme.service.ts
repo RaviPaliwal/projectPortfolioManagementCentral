@@ -398,7 +398,7 @@ export async function fetchProgrammeDetails(programmeId: string): Promise<Progra
         let issues: IssueModel[] = []
         if (projectIds.length > 0) {
             try {
-                const projectFilter = projectIds.map(id => `_pm_project_value eq '${id}'`).join(' or ')
+                const projectFilter = projectIds.map(id => `(_pm_regardingid_value eq '${id}' or _pm_project_value eq '${id}')`).join(' or ')
                 const [risksResult, issuesResult] = await Promise.all([
                     Pm_risksService.getAll({
                         filter: `(${projectFilter}) and statecode eq 0`,
@@ -460,7 +460,7 @@ export async function fetchEscalatedRisksByProgramme(programmeId: string): Promi
             return { escalatedRisks: [], severityDistribution: { high: 0, medium: 0, low: 0 } }
         }
 
-        const projectFilter = projectIds.map(id => `_pm_project_value eq '${id}'`).join(' or ')
+        const projectFilter = projectIds.map(id => `(_pm_regardingid_value eq '${id}' or _pm_project_value eq '${id}')`).join(' or ')
         const risksResult = await Pm_risksService.getAll({
             filter: `(${projectFilter}) and pm_escalated eq true and statecode eq 0`,
             select: ['pm_riskid', 'pm_risktitle', 'pm_riskcategory', 'pm_riskdescription', 'pm_ragstatus', 'pm_riskstatus', 'pm_escalated', 'pm_identifieddate', 'pm_targetclosedate', 'pm_inherentscore', 'pm_residualscore', '_pm_project_value', '_pm_riskowner_value'],

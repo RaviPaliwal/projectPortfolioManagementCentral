@@ -177,8 +177,8 @@ export default function ProjectsPage() {
         budgetResult, benefitResult, taskResult, gateResult,
       ] = await Promise.all([
         Pm_projectmilestonesService.getAll({ filter: `_pm_project_value eq '${projectId}'`, top: 100, orderBy: ['pm_planneddate asc'] }),
-        Pm_risksService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 }),
-        Pm_issuesService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 }),
+        Pm_risksService.getAll({ filter: `(_pm_regardingid_value eq '${projectId}' or _pm_project_value eq '${projectId}') and statecode eq 0`, top: 100 }),
+        Pm_issuesService.getAll({ filter: `(_pm_regardingid_value eq '${projectId}' or _pm_project_value eq '${projectId}') and statecode eq 0`, top: 100 }),
         Pm_resourceallocationsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 }),
         Pm_budgetlinesService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 }),
         fetchBenefitsByProject(projectId),
@@ -386,10 +386,10 @@ export default function ProjectsPage() {
         const r = await Pm_projectmilestonesService.getAll({ filter: `_pm_project_value eq '${projectId}'`, top: 100, orderBy: ['pm_planneddate asc'] })
         setDetailMilestones(unwrap(r).map(mapProjectMilestone))
       } else if (type === 'risk') {
-        const r = await Pm_risksService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 })
+        const r = await Pm_risksService.getAll({ filter: `(_pm_regardingid_value eq '${projectId}' or _pm_project_value eq '${projectId}') and statecode eq 0`, top: 100 })
         setDetailRisks(unwrap(r))
       } else if (type === 'issue') {
-        const r = await Pm_issuesService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 })
+        const r = await Pm_issuesService.getAll({ filter: `(_pm_regardingid_value eq '${projectId}' or _pm_project_value eq '${projectId}') and statecode eq 0`, top: 100 })
         setDetailIssues(unwrap(r))
       } else if (type === 'resource') {
         const r = await Pm_resourceallocationsService.getAll({ filter: `_pm_project_value eq '${projectId}' and statecode eq 0`, top: 100 })

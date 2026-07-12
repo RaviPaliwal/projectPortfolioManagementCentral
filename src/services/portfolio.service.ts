@@ -125,30 +125,10 @@ export async function fetchPortfolioHierarchy(): Promise<ProjectHierarchy> {
             }
         }
 
-        // 2. Perform Virtual Financial Aggregation for the hierarchy view
-        // We will iterate through Portfolios and sum up their child Projects' financials
-        const updatedPortfolios = rawPortfolios.map(port => {
-            const portId = normalizeLookupId(port.pm_portfolioid)
-            const childProjects = projects.filter(p => normalizeLookupId(p._pm_portfolio_value) === portId)
-
-            if (childProjects.length > 0) {
-                const aggregates = aggregateFinancials(childProjects, 'pm_approvedbudget', 'pm_actualcost')
-                // Only override if the original record has 0/null to avoid confusing manual entries, 
-                // OR provide them as the source of truth for the dashboard.
-                // Let's use the aggregated values for the UI consistency.
-                return {
-                    ...port,
-                    pm_approvedbudgeteur: aggregates.budget > 0 ? aggregates.budget : port.pm_approvedbudgeteur,
-                    pm_actualspendeur: aggregates.actual > 0 ? aggregates.actual : port.pm_actualspendeur,
-                }
-            }
-            return port
-        })
-
         const updatedProgrammes = rawProgrammes.map(prog => prog)
 
         return {
-            portfolios: updatedPortfolios,
+            portfolios: rawPortfolios,
             programmes: updatedProgrammes,
             projects: projects,
         }

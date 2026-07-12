@@ -37,7 +37,7 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import EditIcon from '@mui/icons-material/Edit'
 import SettingsIcon from '@mui/icons-material/Settings'
 
-import { updateProjectTask } from '@/services'
+import { updateProjectTask, normalizeLookupId } from '@/services'
 import type { ProjectTaskModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 
@@ -132,8 +132,20 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
 
   // Load initial tasks or merge updates without losing unsaved WBS layout structure
   useEffect(() => {
+    const normalizedTasks = tasks.map(t => ({
+      ...t,
+      pm_projecttaskid: normalizeLookupId(t.pm_projecttaskid),
+      pm_parenttaskid: normalizeLookupId(t.pm_parenttaskid),
+      _pm_predecessortask_value: normalizeLookupId(t._pm_predecessortask_value),
+      predecessorIds: t.predecessorIds?.map(id => normalizeLookupId(id)!).filter(Boolean) || (t._pm_predecessortask_value ? [normalizeLookupId(t._pm_predecessortask_value)!] : []),
+      dependencies: t.dependencies?.map(d => ({
+        ...d,
+        predecessorId: normalizeLookupId(d.predecessorId)!,
+      }))
+    }))
+
     if (localTasks.length === 0) {
-      const sorted = [...tasks].sort((a, b) => {
+      const sorted = [...normalizedTasks].sort((a, b) => {
         if (!a.pm_wbsnumber && b.pm_wbsnumber) return 1
         if (a.pm_wbsnumber && !b.pm_wbsnumber) return -1
         if (!a.pm_wbsnumber && !b.pm_wbsnumber) {
@@ -154,7 +166,7 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
       setLocalTasks(sorted)
     } else {
       const taskMap = new Map<string, ProjectTaskModel>()
-      tasks.forEach(t => {
+      normalizedTasks.forEach(t => {
         if (t.pm_projecttaskid) taskMap.set(t.pm_projecttaskid, t)
       })
 
@@ -174,13 +186,15 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
             pm_assignedresource: fresh.pm_assignedresource,
             _pm_project_value: fresh._pm_project_value,
             predecessorIds: fresh.predecessorIds,
+            _pm_predecessortask_value: fresh._pm_predecessortask_value,
+            dependencies: fresh.dependencies,
           }
         }
         return localTask
       })
 
-      const existingIds = new Set(localTasks.map(t => t.pm_projecttaskid).filter(Boolean))
-      const newTasks = tasks.filter(t => t.pm_projecttaskid && !existingIds.has(t.pm_projecttaskid))
+      const existingIds = new Set(localTasks.map(t => t.pm_projecttaskid).filter(Boolean) as string[])
+      const newTasks = normalizedTasks.filter(t => t.pm_projecttaskid && !existingIds.has(t.pm_projecttaskid))
       if (newTasks.length > 0) {
         setLocalTasks(recalculateWbs([...merged, ...newTasks]))
       } else {

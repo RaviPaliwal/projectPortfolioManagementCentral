@@ -50,8 +50,8 @@ export const GovernanceReadinessService = {
 
       // 2. Perform parallel checks for sub-entities
       const [risks, issues, budget, tasks, milestones] = await Promise.all([
-        Pm_risksService.getAll({ filter: `_pm_project_value eq '${pid}' and statecode eq 0`, select: ['pm_riskid'] }),
-        Pm_issuesService.getAll({ filter: `_pm_project_value eq '${pid}' and statecode eq 0`, select: ['pm_issueid', 'pm_issuestatus'] }),
+        Pm_risksService.getAll({ filter: `(_pm_regardingid_value eq '${pid}' or _pm_project_value eq '${pid}') and statecode eq 0`, select: ['pm_riskid'] }),
+        Pm_issuesService.getAll({ filter: `(_pm_regardingid_value eq '${pid}' or _pm_project_value eq '${pid}') and statecode eq 0`, select: ['pm_issueid', 'pm_issuestatus'] }),
         Pm_budgetlinesService.getAll({ filter: `_pm_project_value eq '${pid}' and statecode eq 0`, select: ['pm_budgetlineid'] }),
         Pm_projecttasksService.getAll({ filter: `_pm_project_value eq '${pid}' and statecode eq 0`, select: ['pm_projecttaskid'] }),
         Pm_projectmilestonesService.getAll({ filter: `_pm_project_value eq '${pid}' and statecode eq 0`, select: ['pm_projectmilestoneid'] })

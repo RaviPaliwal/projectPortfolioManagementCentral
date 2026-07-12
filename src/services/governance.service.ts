@@ -672,3 +672,30 @@ export async function deletePerformanceMeasure(id: string): Promise<void> {
     throw err
   }
 }
+
+export async function fetchGateReviewsByProject(projectId: string): Promise<GateReviewModel[]> {
+  try {
+    const normProjId = normalizeLookupId(projectId)
+    if (!normProjId) return []
+    const options: IGetAllOptions = {
+      filter: `_pm_project_value eq '${normProjId}' and statecode eq 0`,
+      select: [
+        'pm_projectgatereviewid', 'pm_gatename', 'pm_gatestage',
+        'pm_reviewoutcome', 'pm_plannedreviewdate',
+        'pm_actualreviewdate', 'pm_reviewnotes',
+        'pm_reviewconditions', '_pm_project_value',
+      ],
+      orderBy: ['createdon desc'],
+      top: 100,
+    }
+    const result = await Pm_projectgatereviewsService.getAll(options)
+    if (!result.success) {
+      console.error('[GovernanceService] fetchGateReviewsByProject failed:', result.error)
+      return []
+    }
+    return unwrapList<Pm_projectgatereviews>(result).map(mapGateReview)
+  } catch (err) {
+    console.error('[GovernanceService] fetchGateReviewsByProject exception:', err)
+    return []
+  }
+}

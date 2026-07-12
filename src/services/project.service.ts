@@ -609,24 +609,29 @@ export async function attachDependenciesToMultipleProjectTasks(tasks: ProjectTas
         const dependencies = unwrapList<Pm_taskdependencies>(depResult)
         const dependencyMap = new Map<string, any[]>()
         for (const dep of dependencies) {
-            if (dep._pm_successortask_value && dep._pm_predecessortask_value) {
-                const list = dependencyMap.get(dep._pm_successortask_value) || []
+            const successorId = normalizeLookupId(dep._pm_successortask_value)
+            const predecessorId = normalizeLookupId(dep._pm_predecessortask_value)
+            if (successorId && predecessorId) {
+                const list = dependencyMap.get(successorId) || []
                 list.push({
                     dependencyId: dep.pm_taskdependencyid,
-                    predecessorId: dep._pm_predecessortask_value,
+                    predecessorId: predecessorId,
                     lagDays: dep.pm_lagdays || 0,
                     dependencyType: dep.pm_dependencytype || 1,
                 })
-                dependencyMap.set(dep._pm_successortask_value, list)
+                dependencyMap.set(successorId, list)
             }
         }
         
         for (const task of tasks) {
-            const deps = dependencyMap.get(task.pm_projecttaskid!) || []
-            task.dependencies = deps
-            task.predecessorIds = deps.map(d => d.predecessorId)
-            task._pm_predecessortask_value = task.predecessorIds[0] || undefined
-            task.pm_predecessortaskid = task.predecessorIds[0] || undefined
+            const taskId = normalizeLookupId(task.pm_projecttaskid)
+            if (taskId) {
+                const deps = dependencyMap.get(taskId) || []
+                task.dependencies = deps
+                task.predecessorIds = deps.map(d => d.predecessorId)
+                task._pm_predecessortask_value = task.predecessorIds[0] || undefined
+                task.pm_predecessortaskid = task.predecessorIds[0] || undefined
+            }
         }
     } catch (err) {
         console.error('[ProjectService] Failed to attach dependencies:', err)

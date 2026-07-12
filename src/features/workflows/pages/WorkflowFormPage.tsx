@@ -1000,78 +1000,309 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
         <Paper variant="outlined" sx={{ p: 3, height: '100%' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, color: 'text.disabled', display: 'block' }}>
-              Approval Chain ({stepTemplates.length})
+              Workflow Steps ({stepTemplates.length})
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {(stepTemplates as any[]).map((step: any, idx: number) => {
-              const isTeam = Number(step.pm_assignetype) === 1
-              const assigneeName = isTeam 
-                ? teams.find((t: any) => t.id === step.pm_assigneeid)?.name
-                : assigneeList.find((u: any) => u.systemuserid === step.pm_assigneeid)?.fullname
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {activePhases.length === 0 ? (
+              // Flat list if no phases at all
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {(stepTemplates as any[]).map((step: any, idx: number) => {
+                  const isTeam = Number(step.pm_assignetype) === 1
+                  const assigneeName = isTeam 
+                    ? teams.find((t: any) => t.id === step.pm_assigneeid)?.name
+                    : assigneeList.find((u: any) => u.systemuserid === step.pm_assigneeid)?.fullname
 
-              return (
-                <Box 
-                  key={idx} 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 2.5, 
-                    p: 2, 
-                    borderRadius: '8px', 
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
-                    border: '1px solid',
-                    borderColor: 'divider'
-                  }}
-                >
-                  {/* Step Index Avatar */}
-                  <Avatar 
-                    sx={{ 
-                      width: 32, 
-                      height: 32, 
-                      bgcolor: 'primary.main', 
-                      color: 'primary.contrastText',
-                      fontSize: '0.85rem', 
-                      fontWeight: 800 
-                    }}
-                  >
-                    {idx + 1}
-                  </Avatar>
+                  return (
+                    <Box 
+                      key={idx} 
+                      sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 2.5, 
+                        p: 2, 
+                        borderRadius: '8px', 
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          borderColor: 'primary.light',
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                          transform: 'translateX(4px)'
+                        }
+                      }}
+                    >
+                      {/* Step Index Avatar */}
+                      <Avatar 
+                        sx={{ 
+                          width: 32, 
+                          height: 32, 
+                          bgcolor: 'primary.main', 
+                          color: 'primary.contrastText',
+                          fontSize: '0.85rem', 
+                          fontWeight: 800 
+                        }}
+                      >
+                        {idx + 1}
+                      </Avatar>
 
-                  {/* Step Content */}
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                      {step.pm_workflowname}
-                    </Typography>
-                    
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.75 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {isTeam ? <GroupIcon sx={{ fontSize: 13, color: 'text.secondary' }} /> : <PersonIcon sx={{ fontSize: 13, color: 'text.secondary' }} />}
-                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                          {assigneeName || 'Unassigned'}
+                      {/* Step Content */}
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                          {step.pm_workflowname}
                         </Typography>
-                      </Box>
-                      {step.pm_sladays && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <TimerIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
-                          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                            {step.pm_sladays} Day SLA
-                          </Typography>
+                        
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.75 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            {isTeam ? <GroupIcon sx={{ fontSize: 13, color: 'text.secondary' }} /> : <PersonIcon sx={{ fontSize: 13, color: 'text.secondary' }} />}
+                            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                              {assigneeName || 'Unassigned'}
+                            </Typography>
+                          </Box>
+                          {step.pm_sladays && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <TimerIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
+                              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                                {step.pm_sladays} Day SLA
+                              </Typography>
+                            </Box>
+                          )}
                         </Box>
-                      )}
-                    </Box>
-                  </Box>
+                      </Box>
 
-                  {/* Type Tag */}
-                  <StatusTag 
-                    label={isTeam ? 'TEAM' : 'USER'} 
-                    color={isTeam ? 'warning' : 'primary'} 
-                    size="small" 
-                    sx={{ fontWeight: 800, fontSize: '0.65rem' }} 
-                  />
-                </Box>
-              )
-            })}
+                      {/* Type Tag */}
+                      <StatusTag 
+                        label={isTeam ? 'TEAM' : 'USER'} 
+                        color={isTeam ? 'warning' : 'primary'} 
+                        size="small" 
+                        sx={{ fontWeight: 800, fontSize: '0.65rem' }} 
+                      />
+                    </Box>
+                  )
+                })}
+              </Box>
+            ) : (
+              // Grouped list if phases exist
+              <>
+                {activePhases.map((phaseName, pIdx) => {
+                  const phaseSteps = groupedSteps[phaseName] || []
+                  if (phaseSteps.length === 0) return null
+
+                  return (
+                    <Box key={phaseName} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      {/* Phase Header */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: pIdx > 0 ? 2 : 0 }}>
+                        <Box 
+                          sx={{ 
+                            width: 4, 
+                            height: 20, 
+                            bgcolor: 'primary.main', 
+                            borderRadius: 1 
+                          }} 
+                        />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.primary' }}>
+                          {phaseName}
+                        </Typography>
+                        <Chip 
+                          label={`${phaseSteps.length} step${phaseSteps.length !== 1 ? 's' : ''}`} 
+                          size="small" 
+                          variant="outlined" 
+                          sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700, color: 'text.secondary', borderColor: 'divider' }} 
+                        />
+                      </Box>
+
+                      {/* Phase Steps */}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pl: 1.5, borderLeft: '1px dashed', borderColor: 'divider', ml: 0.5 }}>
+                        {phaseSteps.map((step) => {
+                          const globalIdx = stepTemplates.indexOf(step)
+                          const isTeam = Number(step.pm_assignetype) === 1
+                          const assigneeName = isTeam 
+                            ? teams.find((t: any) => t.id === step.pm_assigneeid)?.name
+                            : assigneeList.find((u: any) => u.systemuserid === step.pm_assigneeid)?.fullname
+
+                          return (
+                            <Box 
+                              key={globalIdx} 
+                              sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: 2.5, 
+                                p: 2, 
+                                borderRadius: '8px', 
+                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  borderColor: 'primary.light',
+                                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                                  transform: 'translateX(4px)'
+                                }
+                              }}
+                            >
+                              {/* Step Index Avatar */}
+                              <Avatar 
+                                sx={{ 
+                                  width: 32, 
+                                  height: 32, 
+                                  bgcolor: 'primary.main', 
+                                  color: 'primary.contrastText',
+                                  fontSize: '0.85rem', 
+                                  fontWeight: 800 
+                                }}
+                              >
+                                {globalIdx + 1}
+                              </Avatar>
+
+                              {/* Step Content */}
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                  {step.pm_workflowname}
+                                </Typography>
+                                
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.75 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    {isTeam ? <GroupIcon sx={{ fontSize: 13, color: 'text.secondary' }} /> : <PersonIcon sx={{ fontSize: 13, color: 'text.secondary' }} />}
+                                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                                      {assigneeName || 'Unassigned'}
+                                    </Typography>
+                                  </Box>
+                                  {step.pm_sladays && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                      <TimerIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
+                                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                                        {step.pm_sladays} Day SLA
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Box>
+                              </Box>
+
+                              {/* Type Tag */}
+                              <StatusTag 
+                                label={isTeam ? 'TEAM' : 'USER'} 
+                                color={isTeam ? 'warning' : 'primary'} 
+                                size="small" 
+                                sx={{ fontWeight: 800, fontSize: '0.65rem' }} 
+                              />
+                            </Box>
+                          )
+                        })}
+                      </Box>
+                    </Box>
+                  )
+                })}
+
+                {/* Unlinked Steps (Other) */}
+                {groupedSteps.Other && groupedSteps.Other.length > 0 && (() => {
+                  const otherSteps = groupedSteps.Other
+                  return (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      {/* Phase Header */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+                        <Box 
+                          sx={{ 
+                            width: 4, 
+                            height: 20, 
+                            bgcolor: 'text.disabled', 
+                            borderRadius: 1 
+                          }} 
+                        />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary' }}>
+                          General / Unlinked Steps
+                        </Typography>
+                        <Chip 
+                          label={`${otherSteps.length} step${otherSteps.length !== 1 ? 's' : ''}`} 
+                          size="small" 
+                          variant="outlined" 
+                          sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700, color: 'text.secondary', borderColor: 'divider' }} 
+                        />
+                      </Box>
+
+                      {/* Phase Steps */}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pl: 1.5, borderLeft: '1px dashed', borderColor: 'divider', ml: 0.5 }}>
+                        {otherSteps.map((step) => {
+                          const globalIdx = stepTemplates.indexOf(step)
+                          const isTeam = Number(step.pm_assignetype) === 1
+                          const assigneeName = isTeam 
+                            ? teams.find((t: any) => t.id === step.pm_assigneeid)?.name
+                            : assigneeList.find((u: any) => u.systemuserid === step.pm_assigneeid)?.fullname
+
+                          return (
+                            <Box 
+                              key={globalIdx} 
+                              sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: 2.5, 
+                                p: 2, 
+                                borderRadius: '8px', 
+                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  borderColor: 'text.secondary',
+                                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                                  transform: 'translateX(4px)'
+                                }
+                              }}
+                            >
+                              {/* Step Index Avatar */}
+                              <Avatar 
+                                sx={{ 
+                                  width: 32, 
+                                  height: 32, 
+                                  bgcolor: 'text.secondary', 
+                                  color: 'background.paper',
+                                  fontSize: '0.85rem', 
+                                  fontWeight: 800 
+                                }}
+                              >
+                                {globalIdx + 1}
+                              </Avatar>
+
+                              {/* Step Content */}
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                  {step.pm_workflowname}
+                                </Typography>
+                                
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.75 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    {isTeam ? <GroupIcon sx={{ fontSize: 13, color: 'text.secondary' }} /> : <PersonIcon sx={{ fontSize: 13, color: 'text.secondary' }} />}
+                                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                                      {assigneeName || 'Unassigned'}
+                                    </Typography>
+                                  </Box>
+                                  {step.pm_sladays && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                      <TimerIcon sx={{ fontSize: 13, color: 'text.secondary' }} />
+                                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                                        {step.pm_sladays} Day SLA
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Box>
+                              </Box>
+
+                              {/* Type Tag */}
+                              <StatusTag 
+                                label={isTeam ? 'TEAM' : 'USER'} 
+                                color={isTeam ? 'warning' : 'primary'} 
+                                size="small" 
+                                sx={{ fontWeight: 800, fontSize: '0.65rem' }} 
+                              />
+                            </Box>
+                          )
+                        })}
+                      </Box>
+                    </Box>
+                  )
+                })()}
+              </>
+            )}
           </Box>
         </Paper>
       </Grid>
@@ -1280,8 +1511,23 @@ export default function WorkflowFormPage({ workflow, onStepChange, onCreated, on
           </Box>
         )}
       </Box>
-      <Divider sx={{ my: 4 }} />
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ 
+        position: 'sticky', 
+        bottom: -32, 
+        bgcolor: 'background.paper', 
+        pt: 2.5, 
+        pb: 2.5, 
+        px: 4, 
+        borderTop: '1px solid', 
+        borderColor: 'divider', 
+        zIndex: 10,
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        mx: -4,
+        mb: -4,
+        mt: 4
+      }}>
         <Button
           variant="text"
           onClick={() => setActiveStep((s) => Math.max(0, s - 1))}

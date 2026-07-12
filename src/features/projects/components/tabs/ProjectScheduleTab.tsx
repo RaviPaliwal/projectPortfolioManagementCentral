@@ -126,7 +126,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
         rag: m.pm_ragstatus,
         mType: m.pm_milestonetype,
         status: m.pm_status,
-        resource: undefined,
+        resource: m.pm_responsible,
         onCriticalPath: false,
       })),
       ...filteredTasks.map(t => ({

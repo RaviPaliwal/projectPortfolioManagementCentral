@@ -9,7 +9,7 @@ import PersonIcon from '@mui/icons-material/Person'
 import BusinessIcon from '@mui/icons-material/Business'
 import HistoryIcon from '@mui/icons-material/History'
 
-import { fetchProjectDetails, fetchGateReviewById, createGateReview, updateGateReview, unwrapList, updateProject } from '@/services'
+import { fetchProjectDetails, fetchGateReviewById, createGateReview, updateGateReview, unwrapList, updateProject, fetchGateReviewsByProject } from '@/services'
 import { Pm_projectgatereviewsService } from '@/generated'
 import type { Pm_projectgatereviews } from '@/generated/models/Pm_projectgatereviewsModel'
 import type { ProjectModel, GateReviewModel } from '@/types/dataverse'
@@ -58,8 +58,8 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
   const [gateReview, setGateReview] = useState<GateReviewModel | null>(null)
   const [project, setProject] = useState<ProjectModel | null>(null)
   const [gateStage, setGateStage] = useState<number>(0)
-
   const [boardNotes, setBoardNotes] = useState('')
+  const [priorReviews, setPriorReviews] = useState<GateReviewModel[]>([])
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -71,14 +71,22 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
 
         const projId = gr._pm_project_value || (gr as any)._pm_projectlookup_value || (gr as any).pm_project || gr.pm_projectcode
         if (projId) {
-          const proj = await fetchProjectDetails(projId)
+          const [proj, reviews] = await Promise.all([
+            fetchProjectDetails(projId),
+            fetchGateReviewsByProject(projId)
+          ])
           setProject(proj)
+          setPriorReviews(reviews.filter(r => r.pm_projectgatereviewid !== gateReviewId))
         }
         setGateStage(Number(gr.pm_gatestage ?? 0))
       } else if (projectId) {
-        const proj = await fetchProjectDetails(projectId)
+        const [proj, reviews] = await Promise.all([
+          fetchProjectDetails(projectId),
+          fetchGateReviewsByProject(projectId)
+        ])
         if (!proj) { onError('Project not found.'); setLoading(false); return }
         setProject(proj)
+        setPriorReviews(reviews)
 
         const { stage: currentGateStage } = mapPhaseToGate(proj.pm_projectphase)
         setGateStage(currentGateStage)
@@ -149,7 +157,30 @@ export const BoardDecisionTaskModal: React.FC<BoardDecisionTaskModalProps> = ({
   const ragLabel = String(project?.pm_ragstatus) === '1' ? 'On Track'
     : String(project?.pm_ragstatus) === '0' ? 'At Risk' : 'Critical'
 
-  const previousNotes = gateReview?.pm_reviewnotes || ''
+  const previousNotes = priorReviews.length > 0
+    ? priorReviews
+        .map(r => {
+          const dateStr = r.pm_actualreviewdate 
+            ? new Date(r.pm_actualreviewdate).toLocaleDateString()
+            : r.pm_plannedreviewdate 
+              ? new Date(r.pm_plannedreviewdate).toLocaleDateString() 
+              : 'N/A'
+          
+          let outcomeStr = 'Pending'
+          if (r.pm_reviewoutcome === 0) outcomeStr = 'Approved'
+          else if (r.pm_reviewoutcome === 4) outcomeStr = 'Rejected'
+          else if (r.pm_reviewoutcome !== undefined && r.pm_reviewoutcome !== null) outcomeStr = `Code ${r.pm_reviewoutcome}`
+
+          const notes = r.pm_reviewnotes?.trim() || 'No review notes provided.'
+          const conditions = r.pm_reviewconditions?.trim()
+
+          return `[${r.pm_gatename || 'Gate Review'}]
+Date: ${dateStr}
+Outcome: ${outcomeStr}
+Notes: ${notes}${conditions ? `\nConditions: ${conditions}` : ''}`
+        })
+        .join('\n\n---\n\n')
+    : ''
 
   return (
     <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
