@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import {
   Box,
   Paper,
@@ -90,9 +90,11 @@ import {
   startWorkflowForEntity,
   uploadDocument,
   fetchSystemUsers,
+  fetchFundingSourcesByRegarding,
 } from '@/services'
 
 import { useUser } from '@/context/UserContext'
+import { EntityFundingSourcesTab } from '@/features/fundingsources/components'
 import {
   BarChart,
   Bar,
@@ -211,6 +213,10 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
+  const { allowed: canReadFunding } = useAuthorization('FUNDING_SOURCES', 'read')
+  const { allowed: canCreateFunding } = useAuthorization('FUNDING_SOURCES', 'create')
+  const fundingTabRef = useRef<{ triggerCreate: () => void } | null>(null)
+
   // ── Data State ─────────────────────────────────────────────────────────────
   const [initiatives, setInitiatives] = useState<InitiativeModel[]>([])
   const [kpis, setKpis] = useState<PipelineKpis>({
@@ -235,6 +241,27 @@ export default function PipelinePage({ onNavigate }: { onNavigate?: (tab: any) =
   // ── Detail Panel State ─────────────────────────────────────────────────────
   const [selectedInitiative, setSelectedInitiative] = useState<InitiativeModel | null>(null)
   const [detailTab, setDetailTab] = useState(0)
+
+  const [unallocatedReserve, setUnallocatedReserve] = useState(0)
+
+  const loadUnallocatedReserve = useCallback(async () => {
+    if (!selectedInitiative?.pm_initiativeid) {
+      setUnallocatedReserve(0)
+      return
+    }
+    try {
+      const list = await fetchFundingSourcesByRegarding(selectedInitiative.pm_initiativeid, 'pm_initiatives')
+      const total = list.reduce((sum, s) => sum + (s.pm_totalamounteur ?? 0), 0)
+      const budget = selectedInitiative.pm_estimatedcost ?? 0
+      setUnallocatedReserve(total > budget ? total - budget : 0)
+    } catch {
+      setUnallocatedReserve(0)
+    }
+  }, [selectedInitiative])
+
+  useEffect(() => {
+    loadUnallocatedReserve()
+  }, [loadUnallocatedReserve])
 
   // ── Create Modal State ─────────────────────────────────────────────────────
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -1205,31 +1232,41 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                   ].filter(Boolean).join(' • ')
                 : undefined
             }
-            action={selectedInitiative.pm_convertedtoreference ? {
-              label: `Go to Converted ${selectedInitiative.pm_initiativetype === 1 ? 'Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Portfolio' : 'Project'}`,
-              onClick: () => {
-                const targetRef = selectedInitiative.pm_convertedtoreference;
-                if (!targetRef) return;
-                if (selectedInitiative.pm_initiativetype === 1) {
-                  sessionStorage.setItem('preselectProgrammeId', targetRef);
-                  if (onNavigate) onNavigate('programmes');
-                } else if (selectedInitiative.pm_initiativetype === 2) {
-                  sessionStorage.setItem('preselectPortfolioId', targetRef);
-                  if (onNavigate) onNavigate('portfolios');
-                } else {
-                  sessionStorage.setItem('preselectProjectId', targetRef);
-                  if (onNavigate) onNavigate('projects');
-                }
-              },
-              variant: 'contained',
-              color: 'success'
-            } : String(selectedInitiative.pm_pipelinestatus) === '2' ? {
-              label: 'Submit for Approval',
-              onClick: handleResubmitForApproval,
-              disabled: actionLoading,
-              variant: 'contained',
-              color: 'primary'
-            } : undefined}
+            actionElement={
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                {selectedInitiative.pm_convertedtoreference ? (
+                  <Button
+                    variant="contained"
+                    color="success"
+                    onClick={() => {
+                      const targetRef = selectedInitiative.pm_convertedtoreference;
+                      if (!targetRef) return;
+                      if (selectedInitiative.pm_initiativetype === 1) {
+                        sessionStorage.setItem('preselectProgrammeId', targetRef);
+                        if (onNavigate) onNavigate('programmes');
+                      } else if (selectedInitiative.pm_initiativetype === 2) {
+                        sessionStorage.setItem('preselectPortfolioId', targetRef);
+                        if (onNavigate) onNavigate('portfolios');
+                      } else {
+                        sessionStorage.setItem('preselectProjectId', targetRef);
+                        if (onNavigate) onNavigate('projects');
+                      }
+                    }}
+                  >
+                    Go to Converted {selectedInitiative.pm_initiativetype === 1 ? 'Programme' : selectedInitiative.pm_initiativetype === 2 ? 'Portfolio' : 'Project'}
+                  </Button>
+                ) : String(selectedInitiative.pm_pipelinestatus) === '2' ? (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleResubmitForApproval}
+                    disabled={actionLoading}
+                  >
+                    Submit for Approval
+                  </Button>
+                ) : null}
+              </Box>
+            }
           />
 
           {selectedInitiative?.pm_portfolioname && (
@@ -1332,8 +1369,17 @@ User Prompt: ${promptText || "Extract details from the document."}`,
             </Paper>
           )}
 
-          {/* Main Grid Layout: Overview, Approval Tasks side-by-side; Supporting Documents below */}
-          <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch' }}>
+          <Tabs
+            value={detailTab}
+            onChange={(_, v) => setDetailTab(v)}
+            sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
+          >
+            <Tab label="Overview" sx={{ textTransform: 'none', fontWeight: 600 }} />
+            {canReadFunding && <Tab label="Funding Sources" sx={{ textTransform: 'none', fontWeight: 600 }} />}
+          </Tabs>
+
+          {detailTab === 0 && (
+            <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch' }}>
             {/* Overview - 6/12 Width */}
             <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column' }}>
               <Paper sx={{ borderRadius: '24px', border: 'none', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.04)' }}>
@@ -1479,6 +1525,17 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                           )}
                         </Box>
                       </Paper>
+                      {unallocatedReserve > 0 && (
+                        <Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', gap: 1.5, border: '1px solid', borderColor: 'divider', gridColumn: 'span 2' }}>
+                          <Avatar sx={{ bgcolor: (theme) => alpha(theme.palette.info.main, 0.08), color: 'info.main', width: 40, height: 40, border: '1px solid', borderColor: (theme) => alpha(theme.palette.info.main, 0.15) }}>
+                            <AccountBalanceWalletIcon sx={{ fontSize: 18 }} />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem' }}>Unallocated Reserve</Typography>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'info.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{currencyFormatter.format(unallocatedReserve)}</Typography>
+                          </Box>
+                        </Paper>
+                      )}
                     </Box>
                   </Box>
                   <Divider />
@@ -1510,6 +1567,16 @@ User Prompt: ${promptText || "Extract details from the document."}`,
               </Paper>
             </Grid>
           </Grid>
+        )}
+
+          {detailTab === 1 && canReadFunding && (
+            <EntityFundingSourcesTab
+              ref={fundingTabRef}
+              entityId={selectedInitiative.pm_initiativeid || ''}
+              entityType="pm_initiatives"
+              onFundingSourcesChanged={loadUnallocatedReserve}
+            />
+          )}
         </Box>
       )}
 

@@ -31,7 +31,6 @@ export interface Pm_fundingsourcesBase {
   ownerid: string;
   owneridtype: string;
   pm_allocatedamounteur?: number;
-  pm_availableamounteur?: number;
   pm_effectivefromdate?: string;
   pm_effectivetodate?: string;
   pm_fundingbody?: string;
@@ -65,7 +64,6 @@ export interface Pm_fundingsources extends Pm_fundingsourcesBase {
   owneridyominame: string;
   owningbusinessunitname: string;
   pm_allocatedamounteur_base?: number;
-  pm_availableamounteur_base?: number;
   pm_fundingstatusname?: string;
   pm_fundingtypename?: string;
   pm_regardingidname?: string;

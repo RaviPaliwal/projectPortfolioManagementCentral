@@ -47,7 +47,7 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 
 
-import { fetchPortfolioHierarchy, deletePortfolio } from '@/services'
+import { fetchPortfolioHierarchy, deletePortfolio, fetchFundingSourcesByRegarding } from '@/services'
 import {
   BarChart,
   Bar,
@@ -88,6 +88,7 @@ import { colors } from '@/styles'
 
 import PsychologyIcon from '@mui/icons-material/Psychology'
 import { PortfolioFormDialog, PortfolioAICreateDialog, PortfolioGrid } from '../components'
+import { EntityFundingSourcesTab } from '@/features/fundingsources/components'
 
 // ── Export columns ────────────────────────────────────────────────────────────
 const portfolioExportColumns: ExportColumn[] = [
@@ -385,6 +386,8 @@ export default function PortfoliosPage() {
   const { allowed: canCreate } = useAuthorization('PORTFOLIOS', 'create')
   const { allowed: canEdit } = useAuthorization('PORTFOLIOS', 'update')
   const { allowed: canDelete } = useAuthorization('PORTFOLIOS', 'delete')
+  const { allowed: canReadFunding } = useAuthorization('FUNDING_SOURCES', 'read')
+  const { allowed: canCreateFunding } = useAuthorization('FUNDING_SOURCES', 'create')
 
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -406,6 +409,28 @@ export default function PortfoliosPage() {
   const [portfolioSearch, setPortfolioSearch] = useState('')
   const [todayHover, setTodayHover] = useState(false)
   const documentsTabRef = useRef<{ triggerUpload: () => void } | null>(null)
+  const fundingTabRef = useRef<{ triggerCreate: () => void } | null>(null)
+
+  const [unallocatedReserve, setUnallocatedReserve] = useState(0)
+
+  const loadUnallocatedReserve = useCallback(async () => {
+    if (!selectedPortfolio?.pm_portfolioid) {
+      setUnallocatedReserve(0)
+      return
+    }
+    try {
+      const list = await fetchFundingSourcesByRegarding(selectedPortfolio.pm_portfolioid, 'pm_portfolios')
+      const total = list.reduce((sum, s) => sum + (s.pm_totalamounteur ?? 0), 0)
+      const budget = selectedPortfolio.pm_approvedbudgeteur ?? 0
+      setUnallocatedReserve(total > budget ? total - budget : 0)
+    } catch {
+      setUnallocatedReserve(0)
+    }
+  }, [selectedPortfolio])
+
+  useEffect(() => {
+    loadUnallocatedReserve()
+  }, [loadUnallocatedReserve])
 
   // Create/Edit modal state
   const [showFormModal, setShowFormModal] = useState(false)
@@ -545,9 +570,16 @@ export default function PortfoliosPage() {
           : 'No budget data',
         icon: <TrendingDownIcon />,
         color: theme.palette.warning.main
-      }
+      },
+      ...(unallocatedReserve > 0 ? [{
+        label: "Unallocated Reserve",
+        value: currencyFormatter.format(unallocatedReserve),
+        subtitle: "Excess funding reserve",
+        icon: <AccountBalanceWalletIcon />,
+        color: theme.palette.info.main
+      }] : [])
     ]
-  }, [selectedPortfolio, detailProgrammes, detailProjects, theme])
+  }, [selectedPortfolio, detailProgrammes, detailProjects, theme, unallocatedReserve])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleRowClick = useCallback((portfolio: PortfolioModel) => {
@@ -758,6 +790,7 @@ export default function PortfoliosPage() {
         >
           <Tab label="Overview & Projects" sx={{ textTransform: 'none', fontWeight: 600 }} />
           <Tab label="Master Schedule" sx={{ textTransform: 'none', fontWeight: 600 }} />
+          {canReadFunding && <Tab label="Funding Sources" sx={{ textTransform: 'none', fontWeight: 600 }} />}
         </Tabs>
 
         {detailTab === 0 && (
@@ -1216,6 +1249,15 @@ export default function PortfoliosPage() {
 
         {detailTab === 1 && (
           <MasterScheduleTab projects={detailProjects} />
+        )}
+
+        {detailTab === 2 && canReadFunding && (
+          <EntityFundingSourcesTab
+            ref={fundingTabRef}
+            entityId={selectedPortfolio.pm_portfolioid ?? ''}
+            entityType="pm_portfolios"
+            onFundingSourcesChanged={loadUnallocatedReserve}
+          />
         )}
 
         <PortfolioFormDialog

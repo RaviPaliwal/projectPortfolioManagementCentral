@@ -85,8 +85,9 @@ export const mapBudgetLine = (item: Pm_budgetlines): BudgetLineModel => {
 }
 
 export const mapFundingSource = (item: Pm_fundingsources): FundingSourceModel => {
-  const regardingType = item.pm_regardingidtype || ''
-  const regardingName = item.pm_regardingidname || ''
+  const rawItem = item as unknown as Record<string, unknown>
+  const regardingType = (rawItem['_pm_regardingid_value@Microsoft.Dynamics.CRM.lookuplogicalname'] as string) || item.pm_regardingidtype || ''
+  const regardingName = (rawItem['_pm_regardingid_value@OData.Community.Display.V1.FormattedValue'] as string) || item.pm_regardingidname || ''
   return {
     pm_fundingsourceid: item.pm_fundingsourceid,
     pm_fundingsourcename: item.pm_fundingsourcename,
@@ -94,7 +95,7 @@ export const mapFundingSource = (item: Pm_fundingsources): FundingSourceModel =>
     pm_fundingstatus: item.pm_fundingstatus,
     pm_totalamounteur: item.pm_totalamounteur,
     pm_allocatedamounteur: item.pm_allocatedamounteur,
-    pm_availableamounteur: item.pm_availableamounteur,
+    pm_availableamounteur: (item.pm_totalamounteur ?? 0) - (item.pm_allocatedamounteur ?? 0),
     pm_fundingbody: item.pm_fundingbody,
     pm_effectivefromdate: item.pm_effectivefromdate,
     pm_effectivetodate: item.pm_effectivetodate,
@@ -102,8 +103,8 @@ export const mapFundingSource = (item: Pm_fundingsources): FundingSourceModel =>
     pm_programmelookupname: regardingType === 'pm_programmes' ? regardingName : undefined,
     pm_projectname: regardingType === 'pm_projects' ? regardingName : undefined,
     _pm_regardingid_value: item._pm_regardingid_value,
-    pm_regardingidtype: item.pm_regardingidtype,
-    pm_regardingidname: item.pm_regardingidname,
+    pm_regardingidtype: regardingType,
+    pm_regardingidname: regardingName,
     statecode: item.statecode,
   }
 }
@@ -375,9 +376,9 @@ export async function fetchFundingSources(): Promise<FundingSourceModel[]> {
     const selectFields = [
       'pm_fundingsourceid', 'pm_fundingsourcename', 'pm_fundingtype',
       'pm_fundingstatus', 'pm_totalamounteur', 'pm_allocatedamounteur',
-      'pm_availableamounteur', 'pm_fundingbody',
+      'pm_fundingbody',
       'pm_effectivefromdate', 'pm_effectivetodate',
-      'pm_regardingidtype', 'pm_regardingidname', '_pm_regardingid_value',
+      '_pm_regardingid_value',
     ]
     const options: IGetAllOptions = {
       select: selectFields,
@@ -409,9 +410,9 @@ export async function fetchFundingSourceById(fundingSourceId: string): Promise<F
       select: [
         'pm_fundingsourceid', 'pm_fundingsourcename', 'pm_fundingtype',
         'pm_fundingstatus', 'pm_totalamounteur', 'pm_allocatedamounteur',
-        'pm_availableamounteur', 'pm_fundingbody',
+        'pm_fundingbody',
         'pm_effectivefromdate', 'pm_effectivetodate',
-        '_pm_portfolio_value', '_pm_programmelookup_value',
+        '_pm_regardingid_value',
       ],
     })
     if (!result.success) {
@@ -431,6 +432,7 @@ export async function createFundingSource(payload: Partial<FundingSourceModel>):
     const SKIP_VIRTUAL = new Set([
       'pm_referencecode', 'pm_programmename',
       'pm_portfolioname', 'pm_programmelookupname',
+      '_pm_regardingid_value', 'pm_regardingidtype', 'pm_regardingidname',
     ])
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(payload)) {
@@ -442,6 +444,17 @@ export async function createFundingSource(payload: Partial<FundingSourceModel>):
       statecode: 0,
       statuscode: 1,
     }
+
+    const regardingId = normalizeLookupId(payload._pm_regardingid_value)
+    const regardingType = payload.pm_regardingidtype
+    if (regardingId && regardingType) {
+      const typeSuffix = regardingType === 'pm_projects' ? 'pm_project' :
+                         regardingType === 'pm_programmes' ? 'pm_programme' :
+                         regardingType === 'pm_portfolios' ? 'pm_portfolio' :
+                         regardingType === 'pm_initiatives' ? 'pm_initiative' : 'pm_portfolio'
+      cleanPayload[`pm_RegardingId_${typeSuffix}@odata.bind`] = `/${regardingType}(${regardingId})`
+    }
+
     const result = await Pm_fundingsourcesService.create({ ...defaults, ...cleanPayload } as unknown as Pm_fundingsources)
     if (!result.success) {
       console.error('[FinanceService] createFundingSource failed:', result.error)
@@ -472,6 +485,7 @@ export async function updateFundingSource(id: string, changes: Partial<FundingSo
       'pm_fundingsourceid',
       'pm_referencecode', 'pm_programmename',
       'pm_portfolioname', 'pm_programmelookupname',
+      '_pm_regardingid_value', 'pm_regardingidtype', 'pm_regardingidname',
     ])
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(changes)) {
@@ -479,6 +493,17 @@ export async function updateFundingSource(id: string, changes: Partial<FundingSo
         cleanPayload[key] = value
       }
     }
+
+    const regardingId = normalizeLookupId(changes._pm_regardingid_value)
+    const regardingType = changes.pm_regardingidtype
+    if (regardingId && regardingType) {
+      const typeSuffix = regardingType === 'pm_projects' ? 'pm_project' :
+                         regardingType === 'pm_programmes' ? 'pm_programme' :
+                         regardingType === 'pm_portfolios' ? 'pm_portfolio' :
+                         regardingType === 'pm_initiatives' ? 'pm_initiative' : 'pm_portfolio'
+      cleanPayload[`pm_RegardingId_${typeSuffix}@odata.bind`] = `/${regardingType}(${regardingId})`
+    }
+
     const result = await Pm_fundingsourcesService.update(id, cleanPayload as unknown as Pm_fundingsources)
     if (!result.success) {
       console.error('[FinanceService] updateFundingSource failed:', result.error)
@@ -524,6 +549,33 @@ export async function deleteFundingSource(id: string): Promise<void> {
   } catch (err) {
     console.error('[FinanceService] deleteFundingSource exception:', err)
     throw err
+  }
+}
+
+export async function fetchFundingSourcesByRegarding(regardingId: string, regardingType: string): Promise<FundingSourceModel[]> {
+  try {
+    const selectFields = [
+      'pm_fundingsourceid', 'pm_fundingsourcename', 'pm_fundingtype',
+      'pm_fundingstatus', 'pm_totalamounteur', 'pm_allocatedamounteur',
+      'pm_fundingbody',
+      'pm_effectivefromdate', 'pm_effectivetodate',
+      '_pm_regardingid_value',
+    ]
+    const options: IGetAllOptions = {
+      select: selectFields,
+      filter: `statecode eq 0 and _pm_regardingid_value eq '${normalizeLookupId(regardingId)}'`,
+      orderBy: ['createdon desc'],
+      top: 500,
+    }
+    const result = await Pm_fundingsourcesService.getAll(options)
+    if (!result.success) {
+      console.error('[FinanceService] fetchFundingSourcesByRegarding failed:', result.error)
+      return []
+    }
+    return unwrapList<Pm_fundingsources>(result).map(mapFundingSource)
+  } catch (err) {
+    console.error('[FinanceService] fetchFundingSourcesByRegarding exception:', err)
+    return []
   }
 }
 

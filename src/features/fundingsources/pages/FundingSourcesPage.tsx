@@ -25,7 +25,9 @@ import {
   MenuItem,
   Divider,
   Avatar,
+  alpha,
 } from '@mui/material'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -40,6 +42,12 @@ import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import StopCircleIcon from '@mui/icons-material/StopCircle'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import { useAuthorization } from '@/hooks/useAuthorization'
+import {
+  Pm_portfoliosService,
+  Pm_projectsService,
+  Pm_programmesService,
+} from '@/generated'
+import { unwrapList, unwrapSingle } from '@/services/common'
 import type { CrudModule } from '@/constants/permissions'
 import {
   fetchFundingSources,
@@ -162,7 +170,23 @@ export default function FundingSourcesPage() {
     pm_availableamounteur: 0,
     pm_effectivefromdate: '',
     pm_effectivetodate: '',
+    pm_regardingidtype: '',
+    _pm_regardingid_value: '',
   })
+
+  const [portfoliosList, setPortfoliosList] = useState<{ id: string, name: string }[]>([])
+  const [projectsList, setProjectsList] = useState<{ id: string, name: string }[]>([])
+  const [programmesList, setProgrammesList] = useState<{ id: string, name: string }[]>([])
+  const [loadingLookups, setLoadingLookups] = useState(false)
+
+  // Live budget and dates state
+  const [dbApprovedBudget, setDbApprovedBudget] = useState<number>(0)
+  const [loadingBudget, setLoadingBudget] = useState(false)
+  const [entityDates, setEntityDates] = useState<{ start: string | null, end: string | null }>({ start: null, end: null })
+
+  // Options Modal state for budget excess
+  const [showOptionsModal, setShowOptionsModal] = useState(false)
+  const [pendingPayload, setPendingPayload] = useState<any>(null)
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
@@ -184,6 +208,99 @@ export default function FundingSourcesPage() {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  useEffect(() => {
+    const loadLookups = async () => {
+      setLoadingLookups(true)
+      try {
+        const portRes = await Pm_portfoliosService.getAll({ select: ['pm_portfolioid', 'pm_portfolioname'] })
+        if (portRes.success) {
+          setPortfoliosList(unwrapList<any>(portRes).map(p => ({ id: p.pm_portfolioid, name: p.pm_portfolioname })))
+        }
+        const projRes = await Pm_projectsService.getAll({ select: ['pm_projectid', 'pm_projectname'] })
+        if (projRes.success) {
+          setProjectsList(unwrapList<any>(projRes).map(p => ({ id: p.pm_projectid, name: p.pm_projectname })))
+        }
+        const progRes = await Pm_programmesService.getAll({ select: ['pm_programmeid', 'pm_programmename'] })
+        if (progRes.success) {
+          setProgrammesList(unwrapList<any>(progRes).map(p => ({ id: p.pm_programmeid, name: p.pm_programmename })))
+        }
+      } catch (err) {
+        console.error('Error loading lookup lists:', err)
+      } finally {
+        setLoadingLookups(false)
+      }
+    }
+    loadLookups()
+  }, [])
+
+  // Load target budget and dates when connection changes
+  useEffect(() => {
+    if (showFormModal && formData._pm_regardingid_value && formData.pm_regardingidtype) {
+      const loadBudgetAndDates = async () => {
+        setLoadingBudget(true)
+        try {
+          if (formData.pm_regardingidtype === 'pm_portfolios') {
+            const res = await Pm_portfoliosService.get(formData._pm_regardingid_value, { select: ['pm_approvedbudgeteur', 'pm_startdate', 'pm_enddate'] })
+            if (res.success) {
+              const item = unwrapSingle<any>(res)
+              setDbApprovedBudget(Number(item?.pm_approvedbudgeteur ?? 0))
+              setEntityDates({ start: item?.pm_startdate ?? null, end: item?.pm_enddate ?? null })
+            }
+          } else if (formData.pm_regardingidtype === 'pm_projects') {
+            const res = await Pm_projectsService.get(formData._pm_regardingid_value, { select: ['pm_approvedbudget', 'pm_plannedstartdate', 'pm_plannedenddate'] })
+            if (res.success) {
+              const item = unwrapSingle<any>(res)
+              setDbApprovedBudget(Number(item?.pm_approvedbudget ?? 0))
+              setEntityDates({ start: item?.pm_plannedstartdate ?? null, end: item?.pm_plannedenddate ?? null })
+            }
+          } else if (formData.pm_regardingidtype === 'pm_programmes') {
+            const res = await Pm_programmesService.get(formData._pm_regardingid_value, { select: ['pm_budgeteur', 'pm_startdate', 'pm_enddate'] })
+            if (res.success) {
+              const item = unwrapSingle<any>(res)
+              setDbApprovedBudget(Number(item?.pm_budgeteur ?? 0))
+              setEntityDates({ start: item?.pm_startdate ?? null, end: item?.pm_enddate ?? null })
+            }
+          }
+        } catch (err) {
+          console.error('Error loading budget and dates:', err)
+        } finally {
+          setLoadingBudget(false)
+        }
+      }
+      loadBudgetAndDates()
+    } else {
+      setDbApprovedBudget(0)
+      setEntityDates({ start: null, end: null })
+    }
+  }, [formData._pm_regardingid_value, formData.pm_regardingidtype, showFormModal])
+
+  const isTimelineOutside = useMemo(() => {
+    if (!formData.pm_effectivefromdate && !formData.pm_effectivetodate) return false
+    if (!entityDates.start && !entityDates.end) return false
+
+    const fundingStart = formData.pm_effectivefromdate ? new Date(formData.pm_effectivefromdate) : null
+    const fundingEnd = formData.pm_effectivetodate ? new Date(formData.pm_effectivetodate) : null
+    const entityStart = entityDates.start ? new Date(entityDates.start) : null
+    const entityEnd = entityDates.end ? new Date(entityDates.end) : null
+
+    if (fundingStart && entityStart && fundingStart < entityStart) return true
+    if (fundingEnd && entityEnd && fundingEnd > entityEnd) return true
+
+    return false
+  }, [formData.pm_effectivefromdate, formData.pm_effectivetodate, entityDates])
+
+  const liveExistingFundingTotal = useMemo(() => {
+    if (!formData._pm_regardingid_value) return 0
+    return fundingSources
+      .filter((s) => s._pm_regardingid_value === formData._pm_regardingid_value)
+      .filter((s) => !editingSource || s.pm_fundingsourceid !== editingSource.pm_fundingsourceid)
+      .reduce((sum, s) => sum + Number(s.pm_totalamounteur ?? 0), 0)
+  }, [fundingSources, formData._pm_regardingid_value, editingSource])
+
+  const liveTotalFunding = liveExistingFundingTotal + Number(formData.pm_totalamounteur || 0)
+  const isBudgetExceeded = formData._pm_regardingid_value && dbApprovedBudget > 0 && liveTotalFunding > dbApprovedBudget
+  const addableAmount = Math.max(0, dbApprovedBudget - liveExistingFundingTotal)
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
   const kpiItems = useMemo((): KpiCardItem[] => {
@@ -313,6 +430,7 @@ export default function FundingSourcesPage() {
   // ── Form open for create/edit ──
   const openCreateForm = useCallback(() => {
     setEditingSource(null)
+    setError(null)
     setFormData({
       pm_fundingsourcename: '',
       pm_fundingtype: 0,
@@ -323,12 +441,15 @@ export default function FundingSourcesPage() {
       pm_availableamounteur: 0,
       pm_effectivefromdate: '',
       pm_effectivetodate: '',
+      pm_regardingidtype: '',
+      _pm_regardingid_value: '',
     })
     setShowFormModal(true)
   }, [])
 
   const openEditForm = useCallback((source: FundingSourceModel) => {
     setEditingSource(source)
+    setError(null)
     setFormData({
       pm_fundingsourcename: source.pm_fundingsourcename ?? '',
       pm_fundingtype: Number(source.pm_fundingtype) || 0,
@@ -339,11 +460,78 @@ export default function FundingSourcesPage() {
       pm_availableamounteur: source.pm_availableamounteur ?? 0,
       pm_effectivefromdate: source.pm_effectivefromdate?.split('T')[0] ?? '',
       pm_effectivetodate: source.pm_effectivetodate?.split('T')[0] ?? '',
+      pm_regardingidtype: source.pm_regardingidtype ?? '',
+      _pm_regardingid_value: source._pm_regardingid_value ?? '',
     })
     setShowFormModal(true)
   }, [])
 
   // ── Save ──
+  const fetchApprovedBudget = async (entityId: string, entityType: string): Promise<number> => {
+    try {
+      if (entityType === 'pm_portfolios') {
+        const res = await Pm_portfoliosService.get(entityId, { select: ['pm_approvedbudgeteur'] })
+        if (res.success) {
+          const item = unwrapSingle<any>(res)
+          return Number(item?.pm_approvedbudgeteur ?? 0)
+        }
+      } else if (entityType === 'pm_projects') {
+        const res = await Pm_projectsService.get(entityId, { select: ['pm_approvedbudget'] })
+        if (res.success) {
+          const item = unwrapSingle<any>(res)
+          return Number(item?.pm_approvedbudget ?? 0)
+        }
+      } else if (entityType === 'pm_programmes') {
+        const res = await Pm_programmesService.get(entityId, { select: ['pm_budgeteur'] })
+        if (res.success) {
+          const item = unwrapSingle<any>(res)
+          return Number(item?.pm_budgeteur ?? 0)
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching approved budget:', err)
+    }
+    return 0
+  }
+
+  const handleExecuteSave = async (raiseChangeRequest: boolean) => {
+    setShowOptionsModal(false)
+    if (!pendingPayload) return
+    setActionLoading(true)
+    try {
+      if (editingSource?.pm_fundingsourceid) {
+        await updateFundingSource(editingSource.pm_fundingsourceid, pendingPayload)
+        setSuccessMsg(
+          raiseChangeRequest
+            ? 'Funding source updated. Please raise a Change Request to increase the approved budget.'
+            : 'Funding source updated. Excess amount has been placed in Unallocated Reserve.'
+        )
+      } else {
+        const created = await createFundingSource(pendingPayload)
+        if (created?.pm_fundingsourceid) {
+          try {
+            await startWorkflowForEntity('default-template', created.pm_fundingsourceid, MODULE_NAMES.FUNDING_SOURCES.value, 'System')
+          } catch (wfErr) {
+            console.error('[FundingSourcesPage] Failed to initiate workflow:', wfErr)
+          }
+        }
+        setSuccessMsg(
+          raiseChangeRequest
+            ? 'Funding source created. Please raise a Change Request to increase the approved budget.'
+            : 'Funding source created. Excess amount has been placed in Unallocated Reserve.'
+        )
+      }
+      setShowFormModal(false)
+      setTimeout(() => setSuccessMsg(null), 5000)
+      await loadData()
+    } catch {
+      setError('Unable to save funding source.')
+    } finally {
+      setActionLoading(false)
+      setPendingPayload(null)
+    }
+  }
+
   const handleSaveSource = async () => {
     if (!formData.pm_fundingsourcename.trim()) {
       setError('Funding source name is required.')
@@ -359,9 +547,10 @@ export default function FundingSourcesPage() {
         pm_fundingbody: formData.pm_fundingbody || undefined,
         pm_totalamounteur: formData.pm_totalamounteur || 0,
         pm_allocatedamounteur: formData.pm_allocatedamounteur || 0,
-        pm_availableamounteur: formData.pm_availableamounteur || 0,
         pm_effectivefromdate: formData.pm_effectivefromdate || undefined,
         pm_effectivetodate: formData.pm_effectivetodate || undefined,
+        _pm_regardingid_value: formData._pm_regardingid_value || undefined,
+        pm_regardingidtype: formData.pm_regardingidtype || undefined,
       }
 
       if (editingSource?.pm_fundingsourceid) {
@@ -808,6 +997,80 @@ export default function FundingSourcesPage() {
           {editingSource ? 'Edit Funding Source' : 'Add Funding Source'}
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
+          {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
+          {isBudgetExceeded && (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                mb: 2,
+                borderRadius: '16px',
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(237, 108, 2, 0.05)' : 'rgba(237, 108, 2, 0.02)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 2,
+                boxShadow: (theme) => `0 4px 20px ${alpha(theme.palette.warning.main, 0.08)}`,
+                border: '1px solid',
+                borderColor: (theme) => alpha(theme.palette.warning.main, 0.35),
+              }}
+            >
+              <Avatar sx={{ bgcolor: 'warning.main', color: '#fff', width: 36, height: 36 }}>
+                <WarningAmberIcon sx={{ fontSize: 20 }} />
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'warning.main', mb: 0.5, fontFamily: '"Outfit", sans-serif' }}>
+                  Budget Limit Exceeded
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', lineHeight: 1.6 }}>
+                  Total funding for this entity (<span style={{ color: theme.palette.warning.main, fontWeight: 800 }}>{currencyFormatter.format(liveTotalFunding)}</span>) exceeds the approved budget (<span style={{ color: theme.palette.success.main, fontWeight: 800 }}>{currencyFormatter.format(dbApprovedBudget)}</span>). The maximum amount you can add without exceeding the budget is <span style={{ color: theme.palette.success.main, fontWeight: 800 }}>{currencyFormatter.format(addableAmount)}</span>. If you submit this, the excess amount of <span style={{ color: theme.palette.error.main, fontWeight: 800 }}>{currencyFormatter.format(liveTotalFunding - dbApprovedBudget)}</span> will be placed in the Unallocated Reserve. If you do not intend to do so, please click Cancel and first raise the budget via a Change Request.
+                </Typography>
+              </Box>
+            </Paper>
+          )}
+          {isTimelineOutside && (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                mb: 3.5,
+                borderRadius: '16px',
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(237, 108, 2, 0.05)' : 'rgba(237, 108, 2, 0.02)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 2,
+                boxShadow: (theme) => `0 4px 20px ${alpha(theme.palette.warning.main, 0.08)}`,
+                border: '1px solid',
+                borderColor: (theme) => alpha(theme.palette.warning.main, 0.35),
+              }}
+            >
+              <Avatar sx={{ bgcolor: 'warning.main', color: '#fff', width: 36, height: 36 }}>
+                <WarningAmberIcon sx={{ fontSize: 20 }} />
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'warning.main', mb: 0.5, fontFamily: '"Outfit", sans-serif' }}>
+                  Timeline Warning
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', lineHeight: 1.6, mb: 1.5 }}>
+                  The funding timeline falls outside the {formData.pm_regardingidtype === 'pm_portfolios' ? 'Portfolio' : formData.pm_regardingidtype === 'pm_projects' ? 'Project' : 'Programme'} dates (Start: <strong>{entityDates.start ? new Date(entityDates.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</strong>, End: <strong>{entityDates.end ? new Date(entityDates.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</strong>). Please confirm this is correct for pre-planning or extension activities.
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      pm_effectivefromdate: entityDates.start ? entityDates.start.split('T')[0] : '',
+                      pm_effectivetodate: entityDates.end ? entityDates.end.split('T')[0] : '',
+                    })
+                  }}
+                  sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600 }}
+                >
+                  Set Dates to Entity Timeline
+                </Button>
+              </Box>
+            </Paper>
+          )}
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             {editingSource
               ? `Update details for ${editingSource.pm_fundingsourcename}.`
@@ -867,6 +1130,57 @@ export default function FundingSourcesPage() {
             </Grid>
           </Grid>
 
+          {/* Regarding Connection */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <TimelineIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+              Regarding Connection
+            </Typography>
+            <Divider sx={{ flex: 1 }} />
+          </Box>
+          <Grid container spacing={2.5} sx={{ mb: 3 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="regarding-type-label">Regarding Type</InputLabel>
+                <Select
+                  labelId="regarding-type-label"
+                  value={formData.pm_regardingidtype}
+                  label="Regarding Type"
+                  onChange={(e) => setFormData((f) => ({ ...f, pm_regardingidtype: e.target.value as string, _pm_regardingid_value: '' }))}
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  <MenuItem value="">None (Standalone)</MenuItem>
+                  <MenuItem value="pm_portfolios">Portfolio</MenuItem>
+                  <MenuItem value="pm_programmes">Programme</MenuItem>
+                  <MenuItem value="pm_projects">Project</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth size="small" disabled={!formData.pm_regardingidtype || loadingLookups}>
+                <InputLabel id="regarding-record-label">Regarding Record</InputLabel>
+                <Select
+                  labelId="regarding-record-label"
+                  value={formData._pm_regardingid_value}
+                  label="Regarding Record"
+                  onChange={(e) => setFormData((f) => ({ ...f, _pm_regardingid_value: e.target.value as string }))}
+                  sx={{ borderRadius: 1.5 }}
+                >
+                  <MenuItem value="">Select Record...</MenuItem>
+                  {formData.pm_regardingidtype === 'pm_portfolios' && portfoliosList.map(p => (
+                    <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                  ))}
+                  {formData.pm_regardingidtype === 'pm_programmes' && programmesList.map(p => (
+                    <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                  ))}
+                  {formData.pm_regardingidtype === 'pm_projects' && projectsList.map(p => (
+                    <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+
           {/* Funding Amounts */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <EuroIcon sx={{ fontSize: 18, color: 'success.main' }} />
@@ -876,36 +1190,14 @@ export default function FundingSourcesPage() {
             <Divider sx={{ flex: 1 }} />
           </Box>
           <Grid container spacing={2.5} sx={{ mb: 3 }}>
-            <Grid size={{ xs: 12, sm: 4 }}>
+            <Grid size={{ xs: 12 }}>
               <TextField
-                label="Total Amount"
+                label="Total Amount (EUR)"
                 type="number"
                 fullWidth
                 size="small"
                 value={formData.pm_totalamounteur}
                 onChange={(e) => setFormData((f) => ({ ...f, pm_totalamounteur: Number(e.target.value) || 0 }))}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                label="Allocated Amount"
-                type="number"
-                fullWidth
-                size="small"
-                value={formData.pm_allocatedamounteur}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_allocatedamounteur: Number(e.target.value) || 0 }))}
-                slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                label="Available Amount"
-                type="number"
-                fullWidth
-                size="small"
-                value={formData.pm_availableamounteur}
-                onChange={(e) => setFormData((f) => ({ ...f, pm_availableamounteur: Number(e.target.value) || 0 }))}
                 slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
               />
             </Grid>

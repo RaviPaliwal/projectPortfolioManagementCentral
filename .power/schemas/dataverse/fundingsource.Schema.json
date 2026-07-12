@@ -241,21 +241,6 @@
           "x-ms-schema-name": "pm_allocatedamounteur_Base",
           "x-ms-read-only": true
         },
-        "pm_availableamounteur": {
-          "type": "string",
-          "title": "Available Amount (EUR)",
-          "x-ms-dataverse-attribute": "pm_availableamounteur",
-          "x-ms-dataverse-type": "MoneyType",
-          "x-ms-schema-name": "pm_availableamounteur"
-        },
-        "pm_availableamounteur_base": {
-          "type": "string",
-          "title": "Available Amount (EUR) (Base)",
-          "x-ms-dataverse-attribute": "pm_availableamounteur_base",
-          "x-ms-dataverse-type": "MoneyType",
-          "x-ms-schema-name": "pm_availableamounteur_Base",
-          "x-ms-read-only": true
-        },
         "pm_effectivefromdate": {
           "type": "string",
           "title": "Effective From",

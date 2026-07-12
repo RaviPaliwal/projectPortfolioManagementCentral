@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Box,
   Paper,
@@ -31,6 +31,8 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
+import AddIcon from '@mui/icons-material/Add'
+import { EntityFundingSourcesTab } from '@/features/fundingsources/components'
 
 import { StatusChip, StatusTag, TabPanel, Breadcrumbs, PageHeader, ActionIcon, EntityDocumentsTab, WorkflowMilestone } from '@/components/common'
 import type { ProjectModel, ProjectMilestoneModel, RiskModel, IssueModel, BudgetLineModel, BenefitModel, ProjectTaskModel, GateReviewModel } from '@/types/dataverse'
@@ -39,6 +41,7 @@ import { fontSizes } from '@/styles'
 import { EntityApprovalTasks } from '@/features/dashboard/components/EntityApprovalTasks'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 import { useAuthorization } from '@/hooks/useAuthorization'
+import { fetchFundingSourcesByRegarding } from '@/services'
 
 import { ProjectOverviewTab } from './tabs/ProjectOverviewTab'
 import { ProjectFinancialsTab } from './tabs/ProjectFinancialsTab'
@@ -168,12 +171,37 @@ export const Project360View: React.FC<Project360ViewProps> = ({
   const { allowed: canUpdateIssues } = useAuthorization('ISSUES', 'update')
   const { allowed: canDeleteIssues } = useAuthorization('ISSUES', 'delete')
 
+  const { allowed: canReadFunding } = useAuthorization('FUNDING_SOURCES', 'read')
+  const { allowed: canCreateFunding } = useAuthorization('FUNDING_SOURCES', 'create')
+
   const { allowed: canReadGateReviews } = useAuthorization('GATE_REVIEWS', 'read')
   const { allowed: canCreateGateReviews } = useAuthorization('GATE_REVIEWS', 'create')
   const { allowed: canUpdateGateReviews } = useAuthorization('GATE_REVIEWS', 'update')
   const { allowed: canDeleteGateReviews } = useAuthorization('GATE_REVIEWS', 'delete')
 
   const [activeTab, setActiveTab] = useState<string>('overview')
+  const fundingTabRef = useRef<{ triggerCreate: () => void } | null>(null)
+
+  const [unallocatedReserve, setUnallocatedReserve] = useState(0)
+
+  const loadUnallocatedReserve = useCallback(async () => {
+    if (!project?.pm_projectid) {
+      setUnallocatedReserve(0)
+      return
+    }
+    try {
+      const list = await fetchFundingSourcesByRegarding(project.pm_projectid, 'pm_projects')
+      const total = list.reduce((sum, s) => sum + (s.pm_totalamounteur ?? 0), 0)
+      const budget = project.pm_approvedbudget ?? 0
+      setUnallocatedReserve(total > budget ? total - budget : 0)
+    } catch {
+      setUnallocatedReserve(0)
+    }
+  }, [project])
+
+  useEffect(() => {
+    loadUnallocatedReserve()
+  }, [loadUnallocatedReserve])
   const [activeRisk, setActiveRisk] = useState<RiskModel | null>(null)
   const [activeIssue, setActiveIssue] = useState<IssueModel | null>(null)
   const [activeBenefit, setActiveBenefit] = useState<BenefitModel | null>(null)
@@ -234,6 +262,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
     { id: 'governance', label: 'Governance', icon: <HowToRegIcon fontSize="small" />, visible: canReadGateReviews },
     { id: 'tasks', label: 'Tasks', icon: <AssignmentIcon fontSize="small" /> },
     { id: 'documents', label: 'Documents', icon: <InsertDriveFileIcon fontSize="small" /> },
+    { id: 'funding', label: 'Funding Sources', icon: <AttachMoneyIcon fontSize="small" />, visible: canReadFunding },
   ]
 
   const tabs = allTabs.filter(t => t.visible !== false)
@@ -365,6 +394,7 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   risks={risks}
                   issues={issues}
                   benefits={benefits}
+                  unallocatedReserve={unallocatedReserve}
                 />
               )}
               {activeTab === 'schedule' && (
@@ -469,6 +499,14 @@ export const Project360View: React.FC<Project360ViewProps> = ({
                   entityId={project.pm_projectid}
                   moduleName={MODULE_NAMES.PROJECTS.value}
                   canEdit={canEdit}
+                />
+              )}
+              {activeTab === 'funding' && project.pm_projectid && (
+                <EntityFundingSourcesTab
+                  ref={fundingTabRef}
+                  entityId={project.pm_projectid}
+                  entityType="pm_projects"
+                  onFundingSourcesChanged={loadUnallocatedReserve}
                 />
               )}
             </>

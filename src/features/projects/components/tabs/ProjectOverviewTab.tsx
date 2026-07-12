@@ -36,6 +36,7 @@ interface ProjectOverviewTabProps {
   risks?: RiskModel[]
   issues?: IssueModel[]
   benefits?: BenefitModel[]
+  unallocatedReserve?: number
 }
 
 const getRagDetails = (ragVal?: string | number | null) => {
@@ -71,6 +72,7 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
   risks = [],
   issues = [],
   benefits = [],
+  unallocatedReserve = 0,
 }) => {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -149,8 +151,15 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
       subtitle: `${milestoneStats.pending} pending milestone${milestoneStats.pending !== 1 ? 's' : ''}`,
       icon: <FlagIcon />,
       color: 'secondary.main',
-    }
-  ], [taskStats.avgProgress, percentSpent, riskStats.activeRisks, riskStats.openIssues, riskStats.criticalRisks, riskStats.criticalIssues, milestoneStats.completed, milestoneStats.total, milestoneStats.pending])
+    },
+    ...(unallocatedReserve > 0 ? [{
+      label: 'Unallocated Reserve',
+      value: currency(unallocatedReserve),
+      subtitle: 'Excess funding reserve',
+      icon: <AttachMoneyIcon />,
+      color: 'info.main',
+    }] : [])
+  ], [taskStats.avgProgress, percentSpent, riskStats.activeRisks, riskStats.openIssues, riskStats.criticalRisks, riskStats.criticalIssues, milestoneStats.completed, milestoneStats.total, milestoneStats.pending, unallocatedReserve])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -240,23 +249,31 @@ export const ProjectOverviewTab: React.FC<ProjectOverviewTabProps> = ({
               </Box>
 
               <Grid container spacing={2}>
-                <Grid size={{ xs: 4 }}>
+                <Grid size={{ xs: 3 }}>
                   <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'action.hover' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Approved Budget</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>{currency(budget)}</Typography>
                   </Paper>
                 </Grid>
-                <Grid size={{ xs: 4 }}>
+                <Grid size={{ xs: 3 }}>
                   <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'action.hover' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Actual Spend</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 700, color: 'info.main' }}>{currency(actual)}</Typography>
                   </Paper>
                 </Grid>
-                <Grid size={{ xs: 4 }}>
+                <Grid size={{ xs: 3 }}>
                   <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'action.hover' }}>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Variance</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 700, color: variance >= 0 ? 'success.main' : 'error.main' }}>
                       {currency(variance)}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid size={{ xs: 3 }}>
+                  <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'action.hover' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Unallocated Reserve</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: unallocatedReserve > 0 ? 'warning.main' : 'text.primary' }}>
+                      {currency(unallocatedReserve)}
                     </Typography>
                   </Paper>
                 </Grid>
