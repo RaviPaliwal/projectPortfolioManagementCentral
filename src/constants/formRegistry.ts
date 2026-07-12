@@ -61,6 +61,9 @@ const ChangeRequestImpactAssessmentTaskModalWrapper = lazy(() =>
 const ProgrammeApprovalTaskModalWrapper = lazy(() =>
   import('@/features/programmes/components').then((m) => ({ default: m.ProgrammeApprovalTaskModalWrapper }))
 )
+const ProgrammeFinanceTaskModalWrapper = lazy(() =>
+  import('@/features/programmes/components').then((m) => ({ default: m.ProgrammeFinanceTaskModalWrapper }))
+)
 const ChecklistTaskModal = lazy(() =>
   import('@/features/dashboard/components').then((m) => ({ default: m.ChecklistTaskModal }))
 )
@@ -243,6 +246,13 @@ export const FORM_REGISTRY: FormRegistryEntry[] = [
     displayName: 'Programme Approval',
     description: 'Review and approve programme creation or stage transition.',
     modalComponent: ProgrammeApprovalTaskModalWrapper,
+  },
+  {
+    key: 'programme_finance_decision',
+    moduleName: 'Programmes',
+    displayName: 'Programme Finance Decision',
+    description: 'Review programme budget details — verify budget/cost from parent portfolio, and decide the final approved budget for this programme.',
+    modalComponent: ProgrammeFinanceTaskModalWrapper,
   },
   {
     key: 'CHECKLIST_APPROVAL_TASK',

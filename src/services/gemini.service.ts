@@ -176,7 +176,7 @@ The user prompt may contain a block "[Current Form Fields State ...]" representi
 Here are the target fields and guidelines:
 - "pm_initiativename": Clear name of the project or initiative. MUST be under 100 characters.
 - "pm_businesscasedescription": Summary justification and description of the initiative.
-- "pm_estimatedcosteur": Total estimated cost in Euros (numeric). Default to 0 if unknown.
+- "pm_estimatedcosteur": Total estimated budget in Euros (numeric). Default to 0 if unknown.
 - "pm_estimatedbenefitseur": Total estimated benefit in Euros (numeric). Default to 0 if unknown.
 - "pm_initiativetype": Integer code: 0 = Project, 1 = Programme, 2 = Portfolio. (If they say "project", set 0. If "programme" or "program", set 1. If "portfolio", set 2).
 - "matched_portfolio_id": Find the best matching portfolio ID from the Portfolios list below. Set null if no match.

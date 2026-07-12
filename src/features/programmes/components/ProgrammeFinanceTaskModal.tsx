@@ -2,21 +2,21 @@ import React, { useState, useEffect, useCallback, type ComponentType } from 'rea
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Grid, Box, Typography,
   Button, IconButton, CircularProgress, Chip, Paper, TextField, Avatar,
-  Select, MenuItem, FormControl, InputLabel, useTheme, Divider
+  Divider, useTheme,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import DescriptionIcon from '@mui/icons-material/Description'
-import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
 import BusinessIcon from '@mui/icons-material/Business'
-import StarBorderIcon from '@mui/icons-material/StarBorder'
+import PersonIcon from '@mui/icons-material/Person'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
-import { fetchPortfolioHierarchy, updatePortfolio } from '@/services/portfolio.service'
+import StarBorderIcon from '@mui/icons-material/StarBorder'
+import { fetchProgrammeDetails, updateProgramme } from '@/services/programme.service'
 import { fetchInitiatives } from '@/services/initiative.service'
 import { fetchSystemUsers } from '@/services/team.service'
-import type { PortfolioModel } from '@/types/dataverse'
+import type { ProgrammeModel } from '@/types/dataverse'
 import { dispatchFormDialogDecision } from '@/utils/formDialogEvents'
 import { StatusTag } from '@/components/common'
 import { currencyFormatter } from '@/utils/formatters'
@@ -24,7 +24,7 @@ import { useUser } from '@/context/UserContext'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 import { alpha } from '@mui/material/styles'
 
-interface PortfolioFinanceTaskModalProps {
+interface ProgrammeFinanceTaskModalProps {
   open: boolean
   onClose: () => void
   entityId?: string | null
@@ -34,7 +34,14 @@ interface PortfolioFinanceTaskModalProps {
   approvalStepId?: string
 }
 
-export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps> = ({
+const PHASE_LABELS: Record<number, { label: string; color: 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+  0: { label: 'Delivery', color: 'success' },
+  1: { label: 'Planning', color: 'warning' },
+  2: { label: 'Initiation', color: 'info' },
+  3: { label: 'Under Approval', color: 'warning' },
+}
+
+export const ProgrammeFinanceTaskModal: React.FC<ProgrammeFinanceTaskModalProps> = ({
   open, onClose, entityId, onSuccess, onError,
   DecisionBox: DecisionBoxProp, approvalStepId,
 }) => {
@@ -43,18 +50,18 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [portfolio, setPortfolio] = useState<PortfolioModel | null>(null)
+  const [programme, setProgramme] = useState<ProgrammeModel | null>(null)
   const [askedBudget, setAskedBudget] = useState<number | null>(null)
   const [approvedBudget, setApprovedBudget] = useState<number>(0)
 
-  // Form states for editable fields
-  const [ownerId, setOwnerId] = useState<string>('')
+  // Form states (read-only in UI, but loaded/saved)
+  const [managerId, setManagerId] = useState<string>('')
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
   const [description, setDescription] = useState<string>('')
-  const [strategicObjective, setStrategicObjective] = useState<string>('')
   const [businessUnit, setBusinessUnit] = useState<string>('')
-  const [priorityLevel, setPriorityLevel] = useState<number>(2) // Default: Medium (2)
+  const [sponsorName, setSponsorName] = useState<string>('')
+  const [portfolioName, setPortfolioName] = useState<string>('')
 
   // Sync users state when context users resolve
   useEffect(() => {
@@ -67,8 +74,8 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
     if (!entityId) return
     setLoading(true)
     try {
-      const [hierarchy, directUsers, inits] = await Promise.all([
-        fetchPortfolioHierarchy(),
+      const [detail, directUsers, inits] = await Promise.all([
+        fetchProgrammeDetails(entityId),
         (!contextUsers || contextUsers.length === 0) ? fetchSystemUsers() : Promise.resolve(null),
         fetchInitiatives()
       ])
@@ -77,31 +84,31 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
         setUsers(directUsers)
       }
 
-      const found = hierarchy.portfolios.find(p => p.pm_portfolioid === entityId)
-      if (!found) { onError('Portfolio not found.'); setLoading(false); return }
-      setPortfolio(found)
+      const p = detail.programme
+      if (!p) { onError('Programme not found.'); setLoading(false); return }
+      setProgramme(p)
 
       const linkedInit = inits.find(i => i.pm_convertedtoreference === entityId)
       if (linkedInit && linkedInit.pm_estimatedcost != null) {
         setAskedBudget(linkedInit.pm_estimatedcost)
         setApprovedBudget(linkedInit.pm_estimatedcost)
       } else {
-        const fallback = found.pm_approvedbudgeteur ?? 0
+        const fallback = p.pm_budgeteur ?? 0
         setAskedBudget(fallback || null)
         setApprovedBudget(fallback)
       }
 
       // Initialize form fields
-      setOwnerId(found.pm_ownerlookup ? found.pm_ownerlookup.replace(/[{}]/g, '').toLowerCase() : '')
-      setStartDate(found.pm_startdate ? found.pm_startdate.split('T')[0] : '')
-      setEndDate(found.pm_enddate ? found.pm_enddate.split('T')[0] : '')
-      setDescription(found.pm_portfoliodescription || '')
-      setStrategicObjective(found.pm_strategicobjective || '')
-      setBusinessUnit(found.pm_businessunit || '')
-      setPriorityLevel(found.pm_prioritylevel != null ? Number(found.pm_prioritylevel) : 2)
+      setManagerId(p.pm_programmemanager ? p.pm_programmemanager.replace(/[{}]/g, '').toLowerCase() : '')
+      setStartDate(p.pm_startdate ? p.pm_startdate.split('T')[0] : '')
+      setEndDate(p.pm_enddate ? p.pm_enddate.split('T')[0] : '')
+      setDescription(p.pm_programmedescription || '')
+      setBusinessUnit(p.pm_businessunit || '')
+      setSponsorName(p.pm_sponsorname || '')
+      setPortfolioName(p.pm_portfolioname || '')
     } catch (err) {
-      console.error('Failed to load portfolio finance details', err)
-      onError('Failed to load portfolio details.')
+      console.error('Failed to load programme finance details', err)
+      onError('Failed to load programme details.')
     } finally { setLoading(false) }
   }, [entityId, contextUsers, onError])
 
@@ -114,30 +121,28 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
     setSaving(true)
     try {
       // DecisionBox values: 0 = Approve, 3 = Reject
-      const targetStatus = workflowDecision === 0 ? 0 : 2
+      // Approved phase: Delivery (0). Rejected phase: Planning (1)
+      const targetPhase = workflowDecision === 0 ? 0 : 1
 
       // Save approved budget and target status to Dataverse
-      await updatePortfolio(entityId, {
-        pm_ownerlookup: ownerId || undefined,
+      await updateProgramme(entityId, {
+        pm_programmemanager: managerId || undefined,
         pm_startdate: startDate || undefined,
         pm_enddate: endDate || undefined,
-        pm_portfoliodescription: description || undefined,
-        pm_strategicobjective: strategicObjective || undefined,
-        pm_businessunit: businessUnit || undefined,
-        pm_prioritylevel: priorityLevel,
-        pm_approvedbudgeteur: workflowDecision === 0 ? approvedBudget : undefined,
-        pm_portfoliostatus: targetStatus,
+        pm_programmedescription: description || undefined,
+        pm_budgeteur: workflowDecision === 0 ? approvedBudget : undefined,
+        pm_programmephase: targetPhase,
       })
 
       const outcomeLabel = workflowDecision === 0 ? 'Approved' : 'Rejected'
-      onSuccess(`Portfolio Finance Decision recorded. Budget Approved: ${currencyFormatter.format(approvedBudget)}. Outcome: ${outcomeLabel}.`)
+      onSuccess(`Programme Finance Decision recorded. Budget Approved: ${currencyFormatter.format(approvedBudget)}. Outcome: ${outcomeLabel}.`)
       return true
     } catch (err) {
-      console.error('[PortfolioFinanceTaskModal] saveTaskData error:', err)
-      onError('Failed to record portfolio decision.')
+      console.error('[ProgrammeFinanceTaskModal] saveTaskData error:', err)
+      onError('Failed to record programme decision.')
       return false
     } finally { setSaving(false) }
-  }, [entityId, ownerId, startDate, endDate, description, strategicObjective, businessUnit, priorityLevel, approvedBudget, onSuccess, onError])
+  }, [entityId, managerId, startDate, endDate, description, approvedBudget, onSuccess, onError])
 
   if (!open) return null
 
@@ -146,7 +151,7 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', py: 2, px: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <AccountBalanceWalletIcon sx={{ color: 'primary.main' }} />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>Portfolio Finance Approval</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>Programme Finance Approval</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Chip label="Finance Review" color="info" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
@@ -161,13 +166,13 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* Portfolio context card */}
+            {/* Programme context card */}
             <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
               <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1, display: 'block', mb: 1.5 }}>
-                Portfolio context
+                Programme Context
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 800, mb: 3 }}>
-                {portfolio?.pm_portfolioname || 'Loading...'}
+                {programme?.pm_programmename || 'Loading...'}
               </Typography>
 
               <Grid container spacing={3.5}>
@@ -259,10 +264,44 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
                   </Paper>
                 </Grid>
 
-                {/* Read-only Portfolio Context Details */}
+                {/* Read-only Programme Context Details */}
                 <Grid size={{ xs: 12 }}>
                   <Box sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 3, mt: 1.5 }}>
                     <Grid container spacing={3}>
+                      {/* Parent Portfolio */}
+                      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08), color: 'primary.main', width: 40, height: 40 }}>
+                            <BusinessIcon fontSize="small" />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                              Parent Portfolio
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', mt: 0.25 }}>
+                              {portfolioName || '—'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Grid>
+
+                      {/* Business Sponsor */}
+                      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08), color: 'primary.main', width: 40, height: 40 }}>
+                            <PersonIcon fontSize="small" />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                              Business Sponsor
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', mt: 0.25 }}>
+                              {sponsorName || '—'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Grid>
+
                       {/* Business Unit */}
                       <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -280,31 +319,11 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
                         </Box>
                       </Grid>
 
-                      {/* Priority */}
-                      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Avatar sx={{ bgcolor: alpha(theme.palette.warning.main, 0.08), color: 'warning.main', width: 40, height: 40 }}>
-                            <StarBorderIcon fontSize="small" />
-                          </Avatar>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
-                              Priority
-                            </Typography>
-                            <Chip 
-                              label={priorityLevel === 1 ? 'High' : priorityLevel === 2 ? 'Medium' : priorityLevel === 3 ? 'Low' : priorityLevel === 4 ? 'Very Low' : '—'}
-                              color={priorityLevel === 1 ? 'error' : priorityLevel === 2 ? 'warning' : 'primary'}
-                              size="small"
-                              sx={{ fontWeight: 700, mt: 0.5, height: 20 }}
-                            />
-                          </Box>
-                        </Box>
-                      </Grid>
-
-                      {/* Portfolio Owner */}
+                      {/* Programme Manager */}
                       <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                           {(() => {
-                            const user = users.find((u) => u.systemuserid?.replace(/[{}]/g, '').toLowerCase() === ownerId)
+                            const user = users.find((u) => u.systemuserid?.replace(/[{}]/g, '').toLowerCase() === managerId)
                             return (
                               <>
                                 <Avatar 
@@ -321,7 +340,7 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
                                 </Avatar>
                                 <Box>
                                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
-                                    Portfolio Owner
+                                    Programme Manager
                                   </Typography>
                                   <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', mt: 0.25 }}>
                                     {user?.fullname || '—'}
@@ -367,24 +386,33 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
                         </Box>
                       </Grid>
 
-                      {/* Statuses */}
+                      {/* Phase & RAG */}
                       <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, height: '100%' }}>
                           <Box>
                             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>
-                              Overall RAG / Status
+                              Overall RAG / Phase
                             </Typography>
                             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                              {portfolio?.pm_ragstatus != null ? (
+                              {programme?.pm_ragstatus != null ? (
                                 <StatusTag
-                                  label={portfolio.pm_ragstatus === 1 ? 'Green' : portfolio.pm_ragstatus === 0 ? 'Amber' : 'Red'}
-                                  color={portfolio.pm_ragstatus === 1 ? 'success' : portfolio.pm_ragstatus === 0 ? 'warning' : 'error'}
+                                  label={programme.pm_ragstatus === 1 ? 'Green' : programme.pm_ragstatus === 0 ? 'Amber' : 'Red'}
+                                  color={programme.pm_ragstatus === 1 ? 'success' : programme.pm_ragstatus === 0 ? 'warning' : 'error'}
                                   size="small"
                                   variant="outlined"
                                   sx={{ fontWeight: 700 }}
                                 />
                               ) : null}
-                              <StatusTag label="Under Finance Review" color="info" size="small" sx={{ fontWeight: 700 }} />
+                              {programme?.pm_programmephase != null ? (
+                                <StatusTag 
+                                  label={PHASE_LABELS[Number(programme.pm_programmephase)]?.label || 'Under Approval'} 
+                                  color={PHASE_LABELS[Number(programme.pm_programmephase)]?.color || 'info'} 
+                                  size="small" 
+                                  sx={{ fontWeight: 700 }} 
+                                />
+                              ) : (
+                                <StatusTag label="Under Finance Review" color="info" size="small" sx={{ fontWeight: 700 }} />
+                              )}
                             </Box>
                           </Box>
                         </Box>
@@ -395,7 +423,7 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
               </Grid>
             </Paper>
 
-            {/* Description & Objective read-only card */}
+            {/* Description read-only card */}
             <Paper 
               variant="outlined" 
               sx={{ 
@@ -403,13 +431,9 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
                 borderRadius: '16px', 
                 bgcolor: 'background.paper', 
                 borderColor: 'divider',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2.5
+                boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
               }}
             >
-              {/* Description Section */}
               <Box sx={{ pl: 2, borderLeft: '3px solid', borderColor: 'primary.main' }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
                   <DescriptionIcon fontSize="small" sx={{ color: 'primary.main' }} />
@@ -417,19 +441,6 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
                 </Typography>
                 <Typography variant="body2" color="text.primary" sx={{ lineHeight: 1.6, whiteSpace: 'pre-wrap', fontWeight: 500 }}>
                   {description || 'No description provided.'}
-                </Typography>
-              </Box>
-
-              <Divider />
-
-              {/* Strategic Objectives Section */}
-              <Box sx={{ pl: 2, borderLeft: '3px solid', borderColor: 'warning.main' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
-                  <LightbulbIcon fontSize="small" sx={{ color: 'warning.main' }} />
-                  Strategic Objectives
-                </Typography>
-                <Typography variant="body2" color="text.primary" sx={{ lineHeight: 1.6, whiteSpace: 'pre-wrap', fontWeight: 500 }}>
-                  {strategicObjective || 'No strategic objectives defined.'}
                 </Typography>
               </Box>
             </Paper>
@@ -440,9 +451,9 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
                 <FactCheckIcon sx={{ fontSize: 16 }} /> After Your Decision
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.8rem' }}>
-                <strong>Approved:</strong> Portfolio status changes to <em>Active</em> and sets final approved budget, enabling programme creation and child resource allocations.
+                <strong>Approved:</strong> Programme phase changes to <em>Delivery</em> and sets final approved budget, enabling project creation and child resource allocations.
                 <br />
-                <strong>Rejected:</strong> Portfolio status set to <em>Rejected</em>. The portfolio owner will be notified with decision notes.
+                <strong>Rejected:</strong> Programme phase returned to <em>Planning</em>. The programme manager will be notified with decision notes.
               </Typography>
             </Box>
           </Box>
@@ -455,7 +466,7 @@ export const PortfolioFinanceTaskModal: React.FC<PortfolioFinanceTaskModalProps>
             approvalStepId={approvalStepId}
             onBeforeDecision={saveTaskData}
             onDecisionComplete={(decision) => {
-              dispatchFormDialogDecision({ formKey: 'portfolio_finance_decision', decision })
+              dispatchFormDialogDecision({ formKey: 'programme_finance_decision', decision })
               onClose()
             }}
             onDecisionError={(msg) => onError(msg)}

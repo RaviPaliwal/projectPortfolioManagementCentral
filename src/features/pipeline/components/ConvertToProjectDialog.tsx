@@ -155,6 +155,11 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
     }
   }, [open, initiative])
 
+  // ── Selected portfolio display name ────────────────────────────────────
+  const selectedPortfolio = portfolios.find(
+    (p) => p.pm_portfolioid === form._pm_portfolio_value
+  )
+
   // ── Programme validation ───────────────────────────────────────────────
   const selectedProgramme = useMemo(() => {
     if (initiative?.pm_initiativetype !== 0) return null
@@ -174,22 +179,40 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
 
   const dateErrors = useMemo(() => {
     const errors: { startDate?: string; endDate?: string } = {}
-    if (!selectedProgramme) return errors
-    const progStart = selectedProgramme.pm_startdate
-    const progEnd = selectedProgramme.pm_enddate
-    if (!progStart || !progEnd) return errors
+    
+    // Project conversion: validate against selectedProgramme
+    if (initiative?.pm_initiativetype === 0 && selectedProgramme) {
+      const progStart = selectedProgramme.pm_startdate
+      const progEnd = selectedProgramme.pm_enddate
+      if (progStart && progEnd) {
+        if (form.pm_plannedstartdate && form.pm_plannedstartdate < progStart) {
+          errors.startDate = `Cannot be before programme start (${new Date(progStart).toLocaleDateString()})`
+        }
+        if (form.pm_plannedenddate && form.pm_plannedenddate > progEnd) {
+          errors.endDate = `Cannot be after programme end (${new Date(progEnd).toLocaleDateString()})`
+        }
+      }
+    }
+    
+    // Programme conversion: validate against selectedPortfolio
+    if (initiative?.pm_initiativetype === 1 && selectedPortfolio) {
+      const portStart = selectedPortfolio.pm_startdate
+      const portEnd = selectedPortfolio.pm_enddate
+      if (portStart && portEnd) {
+        if (form.pm_plannedstartdate && form.pm_plannedstartdate < portStart) {
+          errors.startDate = `Cannot be before portfolio start (${new Date(portStart).toLocaleDateString()})`
+        }
+        if (form.pm_plannedenddate && form.pm_plannedenddate > portEnd) {
+          errors.endDate = `Cannot be after portfolio end (${new Date(portEnd).toLocaleDateString()})`
+        }
+      }
+    }
 
-    if (form.pm_plannedstartdate && form.pm_plannedstartdate < progStart) {
-      errors.startDate = `Cannot be before programme start (${new Date(progStart).toLocaleDateString()})`
-    }
-    if (form.pm_plannedenddate && form.pm_plannedenddate > progEnd) {
-      errors.endDate = `Cannot be after programme end (${new Date(progEnd).toLocaleDateString()})`
-    }
     if (form.pm_plannedstartdate && form.pm_plannedenddate && form.pm_plannedstartdate > form.pm_plannedenddate) {
       errors.endDate = 'End date must be after start date'
     }
     return errors
-  }, [form.pm_plannedstartdate, form.pm_plannedenddate, selectedProgramme])
+  }, [form.pm_plannedstartdate, form.pm_plannedenddate, selectedProgramme, selectedPortfolio, initiative?.pm_initiativetype])
 
   const hasDateErrors = !!dateErrors.startDate || !!dateErrors.endDate
   const hasBudgetError = programmeBudgetInfo !== null && form.pm_approvedbudget > programmeBudgetInfo.availableBudget
@@ -201,7 +224,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
     if (type === 0) {
       return form.pm_projectname.trim() && form.pm_projectmanager && !hasDateErrors && !hasBudgetError
     } else if (type === 1) {
-      return form.pm_programmename.trim() && form.pm_programmemanager
+      return form.pm_programmename.trim() && form.pm_programmemanager && !hasDateErrors
     } else if (type === 2) {
       return form.pm_portfolioname.trim() && form.pm_ownerlookup
     }
@@ -213,10 +236,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
     !form._pm_portfolio_value || p._pm_portfolio_value === form._pm_portfolio_value
   )
 
-  // ── Selected portfolio display name ────────────────────────────────────
-  const selectedPortfolio = portfolios.find(
-    (p) => p.pm_portfolioid === form._pm_portfolio_value
-  )
+
 
   // ── Handle form field changes ──────────────────────────────────────────
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { value: any } }) => {
@@ -321,7 +341,7 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               <>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider' }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Estimated Cost (from initiative)</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>Estimated Budget (from initiative)</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, fontFamily: '"JetBrains Mono", monospace' }}>
                       {initiative?.pm_estimatedcost ? currencyFormatter.format(initiative.pm_estimatedcost) : '—'}
                     </Typography>
@@ -820,6 +840,20 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
               </Typography>
             </Paper>
           )}
+
+          {initiative?.pm_initiativetype === 1 && selectedPortfolio && selectedPortfolio.pm_startdate && (
+            <Paper variant="outlined" sx={{ p: 1.5, mb: 2, bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'grey.50', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <TimelineIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+              <Typography variant="caption" color="text.secondary">
+                Portfolio date range:{' '}
+                <strong>{new Date(selectedPortfolio.pm_startdate).toLocaleDateString()}</strong>
+                {' — '}
+                <strong>{selectedPortfolio.pm_enddate ? new Date(selectedPortfolio.pm_enddate).toLocaleDateString() : 'No end date'}</strong>
+                {' · Programme must be within this range'}
+              </Typography>
+            </Paper>
+          )}
+
           <Grid container spacing={2.5}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
@@ -830,8 +864,8 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                 label="Planned Start"
                 value={form.pm_plannedstartdate}
                 onChange={handleChange('pm_plannedstartdate')}
-                error={initiative?.pm_initiativetype === 0 && !!dateErrors.startDate}
-                helperText={(initiative?.pm_initiativetype === 0 && dateErrors.startDate) || ''}
+                error={!!dateErrors.startDate}
+                helperText={dateErrors.startDate || ''}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -843,8 +877,8 @@ export const ConvertToProjectDialog: React.FC<ConvertToProjectDialogProps> = ({
                 label="Planned End"
                 value={form.pm_plannedenddate}
                 onChange={handleChange('pm_plannedenddate')}
-                error={initiative?.pm_initiativetype === 0 && !!dateErrors.endDate}
-                helperText={(initiative?.pm_initiativetype === 0 && dateErrors.endDate) || ''}
+                error={!!dateErrors.endDate}
+                helperText={dateErrors.endDate || ''}
               />
             </Grid>
           </Grid>

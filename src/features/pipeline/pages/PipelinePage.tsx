@@ -1067,7 +1067,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                  <TableHeader cells={[
                   { label: 'Initiative Name', sortable: true, active: sort.field === 'name', dir: sort.dir, onClick: () => handleSort('name') },
                   { label: 'Business Sponsor', sortable: true, active: sort.field === 'sponsor', dir: sort.dir, onClick: () => handleSort('sponsor') },
-                  { label: 'Estimated Cost', sortable: true, active: sort.field === 'estimatedCost', dir: sort.dir, onClick: () => handleSort('estimatedCost') },
+                  { label: 'Estimated Budget', sortable: true, active: sort.field === 'estimatedCost', dir: sort.dir, onClick: () => handleSort('estimatedCost') },
                   { label: 'Est. Benefits', sortable: true, active: sort.field === 'estimatedBenefits', dir: sort.dir, onClick: () => handleSort('estimatedBenefits') },
                   { label: 'Initiative Type', sortable: true, active: sort.field === 'type', dir: sort.dir, onClick: () => handleSort('type') },
                   { label: 'Status', sortable: true, active: sort.field === 'status', dir: sort.dir, onClick: () => handleSort('status') },
@@ -1424,7 +1424,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                           <MonetizationOnIcon sx={{ fontSize: 18 }} />
                         </Avatar>
                         <Box>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem' }}>Est. Cost</Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.65rem' }}>Est. Budget</Typography>
                           <Typography variant="subtitle1" sx={{ fontWeight: 900, color: 'primary.main', mt: 0.25, fontFamily: '"Outfit", sans-serif' }}>{selectedInitiative.pm_estimatedcost ? currencyFormatter.format(selectedInitiative.pm_estimatedcost) : '—'}</Typography>
                         </Box>
                       </Paper>
@@ -1725,7 +1725,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
             <Grid container spacing={2.5} sx={{ mb: 3 }}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
-                  label="Estimated Cost (EUR)"
+                  label="Estimated Budget (EUR)"
                   type="number"
                   fullWidth
                   size="small"
@@ -1809,7 +1809,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-                    <Typography variant="body2" color="text.secondary">New Initiative Cost:</Typography>
+                    <Typography variant="body2" color="text.secondary">New Initiative Budget:</Typography>
                     <Typography variant="body2" color="error.main" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
                       - {currencyFormatter.format(createForm.pm_estimatedcosteur || 0)}
                     </Typography>
@@ -1835,7 +1835,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
             <Box sx={{ mb: 2, p: 1.25, bgcolor: alpha(theme.palette.error.main, 0.1), border: '1px solid', borderColor: alpha(theme.palette.error.main, 0.2), display: 'flex', alignItems: 'center', gap: 1 }}>
               <WarningAmberIcon sx={{ fontSize: 18, color: 'error.main', flexShrink: 0 }} />
               <Typography variant="caption" color="error.dark" sx={{ fontWeight: 600 }}>
-                Estimated cost exceeds available {parentBudgetInfo.label.toLowerCase()} budget by {currencyFormatter.format(createForm.pm_estimatedcosteur - parentBudgetInfo.availableBudget)}.
+                Estimated budget exceeds available {parentBudgetInfo.label.toLowerCase()} budget by {currencyFormatter.format(createForm.pm_estimatedcosteur - parentBudgetInfo.availableBudget)}.
               </Typography>
             </Box>
           )}
@@ -2212,7 +2212,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 1.5 }}>
-            The estimated cost of this initiative exceeds the available {parentBudgetInfo ? parentBudgetInfo.label.toLowerCase() : 'parent'} budget by <strong>{parentBudgetInfo ? currencyFormatter.format(createForm.pm_estimatedcosteur - (parentBudgetInfo?.availableBudget ?? 0)) : ''}</strong>.
+            The estimated budget of this initiative exceeds the available {parentBudgetInfo ? parentBudgetInfo.label.toLowerCase() : 'parent'} budget by <strong>{parentBudgetInfo ? currencyFormatter.format(createForm.pm_estimatedcosteur - (parentBudgetInfo?.availableBudget ?? 0)) : ''}</strong>.
           </Typography>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
             Do you still want to proceed and create this initiative?
