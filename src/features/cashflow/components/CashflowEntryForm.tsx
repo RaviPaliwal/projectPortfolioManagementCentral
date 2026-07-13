@@ -69,10 +69,13 @@ export const CashflowEntryForm: React.FC<CashflowEntryFormProps> = ({
   }, [projects, formData._pm_project_value, formData.pm_projectname])
 
   const filteredBudgetLines = useMemo(() => {
-    let list = budgetLines
+    let list = budgetLines.filter((bl) => Number(bl.pm_budgetlinestatus) === 2)
     if (formData._pm_project_value) {
       const normalizedProjId = formData._pm_project_value.replace(/[{}]/g, '').trim().toLowerCase()
-      list = budgetLines.filter((bl) => bl._pm_project_value?.replace(/[{}]/g, '').trim().toLowerCase() === normalizedProjId)
+      list = budgetLines.filter((bl) => 
+        bl._pm_project_value?.replace(/[{}]/g, '').trim().toLowerCase() === normalizedProjId &&
+        Number(bl.pm_budgetlinestatus) === 2
+      )
     }
     // Always include the currently selected budget line if it exists
     if (formData._pm_budgetline_value) {

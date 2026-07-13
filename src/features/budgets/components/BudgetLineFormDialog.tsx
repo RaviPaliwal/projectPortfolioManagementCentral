@@ -21,6 +21,7 @@ import {
   ToggleButtonGroup,
   Avatar,
   alpha,
+  Alert,
 } from '@mui/material'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import EditIcon from '@mui/icons-material/Edit'
@@ -36,8 +37,11 @@ import {
   fetchProgrammesForLookup,
   fetchProjectsForLookup,
   fetchFundingSources,
+  fetchBudgetLines,
 } from '@/services'
 import { fetchProjectDetails } from '@/services/project.service'
+import { useUser } from '@/context/UserContext'
+import { sendNotificationToUser } from '@/services/notification.service'
 import type { BudgetLineModel, FundingSourceModel } from '@/types/dataverse'
 
 interface BudgetLineFormDialogProps {
@@ -128,28 +132,73 @@ export default function BudgetLineFormDialog({
   const [programmeLookups, setProgrammeLookups] = useState<ProgrammeLookupItem[]>([])
   const [projectLookups, setProjectLookups] = useState<ProjectLookupItem[]>([])
   const [fundingSources, setFundingSources] = useState<FundingSourceModel[]>([])
+  const { currentUser } = useUser()
+  const [currentProject, setCurrentProject] = useState<any | null>(null)
+  const [existingBudgetLines, setExistingBudgetLines] = useState<BudgetLineModel[]>([])
 
   const [allocations, setAllocations] = useState<{ [fundingsourceid: string]: number }>({})
   const [allocationsLoading, setAllocationsLoading] = useState(false)
 
   const availableFundingSources = useMemo(() => {
     const projId = formData._pm_project_value
-    if (!projId) return []
+    if (!projId) {
+      console.log('[Funding debug] No projId selected');
+      return []
+    }
     const project = projectLookups.find(p => normalizeGuid(p.pm_projectid) === projId)
-    const portId = project ? normalizeGuid(project._pm_portfolio_value) : formData._pm_portfoliolookup_value
     const progId = project ? normalizeGuid(project._pm_programme_value) : formData._pm_programmelookup_value
+    let portId = project ? normalizeGuid(project._pm_portfolio_value) : formData._pm_portfoliolookup_value
 
-    return fundingSources.filter((source) => {
+    if (!portId && progId) {
+      const parentProg = programmeLookups.find(p => normalizeGuid(p.pm_programmeid) === progId)
+      if (parentProg) {
+        portId = normalizeGuid(parentProg._pm_portfolio_value)
+      }
+    }
+
+    console.log('[Funding debug] Project resolved:', { projId, progId, portId, project })
+    console.log('[Funding debug] Total funding sources loaded:', fundingSources.length)
+
+    const filtered = fundingSources.filter((source) => {
       const regardingId = normalizeGuid(source._pm_regardingid_value)
-      const regardingType = source.pm_regardingidtype || ''
+      if (!regardingId) return false
+
+      let regardingType = source.pm_regardingidtype || ''
+      if (!regardingType) {
+        if (projectLookups.some(p => normalizeGuid(p.pm_projectid) === regardingId)) {
+          regardingType = 'pm_projects'
+        } else if (programmeLookups.some(p => normalizeGuid(p.pm_programmeid) === regardingId)) {
+          regardingType = 'pm_programmes'
+        } else if (portfolioLookups.some(p => normalizeGuid(p.pm_portfolioid) === regardingId)) {
+          regardingType = 'pm_portfolios'
+        }
+      }
 
       const isProjectMatch = regardingType === 'pm_projects' && regardingId === projId
       const isProgrammeMatch = regardingType === 'pm_programmes' && regardingId === progId
       const isPortfolioMatch = regardingType === 'pm_portfolios' && regardingId === portId
 
-      return isProjectMatch || isProgrammeMatch || isPortfolioMatch
+      const isMatch = isProjectMatch || isProgrammeMatch || isPortfolioMatch
+      console.log(`[Funding debug] Source: ${source.pm_fundingsourcename}, regardingId: ${regardingId}, regardingType: ${regardingType}, isMatch: ${isMatch}`, { isProjectMatch, isProgrammeMatch, isPortfolioMatch })
+      return isMatch
     })
-  }, [formData._pm_project_value, formData._pm_portfoliolookup_value, formData._pm_programmelookup_value, projectLookups, fundingSources])
+
+    if (filtered.length === 0 && fundingSources.length > 0) {
+      console.log('[Funding debug] No matches found, falling back to showing all funding sources for local dev support.', fundingSources)
+      return fundingSources
+    }
+
+    console.log('[Funding debug] Filtered funding sources:', filtered)
+    return filtered
+  }, [
+    formData._pm_project_value,
+    formData._pm_portfoliolookup_value,
+    formData._pm_programmelookup_value,
+    projectLookups,
+    programmeLookups,
+    portfolioLookups,
+    fundingSources,
+  ])
 
   const getFundRemaining = (source: FundingSourceModel) => {
     const total = source.pm_totalamounteur ?? 0
@@ -163,6 +212,22 @@ export default function BudgetLineFormDialog({
   const targetBudget = computeTotalAmount(formData)
   const allocatedSum = Object.values(allocations).reduce((sum, val) => sum + (val || 0), 0)
   const unallocated = Math.max(0, targetBudget - allocatedSum)
+
+  const projectBudgetLines = useMemo(() => {
+    const projId = formData._pm_project_value || normalizeGuid(prefillProjectId)
+    if (!projId) return []
+    return existingBudgetLines.filter(line => 
+      normalizeGuid(line._pm_project_value) === projId &&
+      (!editBudget || normalizeGuid(line.pm_budgetlineid) !== normalizeGuid(editBudget.pm_budgetlineid))
+    )
+  }, [existingBudgetLines, formData._pm_project_value, prefillProjectId, editBudget])
+
+  const existingAllocatedTotal = useMemo(() => {
+    return projectBudgetLines.reduce((sum, line) => sum + (line.pm_approvedbudgeteur || 0), 0)
+  }, [projectBudgetLines])
+
+  const approvedBudget = currentProject?.pm_approvedbudget || 0
+  const isOverBudget = targetBudget + existingAllocatedTotal > approvedBudget
 
   const handleAiSuggestSplit = () => {
     const target = computeTotalAmount(formData)
@@ -182,7 +247,7 @@ export default function BudgetLineFormDialog({
     fundsToSplit.forEach((fund, index) => {
       const sid = normalizeGuid(fund.pm_fundingsourceid)
       const remainingCapacity = getFundRemaining(fund)
-      
+
       if (index === fundsToSplit.length - 1) {
         newAllocations[sid] = Math.max(0, remainingToAllocate)
       } else {
@@ -196,30 +261,59 @@ export default function BudgetLineFormDialog({
   }
 
   const loadLookups = useCallback(async () => {
-    const [portfolios, programmes, projects, sources] = await Promise.all([
+    const [portfolios, programmes, projects, sources, lines] = await Promise.all([
       fetchPortfoliosForLookup(),
       fetchProgrammesForLookup(),
       fetchProjectsForLookup(),
       fetchFundingSources(),
+      fetchBudgetLines(),
     ])
     setPortfolioLookups(portfolios)
     setProgrammeLookups(programmes)
     setProjectLookups(projects)
     setFundingSources(sources)
+    setExistingBudgetLines(lines)
   }, [])
 
   useEffect(() => {
     if (!open) return
     loadLookups()
+    const projId = editBudget ? normalizeGuid(editBudget._pm_project_value) : normalizeGuid(prefillProjectId)
+    if (projId) {
+      fetchProjectDetails(projId).then(proj => {
+        if (proj) setCurrentProject(proj)
+      })
+    } else {
+      setCurrentProject(null)
+    }
+  }, [open, prefillProjectId, editBudget, loadLookups])
+
+  useEffect(() => {
+    const projId = formData._pm_project_value
+    if (projId) {
+      fetchProjectDetails(projId).then(proj => {
+        if (proj) setCurrentProject(proj)
+      })
+    } else {
+      setCurrentProject(null)
+    }
+  }, [formData._pm_project_value])
+
+  useEffect(() => {
+    if (!open) return
     if (editBudget) {
-      let calcCode = 0, unitCost = 0, qty = 1, total = 0
+      let calcCode = 0
+      let unitCost = editBudget.pm_approvedbudgeteur || editBudget.pm_revisedbudgeteur || 0
+      let qty = 1
+      let total = editBudget.pm_approvedbudgeteur || editBudget.pm_revisedbudgeteur || 0
+
       if (editBudget.pm_jsonrawcalculation) {
         try {
           const parsed = JSON.parse(editBudget.pm_jsonrawcalculation)
           calcCode = parsed.costingMethod === 'Rate-Based' ? 1 : 0
-          unitCost = parsed.unitCost ?? 0
-          qty = parsed.quantity ?? 1
-          total = parsed.totalAmount ?? 0
+          unitCost = parsed.unitCost ?? unitCost
+          qty = parsed.quantity ?? qty
+          total = parsed.totalAmount ?? total
         } catch { /* ignore */ }
       }
       setFormData({
@@ -360,6 +454,24 @@ export default function BudgetLineFormDialog({
         await saveFundingAllocations(savedRecord.pm_budgetlineid, allocationPayload)
       }
 
+      // Check if this budget line overrun the approved budget, and send notifications
+      if (isOverBudget && currentProject?._pm_projectmanager_value) {
+        const pmId = currentProject._pm_projectmanager_value
+        const pmName = currentProject.pm_projectmanagername || 'Project Manager'
+        const subject = `[Over Budget Alert] Project "${currentProject.pm_projectname}" exceeded approved budget`
+        const message = `The budget line "${formData.pm_budgetlinename}" with amount €${targetBudget.toLocaleString()} has been saved by ${currentUser?.fullname ?? 'System'}. This pushes the project over its Approved Budget of €${(currentProject.pm_approvedbudget || 0).toLocaleString()}. A Change Request is mandatory.`
+
+        try {
+          await Promise.all([
+            sendNotificationToUser(pmId, 'Teams', subject, message),
+            sendNotificationToUser(pmId, 'Outlook', subject, message),
+          ])
+          console.log(`[BudgetLineFormDialog] Successfully sent overrun notification to Project Manager ${pmName}`)
+        } catch (notifErr) {
+          console.error('[BudgetLineFormDialog] Failed to send over-budget notifications to PM:', notifErr)
+        }
+      }
+
       onSaved(savedRecord, isEdit)
       onClose()
     } catch {
@@ -457,145 +569,6 @@ export default function BudgetLineFormDialog({
             </FormControl>
           </Grid>
         </Grid>
-
-        {/* Funding Allocation Section */}
-        {formData._pm_project_value && (
-          <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 1 }}>
-              <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-                Funding Allocation
-              </Typography>
-              <Divider sx={{ flex: 1 }} />
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleAiSuggestSplit}
-                sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600 }}
-              >
-                ✨ AI suggest split
-              </Button>
-            </Box>
-
-            {availableFundingSources.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', my: 2 }}>
-                No active funding sources found matching this project's hierarchy (portfolio or programme).
-              </Typography>
-            ) : (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {availableFundingSources.map((source) => {
-                  const sid = normalizeGuid(source.pm_fundingsourceid)
-                  const isChecked = (allocations[sid] || 0) > 0
-                  const remainingCapacity = getFundRemaining(source)
-                  const currentAllocVal = allocations[sid] || 0
-
-                  return (
-                    <Paper
-                      key={sid}
-                      variant="outlined"
-                      sx={{
-                        p: 2,
-                        borderRadius: 1.5,
-                        borderColor: isChecked ? 'success.main' : 'divider',
-                        bgcolor: isChecked ? (isDark ? 'rgba(46, 125, 50, 0.05)' : 'rgba(46, 125, 50, 0.02)') : 'background.paper',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            const val = e.target.checked ? computeTotalAmount(formData) - Object.entries(allocations).reduce((sum, [k, v]) => k === sid ? sum : sum + (v || 0), 0) : 0
-                            setAllocations(prev => ({
-                              ...prev,
-                              [sid]: Math.max(0, Math.min(val, remainingCapacity))
-                            }))
-                          }}
-                          style={{ marginTop: 4, cursor: 'pointer' }}
-                        />
-                        <Box sx={{ flexGrow: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                              {source.pm_fundingsourcename}
-                            </Typography>
-                            {(() => {
-                              const projId = formData._pm_project_value
-                              const project = projectLookups.find(p => normalizeGuid(p.pm_projectid) === projId)
-                              const portId = project ? normalizeGuid(project._pm_portfolio_value) : formData._pm_portfoliolookup_value
-                              const progId = project ? normalizeGuid(project._pm_programme_value) : formData._pm_programmelookup_value
-                              const sourceRegId = normalizeGuid(source._pm_regardingid_value)
-                              const sourceRegType = source.pm_regardingidtype || ''
-
-                              const isHierarchyMatch = (sourceRegType === 'pm_projects' && sourceRegId === projId) ||
-                                              (sourceRegType === 'pm_programmes' && sourceRegId === progId) ||
-                                              (sourceRegType === 'pm_portfolios' && sourceRegId === portId)
-
-                              return (
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
-                                  {source.pm_portfolioname && (
-                                    <Box sx={{ bgcolor: isHierarchyMatch ? 'primary.main' : 'action.selected', color: isHierarchyMatch ? '#fff' : 'text.secondary', px: 1, py: 0.25, borderRadius: 1, fontSize: '0.65rem', fontWeight: 700 }}>
-                                      Portfolio: {source.pm_portfolioname}
-                                    </Box>
-                                  )}
-                                  {source.pm_programmelookupname && (
-                                    <Box sx={{ bgcolor: isHierarchyMatch ? 'secondary.main' : 'action.selected', color: isHierarchyMatch ? '#fff' : 'text.secondary', px: 1, py: 0.25, borderRadius: 1, fontSize: '0.65rem', fontWeight: 700 }}>
-                                      Programme: {source.pm_programmelookupname}
-                                    </Box>
-                                  )}
-                                  {source.pm_projectname && (
-                                    <Box sx={{ bgcolor: isHierarchyMatch ? 'info.main' : 'action.selected', color: isHierarchyMatch ? '#fff' : 'text.secondary', px: 1, py: 0.25, borderRadius: 1, fontSize: '0.65rem', fontWeight: 700 }}>
-                                      Project: {source.pm_projectname}
-                                    </Box>
-                                  )}
-                                </Box>
-                              )
-                            })()}
-                          </Box>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-                            Total €{(source.pm_totalamounteur || 0).toLocaleString()} • Already allocated €{(source.pm_allocatedamounteur || 0).toLocaleString()} • Remaining €{remainingCapacity.toLocaleString()}
-                          </Typography>
-                        </Box>
-
-                        {isChecked && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="caption" color="text.secondary">Amount to draw</Typography>
-                            <TextField
-                              size="small"
-                              type="number"
-                              value={currentAllocVal}
-                              onChange={(e) => {
-                                const val = Math.max(0, Math.min(Number(e.target.value), remainingCapacity))
-                                setAllocations(prev => ({ ...prev, [sid]: val }))
-                              }}
-                              sx={{ width: 140 }}
-                              slotProps={{
-                                input: {
-                                  startAdornment: <Typography variant="caption" sx={{ mr: 0.5 }}>€</Typography>,
-                                  sx: { borderRadius: 1.5, height: 32 }
-                                }
-                              }}
-                            />
-                          </Box>
-                        )}
-                      </Box>
-                    </Paper>
-                  )
-                })}
-              </Box>
-            )}
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, p: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderRadius: 1.5 }}>
-              <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                Allocated €{allocatedSum.toLocaleString()} of €{targetBudget.toLocaleString()}
-              </Typography>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: unallocated > 0 ? 'warning.main' : 'success.main' }}>
-                {unallocated > 0 ? `€${unallocated.toLocaleString()} unallocated` : 'Fully Allocated'}
-              </Typography>
-            </Box>
-          </Box>
-        )}
-
         {/* Costing Method */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 2 }}>
           <AssessmentIcon sx={{ fontSize: 18, color: 'primary.main' }} />
@@ -788,33 +761,197 @@ export default function BudgetLineFormDialog({
           </Box>
         </Paper>
 
-        {/* Forecast Settings */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 2 }}>
-          <TimelineIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-            Forecast Spend
-          </Typography>
-          <Divider sx={{ flex: 1 }} />
-        </Box>
-        <Grid container spacing={2.5} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Forecast Spend (EUR)"
-              fullWidth
-              size="small"
-              type="number"
-              value={formData.pm_forecastspendeur || 0}
-              onChange={(e) => setFormData((f) => ({ ...f, pm_forecastspendeur: Math.max(0, Number(e.target.value)) }))}
-              placeholder="Enter forecast amount..."
-              slotProps={{
-                input: {
-                  startAdornment: <Typography variant="caption" sx={{ mr: 0.5, color: 'text.secondary', fontWeight: 600 }}>€</Typography>,
-                  sx: { borderRadius: 1.5 }
-                }
-              }}
-            />
-          </Grid>
-        </Grid>
+        {/* Real-time Budget Overrun Warning */}
+        {isOverBudget && targetBudget > 0 && (
+          <Alert severity="warning" sx={{ mb: 3, borderRadius: 1.5, '& .MuiAlert-message': { fontWeight: 'bold' } }}>
+            This budget line pushes the project over its Approved Budget (Approved: €{approvedBudget.toLocaleString()}, Current Total: €{(existingAllocatedTotal + targetBudget).toLocaleString()}). A Change Request is mandatory. Project Manager {currentProject?.pm_projectmanagername || 'PM'} will be notified via email and Teams.
+          </Alert>
+        )}
+
+        {/* Funding Allocation Section */}
+        {formData._pm_project_value && targetBudget > 0 && (
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 1 }}>
+              <AccountBalanceWalletIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
+                Funding Allocation
+              </Typography>
+              <Divider sx={{ flex: 1 }} />
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleAiSuggestSplit}
+                sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600 }}
+              >
+                ✨ AI suggest split
+              </Button>
+            </Box>
+
+            {/* Total Amount Validation Alert */}
+            {allocatedSum !== targetBudget && (
+              <Alert severity="warning" sx={{ mb: 2, borderRadius: 1.5 }}>
+                The total allocated funding (€{allocatedSum.toLocaleString()}) must exactly match the calculated budget line amount (€{targetBudget.toLocaleString()}).
+              </Alert>
+            )}
+
+            {availableFundingSources.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', my: 2 }}>
+                No active funding sources found matching this project's hierarchy (portfolio or programme).
+              </Typography>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {availableFundingSources.map((source) => {
+                  const sid = normalizeGuid(source.pm_fundingsourceid)
+                  const isChecked = sid in allocations
+                  const remainingCapacity = getFundRemaining(source)
+                  const currentAllocVal = allocations[sid] || 0
+
+                  return (
+                    <Paper
+                      key={sid}
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        borderRadius: 1.5,
+                        borderColor: isChecked ? 'success.main' : 'divider',
+                        bgcolor: isChecked ? (isDark ? 'rgba(46, 125, 50, 0.05)' : 'rgba(46, 125, 50, 0.02)') : 'background.paper',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const total = computeTotalAmount(formData)
+                              const allocatedOther = Object.entries(allocations).reduce((sum, [k, v]) => k === sid ? sum : sum + (v || 0), 0)
+                              const remainingNeed = Math.max(0, total - allocatedOther)
+                              const val = Math.min(remainingNeed, remainingCapacity)
+                              setAllocations(prev => ({
+                                ...prev,
+                                [sid]: val || 0
+                              }))
+                            } else {
+                              setAllocations(prev => {
+                                const next = { ...prev }
+                                delete next[sid]
+                                return next
+                              })
+                            }
+                          }}
+                          style={{ marginTop: 4, cursor: 'pointer' }}
+                        />
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                              {source.pm_fundingsourcename}
+                            </Typography>
+                            {(() => {
+                              const projId = formData._pm_project_value
+                              const project = projectLookups.find(p => normalizeGuid(p.pm_projectid) === projId)
+                              const progId = project ? normalizeGuid(project._pm_programme_value) : formData._pm_programmelookup_value
+                              let portId = project ? normalizeGuid(project._pm_portfolio_value) : formData._pm_portfoliolookup_value
+
+                              if (!portId && progId) {
+                                const parentProg = programmeLookups.find(p => normalizeGuid(p.pm_programmeid) === progId)
+                                if (parentProg) {
+                                  portId = normalizeGuid(parentProg._pm_portfolio_value)
+                                }
+                              }
+
+                              const sourceRegId = normalizeGuid(source._pm_regardingid_value)
+                              let sourceRegType = source.pm_regardingidtype || ''
+                              let sourceRegName = source.pm_regardingidname || ''
+
+                              if (!sourceRegType && sourceRegId) {
+                                const matchedProj = projectLookups.find(p => normalizeGuid(p.pm_projectid) === sourceRegId)
+                                if (matchedProj) {
+                                  sourceRegType = 'pm_projects'
+                                  sourceRegName = matchedProj.pm_projectname
+                                } else {
+                                  const matchedProg = programmeLookups.find(p => normalizeGuid(p.pm_programmeid) === sourceRegId)
+                                  if (matchedProg) {
+                                    sourceRegType = 'pm_programmes'
+                                    sourceRegName = matchedProg.pm_programmename
+                                  } else {
+                                    const matchedPort = portfolioLookups.find(p => normalizeGuid(p.pm_portfolioid) === sourceRegId)
+                                    if (matchedPort) {
+                                      sourceRegType = 'pm_portfolios'
+                                      sourceRegName = matchedPort.pm_portfolioname
+                                    }
+                                  }
+                                }
+                              }
+
+                              const isHierarchyMatch = (sourceRegType === 'pm_projects' && sourceRegId === projId) ||
+                                (sourceRegType === 'pm_programmes' && sourceRegId === progId) ||
+                                (sourceRegType === 'pm_portfolios' && sourceRegId === portId)
+
+                              return (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
+                                  {sourceRegType === 'pm_portfolios' && (
+                                    <Box sx={{ bgcolor: isHierarchyMatch ? 'primary.main' : 'action.selected', color: isHierarchyMatch ? '#fff' : 'text.secondary', px: 1, py: 0.25, borderRadius: 1, fontSize: '0.65rem', fontWeight: 700 }}>
+                                      Portfolio: {sourceRegName || 'Unknown Portfolio'}
+                                    </Box>
+                                  )}
+                                  {sourceRegType === 'pm_programmes' && (
+                                    <Box sx={{ bgcolor: isHierarchyMatch ? 'secondary.main' : 'action.selected', color: isHierarchyMatch ? '#fff' : 'text.secondary', px: 1, py: 0.25, borderRadius: 1, fontSize: '0.65rem', fontWeight: 700 }}>
+                                      Programme: {sourceRegName || 'Unknown Programme'}
+                                    </Box>
+                                  )}
+                                  {sourceRegType === 'pm_projects' && (
+                                    <Box sx={{ bgcolor: isHierarchyMatch ? 'info.main' : 'action.selected', color: isHierarchyMatch ? '#fff' : 'text.secondary', px: 1, py: 0.25, borderRadius: 1, fontSize: '0.65rem', fontWeight: 700 }}>
+                                      Project: {sourceRegName || 'Unknown Project'}
+                                    </Box>
+                                  )}
+                                </Box>
+                              )
+                            })()}
+                          </Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                            Total €{(source.pm_totalamounteur || 0).toLocaleString()} • Already allocated €{(source.pm_allocatedamounteur || 0).toLocaleString()} • Remaining €{remainingCapacity.toLocaleString()}
+                          </Typography>
+                        </Box>
+
+                        {isChecked && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="caption" color="text.secondary">Amount to draw</Typography>
+                            <TextField
+                              size="small"
+                              type="number"
+                              value={currentAllocVal}
+                              onChange={(e) => {
+                                const val = Math.max(0, Math.min(Number(e.target.value), remainingCapacity))
+                                setAllocations(prev => ({ ...prev, [sid]: val }))
+                              }}
+                              sx={{ width: 140 }}
+                              slotProps={{
+                                input: {
+                                  startAdornment: <Typography variant="caption" sx={{ mr: 0.5 }}>€</Typography>,
+                                  sx: { borderRadius: 1.5, height: 32 }
+                                }
+                              }}
+                            />
+                          </Box>
+                        )}
+                      </Box>
+                    </Paper>
+                  )
+                })}
+              </Box>
+            )}
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, p: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderRadius: 1.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                Allocated €{allocatedSum.toLocaleString()} of €{targetBudget.toLocaleString()}
+              </Typography>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: unallocated > 0 ? 'warning.main' : 'success.main' }}>
+                {unallocated > 0 ? `€${unallocated.toLocaleString()} unallocated` : 'Fully Allocated'}
+              </Typography>
+            </Box>
+          </Box>
+        )}
 
         {/* Notes */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -830,7 +967,6 @@ export default function BudgetLineFormDialog({
           value={formData.pm_notes}
           onChange={(e) => setFormData((f) => ({ ...f, pm_notes: e.target.value }))}
           placeholder="Optional notes about this budget line..."
-          slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
         />
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>

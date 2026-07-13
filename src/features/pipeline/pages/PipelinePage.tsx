@@ -1269,12 +1269,6 @@ User Prompt: ${promptText || "Extract details from the document."}`,
             }
           />
 
-          {selectedInitiative?.pm_portfolioname && (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: -2, mb: 1.5 }}>
-              <StatusTag label={selectedInitiative.pm_portfolioname} size="small" color="primary" variant="outlined" />
-            </Box>
-          )}
-
           {/* Workflow Step Milestones */}
           <WorkflowMilestone
             entityId={selectedInitiative.pm_initiativeid || ''}
@@ -1369,14 +1363,6 @@ User Prompt: ${promptText || "Extract details from the document."}`,
             </Paper>
           )}
 
-          <Tabs
-            value={detailTab}
-            onChange={(_, v) => setDetailTab(v)}
-            sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
-          >
-            <Tab label="Overview" sx={{ textTransform: 'none', fontWeight: 600 }} />
-            {canReadFunding && <Tab label="Funding Sources" sx={{ textTransform: 'none', fontWeight: 600 }} />}
-          </Tabs>
 
           {detailTab === 0 && (
             <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch' }}>
@@ -1398,6 +1384,32 @@ User Prompt: ${promptText || "Extract details from the document."}`,
                       <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Business Sponsor</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>{selectedInitiative.pm_sponsorname || '—'}</Typography>
                     </Box>
+
+                    {Number(selectedInitiative.pm_initiativetype) !== 1 && Number(selectedInitiative.pm_initiativetype) !== 2 && (
+                      <>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Parent Portfolio</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>
+                            {selectedInitiative.pm_portfolioname || 'NA'}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Parent Programme</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>
+                            {selectedInitiative.pm_programmename || 'NA'}
+                          </Typography>
+                        </Box>
+                      </>
+                    )}
+
+                    {Number(selectedInitiative.pm_initiativetype) === 1 && (
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Parent Portfolio</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary', mt: 0.25, fontSize: '0.825rem' }}>
+                          {selectedInitiative.pm_portfolioname || 'NA'}
+                        </Typography>
+                      </Box>
+                    )}
                     <Box>
                       <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Converted To</Typography>
                       {selectedInitiative.pm_convertedtoreference ? (
@@ -1568,15 +1580,6 @@ User Prompt: ${promptText || "Extract details from the document."}`,
             </Grid>
           </Grid>
         )}
-
-          {detailTab === 1 && canReadFunding && (
-            <EntityFundingSourcesTab
-              ref={fundingTabRef}
-              entityId={selectedInitiative.pm_initiativeid || ''}
-              entityType="pm_initiatives"
-              onFundingSourcesChanged={loadUnallocatedReserve}
-            />
-          )}
         </Box>
       )}
 

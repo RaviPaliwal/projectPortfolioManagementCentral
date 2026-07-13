@@ -241,6 +241,10 @@ export async function createBudgetLine(payload: Partial<BudgetLineModel>): Promi
       'pm_portfoliolookupname', 'pm_programmelookupname', 'pm_projectname',
       'pm_portfolio', 'pm_programme', 'pm_projectcode',
       'pm_costinglevelcode', 'pm_unitcosteur', 'pm_quantity', 'pm_totalamounteur',
+      'pm_varianceeur', 'pm_budgetlinestatusname', 'pm_costcategoryname', 'pm_expencecatagoryname',
+      'pm_forecastspendeur_base', 'pm_approvedbudgeteur_base', 'pm_revisedbudgeteur_base',
+      'pm_actualspendeur_base', 'pm_committedspendeur_base', 'pm_estimateatcompletioneur_base',
+      'pm_estimatetocompleteeur_base',
       '_pm_fiscalperiod_value', '_pm_fundingsource_value',
       '_pm_portfoliolookup_value', '_pm_programmelookup_value', '_pm_project_value',
     ])
@@ -294,6 +298,10 @@ export async function updateBudgetLine(id: string, changes: Partial<BudgetLineMo
       'pm_portfoliolookupname', 'pm_programmelookupname', 'pm_projectname',
       'pm_portfolio', 'pm_programme', 'pm_projectcode',
       'pm_costinglevelcode', 'pm_unitcosteur', 'pm_quantity', 'pm_totalamounteur',
+      'pm_varianceeur', 'pm_budgetlinestatusname', 'pm_costcategoryname', 'pm_expencecatagoryname',
+      'pm_forecastspendeur_base', 'pm_approvedbudgeteur_base', 'pm_revisedbudgeteur_base',
+      'pm_actualspendeur_base', 'pm_committedspendeur_base', 'pm_estimateatcompletioneur_base',
+      'pm_estimatetocompleteeur_base',
       '_pm_fiscalperiod_value', '_pm_fundingsource_value',
       '_pm_portfoliolookup_value', '_pm_programmelookup_value', '_pm_project_value',
     ])
@@ -449,9 +457,9 @@ export async function createFundingSource(payload: Partial<FundingSourceModel>):
     const regardingType = payload.pm_regardingidtype
     if (regardingId && regardingType) {
       const typeSuffix = regardingType === 'pm_projects' ? 'pm_project' :
-                         regardingType === 'pm_programmes' ? 'pm_programme' :
-                         regardingType === 'pm_portfolios' ? 'pm_portfolio' :
-                         regardingType === 'pm_initiatives' ? 'pm_initiative' : 'pm_portfolio'
+        regardingType === 'pm_programmes' ? 'pm_programme' :
+          regardingType === 'pm_portfolios' ? 'pm_portfolio' :
+            regardingType === 'pm_initiatives' ? 'pm_initiative' : 'pm_portfolio'
       cleanPayload[`pm_RegardingId_${typeSuffix}@odata.bind`] = `/${regardingType}(${regardingId})`
     }
 
@@ -498,9 +506,9 @@ export async function updateFundingSource(id: string, changes: Partial<FundingSo
     const regardingType = changes.pm_regardingidtype
     if (regardingId && regardingType) {
       const typeSuffix = regardingType === 'pm_projects' ? 'pm_project' :
-                         regardingType === 'pm_programmes' ? 'pm_programme' :
-                         regardingType === 'pm_portfolios' ? 'pm_portfolio' :
-                         regardingType === 'pm_initiatives' ? 'pm_initiative' : 'pm_portfolio'
+        regardingType === 'pm_programmes' ? 'pm_programme' :
+          regardingType === 'pm_portfolios' ? 'pm_portfolio' :
+            regardingType === 'pm_initiatives' ? 'pm_initiative' : 'pm_portfolio'
       cleanPayload[`pm_RegardingId_${typeSuffix}@odata.bind`] = `/${regardingType}(${regardingId})`
     }
 
@@ -619,7 +627,7 @@ export async function seedFiscalPeriods(year: number, startDateStr: string): Pro
     for (let i = 1; i <= 13; i++) {
       const pStart = new Date(start.getTime() + (i - 1) * 28 * 24 * 60 * 60 * 1000)
       const pEnd = new Date(pStart.getTime() + 27 * 24 * 60 * 60 * 1000)
-      
+
       const pStartMidnight = new Date(pStart)
       pStartMidnight.setHours(0, 0, 0, 0)
       const pEndEndDay = new Date(pEnd)
@@ -1269,10 +1277,10 @@ export async function saveFundingAllocations(
   try {
     const cleanBudgetlineId = normalizeGuid(budgetlineId)
     const existing = await fetchFundingAllocationsByBudgetline(cleanBudgetlineId)
-    
+
     const incomingSourceIds = new Set(allocations.map(a => normalizeGuid(a.pm_fundingsourceid)))
     const toDelete = existing.filter(e => !incomingSourceIds.has(normalizeGuid(e._pm_fundingsource_value)))
-    
+
     for (const item of toDelete) {
       await Pm_budgetlinefundingallocationsService.delete(item.pm_budgetlinefundingallocationid)
     }
@@ -1280,7 +1288,7 @@ export async function saveFundingAllocations(
     for (const alloc of allocations) {
       const cleanSourceId = normalizeGuid(alloc.pm_fundingsourceid)
       const match = existing.find(e => normalizeGuid(e._pm_fundingsource_value) === cleanSourceId)
-      
+
       const payload: any = {
         pm_allocatedamount: alloc.pm_allocatedamount,
         pm_name: `Allocation - ${cleanBudgetlineId.substring(0, 8)} to ${cleanSourceId.substring(0, 8)}`,

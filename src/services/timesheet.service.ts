@@ -3,6 +3,7 @@ import {
   Pm_timesheetentriesService,
   Pm_resourcesService,
   Pm_projectsService,
+  Pm_fiscalperiodsService,
 } from '@/generated'
 import { writeAuditLog } from './changelog.service'
 import { sendNotificationToUser, sendNotificationToUserName } from './notification.service'
@@ -97,7 +98,6 @@ export async function fetchTimesheets(resourceId?: string): Promise<TimesheetMod
       console.error('[TimesheetService] fetchTimesheets failed:', result.error)
       return []
     }
-    const { Pm_fiscalperiodsService } = await import('@/generated/services/Pm_fiscalperiodsService')
     const periodsResult = await Pm_fiscalperiodsService.getAll({ select: ['pm_fiscalperiodid', 'pm_startdate', 'pm_enddate'], top: 200 })
     const periods = periodsResult.success ? unwrapList<any>(periodsResult) : []
 
@@ -163,7 +163,6 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
     const item = unwrapSingle<Pm_timesheets>(result)
     if (!item) return null
 
-    const { Pm_fiscalperiodsService } = await import('@/generated/services/Pm_fiscalperiodsService')
     const periodsResult = await Pm_fiscalperiodsService.getAll({ select: ['pm_fiscalperiodid', 'pm_startdate', 'pm_enddate'], top: 200 })
     const periods = periodsResult.success ? unwrapList<any>(periodsResult) : []
 
@@ -230,7 +229,6 @@ export async function createTimesheet(payload: Partial<TimesheetModel>): Promise
       }
     } else if (payload.pm_periodstartdate) {
       try {
-        const { Pm_fiscalperiodsService } = await import('@/generated/services/Pm_fiscalperiodsService')
         const periodsResult = await Pm_fiscalperiodsService.getAll({ select: ['pm_fiscalperiodid', 'pm_startdate', 'pm_enddate'], top: 100 })
         if (periodsResult.success) {
           const periods = unwrapList<any>(periodsResult)

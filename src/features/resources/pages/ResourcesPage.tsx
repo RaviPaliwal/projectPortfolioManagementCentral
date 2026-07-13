@@ -94,7 +94,49 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const DEPARTMENT_OPTIONS = [
+  'Infrastructure & Track',
+  'Signalling & Telecoms',
+  'Operations & Fleet',
+  'Safety & Compliance',
+  'IT & Digital Transformation',
+  'Finance & Procurement',
+  'Human Resources',
+  'PMO & Strategy',
+  'Commercial & Passenger Services',
+  'Civil Engineering',
+]
+
+const POSITION_TITLE_OPTIONS = [
+  'Project Manager',
+  'Programme Manager',
+  'Senior PMO Analyst',
+  'Lead Civil Engineer',
+  'Permanent Way (P-Way) Engineer',
+  'Signalling Design Engineer',
+  'Operations Controller',
+  'Fleet Maintenance Manager',
+  'IT Systems Architect',
+  'Software Engineer',
+  'Business Analyst',
+  'Scrum Master',
+  'Procurement Specialist',
+  'Safety Inspector',
+]
+
+const PRIMARY_ROLE_OPTIONS = [
+  'Project Management',
+  'Programme Management',
+  'PMO Support & Governance',
+  'Track Engineering (Civil)',
+  'Signalling & Telecommunication Systems',
+  'Rolling Stock Maintenance & Engineering',
+  'Railway Operations & Scheduling',
+  'IT Software Development',
+  'Cloud Infrastructure & IT Ops',
+  'Procurement & Contract Management',
+  'Safety Assurance & Audit',
+]
 
 const CATEGORY_LABELS: Record<string, string> = {
   '0': 'Internal Staff',
@@ -1071,33 +1113,48 @@ export default function ResourcesPage() {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
+                    select
                     label="Department"
                     fullWidth
                     size="small"
-                    value={formData.pm_departmentname}
+                    value={formData.pm_departmentname || ''}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_departmentname: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
+                    slotProps={{ select: { sx: { borderRadius: 1.5 } } }}
+                  >
+                    {DEPARTMENT_OPTIONS.map((opt) => (
+                      <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                    ))}
+                  </TextField>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
+                    select
                     label="Position / Title"
                     fullWidth
                     size="small"
-                    value={formData.pm_positiontitle}
+                    value={formData.pm_positiontitle || ''}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_positiontitle: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
+                    slotProps={{ select: { sx: { borderRadius: 1.5 } } }}
+                  >
+                    {POSITION_TITLE_OPTIONS.map((opt) => (
+                      <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                    ))}
+                  </TextField>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
+                    select
                     label="Primary Role"
                     fullWidth
                     size="small"
-                    value={formData.pm_primaryrole}
+                    value={formData.pm_primaryrole || ''}
                     onChange={(e) => setFormData((f) => ({ ...f, pm_primaryrole: e.target.value }))}
-                    slotProps={{ input: { sx: { borderRadius: 1.5 } } }}
-                  />
+                    slotProps={{ select: { sx: { borderRadius: 1.5 } } }}
+                  >
+                    {PRIMARY_ROLE_OPTIONS.map((opt) => (
+                      <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                    ))}
+                  </TextField>
                 </Grid>
                 {(formData.pm_resourcecategory === 1 || formData.pm_resourcecategory === 2) && (
                   <Grid size={{ xs: 12 }}>

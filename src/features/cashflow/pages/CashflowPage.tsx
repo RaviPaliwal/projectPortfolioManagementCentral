@@ -114,6 +114,16 @@ export default function CashflowPage() {
 
   const handleSave = async () => {
     if (!formData.pm_entryname) return
+
+    // Validation: Budget line must be Approved (status === 2)
+    if (formData._pm_budgetline_value) {
+      const blId = formData._pm_budgetline_value.replace(/[{}]/g, '').trim().toLowerCase()
+      const bl = budgetLines.find(x => x.pm_budgetlineid?.replace(/[{}]/g, '').trim().toLowerCase() === blId)
+      if (bl && Number(bl.pm_budgetlinestatus) !== 2) {
+        setError("Cannot link Cashflow with an unapproved Budget Line. The budget line status must be Approved.")
+        return
+      }
+    }
     
     setSaving(true)
     setError(null)

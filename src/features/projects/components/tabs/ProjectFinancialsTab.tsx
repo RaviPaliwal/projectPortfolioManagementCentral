@@ -574,7 +574,6 @@ const budgetExportColumns: ExportColumn[] = [
           <PieChartIcon sx={{ fontSize: 20, color: 'primary.main' }} /> Budget Breakdown
         </Typography>
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-          <ExportButton filename={`project_${project.pm_projectid || 'budget'}_lines.csv`} columns={budgetExportColumns} data={budgetLines} />
           {canEdit && (
             <>
               <Button
@@ -617,7 +616,7 @@ const budgetExportColumns: ExportColumn[] = [
       </Box>
 
       <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch' }}>
-        <Grid size={{ xs: 12, md: 8.5 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+        <Grid size={{ xs: 12, md: 12 }} sx={{ display: 'flex', flexDirection: 'column' }}>
           <BudgetTable
             budgetLines={budgetLines}
             loading={false}
@@ -628,83 +627,6 @@ const budgetExportColumns: ExportColumn[] = [
             openCreate={onAddBudgetLine}
             canEdit={canEdit}
           />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 3.5 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 3,
-              borderRadius: '24px',
-              bgcolor: isDark ? 'background.paper' : '#fff',
-              height: 'calc(100% - 24px)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: 3
-            }}
-          >
-            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Financial Analysis
-              </Typography>
-
-              <Box sx={{ height: 180, width: '100%', mb: 2, flexGrow: 1 }}>
-                {categorySummary.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={categorySummary}
-                      margin={{ top: 10, right: 10, left: -25, bottom: 5 }}
-                    >
-                      <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} stroke={theme.palette.divider} />
-                      <YAxis tick={{ fontSize: 9, fontFamily: 'monospace' }} stroke={theme.palette.divider} tickFormatter={(v) => `€${v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : v}`} />
-                      <RechartsTooltip formatter={(value) => [`€${new Intl.NumberFormat('en-GB').format(Number(value))}`]} />
-                      <Bar dataKey="budget" name="Budget" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} barSize={16} />
-                      <Bar dataKey="spend" name="Spend" fill={theme.palette.success.main} radius={[4, 4, 0, 0]} barSize={16} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', border: '1px dashed', borderColor: 'divider', borderRadius: 2 }}>
-                    <Typography variant="caption" color="text.secondary">No category data to display</Typography>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Summary Indicators
-              </Typography>
-
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
-                  <VerifiedIcon fontSize="small" sx={{ color: 'primary.main' }} /> Budget Utilisation
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: 120 }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={totalBudget > 0 ? Math.min(100, Math.round((totalSpent / totalBudget) * 100)) : 0}
-                    sx={{ flexGrow: 1, height: 6, borderRadius: 3 }}
-                    color={totalSpent > totalBudget ? 'error' : 'primary'}
-                  />
-                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                    {totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0}%
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
-                  <WarningAmberIcon fontSize="small" sx={{ color: costVariance >= 0 ? 'success.main' : 'error.main' }} /> Cost Health
-                </Typography>
-                <StatusTag
-                  label={costVariance >= 0 ? 'Under Budget' : 'Over Budget'}
-                  color={costVariance >= 0 ? 'success' : 'error'}
-                  size="small"
-                />
-              </Box>
-            </Box>
-          </Paper>
         </Grid>
       </Grid>
 
