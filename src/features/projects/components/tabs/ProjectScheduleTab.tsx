@@ -41,7 +41,7 @@ interface ProjectScheduleTabProps {
   onEditTask?: (task: ProjectTaskModel) => void
   onDeleteMilestone?: (milestoneId: string) => Promise<void>
   canEdit?: boolean
-  onRefresh?: () => void
+  onRefresh?: (type?: string) => void
   onSuccess?: (msg: string) => void
   onError?: (err: any) => void
   onAddMilestone?: () => void

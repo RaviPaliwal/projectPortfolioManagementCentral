@@ -1588,9 +1588,11 @@ User Prompt: ${promptText || "Extract details from the document."}`,
         fullWidth
         slotProps={{
           paper: {
-            sx: aiMode 
-              ? { borderRadius: 3, height: '85vh', maxHeight: 800 } 
-              : { borderRadius: 1.5 }
+            sx: {
+              borderRadius: aiMode ? 3 : 1.5,
+              height: '85vh',
+              maxHeight: 800
+            }
           }
         }}
       >

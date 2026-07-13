@@ -1271,6 +1271,85 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
     return 0
   }, [plannedStartDate, plannedEndDate])
 
+  // Compute next WBS number and task level based on selected Parent Task and existing rawTasks
+  const computedWbsInfo = useMemo(() => {
+    // If we're editing, parentTaskId is unchanged, and original task already has a WBS number, keep it
+    if (initialData && initialData.pm_wbsnumber && normalizeLookupId(parentTaskId) === normalizeLookupId(initialData.pm_parenttaskid)) {
+      return {
+        wbsNumber: initialData.pm_wbsnumber,
+        taskLevel: initialData.pm_tasklevel || 1
+      }
+    }
+
+    // Otherwise, compute next WBS number
+    if (parentTaskId) {
+      const parentTask = rawTasks.find(t => normalizeLookupId(t.pm_projecttaskid) === normalizeLookupId(parentTaskId))
+      if (parentTask) {
+        const parentWbs = parentTask.pm_wbsnumber || '1'
+        const parentLevel = parentTask.pm_tasklevel || 1
+        const childLevel = parentLevel + 1
+
+        // Filter for existing siblings under the same parent
+        const siblings = rawTasks.filter(t => {
+          // If we are editing, exclude the current task to avoid self-counting
+          if (initialData && normalizeLookupId(t.pm_projecttaskid) === normalizeLookupId(initialData.pm_projecttaskid)) {
+            return false
+          }
+          const tParentId = normalizeLookupId(t.pm_parenttaskid)
+          const tWbs = t.pm_wbsnumber
+          const matchesParentId = tParentId === normalizeLookupId(parentTaskId)
+          const matchesWbsPattern = tWbs && tWbs.startsWith(parentWbs + '.') && tWbs.slice(parentWbs.length + 1).split('.').length === 1
+          return matchesParentId || (t.pm_tasklevel === childLevel && matchesWbsPattern)
+        })
+
+        let maxSuffix = 0
+        siblings.forEach(t => {
+          if (t.pm_wbsnumber) {
+            const parts = t.pm_wbsnumber.split('.')
+            const lastPart = parseInt(parts[parts.length - 1], 10)
+            if (!isNaN(lastPart) && lastPart > maxSuffix) {
+              maxSuffix = lastPart
+            }
+          }
+        })
+
+        return {
+          wbsNumber: `${parentWbs}.${maxSuffix + 1}`,
+          taskLevel: childLevel
+        }
+      }
+    }
+
+    // No parent selected (Root Task)
+    const rootSiblings = rawTasks.filter(t => {
+      // If we are editing, exclude the current task to avoid self-counting
+      if (initialData && normalizeLookupId(t.pm_projecttaskid) === normalizeLookupId(initialData.pm_projecttaskid)) {
+        return false
+      }
+      const tParentId = normalizeLookupId(t.pm_parenttaskid)
+      const tWbs = t.pm_wbsnumber
+      const matchesNoParent = !tParentId
+      const matchesWbsPattern = tWbs && !tWbs.includes('.')
+      return matchesNoParent || (t.pm_tasklevel === 1 && matchesWbsPattern)
+    })
+
+    let maxRoot = 0
+    rootSiblings.forEach(t => {
+      if (t.pm_wbsnumber) {
+        const parts = t.pm_wbsnumber.split('.')
+        const firstPart = parseInt(parts[0], 10)
+        if (!isNaN(firstPart) && firstPart > maxRoot) {
+          maxRoot = firstPart
+        }
+      }
+    })
+
+    return {
+      wbsNumber: `${maxRoot + 1}`,
+      taskLevel: 1
+    }
+  }, [parentTaskId, rawTasks, initialData])
+
   // Reactive inline validation checking
   const validationError = useMemo(() => {
     // 1. Parent Task Bounds Check
@@ -1350,13 +1429,15 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
       const payloadData = {
         pm_taskname: taskName,
         pm_taskdescription: description,
-        pm_parenttaskid: parentTaskId || undefined,
-        pm_assignedresource: assignedResource || undefined,
+        pm_parenttaskid: parentTaskId,
+        pm_assignedresource: assignedResource,
         pm_plannedstartdate: plannedStartDate || undefined,
         pm_plannedenddate: plannedEndDate || undefined,
         pm_percentcomplete: percentComplete,
         pm_taskstatus: statusVal,
-        pm_durationdays: durationDays || undefined
+        pm_durationdays: durationDays || undefined,
+        pm_wbsnumber: computedWbsInfo.wbsNumber || undefined,
+        pm_tasklevel: computedWbsInfo.taskLevel
       }
 
       if (initialData?.pm_projecttaskid) {
@@ -1405,7 +1486,7 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
             <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
-                label="Task name *"
+                label="Task name"
                 value={taskName}
                 onChange={(e) => setTaskName(e.target.value)}
                 required
@@ -1455,12 +1536,21 @@ export const TaskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
               </TextField>
             </Grid>
 
-            <Grid size={{ xs: 6 }}>
+            <Grid size={{ xs: 3 }}>
               <TextField
                 fullWidth
                 type="number"
                 label="Duration (days)"
                 value={durationDays}
+                disabled
+              />
+            </Grid>
+
+            <Grid size={{ xs: 3 }}>
+              <TextField
+                fullWidth
+                label="WBS Code"
+                value={computedWbsInfo.wbsNumber}
                 disabled
               />
             </Grid>
