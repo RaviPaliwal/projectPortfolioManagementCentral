@@ -17,6 +17,7 @@ import TrackChangesIcon from '@mui/icons-material/TrackChanges'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
+import FlagIcon from '@mui/icons-material/Flag'
 
 import { StatusTag, KpiCardRow } from '@/components/common'
 import type { BenefitModel } from '@/types/dataverse'
@@ -197,7 +198,9 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5 }}>
                   <Box>
                     <Typography variant="caption" color="text.disabled" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Reference / ID</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedBenefit.pm_benefitreference || '—'}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                      {selectedBenefit.pm_benefitreference ? selectedBenefit.pm_benefitreference.replace('--', '-') : '—'}
+                    </Typography>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.disabled" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Benefit Type</Typography>
@@ -236,7 +239,7 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
                       {selectedBenefit.pm_unitofmeasure || '—'}
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5 }}>
                     <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'action.hover', borderLeft: (theme) => `4px solid ${theme.palette.text.secondary}` }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 700, textTransform: 'uppercase' }}>Baseline</Typography>
                       <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"JetBrains Mono", monospace' }}>
@@ -260,7 +263,7 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   <TimelineIcon sx={{ fontSize: 18, color: 'primary.main' }} /> Realisation Timeline
                 </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5 }}>
                   <Box>
                     <Typography variant="caption" color="text.disabled" sx={{ display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>Start Date</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
@@ -276,9 +279,9 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
                 </Box>
 
                 {startDate && endDate && (
-                  <Box sx={{ mt: 1.5 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="caption" color="text.secondary">Realisation Period Progress</Typography>
+                  <Box sx={{ mt: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Realisation Period Progress</Typography>
                       <Typography variant="caption" sx={{ fontWeight: 700 }}>{timeProgress}% ({durationDays} days total)</Typography>
                     </Box>
                     <LinearProgress
@@ -309,7 +312,7 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: '12px', bgcolor: 'action.hover' }}>
                 <Avatar sx={{ bgcolor: ragColor, width: 44, height: 44 }}>
-                  <EmojiEventsIcon sx={{ color: '#fff' }} />
+                  <FlagIcon sx={{ color: '#fff' }} />
                 </Avatar>
                 <Box>
                   <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>RAG STATUS</Typography>

@@ -130,20 +130,17 @@ import type { ExportColumn } from '@/utils/exportUtils'
 import { WORKFLOW_DECISION_EVENT } from '@/services/workflow.service'
 import { ConvertToProjectDialog } from '../components/ConvertToProjectDialog'
 import { createProject, createProgramme, createPortfolio } from '@/services'
-import { formatDate } from '@/utils/formatters'
+import { formatDate, currencyFormatter } from '@/utils/formatters'
+import { CURRENCY_DISPLAY } from '@/constants/currency'
 
 // ── Export columns ────────────────────────────────────────────────────────────
 const pipelineExportColumns: ExportColumn[] = [
   { key: 'pm_initiativetitle', label: 'Initiative Title' },
   { key: 'pm_initiativestatus', label: 'Status' },
   { key: 'pm_initiativeowner', label: 'Owner' },
-  { key: 'pm_estimatedbudget', label: 'Est. Budget (EUR)' },
+  { key: 'pm_estimatedbudget', label: `Est. Budget (${CURRENCY_DISPLAY})` },
   { key: 'pm_initiativecategory', label: 'Category' },
 ]
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B'
@@ -1797,7 +1794,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
             <Grid container spacing={2.5} sx={{ mb: 3 }}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
-                  label="Estimated Budget (EUR)"
+                  label={`Estimated Budget (${CURRENCY_DISPLAY})`}
                   type="number"
                   fullWidth
                   size="small"
@@ -1812,7 +1809,7 @@ User Prompt: ${promptText || "Extract details from the document."}`,
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
-                  label="Estimated Benefits (EUR)"
+                  label={`Estimated Benefits (${CURRENCY_DISPLAY})`}
                   type="number"
                   fullWidth
                   size="small"

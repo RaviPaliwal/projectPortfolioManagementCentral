@@ -107,16 +107,7 @@ export const BenefitsGrid = ({
         </Typography>
       )
     },
-    {
-      key: 'pm_ragstatus',
-      label: 'RAG',
-      format: (val) => (
-        <StatusTag
-          label={RAG_LABELS[String(val) as keyof typeof RAG_LABELS] ?? '—'}
-          color={RAG_COLORS[String(val) as keyof typeof RAG_COLORS]}
-        />
-      )
-    },
+
     {
       key: 'pm_benifitownername',
       label: 'Owner',

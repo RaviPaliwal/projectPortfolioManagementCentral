@@ -698,13 +698,49 @@ export async function fetchAllIssues(): Promise<IssueModel[]> {
   }
 }
 
+const SKIP_FIELDS = new Set([
+  'pm_issueid',
+  'pm_project',
+  '_pm_project_value',
+  'pm_programmefk',
+  '_pm_programmefk_value',
+  'pm_issueowner',
+  '_pm_issueowner_value',
+  'pm_risk',
+  '_pm_risk_value',
+  'pm_regardingid',
+  '_pm_regardingid_value',
+  'pm_regardingidtype',
+  'pm_projectname',
+  'pm_programmefkname',
+  'pm_issueownername',
+  'pm_riskname',
+  'pm_regardingidname',
+  'ownerid',
+  'owneridtype',
+  'owneridname',
+  'createdon',
+  'createdby',
+  'modifiedon',
+  'modifiedby',
+  'owningbusinessunit',
+  '_owningbusinessunit_value',
+  'owningteam',
+  '_owningteam_value',
+  'owninguser',
+  '_owninguser_value',
+  'pm_linkedrisk',
+  'pm_linkedriskname',
+])
+
 export async function createIssueFull(payload: Partial<IssueModel>): Promise<IssueModel | null> {
   try {
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(payload)) {
-      if (value !== undefined && value !== null && value !== '' &&
-        key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner' && key !== '_pm_regardingid_value' && key !== 'pm_regardingidtype') {
-        if (['pm_issuecategory', 'pm_issuestatus', 'pm_prioritylevel', 'pm_impactlevel', 'pm_ragstatus'].includes(key)) {
+      if (value !== undefined && value !== null && value !== '' && !SKIP_FIELDS.has(key) && !key.startsWith('_') && !key.endsWith('name') && typeof value !== 'object') {
+        if (key === 'pm_escalationstatus') {
+          cleanPayload[key] = value === 'true' || value === '1' || value === 1 || value === true
+        } else if (['pm_issuecategory', 'pm_issuestatus', 'pm_prioritylevel', 'pm_impactlevel', 'pm_ragstatus'].includes(key)) {
           cleanPayload[key] = typeof value === 'string' ? Number(value) : value
         } else {
           cleanPayload[key] = value
@@ -749,8 +785,7 @@ export async function createIssueFull(payload: Partial<IssueModel>): Promise<Iss
         actionType: 'Create',
         entityName: 'pm_issues',
         recordId: item.pm_issueid,
-        recordName: item.pm_issuetitle || '',
-        newValue: `Issue created: ${item.pm_issuetitle || ''}`
+        recordName: item.pm_issuetitle || 'Issue',
       })
     }
     return item ? mapIssue(item) : null
@@ -777,9 +812,10 @@ export async function updateIssueFull(id: string, changes: Partial<IssueModel>):
 
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(changes)) {
-      if (value !== undefined && value !== null &&
-        key !== 'pm_issueid' && key !== '_pm_project_value' && key !== '_pm_programmefk_value' && key !== '_pm_issueowner_value' && key !== '_pm_risk_value' && key !== 'pm_issueowner' && key !== '_pm_regardingid_value' && key !== 'pm_regardingidtype') {
-        if (['pm_issuecategory', 'pm_issuestatus', 'pm_prioritylevel', 'pm_impactlevel', 'pm_ragstatus'].includes(key)) {
+      if (value !== undefined && value !== null && !SKIP_FIELDS.has(key) && !key.startsWith('_') && !key.endsWith('name') && typeof value !== 'object') {
+        if (key === 'pm_escalationstatus') {
+          cleanPayload[key] = value === 'true' || value === '1' || value === 1 || value === true
+        } else if (['pm_issuecategory', 'pm_issuestatus', 'pm_prioritylevel', 'pm_impactlevel', 'pm_ragstatus'].includes(key)) {
           cleanPayload[key] = typeof value === 'string' ? Number(value) : value
         } else {
           cleanPayload[key] = value
@@ -809,6 +845,7 @@ export async function updateIssueFull(id: string, changes: Partial<IssueModel>):
         cleanPayload['pm_risk@odata.bind'] = `/pm_risks(${riskId})`
       }
     }
+    console.log('[RiskIssueService] updateIssueFull cleanPayload:', cleanPayload)
     const result = await Pm_issuesService.update(id, cleanPayload as unknown as Pm_issues)
     if (!result.success) {
       console.error('[RiskIssueService] updateIssueFull failed:', result.error)

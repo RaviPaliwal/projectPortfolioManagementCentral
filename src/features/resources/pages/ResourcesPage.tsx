@@ -68,6 +68,8 @@ import {
   fetchDepartmentDemandData
 } from '@/services/chart.service'
 import type { ExportColumn } from '@/utils/exportUtils'
+import { CURRENCY_DISPLAY } from '@/constants/currency'
+import { currencyFormatter } from '@/utils/formatters'
 import type { ResourceModel, ResourceAllocationModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, Breadcrumbs, SearchFilterBar, TabPanel, ExportButton, ActionIcon, WorkflowMilestone } from '@/components/common'
@@ -180,8 +182,6 @@ interface SortState {
   dir: SortDir
 }
 
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
-
 const resourceExportColumns: ExportColumn[] = [
   { key: 'pm_fullname', label: 'Name' },
   { key: 'pm_departmentname', label: 'Department' },
@@ -189,7 +189,7 @@ const resourceExportColumns: ExportColumn[] = [
   { key: 'pm_resourcecategory', label: 'Category' },
   { key: 'pm_positiontitle', label: 'Position' },
   { key: 'pm_dailyworkcapacity', label: 'Daily Capacity (h)' },
-  { key: 'pm_dailycostrate', label: 'Daily Rate (EUR)' },
+  { key: 'pm_dailycostrate', label: `Daily Rate (${CURRENCY_DISPLAY})` },
 ]
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -1194,7 +1194,7 @@ export default function ResourcesPage() {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
-                    label="Daily Cost Rate (EUR)"
+                    label={`Daily Cost Rate (${CURRENCY_DISPLAY})`}
                     type="number"
                     fullWidth
                     size="small"

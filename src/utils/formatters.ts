@@ -1,12 +1,14 @@
+import { CURRENCY_CODE } from '@/constants/currency'
+
 export const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
-  currency: 'USD',
+  currency: CURRENCY_CODE,
   maximumFractionDigits: 0,
 })
 
 export const currencyFormatterDetailed = new Intl.NumberFormat('en-US', {
   style: 'currency',
-  currency: 'USD',
+  currency: CURRENCY_CODE,
   maximumFractionDigits: 2,
 })
 

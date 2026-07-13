@@ -60,6 +60,8 @@ import type { FundingSourceModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 import { PageHeader, KpiCardRow, TableFooter, TableShell, Breadcrumbs, SearchFilterBar, ExportButton, StatusTag, ActionIcon, WorkflowMilestone, TabPanel } from '@/components/common'
 import type { KpiCardItem, FilterOption, ExportColumn } from '@/components/common'
+import { CURRENCY_DISPLAY } from '@/constants/currency'
+import { currencyFormatter } from '@/utils/formatters'
 import { MODULE_NAMES } from '@/constants/moduleNames'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -100,9 +102,9 @@ const fundingExportColumns: ExportColumn[] = [
   { key: 'pm_fundingsourcename', label: 'Source' },
   { key: 'pm_fundingtype', label: 'Type' },
   { key: 'pm_fundingstatus', label: 'Status' },
-  { key: 'pm_totalamounteur', label: 'Total Amount (EUR)' },
-  { key: 'pm_allocatedamounteur', label: 'Allocated (EUR)' },
-  { key: 'pm_availableamounteur', label: 'Available (EUR)' },
+  { key: 'pm_totalamounteur', label: `Total Amount (${CURRENCY_DISPLAY})` },
+  { key: 'pm_allocatedamounteur', label: `Allocated (${CURRENCY_DISPLAY})` },
+  { key: 'pm_availableamounteur', label: `Available (${CURRENCY_DISPLAY})` },
   { key: 'pm_fundingbody', label: 'Funding Body' },
   { key: 'pm_portfolioname', label: 'Portfolio' },
   { key: 'pm_effectivefromdate', label: 'Effective From' },
@@ -123,7 +125,7 @@ interface SortState {
   dir: SortDir
 }
 
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+// local currencyFormatter removed to use imported one
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -1185,14 +1187,14 @@ export default function FundingSourcesPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <EuroIcon sx={{ fontSize: 18, color: 'success.main' }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: fontSizes.xs, color: 'text.secondary' }}>
-              Funding Amounts (EUR)
+              Funding Amounts ({CURRENCY_DISPLAY})
             </Typography>
             <Divider sx={{ flex: 1 }} />
           </Box>
           <Grid container spacing={2.5} sx={{ mb: 3 }}>
             <Grid size={{ xs: 12 }}>
               <TextField
-                label="Total Amount (EUR)"
+                label={`Total Amount (${CURRENCY_DISPLAY})`}
                 type="number"
                 fullWidth
                 size="small"

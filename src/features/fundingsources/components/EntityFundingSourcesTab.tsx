@@ -43,6 +43,8 @@ import {
 import type { FundingSourceModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 import { TableShell, StatusTag, ActionIcon, TableFooter } from '@/components/common'
+import { CURRENCY_DISPLAY } from '@/constants/currency'
+import { currencyFormatter } from '@/utils/formatters'
 import {
   Pm_portfoliosService,
   Pm_projectsService,
@@ -74,7 +76,7 @@ const STATUS_COLORS: Record<string, 'success' | 'error'> = {
   '1': 'error',
 }
 
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+// local currencyFormatter removed
 
 export interface EntityFundingSourcesTabRef {
   triggerCreate: () => void
@@ -706,7 +708,7 @@ export const EntityFundingSourcesTab = forwardRef<EntityFundingSourcesTabRef, En
                 <TextField
                   fullWidth
                   size="small"
-                  label="Total Amount (EUR)"
+                  label={`Total Amount (${CURRENCY_DISPLAY})`}
                   type="number"
                   value={formData.pm_totalamounteur || ''}
                   onChange={(e) => setFormData({ ...formData, pm_totalamounteur: Number(e.target.value) })}

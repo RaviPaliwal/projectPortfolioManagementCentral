@@ -43,6 +43,8 @@ import SavingsIcon from '@mui/icons-material/Savings'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange'
 import CategoryIcon from '@mui/icons-material/Category'
+import { CURRENCY_DISPLAY, CURRENCY_SYMBOL } from '@/constants/currency'
+import { currencyFormatter } from '@/utils/formatters'
 import SourceIcon from '@mui/icons-material/Source'
 import NotesIcon from '@mui/icons-material/Notes'
 import VerifiedIcon from '@mui/icons-material/Verified'
@@ -82,10 +84,10 @@ const budgetExportColumns: ExportColumn[] = [
   { key: 'pm_portfolioname', label: 'Portfolio' },
   { key: 'pm_programmename', label: 'Programme' },
   { key: 'pm_projectname', label: 'Project' },
-  { key: 'pm_budgetamount', label: 'Budget (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
-  { key: 'pm_plannedamount', label: 'Planned (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
-  { key: 'pm_actualamount', label: 'Actual (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
-  { key: 'pm_remainingamount', label: 'Remaining (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_budgetamount', label: `Budget (${CURRENCY_DISPLAY})`, format: (v: any) => v != null ? `${CURRENCY_SYMBOL}${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_plannedamount', label: `Planned (${CURRENCY_DISPLAY})`, format: (v: any) => v != null ? `${CURRENCY_SYMBOL}${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_actualamount', label: `Actual (${CURRENCY_DISPLAY})`, format: (v: any) => v != null ? `${CURRENCY_SYMBOL}${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_remainingamount', label: `Remaining (${CURRENCY_DISPLAY})`, format: (v: any) => v != null ? `${CURRENCY_SYMBOL}${Number(v).toLocaleString()}` : '' },
   { key: 'pm_fiscalperiodname', label: 'Period' },
   { key: 'pm_statusname', label: 'Status' },
 ]
@@ -125,7 +127,7 @@ interface SortState {
   dir: SortDir
 }
 
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+// local currencyFormatter removed
 const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 
 const getVarianceColor = (variance?: number): string => {

@@ -38,6 +38,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import type { BudgetLineModel, ProjectModel } from '@/types/dataverse'
+import { CURRENCY_DISPLAY, CURRENCY_SYMBOL } from '@/constants/currency'
 import { currency } from '../../constants'
 import { fontSizes } from '@/styles'
 import { BudgetTable } from '@/features/budgets/components/BudgetTable'
@@ -560,10 +561,10 @@ const budgetExportColumns: ExportColumn[] = [
   { key: 'pm_portfolioname', label: 'Portfolio' },
   { key: 'pm_programmename', label: 'Programme' },
   { key: 'pm_projectname', label: 'Project' },
-  { key: 'pm_approvedbudgeteur', label: 'Budget (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
-  { key: 'pm_forecastspendeur', label: 'Forecast (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
-  { key: 'pm_actualspendeur', label: 'Actual (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
-  { key: 'pm_committedspendeur', label: 'Committed (EUR)', format: (v: any) => v != null ? `€${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_approvedbudgeteur', label: `Budget (${CURRENCY_DISPLAY})`, format: (v: any) => v != null ? `${CURRENCY_SYMBOL}${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_forecastspendeur', label: `Forecast (${CURRENCY_DISPLAY})`, format: (v: any) => v != null ? `${CURRENCY_SYMBOL}${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_actualspendeur', label: `Actual (${CURRENCY_DISPLAY})`, format: (v: any) => v != null ? `${CURRENCY_SYMBOL}${Number(v).toLocaleString()}` : '' },
+  { key: 'pm_committedspendeur', label: `Committed (${CURRENCY_DISPLAY})`, format: (v: any) => v != null ? `${CURRENCY_SYMBOL}${Number(v).toLocaleString()}` : '' },
   { key: 'pm_fiscalperiodname', label: 'Period' },
 ]
 

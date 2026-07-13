@@ -90,14 +90,16 @@ import PsychologyIcon from '@mui/icons-material/Psychology'
 import { PortfolioFormDialog, PortfolioAICreateDialog, PortfolioGrid } from '../components'
 import { EntityFundingSourcesTab } from '@/features/fundingsources/components'
 
+import { CURRENCY_DISPLAY } from '@/constants/currency'
+
 // ── Export columns ────────────────────────────────────────────────────────────
 const portfolioExportColumns: ExportColumn[] = [
   { key: 'pm_portfolioname', label: 'Portfolio Name' },
   { key: '_pm_ownerlookup_value', label: 'Owner' },
   { key: 'pm_portfoliostatus', label: 'Status' },
   { key: 'pm_ragstatus', label: 'RAG' },
-  { key: 'pm_approvedbudgeteur', label: 'Budget (EUR)' },
-  { key: 'pm_actualspendeur', label: 'Actual Spend (EUR)' },
+  { key: 'pm_approvedbudgeteur', label: `Budget (${CURRENCY_DISPLAY})` },
+  { key: 'pm_actualspendeur', label: `Actual Spend (${CURRENCY_DISPLAY})` },
 ]
 
 // ── Portfolio Hierarchy Table ────────────────────────────────────────────────

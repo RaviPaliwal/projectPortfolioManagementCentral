@@ -15,6 +15,7 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import type { BudgetLineModel } from '@/types/dataverse'
 import { fontSizes } from '@/styles'
 import { DataverseTable, StatusTag, type Column } from '@/components/common'
+import { currencyFormatter } from '@/utils/formatters'
 
 interface BudgetTableProps {
   budgetLines: BudgetLineModel[]
@@ -42,7 +43,7 @@ const CATEGORY_COLORS: Record<string, 'primary' | 'warning' | 'info' | 'secondar
   '3': 'secondary',
 }
 
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+// local currencyFormatter removed
 const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 
 const budgetUtilization = (budget?: BudgetLineModel): number => {
