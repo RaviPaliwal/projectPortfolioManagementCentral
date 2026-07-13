@@ -49,8 +49,8 @@ export const mapTimesheet = (item: Pm_timesheets, periods?: any[]): TimesheetMod
     pm_rejectionreason: item.pm_rejectionreason,
     pm_resourcename: item.pm_resourcename,
     _pm_resource_value: item._pm_resource_value,
-    pm_reportingperiod: item.pm_financialperiodname || undefined,
-    pm_financialperiodname: item.pm_financialperiodname,
+    pm_reportingperiod: item.pm_financialperiodname || (item as any)['_pm_financialperiod_value@OData.Community.Display.V1.FormattedValue'] || undefined,
+    pm_financialperiodname: item.pm_financialperiodname || (item as any)['_pm_financialperiod_value@OData.Community.Display.V1.FormattedValue'],
     _pm_financialperiod_value: item._pm_financialperiod_value,
     ownerid: (item as any)._ownerid_value || item.ownerid,
     owneridtype: item.owneridtype,
@@ -82,7 +82,7 @@ export async function fetchTimesheets(resourceId?: string): Promise<TimesheetMod
       'pm_submissiondate', 'pm_submittedby',
       'pm_approvaldate', 'pm_approvedby',
       'pm_rejectionreason', '_pm_resource_value',
-      'pm_financialperiodname', '_pm_financialperiod_value',
+      '_pm_financialperiod_value',
     ]
     const options: IGetAllOptions = {
       select: selectFields,
@@ -153,7 +153,7 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
       'pm_submissiondate', 'pm_submittedby',
       'pm_approvaldate', 'pm_approvedby',
       'pm_rejectionreason', '_pm_resource_value', 'ownerid',
-      'pm_financialperiodname', '_pm_financialperiod_value',
+      '_pm_financialperiod_value',
     ]
     const result = await Pm_timesheetsService.get(timesheetId, { select: selectFields })
     if (!result.success) {
@@ -193,12 +193,30 @@ export async function fetchTimesheetDetails(timesheetId: string): Promise<Timesh
     return null
   }
 }
+const SKIP_VIRTUAL = new Set([
+  'pm_periodstartdate',
+  'pm_periodenddate',
+  'pm_resourcename',
+  'pm_ownername',
+  'pm_financialperiodname',
+  'pm_timesheetstatusname',
+  '_pm_resource_value',
+  '_pm_financialperiod_value',
+  'pm_timesheetid',
+  'ownerid',
+  'owneridtype',
+  'owneridname',
+  'createdbyname',
+  'modifiedbyname',
+  'statecodename',
+  'statuscodename',
+])
 
 export async function createTimesheet(payload: Partial<TimesheetModel>): Promise<TimesheetModel | null> {
   try {
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(payload)) {
-      if (value !== undefined && value !== null && value !== '' && key !== '_pm_resource_value' && key !== 'pm_timesheetid' && key !== 'pm_ownername' && key !== 'pm_resourcename' && key !== 'ownerid' && key !== 'owneridtype') {
+      if (value !== undefined && value !== null && value !== '' && !SKIP_VIRTUAL.has(key)) {
         cleanPayload[key] = value
       }
     }

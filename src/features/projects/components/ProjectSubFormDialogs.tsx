@@ -336,7 +336,7 @@ export const RiskDialog: React.FC<SubDialogProps> = ({ open, onClose, projectId,
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
-      <DialogTitle sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
+      <DialogTitle component="div" sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
           {isEdit ? 'Edit Risk' : 'Log Risk'}
         </Typography>

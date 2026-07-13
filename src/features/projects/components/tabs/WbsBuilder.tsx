@@ -593,28 +593,36 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
                 <TableCell align="center">
                   <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
                     <Tooltip title="Outdent (⬅️)">
-                      <IconButton size="small" onClick={() => handleOutdent(index)} disabled={level <= 1}>
-                        <ArrowBackIcon fontSize="small" />
-                      </IconButton>
+                      <span>
+                        <IconButton size="small" onClick={() => handleOutdent(index)} disabled={level <= 1}>
+                          <ArrowBackIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                     <Tooltip title="Indent (➡️)">
-                      <IconButton size="small" onClick={() => handleIndent(index)} disabled={isFirst || level > (localTasks[index - 1].pm_tasklevel || 1)}>
-                        <ArrowForwardIcon fontSize="small" />
-                      </IconButton>
+                      <span>
+                        <IconButton size="small" onClick={() => handleIndent(index)} disabled={isFirst || level > (localTasks[index - 1].pm_tasklevel || 1)}>
+                          <ArrowForwardIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </Box>
                 </TableCell>
                 <TableCell align="center">
                   <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
                     <Tooltip title="Move Up (⬆️)">
-                      <IconButton size="small" onClick={() => handleMoveUp(index)} disabled={isFirst}>
-                        <ArrowUpwardIcon fontSize="small" />
-                      </IconButton>
+                      <span>
+                        <IconButton size="small" onClick={() => handleMoveUp(index)} disabled={isFirst}>
+                          <ArrowUpwardIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                     <Tooltip title="Move Down (⬇️)">
-                      <IconButton size="small" onClick={() => handleMoveDown(index)} disabled={isLast}>
-                        <ArrowDownwardIcon fontSize="small" />
-                      </IconButton>
+                      <span>
+                        <IconButton size="small" onClick={() => handleMoveDown(index)} disabled={isLast}>
+                          <ArrowDownwardIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </Box>
                 </TableCell>

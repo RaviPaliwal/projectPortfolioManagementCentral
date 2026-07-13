@@ -125,7 +125,7 @@ export const RiskTable = ({
       format: (val: any) => <Typography variant="body2" color="text.secondary">{IMPACT_LABELS[String(val ?? '')] || '—'}</Typography>
     },
     {
-      key: 'pm_inherentprobability',
+      key: 'risk_score',
       label: 'Score',
       format: (val: any, risk: RiskModel) => {
         const scoreVal = riskScore(risk.pm_inherentprobability, risk.pm_inherentimpact)

@@ -215,23 +215,25 @@ export const ProjectTasksTab: React.FC<ProjectTasksTabProps> = ({
 
                             {!isComplete ? (
                               <Tooltip title="Mark as Done">
-                                <IconButton
-                                  size="small"
-                                  color="success"
-                                  disabled={updatingTaskId === task.pm_projecttaskid || deletingTaskId === task.pm_projecttaskid}
-                                  onClick={() => handleMarkAsDoneClick(task.pm_projecttaskid!)}
-                                  sx={{
-                                    border: '1px solid',
-                                    borderColor: 'success.light',
-                                    '&:hover': { bgcolor: 'success.lighter' }
-                                  }}
-                                >
-                                  {updatingTaskId === task.pm_projecttaskid ? (
-                                    <CircularProgress size={16} color="inherit" />
-                                  ) : (
-                                    <CheckCircleIcon sx={{ fontSize: 16 }} />
-                                  )}
-                                </IconButton>
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    color="success"
+                                    disabled={updatingTaskId === task.pm_projecttaskid || deletingTaskId === task.pm_projecttaskid}
+                                    onClick={() => handleMarkAsDoneClick(task.pm_projecttaskid!)}
+                                    sx={{
+                                      border: '1px solid',
+                                      borderColor: 'success.light',
+                                      '&:hover': { bgcolor: 'success.lighter' }
+                                    }}
+                                  >
+                                    {updatingTaskId === task.pm_projecttaskid ? (
+                                      <CircularProgress size={16} color="inherit" />
+                                    ) : (
+                                      <CheckCircleIcon sx={{ fontSize: 16 }} />
+                                    )}
+                                  </IconButton>
+                                </span>
                               </Tooltip>
                             ) : (
                               <Tooltip title="Completed">
