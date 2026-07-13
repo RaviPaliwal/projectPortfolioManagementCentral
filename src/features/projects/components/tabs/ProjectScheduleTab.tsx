@@ -87,6 +87,7 @@ export const ProjectScheduleTab: React.FC<ProjectScheduleTabProps> = ({
       wbs: t.pm_wbsnumber,
       onCriticalPath: isCritical(t.pm_oncriticalpath),
       predecessorIds: t.predecessorIds || (t._pm_predecessortask_value ? [t._pm_predecessortask_value] : []),
+      isMilestone: !!t.pm_ismilestone,
     }))
     if (showCriticalPathOnly) {
       return raw.filter(t => t.onCriticalPath)

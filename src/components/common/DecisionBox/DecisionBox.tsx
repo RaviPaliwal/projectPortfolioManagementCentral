@@ -43,6 +43,22 @@ export interface DecisionBoxProps {
 
 // ─── Component ──────────────────────────────────────────────────────────
 
+const T = {
+  ink: "#141310",
+  sub: "#716A5C",
+  faint: "#A39C8C",
+  line: "#E6E1D6",
+  paper: "#FBFAF7",
+  card: "#FFFFFF",
+  brand: "#1C7A5E",
+  brandDark: "#0F5B44",
+  brandTint: "#E9F3EE",
+  amber: "#AD7A1E",
+  amberTint: "#FBF1DD",
+  red: "#B7402C",
+  redTint: "#FBEBE7",
+}
+
 export const DecisionBox: React.FC<DecisionBoxProps> = ({
   approvalStepId,
   onBeforeDecision,
@@ -90,9 +106,9 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
   const isLoading = submitting
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, width: '100%' }}>
       {lastError && (
-        <Box sx={{ color: 'error.main', fontSize: '0.8rem', bgcolor: 'error.50', p: 1.5, borderRadius: 1 }}>
+        <Box sx={{ color: T.red, fontSize: '0.8rem', bgcolor: T.redTint, p: 1.5, borderRadius: 1 }}>
           {lastError}
         </Box>
       )}
@@ -107,8 +123,22 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         disabled={isLoading || disabled}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 2,
+            backgroundColor: T.card,
+            '& fieldset': { borderColor: T.line },
+            '&:hover fieldset': { borderColor: T.faint },
+            '&.Mui-focused fieldset': { borderColor: T.brand, borderWidth: '1px' },
+          },
+          '& .MuiInputLabel-root': {
+            color: T.sub,
+            fontSize: '0.85rem',
+            '&.Mui-focused': { color: T.brand },
+          }
+        }}
         slotProps={{
-          input: { sx: { borderRadius: 1.5 } },
+          input: { sx: { fontSize: '0.85rem', color: T.ink } },
           inputLabel: { shrink: true },
         }}
       />
@@ -116,21 +146,57 @@ export const DecisionBox: React.FC<DecisionBoxProps> = ({
       <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>
         <Button
           variant="outlined"
-          color="error"
           disabled={isLoading || disabled}
           onClick={() => handleDecision(3)}
-          startIcon={isLoading ? <CircularProgress size={16} /> : <CancelIcon />}
-          sx={{ fontWeight: 600, minWidth: 140 }}
+          startIcon={isLoading ? <CircularProgress size={16} sx={{ color: T.red }} /> : <CancelIcon />}
+          sx={{
+            fontWeight: 700,
+            minWidth: 140,
+            textTransform: 'none',
+            borderRadius: 2.5,
+            px: 2.5,
+            py: 1,
+            fontSize: '0.8rem',
+            color: T.red,
+            borderColor: T.line,
+            bgcolor: T.card,
+            '&:hover': {
+              bgcolor: T.redTint,
+              borderColor: '#E9C4B9',
+            },
+            '&.Mui-disabled': {
+              color: T.faint,
+              borderColor: T.line,
+            }
+          }}
         >
           {isLoading ? 'Processing...' : 'Reject'}
         </Button>
         <Button
           variant="contained"
-          color="success"
           disabled={isLoading || disabled || approveDisabled}
           onClick={() => handleDecision(0)}
-          startIcon={isLoading ? <CircularProgress size={16} /> : <CheckCircleIcon />}
-          sx={{ fontWeight: 600, minWidth: 140 }}
+          startIcon={isLoading ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <CheckCircleIcon />}
+          sx={{
+            fontWeight: 700,
+            minWidth: 140,
+            textTransform: 'none',
+            borderRadius: 2.5,
+            px: 2.5,
+            py: 1,
+            fontSize: '0.8rem',
+            bgcolor: T.brand,
+            color: '#fff',
+            boxShadow: 'none',
+            '&:hover': {
+              bgcolor: T.brandDark,
+              boxShadow: 'none',
+            },
+            '&.Mui-disabled': {
+              bgcolor: T.line,
+              color: T.faint,
+            }
+          }}
         >
           {isLoading ? 'Processing...' : 'Approve'}
         </Button>

@@ -5,6 +5,7 @@ import {
   useTheme,
   IconButton,
   Tooltip,
+  Paper,
 } from '@mui/material'
 import ZoomInIcon from '@mui/icons-material/ZoomIn'
 import ZoomOutIcon from '@mui/icons-material/ZoomOut'
@@ -79,8 +80,9 @@ const getMonday = (date: Date): Date => {
   return d
 }
 
-const getTaskColor = (task: GanttTaskData, isDark: boolean): string => {
+const getTaskColor = (task: GanttTaskData, isDark: boolean, theme: any): string => {
   if (task.isMilestone) return '#f59e0b'
+  if (task.level === 1) return theme.palette.primary.main
   if (String(task.status) === '0' || task.percentComplete === 100) return '#10b981'
   return isDark ? '#3b82f6' : '#2563eb'
 }
@@ -89,6 +91,23 @@ const getStatusLabel = (status?: string): string => {
   if (String(status) === '0') return 'Complete'
   if (String(status) === '1') return 'In Progress'
   return 'Not Started'
+}
+
+const getHierarchyPrefix = (item: GanttTaskData, index: number, list: GanttTaskData[]): string => {
+  if (!item.level || item.level === 1) return ''
+  
+  // Find if there is any subsequent child task (level > 1) before the next parent task (level 1, not milestone)
+  let hasMoreSiblings = false
+  for (let j = index + 1; j < list.length; j++) {
+    const next = list[j]
+    if (next.level === 1 && !next.isMilestone) break
+    if (next.level && next.level > 1) {
+      hasMoreSiblings = true
+      break
+    }
+  }
+  
+  return hasMoreSiblings ? '├─ ' : '└─ '
 }
 
 export default function GanttChart({ tasks, milestones, onTaskClick, height }: GanttChartProps) {
@@ -102,12 +121,45 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
   const [selectedLine, setSelectedLine] = useState<{ predId: string; succId: string } | null>(null)
   const [hoveredLine, setHoveredLine] = useState<{ predId: string; succId: string } | null>(null)
 
+  const [hoveredTask, setHoveredTask] = useState<GanttTaskData | null>(null)
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number; alignRight: boolean }>({ x: 0, y: 0, alignRight: false })
+
   // Ensure all items are sorted by WBS and start date
   const allItems = useMemo(() => {
+    // 1. Separate parent tasks (level 1)
+    const parentTasks = tasks.filter(t => t.level === 1)
+
+    // 2. Prepare items array
     const items = [...tasks]
     if (milestones) {
       for (const ms of milestones) {
         if (!items.some((t) => t.id === ms.id)) {
+          // Find the parent phase (level 1 task) based on dates
+          let bestParent = parentTasks[0]
+          if (parentTasks.length > 0 && ms.date) {
+            const msTime = new Date(ms.date).getTime()
+            let minDiff = Infinity
+            
+            for (const p of parentTasks) {
+              const pStart = p.startDate ? new Date(p.startDate).getTime() : 0
+              const pEnd = p.endDate ? new Date(p.endDate).getTime() : pStart
+              
+              if (msTime >= pStart && msTime <= pEnd) {
+                bestParent = p
+                break
+              }
+              const diff = msTime - pStart
+              if (diff >= 0 && diff < minDiff) {
+                minDiff = diff
+                bestParent = p
+              }
+            }
+          }
+          
+          const parentWbs = bestParent?.wbs || '1'
+          const msTime = ms.date ? new Date(ms.date).getTime() : 0
+          const virtualWbs = `${parentWbs}.milestone.${msTime}`
+
           items.push({
             id: ms.id,
             name: ms.name,
@@ -115,18 +167,23 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
             endDate: ms.date,
             percentComplete: String(ms.status) === '2' ? 100 : 0,
             isMilestone: true,
-            level: 2, // render indented under phase/summary
+            level: 1, // display at level 1
             status: ms.status,
+            wbs: virtualWbs,
           })
         }
       }
     }
     
-    // Sort tasks logically by WBS number or start date
+    // Sort tasks logically by WBS number
     return items.sort((a, b) => {
-      if (a.wbs && b.wbs) {
-        return a.wbs.localeCompare(b.wbs, undefined, { numeric: true, sensitivity: 'base' })
+      const wbsA = a.wbs || ''
+      const wbsB = b.wbs || ''
+      if (wbsA && wbsB) {
+        return wbsA.localeCompare(wbsB, undefined, { numeric: true, sensitivity: 'base' })
       }
+      if (wbsA) return -1
+      if (wbsB) return 1
       const dateA = a.startDate ? new Date(a.startDate).getTime() : 0
       const dateB = b.startDate ? new Date(b.startDate).getTime() : 0
       return dateA - dateB
@@ -317,6 +374,43 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
     return { x: startX, y: y + (ROW_HEIGHT - BAR_HEIGHT) / 2, width: w, isValid: true }
   }
 
+  const hierarchyLines = useMemo(() => {
+    const lines: Array<{ path: string }> = []
+    
+    for (let i = 0; i < allItems.length; i++) {
+      const parent = allItems[i]
+      const isParent = parent.level === 1 && !parent.isMilestone
+      if (!isParent) continue
+      
+      const parentBar = getTaskBar(parent, HEADER_HEIGHT + i * ROW_HEIGHT)
+      if (!parentBar.isValid) continue
+      
+      const pX = parentBar.x
+      const pY = parentBar.y + BAR_HEIGHT / 2
+      
+      // Find all subsequent child tasks until the next level 1 summary task
+      for (let j = i + 1; j < allItems.length; j++) {
+        const child = allItems[j]
+        if (child.level === 1 && !child.isMilestone) break // reached next parent task
+        if (child.isMilestone) continue // do not connect milestones to parent tasks
+        
+        const childBar = getTaskBar(child, HEADER_HEIGHT + j * ROW_HEIGHT)
+        if (!childBar.isValid) continue
+        
+        const cX = childBar.x
+        const cY = childBar.y + BAR_HEIGHT / 2
+        
+        // Only draw if child starts at or after parent start
+        const startX = Math.min(pX, cX)
+        
+        lines.push({
+          path: `M ${startX} ${pY} L ${startX} ${cY} L ${cX} ${cY}`
+        })
+      }
+    }
+    return lines
+  }, [allItems, startDate, dayWidth])
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       {/* Zoom controls */}
@@ -382,9 +476,10 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
               </Typography>
             </Box>
             
-            {itemPositions.map(({ y, item }) => {
+            {itemPositions.map(({ y, item }, index) => {
               const isSummary = item.level && item.level === 1 && !item.isMilestone
               const isComp = String(item.status) === '0'
+              const prefix = getHierarchyPrefix(item, index, allItems)
               return (
                 <Box
                   key={item.id}
@@ -410,8 +505,8 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
                     borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
                   }}
                 >
-                  {item.level && item.level > 1 && (
-                    <Box sx={{ width: 8 * (item.level - 1), flexShrink: 0 }} />
+                  {item.level && item.level > 2 && (
+                    <Box sx={{ width: 12 * (item.level - 2), flexShrink: 0 }} />
                   )}
                   
                   <Box sx={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -427,7 +522,7 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
                         color: isComp ? 'text.secondary' : 'text.primary',
                       }}
                     >
-                      {item.wbs && !item.name.startsWith(item.wbs) ? `${item.wbs} ` : ''}{item.name}
+                      {prefix}{item.wbs && !item.name.startsWith(item.wbs) ? `${item.wbs} ` : ''}{item.name}
                     </Typography>
                     <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.62rem', fontWeight: 600 }}>
                       {item.isMilestone ? '⚑ Milestone' : `${getStatusLabel(item.status)} · ${item.percentComplete}%`}
@@ -591,6 +686,18 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
                 fill={isDark ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.04)'} />
             ))}
 
+            {/* Hierarchy connection lines */}
+            {hierarchyLines.map((line, idx) => (
+              <path
+                key={`hc-${idx}`}
+                d={line.path}
+                fill="none"
+                stroke={isDark ? '#4b5563' : '#cbd5e1'}
+                strokeWidth={1.25}
+                style={{ pointerEvents: 'none' }}
+              />
+            ))}
+
             {/* Dependency arrows */}
             {dependencyArrows.map((arrow, i) => {
               const isSelectedLine = !!(selectedLine && selectedLine.predId === arrow.predId && selectedLine.succId === arrow.succId)
@@ -651,7 +758,7 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
               const { x: bx, y: by, width: bw, isValid } = getTaskBar(item, y)
               if (!isValid) return null
               
-              const bc = getTaskColor(item, isDark)
+              const bc = getTaskColor(item, isDark, theme)
               const isSummary = item.level && item.level === 1 && !item.isMilestone
 
               // Render Milestone
@@ -663,7 +770,35 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
                 const isHighlightedNode = isSelectedNode || isHoveredNode
 
                 return (
-                  <g key={`ms-${item.id}`}>
+                  <g
+                    key={`ms-${item.id}`}
+                    onMouseEnter={(e) => {
+                      setHoveredTaskId(item.id)
+                      setHoveredTask(item)
+                      const rect = scrollRef.current?.getBoundingClientRect()
+                      if (rect) {
+                        const x = e.clientX - rect.left + (scrollRef.current?.scrollLeft || 0)
+                        const y = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0)
+                        const relativeX = e.clientX - rect.left
+                        const alignRight = relativeX > rect.width / 2
+                        setTooltipPos({ x, y, alignRight })
+                      }
+                    }}
+                    onMouseMove={(e) => {
+                      const rect = scrollRef.current?.getBoundingClientRect()
+                      if (rect) {
+                        const x = e.clientX - rect.left + (scrollRef.current?.scrollLeft || 0)
+                        const y = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0)
+                        const relativeX = e.clientX - rect.left
+                        const alignRight = relativeX > rect.width / 2
+                        setTooltipPos({ x, y, alignRight })
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredTaskId(null)
+                      setHoveredTask(null)
+                    }}
+                  >
                     {isHighlightedNode && (
                       <polygon
                         points={`${cx},${cy - 11} ${cx + 11},${cy} ${cx},${cy + 11} ${cx - 11},${cy}`}
@@ -688,20 +823,74 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
                 )
               }
 
-              // Render Summary Phase Bar (Window Line / Bracket in accent color)
+              // Render Summary Phase Bar as a box
               if (isSummary) {
-                const cy = y + ROW_HEIGHT / 2
+                const pw = bw * (item.percentComplete / 100)
+                const isSelectedNode = !!(selectedLine && (selectedLine.predId === item.id || selectedLine.succId === item.id))
+                const isHoveredNode = !!(hoveredLine && (hoveredLine.predId === item.id || hoveredLine.succId === item.id))
+                const isHighlightedNode = isSelectedNode || isHoveredNode
+
                 return (
-                  <g key={`summary-${item.id}`}>
-                    <path
-                      d={`M ${bx} ${cy - 8} L ${bx} ${cy + 8} M ${bx} ${cy} L ${bx + bw} ${cy} M ${bx + bw} ${cy - 8} L ${bx + bw} ${cy + 8}`}
-                      stroke={theme.palette.primary.main}
-                      strokeWidth={3}
-                      strokeLinecap="round"
-                      fill="none"
-                      style={{ cursor: onTaskClick ? 'pointer' : 'default' }}
-                      onClick={() => onTaskClick?.(item.id)}
-                    />
+                  <g
+                    key={`summary-${item.id}`}
+                    onMouseEnter={(e) => {
+                      setHoveredTaskId(item.id)
+                      setHoveredTask(item)
+                      const rect = scrollRef.current?.getBoundingClientRect()
+                      if (rect) {
+                        const x = e.clientX - rect.left + (scrollRef.current?.scrollLeft || 0)
+                        const y = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0)
+                        const relativeX = e.clientX - rect.left
+                        const alignRight = relativeX > rect.width / 2
+                        setTooltipPos({ x, y, alignRight })
+                      }
+                    }}
+                    onMouseMove={(e) => {
+                      const rect = scrollRef.current?.getBoundingClientRect()
+                      if (rect) {
+                        const x = e.clientX - rect.left + (scrollRef.current?.scrollLeft || 0)
+                        const y = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0)
+                        const relativeX = e.clientX - rect.left
+                        const alignRight = relativeX > rect.width / 2
+                        setTooltipPos({ x, y, alignRight })
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredTaskId(null)
+                      setHoveredTask(null)
+                    }}
+                    style={{ cursor: onTaskClick ? 'pointer' : 'default' }}
+                    onClick={() => onTaskClick?.(item.id)}
+                  >
+                    {/* Neon highlight outline */}
+                    {isHighlightedNode && (
+                      <rect x={bx - 2} y={by - 2} width={bw + 4} height={BAR_HEIGHT + 4} rx={8} ry={8}
+                        fill="none" stroke={item.onCriticalPath ? '#ff3b30' : '#00f6ff'} strokeWidth={3}
+                        style={{ pointerEvents: 'none', filter: 'drop-shadow(0px 0px 4px rgba(0, 246, 255, 0.6))' }} />
+                    )}
+                    {/* Bar background */}
+                    <rect x={bx} y={by} width={bw} height={BAR_HEIGHT} rx={6} ry={6}
+                      fill={bc} fillOpacity={0.25} stroke={bc} strokeWidth={1.5} />
+                    {/* Progress fill using primary color */}
+                    {pw > 0 && (
+                      <rect x={bx} y={by} width={Math.max(6, pw)} height={BAR_HEIGHT} rx={6} ry={6}
+                        fill={bc} opacity={0.85} />
+                    )}
+                    {/* Border to make summary box look crisp */}
+                    <rect x={bx} y={by} width={bw} height={BAR_HEIGHT} rx={6} ry={6}
+                      fill="none" stroke={bc} strokeWidth={2}
+                      style={{ pointerEvents: 'none' }} />
+                    {/* Text Clip Path */}
+                    <clipPath id={`clip-${item.id}`}>
+                      <rect x={bx + 8} y={by} width={Math.max(0, bw - 16)} height={BAR_HEIGHT} />
+                    </clipPath>
+                    {/* Task name inside box */}
+                    <text x={bx + 8} y={by + BAR_HEIGHT / 2 + 1}
+                      clipPath={`url(#clip-${item.id})`}
+                      fill="#ffffff" fontSize={10} fontWeight={800}
+                      dominantBaseline="middle" style={{ pointerEvents: 'none', textShadow: '0px 1px 2px rgba(0,0,0,0.8)' }}>
+                      {item.name} · {item.percentComplete}%
+                    </text>
                   </g>
                 )
               }
@@ -714,7 +903,37 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
               const isHighlightedNode = isSelectedNode || isHoveredNode
 
               return (
-                <g key={`tk-${item.id}`}>
+                <g
+                  key={`tk-${item.id}`}
+                  onMouseEnter={(e) => {
+                    setHoveredTaskId(item.id)
+                    setHoveredTask(item)
+                    const rect = scrollRef.current?.getBoundingClientRect()
+                    if (rect) {
+                      const x = e.clientX - rect.left + (scrollRef.current?.scrollLeft || 0)
+                      const y = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0)
+                      const relativeX = e.clientX - rect.left
+                      const alignRight = relativeX > rect.width / 2
+                      setTooltipPos({ x, y, alignRight })
+                    }
+                  }}
+                  onMouseMove={(e) => {
+                    const rect = scrollRef.current?.getBoundingClientRect()
+                    if (rect) {
+                      const x = e.clientX - rect.left + (scrollRef.current?.scrollLeft || 0)
+                      const y = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0)
+                      const relativeX = e.clientX - rect.left
+                      const alignRight = relativeX > rect.width / 2
+                      setTooltipPos({ x, y, alignRight })
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredTaskId(null)
+                    setHoveredTask(null)
+                  }}
+                  style={{ cursor: onTaskClick ? 'pointer' : 'default' }}
+                  onClick={() => onTaskClick?.(item.id)}
+                >
                   {/* Neon highlight outline */}
                   {isHighlightedNode && (
                     <rect x={bx - 2} y={by - 2} width={bw + 4} height={BAR_HEIGHT + 4} rx={8} ry={8}
@@ -723,18 +942,11 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
                   )}
                   {/* Bar background */}
                   <rect x={bx} y={by} width={bw} height={BAR_HEIGHT} rx={6} ry={6}
-                    fill={bc}
-                    fillOpacity={0.35}
-                    stroke={bc}
-                    strokeWidth={1.5}
-                    style={{ cursor: onTaskClick ? 'pointer' : 'default' }}
-                    onClick={() => onTaskClick?.(item.id)} />
+                    fill={bc} fillOpacity={0.35} stroke={bc} strokeWidth={1.5} />
                   {/* Progress fill */}
                   {pw > 0 && (
                     <rect x={bx} y={by} width={Math.max(6, pw)} height={BAR_HEIGHT} rx={6} ry={6}
-                      fill={bc} opacity={0.85}
-                      style={{ cursor: onTaskClick ? 'pointer' : 'default' }}
-                      onClick={() => onTaskClick?.(item.id)} />
+                      fill={bc} opacity={0.85} />
                   )}
                   {/* Critical Path Outline */}
                   {item.onCriticalPath && (
@@ -742,17 +954,22 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
                       fill="none" stroke="#ef4444" strokeWidth={2}
                       style={{ pointerEvents: 'none' }} />
                   )}
-                  {/* Percentage label */}
-                  <text x={bx + 8} y={by + BAR_HEIGHT / 2 + 1}
-                    fill="#ffffff" fontSize={10} fontWeight={700}
-                    dominantBaseline="middle" style={{ pointerEvents: 'none' }}>
-                    {item.percentComplete > 20 ? `${item.percentComplete}%` : ''}
-                  </text>
                   {/* Overdue indicator */}
                   {isOver && (
                     <line x1={bx + bw + 3} y1={by} x2={bx + bw + 3} y2={by + BAR_HEIGHT}
                       stroke="#ef4444" strokeWidth={3} strokeLinecap="round" />
                   )}
+                  {/* Text Clip Path */}
+                  <clipPath id={`clip-${item.id}`}>
+                    <rect x={bx + 8} y={by} width={Math.max(0, bw - 16)} height={BAR_HEIGHT} />
+                  </clipPath>
+                  {/* Task name inside box */}
+                  <text x={bx + 8} y={by + BAR_HEIGHT / 2 + 1}
+                    clipPath={`url(#clip-${item.id})`}
+                    fill="#ffffff" fontSize={10} fontWeight={700}
+                    dominantBaseline="middle" style={{ pointerEvents: 'none', textShadow: '0px 1px 2px rgba(0,0,0,0.8)' }}>
+                    {item.name} · {item.percentComplete}%
+                  </text>
                 </g>
               )
             })}
@@ -765,6 +982,93 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
               </line>
             )}
           </svg>
+
+          {/* Hover Tooltip Details */}
+          {hoveredTask && (
+            <Paper
+              elevation={8}
+              sx={{
+                position: 'absolute',
+                left: tooltipPos.alignRight ? undefined : tooltipPos.x + 16,
+                right: tooltipPos.alignRight ? (scrollRef.current ? scrollRef.current.scrollWidth - tooltipPos.x + 16 : undefined) : undefined,
+                top: tooltipPos.y + 16,
+                zIndex: 100,
+                p: 2,
+                minWidth: 240,
+                maxWidth: 320,
+                pointerEvents: 'none',
+                borderRadius: 2,
+                bgcolor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid',
+                borderColor: 'divider',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5, color: 'text.primary', fontSize: '0.8rem' }}>
+                {hoveredTask.wbs ? `${hoveredTask.wbs} ` : ''}{hoveredTask.name}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Duration</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                    {hoveredTask.startDate} to {hoveredTask.endDate}
+                  </Typography>
+                </Box>
+                {!hoveredTask.isMilestone && (
+                  <>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Status</Typography>
+                      <Typography variant="caption" sx={{ 
+                        fontWeight: 700, 
+                        px: 1, 
+                        py: 0.25, 
+                        borderRadius: 1, 
+                        fontSize: '0.65rem',
+                        bgcolor: String(hoveredTask.status) === '0' || hoveredTask.percentComplete === 100
+                          ? 'success.light' 
+                          : String(hoveredTask.status) === '1'
+                          ? 'primary.light' 
+                          : 'action.disabledBackground',
+                        color: String(hoveredTask.status) === '0' || hoveredTask.percentComplete === 100
+                          ? 'success.contrastText' 
+                          : String(hoveredTask.status) === '1'
+                          ? 'primary.contrastText' 
+                          : 'text.secondary',
+                      }}>
+                        {getStatusLabel(hoveredTask.status)}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 0.5 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Progress</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.primary' }}>{hoveredTask.percentComplete}%</Typography>
+                      </Box>
+                      <Box sx={{ width: '100%', height: 6, bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)', borderRadius: 1, overflow: 'hidden' }}>
+                        <Box sx={{ width: `${hoveredTask.percentComplete}%`, height: '100%', bgcolor: getTaskColor(hoveredTask, isDark, theme), borderRadius: 1 }} />
+                      </Box>
+                    </Box>
+                  </>
+                )}
+                {hoveredTask.isMilestone && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Type</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'warning.main', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      ⚑ Milestone
+                    </Typography>
+                  </Box>
+                )}
+                {hoveredTask.onCriticalPath && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, color: 'error.main' }}>
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'error.main' }} />
+                    <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                      Critical Path Task
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Paper>
+          )}
         </Box>
       </Box>
 
@@ -774,7 +1078,7 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
           { c: '#3b82f6', l: 'Standard Task (In Progress)', t: 'bar' },
           { c: '#10b981', l: 'Completed Task', t: 'bar' },
           { c: '#ef4444', l: 'Critical Path Task', t: 'outline' },
-          { c: 'primary.main', l: 'Summary Phase', t: 'windowLine' },
+          { c: 'primary.main', l: 'Summary Phase', t: 'bar' },
           { c: '#f59e0b', l: 'Milestone Indicator', t: 'dia' },
           { c: '#ef4444', l: 'Current Date Line', t: 'dash2' },
           { c: '#3b82f6', l: 'Dependency Connection', t: 'dash' },
@@ -791,13 +1095,6 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
             {x.t === 'dash' && <Box sx={{ width: 16, height: 0, borderTop: `2px dashed ${x.c}`, opacity: 0.8 }} />}
             {x.t === 'dash2' && <Box sx={{ width: 16, height: 0, borderTop: `2px dashed ${x.c}`, opacity: 0.9 }} />}
             {x.t === 'outline' && <Box sx={{ width: 16, height: 6, borderRadius: 0.5, border: '1.5px solid #ef4444', bgcolor: 'transparent' }} />}
-            {x.t === 'windowLine' && (
-              <Box sx={{ display: 'flex', alignItems: 'center', height: 8 }}>
-                <Box sx={{ width: 1.5, height: 8, bgcolor: 'primary.main' }} />
-                <Box sx={{ width: 12, height: 1.5, bgcolor: 'primary.main' }} />
-                <Box sx={{ width: 1.5, height: 8, bgcolor: 'primary.main' }} />
-              </Box>
-            )}
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{x.l}</Typography>
           </Box>
         ))}

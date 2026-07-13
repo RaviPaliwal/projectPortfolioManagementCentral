@@ -20,6 +20,43 @@ import { useUser } from '@/context/UserContext'
 import type { DecisionBoxProps } from '@/components/common/DecisionBox/DecisionBox'
 import { resolveEntityIdFromApprovalStep } from '@/services/task-resolver.service'
 
+const T = {
+  ink: "#141310",
+  sub: "#716A5C",
+  faint: "#A39C8C",
+  line: "#E6E1D6",
+  paper: "#FBFAF7",
+  card: "#FFFFFF",
+  brand: "#1C7A5E",
+  brandDark: "#0F5B44",
+  brandTint: "#E9F3EE",
+  amber: "#AD7A1E",
+  amberTint: "#FBF1DD",
+  red: "#B7402C",
+  redTint: "#FBEBE7",
+}
+
+const Tag: React.FC<{ color: string; tint: string; children: React.ReactNode }> = ({ color, tint, children }) => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 5,
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: "0.04em",
+      textTransform: "uppercase",
+      color,
+      background: tint,
+      padding: "3px 9px",
+      borderRadius: 6,
+      fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+    }}
+  >
+    {children}
+  </span>
+)
+
 interface ChangeRequestImpactAssessmentTaskModalProps {
   open: boolean
   onClose: () => void
@@ -158,21 +195,16 @@ export const ChangeRequestImpactAssessmentTaskModal: React.FC<ChangeRequestImpac
     }
   }, [open, loadData])
 
-  const overallSeverityLabel = useMemo(() => {
-    if (areas.length === 0) return 'None'
+  const { overallSeverityLabel, overallSeverityColor, overallSeverityTint } = useMemo(() => {
+    if (areas.length === 0) {
+      return { overallSeverityLabel: 'NONE', overallSeverityColor: T.sub, overallSeverityTint: T.line }
+    }
     const maxRank = Math.max(...areas.map(a => SEVERITY_RANK[a.severity]))
-    if (maxRank === 0) return 'None'
-    if (maxRank === 1) return 'Low'
-    if (maxRank === 2) return 'Medium'
-    return 'High'
+    if (maxRank === 0) return { overallSeverityLabel: 'NONE', overallSeverityColor: T.sub, overallSeverityTint: T.line }
+    if (maxRank === 1) return { overallSeverityLabel: 'LOW', overallSeverityColor: T.brand, overallSeverityTint: T.brandTint }
+    if (maxRank === 2) return { overallSeverityLabel: 'MEDIUM', overallSeverityColor: T.amber, overallSeverityTint: T.amberTint }
+    return { overallSeverityLabel: 'HIGH', overallSeverityColor: T.red, overallSeverityTint: T.redTint }
   }, [areas])
-
-  const overallSeverityColor = useMemo(() => {
-    if (overallSeverityLabel === 'None') return 'grey'
-    if (overallSeverityLabel === 'Low') return 'success'
-    if (overallSeverityLabel === 'Medium') return 'warning'
-    return 'error'
-  }, [overallSeverityLabel])
 
   const handleUpdateSeverity = (categoryValue: number, severity: SeverityRatingValue) => {
     setAreas(prev => prev.map(a => a.categoryValue === categoryValue ? { ...a, severity } : a))
@@ -279,67 +311,117 @@ export const ChangeRequestImpactAssessmentTaskModal: React.FC<ChangeRequestImpac
     onClose()
   }, [onSuccess, onClose])
 
-  if (!open) return null
-
   return (
-    <Dialog open={open} onClose={() => !saving && onClose()} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', py: 2, px: 3 }}>
+    <Dialog 
+      open={open} 
+      onClose={() => !saving && onClose()} 
+      maxWidth="md" 
+      fullWidth
+      slotProps={{
+        paper: {
+          style: {
+            borderRadius: 14,
+            border: `1px solid ${T.line}`,
+            background: T.card,
+            overflow: 'hidden',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.06)'
+          }
+        }
+      }}
+    >
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: T.paper, color: T.ink, borderBottom: '1px solid', borderColor: T.line, py: 2.5, px: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <AssessmentIcon sx={{ color: 'primary.main' }} />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>Impact Assessment</Typography>
+          <AssessmentIcon sx={{ color: T.brand }} />
+          <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: "'Source Serif 4', serif", fontSize: '1.25rem' }}>Impact Assessment</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton size="small" onClick={onClose} disabled={saving} sx={{ color: 'text.secondary' }}>
-            <CloseIcon fontSize="small" />
+          <IconButton 
+            size="small" 
+            onClick={onClose} 
+            disabled={saving} 
+            sx={{ 
+              width: 30,
+              height: 30,
+              borderRadius: '8px',
+              border: `1px solid ${T.line}`,
+              background: "transparent",
+              color: T.sub,
+              transition: 'all 0.15s ease',
+              '&:hover': {
+                borderColor: T.ink,
+                background: '#f0eee6',
+              }
+            }}
+          >
+            <CloseIcon fontSize="small" style={{ fontSize: 15 }} />
           </IconButton>
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
+      <DialogContent sx={{ p: 0, bgcolor: T.paper, fontFamily: "'Inter', sans-serif" }}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@600&display=swap');
+        `}</style>
+
         {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
+          <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress sx={{ color: T.brand }} /></Box>
         ) : changeRequest ? (
           <Grid container>
             {/* Left Column: Context Card */}
-            <Grid size={{ xs: 12, md: 4 }} sx={{ borderRight: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', p: 3 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 1 }}>Context</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5 }}>{changeRequest.pm_changerequesttitle}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{changeRequest.pm_changerequestreference}</Typography>
+            <Grid size={{ xs: 12, md: 4 }} sx={{ borderRight: '1px solid', borderColor: T.line, bgcolor: T.paper, p: 3, pb: 6 }}>
+              <Typography variant="overline" sx={{ fontWeight: 700, letterSpacing: 1, color: T.faint, fontFamily: "'IBM Plex Mono', monospace" }}>Context</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700, mt: 1, mb: 0.5, color: T.ink, fontFamily: "'Source Serif 4', serif" }}>{changeRequest.pm_changerequesttitle}</Typography>
+              <Typography variant="body2" sx={{ mb: 2, color: T.sub, fontFamily: "'Inter', sans-serif" }}>{changeRequest.pm_changerequestreference}</Typography>
               
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 3 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 3 }}>
                 <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Type</Typography>
-                  <StatusTag label={CHANGE_TYPE_LABELS[String(changeRequest.pm_changetype ?? '')]} color={CHANGE_TYPE_COLORS[String(changeRequest.pm_changetype ?? '')]} />
+                  <Typography variant="caption" sx={{ display: 'block', mb: 0.75, color: T.sub, fontWeight: 600 }}>Type</Typography>
+                  <Tag color={changeRequest.pm_changetype === 0 ? T.brand : changeRequest.pm_changetype === 1 ? T.amber : T.sub} tint={changeRequest.pm_changetype === 0 ? T.brandTint : changeRequest.pm_changetype === 1 ? T.amberTint : T.line}>
+                    {CHANGE_TYPE_LABELS[String(changeRequest.pm_changetype ?? '')] || 'General'}
+                  </Tag>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Priority</Typography>
-                  <StatusTag label={PRIORITY_LABELS[String(changeRequest.pm_prioritylevel ?? '')]} color={PRIORITY_COLORS[String(changeRequest.pm_prioritylevel ?? '')]} />
+                  <Typography variant="caption" sx={{ display: 'block', mb: 0.75, color: T.sub, fontWeight: 600 }}>Priority</Typography>
+                  <Tag color={changeRequest.pm_prioritylevel === 1 ? T.red : T.amber} tint={changeRequest.pm_prioritylevel === 1 ? T.redTint : T.amberTint}>
+                    {PRIORITY_LABELS[String(changeRequest.pm_prioritylevel ?? '')] || 'Medium'}
+                  </Tag>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Impact</Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Chip size="small" icon={<AttachMoneyIcon sx={{ fontSize: 14 }} />} label={`${changeRequest.pm_costimpacteur ?? 0} EUR`} />
-                    <Chip size="small" icon={<ScheduleIcon sx={{ fontSize: 14 }} />} label={`${changeRequest.pm_scheduleimpactdays ?? 0}d`} />
+                  <Typography variant="caption" sx={{ display: 'block', mb: 0.75, color: T.sub, fontWeight: 600 }}>Impact</Typography>
+                  <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.8rem', fontWeight: 700, color: T.ink }}>
+                      <AttachMoneyIcon sx={{ fontSize: 15, color: T.brand }} />
+                      <span>{changeRequest.pm_costimpacteur ? changeRequest.pm_costimpacteur.toLocaleString() : 0} EUR</span>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.8rem', fontWeight: 700, color: T.ink }}>
+                      <ScheduleIcon sx={{ fontSize: 15, color: T.amber }} />
+                      <span>{changeRequest.pm_scheduleimpactdays ?? 0}d</span>
+                    </Box>
                   </Box>
                 </Box>
                 {linkedProject && (
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Linked Project</Typography>
-                    <Chip size="small" icon={<FolderIcon sx={{ fontSize: 14 }} />} label={linkedProject.pm_projectname || 'Unnamed Project'} variant="outlined" />
+                    <Typography variant="caption" sx={{ display: 'block', mb: 0.75, color: T.sub, fontWeight: 600 }}>Linked Project</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontSize: '0.8rem', fontWeight: 700, color: T.ink, border: '1px solid', borderColor: T.line, px: 1.25, py: 0.5, borderRadius: 1.5, bgcolor: T.card }}>
+                      <FolderIcon sx={{ fontSize: 15, color: T.sub }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {linkedProject.pm_projectname || 'Unnamed Project'}
+                      </span>
+                    </Box>
                   </Box>
                 )}
                 {/* Project Milestones */}
                 {projectMilestones.length > 0 && (
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Project Milestones</Typography>
+                    <Typography variant="caption" sx={{ display: 'block', mb: 0.75, color: T.sub, fontWeight: 600 }}>Project Milestones</Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                       {projectMilestones.map(m => (
-                        <Box key={m.pm_projectmilestoneid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'action.hover', px: 1, py: 0.5, borderRadius: 1 }}>
-                          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
+                        <Box key={m.pm_projectmilestoneid} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: T.card, border: '1px solid', borderColor: T.line, px: 1.25, py: 0.75, borderRadius: 1.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 700, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%', fontFamily: "'Inter', sans-serif" }}>
                             {m.pm_milestonename}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                            {m.pm_planneddate ? new Date(m.pm_planneddate).toLocaleDateString() : 'No date'}
+                          <Typography variant="caption" sx={{ fontSize: '0.7rem', color: T.sub, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace" }}>
+                            {m.pm_planneddate ? new Date(m.pm_planneddate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No date'}
                           </Typography>
                         </Box>
                       ))}
@@ -347,22 +429,24 @@ export const ChangeRequestImpactAssessmentTaskModal: React.FC<ChangeRequestImpac
                   </Box>
                 )}
                 <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Overall Rating</Typography>
-                  <Chip size="small" label={`Overall: ${overallSeverityLabel}`} color={overallSeverityColor as any} sx={{ fontWeight: 600 }} />
+                  <Typography variant="caption" sx={{ display: 'block', mb: 0.75, color: T.sub, fontWeight: 600 }}>Overall Rating</Typography>
+                  <Tag color={overallSeverityColor} tint={overallSeverityTint}>
+                    Overall: {overallSeverityLabel}
+                  </Tag>
                 </Box>
               </Box>
             </Grid>
 
             {/* Right Column: Assessment Forms */}
-            <Grid size={{ xs: 12, md: 8 }} sx={{ p: 3 }}>
-              {localError && <Alert severity="error" sx={{ mb: 2 }}>{localError}</Alert>}
+            <Grid size={{ xs: 12, md: 8 }} sx={{ p: 3, pb: 6, bgcolor: T.card }}>
+              {localError && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{localError}</Alert>}
               
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Impact Area Severity Ratings</Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: T.ink, fontFamily: "'Inter', sans-serif" }}>Impact Area Severity Ratings</Typography>
 
               {areas.map(area => (
-                <Box key={area.categoryValue} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, mb: 2, bgcolor: 'background.paper' }}>
+                <Box key={area.categoryValue} sx={{ border: '1px solid', borderColor: T.line, borderRadius: 2.5, p: 2, mb: 2, bgcolor: T.card }}>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 1, mb: area.severity !== 0 ? 1.5 : 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>{area.categoryLabel} impact</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: T.ink }}>{area.categoryLabel} impact</Typography>
                     <Box sx={{ display: 'flex', gap: 0.75 }}>
                       {SEVERITIES.map(s => {
                         const isSelected = area.severity === s.value
@@ -370,18 +454,56 @@ export const ChangeRequestImpactAssessmentTaskModal: React.FC<ChangeRequestImpac
                           <Button
                             key={s.value}
                             variant={isSelected ? 'contained' : 'outlined'}
-                            color={s.color}
                             size="small"
                             onClick={() => handleUpdateSeverity(area.categoryValue, s.value)}
                             sx={{
                               borderRadius: 4,
-                              px: 1.75,
-                              py: 0.25,
+                              px: 2,
+                              py: 0.5,
                               textTransform: 'none',
                               fontSize: '0.75rem',
-                              fontWeight: 600,
+                              fontWeight: 700,
                               boxShadow: 'none',
-                              '&:hover': { boxShadow: 'none' },
+                              fontFamily: "'Inter', sans-serif",
+                              color: isSelected ? '#fff' : (
+                                s.value === 3 ? T.brand :
+                                s.value === 1 ? T.amber :
+                                s.value === 2 ? T.red :
+                                T.sub
+                              ),
+                              bgcolor: isSelected ? (
+                                s.value === 3 ? T.brand :
+                                s.value === 1 ? T.amber :
+                                s.value === 2 ? T.red :
+                                T.sub
+                              ) : 'transparent',
+                              borderColor: isSelected ? 'transparent' : (
+                                s.value === 3 ? `${T.brand}44` :
+                                s.value === 1 ? `${T.amber}44` :
+                                s.value === 2 ? `${T.red}44` :
+                                T.line
+                              ),
+                              border: '1px solid',
+                              '&:hover': {
+                                boxShadow: 'none',
+                                bgcolor: isSelected ? (
+                                  s.value === 3 ? T.brandDark :
+                                  s.value === 1 ? '#916212' :
+                                  s.value === 2 ? '#9c301e' :
+                                  T.sub
+                                ) : (
+                                  s.value === 3 ? T.brandTint :
+                                  s.value === 1 ? T.amberTint :
+                                  s.value === 2 ? T.redTint :
+                                  T.paper
+                                ),
+                                borderColor: isSelected ? 'transparent' : (
+                                  s.value === 3 ? T.brand :
+                                  s.value === 1 ? T.amber :
+                                  s.value === 2 ? T.red :
+                                  T.faint
+                                ),
+                              },
                             }}
                           >
                             {s.label}
@@ -403,8 +525,17 @@ export const ChangeRequestImpactAssessmentTaskModal: React.FC<ChangeRequestImpac
                         onChange={e => handleUpdateDescription(area.categoryValue, e.target.value)}
                         error={validationErrors[area.categoryValue]}
                         helperText={validationErrors[area.categoryValue] ? 'Description is required for a rated impact.' : ''}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            backgroundColor: T.paper,
+                            '& fieldset': { borderColor: T.line },
+                            '&:hover fieldset': { borderColor: T.faint },
+                            '&.Mui-focused fieldset': { borderColor: T.brand, borderWidth: '1px' },
+                          }
+                        }}
                         slotProps={{
-                          input: { sx: { borderRadius: 1.5, fontSize: '0.85rem' } }
+                          input: { sx: { fontSize: '0.85rem', color: T.ink } }
                         }}
                       />
                     </Box>
@@ -412,7 +543,7 @@ export const ChangeRequestImpactAssessmentTaskModal: React.FC<ChangeRequestImpac
                 </Box>
               ))}
 
-              <Divider sx={{ my: 3 }} />
+              <Divider sx={{ mt: 4, mb: 3, borderColor: T.line }} />
               
               {DecisionBoxProp && approvalStepId && (
                 <DecisionBoxProp

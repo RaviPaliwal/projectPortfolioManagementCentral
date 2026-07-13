@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, type ComponentType } from 'react'
 import {
-  Dialog, DialogContent, CircularProgress, Alert, Button, IconButton
+  Dialog, DialogContent, CircularProgress, Alert, Button, IconButton, DialogActions, Divider
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
@@ -193,8 +193,6 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
   const [impactDetails, setImpactDetails] = useState<ImpactDetail[]>([])
   const [assessmentStep, setAssessmentStep] = useState<WorkflowApprovalStepModel | null>(null)
   
-  const [notes, setNotes] = useState("")
-  const [focused, setFocused] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
@@ -263,7 +261,7 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
   }, [changeRequestId, onError])
 
   useEffect(() => {
-    if (open) { loadData(); setLocalError(null); setNotes("") }
+    if (open) { loadData(); setLocalError(null) }
   }, [open, loadData])
 
   const overallRisk = useMemo(() => {
@@ -326,33 +324,7 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
     }
   }, [changeRequest, currentUser, linkedProject])
 
-  const handleDecision = async (decision: number) => {
-    if (!approvalStepId) return
-    setSaving(true)
-    setLocalError(null)
-    try {
-      // Step 1: Save decision updates in database
-      const successDataverse = await onBeforeDecision(decision)
-      if (!successDataverse) {
-        setSaving(false)
-        return
-      }
 
-      // Step 2: Submit workflow approval step decision
-      const successWorkflow = await submitWorkflowDecision(approvalStepId, decision, notes)
-      if (successWorkflow) {
-        onSuccess(decision === 0 ? 'Change request approved.' : 'Change request rejected.')
-        dispatchFormDialogDecision({ formKey: 'change_request_approval', decision })
-        onClose()
-      } else {
-        setLocalError('Workflow routing handler did not return success.')
-      }
-    } catch (err) {
-      setLocalError(err instanceof Error ? err.message : 'Failed to submit workflow decision.')
-    } finally {
-      setSaving(false)
-    }
-  }
 
   if (!open) return null
 
@@ -362,15 +334,13 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
       onClose={() => !saving && onClose()} 
       maxWidth="md" 
       fullWidth
-      slotProps={{
-        paper: {
-          style: {
-            borderRadius: 14,
-            border: `1px solid ${T.line}`,
-            background: T.card,
-            overflow: 'hidden',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.06)'
-          }
+      sx={{
+        '& .MuiDialogPaper-root': {
+          borderRadius: '14px',
+          border: `1px solid ${T.line}`,
+          background: T.card,
+          overflow: 'hidden',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.06)',
         }
       }}
     >
@@ -571,108 +541,40 @@ export const ChangeRequestApprovalTaskModal: React.FC<ChangeRequestApprovalTaskM
                 </div>
               </div>
 
-              {/* Decision notes input */}
-              <div style={{ marginTop: 24, paddingBottom: 24 }}>
-                <SectionLabel icon={MessageIcon} text="Decision notes" />
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  onFocus={() => setFocused(true)}
-                  onBlur={() => setFocused(false)}
-                  placeholder="Enter rationale for this decision..."
-                  rows={3}
-                  disabled={saving}
-                  style={{
-                    width: "100%",
-                    resize: "none",
-                    border: `1px solid ${focused ? T.brand : T.line}`,
-                    borderRadius: 10,
-                    padding: "11px 13px",
-                    fontSize: 13.5,
-                    fontFamily: "inherit",
-                    color: T.ink,
-                    background: T.paper,
-                    boxShadow: focused ? `0 0 0 3px ${T.brandTint}` : "none",
-                    boxSizing: "border-box",
-                    transition: "border-color .15s ease, box-shadow .15s ease",
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Footer with buttons */}
-            <div
-              style={{
-                padding: "16px 30px",
-                borderTop: `1px solid ${T.line}`,
-                background: T.paper,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <span style={{ fontSize: 11.5, color: T.faint }}>
-                Requires governance sign-off before status changes.
-              </span>
-              <div style={{ display: "flex", gap: 10 }}>
-                <Button
-                  onClick={() => handleDecision(3)}
-                  disabled={saving}
-                  startIcon={<CancelIcon style={{ fontSize: 15 }} />}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    padding: "9px 16px",
-                    borderRadius: '8px',
-                    border: `1px solid ${T.line}`,
-                    background: T.card,
-                    color: T.red,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    fontFamily: "'Inter', -apple-system, sans-serif",
-                    cursor: saving ? "not-allowed" : "pointer",
-                    opacity: saving ? 0.7 : 1,
-                    '&:hover': {
-                      background: T.redTint,
-                      borderColor: "#E9C4B9"
-                    }
-                  }}
-                >
-                  {saving ? 'Processing...' : 'Reject'}
-                </Button>
-                <Button
-                  onClick={() => handleDecision(0)}
-                  disabled={saving}
-                  startIcon={<CheckCircleIcon style={{ fontSize: 15 }} />}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    padding: "9px 18px",
-                    borderRadius: '8px',
-                    border: "none",
-                    background: T.brand,
-                    color: "#fff",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    fontFamily: "'Inter', -apple-system, sans-serif",
-                    cursor: saving ? "not-allowed" : "pointer",
-                    opacity: saving ? 0.7 : 1,
-                    '&:hover': {
-                      background: T.brandDark
-                    }
-                  }}
-                >
-                  {saving ? 'Processing...' : 'Approve'}
-                </Button>
-              </div>
             </div>
           </div>
         ) : null}
       </DialogContent>
+
+      {changeRequest && !loading && DecisionBoxProp && approvalStepId && (
+        <>
+          <Divider sx={{ borderColor: T.line }} />
+          <DialogActions sx={{ p: 3, bgcolor: T.paper, flexDirection: 'column', alignItems: 'stretch' }}>
+            <DecisionBoxProp
+              approvalStepId={approvalStepId}
+              onBeforeDecision={async (decision, notes) => {
+                setSaving(true)
+                try {
+                  const success = await onBeforeDecision(decision)
+                  return success
+                } catch (err) {
+                  setLocalError(err instanceof Error ? err.message : 'Failed to save decision metadata.')
+                  return false
+                } finally {
+                  setSaving(false)
+                }
+              }}
+              onDecisionComplete={(decision) => {
+                onSuccess(decision === 0 ? 'Change request approved.' : 'Change request rejected.')
+                dispatchFormDialogDecision({ formKey: 'change_request_approval', decision })
+                onClose()
+              }}
+              onDecisionError={setLocalError}
+              disabled={saving}
+            />
+          </DialogActions>
+        </>
+      )}
     </Dialog>
   )
 }
