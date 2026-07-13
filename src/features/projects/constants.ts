@@ -1,3 +1,4 @@
+import { CURRENCY_CODE } from '@/constants/currency'
 import type { ExportColumn } from '@/utils/exportUtils'
 
 export const RAG_COLORS: Record<string, string> = {
@@ -33,7 +34,7 @@ export const phaseLabel = (code?: string | number): string => {
 
 export const currency = (val?: number): string => {
   if (!val && val !== 0) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val)
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: CURRENCY_CODE, maximumFractionDigits: 0 }).format(val)
 }
 
 export const projectExportColumns: ExportColumn[] = [

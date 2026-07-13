@@ -1,6 +1,5 @@
 import { Typography, useTheme, type TypographyVariant } from '@mui/material'
-
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+import { currencyFormatter } from '@/utils/formatters'
 
 export interface VarianceDisplayProps {
   budget?: number

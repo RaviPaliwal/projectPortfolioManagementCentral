@@ -34,7 +34,8 @@ import { DocumentPreviewDialog, Button } from '@/components/common'
 
 import { BUSINESS_UNITS } from '@/constants/businessUnits'
 
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+import { currencyFormatter } from '@/utils/formatters'
+import { CURRENCY_DISPLAY } from '@/constants/currency'
 
 const defaultProjectForm: Partial<ProjectModel> = {
   pm_projectname: '',
@@ -379,7 +380,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
 
         <Grid container spacing={2.5} sx={{ mb: 4 }}>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth type="number" label="Approved Budget (EUR)" size="small" value={form.pm_approvedbudget ?? 0}
+            <TextField fullWidth type="number" label={`Approved Budget (${CURRENCY_DISPLAY})`} size="small" value={form.pm_approvedbudget ?? 0}
               onChange={(e) => setForm((p) => ({ ...p, pm_approvedbudget: Number(e.target.value) }))}
               error={hasBudgetError}
               disabled={isEdit && currentUserPersona !== 'SystemAdministrator'}
@@ -387,7 +388,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth type="number" label="Actual Cost (EUR)" size="small" value={form.pm_actualcost ?? 0}
+            <TextField fullWidth type="number" label={`Actual Cost (${CURRENCY_DISPLAY})`} size="small" value={form.pm_actualcost ?? 0}
               disabled
               slotProps={{ input: { readOnly: true } }}
               helperText="Aggregated sum of all cashflows for this project"

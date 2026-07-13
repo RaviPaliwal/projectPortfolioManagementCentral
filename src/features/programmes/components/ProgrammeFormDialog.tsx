@@ -37,7 +37,8 @@ import { useUser } from '@/context/UserContext'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import { DocumentPreviewDialog } from '@/components/common'
 
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+import { currencyFormatter } from '@/utils/formatters'
+import { CURRENCY_DISPLAY } from '@/constants/currency'
 
 interface ProgrammeFormDialogProps {
   open: boolean
@@ -456,7 +457,7 @@ export const ProgrammeFormDialog: React.FC<ProgrammeFormDialogProps> = ({
                 <Grid container spacing={2} sx={{ alignItems: 'center' }}>
                   <Grid size={{ xs: 12, sm: 4 }}>
                     <TextField
-                      label="Budget Amount (EUR)"
+                      label={`Budget Amount (${CURRENCY_DISPLAY})`}
                       type="number"
                       fullWidth
                       size="small"

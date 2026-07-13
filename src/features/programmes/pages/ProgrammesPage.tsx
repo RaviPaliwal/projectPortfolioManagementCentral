@@ -103,7 +103,8 @@ import { normalizeLookupId } from '@/services'
 import { EntityFundingSourcesTab } from '@/features/fundingsources/components'
 import { fetchFundingSourcesByRegarding } from '@/services'
 
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+import { currencyFormatter } from '@/utils/formatters'
+import { CURRENCY_DISPLAY } from '@/constants/currency'
 
 // ── Programme Hierarchy Table ────────────────────────────────────────────────
 interface ProgrammeHierarchyTableProps {
