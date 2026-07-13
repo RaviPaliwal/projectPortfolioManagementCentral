@@ -163,8 +163,9 @@ export const BudgetTable: React.FC<BudgetTableProps> = ({
       key: 'pm_varianceeur',
       label: 'Variance',
       align: 'right',
-      format: (val: any) => {
-        const isOverBudget = val != null && val < 0
+      format: (val: any, row: any) => {
+        const computedVariance = (Number(row.pm_revisedbudgeteur) || Number(row.pm_approvedbudgeteur) || 0) - (Number(row.pm_actualspendeur) || 0) - (Number(row.pm_committedspendeur) || 0)
+        const isOverBudget = computedVariance < 0
         return (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
             {isOverBudget && (
@@ -172,8 +173,8 @@ export const BudgetTable: React.FC<BudgetTableProps> = ({
                 <WarningAmberIcon color="error" sx={{ fontSize: 16 }} />
               </Tooltip>
             )}
-            <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600, color: getVarianceColor(val) }}>
-              {val != null ? currencyFormatter.format(val) : '—'}
+            <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 600, color: getVarianceColor(computedVariance) }}>
+              {currencyFormatter.format(computedVariance)}
             </Typography>
           </Box>
         )

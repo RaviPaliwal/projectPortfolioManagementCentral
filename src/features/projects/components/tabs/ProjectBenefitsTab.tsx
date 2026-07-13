@@ -367,9 +367,9 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
         )}
       </Box>
 
-      {/* 2-Column Side-by-Side Benefits Grid */}
+      {/* Benefits Grid */}
       <Grid container spacing={3.5} sx={{ display: 'flex', alignItems: 'stretch' }}>
-        <Grid size={{ xs: 12, md: 8.5 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+        <Grid size={12} sx={{ display: 'flex', flexDirection: 'column' }}>
           <BenefitsGrid
             benefits={benefits}
             loading={false}
@@ -380,108 +380,6 @@ export const ProjectBenefitsTab: React.FC<ProjectBenefitsTabProps> = ({
             categoryFilter={benefitCategoryFilter}
             onCategoryFilterChange={setBenefitCategoryFilter}
           />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 3.5 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 3,
-              borderRadius: '24px',
-              bgcolor: isDark ? 'background.paper' : '#fff',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: 3
-            }}
-          >
-            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 2.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Category Breakdown
-              </Typography>
-
-              <Box sx={{ height: 180, width: '100%', mb: 2, flexGrow: 1, display: 'block', position: 'relative' }}>
-                {categorySummary.length > 0 ? (
-                  <>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsPieChart>
-                        <Pie
-                          data={categorySummary}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={4}
-                          dataKey="value"
-                        >
-                          {categorySummary.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip formatter={(value) => [`${value} Benefit(s)`]} />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        textAlign: 'center',
-                        pointerEvents: 'none'
-                      }}
-                    >
-                      <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: '"Outfit", sans-serif', color: 'text.primary', lineHeight: 1 }}>
-                        {benefits.length}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        Total
-                      </Typography>
-                    </Box>
-                  </>
-                ) : (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%', border: '1px dashed', borderColor: 'divider', borderRadius: 2 }}>
-                    <Typography variant="caption" color="text.secondary">No category data</Typography>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Summary Indicators
-              </Typography>
-
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
-                  <VerifiedIcon fontSize="small" sx={{ color: 'primary.main' }} /> Realisation Progress
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: 120 }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={achievementRate}
-                    sx={{ flexGrow: 1, height: 6, borderRadius: 3 }}
-                    color={achievementRate >= 100 ? 'success' : 'primary'}
-                  />
-                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                    {achievementRate}%
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600 }}>
-                  <WarningAmberIcon fontSize="small" sx={{ color: criticalCount > 0 ? 'error.main' : 'success.main' }} /> Benefits RAG
-                </Typography>
-                <StatusTag
-                  label={criticalCount > 0 ? `${criticalCount} Critical` : 'On Track'}
-                  color={criticalCount > 0 ? 'error' : 'success'}
-                  size="small"
-                />
-              </Box>
-            </Box>
-          </Paper>
         </Grid>
       </Grid>
     </Box>

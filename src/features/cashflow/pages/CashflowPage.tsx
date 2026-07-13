@@ -123,6 +123,26 @@ export default function CashflowPage() {
         setError("Cannot link Cashflow with an unapproved Budget Line. The budget line status must be Approved.")
         return
       }
+
+      if (bl) {
+        const approvedBudget = bl.pm_approvedbudgeteur || 0
+        // Sum other active outflow cashflows linked to this budget line
+        const otherOutflows = entries.filter((e) => {
+          if (dialogMode === 'edit' && e.pm_cashflowentryid === formData.pm_cashflowentryid) {
+            return false
+          }
+          const cfBLId = e._pm_budgetline_value ? e._pm_budgetline_value.replace(/[{}]/g, '').trim().toLowerCase() : ''
+          return cfBLId === blId && Number(e.pm_transactiondirection) === 0
+        })
+        const otherOutflowsSum = otherOutflows.reduce((sum, e) => sum + (Number(e.pm_amount) || 0), 0)
+        const currentAmount = Number(formData.pm_transactiondirection) === 0 ? (Number(formData.pm_amount) || 0) : 0
+        const totalOutflows = otherOutflowsSum + currentAmount
+
+        if (totalOutflows > approvedBudget) {
+          setError(`Cannot save: Total Outflow cashflow entries linked to this budget line (€${totalOutflows.toLocaleString()}) would exceed its Approved Budget (€${approvedBudget.toLocaleString()}).`)
+          return
+        }
+      }
     }
     
     setSaving(true)

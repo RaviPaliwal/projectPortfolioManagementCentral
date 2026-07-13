@@ -853,7 +853,11 @@ export async function createCashflowEntry(payload: Partial<CashflowEntryModel>):
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(payload)) {
       if (value !== undefined && value !== null && value !== '' && !SKIP_FIELDS.has(key)) {
-        cleanPayload[key] = value
+        if (key === 'pm_amount' || key === 'pm_transactiondirection' || key === 'pm_transactiontype') {
+          cleanPayload[key] = Number(value)
+        } else {
+          cleanPayload[key] = value
+        }
       }
     }
     const defaults: Record<string, unknown> = {
@@ -944,7 +948,11 @@ export async function updateCashflowEntry(id: string, changes: Partial<CashflowE
     const cleanPayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(changes)) {
       if (value !== undefined && value !== null && !SKIP_FIELDS.has(key)) {
-        cleanPayload[key] = value
+        if (key === 'pm_amount' || key === 'pm_transactiondirection' || key === 'pm_transactiontype') {
+          cleanPayload[key] = Number(value)
+        } else {
+          cleanPayload[key] = value
+        }
       }
     }
     if (changes._pm_fiscalperiod_value) {
@@ -1142,7 +1150,6 @@ export async function recalculateRealFinancialsForProject(projectId: string | nu
       // Update the budget line record directly in Dataverse (bypass recalculation recursion)
       const updateRes = await Pm_budgetlinesService.update(bl.pm_budgetlineid, {
         pm_actualspendeur: lineActuals,
-        pm_varianceeur: variance,
         pm_estimateatcompletioneur: eac,
       } as unknown as Pm_budgetlines)
       if (!updateRes.success) {

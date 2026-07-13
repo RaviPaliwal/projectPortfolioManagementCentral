@@ -723,7 +723,10 @@ export default function GanttChart({ tasks, milestones, onTaskClick, height }: G
                   )}
                   {/* Bar background */}
                   <rect x={bx} y={by} width={bw} height={BAR_HEIGHT} rx={6} ry={6}
-                    fill={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}
+                    fill={bc}
+                    fillOpacity={0.35}
+                    stroke={bc}
+                    strokeWidth={1.5}
                     style={{ cursor: onTaskClick ? 'pointer' : 'default' }}
                     onClick={() => onTaskClick?.(item.id)} />
                   {/* Progress fill */}
