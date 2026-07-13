@@ -45,7 +45,7 @@ interface WbsBuilderProps {
   tasks: ProjectTaskModel[]
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
-  onRefresh: () => void
+  onRefresh: (type?: string) => void
   onEditTask?: (task: ProjectTaskModel) => void
 }
 
@@ -77,6 +77,7 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
   const [localTasks, setLocalTasks] = useState<ProjectTaskModel[]>([])
   const [saving, setSaving] = useState(false)
   const [saveProgress, setSaveProgress] = useState(0)
+  const [needsReset, setNeedsReset] = useState(false)
 
   const [activeTaskIndex, setActiveTaskIndex] = useState<number | null>(null)
   const [dependencyDialogTasks, setDependencyDialogTasks] = useState<any[]>([])
@@ -144,7 +145,7 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
       }))
     }))
 
-    if (localTasks.length === 0) {
+    if (localTasks.length === 0 || needsReset) {
       const sorted = [...normalizedTasks].sort((a, b) => {
         if (!a.pm_wbsnumber && b.pm_wbsnumber) return 1
         if (a.pm_wbsnumber && !b.pm_wbsnumber) return -1
@@ -164,6 +165,9 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
         return 0
       })
       setLocalTasks(sorted)
+      if (needsReset) {
+        setNeedsReset(false)
+      }
     } else {
       const taskMap = new Map<string, ProjectTaskModel>()
       normalizedTasks.forEach(t => {
@@ -201,7 +205,7 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
         setLocalTasks(merged)
       }
     }
-  }, [tasks])
+  }, [tasks, needsReset])
 
   // HTML5 Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -410,10 +414,12 @@ export const WbsBuilder: React.FC<WbsBuilderProps> = ({ tasks, onSuccess, onErro
     setSaving(false)
     if (errCount === 0) {
       onSuccess(`Saved WBS structure changes successfully (${changedTasks.length} tasks updated).`)
-      onRefresh()
+      setNeedsReset(true)
+      onRefresh('task')
     } else {
       onError(`WBS structure saved with ${errCount} failures. Please reload and try again.`)
-      onRefresh()
+      setNeedsReset(true)
+      onRefresh('task')
     }
   }
 

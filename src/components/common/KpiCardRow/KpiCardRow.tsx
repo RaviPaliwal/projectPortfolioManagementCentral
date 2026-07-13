@@ -93,6 +93,9 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({ items, loading, variant 
           ? { value: kpi.trend, isPositive: kpi.trendIsPositive ?? true } 
           : getDeterministicTrend(kpi.label)
 
+        // Suppress trend badge when value is zero — a % change on 0 is meaningless
+        const trendVisible = resolvedTrend && !(typeof kpi.value === 'number' && kpi.value === 0)
+
         const trendBg = resolvedTrend.isPositive 
           ? (isDark ? alpha(theme.palette.success.main, 0.15) : '#e6f4ea') 
           : (isDark ? alpha(theme.palette.error.main, 0.15) : '#fce8e6')
@@ -162,7 +165,7 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({ items, loading, variant 
                     </Typography>
 
                     {/* Trend Badge */}
-                    {resolvedTrend && (
+                    {trendVisible && (
                       <Box
                         sx={{
                           display: 'inline-flex',

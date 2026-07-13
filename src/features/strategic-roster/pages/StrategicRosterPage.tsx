@@ -125,10 +125,10 @@ const TimelineItem = ({
   const financialProgress = allottedBudget && allottedBudget > 0 ? Math.min(100, ((actual || 0) / allottedBudget) * 100) : 0
 
   const gradient = type === 'portfolio'
-    ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.75)}, ${alpha(theme.palette.primary.light ?? theme.palette.primary.main, 0.65)})`
+    ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${alpha(theme.palette.primary.light ?? theme.palette.primary.main, 0.88)})`
     : type === 'programme'
-    ? `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.75)}, ${alpha(theme.palette.secondary.light ?? theme.palette.secondary.main, 0.65)})`
-    : `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.75)}, ${alpha(theme.palette.info.light ?? theme.palette.info.main, 0.65)})`
+    ? `linear-gradient(135deg, ${theme.palette.secondary.main}, ${alpha(theme.palette.secondary.light ?? theme.palette.secondary.main, 0.88)})`
+    : `linear-gradient(135deg, ${theme.palette.info.main}, ${alpha(theme.palette.info.light ?? theme.palette.info.main, 0.88)})`
 
   return (
     <Box sx={{
@@ -269,7 +269,7 @@ const TimelineItem = ({
                 zIndex: 10,
               }
             }}>
-              {width > 22 ? (
+              {width > 3 ? (
                 <Typography variant="caption" sx={{
                   color: '#fff',
                   fontSize: '0.7rem',
@@ -280,9 +280,9 @@ const TimelineItem = ({
                   letterSpacing: 0.5,
                   textTransform: 'uppercase'
                 }}>
-                  {name} ({Math.round((width / 100) * totalDays)}d)
+                  {name} ({Math.round((end!.getTime() - start!.getTime()) / (1000 * 60 * 60 * 24))}d)
                 </Typography>
-              ) : width > 10 ? (
+              ) : width > 1 ? (
                 <Typography variant="caption" sx={{
                   color: '#fff',
                   fontSize: '0.68rem',
@@ -290,7 +290,7 @@ const TimelineItem = ({
                   whiteSpace: 'nowrap',
                   letterSpacing: 0.5
                 }}>
-                  {Math.round((width / 100) * totalDays)}d
+                  {Math.round((end!.getTime() - start!.getTime()) / (1000 * 60 * 60 * 24))}d
                 </Typography>
               ) : null}
             </Box>
@@ -782,6 +782,33 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
           {/* ── View Toggle Rendering ── */}
           {viewMode === 'timeline' && (
             <Box sx={{ overflowX: 'auto', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+              {/* ── Timeline Legend ── */}
+              <Box sx={{
+                px: 3,
+                py: 1.25,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2.5,
+                borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                bgcolor: alpha(theme.palette.background.default, 0.6),
+              }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.disabled', fontSize: '0.62rem', mr: 0.5, userSelect: 'none' }}>
+                  Legend:
+                </Typography>
+                {([
+                  { label: 'Portfolio', color: theme.palette.primary.main },
+                  { label: 'Programme', color: theme.palette.secondary.main },
+                  { label: 'Project',   color: theme.palette.info.main },
+                ] as const).map(({ label, color }) => (
+                  <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Box sx={{ width: 10, height: 10, borderRadius: '3px', bgcolor: color, flexShrink: 0, boxShadow: `0 0 4px ${alpha(color, 0.5)}` }} />
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.68rem', letterSpacing: 0.2 }}>
+                      {label}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+
               <Box sx={{ minWidth: Math.max(1200, months.length * 120 + 460) }}>
                 {/* Strategic Timeline Header */}
                 <Box sx={{ display: 'flex', bgcolor: alpha(theme.palette.background.default, 0.8), borderBottom: `2px solid ${theme.palette.divider}`, backdropFilter: 'blur(8px)' }}>
@@ -972,6 +999,7 @@ export default function StrategicRosterPage({ onNavigate }: StrategicRosterPageP
               </Box>
             </Box>
           )}
+
 
           {viewMode === 'cards' && (
             <CardView
